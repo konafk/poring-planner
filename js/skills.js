@@ -28,6 +28,10 @@ function levelPreset(p,c){const s=presetSkill(p),a={...p};if(!s||!hasTree(c))ret
   if(p.zeny!=null){const z=String(lo[7]).match(/Zeny Cost:?\s*([\d,]+)/i);if(z)a.zeny=+z[1].replace(/,/g,"")}
   a.name=/Lv\s*\d+/.test(p.name)?p.name.replace(/Lv\s*\d+/,"Lv"+lv):`${p.name} Lv${lv}`;return {a,lv,s}}
 const refreshPreset=c=>{if(c.preset>=0){const p=JOBS[state.job].p[c.preset];if(p)c.a=levelPreset(p,c).a}};
+// the skill check corrected four presets' damage % (Grimtooth 300%, the Monk combo's knuckle and STR, Acid Bomb's monster VIT, Axe Boomerang's
+// weight) and moved cast times and delays to the in-game table: saved characters still on a preset take the new numbers at their learned level
+(function presetsV4(){if(state.presetsV4)return;state.presetsV4=true;const job=state.job;
+  for(const j in state.chars){const c=state.chars[j],p=JOBS[j]&&c&&c.preset>=0&&JOBS[j].p[c.preset];if(p){state.job=j;c.a=levelPreset(p,c).a}}state.job=job;save()})();
 // passives: values come from the skill's own description at the learned level; this table only says what they need.
 // any: bonus lines that count with any weapon (Music / Dance Lessons' Max SP %, checked on a Dancer with no whip)
 const SK_PASSIVE={"sword-mastery":{w:["Dagger","One-handed sword"]},"two-handed-sword-mastery":{w:["Two-handed sword"]},"spear-mastery":{w:["One-handed spear","Two-handed spear"]},

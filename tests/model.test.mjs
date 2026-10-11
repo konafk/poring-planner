@@ -1407,4 +1407,40 @@ t("shield skills add the shield's weight + 4 × its refine to their %", () => {
   assert.equal(run(`C().a.shw`), true);
 });
 
+t("skill check: Grimtooth, the Monk combo, Acid Bomb and Axe Boomerang", () => {
+  const pre = (job, name) => `({...JOBS.${job}.p.find(p=>p.name.startsWith(${JSON.stringify(name)}))})`;
+  setup("Assassin", { st: { agi: 50 } });
+  run(`C().a=${pre("Assassin", "Grimtooth")}`);
+  near(run(`pctEff()`), 300 + 50);                                         // ATK 300% at Lv5 in game, + AGI
+  // Raging Quadruple Blow doubles with a knuckle, Raging Thrust adds 5 × STR
+  setup("Monk", { st: { str: 40 }, weapon: "Knuckle" });
+  run(`C().a=${pre("Monk", "Combo")}`);
+  near(run(`pctEff()`), 1000 + 1600 + 5 * 40);
+  run(`C().weapon="One-handed mace"`);
+  near(run(`pctEff()`), 500 + 1600 + 5 * 40);
+  // Acid Bomb: + 10 × the monster's VIT, only when there's a monster
+  setup("Alchemist", { baseLv: 90, st: {}, intTxt: "30" });
+  run(`C().a=${pre("Alchemist", "Acid Bomb")}`);
+  near(run(`pctEff(${MOB})`), 4000 + 2 * 30 + 10 * 30);                    // the Dummy has VIT 30
+  near(run(`pctEff()`), 4000 + 2 * 30);
+  // Axe Boomerang: + the axe's weight, typed in or from the Weapon row
+  setup("Blacksmith", { baseLv: 90, st: {}, weaponW: 250 });
+  run(`C().a=${pre("Blacksmith", "Axe Boomerang")}`);
+  near(run(`pctEff()`), 500 + 250);
+  const axe = run(`EQUIP.find(x=>x.type==="axe_2h"&&x.w>0).id`);
+  run(`C().mode='build';C().build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{weapon:{id:${axe},refine:0,cards:[]}}};applyBuild()`);
+  near(run(`pctEff()`), 500 + run(`BUILD.item(${axe}).w`));
+  // weapons carry their weight; starter and guild weapons weigh nothing
+  assert.equal(run(`EQUIP.filter(x=>(x.slot||[]).includes("weapon")&&x.w>0).length>300`), true);
+  assert.equal(run(`EQUIP.find(x=>x.name==="Novice Battle Axe").w`), undefined);
+});
+
+t("preset cast times and delays match the in-game skill table", () => {
+  // fixed / variable cast and max(cooldown, after-cast delay) at the preset's level, for every preset the table has a row for
+  const bad = run(`(()=>{const out=[];for(const j in JOBS){state.job=j;for(const p of JOBS[j].p){const s=presetSkill(p);if(!s||p.fct==null)continue;
+    const r=skRow(s,s.max),near=(a,b)=>Math.abs(a-b)<1e-9;
+    if(!near(p.fct,(r[4]||0)/1000)||!near(p.vct,(r[3]||0)/1000)||!near(p.delay,Math.max(r[5]||0,r[6]||0)/1000))out.push(j+": "+p.name)}}return out.join(", ")})()`);
+  assert.equal(bad, "");
+});
+
 console.log(`${n} tests passed`);

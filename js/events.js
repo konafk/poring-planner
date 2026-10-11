@@ -78,6 +78,7 @@ $("acSpell").addEventListener("change",e=>{AC().spell=e.target.value;save();rend
 $("convSel").addEventListener("change",e=>{const v=e.target.value,c=C();c.converters=!!v;c.convEl=v==="auto"?"":v;save();renderAll()});
 // attack detail fields: editing makes the attack "Custom"
 $("cartW").addEventListener("input",e=>{C().cartW=Math.min(8000,Math.max(0,num(e.target.value)));save();renderAll()});
+$("weaponW").addEventListener("input",e=>{C().weaponW=Math.max(0,num(e.target.value));save();renderAll()});
 $("shieldW").addEventListener("input",e=>{C().shieldW=Math.max(0,num(e.target.value));save();renderAll()});
 $("shieldRef").addEventListener("input",e=>{C().shieldRef=Math.min(20,Math.max(0,num(e.target.value)));save();renderAll()});
 const aMap={aType:"type",aPct:"pct",aHits:"hits",aElem:"el",aCast:"cast",aDelay:"delay",aSp:"sp",aTargets:"targets",aZeny:"zeny"};

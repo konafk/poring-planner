@@ -156,6 +156,7 @@
         <label>Monsters hit per use<input id="aTargets" type="number" step="0.5" min="1"></label>
         <label>Zeny per use<input id="aZeny" type="number" step="100" min="0" placeholder="0"></label>
         <label id="cartWrap" hidden>Cart weight<input id="cartW" type="number" step="100" min="0" max="8000" placeholder="0 – 8000"></label>
+        <label id="weaponWWrap" hidden title="Axe Boomerang adds the axe's weight to its damage %. Build mode reads it from the Weapon row">Weapon weight<input id="weaponW" type="number" step="1" min="0" placeholder="weight"></label>
         <label id="shieldWrap" hidden title="Shield Boomerang and Rapid Smiting add the shield's weight + 4 × its refine to their damage %. Build mode reads them from the Shield row">Shield weight / refine<span class="bar"><input id="shieldW" type="number" step="1" min="0" placeholder="weight" aria-label="Shield weight" style="flex:1;min-width:0"><input id="shieldRef" type="number" step="1" min="0" max="20" placeholder="+0" aria-label="Shield refine" style="width:56px"></span></label>
       </div>
       <div class="note" id="useInfo"></div>

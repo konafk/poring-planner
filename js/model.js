@@ -65,7 +65,12 @@ const shieldWR=(c=C())=>{if(c.mode==="build"){const g=((c.build&&c.build.gear)||
     return it&&(it.slot||[]).includes("shield")?{w:num(it.w),r:num(g.refine),name:it.name}:{w:0,r:0,name:""}}
   return {w:Math.max(0,num(c.shieldW)),r:Math.max(0,num(c.shieldRef))}};
 const shieldPct=(c=C())=>{const s=shieldWR(c);return s.w+4*s.r};
-const pctEff=()=>{const c=C(),a=c.a;let p=num(a.pct);(a.sadd||[]).forEach(([k,f])=>{const v=statVal(c,k);if(v!=null)p+=v*f});if(num(a.cart))p+=num(a.cart)*Math.min(8000,Math.max(0,num(c.cartW)))/8000;if(a.shw)p+=shieldPct(c);if(!a.blv)return p;const lv=num(c.baseLv,99);return p*(a.blvBug?lv:Math.max(100,lv))/100};
+// weapon-weight skills (a.wgt: Axe Boomerang): + weapon weight %, from the Weapon row in build mode, otherwise the Weapon weight box
+const weaponW=(c=C())=>{if(c.mode==="build"){const g=((c.build&&c.build.gear)||{}).weapon,it=g&&g.id&&BUILD.item(g.id);return it?{w:num(it.w),name:it.name}:{w:0,name:""}}
+  return {w:Math.max(0,num(c.weaponW))}};
+// a.wpct: extra % with a weapon type (Raging Quadruple Blow doubles with a knuckle); a.mvit: + N × the monster's VIT % (Acid Bomb), only when m is given
+const pctEff=m=>{const c=C(),a=c.a;let p=num(a.pct);(a.sadd||[]).forEach(([k,f])=>{const v=statVal(c,k);if(v!=null)p+=v*f});if(num(a.cart))p+=num(a.cart)*Math.min(8000,Math.max(0,num(c.cartW)))/8000;if(a.shw)p+=shieldPct(c);
+  if(a.wgt)p+=weaponW(c).w;if(a.wpct)p+=num(a.wpct[c.weapon]);if(m&&a.mvit)p+=num(a.mvit)*num(m.vit);if(!a.blv)return p;const lv=num(c.baseLv,99);return p*(a.blvBug?lv:Math.max(100,lv))/100};
 const targets=()=>Math.max(1,num(C().a.targets,1));
 // magic: true for magic damage (spells, Spell Fist, Shadow Spell auto-casts). Each race / size / element / name bonus is
 // physical-only, magic-only or both (race / size / element default to both, as before the setting existed)
@@ -115,21 +120,21 @@ const leftEl=()=>EL_OVR||C().lwElem||"Neutral";
 const mobSoftDef=m=>Math.max(0,Math.floor(((m.lv||0)+(m.vit||0))/2));
 const mobSoftMdef=m=>Math.max(0,Math.floor(((m.lv||0)+(m.int||0))/4));
 // "Your hit %": skill % after element, size and your bonuses, as a share of your full ATK (before monster DEF/MDEF)
-const hitPctOf=m=>{const a=C().a;if(a.type==="spellfist")return sfPct()*elemMult(m,atkEl())/100*bonusMul(m,true);if(a.type==="magic")return pctEff()*elemMult(m,atkEl())/100*bonusMul(m,true);
+const hitPctOf=m=>{const a=C().a;if(a.type==="spellfist")return sfPct()*elemMult(m,atkEl())/100*bonusMul(m,true);if(a.type==="magic")return pctEff(m)*elemMult(m,atkEl())/100*bonusMul(m,true);
   const P=atkParts(),tot=P.weapon+P.neutral;if(tot<=0)return 0;
-  const k=(P.weapon*sizeMod(m,C().weapon)/100*elemMult(m,atkEl())/100+P.neutral*elemMult(m,"Neutral")/100)/tot;return pctEff()*k*bonusMul(m)};
+  const k=(P.weapon*sizeMod(m,C().weapon)/100*elemMult(m,atkEl())/100+P.neutral*elemMult(m,"Neutral")/100)/tot;return pctEff(m)*k*bonusMul(m)};
 // hit chance = 100 + your HIT − the monster's "100% hit" value, 5–100%; magic always lands
 const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist")return 100;if(m.hit100==null)return 95;return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100))};
 function dmgPerHit(m){
   const a=C().a;if(a.type==="spellfist")return magicDmg(m,sfPct(),atkEl());
-  if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor((sumStat(cf("matkTxt"))*pctEff()/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
+  if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor((sumStat(cf("matkTxt"))*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
   const P=atkParts(),d=physDmg(m,P.weapon*sizeMod(m,C().weapon)/100*elemMult(m,atkEl())/100+P.neutral*elemMult(m,"Neutral")/100);
   return dualHit()&&d>0?Math.max(1,Math.floor(d*handPct().right/100)):d}
 // one physical hit from an ATK pool (weapon share after size and element, plus the Neutral share)
 function physDmg(m,pool){if(pool<=0)return 0;
   const c=C(),a=c.a,skill=a.type!=="auto";const rng=(1+num(c.rangePct)/100)*(skill?1+num(c.skillPct)/100:1);
   // mastery ATK (flat, from passive skills) is added after the skill ratio, before cards and DEF
-  const df=effDef(m);return Math.max(1,Math.floor((pool*pctEff()/100+masteryFor(m)*elemMult(m,"Neutral")/100)*bonusMul(m)*rng*(4000+df)/(4000+10*df)-mobSoftDef(m)))}
+  const df=effDef(m);return Math.max(1,Math.floor((pool*pctEff(m)/100+masteryFor(m)*elemMult(m,"Neutral")/100)*bonusMul(m)*rng*(4000+df)/(4000+10*df)-mobSoftDef(m)))}
 // the left hand's hit on a dual-wield basic attack (0 otherwise): its own weapon, size and element, status ATK once
 function leftDmg(m){if(!dualHit())return 0;const P=atkParts(),d=physDmg(m,P.left*sizeMod(m,C().lw)/100*elemMult(m,leftEl())/100+(P.neutral-P.st)*elemMult(m,"Neutral")/100);
   return d>0?Math.max(1,Math.floor(d*handPct().left/100)):0}

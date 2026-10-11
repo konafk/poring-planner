@@ -16,7 +16,8 @@ The numbers are estimates. Skill values and formulas follow the sources below an
 - Spawn, drop and item name cross-check, in-game map codes: [ragnarokzero.net](https://ragnarokzero.net/database/maps)
 - Monster race and HP cross-check: [einh-guild.de](https://einh-guild.de), [midgardhub.com](https://midgardhub.com/database/monsters)
 - Formulas: [roz.prontera.info/mechanics](https://roz.prontera.info/mechanics), [iRO Wiki](https://irowiki.org/wiki/Stats)
-- Zero skill data, element table and ASPD table: [Landgris ROCalculator](https://landgris.github.io/ROCalculator/?zero)
+- Skill damage %, cast times, cooldowns and after-cast delays: the in-game skill table from [roz.prontera.info](https://roz.prontera.info) (`data/skills.js`)
+- Skill stat add-ons and base-level scaling, element table and ASPD table: [Landgris ROCalculator](https://landgris.github.io/ROCalculator/?zero)
 - Consumables: values from the in-game item tooltips (Ragnarok Zero Global). How they stack follows Landgris: stat food and Blessing of Yggdrasil take the higher per stat, course meals and event drinks add on top
 - Size table and EXP tables: [official game guide](https://roz.mygnjoy.com/en/intro/guide/12)
 - Clan buffs: [Midgard Hub new player guide](https://midgardhub.com/guides/new-player), the same as iRO Wiki's Clan System

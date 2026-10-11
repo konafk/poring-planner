@@ -33,6 +33,11 @@ function renderChar(){renderAspdBuffs();potInfo();
   // shield skills: what the shield adds to the skill %. Build mode shows the Shield row's weight and refine in the boxes, read-only
   {const b=c.mode==="build",s=shieldWR(c);$("shieldWrap").hidden=!a.shw;
     [["shieldW",s.w],["shieldRef",s.r]].forEach(([id,v])=>{const el=$(id);el.disabled=b;if(document.activeElement!==el)el.value=b&&!s.name||!b&&!v?"":v})}
+  // weapon weight (Axe Boomerang), same read-only rule in build mode
+  {const b=c.mode==="build",w=weaponW(c),el=$("weaponW");$("weaponWWrap").hidden=!a.wgt;el.disabled=b;if(document.activeElement!==el)el.value=b&&!w.name||!b&&!w.w?"":w.w;
+    if(a.wgt)$("atkSummary").textContent+=c.mode==="build"&&!w.name?" · no weapon in the Weapon row, so no weight bonus":` · ${w.name?w.name+": ":""}weapon weight +${w.w}%: ${Math.round(pctEff())}% per hit`}
+  if(a.mvit)$("atkSummary").textContent+=` · + ${a.mvit} × the monster's VIT %`;
+  if(a.wpct&&a.wpct[c.weapon])$("atkSummary").textContent+=` · ${c.weapon}: +${a.wpct[c.weapon]}%`;
   if(a.shw){const s=shieldWR(c);$("atkSummary").textContent+=c.mode==="build"&&!s.name?" · no shield in the Shield row, so no shield bonus"
     :` · ${s.name?s.name+": ":""}shield weight ${s.w} + 4 × refine ${s.r} = +${shieldPct(c)}%: ${Math.round(pctEff())}% per hit`}
   if(dualOn()){const h=handPct();$("atkSummary").textContent+=a.type==="auto"?` · dual wield: right hand ${h.right}% + left ${c.lw} ${h.left}% (${leftEl()})`:" · dual wield: skills use the right hand only"}

@@ -157,8 +157,9 @@ def item_row(slug):
     row = {"id": it["item_id_ingame"], "slug": slug, "name": it["name"], "slot": it.get("equip_slots") or ([it["equip_slot"]] if it.get("equip_slot") else None),
            "type": it.get("weapon_type"), "el": it.get("element"), "slots": it.get("slots") or 0,
            "lv": it.get("min_level") or 0, "wlv": it.get("weapon_level") or 0,
-           # shield weight, as in game: Shield Boomerang and Rapid Smiting add it to their damage %
-           "w": it.get("weight") if "shield" in (it.get("equip_slots") or [it.get("equip_slot")]) else None,
+           # weapon and shield weight, as in game: Axe Boomerang, Shield Boomerang and Rapid Smiting add it to their damage %
+           # (starter and guild weapons have none: weightless)
+           "w": it.get("weight") or None if {"weapon", "shield"} & set(it.get("equip_slots") or [it.get("equip_slot")]) else None,
            "refine": it.get("refine_schedule"),
            "atk": it.get("physical_attack") or 0, "matk": it.get("magic_attack") or 0,
            "def": it.get("physical_defense") or 0, "mdef": it.get("magic_defense") or 0,
@@ -214,7 +215,7 @@ def main():
             print(f"  {i}/{len(slugs) + len(cards)}", flush=True)
 
     src = "Exported by tools/export_prontera.py from roz.prontera.info"
-    fields = ("// fields: id, slug, name, slot (every slot it takes), type (weapon type), el, slots, lv (required), wlv (weapon level), w (shield weight, as in game), refine (schedule),\n"
+    fields = ("// fields: id, slug, name, slot (every slot it takes), type (weapon type), el, slots, lv (required), wlv (weapon level), w (weapon and shield weight, as in game; none = weightless), refine (schedule),\n"
               "// atk, matk, def, mdef, g: bonus groups {r: min refine, rs: min combined refine, lv: min base level, cls: job slugs, lvPer / lvMax: lines count once per lvPer base levels up to lvMax,\n"
               "// proc: text of an effect that isn't a plain stat, b: [[type, target kind, target, value, per N refines, skill, scaling skill]]}")
     write("equipment.js", f"// Equipment ({src}); GvG-only bonuses are left out.\n{fields}\n// SETS: combos by item slug, same bonus groups.",
