@@ -337,6 +337,9 @@ $("itemCard").addEventListener("click",e=>{const a=e.target.closest("[data-pitem
 $("mapList").innerHTML=Object.keys(MAPMOBS).sort((a,b)=>mapCode(a).localeCompare(mapCode(b))).map(m=>`<option value="${mapCode(m)}">${esc(mapName(m))} · ${MAPMOBS[m].length} monsters</option>`).join("");
 $("mapInput").addEventListener("change",e=>{state.map=mapKey(e.target.value);save();renderMap()});
 $("mapFromMob").addEventListener("click",()=>{state.map="";save();renderMap()});
+// monsters on you at once on the Map planner's map; blank goes back to the default (3 in Labyrinth Forest, else 1)
+$("mobbedIn").addEventListener("input",e=>{let mp=mapKey(state.map);if(!MAPMOBS[mp]){const m=calcMob(),om=m?openMaps(m):[];mp=om.length?om[0][0]:""}if(!MAPMOBS[mp])return;
+  if(!state.mobbed)state.mobbed={};const v=e.target.value;if(v===""||!(+v>0))delete state.mobbed[mp];else state.mobbed[mp]=Math.min(12,Math.max(1,Math.round(+v)));save();renderAll()});
 $("mapTable").querySelector("tbody").addEventListener("click",e=>{const sm=e.target.closest("[data-sessmob]");if(sm){toggleSessMob(+sm.dataset.sessmob);save();renderAll();return}const sk=e.target.closest("[data-skip]");if(sk){const id=+sk.dataset.skip;if(!state.skipMobs)state.skipMobs=[];state.skipMobs=state.skipMobs.includes(id)?state.skipMobs.filter(x=>x!==id):[...state.skipMobs,id];save();renderAll();return}const tr=e.target.closest("tr[data-id]");if(tr)pickMob(MOBS.find(m=>m.id===+tr.dataset.id))});
 // goal
 // goal levels default to the max (base Lv MAX_BASE_LV, your job's max job level); typing past it stops at it, and a blank or too-low goal goes back to it

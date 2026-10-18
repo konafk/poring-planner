@@ -1482,6 +1482,37 @@ t("Farm without items: HP and SP out against regen, cards, Heal and Indulge, gra
   run("C().autoSp=true"); const before = run(`itemsOnNow()`); run(`susMob(${MOB},2)`); assert.equal(run(`itemsOnNow()`), before);
 });
 
+t("a map's own count of monsters on you: every monster there, hits add up, FLEE / DEF crowd penalty; room dungeons (Labyrinth Forest 1F / 3F, Sunken Ship) start at 3", () => {
+  const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
+  setup("Knight", { atkTxt: "100+300", aspd: 170, defTxt: "40+60", fleeTxt: "200", maxHp: 6000, hitScale: 1, mobInterval: 1.5, st: {}, a: AUTO });
+  const one = run(`({d:dodge(${MOB}),h:hitsOnYou(${MOB}),dmg:mobHitDmg(${MOB})})`);
+  near(one.d, 95 + 200 - 250);                                              // one at a time: as before
+  const at = n => run(`(()=>{const k=MOBBED;MOBBED=${n};try{return {d:dodge(${MOB}),h:hitsOnYou(${MOB}),dmg:mobHitDmg(${MOB})}}finally{MOBBED=k}})()`);
+  const two = at(2);
+  near(two.d, one.d); near(two.h, 2 * one.h); near(two.dmg, one.dmg);       // two: twice the hits, no penalty yet
+  const four = at(4);
+  near(four.d, Math.max(0, 95 + 200 * 0.8 - 250));                          // 4: FLEE −20%
+  near(four.h, 4 * (100 - four.d) / 100 / 1.5);
+  near(four.dmg, Math.max(1, 150 * (4000 + 54) / (4000 + 540) - 36));     // DEF −10%: hard 60 → 54, soft 40 → 36
+  near(at(20).d, 0);
+  near(run(`(()=>{const k=MOBBED;MOBBED=4;try{return crowdN(${MOB})}finally{MOBBED=k}})()`), 4);   // the map's count wins, aggressive or not
+  assert.equal(run(`crowdN(${MOB})`), 1);                                   // elsewhere a passive monster is 1 on you                                                        // FLEE can't go below 0
+  run("C().fleeTxt='900'"); near(at(1).d, 95);                              // dodge tops out at 95%: 5% of swings always land
+  // per map: Labyrinth Forest defaults to 3, a typed count wins, other maps have none (the Character tab's per-monster count applies)
+  assert.equal(run("mobbedOf('maz_d01')"), 3); assert.equal(run("mobbedOf('maz_d03')"), 3); assert.equal(run("mobbedOf('prt_maze02')"), null);
+  assert.equal(run("mobbedOf('tre_d01')"), 3); assert.equal(run("mobbedOf('tre_d02')"), 3);              // Sunken Ship's cabins: a room dungeon too
+  assert.equal(run("mobbedOf('gon_d02')"), 3); assert.equal(run("mobbedOf('sp_d05')"), 3);               // Kunlun's Chess Terrace, Sphinx B5F
+  assert.equal(run("mobbedOf('c_tower4')"), null);                                                       // only a few room warps: normal
+  assert.equal(run("ROOM_MAPS.every(mp=>MAPMOBS[mp])"), true);                                           // every room dungeon is a real spawn map assert.equal(run(`mobbedOf(mapKey('pay_dun00'))`), null);
+  setup("Knight", { fleeTxt: "100", defTxt: "0+0", hpRegen6: 1, hitScale: 1 });   // the default attack hurts Payon Cave's monsters; no DEF, little regen
+  const P = JSON.stringify(run("mapKey('pay_dun00')")), set = n => run(`state.mobbed={[${P}]:${n}}`);
+  set(4); assert.equal(run(`mobbedOf(${P})`), 4);
+  const hp4 = run(`mapStats(${P},2).hpm`); run("state.mobbed={}"); const hp1 = run(`mapStats(${P},2).hpm`);
+  assert.ok(hp4 > hp1); assert.equal(run("MOBBED"), null);                     // and nothing outside the map changes
+  const s1 = run(`mapStats(${P},2).sus.score`); set(6); assert.ok(s1 >= run(`mapStats(${P},2).sus.score`));
+  run("state.mobbed={}");
+});
+
 t("preset cast times and delays match the in-game skill table", () => {
   // fixed / variable cast and max(cooldown, after-cast delay) at the preset's level, for every preset the table has a row for
   const bad = run(`(()=>{const out=[];for(const j in JOBS){state.job=j;for(const p of JOBS[j].p){const s=presetSkill(p);if(!s||p.fct==null)continue;

@@ -98,6 +98,8 @@ state.tsort=Object.fromEntries(Object.entries(objOr(state.tsort)).filter(([,v])=
 [["bestTable","bestSort","bestDir"],["huntTable","huntSort","huntDir"]].forEach(([id,k,d])=>{if(typeof state[k]==="string"&&!state.tsort[id])state.tsort[id]=[state[k],state[d]===1?1:-1];delete state[k];delete state[d]});
 state.tfilt=Object.fromEntries(Object.entries(objOr(state.tfilt)).map(([k,v])=>[k,Object.fromEntries(Object.entries(objOr(v)).filter(([,x])=>typeof x==="string"))]));
 state.noTele=(Array.isArray(state.noTele)?state.noTele:[]).map(String);
+// monsters on you at once per map (Map planner): whole numbers 1–12
+state.mobbed=Object.fromEntries(Object.entries(numMap(state.mobbed)).map(([k,v])=>[k,Math.min(12,Math.max(1,Math.round(v)))]));
 // per account: buy at the Discount price (on unless switched off): recovery items, the ASPD potion, skill items and Custom HP / SP items
 state.recovery={discount:!(state.recovery&&state.recovery.discount===false)};
 delete state.flyPrice;
