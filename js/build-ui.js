@@ -36,8 +36,7 @@ const OWN_LISTS=[{list:"consList",add:"consAdd",note:"consNote",key:"cons",what:
 const consStatOf=c=>{if(!c.consStat||typeof c.consStat!=="object")c.consStat={};const pb=c.pbuffs||{};
   [["agiFood","agi"],["dexFood","dex"]].forEach(([k,st])=>{if(!pb[k])return;if(pb[k].on){const o=c.consStat[st]||(c.consStat[st]={});o.n=num(o.n)+Math.min(10,Math.max(1,num(pb[k].lv,10)))}delete pb[k]});
   return c.consStat};
-// Blessing of Yggdrasil (World Tree Dew or Zelstar, 1 hour): all stats +7, ATK +30, MATK +30, HIT +5, FLEE +5 (in-game Yggdrasil Staff
-// tooltip; Landgris ROCalculator has HIT / FLEE +30, which is wrong for Zero)
+// Blessing of Yggdrasil (World Tree Dew or Zelstar, 1 hour): all stats +7, ATK +30, MATK +30, HIT +5, FLEE +5 (in-game Yggdrasil Staff tooltip)
 const YGG_FX=[...["str","agi","vit","int","dex","luk"].map(k=>[k,7]),["atk",30],["matk",30],["hit",5],["flee",5]];
 // effect lines the status window can't show, read before the usual options (they count whether or not "add on top" is ticked):
 // "SP +5% every 5s" / "HP +20 every 5 sec" / "SP +2/s" -> restored per second (sp_regen, sp_regen_pct of Max SP, same for HP),
@@ -70,8 +69,8 @@ function parseCons(txt){const lines=[],rest=[],N="([+-]\\s*\\d+(?:\\.\\d+)?)";
     rest.push(p)};
   String(txt||"").split(/[,;\n]+/).forEach(one);
   const o=BUILD.parseOptions(rest.join(","));return {lines:[...lines,...o.lines],bad:o.bad}}
-// Ragnarok Zero event consumables (30 minutes each), added as rows you can edit; values from the in-game tooltips (Ragnarok Zero Global),
-// which win over Landgris ROCalculator where they differ (Premium Course Meal is ATK / MATK +20 there, not +30). note: what isn't counted
+// Ragnarok Zero event consumables (30 minutes each), added as rows you can edit; values from the in-game tooltips (Ragnarok Zero Global).
+// note: what isn't counted
 const CONS_PRESETS=[
   {name:"Challenge Drink",eff:"ATK/MATK +30, ATK/MATK +1%, HIT/FLEE +30, ASPD +1, SP consumption -5%, Fixed cast -30%"},
   {name:"Mimir's Well",eff:"Max SP +10%, SP consumption -10%"},
@@ -82,7 +81,7 @@ const CONS_PRESETS=[
   {name:"Enriched Abrasive",eff:"CRIT +30"},
   {name:"Growth Elixir",eff:"Base/Job EXP +50%"},
   {name:"Ale's Blessing",eff:"Recovery items +20%, Heal received +20%"}];
-// stacking as in Landgris ROCalculator: stat food (the + column) and Blessing of Yggdrasil don't add up, the higher one counts per stat;
+// stacking: stat food (the + column) and Blessing of Yggdrasil don't add up, the higher one counts per stat;
 // course meals, event drinks and other rows stack on top
 // clans (Ragnarok Zero Global; Midgard Hub's new player guide, the same as iRO Wiki's Clan System): a buff that stays on while you're
 // a member, two stats +1, Max HP +30 and Max SP +10. It stacks with food and Blessing of Yggdrasil. It can't be switched off, so a
