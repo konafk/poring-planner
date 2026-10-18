@@ -300,9 +300,24 @@ $("stoneRow").addEventListener("change",e=>{const b=gearSet();
   if(e.target.dataset.ring){b.special=b.special||{};if(e.target.value)b.special.ring=+e.target.value;else delete b.special.ring;save();renderAll();return}
   const k=e.target.dataset.stone;if(!k)return;b.stones=b.stones||{};
   if(e.target.value)b.stones[k]=+e.target.value;else delete b.stones[k];save();renderAll()});
-function renderGearTable(){const c=C(),b=gearSet(c);GEAR_LISTS={};let lists="";
+// ---- remembered gear: each item keeps the refine, cards and affixes it had when it last came off (build.mem by item id, the
+// MEM_N newest), in any of your gear sets, so swapping a part out and back brings it back as it was. The item lists mark them ----
+const MEM_N=100;
+const memOf=c=>{const b=buildOf(c);if(!b.mem||typeof b.mem!=="object"||Array.isArray(b.mem))b.mem={};return b.mem};
+// keep row g's refine, cards and affixes under its item; a +0 item with no cards or affixes has nothing to keep
+function memKeep(c,g){if(!g||!g.id)return;const m=memOf(c),opts=BUILD.optRows(g.opts);delete m[g.id];
+  if(num(g.refine)||(g.cards||[]).some(Boolean)||opts.length)m[g.id]=JSON.parse(JSON.stringify({refine:num(g.refine),cards:g.cards||[],opts,t:Date.now()}));
+  Object.entries(m).sort((x,y)=>num(y[1].t)-num(x[1].t)).slice(MEM_N).forEach(([id])=>delete m[id])}
+const memAll=(c,gear)=>Object.values(gear||{}).forEach(g=>memKeep(c,g));
+// put item id in row g, the one there now remembered first: as it last was if remembered, else +0 with no cards or affixes
+function gearPut(c,g,id){if(g.id===id)return;memKeep(c,g);const m=memOf(c)[id]||{};g.id=id;
+  g.refine=num(m.refine);g.cards=[...(m.cards||[])];g.opts=JSON.parse(JSON.stringify(m.opts||[]))}
+// "+7 · Vitata Card · 2 affixes"
+const memTxt=m=>[num(m.refine)?`+${num(m.refine)}`:"",...(m.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean),
+  ...(m.opts&&m.opts.length?[`${m.opts.length} affix${m.opts.length>1?"es":""}`]:[])].filter(Boolean).join(" · ");
+function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};let lists="";
   const rows=BUILD.SLOTS.map(s=>{const g0=b.gear[s.k]||{},items=gearChoices(s.k),cards=cardChoices(s.k,g0.id&&BUILD.item(g0.id));GEAR_LISTS["g_"+s.k]=pickList(items);GEAR_LISTS["c_"+s.k]=pickList(cards);
-    lists+=`<datalist id="gl_${s.k}">${[...GEAR_LISTS["g_"+s.k].keys()].map(n=>`<option value="${esc(n)}">`).join("")}</datalist><datalist id="cl_${s.k}">${[...GEAR_LISTS["c_"+s.k]].map(([n,id])=>{const p=cardName({id});return `<option value="${esc(n)}"${p?` label="${esc(p)}"`:""}>`}).join("")}</datalist>`;
+    lists+=`<datalist id="gl_${s.k}">${[...GEAR_LISTS["g_"+s.k]].map(([n,id])=>`<option value="${esc(n)}"${mem[id]?` label="remembered: ${esc(memTxt(mem[id]))}"`:""}>`).join("")}</datalist><datalist id="cl_${s.k}">${[...GEAR_LISTS["c_"+s.k]].map(([n,id])=>{const p=cardName({id});return `<option value="${esc(n)}"${p?` label="${esc(p)}"`:""}>`}).join("")}</datalist>`;
     const g=b.gear[s.k]||{},it=g.id&&BUILD.item(g.id),label=n=>{const x=BUILD.item(n);return x?labelOf(x,cards):""};
     const cardBoxes=it&&it.slots?Array.from({length:it.slots},(_,i)=>`<input data-card="${i}" list="cl_${s.k}" placeholder="card" title="The card (Vitata), or the name it gives the item in game (Healing)" value="${esc(g.cards&&g.cards[i]?label(g.cards[i]):"")}">`).join(""):"";
     const refinable=it&&s.k!=="ammo"; // every part: some accessories and headgear refine though the data has no schedule for them
@@ -316,7 +331,7 @@ function renderBuild(){const c=C(),on=c.mode==="build";
   ROOTQ("[data-cmode]").forEach(x=>x.setAttribute("aria-checked",String(x.dataset.cmode===(on?"build":"status"))));
   $("buildPanel").hidden=!on;$("statNote").hidden=on;$("shieldRow").hidden=on;$("onTopWrap").hidden=on;$("addOnTop").checked=c.addOnTop!==false;BUILT_IDS.forEach(id=>{const el=$(id);el.disabled=on;if(on&&document.activeElement!==el)el.value=id.startsWith("st_")?(c.st||{})[id.slice(3)]??"":c[id]??""});
   $("modeNote").textContent=on?"Stats below are worked out from your base stats, job level and gear.":"Type the numbers from your in-game status window.";
-  if(!on)return;renderAltBar(c);const b=buildOf(c);ROOTQ("[data-bs]").forEach(x=>{if(document.activeElement!==x)x.value=b.base[x.dataset.bs]??""});
+  if(!on)return;renderAltBar(c);renderLoadouts(c);const b=buildOf(c);ROOTQ("[data-bs]").forEach(x=>{if(document.activeElement!==x)x.value=b.base[x.dataset.bs]??""});
   const r=BUILD_LAST;if(!r)return;const jb=r.jobBonus;
   $("jobBonusNote").textContent=`Job Lv ${r.fields.jobLv} bonus: `+BUILD.STAT6.map(k=>`${k.toUpperCase()} +${jb[k]}`).join(" · ")+(BUILD.curve(state.job,"hp",num(c.baseLv))==null?" · no HP/SP table for this job, type Max HP/SP after switching back":"");
   // check against the game: type the in-game totals, see the difference per stat
@@ -337,12 +352,12 @@ ROOTQ("[data-cmode]").forEach(x=>x.addEventListener("click",()=>{const c=C(),to=
   else if(c.statusSnap){SNAP_KEYS.forEach(k=>{const v=c.statusSnap[k];if(v==null)delete c[k];else c[k]=v});delete c.statusSnap}
   c.mode=to;save();if(to==="build")renderGearTable();renderAll();syncChar()}));
 ROOTQ("[data-bs]").forEach(x=>x.addEventListener("input",()=>{buildOf(C()).base[x.dataset.bs]=num(x.value)||1;save();renderAll()}));
-$("gearTable").addEventListener("change",e=>{const tr=e.target.closest("tr[data-slot]");if(!tr)return;const k=tr.dataset.slot,b=gearSet(),g=b.gear[k]||(b.gear[k]={});
+$("gearTable").addEventListener("change",e=>{const tr=e.target.closest("tr[data-slot]");if(!tr)return;const k=tr.dataset.slot,c=C(),b=gearSet(c),g=b.gear[k]||(b.gear[k]={});
   if(e.target.classList.contains("item")){const v=e.target.value.trim();const id=GEAR_LISTS["g_"+k].get(v);
-    // not on the list: read it as the equipment window names it, refine and cards included
+    // not on the list: read it as the equipment window names it, refine and cards included (they win over what the item last had)
     const r=id==null&&v?readGear(k,v):null;
-    if(!v){delete b.gear[k]}else if(id!=null){if(g.id!==id){g.id=id;g.cards=[];g.refine=0}}
-    else if(r){if(r.refine!=null)g.refine=r.refine;else if(g.id!==r.id)g.refine=0;if(g.id!==r.id||r.cards.length)g.cards=r.cards;g.id=r.id}else{e.target.value=g.id?e.target.defaultValue:"";return}
+    if(!v){memKeep(c,g);delete b.gear[k]}else if(id!=null)gearPut(c,g,id);
+    else if(r){gearPut(c,g,r.id);if(r.refine!=null)g.refine=r.refine;if(r.cards.length)g.cards=r.cards}else{e.target.value=g.id?e.target.defaultValue:"";return}
     save();renderGearTable();renderAll();return}
   // picking an option keeps its value; "remove" drops it. The rows replace any text typed before the lists
   if(e.target.dataset.opt!=null){const rows=BUILD.optRows(g.opts),i=+e.target.dataset.opt,v=e.target.value;
@@ -371,7 +386,7 @@ const altList=(c=C())=>Array.from({length:ALT_N},(_,i)=>i).filter(i=>altSaved(c,
 // your character with set i on instead of your gear (base stats, skills and buffs stay); the in-game Max HP / SP typed
 // under "Check against the game" are for your gear, so they don't count for it
 const altChar=(c,i)=>{if(!altSaved(c,i))return null;const x=JSON.parse(JSON.stringify(c)),a=x.build.alts[i];
-  x.build={...x.build,gear:a.gear||{},stones:a.stones||{},special:a.special||{},check:{}};delete x.build.alts;delete x.gearEdit;return x};
+  x.build={...x.build,gear:a.gear||{},stones:a.stones||{},special:a.special||{},check:{}};delete x.build.alts;delete x.build.loadouts;delete x.build.mem;delete x.gearEdit;return x};
 const SET_KEYS=["gear","stones","special"];
 const setCopy=b=>JSON.parse(JSON.stringify(Object.fromEntries(SET_KEYS.map(k=>[k,b[k]||{}]))));
 const gearTxt=g=>{const it=g&&g.id&&BUILD.item(g.id);if(!it)return "none";const n=(g.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean);
@@ -389,7 +404,39 @@ function renderAltBar(c=C()){const i=altIdx(c),has=i>=0&&altSaved(c,i),list=altL
     :list.length?list.map(k=>`Set ${k+1}: ${altDiffTxt(c,k)}`).join("<br>")+"<br>Compare them on the EXP &amp; formulas tab":`Up to ${ALT_N} other sets of gear, worked out next to yours on the EXP &amp; formulas tab.`}
 ROOTQ("[data-gset]").forEach(x=>x.addEventListener("click",()=>{const c=C();if(x.dataset.gset==="mine")delete c.gearEdit;else c.gearEdit="alt"+x.dataset.gset;save();renderGearTable();renderAll()}));
 $("altCopy").addEventListener("click",()=>{const c=C(),i=altIdx(c);if(i<0)return;if(altSaved(c,i)&&altDiff(c,i).length&&!confirm(`Replace set ${i+1} with a copy of your gear?`))return;
-  buildOf(c).alts[i]=setCopy(buildOf(c));save();renderGearTable();renderAll()});
+  memAll(c,altOf(c,i).gear);buildOf(c).alts[i]=setCopy(buildOf(c));save();renderGearTable();renderAll()});
 const altSwap=(c,i)=>{const b=buildOf(c),mine=setCopy(b),other=setCopy(altOf(c,i));Object.assign(b,other);b.alts[i]=mine};
 $("altSwap").addEventListener("click",()=>{const c=C(),i=altIdx(c);if(i<0)return;altSwap(c,i);save();renderGearTable();renderAll()});
-$("altClear").addEventListener("click",()=>{const c=C(),i=altIdx(c);if(i<0||!confirm(`Empty set ${i+1}?`))return;buildOf(c).alts[i]={gear:{}};save();renderGearTable();renderAll()});
+$("altClear").addEventListener("click",()=>{const c=C(),i=altIdx(c);if(i<0||!confirm(`Empty set ${i+1}?`))return;memAll(c,altOf(c,i).gear);buildOf(c).alts[i]={gear:{}};save();renderGearTable();renderAll()});
+// ---- saved loadouts: whole gear setups under a name (build.loadouts: {name, gear, stones, special}), to swap the table shown (your
+// gear, or the set being edited) between them. Loading one remembers the items it takes off ----
+const loadoutsOf=c=>{const b=buildOf(c);if(!Array.isArray(b.loadouts)||b.loadouts.some(x=>!x||typeof x!=="object"))b.loadouts=(Array.isArray(b.loadouts)?b.loadouts:[]).filter(x=>x&&typeof x==="object");return b.loadouts};
+// a set's gear in a fixed form, for "is this the same gear": keys sorted, empty rows and trailing empty card boxes dropped
+const canon=v=>Array.isArray(v)?v.map(canon):v&&typeof v==="object"?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canon(v[k])])):v;
+const setKey=b=>{const x=setCopy(b);x.gear=Object.fromEntries(Object.entries(x.gear).filter(([,g])=>g&&g.id).map(([k,g])=>[k,{...g,cards:(g.cards||[]).map(id=>id||null).filter((id,i,a)=>a.slice(i).some(Boolean)),refine:num(g.refine)}]));return JSON.stringify(canon(x))};
+// the loadout the table shows now, or −1
+const loadoutAt=(c=C())=>{const k=setKey(gearSet(c));return loadoutsOf(c).findIndex(x=>setKey(x)===k)};
+// save the table shown as loadout name (one with that name, in any case, is replaced); its index
+function loadoutSave(c,name){const L=loadoutsOf(c),nm=String(name).trim(),i=L.findIndex(x=>String(x.name||"").toLowerCase()===nm.toLowerCase()),x={name:nm,...setCopy(gearSet(c))};
+  if(i>=0){L[i]=x;return i}L.push(x);return L.length-1}
+function loadoutLoad(c,i){const lo=loadoutsOf(c)[i];if(!lo)return;const s=gearSet(c);memAll(c,s.gear);Object.assign(s,setCopy(lo))}
+const loadoutName=x=>String(x&&x.name||"").trim()||"(no name)";
+function renderLoadouts(c=C()){const L=loadoutsOf(c),at=loadoutAt(c),pick=$("loadoutPick"),i=altIdx(c),memN=Object.keys(memOf(c)).length;
+  if(document.activeElement!==pick){const was=pick.value;
+    pick.innerHTML=L.length?L.map((x,j)=>`<option value="${j}">${esc(loadoutName(x))}${j===at?" (in the table)":""}</option>`).join(""):`<option value="">No saved loadouts</option>`;
+    pick.value=L[+was]&&was!==""?was:String(at>=0?at:L.length?0:"")}
+  $("loadoutLoad").textContent=i>=0?`Load into set ${i+1}`:"Wear it";["loadoutLoad","loadoutDel"].forEach(id=>$(id).disabled=!L.length);
+  $("memClear").hidden=!memN;$("memClear").textContent=`Forget remembered items (${memN})`;
+  $("loadoutNote").innerHTML=(at>=0?`The table is loadout <b>${esc(loadoutName(L[at]))}</b>. `:"")+
+    `Gear you take off keeps its refine, cards and affixes: put it on again and they come back${memN?" (marked “remembered” in the item lists)":""}.`}
+$("loadoutSave").addEventListener("click",()=>{const c=C(),L=loadoutsOf(c),at=loadoutAt(c),cur=L[+$("loadoutPick").value];
+  const nm=prompt("Name this loadout",at>=0?loadoutName(L[at]):cur?loadoutName(cur):`Loadout ${L.length+1}`);if(nm==null||!nm.trim())return;
+  const same=L.find(x=>String(x.name||"").toLowerCase()===nm.trim().toLowerCase());if(same&&setKey(same)!==setKey(gearSet(c))&&!confirm(`Replace loadout “${loadoutName(same)}” with the gear in the table?`))return;
+  const j=loadoutSave(c,nm);save();renderAll();$("loadoutPick").value=String(j)});
+$("loadoutLoad").addEventListener("click",()=>{const c=C(),j=+$("loadoutPick").value,lo=loadoutsOf(c)[j];if(!lo)return;
+  // the table's gear goes unless a loadout has it (its items stay remembered either way)
+  const s=gearSet(c),has=Object.values(s.gear||{}).some(g=>g&&g.id);
+  if(has&&loadoutAt(c)<0&&setKey(s)!==setKey(lo)&&!confirm(`The gear in the table isn't saved as a loadout. Put “${loadoutName(lo)}” on anyway?`))return;
+  loadoutLoad(c,j);save();renderGearTable();renderAll()});
+$("loadoutDel").addEventListener("click",()=>{const c=C(),L=loadoutsOf(c),j=+$("loadoutPick").value;if(!L[j]||!confirm(`Delete loadout “${loadoutName(L[j])}”?`))return;L.splice(j,1);save();renderAll()});
+$("memClear").addEventListener("click",()=>{const c=C();if(!confirm("Forget the refine, cards and affixes remembered for the gear you took off?"))return;buildOf(c).mem={};save();renderGearTable();renderAll()});
