@@ -1874,4 +1874,14 @@ t("poison: monsters with Poison Attack poison you part of the time: HP drain, no
   near(run(`poisonUp(${pm})`), a2 * D2 / (1 + a2 * D2));
 });
 
+t("a fresh session is named after its map and follows it while the name is the default", () => {
+  run(`cur().name="New session";toggleSessMob(25328)`);
+  assert.equal(run(`cur().name`), run(`mapCode(sessMap(cur()))`));
+  assert.equal(run(`cur().name`), "nrd_dun02");
+  run(`toggleSessMob(25329)`);                                       // same map: still its code
+  assert.equal(run(`cur().name`), "nrd_dun02");
+  run(`cur().name="my run";toggleSessMob(25329)`);                    // a name you typed is kept
+  assert.equal(run(`cur().name`), "my run");
+});
+
 console.log(`${n} tests passed`);

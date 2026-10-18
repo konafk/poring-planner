@@ -248,9 +248,12 @@ $("delSession").addEventListener("click",()=>{if(!delArmed){delArmed=true;$("del
   if(!state.sessions.length)state.sessions.push({id:"s"+Date.now(),name:"New session",mobIds:[],entries:[]});openSession(state.sessions[0].id)});
 $("cmpTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.target.closest("tr[data-sid]");if(!tr)return;openSession(tr.dataset.sid);window.scrollTo({top:0,behavior:"smooth"})});
 // monsters
-// add or remove a monster from the current session; the first one names a fresh session and sets its job
-const toggleSessMob=id=>{const s=cur();const i=s.mobIds.indexOf(id);if(i>=0){s.mobIds.splice(i,1);return}
-  if(!s.mobIds.length)s.job=state.job;s.mobIds.push(id);const m=MOBS.find(x=>x.id===id);if(s.mobIds.length===1&&m&&s.name==="New session")s.name=m.name};
+// add or remove a monster from the current session; the first one sets a fresh session's job
+// a fresh session is named after its map (the first monster's name if it has no open map), and the name follows the map while it's still the default
+const sessAutoName=s=>{const mp=sessMap(s),m=sessMobs(s)[0];return mp?mapCode(mp):m?m.name:""};
+const toggleSessMob=id=>{const s=cur(),auto=s.name==="New session"||s.name===sessAutoName(s);const i=s.mobIds.indexOf(id);
+  if(i>=0)s.mobIds.splice(i,1);else{if(!s.mobIds.length)s.job=state.job;s.mobIds.push(id)}
+  const nm=sessAutoName(s);if(auto&&nm)s.name=nm};
 // the monster you click is also the one Monster info shows
 const pickMob=m=>{if(!m)return;state.calcMobId=m.id;state.infoMobId=m.id;const s=cur();if(!s.mobIds.length)toggleSessMob(m.id);save();renderAll()};
 $("mobList").innerHTML=MOBS.map(mobOpt).join("");
