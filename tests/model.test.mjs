@@ -1022,6 +1022,11 @@ t("Blitz Beat: falcon hits that always land, ignore DEF and bonuses; auto Blitz 
   const hc = run(`hitChance(${MOB})`) / 100;
   near(run(`usesPerKill(${MOB})`), 10000 / ((run(`dmgPerHit(${MOB})`) + run(`autoBlitzDmg(${MOB})`)) * hc));
   assert.equal(run(`JOBS.Monk.p[0].pct`), 2400);                       // Throw Spirit Sphere Lv5: 900 + 300 × Lv
+  const fa = JSON.parse(run(`JSON.stringify(JOBS.Hunter.p.find(p=>p.falcon==="assault"))`));
+  run(`C().a=${JSON.stringify(fa)};C().baseLv=99`);                    // Falcon Assault Lv5: the Lv5 Blitz Beat hit / 10 × 5 × (55 + 99/5)
+  assert.equal(run(`dmgPerHit(${MOB})`), Math.floor(per / 10 * 5 * (55 + 99 / 5)));
+  assert.equal(run(`hitChance(${MOB})`), 100);
+  near(run(`perUse(${MOB})`), Math.floor(per / 10 * 5 * (55 + 99 / 5)));
 });
 
 t("auto-cast spells from cards work on any job's basic attacks", () => {

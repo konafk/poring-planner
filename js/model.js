@@ -143,7 +143,7 @@ const hitPctOf=m=>{const a=C().a;if(a.falcon)return elemMult(m,"Neutral");if(a.t
 // hit chance = 100 + your HIT − the monster's "100% hit" value, 5–100%; magic always lands
 const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist"||C().a.falcon)return 100;if(m.hit100==null)return 95;return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100))};
 function dmgPerHit(m){
-  const a=C().a;if(a.type==="spellfist")return sfHit(m,atkEl());if(a.falcon)return blitzHit(m,Math.round(num(a.hits,5)));
+  const a=C().a;if(a.type==="spellfist")return sfHit(m,atkEl());if(a.falcon==="assault")return faHit(m);if(a.falcon)return blitzHit(m,Math.round(num(a.hits,5)));
   if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor((sumStat(cf("matkTxt"))*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
   const P=atkParts(),d=physDmg(m,handAtk(m,P.weapon,C().weapon,atkEl(),frontAtk()));
   return dualHit()&&d>0?Math.max(1,Math.floor(d*handPct().right/100)):d}
@@ -181,8 +181,12 @@ const dlDmg=m=>{const lv=dlLv();if(!lv)return 0;const o={...C().a,dl:false,hits:
 // Blitz Beat (Hunter falcon), per hit: (AGI/2 + DEX/10) × 2 + 6 × Steel Crow Lv + 20 × Blitz Beat Lv, as a Neutral hit that always lands
 // and ignores DEF and your damage bonuses. Auto Blitz: LUK/3 % on each basic attack that hits, at Lv (Job Lv + 9)/10 up to the learned Lv
 // (rAthena renewal). Steel Crow and Blitz Beat count as Lv 10 / 5 without a skill tree
-const blitzHit=(m,lv)=>{const c=C(),e=elemMult(m,"Neutral")/100;if(e<=0)return 0;const st=k=>num(statVal(c,k)),sc=hasTree(c)?skLv(c,"steel-crow"):10;
-  return Math.max(1,Math.floor(((Math.floor(st("agi")/2)+Math.floor(st("dex")/10))*2+6*sc+20*lv)*e))};
+const blitzBase=lv=>{const c=C(),st=k=>num(statVal(c,k)),sc=hasTree(c)?skLv(c,"steel-crow"):10;return (Math.floor(st("agi")/2)+Math.floor(st("dex")/10))*2+6*sc+20*lv};
+const blitzHit=(m,lv)=>{const e=elemMult(m,"Neutral")/100;return e<=0?0:Math.max(1,Math.floor(blitzBase(lv)*e))};
+// Falcon Assault (Zero skill data): one hit of the Blitz Beat hit (at Falcon Assault's Lv) / 10 × 5 × (5 + 50 + base Lv / 5), like Blitz Beat
+// otherwise. TODO: the client text says "+100% per level"; how it scales below Lv5 isn't confirmed. Lv5 without a skill tree
+const faLv=(c=C())=>hasTree(c)&&skLv(c,"falcon-assault")>0?skLv(c,"falcon-assault"):5;
+const faHit=m=>{const e=elemMult(m,"Neutral")/100;return e<=0?0:Math.max(1,Math.floor(blitzBase(faLv())/10*5*(55+num(C().baseLv,99)/5)*e))};
 const autoBlitzLv=(c=C())=>!c.a.autoBlitz?0:Math.min(hasTree(c)?skLv(c,"blitz-beat"):5,Math.floor((num(c.jobLv,50)+9)/10));
 const autoBlitzDmg=m=>{const n=autoBlitzLv();return n?Math.min(1,num(statVal(C(),"luk"))/300)*blitzHit(m,n)*n:0};
 const dlUpkeep=()=>{const lv=dlLv();return lv?(50+5*lv)*spCostMul()/(60+30*lv):0};
