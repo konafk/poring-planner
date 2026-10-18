@@ -103,6 +103,14 @@
         <button type="button" class="small danger" id="altClear">Empty it</button>
       </div>
       <div class="note" id="altNote"></div>
+      <div class="bar">
+        <select id="loadoutPick" aria-label="Saved loadouts" style="width:auto;max-width:100%"></select>
+        <button type="button" class="small" id="loadoutLoad" title="Put this loadout in the table shown: its gear comes off and stays remembered">Wear it</button>
+        <button type="button" class="small" id="loadoutSave" title="Save the gear in the table under a name, to swap back to it later">Save as loadout…</button>
+        <button type="button" class="small danger" id="loadoutDel">Delete</button>
+        <button type="button" class="small" id="memClear" title="Gear you take off keeps its refine, cards and affixes for when you put it on again" hidden>Forget remembered items</button>
+      </div>
+      <div class="note" id="loadoutNote"></div>
       <div class="scroll"><table id="gearTable"><thead><tr><th>Slot</th><th>Item</th><th>Refine</th><th>Cards</th><th>Affixes</th></tr></thead><tbody></tbody></table></div>
       <div id="gearLists"></div>
       <div class="note" style="margin-top:6px" title="The Special Equipment tab: one enchant stone per costume slot (Costume Enchanter, Prontera Cash Room; stones that complete a set add its bonus too) and the Taming Ring with the pet egg sealed in it">Special equipment: costume enchant stones and the Taming Ring</div>

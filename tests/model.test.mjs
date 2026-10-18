@@ -1838,6 +1838,35 @@ t("other gear sets: up to 3 worked out next to your gear without touching it, sw
   assert.equal(app("JSON.stringify([state.chars.Wizard.build.alts[0].gear,'alt' in state.chars.Wizard.build,state.chars.Wizard.gearEdit])"), JSON.stringify([{ weapon: { id: 3 } }, false, "alt0"]));
 });
 
+t("remembered gear and saved loadouts: swapping a part out and back keeps its refine, cards and affixes", () => {
+  run(`{state.job="Knight";state.chars={};const c=C();c.mode="build";const b=buildOf(c);const id=n=>EQUIP.find(x=>x.name===n).id;
+    globalThis.PIKE=id("Pike");globalThis.ZWEI=id("Zweihander");globalThis.CARD=CARDS.find(x=>(x.slot||[]).includes("weapon")).id;
+    b.gear={weapon:{id:PIKE,refine:7,cards:[CARD],opts:[{k:BUILD.OPTIONS[0].k,v:5}]}}}`);
+  const w = () => JSON.parse(run("JSON.stringify(buildOf(C()).gear.weapon)"));
+  run("gearPut(C(),buildOf(C()).gear.weapon,ZWEI)");
+  assert.equal(w().id, run("ZWEI")); assert.equal(w().refine, 0); assert.deepEqual(w().cards, []); assert.deepEqual(w().opts, []);   // a new item: +0, bare
+  run("buildOf(C()).gear.weapon.refine=4");
+  run("gearPut(C(),buildOf(C()).gear.weapon,PIKE)");                                             // back: as it was
+  assert.equal(w().refine, 7); assert.deepEqual(w().cards, [run("CARD")]); assert.equal(w().opts.length, 1);
+  run("gearPut(C(),buildOf(C()).gear.weapon,ZWEI)"); assert.equal(w().refine, 4); assert.equal(w().opts.length, 0);
+  run("memKeep(C(),{id:PIKE,refine:0,cards:[null],opts:[]})"); assert.equal(run("PIKE in memOf(C())"), false);   // nothing to keep
+  run("for(let i=0;i<MEM_N+5;i++)memOf(C())[-1-i]={refine:1,cards:[],opts:[],t:i};memKeep(C(),buildOf(C()).gear.weapon)");
+  assert.equal(run("Object.keys(memOf(C())).length"), run("MEM_N")); assert.equal(run("ZWEI in memOf(C())"), true);   // the oldest go
+  // loadouts: save the table under a name, load another one in its place, the one in the table found again
+  run("buildOf(C()).gear={weapon:{id:PIKE,refine:7}};loadoutSave(C(),'Farm')");
+  run("buildOf(C()).gear={weapon:{id:ZWEI,refine:9,cards:[]}};loadoutSave(C(),'Boss')");
+  assert.equal(run("loadoutAt(C())"), 1);
+  run("loadoutLoad(C(),0)"); assert.equal(w().id, run("PIKE")); assert.equal(run("loadoutAt(C())"), 0);
+  assert.equal(run("memOf(C())[ZWEI].refine"), 9);                                               // what came off is remembered
+  run("buildOf(C()).gear.weapon.refine=8;loadoutSave(C(),' farm ')");                           // same name, any case: replaced
+  assert.equal(run("loadoutsOf(C()).length"), 2); assert.equal(run("loadoutsOf(C())[0].gear.weapon.refine"), 8);
+  run("C().gearEdit='alt1';loadoutLoad(C(),1)");                                                // into the set being edited
+  assert.equal(run("altOf(C(),1).gear.weapon.id"), run("ZWEI")); assert.equal(w().refine, 8);
+  run("delete C().gearEdit");
+  const snap = JSON.parse(run("JSON.stringify(charSnap().build)")); assert.equal("loadouts" in snap || "mem" in snap, false);
+  assert.equal(run("'loadouts' in altChar(C(),1).build"), false);
+});
+
 t("crowds: aggressive or assisting monsters gang up, and from 3 at once FLEE and DEF drop", () => {
   const agg = MOB.replace("drops:[]", "drops:[],agg:true"), calm = MOB;
   setup("Knight", { atkTxt: "100+300", fleeTxt: "240", defTxt: "20+40", maxHp: 5000, hitScale: 0.3, mobInterval: 1.5, st: { vit: "1" }, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
