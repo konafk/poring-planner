@@ -1623,10 +1623,11 @@ t("a map's own count of monsters on you: every monster there, hits add up, FLEE 
 });
 
 t("preset cast times and delays match the in-game skill table", () => {
-  // fixed / variable cast and max(cooldown, after-cast delay) at the preset's level, for every preset the table has a row for
+  // fixed / variable cast, cooldown and after-cast delay at the preset's level, for every preset the table has a row for
   const bad = run(`(()=>{const out=[];for(const j in JOBS){state.job=j;for(const p of JOBS[j].p){const s=presetSkill(p);if(!s||p.fct==null)continue;
     const r=skRow(s,s.max),near=(a,b)=>Math.abs(a-b)<1e-9;
-    if(!near(p.fct,(r[4]||0)/1000)||!near(p.vct,(r[3]||0)/1000)||!near(p.delay,Math.max(r[5]||0,r[6]||0)/1000))out.push(j+": "+p.name)}}return out.join(", ")})()`);
+    if(!near(p.fct,(r[4]||0)/1000)||!near(p.vct,(r[3]||0)/1000)||!near(p.delay,Math.max(r[5]||0,r[6]||0)/1000)||!near(p.gcd||0,(r[5]||0)/1000)||!near(p.cd||0,(r[6]||0)/1000))
+      out.push(j+": "+p.name)}}return out.join(", ")})()`);
   assert.equal(bad, "");
 });
 
