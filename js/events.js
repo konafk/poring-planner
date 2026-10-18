@@ -14,8 +14,7 @@ function derived(c){const g=k=>statVal(c,k)??0;const lv=num(c.baseLv),str=g("str
   return {atk:Math.floor(lv/4+(r?dex+str/5:str+dex/5)+luk/3),matk:Math.floor(lv/4)+Math.floor(int*1.5)+Math.floor(dex/5)+Math.floor(luk/3),
     hit:175+lv+dex+Math.floor(luk/3),flee:100+lv+agi+Math.floor(luk/5),def:Math.floor(lv/2)+Math.floor(vit/2)+Math.floor(agi/5),
     crit:1+luk*0.3+lv/100,aspdTerm:Math.sqrt(agi*agi/2+dex*dex/(r?7:5))/4,vit,int}}
-// ASPD base + weapon penalty for 1st and 2nd jobs on Zero (RO樂園攻速計算機 2026-09-07, sheet "攻速懲罰表"; the Landgris
-// ROCalculator "paradise" table is the same apart from Knight two-handed sword, where it uses Lord Knight's −3); missing = unknown
+// ASPD base + weapon penalty for 1st and 2nd jobs on Zero (RO樂園攻速計算機 2026-09-07, sheet "攻速懲罰表"); missing = unknown
 const ASPD_T={Swordsman:{"Bare hands":156,"One-handed mace":-10,"Two-handed mace":-10,"Dagger":-7,"One-handed sword":-7,"Two-handed sword":-14,"One-handed axe":-15,"Two-handed axe":-20,"One-handed spear":-17,"Two-handed spear":-25},
  Mage:{"Bare hands":146,"One-handed staff":-5,"Two-handed staff":-5,"Dagger":0},Archer:{"Bare hands":156,"Dagger":-15,"Bow":-10},
  Acolyte:{"Bare hands":156,"One-handed mace":-5,"Two-handed mace":-5,"One-handed staff":-20,"Two-handed staff":-20},

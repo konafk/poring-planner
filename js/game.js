@@ -33,12 +33,12 @@ const sizeMod=(m,w)=>{const t=WEAPONS[w]||WEAPONS[WREN[w]]||WEAPONS["Bare hands"
 // what each use costs (catalysts from rAthena's renewal skill_db; prices and weights in data/consumables.js, see useItems in model.js):
 // consumes: [{item, qty}] by item name · arrows: arrows per use with a bow, instrument or whip (basic attacks always fire one) · zeny: zeny per use (Mammonite, scaled to the learned level)
 // wgt: Axe Boomerang adds the weapon's weight to its % · wpct: {weapon type: extra %} · mvit: + N × the monster's VIT % (Acid Bomb)
-// shw: shield skills (Shield Boomerang, Rapid Smiting / Shield Chain) add the shield's weight + 4 × its refine to their % (Landgris: 80×SLV+SHW+SRL*4, 600+400×SLV+SHW+SRL*4)
+// shw: shield skills (Shield Boomerang, Rapid Smiting / Shield Chain) add the shield's weight + 4 × its refine to their %
 const A=(name,type,pct,hits,el,cast,delay,sp,targets,note,extra)=>({name,type,pct,hits,el,cast,delay,sp,targets,note:note||"",...(extra||{})});
 const BASIC=A("Basic attack","auto",100,1,"W",0,0,0,1);
 // Cast (fixed / variable), cooldown and after-cast delay (the gcd slot) come from the in-game skill table in data/skills.js
-// (roz.prontera.info, verified for Zero); Plagiarism copies follow their source. The Monk combo has no row and keeps Landgris' numbers.
-// Zero skill data from Landgris ROCalculator (skills_zero.json + Zero Global overrides): base-level scaling (blv) and stat add-ons
+// (roz.prontera.info, verified for Zero); Plagiarism copies follow their source. The Monk combos have no row and keep their own numbers.
+// Zero skill data (with the Zero Global ratios): base-level scaling (blv) and stat add-ons
 // (sadd: [stat, % per point]); ratios cross-checked with rozerodb.
 // blv: × base level / 100, but only above Lv100, so it never lowers a skill. blvBug: Soul Destroyer, Axe Tornado and Triangle Shot miss
 // that check in Zero (and on Global) and take × base level / 100 at every level (forum.gamer.com.tw/C.php?bsn=83142&snA=3087)
@@ -120,7 +120,7 @@ const FIELD_ITEM={volcano:"Blue Gemstone",deluge:"Blue Gemstone",whirlwind:"Blue
    "Jupitel Thunder Lv10","Heaven's Drive Lv5","Storm Gust Lv10","Lord of Vermilion Lv10","Meteor Storm Lv10"].forEach(n=>{const s=all.find(x=>x.name===n);
     if(s)JOBS.Rogue.p.push({...s,name:"Copied: "+s.name,note:"Plagiarism copy"+((fix[n]??s.note)?". "+(fix[n]??s.note):"")})});
   // Auto Shadow Spell Lv10 (needs Plagiarism 10): basic attacks have a 30% chance to auto-cast the copied magic skill at up to Lv7, MATK +50.
-  // Lv7 ratios from Landgris skills_zero.json; single-target skills only. Auto-casts are modelled as free (no SP)
+  // Lv7 ratios from the Zero skill data; single-target skills only. Auto-casts are modelled as free (no SP)
   const ss=(n,el,pct,hits,sadd,note)=>JOBS.Rogue.p.push(A("Shadow Spell: "+n,"auto",100,1.5,"W",0,0,0,1,
     `Basic attacks (Double Attack averaged in), 30% per attack to auto-cast ${n}: ${pct}%${sadd?" + "+sadd.map(([k,f])=>(f===1?"":f===0.5?"½":f+"×")+k.toUpperCase()).join(" + ")+"%":""} × ${hits} ${el}, MATK +50${note?". "+note:""}`,{ss:{el,pct,hits,sadd:sadd||[]}}));
   const INT2=[["int",0.5]];

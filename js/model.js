@@ -117,7 +117,7 @@ const effMdef=m=>(m.mdef||0)*(1-ignOf("mdef",m)/100);
 // dual wield the left weapon too. ATK % isn't in the window: it comes from atkPct (gear in build mode, the ATK % box, consumables)
 const atkParts=()=>{const p=String(cf("atkTxt")||"0").split("+").map(x=>parseFloat(x)||0);const st=p[0]||0,gear=p.slice(1).reduce((x,y)=>x+y,0);
   const w=num(C().wAtk)>0?Math.min(num(C().wAtk),gear):gear,lw=dualOn()?Math.min(num(C().lwAtk),Math.max(0,gear-w)):0;
-  // weapon ATK +0.5% per STR (melee) or DEX (bow, instrument, whip); checked against Landgris ROCalculator
+  // weapon ATK +0.5% per STR (melee) or DEX (bow, instrument, whip)
   const c=C(),main=statVal(c,RANGED.includes(c.weapon)?"dex":"str");const wb=main!=null?1+main/200:1;
   return {st,gear,weapon:w*wb,left:lw*wb,eq:Math.max(0,gear-w-lw)}};
 // one hand's ATK before the skill %: post ATK (weapon ATK × size penalty + equipment ATK) × the post bonuses, plus post ATK × ATK %
