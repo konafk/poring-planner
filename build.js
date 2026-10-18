@@ -90,8 +90,9 @@ const BUILD=(()=>{
     if(flat&&!kind){A[flat]+=v;return true}
     if(type==="attack_delay_percent"&&!kind){A.aspdPct-=v;return true} // −10% delay counts as +10% ASPD
     if(type==="after_cast_delay_percent"&&!kind){A.acd-=v;return true}
-    if((type==="cast_time_variable_percent"||type==="cast_time_fixed_percent")&&!kind){const f=type==="cast_time_variable_percent";
-      if(b[5])addTo(f?A.vctOf:A.fctOf,b[5],-v);else A[f?"vct":"fct"]-=v;return true}
+    // variable cast % cuts add up; of the fixed cast % cuts only the highest counts
+    if(type==="cast_time_variable_percent"&&!kind){if(b[5])addTo(A.vctOf,b[5],-v);else A.vct-=v;return true}
+    if(type==="cast_time_fixed_percent"&&!kind){const top=(o,k)=>{o[k]=-v>0?Math.max(o[k]||0,-v):(o[k]||0)-v};if(b[5])top(A.fctOf,b[5]);else top(A,"fct");return true}
     if(type==="skill_damage_percent"&&!kind){if(b[5])addTo(A.skillOf,b[5],v);else A.skill+=v;return true}
     if((type==="damage_percent"||type==="magic_damage_percent"||type==="physical_damage_percent")&&bucket(kind)){
       const ch=bucket(kind),t=tgt(kind,target);if(type!=="magic_damage_percent")addTo(A.phys[ch],t,v);if(type!=="physical_damage_percent"&&type!=="damage_percent")addTo(A.magic[ch],t,v);return true}
