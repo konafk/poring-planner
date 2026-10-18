@@ -81,18 +81,22 @@ const targets=()=>Math.max(1,num(C().a.targets,1));
 // In build mode gear adds per-race / size / element / boss-normal maps (build.js); the manual boxes add into the same category
 // monster groups ("against Boulder Dwarves +30%"): each group counts once against monsters whose name contains it
 const groupMul=(B,m)=>Object.entries(B.group||{}).reduce((k,[g,v])=>String(m.name||"").toLowerCase().includes(g.toLowerCase())?k*(1+v/100):k,1);
-const bonusMul=(m,magic=false)=>{const c=C();let k=1+num(c.dmgBonus)/100;
+// damage bonuses in two groups. post: race, size, monster element, boss / normal, monster name, "all" and your attack element %, which on a
+// physical hit only scale weapon + equipment ATK (each its own multiplier); full: the extra damage %, consumables' ranged / magic %
+// and skill passives' damage % (Power Thrust, Advanced Katar Mastery), on the whole hit. Spells take both on the whole hit
+const bonusParts=(m,magic=false)=>{const c=C();let post=1,full=1+num(c.dmgBonus)/100;
   const on=t=>t==="both"||(t==="magic")===magic;
-  const nm=String(c.nameSel||"").trim().toLowerCase();if(nm&&on(c.nameType||"phys")&&String(m.name).toLowerCase().includes(nm))k*=1+num(c.namePct)/100;
+  const nm=String(c.nameSel||"").trim().toLowerCase();if(nm&&on(c.nameType||"phys")&&String(m.name).toLowerCase().includes(nm))post*=1+num(c.namePct)/100;
   const B=c.bx?(magic?c.bx.magic:c.bx.phys):null,el=m.el||"Neutral";
-  if(B)k*=(1+(B.race[m.race]||0)/100)*(1+(B.size[m.size]||0)/100)*(1+(B.ele[el]||0)/100)*(1+(B.all||0)/100)*(1+(B.kind[m.boss?"boss":"normal"]||0)/100)*groupMul(B,m);
-  if(!m.boss)k*=1+num(c.normalPct)/100;
-  k*=1+num(c.myElPct)/100;if(magic&&c.bx)k*=1+((c.bx.myEle||{})[atkEl()]||0)/100;
+  if(B)post*=(1+(B.race[m.race]||0)/100)*(1+(B.size[m.size]||0)/100)*(1+(B.ele[el]||0)/100)*(1+(B.all||0)/100)*(1+(B.kind[m.boss?"boss":"normal"]||0)/100)*groupMul(B,m);
+  if(!m.boss)post*=1+num(c.normalPct)/100;
+  post*=1+num(c.myElPct)/100;if(magic&&c.bx)post*=1+((c.bx.myEle||{})[atkEl()]||0)/100;
   // consumables: magic damage % (Unlimited Drink) on spells, ranged damage % on physical attacks with a ranged weapon
-  k*=1+consSum(magic?"magic_dmg":RANGED.includes(c.weapon)?"range_dmg":"")/100;
+  full*=1+consSum(magic?"magic_dmg":RANGED.includes(c.weapon)?"range_dmg":"")/100;
   // learned passives and buffs: physical damage % (Advanced Katar Mastery, Power Thrust), element % for spells (Endow, Volcano...)
   // and, for an element's plain "Damage" bonus (Volcano, Deluge, Whirlwind), for physical attacks of that element too
-  if(SKFX){if(!magic)k*=(1+SKFX.pct/100)*(1+(SKFX.physEle[atkEl()]||0)/100);else k*=1+(SKFX.myEle[atkEl()]||0)/100}return k};
+  if(SKFX){if(!magic){full*=1+SKFX.pct/100;post*=1+(SKFX.physEle[atkEl()]||0)/100}else post*=1+(SKFX.myEle[atkEl()]||0)/100}return {post,full}};
+const bonusMul=(m,magic=false)=>{const b=bonusParts(m,magic);return b.post*b.full};
 // build mode: gear EXP bonus % (plus vs a monster's race), and damage taken from its race / element / boss-normal kind
 const expGear=m=>{const c=C();return c.bx?(c.bx.exp.all||0)+((c.bx.exp.race||{})[m.race]||0):0};
 // your EXP per kill: your Even Share cut (rounded down), then every EXP bonus added together, not multiplied (10% + 10% is ×1.20,
@@ -109,13 +113,19 @@ const ignOf=(k,m)=>{const c=C(),I=c.bx&&c.bx.ign&&c.bx.ign[k];let v=num(c[k==="d
 const effDef=m=>(m.def||0)*(1-ignOf("def",m)/100);
 const effMdef=m=>(m.mdef||0)*(1-ignOf("mdef",m)/100);
 // Formulas from roz.prontera.info/mechanics (Ragnarok Zero, renewal core)
-// ATK is "status + gear". The weapon share takes size and element; status ATK counts twice and, with other gear, stays Neutral.
-// Dual wield: the gear side holds both weapons, so the left one's ATK comes out of the Neutral share too
+// ATK is "status + gear" as in the status window. The gear side is the weapon (×(1 + STR or DEX / 200)) and equipment ATK (eq); with
+// dual wield the left weapon too. ATK % isn't in the window: it comes from atkPct (gear in build mode, the ATK % box, consumables)
 const atkParts=()=>{const p=String(cf("atkTxt")||"0").split("+").map(x=>parseFloat(x)||0);const st=p[0]||0,gear=p.slice(1).reduce((x,y)=>x+y,0);
   const w=num(C().wAtk)>0?Math.min(num(C().wAtk),gear):gear,lw=dualOn()?Math.min(num(C().lwAtk),Math.max(0,gear-w)):0;
   // weapon ATK +0.5% per STR (melee) or DEX (bow, instrument, whip); checked against Landgris ROCalculator
   const c=C(),main=statVal(c,RANGED.includes(c.weapon)?"dex":"str");const wb=main!=null?1+main/200:1;
-  return {st,gear,weapon:w*wb,left:lw*wb,neutral:Math.max(0,gear-w-lw)+2*st}};
+  return {st,gear,weapon:w*wb,left:lw*wb,eq:Math.max(0,gear-w-lw)}};
+// one hand's ATK before the skill %: post ATK (weapon ATK × size penalty + equipment ATK) × the post bonuses, plus post ATK × ATK %
+// (added, not multiplied with the cards), all × the weapon's element; then status ATK × Neutral, outside the cards and ATK %
+const handAtk=(m,w,wType,el,front)=>{const P=atkParts(),post=w*sizeMod(m,wType)/100+P.eq;
+  return post*(bonusParts(m).post+num(cf("atkPct"))/100)*elemMult(m,el)/100+front*elemMult(m,"Neutral")/100};
+// status ATK counts twice; a skill while dual-wielding counts it once (basic attacks: right hand twice, left hand once)
+const frontAtk=()=>atkParts().st*(dualOn()&&C().a.type!=="auto"?1:2);
 // ---- Assassin dual wield (rAthena renewal battle.cpp; its ASPD table is the Zero one, see BUILD.LEFT_ASPD) ----
 // a basic attack hits with both hands: the right × Righthand Mastery (50 + 10 × Lv)%, the left × Lefthand Mastery (30 + 10 × Lv)%,
 // after DEF. The left hand's status ATK isn't doubled, Double Attack repeats only the right hand, and skills use the right hand only.
@@ -128,22 +138,22 @@ const mobSoftDef=m=>Math.max(0,Math.floor(((m.lv||0)+(m.vit||0))/2));
 const mobSoftMdef=m=>Math.max(0,Math.floor(((m.lv||0)+(m.int||0))/4));
 // "Your hit %": skill % after element, size and your bonuses, as a share of your full ATK (before monster DEF/MDEF)
 const hitPctOf=m=>{const a=C().a;if(a.type==="spellfist")return sfPct()*elemMult(m,atkEl())/100*bonusMul(m,true);if(a.type==="magic")return pctEff(m)*elemMult(m,atkEl())/100*bonusMul(m,true);
-  const P=atkParts(),tot=P.weapon+P.neutral;if(tot<=0)return 0;
-  const k=(P.weapon*sizeMod(m,C().weapon)/100*elemMult(m,atkEl())/100+P.neutral*elemMult(m,"Neutral")/100)/tot;return pctEff(m)*k*bonusMul(m)};
+  const P=atkParts(),tot=P.weapon+P.eq+frontAtk();if(tot<=0)return 0;
+  return pctEff(m)*handAtk(m,P.weapon,C().weapon,atkEl(),frontAtk())/tot*bonusParts(m).full};
 // hit chance = 100 + your HIT − the monster's "100% hit" value, 5–100%; magic always lands
 const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist")return 100;if(m.hit100==null)return 95;return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100))};
 function dmgPerHit(m){
-  const a=C().a;if(a.type==="spellfist")return magicDmg(m,sfPct(),atkEl());
+  const a=C().a;if(a.type==="spellfist")return sfHit(m,atkEl());
   if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor((sumStat(cf("matkTxt"))*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
-  const P=atkParts(),d=physDmg(m,P.weapon*sizeMod(m,C().weapon)/100*elemMult(m,atkEl())/100+P.neutral*elemMult(m,"Neutral")/100);
+  const P=atkParts(),d=physDmg(m,handAtk(m,P.weapon,C().weapon,atkEl(),frontAtk()));
   return dualHit()&&d>0?Math.max(1,Math.floor(d*handPct().right/100)):d}
-// one physical hit from an ATK pool (weapon share after size and element, plus the Neutral share)
+// one physical hit from a hand's ATK (handAtk: the post bonuses and element are in it), × skill %, then the full bonuses and DEF
 function physDmg(m,pool){if(pool<=0)return 0;
   const c=C(),a=c.a,skill=a.type!=="auto";const rng=(1+num(c.rangePct)/100)*(skill?1+num(c.skillPct)/100:1);
-  // mastery ATK (flat, from passive skills) is added after the skill ratio, before cards and DEF
-  const df=effDef(m);return Math.max(1,Math.floor((pool*pctEff(m)/100+masteryFor(m)*elemMult(m,"Neutral")/100)*bonusMul(m)*rng*(4000+df)/(4000+10*df)-mobSoftDef(m)))}
+  // mastery ATK (flat, from passive skills) is added after the skill ratio, before the full bonuses and DEF; race / size cards don't scale it
+  const df=effDef(m);return Math.max(1,Math.floor((pool*pctEff(m)/100+masteryFor(m)*elemMult(m,"Neutral")/100)*bonusParts(m).full*rng*(4000+df)/(4000+10*df)-mobSoftDef(m)))}
 // the left hand's hit on a dual-wield basic attack (0 otherwise): its own weapon, size and element, status ATK once
-function leftDmg(m){if(!dualHit())return 0;const P=atkParts(),d=physDmg(m,P.left*sizeMod(m,C().lw)/100*elemMult(m,leftEl())/100+(P.neutral-P.st)*elemMult(m,"Neutral")/100);
+function leftDmg(m){if(!dualHit())return 0;const P=atkParts(),d=physDmg(m,handAtk(m,P.left,C().lw,leftEl(),P.st));
   return d>0?Math.max(1,Math.floor(d*handPct().left/100)):0}
 // damage of one use before hit and crit: every hit of the attack, plus the left hand once
 // Side Winder adds its double attack to basic attacks, right hand only, unless you learned Double Attack (the card then follows the skill)
@@ -154,13 +164,26 @@ const perUse=m=>{const a=C().a,h=a.sizeHits?a.sizeHits[{S:0,M:1,L:2}[m.size]??1]
 const critRace=m=>{const c=C();return m&&c.bx&&c.bx.critRace?num(c.bx.critRace[m.race]):0};
 const critChance=m=>{const c=C();if(c.a.type!=="auto")return 0;return Math.min(100,Math.max(0,(num(cf("crit"))+critRace(m))*(c.weapon==="Katar"?2:1)-(m&&m.luk||0)*0.2))/100};
 // uses needed per kill: whole hits that land, spread over misses
-// average damage of one use: hits that land (crits always do, × 1.4 × (1 + crit damage %)) plus auto-casts, which only proc on swings that connect
-const procPerUse=m=>ssDmg(m)*SS_CHANCE+acDmg(m)*acChance();
-const useAvg=(m,per,proc)=>{const cr=critChance(m),hc=hitChance(m)/100;return per*(cr*1.4*(1+(num(C().critDmg)+consSum("crit_dmg"))/100)+(1-cr)*hc)+proc*(cr+(1-cr)*hc)};
-const dpsOf=m=>{if(isSF())return null;return useAvg(m,perUse(m),procPerUse(m))*targets()/useSec()};
-function usesPerKill(m){if(isSF()){const d=sfPerAttack(m);return d>0?Math.ceil(m.hp/d):Infinity}const per=perUse(m),proc=procPerUse(m);if(per<=0&&proc<=0)return Infinity;
+// average damage of one use: hits that land (crits always do, × 1.4 × (1 + crit damage %)) plus auto-casts: card and scroll auto-casts
+// only proc on swings that connect, Auto Shadow Spell (free) procs on a miss too, like Spell Fist and Hindsight
+const procPerUse=m=>acDmg(m)*acChance()+dlDmg(m);
+const procFree=m=>ssDmg(m)*SS_CHANCE;
+// Duple Light (Priest, Zero): each melee basic attack that hits adds a physical orb ((500 + 50 × Lv)% ATK, the weapon's element and size
+// penalty, rolling to hit again) and, DL_MAGIC of the time, a magic orb ((800 + 80 × Lv)% MATK, Neutral, always hits). No base-level scaling.
+// Recast every 60 + 30 × Lv s for 50 + 5 × Lv SP. The orb chances are the Lv10 ones (100% / 50%, checked in game) at every level
+// TODO: the chances below Lv10 aren't known; the skill description leaves them out
+const DL_PHYS=1,DL_MAGIC=0.5;
+const dlLv=(c=C())=>!c.a.dl?0:hasTree(c)?skLv(c,"duple-light"):10;
+const dlDmg=m=>{const lv=dlLv();if(!lv)return 0;const o={...C().a,dl:false,hits:1,sadd:[]};
+  const phys=withAtk({...o,name:"Duple Light",type:"phys",pct:500+50*lv,el:"W"},()=>dmgPerHit(m)*hitChance(m)/100);
+  const mag=withAtk({...o,name:"Duple Light",type:"magic",pct:800+80*lv,el:"Neutral"},()=>dmgPerHit(m));
+  return phys*DL_PHYS+mag*DL_MAGIC};
+const dlUpkeep=()=>{const lv=dlLv();return lv?(50+5*lv)*spCostMul()/(60+30*lv):0};
+const useAvg=(m,per,proc,free=0)=>{const cr=critChance(m),hc=hitChance(m)/100;return per*(cr*1.4*(1+(num(C().critDmg)+consSum("crit_dmg"))/100)+(1-cr)*hc)+proc*(cr+(1-cr)*hc)+free};
+const dpsOf=m=>{if(isSF())return null;return useAvg(m,perUse(m),procPerUse(m),procFree(m))*targets()/useSec()};
+function usesPerKill(m){if(isSF()){const d=sfPerAttack(m);return d>0?Math.ceil(m.hp/d):Infinity}const per=perUse(m),proc=procPerUse(m),free=procFree(m);if(per<=0&&proc<=0&&free<=0)return Infinity;
   // Shadow Spell and card auto-casts are averaged into each attack
-  if(critChance(m)>0||proc>0)return Math.max(1,m.hp/useAvg(m,per,proc));
+  if(critChance(m)>0||proc>0||free>0)return Math.max(1,m.hp/useAvg(m,per,proc,free));
   return Math.ceil(m.hp/per)/(hitChance(m)/100)}
 // SP: a use costs SP; natural regen is 1 + MaxSP/100 + INT/6 per 8s, + (INT − 120)/2 + 4 from INT 120 (roz.prontera.info), unless typed
 // "SP Recovery +x%" from gear (Eggyra, Sohee, Merman Cards…) raises it by x%; a typed regen already has it
@@ -193,7 +216,7 @@ const ihrPer10=()=>{const l=skLv(C(),"increase-hp-recovery");return l>0?Math.flo
 // m: the monster in play, whose poison stops natural regen and Increase HP Recovery part of the time (poisonUp)
 const hpRegenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(hpRegen6()/6+ihrPer10()/10)*(1-poisonUp(m)))+consHPPerSec();
 // SP the attack itself costs per second (Spell Fist: its upkeep); defSP adds Energy Coat and Vitata's heals against the monster in play
-const skillSPPerSec=()=>num(C().a.sp)*spCostMul()/useSec();
+const skillSPPerSec=()=>num(C().a.sp)*spCostMul()/useSec()+dlUpkeep();
 const spNeedPerSec=()=>isSF()?sgUpkeep()+defSP()+hsFullSP()*hsSustain():skillSPPerSec()+defSP();
 // SP back per second: natural regen and Increase SP Recovery (stop when you're overweight) plus SP from cards and consumables, which keep going
 const regenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(spRegen8()/8+isrPer10()/10)*(1-poisonUp(m)))+cardSPPerSec()+consSPPerSec();
@@ -262,9 +285,11 @@ let HS_OVR=null; // Hindsight forced on/off while comparing
 const withHs=(v,fn)=>{const k=HS_OVR;HS_OVR=v;try{return fn()}finally{HS_OVR=k}};
 const hsOnNow=()=>HS_OVR!=null?HS_OVR:!!G().hsOn;
 const sfBolts=()=>["Fire","Water","Wind"].filter(b=>G().bolts[b]&&(state.job!=="Sage"||!hasTree(C())||skLv(C(),SG_BOLT[b])>0));
-// Spell Fist: Lv × 5% proc chance on each basic attack; damage (1000 + 100 × bolt Lv)% MATK of the bolt's element (Landgris Zero data, checked in game)
+// Spell Fist: Lv × 5% proc chance on each basic attack, hit or miss; damage in the bolt's element (checked in game)
 const sfChance=()=>Math.min(10,Math.max(0,num(G().sfLv)))*5/100;
-const sfPct=()=>1000+100*Math.min(10,Math.max(1,num(G().boltLv,10)));
+// Spell Fist %: 100 × bolt Lv + 100 × Spell Fist Lv. The bolt is worked out first at 100% (its MDEF steps included), then × that %
+const sfPct=()=>100*Math.min(10,Math.max(1,num(G().boltLv,10)))+100*Math.min(10,Math.max(1,num(G().sfLv,10)));
+const sfHit=(m,el)=>Math.floor(magicDmg(m,100,el)*sfPct()/100);
 const magicDmg=(m,pct,el,addMatk=0)=>{const e=elemMult(m,el)/100;if(e<=0||pct<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor(((sumStat(cf("matkTxt"))+addMatk)*pct/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*e))};
 // Hindsight: Lv × 2% chance per attack to auto-cast a bolt at half its level (100% MATK per hit); costs 2/3 of the bolt's SP
 const hsLvN=()=>Math.min(10,Math.max(0,num(G().hsLv)));
@@ -342,7 +367,7 @@ const hsSustain=()=>{const f=hsFullSP();if(f<=0||sgItemsOn())return 1;return Mat
 // the basic attack under Spell Fist still deals its own physical hit: weapon element, size, DEF, HIT and crits, plus card auto-casts
 const withAtk=(a,fn)=>{const c=C(),k=c.a;c.a=a;try{return fn()}finally{c.a=k}};
 const sfPhys=m=>withAtk(BASIC,()=>withEl(null,()=>useAvg(m,dmgPerHit(m),procPerUse(m))));
-const sfMagic=m=>{const el=atkEl();return sfChance()*magicDmg(m,sfPct(),el)*daFactor()+hsChance()*hsSustain()*hsBoltLv()*magicDmg(m,100,el)*(1+dbChance())};
+const sfMagic=m=>{const el=atkEl();return sfChance()*sfHit(m,el)*daFactor()+hsChance()*hsSustain()*hsBoltLv()*magicDmg(m,100,el)*(1+dbChance())};
 const sfPerAttack=m=>sfMagic(m)+sfPhys(m)*daFactor();
 // Hindsight auto: on for the session's map only when the extra EXP costs less than your limit per 1% (after the extra loot)
 function applyHsAuto(){

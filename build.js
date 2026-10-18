@@ -253,7 +253,8 @@ const BUILD=(()=>{
     const weapon=wpn?WTYPE[wpn.type]||"Bare hands":"Bare hands",ranged=RANGED_W.includes(weapon),S=status(lv,tot,ranged),f=Math.floor;
     const lw=wpnL?WTYPE[wpnL.type]||null:null,dual=dualOk(job,weapon,lw);
     if(wpnL&&!dual)A.unmodelled.push(`${wpnL.name}: a left-hand weapon needs an Assassin with a dagger, one-handed sword or one-handed axe in each hand`);
-    const gearSide=f((weaponAtk+gearAtk+refAtk+A.atk)*(1+A.atkPct/100));
+    // ATK % isn't in the status window's ATK: it's passed on as atkPct, which the damage model adds next to the race / size cards
+    const gearSide=f(weaponAtk+gearAtk+refAtk+A.atk);
     const matkTot=f((S.matk+gearMatk+refMatk+A.matk)*(1+A.matkPct/100));
     const hpBase=+b.hpBase>0?+b.hpBase:curve(job,"hp",lv),spBase=+b.spBase>0?+b.spBase:curve(job,"sp",lv);
     const maxHp=hpBase!=null?f((f(hpBase*(1+tot.vit/100))+A.hp)*(1+A.hpPct/100)):null,maxSp=spBase!=null?f((f(spBase*(1+tot.int/100))+A.sp)*(1+A.spPct/100)):null;
@@ -265,11 +266,11 @@ const BUILD=(()=>{
     const ammo=worn.find(w=>w.slot==="ammo"),arrowEl=weapon==="Bow"&&ammo&&ammo.it.el?cap(ammo.it.el):null; // bows shoot the arrow's element
     const fields={baseLv:lv,jobLv,weapon,wElem:arrowEl||A.wEle||(wpn&&wpn.el?cap(wpn.el):null)||"Neutral",
       st:{str:`${base.str}+${tot.str-base.str}`,agi:`${base.agi}+${tot.agi-base.agi}`,vit:`${base.vit}+${tot.vit-base.vit}`,dex:`${base.dex}+${tot.dex-base.dex}`,luk:`${base.luk}+${tot.luk-base.luk}`},
-      intTxt:`${base.int}+${tot.int-base.int}`,atkTxt:`${S.atk}+${gearSide}`,wAtk:f((weaponAtk+(wpn?refineAt(wpn,(gear.weapon||{}).refine)[0]:0))*(1+A.atkPct/100)),
+      intTxt:`${base.int}+${tot.int-base.int}`,atkTxt:`${S.atk}+${gearSide}`,wAtk:f(weaponAtk+(wpn?refineAt(wpn,(gear.weapon||{}).refine)[0]:0)),atkPct:A.atkPct,
       matkTxt:`${S.matk}+${matkTot-S.matk}`,hitTxt:`${S.hit}+${A.hit}`,fleeTxt:`${S.flee}+${A.flee}`,defTxt:`${S.softDef}+${gearDef+refDef+A.def}`,
       maxHp,maxSp,aspd,crit:Math.round((S.crit+A.crit)*10)/10,critDmg:A.critDmg,rangePct:ranged?A.ranged:A.melee,
       vctPct:A.vct,fctPct:A.fct,acdPct:A.acd,ignDef:A.ignDef,ignMdef:A.ignMdef,
-      lw:dual?lw:"",lwAtk:dual?f(((wpnL.atk||0)+refineAt(wpnL,(gear.shield||{}).refine)[0])*(1+A.atkPct/100)):0,lwElem:dual&&wpnL.el?cap(wpnL.el):"Neutral"};
+      lw:dual?lw:"",lwAtk:dual?f((wpnL.atk||0)+refineAt(wpnL,(gear.shield||{}).refine)[0]):0,lwElem:dual&&wpnL.el?cap(wpnL.el):"Neutral"};
     return {fields,acc:A,shield,jobBonus:jb,total:tot,status:S,worn:worn.map(w=>({name:w.it.name,slot:w.slot,refine:w.r,cards:w.cards.map(c=>c.name)})),unmodelled:A.unmodelled}}
 
   // the equipment window names gear by its cards: "+7 Double Healing Shining Clip" is a +7 Shining Clip with two Vitata Cards.
