@@ -83,7 +83,7 @@ Notes on `export_prontera.py`:
 
 - It caches pages in `tools/cache/`. After a patch, run it with `--refresh` to pick up new items and skill, job and refine changes. Delete the cache to also pick up changed stats on existing items.
 - Items that fail to download are left out and listed at the end, so rerun it to retry them.
-- It applies corrections found by checking against the official client (listed at the top of the script): Guild gear options are GvG/Siege-only, a few cards' CRIT only counts against one race, some skill cooldowns and damage-taken lines that were missing, and the cast and delays of Brandish Spear, Rapid Smiting, Axe Boomerang and Power Swing, which the client has differently.
+- It applies corrections found by checking against the official client (listed at the top of the script): Guild gear options are GvG/Siege-only, a few cards' CRIT only counts against one race, some skill cooldowns and damage-taken lines that were missing.
 
 ## Tests
 
