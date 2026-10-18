@@ -31,8 +31,9 @@ function levelPreset(p,c){const s=presetSkill(p),a={...p};if(!s||!hasTree(c))ret
 const refreshPreset=c=>{if(c.preset>=0){const p=JOBS[state.job].p[c.preset];if(p)c.a=levelPreset(p,c).a}};
 // the skill check corrected four presets' damage % (Grimtooth 300%, the Monk combo's knuckle and STR, Acid Bomb's monster VIT, Axe Boomerang's
 // weight) and moved cast times and delays to the in-game table: saved characters still on a preset take the new numbers at their learned level
-// V5: cooldown and after-cast delay are kept apart (after-cast delay % only cuts the after-cast delay) and follow the learned level
-(function presetsV5(){if(state.presetsV5)return;state.presetsV5=true;const job=state.job;
+// V5: cooldown and after-cast delay are kept apart (after-cast delay % only cuts the after-cast delay) and follow the learned level;
+// V6: Throw Spirit Sphere 2400% at Lv5
+(function presetsV6(){if(state.presetsV6)return;state.presetsV6=true;const job=state.job;
   for(const j in state.chars){const c=state.chars[j],p=JOBS[j]&&c&&c.preset>=0&&JOBS[j].p[c.preset];if(p){state.job=j;c.a=levelPreset(p,c).a}}state.job=job;save()})();
 // passives: values come from the skill's own description at the learned level; this table only says what they need.
 // any: bonus lines that count with any weapon (Music / Dance Lessons' Max SP %, checked on a Dancer with no whip)

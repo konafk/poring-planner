@@ -137,13 +137,13 @@ const leftEl=()=>EL_OVR||C().lwElem||"Neutral";
 const mobSoftDef=m=>Math.max(0,Math.floor(((m.lv||0)+(m.vit||0))/2));
 const mobSoftMdef=m=>Math.max(0,Math.floor(((m.lv||0)+(m.int||0))/4));
 // "Your hit %": skill % after element, size and your bonuses, as a share of your full ATK (before monster DEF/MDEF)
-const hitPctOf=m=>{const a=C().a;if(a.type==="spellfist")return sfPct()*elemMult(m,atkEl())/100*bonusMul(m,true);if(a.type==="magic")return pctEff(m)*elemMult(m,atkEl())/100*bonusMul(m,true);
+const hitPctOf=m=>{const a=C().a;if(a.falcon)return elemMult(m,"Neutral");if(a.type==="spellfist")return sfPct()*elemMult(m,atkEl())/100*bonusMul(m,true);if(a.type==="magic")return pctEff(m)*elemMult(m,atkEl())/100*bonusMul(m,true);
   const P=atkParts(),tot=P.weapon+P.eq+frontAtk();if(tot<=0)return 0;
   return pctEff(m)*handAtk(m,P.weapon,C().weapon,atkEl(),frontAtk())/tot*bonusParts(m).full};
 // hit chance = 100 + your HIT − the monster's "100% hit" value, 5–100%; magic always lands
-const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist")return 100;if(m.hit100==null)return 95;return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100))};
+const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist"||C().a.falcon)return 100;if(m.hit100==null)return 95;return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100))};
 function dmgPerHit(m){
-  const a=C().a;if(a.type==="spellfist")return sfHit(m,atkEl());
+  const a=C().a;if(a.type==="spellfist")return sfHit(m,atkEl());if(a.falcon)return blitzHit(m,Math.round(num(a.hits,5)));
   if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor((sumStat(cf("matkTxt"))*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
   const P=atkParts(),d=physDmg(m,handAtk(m,P.weapon,C().weapon,atkEl(),frontAtk()));
   return dualHit()&&d>0?Math.max(1,Math.floor(d*handPct().right/100)):d}
@@ -166,7 +166,7 @@ const critChance=m=>{const c=C();if(c.a.type!=="auto")return 0;return Math.min(1
 // uses needed per kill: whole hits that land, spread over misses
 // average damage of one use: hits that land (crits always do, × 1.4 × (1 + crit damage %)) plus auto-casts: card and scroll auto-casts
 // only proc on swings that connect, Auto Shadow Spell (free) procs on a miss too, like Spell Fist and Hindsight
-const procPerUse=m=>acDmg(m)*acChance()+dlDmg(m);
+const procPerUse=m=>acDmg(m)*acChance()+dlDmg(m)+autoBlitzDmg(m);
 const procFree=m=>ssDmg(m)*SS_CHANCE;
 // Duple Light (Priest, Zero): each melee basic attack that hits adds a physical orb ((500 + 50 × Lv)% ATK, the weapon's element and size
 // penalty, rolling to hit again) and, DL_MAGIC of the time, a magic orb ((800 + 80 × Lv)% MATK, Neutral, always hits). No base-level scaling.
@@ -178,6 +178,13 @@ const dlDmg=m=>{const lv=dlLv();if(!lv)return 0;const o={...C().a,dl:false,hits:
   const phys=withAtk({...o,name:"Duple Light",type:"phys",pct:500+50*lv,el:"W"},()=>dmgPerHit(m)*hitChance(m)/100);
   const mag=withAtk({...o,name:"Duple Light",type:"magic",pct:800+80*lv,el:"Neutral"},()=>dmgPerHit(m));
   return phys*DL_PHYS+mag*DL_MAGIC};
+// Blitz Beat (Hunter falcon), per hit: (AGI/2 + DEX/10) × 2 + 6 × Steel Crow Lv + 20 × Blitz Beat Lv, as a Neutral hit that always lands
+// and ignores DEF and your damage bonuses. Auto Blitz: LUK/3 % on each basic attack that hits, at Lv (Job Lv + 9)/10 up to the learned Lv
+// (rAthena renewal). Steel Crow and Blitz Beat count as Lv 10 / 5 without a skill tree
+const blitzHit=(m,lv)=>{const c=C(),e=elemMult(m,"Neutral")/100;if(e<=0)return 0;const st=k=>num(statVal(c,k)),sc=hasTree(c)?skLv(c,"steel-crow"):10;
+  return Math.max(1,Math.floor(((Math.floor(st("agi")/2)+Math.floor(st("dex")/10))*2+6*sc+20*lv)*e))};
+const autoBlitzLv=(c=C())=>!c.a.autoBlitz?0:Math.min(hasTree(c)?skLv(c,"blitz-beat"):5,Math.floor((num(c.jobLv,50)+9)/10));
+const autoBlitzDmg=m=>{const n=autoBlitzLv();return n?Math.min(1,num(statVal(C(),"luk"))/300)*blitzHit(m,n)*n:0};
 const dlUpkeep=()=>{const lv=dlLv();return lv?(50+5*lv)*spCostMul()/(60+30*lv):0};
 const useAvg=(m,per,proc,free=0)=>{const cr=critChance(m),hc=hitChance(m)/100;return per*(cr*1.4*(1+(num(C().critDmg)+consSum("crit_dmg"))/100)+(1-cr)*hc)+proc*(cr+(1-cr)*hc)+free};
 const dpsOf=m=>{if(isSF())return null;return useAvg(m,perUse(m),procPerUse(m),procFree(m))*targets()/useSec()};
@@ -306,7 +313,7 @@ const sgUpkeep=()=>(76+30)*sgSpMult()/300+(hsOnNow()&&G().dbOn?(35+5*dbLvN())*sg
 const daFactor=()=>CRD().daSF?1+num(CRD().daPct)/100:1;
 // Hunter Fly Card: each physical attack has a 5% chance to restore 100 HP/s for 5 s (refreshes, doesn't stack). Basic attacks
 // and Spell Fist swing at your ASPD, physical skills once per use; spells don't trigger it
-const physAtkPerSec=()=>{const t=C().a.type;return t==="auto"||t==="spellfist"?atkPerSec():t==="phys"?1/useSec():0};
+const physAtkPerSec=()=>{const t=C().a.type;return t==="auto"||t==="spellfist"?atkPerSec():t==="phys"&&!C().a.falcon?1/useSec():0};
 // copies worn: build mode counts them in the gear (and then they count as ticked), else the box (1–4) when ticked
 const HUNTER_FLY=27266,DRACULA=27268;
 const cardCopies=(id,on,n)=>{const g=cardsInGear(C(),[id]);return g>0?g:on?Math.min(4,Math.max(1,Math.round(num(n,1)))):0};

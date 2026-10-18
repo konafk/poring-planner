@@ -1005,6 +1005,25 @@ t("Duple Light: a physical orb per hit (own hit roll) and a magic orb half the t
   assert.equal(run(`dlDmg(${MOB})`), 0);
 });
 
+t("Blitz Beat: falcon hits that always land, ignore DEF and bonuses; auto Blitz on basic attacks", () => {
+  const blitz = JSON.parse(run(`JSON.stringify(JOBS.Hunter.p.find(p=>p.falcon))`));
+  setup("Hunter", { atkTxt: "100+150", wAtk: 120, weapon: "Bow", wElem: "Neutral", hitTxt: "1", crit: 0, jobLv: 50, dmgBonus: 50,
+    st: { agi: "90", dex: "80", luk: "60" }, a: blitz });
+  const per = (Math.floor(90 / 2) + Math.floor(80 / 10)) * 2 + 6 * 10 + 20 * 5;   // Steel Crow Lv10 without a skill tree
+  assert.equal(run(`dmgPerHit(${MOB})`), per);                         // Neutral vs Water 1: 100%; the +50% extra damage isn't counted
+  assert.equal(run(`hitChance(${MOB})`), 100);
+  near(run(`perUse(${MOB})`), per * 5);
+  const auto = JSON.parse(run(`JSON.stringify(JOBS.Hunter.p.find(p=>p.autoBlitz))`));
+  run(`C().a=${JSON.stringify(auto)}`);
+  assert.equal(run("autoBlitzLv()"), 5);                               // Job Lv 50: (50 + 9) / 10 = 5
+  near(run(`autoBlitzDmg(${MOB})`), 0.2 * per * 5);                     // LUK 60: 20% per basic attack that hits
+  run("C().jobLv=25");
+  assert.equal(run("autoBlitzLv()"), 3);
+  const hc = run(`hitChance(${MOB})`) / 100;
+  near(run(`usesPerKill(${MOB})`), 10000 / ((run(`dmgPerHit(${MOB})`) + run(`autoBlitzDmg(${MOB})`)) * hc));
+  assert.equal(run(`JOBS.Monk.p[0].pct`), 2400);                       // Throw Spirit Sphere Lv5: 900 + 300 × Lv
+});
+
 t("auto-cast spells from cards work on any job's basic attacks", () => {
   const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
   setup("Knight", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", matkTxt: "100+50", intTxt: "40", hitTxt: "300", crit: 0, st: {}, a: AUTO });
