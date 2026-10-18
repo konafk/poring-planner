@@ -284,10 +284,12 @@ const cardSPPerSec=()=>dracSPPerSec()+dpSPPerSec()+killSPPerSec();
 // Energy Coat: damage cut and SP per hit taken (% of Max SP) depend on how full your SP is
 const EC_BANDS=[[30,3,"100–81%"],[24,2.5,"80–61%"],[18,2,"60–41%"],[12,1.5,"40–21%"],[6,1,"20–1%"]];
 const hsFullSP=()=>atkPerSec()*hsChance()*hsProcSP();
-const sgItemsOn=()=>hsOnNow()&&spItemAmt()>0; // SP items go with Hindsight
+const sgItemsOn=()=>!NO_ITEMS&&hsOnNow()&&spItemAmt()>0; // SP items go with Hindsight
 // damage taken, any attack: Energy Coat (Mage, Wizard, Sage), HP back (Hunter Fly, HP regen, consumables) and Vitata's heals. Energy Coat's cut and SP per hit depend on
 // how full your SP is: the fullest band your regen can hold after the attack's own SP, else where SP items keep it, else nearly empty
-const itemsOnNow=()=>isSF()?sgItemsOn():!!C().autoSp&&spItemAmt()>0;
+// NO_ITEMS: worked out as if you carry no SP items (Farm without items, see susKill)
+let NO_ITEMS=false;
+const itemsOnNow=()=>isSF()?sgItemsOn():!NO_ITEMS&&!!C().autoSp&&spItemAmt()>0;
 // its hits that land on you per second: a swing every interval, times "swings reach you", less what you dodge
 // swingsOnYou: one monster's swings that reach you a second; hitsOnYou: every monster on you, less what you dodge
 const swingsOnYou=m=>!m||m.atkMin==null?0:Math.max(0,num(C().hitScale,1))/Math.max(.3,num(C().mobInterval,1.5));
@@ -333,6 +335,48 @@ function applyHsAuto(){
   const want=gain>0&&(net<=0||per<=num(g.hsWorth));g.hsOn=want;
   g._note=`Hindsight auto: ${want?"on":"off"} on ${mapCode(mp)} · ${gain<=0?"no EXP gain":net<=0?"extra loot pays for the SP items":`~${fmtN(per)} z per 1% EXP vs your ${fmtN(num(g.hsWorth))} z limit`} (+${gain.toFixed(2)}%/hr)`;
 }
+// ---- Farm without items: can your own recovery keep up with what a monster or map costs you, with no HP or SP items? ----
+// Per kill: the HP it takes off you while you fight it (its ATK through your DEF, its hits that get past your FLEE, Energy Coat's cut)
+// against HP back over fight + walk (natural regen and Increase HP Recovery, HP-over-time consumables, Hunter Fly while you attack),
+// and the SP your attack and Energy Coat use against SP back (natural regen and Increase SP Recovery, consumables, SP cards while you attack).
+// Spare SP pays for Heal when HP falls short, spare HP for Indulge when SP falls short. The % is the share of what you use that comes back
+// (the lower of HP and SP): green 100% and no kill takes half your Max HP, yellow 50% or more (you sit now and then), red below that or
+// when one kill can take all your HP before regen catches up and you have no Heal
+const skRowOf=(slug,lv)=>{for(const t of SKILLS[state.job]||[])for(const s of t.skills)if(s.slug===slug)return s.lv[Math.min(lv,s.lv.length)-1]||null;return null};
+// Heal (Acolyte, Priest, Monk, Crusader) at its learned level: (BaseLv + INT) / 5 × 3 × Lv + MATK, × Heal received % (rAthena's renewal
+// formula, not checked in game), SP from Zero's skill data. Without it, Vitata's Heal Lv1 (the HP / SP boxes on the Cards card). null: no Heal
+function healOpt(){const lv=skLv(C(),"heal");
+  if(lv>0){const r=skRowOf("heal",lv);return {name:`Heal Lv${lv}`,hp:(Math.floor((num(C().baseLv)+(statVal(C(),"int")||0))/5)*3*lv+sumStat(cf("matkTxt")))*(1+consSum("heal_pct")/100),sp:num(r?r[0]:10+3*lv)*spCostMul()}}
+  return CRD().vitata&&healHpEff()>0?{name:"Vitata's Heal Lv1",hp:healHpEff(),sp:num(CRD().healSp)*(isSF()?sgSpMult():spCostMul())}:null}
+// Indulge (Sage) at its learned level: 10% of Max HP for (10 × Lv)% of that as SP, less the Lv SP it costs (the 10% is classic RO's,
+// not checked in game). null: not learned, or it can't give SP back
+function indulgeOpt(){const lv=skLv(C(),"indulge");if(!(lv>0))return null;const hp=num(cf("maxHp"))*0.1,r=skRowOf("indulge",lv),sp=hp*lv/10-num(r?r[0]:lv)*spCostMul();
+  return sp>0?{name:`Indulge Lv${lv}`,hp,sp}:null}
+// one kill of m with w seconds walking: HP and SP out and back, fight time F being the attacking alone (no resting or heals).
+// burst: HP lost over the fight alone (regen and Hunter Fly during it taken off)
+function susKill(m,w){const k=SG_MOB,ki=NO_ITEMS;SG_MOB=m;NO_ITEMS=true;try{
+  // poison (poisonUp) drains HP over the whole kill, walking too, and stops natural regen part of the time
+  const F=rawFight(m);if(!isFinite(F))return null;const d=defense(m),T=F+w,hpBack=hpRegenPerSec(m),spBack=(REGEN_OFF?0:(spRegen8()/8+isrPer10()/10)*(1-poisonUp(m)))+consSPPerSec();
+  const hpOut=d?d.taken*F+d.psn*T:0,hf=hfHpPerSec()*F,spOut=(isSF()?sgUpkeep()*T+hsFullSP()*hsSustain()*F:skillSPPerSec()*F)+(d?d.ecSP*F:0);
+  return {F,T,hpOut,hpIn:hf+hpBack*T,hf,spOut,spIn:cardSPPerSec()*F+spBack*T,card:cardSPPerSec()*F,hpBack,spBack,burst:Math.max(0,hpOut-hf-hpBack*F),known:!!d,dodge:dodge(m)}}
+  finally{SG_MOB=k;NO_ITEMS=ki}}
+// kills: [{k: susKill, n: spawns}] (a map's monsters, or one with n 1). Adds them up per kill, lets Heal and Indulge trade what's spare, and grades it
+function susCalc(kills){const L=kills.filter(x=>x.k);if(!L.length)return null;const W=L.reduce((a,x)=>a+x.n,0),sum=f=>L.reduce((a,x)=>a+x.n*f(x.k),0)/W;
+  const T=sum(k=>k.T),hpOut=sum(k=>k.hpOut),hpIn=sum(k=>k.hpIn),spOut=sum(k=>k.spOut),spIn=sum(k=>k.spIn),maxHp=num(cf("maxHp"));
+  const h=healOpt(),ind=indulgeOpt();let hpS=hpIn-hpOut,spS=spIn-spOut,heals=0,inds=0;
+  if(hpS<0&&h&&spS>0){heals=Math.min(-hpS/h.hp,spS/h.sp);hpS+=heals*h.hp;spS-=heals*h.sp}
+  if(spS<0&&ind&&hpS>0){inds=Math.min(-spS/ind.sp,hpS/ind.hp);spS+=inds*ind.sp;hpS-=inds*ind.hp}
+  const hpCov=hpOut>0?Math.max(0,1+Math.min(0,hpS)/hpOut):1,spCov=spOut>0?Math.max(0,1+Math.min(0,spS)/spOut):1,score=Math.min(hpCov,spCov)*100;
+  // what's still short you sit out: seconds a kill, at your regen
+  const hpBack=sum(k=>k.hpBack),spBack=sum(k=>k.spBack),rest=Math.max(hpS<0?(hpBack>0?-hpS/hpBack:Infinity):0,spS<0?(spBack>0?-spS/spBack:Infinity):0);
+  const burst=h||!(maxHp>0)?0:Math.max(...L.map(x=>x.k.burst))/maxHp,known=L.every(x=>x.k.known);
+  const cls=score>=99.95&&burst<0.5?"good":score>=50&&burst<1?"warnc":"bad";
+  const pm=v=>v/T*60;
+  return {score,hpCov:hpCov*100,spCov:spCov*100,cls,label:cls==="good"?"keeps up":cls==="warnc"?"with rests":"needs items",burst,rest,known,T,
+    hpOutM:pm(hpOut),hpInM:pm(hpIn),hfM:pm(sum(k=>k.hf)),spOutM:pm(spOut),spInM:pm(spIn),cardM:pm(sum(k=>k.card)),
+    heal:h,healsM:pm(heals),healM:pm(heals*(h?h.hp:0)),ind,indsM:pm(inds),indM:pm(inds*(ind?ind.sp:0))}}
+const susMob=(m,w)=>susCalc([{k:susKill(m,w),n:1}]);
+
 // drop rate bonus % scales every drop chance
 // ---- items skills use up (catalysts, arrows; data/consumables.js) and the zeny they cost ----
 // price: the one you typed for the item (c.itemPrices, saved per job like the SP item price), else its NPC buy price, less Discount from NPCs
@@ -605,16 +649,16 @@ function mobRow00(m,w){
 }
 // map averages, weighted by spawn counts; monsters you can't hurt are skipped (you walk past them)
 function mapStats0(mp,w){
-  const list=(MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m));let N=0,n=0,exp=0,time=0,fight=0,z=0,zc=0,hc=0,spi=0,hp=0,hpi=0,hpt=0,pz=0,psn=0,hpN=0,wt=0;const skip=[],unk=[];
+  const list=(MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m));let N=0,n=0,exp=0,time=0,fight=0,z=0,zc=0,hc=0,spi=0,hp=0,hpi=0,hpt=0,pz=0,psn=0,hpN=0,wt=0;const skip=[],unk=[],sus=[];
   list.forEach(({m,n:c})=>{N+=c;if(m.expUnknown){unk.push(m.name);return}const r=mobRow0(m,w);if(!isFinite(r.sec)){skip.push(m.name);return}
-    n+=c;exp+=c*r.epk;time+=c*r.tot;fight+=c*r.sec;z+=c*r.zk;zc+=c*r.zc;hc+=c*r.hc*r.tot;spi+=c*r.sph*r.tot;wt+=c*weightKill(m);if(r.hpm!=null){hp+=c*r.hpm*r.tot;hpi+=c*r.hpi*r.tot;hpt+=c*r.hpt*r.tot;pz+=c*r.pz*r.tot;psn+=c*r.psn*r.tot;hpN+=c*r.tot}});
+    n+=c;sus.push({k:susKill(m,w),n:c});exp+=c*r.epk;time+=c*r.tot;fight+=c*r.sec;z+=c*r.zk;zc+=c*r.zc;hc+=c*r.hc*r.tot;spi+=c*r.sph*r.tot;wt+=c*weightKill(m);if(r.hpm!=null){hp+=c*r.hpm*r.tot;hpi+=c*r.hpi*r.tot;hpt+=c*r.hpt*r.tot;pz+=c*r.pz*r.tot;psn+=c*r.psn*r.tot;hpN+=c*r.tot}});
   if(!n)return null;
   // zg: zeny / hr after skill items and zeny; zph also takes off SP items, the ASPD potion and ground buffs (per monster, over the time spent on it)
   // healing (Recovery items): SP items (spHr a hour, spZ zeny) and HP items for the HP lost (hpHr, hpZ). zb: zeny / hr before healing, net: after it
   // weight: wk picked up a kill, wph an hour, trip the hours from leaving town to leaving it again (null with weight off or weightless drops)
   const zg=z/time*3600,hcHr=hc/time,hpm=hpN?hp/hpN:null,hpiM=hpN?hpi/hpN:null,spHr=spi/time,spZ=spHr*spItemPrice(),hh=hpHeal(hpiM),wk=wt/n,room=wOn()?wRoom(sellLim()):0;
   return {mp,N,epm:exp/time*60,secT:time/n,sec:fight/n,walk:w,sell:time/n-fight/n-w,epk:exp/n,zg,zph:zg-hcHr,zcost:zc/time*3600+hcHr,hpm,hpi:hpiM,hpt:hpN?hpt/hpN:null,pz:hpN?pz/hpN:0,psn:hpN?psn/hpN:0,skip:skip.length,skipNames:skip,unk:unk.length,unkNames:unk,
-    spHr,spZ,hpHr:hh.n,hpZ:hh.z,heal:hh.z+spZ,zb:zg-hcHr+spZ,net:zg-hcHr-hh.z,wk,wph:wt/time*3600,trip:wk>0&&room>0?room/wk*(time/n)/3600:null};
+    spHr,spZ,hpHr:hh.n,hpZ:hh.z,heal:hh.z+spZ,zb:zg-hcHr+spZ,net:zg-hcHr-hh.z,wk,wph:wt/time*3600,trip:wk>0&&room>0?room/wk*(time/n)/3600:null,sus:susCalc(sus)};
 }
 // best converter per monster (by EXP/min) and one converter per map
 function mobRow(m,w){let best=null;elOptions().forEach(el=>{const r=withEl(el,()=>mobRow0(m,w));r.el2=el;if(!best||r.epm>best.epm)best=r});return best}

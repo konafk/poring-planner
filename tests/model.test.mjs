@@ -1436,6 +1436,52 @@ t("skill check: Grimtooth, the Monk combo, Acid Bomb and Axe Boomerang", () => {
   assert.equal(run(`EQUIP.find(x=>x.name==="Novice Battle Axe").w`), undefined);
 });
 
+t("Farm without items: HP and SP out against regen, cards, Heal and Indulge, graded green / yellow / red", () => {
+  const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
+  setup("Knight", { atkTxt: "100+300", aspd: 170, defTxt: "10+10", fleeTxt: "0", maxHp: 6000, maxSp: 300, hitScale: 1, mobInterval: 1.5, hpRegen6: 30, spRegen: 8, st: {}, intTxt: "", a: AUTO });
+  const sus = (w = 2) => run(`susMob(${MOB},${w})`), F = run(`rawFight(${MOB})`), raw = run(`defense(${MOB})`).taken;
+  let s = sus();
+  near(s.hpOutM, raw * F / (F + 2) * 60);                              // HP lost only while fighting
+  near(s.hpInM, 5 * 60);                                                // regen (30 per 6 s) over fight + walk
+  near(s.hpCov, Math.min(100, 5 * (F + 2) / (raw * F) * 100));
+  near(s.spCov, 100);                                                   // basic attacks use no SP
+  near(s.score, s.hpCov);
+  assert.equal(s.cls, s.score >= 99.95 && s.burst < 0.5 ? "good" : s.score >= 50 && s.burst < 1 ? "warnc" : "bad");
+  run("C().fleeTxt='500'");                                             // dodge everything you can (95%): far less HP lost
+  assert.ok(sus().hpOutM < s.hpOutM && sus().score >= s.score);
+  run("C().fleeTxt='0';C().hpRegen6=6000");                             // regen far above the damage: green
+  s = sus(); assert.equal(s.score, 100); assert.equal(s.cls, "good");
+  run("C().hpRegen6=1;C().maxHp=10");                                   // one kill takes all your HP and you have no Heal: red
+  s = sus(); assert.ok(s.burst >= 1); assert.equal(s.cls, "bad");
+  // Heal: spare SP pays for it at the learned level, (BaseLv + INT) / 5 × 3 × Lv + MATK per cast
+  setup("Crusader", { baseLv: 60, atkTxt: "100+300", matkTxt: "100", aspd: 170, defTxt: "10+10", fleeTxt: "0", maxHp: 6000, maxSp: 600, hitScale: 1, mobInterval: 1.5, hpRegen6: 6, spRegen: 400, st: {}, intTxt: "40", a: AUTO });
+  const noHeal = sus();
+  run("C().skills={heal:10,faith:10}");
+  const h = run("healOpt()");
+  assert.equal(h.name, "Heal Lv10"); near(h.hp, Math.floor((60 + 40) / 5) * 3 * 10 + 100); near(h.sp, 40);
+  s = sus();
+  assert.ok(s.healsM > 0); near(s.healM, s.healsM * h.hp);
+  assert.ok(s.hpCov > noHeal.hpCov); assert.equal(s.burst, 0);         // with a Heal, a long fight isn't a threat on its own
+  run("C().spRegen=1");                                                 // little spare SP: only as many Heals as it pays for
+  const few = sus(); assert.ok(few.healsM < s.healsM && few.hpCov < s.hpCov);
+  // Indulge (Sage): spare HP turns into SP at (10 × Lv)% of 10% of Max HP, less its SP
+  setup("Sage", { matkTxt: "300+200", aspd: 170, defTxt: "10+10", fleeTxt: "0", maxSp: 300, maxHp: 4000, hitScale: 0, mobInterval: 1.5, hpRegen6: 600, spRegen: 1, st: {}, intTxt: "",
+    sage: { hsOn: false, hsAuto: false }, ec: { on: false }, cards: { vitata: false }, a: { ...AUTO, type: "magic", pct: 100, sp: 30, el: "Fire", cast: 1, delay: 1 } });
+  const dry = sus();
+  assert.ok(dry.spCov < 100 && dry.hpCov === 100);
+  run("C().skills={indulge:5,'increase-sp-recovery':1,'magic-rod':1}");
+  const ind = run("indulgeOpt()");
+  near(ind.sp, 400 * 0.5 - 5);
+  s = sus(); assert.ok(s.indsM > 0 && s.spCov > dry.spCov); near(s.indM, s.indsM * ind.sp);
+  // a map adds up its monsters by spawns, and comes back on every EXP Hunter row
+  setup("Knight", {});
+  const mp = run("Object.keys(MAPMOBS).find(mp=>!isClosed(mp)&&mapStats(mp,2))");
+  const r = run(`mapStats(${JSON.stringify(mp)},2)`);
+  assert.ok(r.sus && r.sus.score >= 0 && r.sus.score <= 100 && ["good", "warnc", "bad"].includes(r.sus.cls));
+  // it never changes what the rest of the page counts (SP items stay on for it)
+  run("C().autoSp=true"); const before = run(`itemsOnNow()`); run(`susMob(${MOB},2)`); assert.equal(run(`itemsOnNow()`), before);
+});
+
 t("preset cast times and delays match the in-game skill table", () => {
   // fixed / variable cast and max(cooldown, after-cast delay) at the preset's level, for every preset the table has a row for
   const bad = run(`(()=>{const out=[];for(const j in JOBS){state.job=j;for(const p of JOBS[j].p){const s=presetSkill(p);if(!s||p.fct==null)continue;
