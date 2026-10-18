@@ -133,7 +133,7 @@ const hitPctOf=m=>{const a=C().a;if(a.type==="spellfist")return sfPct()*elemMult
 // hit chance = 100 + your HIT − the monster's "100% hit" value, 5–100%; magic always lands
 const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist")return 100;if(m.hit100==null)return 95;return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100))};
 function dmgPerHit(m){
-  const a=C().a;if(a.type==="spellfist")return magicDmg(m,sfPct(),atkEl());
+  const a=C().a;if(a.type==="spellfist")return sfHit(m,atkEl());
   if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor((sumStat(cf("matkTxt"))*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
   const P=atkParts(),d=physDmg(m,P.weapon*sizeMod(m,C().weapon)/100*elemMult(m,atkEl())/100+P.neutral*elemMult(m,"Neutral")/100);
   return dualHit()&&d>0?Math.max(1,Math.floor(d*handPct().right/100)):d}
@@ -154,13 +154,15 @@ const perUse=m=>{const a=C().a,h=a.sizeHits?a.sizeHits[{S:0,M:1,L:2}[m.size]??1]
 const critRace=m=>{const c=C();return m&&c.bx&&c.bx.critRace?num(c.bx.critRace[m.race]):0};
 const critChance=m=>{const c=C();if(c.a.type!=="auto")return 0;return Math.min(100,Math.max(0,(num(cf("crit"))+critRace(m))*(c.weapon==="Katar"?2:1)-(m&&m.luk||0)*0.2))/100};
 // uses needed per kill: whole hits that land, spread over misses
-// average damage of one use: hits that land (crits always do, × 1.4 × (1 + crit damage %)) plus auto-casts, which only proc on swings that connect
-const procPerUse=m=>ssDmg(m)*SS_CHANCE+acDmg(m)*acChance();
-const useAvg=(m,per,proc)=>{const cr=critChance(m),hc=hitChance(m)/100;return per*(cr*1.4*(1+(num(C().critDmg)+consSum("crit_dmg"))/100)+(1-cr)*hc)+proc*(cr+(1-cr)*hc)};
-const dpsOf=m=>{if(isSF())return null;return useAvg(m,perUse(m),procPerUse(m))*targets()/useSec()};
-function usesPerKill(m){if(isSF()){const d=sfPerAttack(m);return d>0?Math.ceil(m.hp/d):Infinity}const per=perUse(m),proc=procPerUse(m);if(per<=0&&proc<=0)return Infinity;
+// average damage of one use: hits that land (crits always do, × 1.4 × (1 + crit damage %)) plus auto-casts: card and scroll auto-casts
+// only proc on swings that connect, Auto Shadow Spell (free) procs on a miss too, like Spell Fist and Hindsight
+const procPerUse=m=>acDmg(m)*acChance();
+const procFree=m=>ssDmg(m)*SS_CHANCE;
+const useAvg=(m,per,proc,free=0)=>{const cr=critChance(m),hc=hitChance(m)/100;return per*(cr*1.4*(1+(num(C().critDmg)+consSum("crit_dmg"))/100)+(1-cr)*hc)+proc*(cr+(1-cr)*hc)+free};
+const dpsOf=m=>{if(isSF())return null;return useAvg(m,perUse(m),procPerUse(m),procFree(m))*targets()/useSec()};
+function usesPerKill(m){if(isSF()){const d=sfPerAttack(m);return d>0?Math.ceil(m.hp/d):Infinity}const per=perUse(m),proc=procPerUse(m),free=procFree(m);if(per<=0&&proc<=0&&free<=0)return Infinity;
   // Shadow Spell and card auto-casts are averaged into each attack
-  if(critChance(m)>0||proc>0)return Math.max(1,m.hp/useAvg(m,per,proc));
+  if(critChance(m)>0||proc>0||free>0)return Math.max(1,m.hp/useAvg(m,per,proc,free));
   return Math.ceil(m.hp/per)/(hitChance(m)/100)}
 // SP: a use costs SP; natural regen is 1 + MaxSP/100 + INT/6 per 8s, + (INT − 120)/2 + 4 from INT 120 (roz.prontera.info), unless typed
 // "SP Recovery +x%" from gear (Eggyra, Sohee, Merman Cards…) raises it by x%; a typed regen already has it
@@ -262,9 +264,11 @@ let HS_OVR=null; // Hindsight forced on/off while comparing
 const withHs=(v,fn)=>{const k=HS_OVR;HS_OVR=v;try{return fn()}finally{HS_OVR=k}};
 const hsOnNow=()=>HS_OVR!=null?HS_OVR:!!G().hsOn;
 const sfBolts=()=>["Fire","Water","Wind"].filter(b=>G().bolts[b]&&(state.job!=="Sage"||!hasTree(C())||skLv(C(),SG_BOLT[b])>0));
-// Spell Fist: Lv × 5% proc chance on each basic attack; damage (1000 + 100 × bolt Lv)% MATK of the bolt's element (Landgris Zero data, checked in game)
+// Spell Fist: Lv × 5% proc chance on each basic attack, hit or miss; damage in the bolt's element (checked in game)
 const sfChance=()=>Math.min(10,Math.max(0,num(G().sfLv)))*5/100;
-const sfPct=()=>1000+100*Math.min(10,Math.max(1,num(G().boltLv,10)));
+// Spell Fist %: 100 × bolt Lv + 100 × Spell Fist Lv. The bolt is worked out first at 100% (its MDEF steps included), then × that %
+const sfPct=()=>100*Math.min(10,Math.max(1,num(G().boltLv,10)))+100*Math.min(10,Math.max(1,num(G().sfLv,10)));
+const sfHit=(m,el)=>Math.floor(magicDmg(m,100,el)*sfPct()/100);
 const magicDmg=(m,pct,el,addMatk=0)=>{const e=elemMult(m,el)/100;if(e<=0||pct<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor(((sumStat(cf("matkTxt"))+addMatk)*pct/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*e))};
 // Hindsight: Lv × 2% chance per attack to auto-cast a bolt at half its level (100% MATK per hit); costs 2/3 of the bolt's SP
 const hsLvN=()=>Math.min(10,Math.max(0,num(G().hsLv)));
@@ -342,7 +346,7 @@ const hsSustain=()=>{const f=hsFullSP();if(f<=0||sgItemsOn())return 1;return Mat
 // the basic attack under Spell Fist still deals its own physical hit: weapon element, size, DEF, HIT and crits, plus card auto-casts
 const withAtk=(a,fn)=>{const c=C(),k=c.a;c.a=a;try{return fn()}finally{c.a=k}};
 const sfPhys=m=>withAtk(BASIC,()=>withEl(null,()=>useAvg(m,dmgPerHit(m),procPerUse(m))));
-const sfMagic=m=>{const el=atkEl();return sfChance()*magicDmg(m,sfPct(),el)*daFactor()+hsChance()*hsSustain()*hsBoltLv()*magicDmg(m,100,el)*(1+dbChance())};
+const sfMagic=m=>{const el=atkEl();return sfChance()*sfHit(m,el)*daFactor()+hsChance()*hsSustain()*hsBoltLv()*magicDmg(m,100,el)*(1+dbChance())};
 const sfPerAttack=m=>sfMagic(m)+sfPhys(m)*daFactor();
 // Hindsight auto: on for the session's map only when the extra EXP costs less than your limit per 1% (after the extra loot)
 function applyHsAuto(){

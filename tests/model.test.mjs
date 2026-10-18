@@ -946,6 +946,27 @@ t("Spell Fist: each basic attack also lands its physical hit", () => {
   assert.ok(run(`sfPhys(${MOB})`) < phys);
 });
 
+t("Spell Fist: the bolt at 100%, then × (100 × bolt Lv + 100 × Spell Fist Lv)%", () => {
+  setup("Sage", { matkTxt: "300+200", intTxt: "", st: {}, sage: { sfLv: 10, boltLv: 10, bolts: { Fire: true, Water: false, Wind: false }, hsOn: false, hsAuto: false },
+    ec: { on: false }, cards: {}, a: JSON.parse(run("JSON.stringify(JOBS.Sage.p[0])")) });
+  assert.equal(run("sfPct()"), 2000);
+  const bolt = run(`magicDmg(${MOB},100,'Fire')`);
+  assert.equal(run(`dmgPerHit(${MOB})`), Math.floor(bolt * 20));        // soft MDEF taken off the bolt, then × 20
+  assert.ok(run(`dmgPerHit(${MOB})`) < run(`magicDmg(${MOB},2000,'Fire')`));
+  run("G().sfLv=5");
+  assert.equal(run("sfPct()"), 1500);                                 // Spell Fist Lv5 with Lv10 bolts
+  run("G().boltLv=3");
+  assert.equal(run("sfPct()"), 800);
+});
+
+t("Auto Shadow Spell procs on a miss too; card auto-casts need a hit", () => {
+  setup("Rogue", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", matkTxt: "100+50", intTxt: "40", hitTxt: "1", crit: 0, st: {},
+    a: JSON.parse(run(`JSON.stringify(JOBS.Rogue.p.find(p=>p.name.startsWith("Shadow Spell: Fire Bolt")))`)) });
+  const per = run(`perUse(${MOB})`), hc = run(`hitChance(${MOB})`) / 100, ss = run(`ssDmg(${MOB})`);
+  assert.ok(hc < 0.1 && ss > 0);
+  near(run(`usesPerKill(${MOB})`), 10000 / (per * hc + ss * 0.3));    // the 30% Shadow Spell isn't cut by the misses
+});
+
 t("auto-cast spells from cards work on any job's basic attacks", () => {
   const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
   setup("Knight", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", matkTxt: "100+50", intTxt: "40", hitTxt: "300", crit: 0, st: {}, a: AUTO });

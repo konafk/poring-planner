@@ -69,7 +69,7 @@ Cuts damage taken by 6–30% for 1–3% of Max SP per hit, the fuller your SP th
 
 ## Sage options
 
-Spell Fist with the best bolt per monster, Hindsight (switched on or off automatically against your zeny limit), Double Bolt and SP items. The cards and Energy Coat above count for Spell Fist too: Side Winder's 2nd hit also procs Spell Fist.
+Spell Fist with the best bolt per monster (a proc on every basic attack, hit or miss; the bolt is worked out at 100% MATK, then × (100 × bolt Lv + 100 × Spell Fist Lv)%, so the monster's MDEF counts that many times over), Hindsight (switched on or off automatically against your zeny limit), Double Bolt and SP items. The cards and Energy Coat above count for Spell Fist too: Side Winder's 2nd hit also procs Spell Fist.
 
 ## Items skills use up
 
