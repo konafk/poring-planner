@@ -407,7 +407,7 @@ const sfPerAttack=m=>sfMagic(m)+sfPhys(m)*daFactor();
 // Hindsight vs none on the session's map, as a note in Sage options: the extra EXP and what the extra SP items cost per 1% (after the extra loot)
 function hsCompare(){
   const g=G();if(!isSF()||!hsLvN()){g._note="";return}
-  const mp=currentMap()||(calcMob()&&(openMaps(calcMob())[0]||[])[0]);if(!mp||!MAPMOBS[mp]){g._note="";return}
+  const mp=currentMap()||mobMap(calcMob());if(!mp||!MAPMOBS[mp]){g._note="";return}
   const L=lvExp(num(C().baseLv))||lvExp(62);const w=walkSec();
   const top=MAPMOBS[mp].filter(x=>!x.m.boss&&!isSkipped(x.m)&&!x.m.expUnknown&&x.m.atkMin!=null).sort((a,b)=>b.n-a.n)[0];const mm=top?top.m:null;
   const run=v=>withHs(v,()=>{const k=SG_MOB;SG_MOB=mm;try{return {r:mapStats(mp,w),items:sgItemsPerSec()}}finally{SG_MOB=k}});
@@ -613,10 +613,17 @@ function stats(s){
     fullH:avgRaw>0?L/avgRaw:Infinity,nextH:avgRaw>0?L*(1-last.pct/100)/avgRaw:Infinity,deaths:es.filter(e=>e.died).length};
 }
 // pace and walking only make sense for sessions of the job you have selected (fight time uses its attack)
-// a session's monsters are weighted by their spawn counts on the session's map: the open map where most of them spawn (ties: more spawns)
+// a session's monsters are weighted by their spawn counts on the session's map: the one you picked (s.map), else the open map where most
+// of them spawn (ties: more spawns)
 const sessMobs=s=>s.mobIds.map(id=>MOBS.find(m=>m.id===id)).filter(Boolean);
-const sessMap=s=>{const k={},tot={};sessMobs(s).forEach(m=>openMaps(m).forEach(([mp,n])=>{k[mp]=(k[mp]||0)+1;tot[mp]=(tot[mp]||0)+n}));
-  let best=null;for(const mp in k)if(best==null||k[mp]>k[best]||(k[mp]===k[best]&&tot[mp]>tot[best]))best=mp;return best};
+// the open maps any of the session's monsters spawn on, best first: [map, how many of its monsters, their spawns]
+const sessMaps=s=>{const k={},tot={};sessMobs(s).forEach(m=>openMaps(m).forEach(([mp,n])=>{k[mp]=(k[mp]||0)+1;tot[mp]=(tot[mp]||0)+n}));
+  return Object.keys(k).map(mp=>[mp,k[mp],tot[mp]]).sort((a,b)=>b[1]-a[1]||b[2]-a[2])};
+const sessMapAuto=s=>(sessMaps(s)[0]||[])[0]||null;
+const sessMap=s=>s.map&&sessMaps(s).some(x=>x[0]===s.map)?s.map:sessMapAuto(s);
+// the map a monster is farmed on: the session's map when it's one of the session's monsters and spawns there, else its best open map
+const mobMap=m=>{if(!m)return "";const s=cur(),mp=s.mobIds.includes(m.id)?sessMap(s):null;if(mp&&(SPAWN[m.id]||[]).some(x=>x[0]===mp))return mp;
+  const om=openMaps(m);return om.length?om[0][0]:""};
 const spawnOn=(m,mp)=>((SPAWN[m.id]||[]).find(x=>x[0]===mp)||[])[1]||1;
 // keep(m) drops monsters from the mix (and re-weights the rest); if it would drop all of them the full list is kept
 function sessMix(s,keep){const mp=sessMap(s);let list=sessMobs(s).map(m=>({m,w:spawnOn(m,mp)}));const kn=list.filter(x=>!x.m.expUnknown);if(kn.length)list=kn;if(keep){const k=list.filter(x=>keep(x.m));if(k.length)list=k}
