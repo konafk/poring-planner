@@ -206,12 +206,16 @@ const defParts=()=>{const p=String(cf("defTxt")||"0").split("+").map(x=>parseFlo
 // monsters on you at once: aggressive monsters, and ones that join a fight their kind is in (assist, data/mobskills.js), gang up:
 // c.crowd of them (2 unless you change it; others 1). Each one swings at you, and from 3 at once FLEE drops 10% and DEF (gear and
 // VIT) 5% per monster past 2
-// A map can set its own count for every monster on it (Map planner: state.mobbed, else MOBBED_D): Labyrinth Forest 1F and 3F are one big
-// map cut into 5×5 small rooms, so the monsters crowd into the room you're in and several hit you together whatever they are. MOBBED is
-// that count for the map being worked out (withMobbed), null when it has none
+// A map can set its own count for every monster on it (Map planner: state.mobbed). RO Zero's maps are towns, fields and dungeons, and
+// dungeons come in two kinds: normal ones, and room dungeons, one big map cut into small rooms (Labyrinth Forest 1F and 3F, 5×5 rooms;
+// Sunken Ship's cabins), where the monsters crowd into the room you're in and several hit you together whatever they are. Room
+// dungeons (ROOM_MAPS) start at ROOM_CROWD; other maps have no count of their own. MOBBED is the count for the map being worked out
+// (withMobbed), null when it has none
 const CROWD_D=2;
-const MOBBED_D={maz_d01:3,maz_d03:3};
-const mobbedOf=mp=>{const v=(state.mobbed||{})[mp];return v!=null?Math.min(12,Math.max(1,Math.round(num(v)))):MOBBED_D[mp]??null};
+const ROOM_MAPS=["maz_d01","maz_d03","tre_d01","tre_d02"],ROOM_CROWD=3;
+const isRoomMap=mp=>ROOM_MAPS.includes(mp);
+const mobbedDef=mp=>isRoomMap(mp)?ROOM_CROWD:null;
+const mobbedOf=mp=>{const v=(state.mobbed||{})[mp];return v!=null?Math.min(12,Math.max(1,Math.round(num(v)))):mobbedDef(mp)};
 let MOBBED=null;
 const withMobbed=(mp,fn)=>{const k=MOBBED;MOBBED=mp?mobbedOf(mp):null;try{return fn()}finally{MOBBED=k}};
 const crowdN=m=>{if(MOBBED!=null&&m)return MOBBED;if(!m||!(m.agg||m.assist))return 1;const v=C().crowd;return v==null||v===""?CROWD_D:Math.max(1,num(v,1))};

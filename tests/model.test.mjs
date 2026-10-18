@@ -1482,7 +1482,7 @@ t("Farm without items: HP and SP out against regen, cards, Heal and Indulge, gra
   run("C().autoSp=true"); const before = run(`itemsOnNow()`); run(`susMob(${MOB},2)`); assert.equal(run(`itemsOnNow()`), before);
 });
 
-t("a map's own count of monsters on you: every monster there, hits add up, FLEE / DEF crowd penalty; Labyrinth Forest 1F and 3F start at 3", () => {
+t("a map's own count of monsters on you: every monster there, hits add up, FLEE / DEF crowd penalty; room dungeons (Labyrinth Forest 1F / 3F, Sunken Ship) start at 3", () => {
   const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
   setup("Knight", { atkTxt: "100+300", aspd: 170, defTxt: "40+60", fleeTxt: "200", maxHp: 6000, hitScale: 1, mobInterval: 1.5, st: {}, a: AUTO });
   const one = run(`({d:dodge(${MOB}),h:hitsOnYou(${MOB}),dmg:mobHitDmg(${MOB})})`);
@@ -1499,7 +1499,9 @@ t("a map's own count of monsters on you: every monster there, hits add up, FLEE 
   assert.equal(run(`crowdN(${MOB})`), 1);                                   // elsewhere a passive monster is 1 on you                                                        // FLEE can't go below 0
   run("C().fleeTxt='900'"); near(at(1).d, 95);                              // dodge tops out at 95%: 5% of swings always land
   // per map: Labyrinth Forest defaults to 3, a typed count wins, other maps have none (the Character tab's per-monster count applies)
-  assert.equal(run("mobbedOf('maz_d01')"), 3); assert.equal(run("mobbedOf('maz_d03')"), 3); assert.equal(run("mobbedOf('prt_maze02')"), null); assert.equal(run(`mobbedOf(mapKey('pay_dun00'))`), null);
+  assert.equal(run("mobbedOf('maz_d01')"), 3); assert.equal(run("mobbedOf('maz_d03')"), 3); assert.equal(run("mobbedOf('prt_maze02')"), null);
+  assert.equal(run("mobbedOf('tre_d01')"), 3); assert.equal(run("mobbedOf('tre_d02')"), 3);              // Sunken Ship's cabins: a room dungeon too
+  assert.equal(run("ROOM_MAPS.every(mp=>MAPMOBS[mp])"), true);                                           // every room dungeon is a real spawn map assert.equal(run(`mobbedOf(mapKey('pay_dun00'))`), null);
   setup("Knight", { fleeTxt: "100", defTxt: "0+0", hpRegen6: 1, hitScale: 1 });   // the default attack hurts Payon Cave's monsters; no DEF, little regen
   const P = JSON.stringify(run("mapKey('pay_dun00')")), set = n => run(`state.mobbed={[${P}]:${n}}`);
   set(4); assert.equal(run(`mobbedOf(${P})`), 4);
