@@ -71,6 +71,22 @@ Open maps, or single monsters, ranked by net zeny/hr. That's the loot value per 
 
 Per-map averages, kills/hr, EXP/hr and net zeny/hr. The EXP Hunter's Zeny / hr column is net the same way.
 
+### Farm without items
+
+Whether your character can farm a map with no HP or SP items, as a % in green, yellow or red. It's a tile in the Map planner, a No items column in the EXP Hunter (sortable, filter `>=100`), a column per monster in the Map planner and a tile for the monster you click. Hover any of them to see the breakdown.
+
+- **HP out:** what each monster takes off you while you fight it: its ATK through your DEF, the hits that get past your FLEE (its hit against your FLEE, the same dodge % as the Monsters table), "swings reach you" and Energy Coat.
+- **HP back:** natural HP regen and Increase HP Recovery over fight and walking time, HP-over-time consumables, and Hunter Fly while you attack.
+- **SP out and back:** the SP your attack and Energy Coat use, against natural SP regen, Increase SP Recovery, SP-over-time consumables and SP cards (Dracula, Dark Priest, +5 SP per kill).
+- **Heal:** spare SP pays for Heal when HP falls short: your Heal skill at its learned level ((Base Lv + INT) / 5 × 3 × Lv + MATK, rAthena's renewal formula, not checked in game), else Vitata's Heal Lv1 from the Cards card. Learn Heal in the Skills card for it to count.
+- **Indulge (Sage):** spare HP turns into SP when SP falls short: 10% of Max HP for (10 × Lv)% of it as SP, less its SP cost (the 10% is classic RO's, not checked in game).
+
+The % is the share of what you use that comes back on its own, the lower of HP and SP. On a map the monsters add up by spawn count.
+
+- **Green (keeps up):** 100%, and no single kill takes half your Max HP.
+- **Yellow (with rests):** 50% or more. You sit now and then; the tooltip says about how long a kill (at standing regen, so sitting is quicker).
+- **Red (needs items):** below 50%, or one kill can take all your HP before regen catches up and you have no Heal.
+
 With an elemental converter (or Spell Fist bolts), a table shows each element's rate against every monster on the map and the map's EXP/min with it, and warns about the monsters the one in use is weak against (for example Fire against Jakk, Fire 2, on Geffen Dungeon B2F). An Element % column shows the rate per monster. For physical attacks the rate applies to weapon ATK; status ATK always hits as Neutral.
 
 ## Monster info
