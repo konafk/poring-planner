@@ -967,6 +967,20 @@ t("Auto Shadow Spell procs on a miss too; card auto-casts need a hit", () => {
   near(run(`usesPerKill(${MOB})`), 10000 / (per * hc + ss * 0.3));    // the 30% Shadow Spell isn't cut by the misses
 });
 
+t("Duple Light: a physical orb per hit (own hit roll) and a magic orb half the time", () => {
+  const dl = JSON.parse(run(`JSON.stringify(JOBS.Priest.p.find(p=>p.dl))`));
+  setup("Priest", { atkTxt: "100+150", wAtk: 0, wElem: "Neutral", matkTxt: "200+100", intTxt: "", hitTxt: "250", crit: 0, st: {}, maxSp: 300, a: dl });
+  const hc = run(`hitChance(${MOB})`) / 100;
+  const orb = (type, pct, el) => run(`withAtk({...C().a,dl:false,type:'${type}',pct:${pct},el:'${el}'},()=>dmgPerHit(${MOB}))`);
+  near(run(`dlDmg(${MOB})`), orb("phys", 1000, "W") * hc + orb("magic", 1600, "Neutral") * 0.5);
+  const base = run(`dmgPerHit(${MOB})`);
+  near(run(`usesPerKill(${MOB})`), 10000 / ((base + run(`dlDmg(${MOB})`)) * hc));   // both orbs need the basic attack to land
+  near(run("dlUpkeep()"), 100 / 360);                                  // 100 SP every 6 minutes
+  near(run("skillSPPerSec()"), 100 / 360);
+  run("C().a={...C().a,dl:false}");
+  assert.equal(run(`dlDmg(${MOB})`), 0);
+});
+
 t("auto-cast spells from cards work on any job's basic attacks", () => {
   const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
   setup("Knight", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", matkTxt: "100+50", intTxt: "40", hitTxt: "300", crit: 0, st: {}, a: AUTO });

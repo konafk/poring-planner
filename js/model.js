@@ -156,8 +156,19 @@ const critChance=m=>{const c=C();if(c.a.type!=="auto")return 0;return Math.min(1
 // uses needed per kill: whole hits that land, spread over misses
 // average damage of one use: hits that land (crits always do, × 1.4 × (1 + crit damage %)) plus auto-casts: card and scroll auto-casts
 // only proc on swings that connect, Auto Shadow Spell (free) procs on a miss too, like Spell Fist and Hindsight
-const procPerUse=m=>acDmg(m)*acChance();
+const procPerUse=m=>acDmg(m)*acChance()+dlDmg(m);
 const procFree=m=>ssDmg(m)*SS_CHANCE;
+// Duple Light (Priest, Zero): each melee basic attack that hits adds a physical orb ((500 + 50 × Lv)% ATK, the weapon's element and size
+// penalty, rolling to hit again) and, DL_MAGIC of the time, a magic orb ((800 + 80 × Lv)% MATK, Neutral, always hits). No base-level scaling.
+// Recast every 60 + 30 × Lv s for 50 + 5 × Lv SP. The orb chances are the Lv10 ones (100% / 50%, checked in game) at every level
+// TODO: the chances below Lv10 aren't known; the skill description leaves them out
+const DL_PHYS=1,DL_MAGIC=0.5;
+const dlLv=(c=C())=>!c.a.dl?0:hasTree(c)?skLv(c,"duple-light"):10;
+const dlDmg=m=>{const lv=dlLv();if(!lv)return 0;const o={...C().a,dl:false,hits:1,sadd:[]};
+  const phys=withAtk({...o,name:"Duple Light",type:"phys",pct:500+50*lv,el:"W"},()=>dmgPerHit(m)*hitChance(m)/100);
+  const mag=withAtk({...o,name:"Duple Light",type:"magic",pct:800+80*lv,el:"Neutral"},()=>dmgPerHit(m));
+  return phys*DL_PHYS+mag*DL_MAGIC};
+const dlUpkeep=()=>{const lv=dlLv();return lv?(50+5*lv)*spCostMul()/(60+30*lv):0};
 const useAvg=(m,per,proc,free=0)=>{const cr=critChance(m),hc=hitChance(m)/100;return per*(cr*1.4*(1+(num(C().critDmg)+consSum("crit_dmg"))/100)+(1-cr)*hc)+proc*(cr+(1-cr)*hc)+free};
 const dpsOf=m=>{if(isSF())return null;return useAvg(m,perUse(m),procPerUse(m),procFree(m))*targets()/useSec()};
 function usesPerKill(m){if(isSF()){const d=sfPerAttack(m);return d>0?Math.ceil(m.hp/d):Infinity}const per=perUse(m),proc=procPerUse(m),free=procFree(m);if(per<=0&&proc<=0&&free<=0)return Infinity;
@@ -195,7 +206,7 @@ const ihrPer10=()=>{const l=skLv(C(),"increase-hp-recovery");return l>0?Math.flo
 // m: the monster in play, whose poison stops natural regen and Increase HP Recovery part of the time (poisonUp)
 const hpRegenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(hpRegen6()/6+ihrPer10()/10)*(1-poisonUp(m)))+consHPPerSec();
 // SP the attack itself costs per second (Spell Fist: its upkeep); defSP adds Energy Coat and Vitata's heals against the monster in play
-const skillSPPerSec=()=>num(C().a.sp)*spCostMul()/useSec();
+const skillSPPerSec=()=>num(C().a.sp)*spCostMul()/useSec()+dlUpkeep();
 const spNeedPerSec=()=>isSF()?sgUpkeep()+defSP()+hsFullSP()*hsSustain():skillSPPerSec()+defSP();
 // SP back per second: natural regen and Increase SP Recovery (stop when you're overweight) plus SP from cards and consumables, which keep going
 const regenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(spRegen8()/8+isrPer10()/10)*(1-poisonUp(m)))+cardSPPerSec()+consSPPerSec();
