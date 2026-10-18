@@ -7,7 +7,7 @@ const BUILT_IDS=["atkPct","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt",
 let BUILD_LAST=null;
 const buildOf=c=>{if(!c.build)c.build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{}};return c.build};
 // other gear sets, as many as you add (up to ALT_MAX; build.alts[i]: gear, stones, special like the build's own), worked out for the
-// EXP & formulas tab only. c.gearEdit "alt0"…: the gear table edits that set instead of your gear
+// gear comparison (Character tab) and the EXP & formulas tab only. c.gearEdit "alt0"…: the gear table edits that set instead of your gear
 const ALT_MAX=10;
 const altN=c=>{const b=c.build;return b&&Array.isArray(b.alts)?Math.min(ALT_MAX,b.alts.length):0};
 const altOf=(c,i)=>{const b=buildOf(c);if(!Array.isArray(b.alts))b.alts=[];let a=b.alts[i];if(!a||typeof a!=="object")a=b.alts[i]={};if(!a.gear||typeof a.gear!=="object")a.gear={};return a};
@@ -380,7 +380,7 @@ $("gearTable").addEventListener("input",e=>{if(e.target.dataset.optv!=null){cons
   if(!e.target.classList.contains("ref"))return;const k=e.target.closest("tr").dataset.slot;const g=gearSet().gear[k];if(!g)return;
   g.refine=Math.max(0,Math.min(20,num(e.target.value)));save();renderAll()});
 // ---- other gear sets: + Add set adds one and Remove set takes it away; the gear table edits set i after "Set i" is picked. Your gear
-// stays what the page works with, and the EXP & formulas tab works them all out side by side. "Swap" makes a set your gear (and yours
+// stays what the page works with, and Your gear vs other gear sets (Character tab, ref.js) works them all out side by side. "Swap" makes a set your gear (and yours
 // that set), so you can switch back ----
 const altSaved=(c,i)=>c.mode==="build"&&!!(c.build&&Array.isArray(c.build.alts)&&c.build.alts[i])&&setSaved(c.build.alts[i]);
 // the sets with gear in them, by number
@@ -400,11 +400,11 @@ function altDiff(c,i){const b=buildOf(c),a=altOf(c,i),g0=b.gear||{},g1=a.gear||{
 const altDiffTxt=(c,i)=>{const d=altDiff(c,i);return d.length?d.join(" · "):"same as your gear"};
 function renderAltBar(c=C()){const i=altIdx(c),has=i>=0&&altSaved(c,i),list=altList(c),n=altN(c);
   $("gsetSeg").innerHTML=`<button type="button" role="radio" data-gset="mine" aria-checked="${i<0}">My gear</button>`+Array.from({length:n},(_,k)=>
-    `<button type="button" role="radio" data-gset="${k}" aria-checked="${k===i}" title="Another set of gear, worked out next to yours on the EXP &amp; formulas tab">Set ${k+1}${altSaved(c,k)?" ●":""}</button>`).join("");
+    `<button type="button" role="radio" data-gset="${k}" aria-checked="${k===i}" title="Another set of gear, worked out next to yours in Your gear vs other gear sets (bottom of this tab)">Set ${k+1}${altSaved(c,k)?" ●":""}</button>`).join("");
   $("altAdd").disabled=n>=ALT_MAX;$("altAdd").title=n>=ALT_MAX?`Up to ${ALT_MAX} other sets`:"Add another set of gear to compare with yours";
   $("buildPanel").classList.toggle("altedit",i>=0);["altCopy","altSwap","altDel"].forEach(id=>$(id).hidden=i<0);$("altSwap").disabled=!has;
-  $("altNote").innerHTML=i>=0?`<b>Editing set ${i+1}.</b> The page still works with your gear. `+(has?`${altDiffTxt(c,i)} · compare on the EXP &amp; formulas tab`:"Pick its gear below, or copy yours in and change a part.")
-    :list.length?list.map(k=>`Set ${k+1}: ${altDiffTxt(c,k)}`).join("<br>")+"<br>Compare them on the EXP &amp; formulas tab":`Press + Add set for another set of gear, worked out next to yours on the EXP &amp; formulas tab.`}
+  $("altNote").innerHTML=i>=0?`<b>Editing set ${i+1}.</b> The page still works with your gear. `+(has?`${altDiffTxt(c,i)} · compare in Your gear vs other gear sets, at the bottom of this tab`:"Pick its gear below, or copy yours in and change a part.")
+    :list.length?list.map(k=>`Set ${k+1}: ${altDiffTxt(c,k)}`).join("<br>")+"<br>Compare them in Your gear vs other gear sets, at the bottom of this tab":`Press + Add set for another set of gear, worked out next to yours in Your gear vs other gear sets, at the bottom of this tab.`}
 $("gsetSeg").addEventListener("click",e=>{const x=e.target.closest("[data-gset]");if(!x)return;const c=C();if(x.dataset.gset==="mine")delete c.gearEdit;else c.gearEdit="alt"+x.dataset.gset;save();renderGearTable();renderAll()});
 // add an empty set (its index, or −1 at ALT_MAX); remove set i, the ones after it moving up, its items remembered
 function altAdd(c){const b=buildOf(c);if(!Array.isArray(b.alts))b.alts=[];if(b.alts.length>=ALT_MAX)return -1;b.alts.push({gear:{}});return b.alts.length-1}
