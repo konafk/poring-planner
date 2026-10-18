@@ -210,9 +210,12 @@ const defParts=()=>{const p=String(cf("defTxt")||"0").split("+").map(x=>parseFlo
 // dungeons come in two kinds: normal ones, and room dungeons, one big map cut into small rooms (Labyrinth Forest 1F and 3F, 5×5 rooms;
 // Sunken Ship's cabins), where the monsters crowd into the room you're in and several hit you together whatever they are. Room
 // dungeons (ROOM_MAPS) start at ROOM_CROWD; other maps have no count of their own. MOBBED is the count for the map being worked out
-// (withMobbed), null when it has none
+// (withMobbed), null when it has none. ROOM_MAPS are the spawn maps with 8 or more warps back into the same map (room to room) in
+// rAthena's warp scripts (npc/warps): Labyrinth Forest 1F 59 and 3F 57, Sunken Ship 1F 20 and 2F 10, Kunlun's Immortal's Chess
+// Terrace 20, Sphinx B5F 8. Clock Tower 4F (5), Glast Heim Castle 1F, Sewer Tunnel 2F and Sphinx B3F (4) have only a few, and
+// Labyrinth Forest 2F none. rAthena has no warps for Izlude Shipwreck, so it isn't known
 const CROWD_D=2;
-const ROOM_MAPS=["maz_d01","maz_d03","tre_d01","tre_d02"],ROOM_CROWD=3;
+const ROOM_MAPS=["maz_d01","maz_d03","tre_d01","tre_d02","gon_d02","sp_d05"],ROOM_CROWD=3;
 const isRoomMap=mp=>ROOM_MAPS.includes(mp);
 const mobbedDef=mp=>isRoomMap(mp)?ROOM_CROWD:null;
 const mobbedOf=mp=>{const v=(state.mobbed||{})[mp];return v!=null?Math.min(12,Math.max(1,Math.round(num(v)))):mobbedDef(mp)};

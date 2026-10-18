@@ -1501,6 +1501,8 @@ t("a map's own count of monsters on you: every monster there, hits add up, FLEE 
   // per map: Labyrinth Forest defaults to 3, a typed count wins, other maps have none (the Character tab's per-monster count applies)
   assert.equal(run("mobbedOf('maz_d01')"), 3); assert.equal(run("mobbedOf('maz_d03')"), 3); assert.equal(run("mobbedOf('prt_maze02')"), null);
   assert.equal(run("mobbedOf('tre_d01')"), 3); assert.equal(run("mobbedOf('tre_d02')"), 3);              // Sunken Ship's cabins: a room dungeon too
+  assert.equal(run("mobbedOf('gon_d02')"), 3); assert.equal(run("mobbedOf('sp_d05')"), 3);               // Kunlun's Chess Terrace, Sphinx B5F
+  assert.equal(run("mobbedOf('c_tower4')"), null);                                                       // only a few room warps: normal
   assert.equal(run("ROOM_MAPS.every(mp=>MAPMOBS[mp])"), true);                                           // every room dungeon is a real spawn map assert.equal(run(`mobbedOf(mapKey('pay_dun00'))`), null);
   setup("Knight", { fleeTxt: "100", defTxt: "0+0", hpRegen6: 1, hitScale: 1 });   // the default attack hurts Payon Cave's monsters; no DEF, little regen
   const P = JSON.stringify(run("mapKey('pay_dun00')")), set = n => run(`state.mobbed={[${P}]:${n}}`);
