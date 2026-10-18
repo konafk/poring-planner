@@ -59,30 +59,54 @@ t("Assassin dual wield: both hands on basic attacks, hand masteries, left weapon
   // gear side 300 = right weapon 200 + left weapon 80 + 20 other gear; no STR typed, so weapon ATK isn't scaled
   setup("Assassin", { atkTxt: "100+300", wAtk: 200, weapon: "One-handed sword", wElem: "Wind", lw: "Dagger", lwAtk: 80, lwElem: "Neutral", st: {}, a: basic });
   const df = 20, soft = Math.floor((50 + 30) / 2), hit = pool => Math.floor(pool * (4000 + df) / (4000 + 10 * df) - soft);
-  // right: 1h sword vs Large 75%, Wind vs Water 150%; status ATK doubled + other gear, Neutral. No skill tree: masteries Lv 5
-  const right = Math.floor(hit(200 * 0.75 * 1.5 + 2 * 100 + 20) * 100 / 100);
+  // right: 1h sword vs Large 75% + other gear, Wind vs Water 150%; status ATK doubled, Neutral. No skill tree: masteries Lv 5
+  const right = Math.floor(hit((200 * 0.75 + 20) * 1.5 + 2 * 100) * 100 / 100);
   // left: dagger vs Large 50%, Neutral; status ATK once
   const left = Math.floor(hit(80 * 0.5 + 100 + 20) * 80 / 100);
   assert.equal(run(`dmgPerHit(${MOB})`), right);
   assert.equal(run(`leftDmg(${MOB})`), left);
   near(run(`perUse(${MOB})`), right + left);
   run(`C().skills={"righthand-mastery":2,"lefthand-mastery":1}`);   // learned levels: 70% and 40%
-  assert.equal(run(`dmgPerHit(${MOB})`), Math.floor(hit(200 * 0.75 * 1.5 + 220) * 70 / 100));
+  assert.equal(run(`dmgPerHit(${MOB})`), Math.floor(hit((200 * 0.75 + 20) * 1.5 + 200) * 70 / 100));
   assert.equal(run(`leftDmg(${MOB})`), Math.floor(hit(80 * 0.5 + 120) * 40 / 100));
   run(`C().skills={}`);
   // Double Attack repeats only the right hand
   run(`C().a.hits=1.5`);
   near(run(`perUse(${MOB})`), right * 1.5 + left);
-  // skills use the right hand only, at full damage
+  // skills use the right hand only, at full damage, with status ATK once (not twice) while dual-wielding
   run(`C().a={...C().a,type:"phys",hits:1}`);
   assert.equal(run(`leftDmg(${MOB})`), 0);
-  assert.equal(run(`dmgPerHit(${MOB})`), hit(200 * 0.75 * 1.5 + 220));
-  // a katar (or any other job) is never dual wield, and the left weapon's ATK stays in the Neutral share
+  assert.equal(run(`dmgPerHit(${MOB})`), hit((200 * 0.75 + 20) * 1.5 + 100));
+  // a katar (or any other job) is never dual wield, and the left weapon's ATK counts as equipment ATK
   setup("Assassin", { atkTxt: "100+300", wAtk: 200, weapon: "Katar", wElem: "Neutral", lw: "Dagger", lwAtk: 80, st: {}, a: basic });
   assert.equal(run(`dualOn()`), false);
   assert.equal(run(`leftDmg(${MOB})`), 0);
   setup("Rogue", { atkTxt: "100+300", wAtk: 200, weapon: "Dagger", lw: "Dagger", lwAtk: 80, st: {}, a: basic });
   assert.equal(run(`dualOn()`), false);
+});
+
+t("physical damage: cards and ATK % scale weapon + equipment ATK only, ATK % adds next to the cards", () => {
+  const basic = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
+  // gear side 300 = weapon 200 + 100 other gear; status ATK 100 counts twice; Neutral weapon vs Water 1, 1h sword vs Large 75%
+  setup("Knight", { atkTxt: "100+300", wAtk: 200, weapon: "One-handed sword", wElem: "Neutral", st: {}, rangePct: 15, a: basic });
+  const df = 20, soft = Math.floor((50 + 30) / 2), hit = (pool, full = 1.15) => Math.floor(pool * full * (4000 + df) / (4000 + 10 * df) - soft);
+  const post = 200 * 0.75 + 100;
+  assert.equal(run(`dmgPerHit(${MOB})`), hit(post + 200));
+  const B = (race, size) => `{race:{Brute:${race}},size:{L:${size}},ele:{},kind:{},all:0,group:{}}`;
+  run(`C().bx={phys:${B(20, 10)},magic:${B(0, 0)}}`);                 // +20% vs Brute, +10% vs Large: each its own multiplier,
+  assert.equal(run(`dmgPerHit(${MOB})`), hit(post * 1.2 * 1.1 + 200));  // on post ATK only, not status ATK
+  run("C().atkPct=19");                                               // ATK +19%: post ATK × 19% added, not × the cards
+  assert.equal(run(`dmgPerHit(${MOB})`), hit(post * (1.2 * 1.1 + 0.19) + 200));
+  run("C().dmgBonus=10");                                             // the extra damage % box is on the whole hit
+  assert.equal(run(`dmgPerHit(${MOB})`), hit(post * (1.2 * 1.1 + 0.19) + 200, 1.15 * 1.1));
+});
+
+t("ATK %: not in the status window's ATK; build mode and consumables pass it on as atkPct", () => {
+  run(`state.job="Knight";state.chars={};C().mode='build';C().build={base:{str:50,agi:1,vit:1,int:1,dex:1,luk:1},gear:{}};C().cons={}`);
+  const r = run(`(()=>{const a=BUILD.compute({base:{str:50,agi:1,vit:1,int:1,dex:1,luk:1},gear:{},extra:[]},"Knight",aspdBase).fields,
+    b=BUILD.compute({base:{str:50,agi:1,vit:1,int:1,dex:1,luk:1},gear:{},extra:[["atk",null,null,40],["atk_percent",null,null,19]]},"Knight",aspdBase).fields;return {a,b}})()`);
+  assert.equal(Number(r.b.atkTxt.split("+")[1]) - Number(r.a.atkTxt.split("+")[1]), 40);   // ATK +40 shows, ATK +19% doesn't
+  assert.equal(r.b.atkPct, 19);
 });
 
 t("Assassin left weapon slows base ASPD by a quarter of its delay", () => {

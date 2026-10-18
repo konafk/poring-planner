@@ -3,7 +3,7 @@
 // compared with what the build computes (BUILD_LAST), not with c, since typed Max HP / SP replace the computed ones
 const CHECKS=[["atk","ATK",F=>sumStat(F.atkTxt)],["matk","MATK",F=>sumStat(F.matkTxt)],["hit","HIT",F=>sumStat(F.hitTxt)],["flee","FLEE",F=>sumStat(F.fleeTxt)],
   ["aspd","ASPD",F=>F.aspd],["def","DEF",F=>sumStat(F.defTxt)],["hp","Max HP",F=>F.maxHp],["sp","Max SP",F=>F.maxSp]];
-const BUILT_IDS=["atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lw","lwAtk","lwElem","crit","critDmg","rangePct","skillPct","vctPct","fctPct","acdPct","ignDef","ignMdef","st_str","st_agi","st_vit","st_dex","st_luk","weapon","wElem"];
+const BUILT_IDS=["atkPct","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lw","lwAtk","lwElem","crit","critDmg","rangePct","skillPct","vctPct","fctPct","acdPct","ignDef","ignMdef","st_str","st_agi","st_vit","st_dex","st_luk","weapon","wElem"];
 let BUILD_LAST=null;
 const buildOf=c=>{if(!c.build)c.build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{}};return c.build};
 // the other gear set (build.alt: gear, stones, special like the build's own), worked out for the EXP & formulas tab only.
@@ -17,7 +17,7 @@ function applyBuild(){const c=C();if(c.mode!=="build"){BUILD_LAST=null;c.bx=eqTo
   const nm=String(c.a.name||"").toLowerCase(),match=o=>Object.entries(o).reduce((t,[k,v])=>t+(nm.includes(k.toLowerCase())?v:0),0);
   const top=o=>Object.entries(o).reduce((t,[k,v])=>nm.includes(k.toLowerCase())?Math.max(t,v):t,0); // fixed cast %: only the highest counts
   Object.assign(c,{atkTxt:F.atkTxt,matkTxt:F.matkTxt,hitTxt:F.hitTxt,fleeTxt:F.fleeTxt,defTxt:F.defTxt,intTxt:F.intTxt,wAtk:F.wAtk,crit:F.crit,critDmg:F.critDmg,
-    rangePct:F.rangePct,skillPct:A.skill+match(A.skillOf),vctPct:F.vctPct+match(A.vctOf),fctPct:Math.max(F.fctPct,top(A.fctOf)),acdPct:F.acdPct,ignDef:F.ignDef,ignMdef:F.ignMdef,
+    atkPct:F.atkPct,rangePct:F.rangePct,skillPct:A.skill+match(A.skillOf),vctPct:F.vctPct+match(A.vctOf),fctPct:Math.max(F.fctPct,top(A.fctOf)),acdPct:F.acdPct,ignDef:F.ignDef,ignMdef:F.ignMdef,
     weapon:F.weapon,wElem:F.wElem,lw:F.lw,lwAtk:F.lwAtk,lwElem:F.lwElem,st:{...(c.st||{}),...F.st},bx:{phys:A.phys,magic:A.magic,myEle:A.myEle,taken:A.taken,exp:A.exp,critRace:A.critRace,spCost:A.spCost,spRec:A.spRec,hpRec:A.hpRec,ign:A.ign}});
   c.shield=r.shield;if(F.aspd!=null)c.aspd=F.aspd;if(F.maxHp!=null)c.maxHp=F.maxHp;if(F.maxSp!=null)c.maxSp=F.maxSp;
   // in-game Max HP / SP typed under "Check against the game" win: they include anything the build can't see (buffs, a stale job change)
@@ -138,7 +138,8 @@ function applyConsumables(){EFF=null;const c=C();if(!addOnTop(c))return;const li
   const b0=derived(c),b1=derived(tmp),d=k=>(b1[k]||0)-(b0[k]||0);
   const parts=t=>{const p=String(t||"0").split("+").map(x=>parseFloat(x)||0);return [p[0]||0,p.slice(1).reduce((a,x)=>a+x,0)]};
   const [as,ag]=parts(c.atkTxt),[ms,mg]=parts(c.matkTxt),[ds,dh]=parts(c.defTxt);
-  const atkSt=as+d("atk"),atkGear=f((ag+g("atk"))*(1+g("atk_percent")/100));
+  // ATK % isn't in the status window: it goes to atkPct, which the damage model adds next to the race / size cards
+  const atkSt=as+d("atk"),atkGear=ag+g("atk");
   const matkSt=ms+d("matk"),matkTot=f((matkSt+mg+g("matk"))*(1+g("matk_percent")/100));
   // ASPD as in build.js: stat term and potion/skill value × AGI/200 go into ASPD1, then ASPD % and flat ASPD, rounded down
   let aspd=num(c.aspd,170)+d("aspdTerm")+g("aspd_mod")*(statVal(tmp,"agi")||0)/200;aspd=Math.min(190,Math.floor(aspd+(195-aspd)*g("aspd_percent")/100+g("aspd")));
@@ -146,7 +147,7 @@ function applyConsumables(){EFF=null;const c=C();if(!addOnTop(c))return;const li
   const hp=num(c.maxHp)>0?f((num(c.maxHp)*(vit0!=null?(100+vit1)/(100+vit0):1)+g("hp"))*(1+g("hp_percent")/100)):c.maxHp;
   const sp=num(c.maxSp)>0?f((num(c.maxSp)*(100+int1)/(100+int0)+g("sp"))*(1+g("sp_percent")/100)):c.maxSp;
   EFF={atkTxt:`${atkSt}+${atkGear}`,matkTxt:`${matkSt}+${matkTot-matkSt}`,hitTxt:String(sumStat(c.hitTxt)+d("hit")+g("hit")),fleeTxt:String(sumStat(c.fleeTxt)+d("flee")+g("flee")),
-    defTxt:`${ds+d("def")}+${dh+g("def")}`,crit:num(c.crit)+d("crit")+g("crit"),aspd,maxHp:hp,maxSp:sp,st:tmp.st,intTxt:tmp.intTxt}}
+    atkPct:num(c.atkPct)+g("atk_percent"),defTxt:`${ds+d("def")}+${dh+g("def")}`,crit:num(c.crit)+d("crit")+g("crit"),aspd,maxHp:hp,maxSp:sp,st:tmp.st,intTxt:tmp.intTxt}}
 function renderCons(){const c=C(),cs=consStatOf(c);
   $("consStats").tBodies[0].innerHTML=STAT6_UI.map(k=>{const o=cs[k]||{};return `<tr data-cs="${k}"><td>${k.toUpperCase()}</td>
     <td><input data-f="n" type="number" step="1" value="${esc(o.n??"")}" placeholder="0" aria-label="${k.toUpperCase()} +"></td>
@@ -328,7 +329,7 @@ function renderBuild(){const c=C(),on=c.mode==="build";
     (tick.length?`${rest.length?"<br>":""}<b>Tick in the Cards rows</b> (Character tab, under the attack) to count: ${tick.map(x=>esc(x.split(":")[0])).join(", ")}`:"")}
 const CARD_ROW=["Hunter Fly Card","Sidewinder Card","Creamy Card","Dracula Card","Dark Priest Card",...Object.values(KILL_SP).map(n=>n+" Card")];
 // switching to build keeps a copy of the typed status-window values, and switching back restores them
-const SNAP_KEYS=["shield","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lw","lwAtk","lwElem","crit","critDmg","rangePct","skillPct","vctPct","fctPct","acdPct","ignDef","ignMdef","weapon","wElem","st"];
+const SNAP_KEYS=["shield","atkPct","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lw","lwAtk","lwElem","crit","critDmg","rangePct","skillPct","vctPct","fctPct","acdPct","ignDef","ignMdef","weapon","wElem","st"];
 ROOTQ("[data-cmode]").forEach(x=>x.addEventListener("click",()=>{const c=C(),to=x.dataset.cmode,from=c.mode==="build"?"build":"status";if(to===from)return;
   if(to==="build")c.statusSnap=JSON.parse(JSON.stringify(Object.fromEntries(SNAP_KEYS.map(k=>[k,c[k]??null]))));
   else if(c.statusSnap){SNAP_KEYS.forEach(k=>{const v=c.statusSnap[k];if(v==null)delete c[k];else c[k]=v});delete c.statusSnap}
