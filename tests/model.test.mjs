@@ -1000,6 +1000,10 @@ t("Duple Light: a physical orb per hit (own hit roll) and a magic orb half the t
   const base = run(`dmgPerHit(${MOB})`);
   near(run(`usesPerKill(${MOB})`), 10000 / ((base + run(`dlDmg(${MOB})`)) * hc));   // both orbs need the basic attack to land
   near(run("dlUpkeep()"), 100 / 360);                                  // 100 SP every 6 minutes
+  run("C().skills={'duple-light':3}");                                   // a skill tree at Lv3: same chances, Lv3 damage %
+  near(run(`dlDmg(${MOB})`), orb("phys", 650, "W") * hc + orb("magic", 1040, "Neutral") * 0.5);
+  near(run("dlUpkeep()"), 65 / 150);                                   // 65 SP every 150 s
+  run("C().skills={}");
   near(run("skillSPPerSec()"), 100 / 360);
   run("C().a={...C().a,dl:false}");
   assert.equal(run(`dlDmg(${MOB})`), 0);
