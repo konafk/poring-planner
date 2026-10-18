@@ -33,7 +33,7 @@ const refreshPreset=c=>{if(c.preset>=0){const p=JOBS[state.job].p[c.preset];if(p
 // weight) and moved cast times and delays to the in-game table: saved characters still on a preset take the new numbers at their learned level
 // V5: cooldown and after-cast delay are kept apart (after-cast delay % only cuts the after-cast delay) and follow the learned level;
 // V6: Throw Spirit Sphere 2400% at Lv5; V8: Excruciating Palm's 200 HP,
-// Throw Spirit Sphere back to Global's 1600%; V7: Brandish Spear, Rapid Smiting, Axe Boomerang and Power Swing take the client's cast and delays, and Magnum Break, Cannon Spear
+// Throw Spirit Sphere back to Global's 1600%, and the four V7 timings back to Global's; V7: Brandish Spear, Rapid Smiting, Axe Boomerang and Power Swing take the client's cast and delays, and Magnum Break, Cannon Spear
 // and Napalm Vulcan their cooldown and after-cast delay apart, as the table has them
 (function presetsV8(){if(state.presetsV8)return;state.presetsV8=true;const job=state.job;
   for(const j in state.chars){const c=state.chars[j],p=JOBS[j]&&c&&c.preset>=0&&JOBS[j].p[c.preset];if(p){state.job=j;c.a=levelPreset(p,c).a}}state.job=job;save()})();
