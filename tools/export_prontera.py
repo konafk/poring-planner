@@ -18,6 +18,10 @@ JOBS = ["Novice", "Swordsman", "Mage", "Archer", "Acolyte", "Merchant", "Thief",
 sys.setrecursionlimit(10000)
 # values roz.prontera.info is missing, from the official client (skillinfoz/skilldelaylist.lub): only fill in what it leaves blank
 CLIENT_FIX = {"falcon-assault": {"cooldown_ms": 500}}
+# cast and delay that roz.prontera.info has wrong for Zero, from the official client's skilldelaylist.lub, the same at every level:
+# slug -> [variable cast, fixed cast, after-cast delay, cooldown] in ms (None = none). They replace prontera's values
+CLIENT_TIMING = {"brandish-spear": [0, 0, 300, 2000], "rapid-smiting": [1000, 0, 300, 300], "axe-boomerang": [0, 0, None, 1000],
+                 "power-swing": [0, 0, 300, 0]}
 # Zero Global skill ratios that differ from roz.prontera.info (kRO Zero): slug -> (prontera's max-level damage %, % to add at every
 # level, or the % per level); applied only while prontera still shows its own value. Sonic Blow is 100% lower on Global (1100% at
 # Lv10, not 1200%); Throw Spirit Sphere is 900 + 300 × Lv (2400% at Lv5, the official client's skill text), not 600 + 200 × Lv
@@ -243,6 +247,8 @@ def main():
                 lv = [[L.get("sp_cost") or 0, L.get("damage_ratio_percent"), L.get("hit_count"), L.get("cast_variable_ms"), L.get("cast_fixed_ms"),
                        L.get("after_cast_delay_ms"), L.get("cooldown_ms") if L.get("cooldown_ms") is not None else CLIENT_FIX.get(sk["slug"], {}).get("cooldown_ms"), L.get("description_text") or ""]
                       for L in sorted(sk["levels"], key=lambda L: L["level"])]
+                if sk["slug"] in CLIENT_TIMING:
+                    lv = [[*r[:3], *CLIENT_TIMING[sk["slug"]], r[7]] for r in lv]
                 lv, f = global_pct(sk["slug"], lv, sk.get("damage_formula_expression"))
                 row = {"slug": sk["slug"], "name": sk["name"], "max": sk["max_level"], "slot": sk["tree_slot"], "passive": sk["passive"] == "passive",
                        "el": sk.get("element"), "pre": [[slug_of.get(p["skill_id"], p["skill_id"]), p["level"]] for p in sk.get("prerequisites") or []],
