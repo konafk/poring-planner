@@ -33,16 +33,17 @@ showTab(VIEW&&VIEW.tab||state.tab||"char",!!VIEW);
 syncClosed();syncChar();renderAll();resetForm();
 if(VIEW){if(VIEW.drafts)for(const id in VIEW.drafts)if(["fPct","fJob","pasteBox"].includes(id)&&typeof VIEW.drafts[id]==="string")$(id).value=VIEW.drafts[id];
   if(VIEW.y>0)scrollTo({top:VIEW.y})}
-// ---- other browser tabs: when another tab saves this account (or changes the account list), this one stops saving and reloads,
-// at once if it's showing, else when you come back to it. Without this, a tab left open on an old copy wipes the EXP you logged in another ----
-(function syncTabs(){
-  const reload=()=>{try{const drafts={};["fPct","fJob","pasteBox"].forEach(id=>{if($(id).value)drafts[id]=$(id).value});
-      sessionStorage.setItem(VIEW_KEY,JSON.stringify({acct:accts.active,tab:document.querySelector('[data-tabbtn][aria-selected="true"]')?.dataset.tabbtn,y:scrollY,drafts}))}catch(e){}
-    location.reload()};
-  addEventListener("storage",e=>{if(e.storageArea!==localStorage||(e.key!==null&&e.key!==ACCT_KEY&&e.key!==acctKey(accts.active)))return;
-    if(!STALE){if(e.key===acctKey(accts.active)&&e.newValue===JSON.stringify(state))return;STALE=true}
-    if(!document.hidden)reload()});
-  document.addEventListener("visibilitychange",()=>{if(STALE&&!document.hidden)reload()});
+// ---- other browser tabs: when another tab saves this account it reloads with that save (at once if it's showing, else when you come
+// back to it; a save of its own before then merges, see state.js). A change to the account list makes it stop saving and reload ----
+(function syncTabs(){let newer=false;
+  const refresh=()=>reloadView("Updated from another tab");
+  addEventListener("storage",e=>{if(e.storageArea!==localStorage)return;
+    if(e.key===null||e.key===ACCT_KEY)STALE=true;
+    else if(e.key===acctKey(accts.active)){if(e.newValue===LAST_RAW)return;newer=true}
+    else return;
+    if(!document.hidden)refresh()});
+  document.addEventListener("visibilitychange",()=>{if((STALE||newer)&&!document.hidden)refresh()});
 })();
+if(VIEW&&VIEW.toast)showToast(String(VIEW.toast));
 (function tripLoop(){tickTrip();setTimeout(tripLoop,1000)})();
 loadShareLink();addEventListener("hashchange",loadShareLink);

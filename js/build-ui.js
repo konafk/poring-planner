@@ -223,7 +223,7 @@ function renderEq(){const c=C();$("eqPanel").hidden=c.mode==="build";const fill=
       ${T?`<select data-f="t">${T().map(x=>Array.isArray(x)?opt(x[0],x[1]):opt(x,x)).join("")}</select>`:""}
       ${k[2]?`<select data-f="ch">${[["both","Phys + Magic"],["phys","Physical"],["magic","Magic"]].map(([v,l])=>`<option value="${v}" ${v===(r.ch||"both")?"selected":""}>${l}</option>`).join("")}</select>`:""}
       <input data-f="v" type="number" step="1" value="${esc(r.v??"")}" placeholder="${k[3]?"+":"%"}" aria-label="${k[3]?"Value":"Percent"}">${k[3]?"":" %"}
-      <button type="button" class="small danger" data-del aria-label="Remove line">✕</button></div>`}).join("")||'<div class="note">No lines yet.</div>'}
+      <button type="button" class="small danger" data-del aria-label="Remove line">✕</button>${r.by==="exp"||r.by==="expRace"?'<span class="note warnc" data-eqmax></span>':""}</div>`}).join("")||'<div class="note">No lines yet.</div>'}
 $("eqAdd").addEventListener("click",()=>{eqOf(C()).push({by:"race",t:RACES[0],ch:"both",v:""});save();renderEq();renderAll()});
 $("eqFill").addEventListener("click",()=>{const c=C();if(!gearSaved(c))return;const rows=gearEqRows(c),had=eqOf(c).length;
   if(had&&!confirm(`Replace your ${had} Equipment stats line${had>1?"s":""} with the ${rows.length} your gear in Build from gear gives?`))return;
