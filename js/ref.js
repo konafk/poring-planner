@@ -76,7 +76,7 @@ function renderPartyTable(m){const s=cur(),n0=partyN(s),known=m&&!m.expUnknown,s
 // ---- your gear vs the other gear set: the numbers that decide a farming spot, against the monster you picked and on the map ----
 const refShown=()=>!$("refFormulas").closest("[data-tab]").hidden;
 // the map compared: the Map planner's, else the monster's best open map, else the session's (as the HP and SP items use)
-const cmpMap=()=>{let mp=mapKey(state.map);if(!MAPMOBS[mp]){const m=calcMob(),om=m?openMaps(m):[];mp=om.length?om[0][0]:currentMap()}return MAPMOBS[mp]?mp:null};
+const cmpMap=()=>{let mp=mapKey(state.map);if(!MAPMOBS[mp])mp=mobMap(calcMob())||currentMap();return MAPMOBS[mp]?mp:null};
 function gearStats(){const m=calcMob(),w=walkSec(),mp=cmpMap(),o={atk:sumStat(cf("atkTxt")),matk:sumStat(cf("matkTxt")),hit:sumStat(cf("hitTxt")),flee:sumStat(cf("fleeTxt")),
     crit:num(cf("crit")),aspd:aspdEff(),hp:num(cf("maxHp")),sp:num(cf("maxSp"))};
   if(m){const r=mobRow(m,w);Object.assign(o,{dmg:withEl(r.el2,()=>dmgPerHit(m)+(dualHit()?leftDmg(m):0)),dps:withEl(r.el2,()=>dpsOf(m)),hitc:r.hitc,uses:r.uses,

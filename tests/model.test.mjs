@@ -307,6 +307,22 @@ t("walking time: the current session first, then another of the same job, then 2
   assert.equal(run("walkSec()"), 2);                                  // no session of this job
 });
 
+t("session map: auto is the best open map, a picked one wins while its monsters spawn there", () => {
+  run(`cur().mobIds=[];cur().name='New session';toggleSessMob(1002)`);
+  const om = run(`JSON.stringify(openMaps(MOBS.find(m=>m.id===1002)))`), maps = JSON.parse(om).map(x => x[0]);
+  assert.ok(maps.length >= 2);
+  assert.equal(run(`sessMap(cur())`), maps[0]);                      // nothing picked: the old best-map rule
+  assert.equal(run(`cur().name`), run(`mapCode(${JSON.stringify(maps[0])})`));
+  run(`cur().map=${JSON.stringify(maps[1])}`);
+  assert.equal(run(`sessMap(cur())`), maps[1]);
+  assert.equal(run(`sessMix(cur()).mp`), maps[1]);                   // spawn weights come from the picked map
+  assert.equal(run(`mobMap(MOBS.find(m=>m.id===1002))`), maps[1]);   // the Map planner follows it
+  run(`cur().map='no_such_map'`);
+  assert.equal(run(`sessMap(cur())`), maps[0]);                      // a map none of them spawn on falls back to auto
+  run(`cur().map=${JSON.stringify(maps[1])};toggleSessMob(1002)`);
+  assert.equal(run(`cur().map`), undefined);                         // removing its monsters drops the pick
+});
+
 t("zeny per kill: the loot value scaled by the drop rate bonus", () => {
   assert.equal(run(`zenyKill({loot:200})`), 200);
   assert.equal(run(`state.dropBonus=50;zenyKill({loot:200})`), 300);

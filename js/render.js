@@ -109,7 +109,7 @@ const fmtSig=n=>n==null||!isFinite(n)?"n/a":n>=100?fmtN(n):String(+n.toPrecision
 const fmtQty=n=>n==null||!isFinite(n)?"–":n<10?n.toFixed(1):fmtN(n);
 const REC_SRC={disc:"Discount",npc:"NPC",player:"players"};
 // the map uses per hour are worked out on: the Map planner's, else the picked monster's best open map, else the session's. HP lost / min and SP short per hour there
-function recNeed(){let mp=mapKey(state.map);if(!MAPMOBS[mp]){const m=calcMob(),om=m?openMaps(m):[];mp=om.length?om[0][0]:currentMap()}if(!MAPMOBS[mp])return null;
+function recNeed(){let mp=mapKey(state.map);if(!MAPMOBS[mp])mp=mobMap(calcMob())||currentMap();if(!MAPMOBS[mp])return null;
   const w=walkSec(),r=mapStats(mp,w);return {mp,hpm:r?r.hpi:null,loss:r?r.hpm:null,sp:r?mapSpShort(mp,w,r.el2):0}}
 function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp:recPick("sp")},ch={hp:recCheapest("hp"),sp:recCheapest("sp")};
   const opts=kind=>`<option value="auto">Auto (cheapest${ch[kind]?": "+esc(ch[kind].name):""})</option><option value="none">None</option>`+recItems(kind).map(x=>`<option value="${x.id}">${esc(x.name)}${x.per==null?" (no price)":""}</option>`).join("")+'<option value="custom">Custom (type it)</option>';
@@ -139,8 +139,12 @@ function renderTracker(){$("dieItem").checked=!!state.dieItem;$("dieBtn").textCo
   $("title").textContent=`${s.name} · ${state.job}`;
   const pz=openPause(s);$("pauseBtn").textContent=pz?"Resume":"Pause";$("pauseBtn").classList.toggle("primary",!!pz);$("pauseNote").hidden=!pz;
   if(pz)$("pauseNote").textContent=`Paused since ${fmtT(pz.from)}; time away isn't counted. Resume or log an entry when back.`;
-  const ms=sessMobs(s),mob=ms.length===1?ms[0]:null;
-  $("subtitle").innerHTML=ms.length>1?`Farming ${ms.map(m=>esc(m.name)).join(", ")}${sessMap(s)?` on ${esc(mapLabel(sessMap(s)))}`:""} · weighted by spawn counts`:mob?`Farming ${esc(mob.name)} · Lv ${mob.lv} · ${mob.el?`<span class="el ${mob.el}">${mob.el} ${mob.elv}</span> · `:""}${mob.size||""} ${mob.race||""} · ${fmtExp(mob)} base EXP · <a href="${dbUrl(mob)}" target="_blank" rel="noopener">rozerodb ↗</a>`:"Pick a monster in the Monsters &amp; maps tab and press \"Farming this now\"";
+  const ms=sessMobs(s),mob=ms.length===1?ms[0]:null,maps=sessMaps(s),auto=sessMapAuto(s),smp=sessMap(s);
+  {const sel=$("sessMapSel"),of=ms.length>1?x=>` · ${x[1]} of ${ms.length} monsters`:()=>"";sel.disabled=!maps.length;
+    sel.innerHTML=!maps.length?`<option value="">${ms.length?"No open map for these monsters":"Pick a monster first"}</option>`
+      :`<option value="">Auto: ${esc(mapLabel(auto))}</option>`+maps.map(x=>`<option value="${esc(x[0])}">${esc(mapLabel(x[0]))}${of(x)} · ≈${x[2]} spawns</option>`).join("");
+    sel.value=s.map&&smp===s.map?s.map:""}
+  $("subtitle").innerHTML=ms.length>1?`Farming ${ms.map(m=>esc(m.name)).join(", ")}${smp?` on ${esc(mapLabel(smp))}`:""} · weighted by spawn counts`:mob?`Farming ${esc(mob.name)} · Lv ${mob.lv} · ${mob.el?`<span class="el ${mob.el}">${mob.el} ${mob.elv}</span> · `:""}${mob.size||""} ${mob.race||""} · ${fmtExp(mob)} base EXP${smp?` · on ${esc(mapLabel(smp))}`:""} · <a href="${dbUrl(mob)}" target="_blank" rel="noopener">rozerodb ↗</a>`:"Pick a monster in the Monsters &amp; maps tab and press \"Farming this now\"";
   const lastE=[...s.entries].sort((a,b)=>a.t-b.t).pop();
   if(lastE){$("tCurLv").textContent=`Lv ${lastE.lv}`;$("tCurLvS").textContent=lvExp(lastE.lv)?`${fmtN(lvExp(lastE.lv))} EXP to level`:"Lv outside EXP table";
     $("tCurPct").textContent=pct(lastE.pct,1);$("tCurPctS").textContent=`logged ${fmtT(lastE.t)}`}
@@ -613,7 +617,7 @@ function convCheck(mp,w,r){const sf=C().a.type==="spellfist",opts=sf?elOptions()
   <div class="scroll"><table class="convtab"><thead><tr><th>${sf?"Bolt":"Converter"}</th>${mobs.map(x=>`<th>${esc(x.m.name)}<br><span class="el ${x.m.el||"Neutral"}">${x.m.el||"Neutral"} ${x.m.elv||1}</span></th>`).join("")}<th>EXP / min</th></tr></thead><tbody>${rows}</tbody></table></div>${warn}`}
 function renderMap(){
   let mp=mapKey(state.map);const mob=calcMob();
-  if(!mp&&mob){const om=openMaps(mob);if(om.length)mp=om[0][0]}
+  if(!mp)mp=mobMap(mob);
   $("mapInput").value=mp?mapCode(mp):"";$("mapName").textContent=mapName(mp)+(isRoomMap(mp)?` · room dungeon: one map cut into small rooms, so monsters crowd into yours (${ROOM_CROWD} on you at once unless you change it)`:"");
   {const b=$("mobbedIn");b.disabled=!MAPMOBS[mp];b.placeholder=MAPMOBS[mp]?(mobbedDef(mp)?String(mobbedDef(mp)):"auto"):"";if(document.activeElement!==b)b.value=MAPMOBS[mp]&&(state.mobbed||{})[mp]!=null?state.mobbed[mp]:""}
   if(!MAPMOBS[mp]){$("mapTiles").innerHTML='<div class="note">Pick a map to see how this job does there.</div>';$("mapTable").querySelector("tbody").innerHTML="";return}

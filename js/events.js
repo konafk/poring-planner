@@ -253,7 +253,11 @@ $("cmpTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.tar
 const sessAutoName=s=>{const mp=sessMap(s),m=sessMobs(s)[0];return mp?mapCode(mp):m?m.name:""};
 const toggleSessMob=id=>{const s=cur(),auto=s.name==="New session"||s.name===sessAutoName(s);const i=s.mobIds.indexOf(id);
   if(i>=0)s.mobIds.splice(i,1);else{if(!s.mobIds.length)s.job=state.job;s.mobIds.push(id)}
+  if(s.map&&!sessMaps(s).some(x=>x[0]===s.map))delete s.map;
   const nm=sessAutoName(s);if(auto&&nm)s.name=nm};
+// the session's map: blank is the auto pick; the name follows it while it's still the default
+$("sessMapSel").addEventListener("change",e=>{const s=cur(),auto=s.name==="New session"||s.name===sessAutoName(s);
+  if(e.target.value)s.map=e.target.value;else delete s.map;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;save();renderAll()});
 // the monster you click is also the one Monster info shows
 const pickMob=m=>{if(!m)return;state.calcMobId=m.id;state.infoMobId=m.id;const s=cur();if(!s.mobIds.length)toggleSessMob(m.id);save();renderAll()};
 $("mobList").innerHTML=MOBS.map(mobOpt).join("");
@@ -340,7 +344,7 @@ $("mapList").innerHTML=Object.keys(MAPMOBS).sort((a,b)=>mapCode(a).localeCompare
 $("mapInput").addEventListener("change",e=>{state.map=mapKey(e.target.value);save();renderMap()});
 $("mapFromMob").addEventListener("click",()=>{state.map="";save();renderMap()});
 // monsters on you at once on the Map planner's map; blank goes back to the default (3 in Labyrinth Forest, else 1)
-$("mobbedIn").addEventListener("input",e=>{let mp=mapKey(state.map);if(!MAPMOBS[mp]){const m=calcMob(),om=m?openMaps(m):[];mp=om.length?om[0][0]:""}if(!MAPMOBS[mp])return;
+$("mobbedIn").addEventListener("input",e=>{let mp=mapKey(state.map);if(!MAPMOBS[mp])mp=mobMap(calcMob());if(!MAPMOBS[mp])return;
   if(!state.mobbed)state.mobbed={};const v=e.target.value;if(v===""||!(+v>0))delete state.mobbed[mp];else state.mobbed[mp]=Math.min(12,Math.max(1,Math.round(+v)));save();renderAll()});
 $("mapTable").querySelector("tbody").addEventListener("click",e=>{const sm=e.target.closest("[data-sessmob]");if(sm){toggleSessMob(+sm.dataset.sessmob);save();renderAll();return}const sk=e.target.closest("[data-skip]");if(sk){const id=+sk.dataset.skip;if(!state.skipMobs)state.skipMobs=[];state.skipMobs=state.skipMobs.includes(id)?state.skipMobs.filter(x=>x!==id):[...state.skipMobs,id];save();renderAll();return}const tr=e.target.closest("tr[data-id]");if(tr)pickMob(MOBS.find(m=>m.id===+tr.dataset.id))});
 // goal
