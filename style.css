@@ -181,6 +181,9 @@ table.cstats input{width:72px;padding:4px 8px;font-size:13px}
 #logMsg{color:var(--bad)}
 #logMsg:empty{display:none}
 #chart .pauseMark{cursor:pointer}
+#chart text.deathMark{font-size:13px;fill:var(--bad)}
+/* a short message at the bottom of the screen ("Updated from another tab") */
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);max-width:calc(100% - 32px);background:var(--fg);color:var(--surface);padding:8px 16px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.25);z-index:50;font-size:14px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .tile .v{white-space:pre-line}
 @media (max-width:600px){.form[style]{grid-template-columns:repeat(2,minmax(0,1fr))!important}#bonusRow{grid-template-columns:1fr!important}}

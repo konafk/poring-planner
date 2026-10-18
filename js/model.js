@@ -186,12 +186,13 @@ const isrPer10=()=>{const l=skLv(C(),"increase-sp-recovery");return l>0?Math.flo
 // Increase HP Recovery (Swordsman, Knight, Crusader; Skills card): every 10 s, Lv × (5 + 0.2% of Max HP) on top of natural regen (Zero's skill data)
 const ihrPer10=()=>{const l=skLv(C(),"increase-hp-recovery");return l>0?Math.floor(l*(5+num(cf("maxHp"))*0.002)):0};
 // HP back per second: natural regen and Increase HP Recovery (stop when you're overweight) plus HP-over-time consumables, which keep going
-const hpRegenPerSec=()=>(REGEN_OFF?0:hpRegen6()/6+ihrPer10()/10)+consHPPerSec();
+// m: the monster in play, whose poison stops natural regen and Increase HP Recovery part of the time (poisonUp)
+const hpRegenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(hpRegen6()/6+ihrPer10()/10)*(1-poisonUp(m)))+consHPPerSec();
 // SP the attack itself costs per second (Spell Fist: its upkeep); defSP adds Energy Coat and Vitata's heals against the monster in play
 const skillSPPerSec=()=>num(C().a.sp)*spCostMul()/useSec();
 const spNeedPerSec=()=>isSF()?sgUpkeep()+defSP()+hsFullSP()*hsSustain():skillSPPerSec()+defSP();
 // SP back per second: natural regen and Increase SP Recovery (stop when you're overweight) plus SP from cards and consumables, which keep going
-const regenPerSec=()=>(REGEN_OFF?0:spRegen8()/8+isrPer10()/10)+cardSPPerSec()+consSPPerSec();
+const regenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(spRegen8()/8+isrPer10()/10)*(1-poisonUp(m)))+cardSPPerSec()+consSPPerSec();
 // items per second when auto SP items are on (covers the gap); otherwise you rest, which stretches fight time
 // the SP item is the one picked in Consumables (spItemAmt: SP it restores, spItemPrice: what it costs)
 const itemsPerSec=()=>isSF()?sgItemsPerSec():C().autoSp&&spItemAmt()>0?Math.max(0,spNeedPerSec()-regenPerSec())/spItemAmt():0;
@@ -200,22 +201,48 @@ const rawFight=m=>{const u=usesPerKill(m);return isFinite(u)?u*useSec()/targets(
 // raw: rawFight(m) when the caller already has it
 const fightSec=(m,raw)=>{const f=healShare(m);return f>=1?Infinity:(raw??rawFight(m))*restFactor()/(1-f)};
 // damage taken: monster ATK through your DEF, its hit chance on you, a swing every interval times "swings reach you"
-// monsters on you at once, per map (state.mobbed, else MOBBED_D; 1 = one at a time). Labyrinth Forest is a 5×5 maze where monsters spawn
-// anywhere and bunch up in the rooms, so a few hit you together. MOBBED is the count for the map being worked out (withMobbed), 1 elsewhere
-const MOBBED_D={maz_d01:3,prt_maze02:3,maz_d03:3};
-const mobbedOf=mp=>{const v=(state.mobbed||{})[mp];return Math.min(12,Math.max(1,Math.round(v!=null?num(v):MOBBED_D[mp]||1)))};
-let MOBBED=1;
-const withMobbed=(mp,fn)=>{const k=MOBBED;MOBBED=mp?mobbedOf(mp):1;try{return fn()}finally{MOBBED=k}};
-// crowd penalty (rAthena's defaults, not checked in game): from the 3rd monster on you, FLEE −10% and DEF −5% (hard and soft) per monster past the 2nd
-const crowdFlee=(n=MOBBED)=>Math.max(0,1-0.1*Math.max(0,n-2));
-const crowdDef=(n=MOBBED)=>Math.max(0,1-0.05*Math.max(0,n-2));
-const defParts=()=>{const p=String(cf("defTxt")||"0").split("+").map(x=>parseFloat(x)||0),k=crowdDef();return {soft:(p[0]||0)*k,hard:p.slice(1).reduce((a,b)=>a+b,0)*k}};
-// dodge = 95 + your FLEE (less the crowd penalty) − the monster's "95% flee" value, 0–95%: at least 5% of swings always land
-const dodge=m=>m.flee95==null?null:Math.max(0,Math.min(95,95+sumStat(cf("fleeTxt"))*crowdFlee()-m.flee95));
-const mobHitDmg=m=>{if(m.atkMin==null)return null;const {soft,hard}=defParts();return Math.max(1,((m.atkMin+m.atkMax)/2*(4000+hard)/(4000+10*hard)-soft)*takenMul(m))};
-// HP lost per minute that HP items must cover: defense() already takes off Hunter Fly and HP regen (hpRegenPerSec);
-// with Vitata your Heal casts cover the rest (paid in SP and time, see healsPerSec), so no HP items
-const hpLossPerMin=(m,d=defense(m))=>{return d?CRD().vitata&&healHpEff()>0?0:d.hp*60:null};
+const defParts=()=>{const p=String(cf("defTxt")||"0").split("+").map(x=>parseFloat(x)||0);return {soft:p[0]||0,hard:p.slice(1).reduce((a,b)=>a+b,0)}};
+// ---- crowds and poison (rAthena pre-renewal: conf/battle/battle.conf, status.cpp, skills/npc/poisonattack.cpp) ----
+// monsters on you at once: aggressive monsters, and ones that join a fight their kind is in (assist, data/mobskills.js), gang up:
+// c.crowd of them (2 unless you change it; others 1). Each one swings at you, and from 3 at once FLEE drops 10% and DEF (gear and
+// VIT) 5% per monster past 2
+// A map can set its own count for every monster on it (Map planner: state.mobbed, else MOBBED_D): Labyrinth Forest 1F and 3F are one big
+// map cut into 5×5 small rooms, so the monsters crowd into the room you're in and several hit you together whatever they are. MOBBED is
+// that count for the map being worked out (withMobbed), null when it has none
+const CROWD_D=2;
+const MOBBED_D={maz_d01:3,maz_d03:3};
+const mobbedOf=mp=>{const v=(state.mobbed||{})[mp];return v!=null?Math.min(12,Math.max(1,Math.round(num(v)))):MOBBED_D[mp]??null};
+let MOBBED=null;
+const withMobbed=(mp,fn)=>{const k=MOBBED;MOBBED=mp?mobbedOf(mp):null;try{return fn()}finally{MOBBED=k}};
+const crowdN=m=>{if(MOBBED!=null&&m)return MOBBED;if(!m||!(m.agg||m.assist))return 1;const v=C().crowd;return v==null||v===""?CROWD_D:Math.max(1,num(v,1))};
+const crowdFlee=n=>Math.max(0,1-0.1*Math.max(0,n-2));
+const crowdDef=n=>Math.max(0,1-0.05*Math.max(0,n-2));
+// dodge = 95 + your FLEE (less the crowd penalty) − the monster's "95% flee" value, 0–95%
+const dodge=m=>m.flee95==null?null:Math.max(0,Math.min(95,95+sumStat(cf("fleeTxt"))*crowdFlee(crowdN(m))-m.flee95));
+// Poison Attack (NPC_POISON, data/mobskills.js): a monster tries it on rate/10000 of its swings, then waits its delay; it hits at 120%
+// of the monster's hit chance and poisons on 20% × skill level, less VIT % and (LUK + your Lv − its Lv) / 10 points. Poison lasts
+// 60 s × (1 − 0.75% per VIT) − LUK / 10 s and a new one doesn't refresh it, so you're poisoned aD / (1 + aD) of the time (a: poisonings
+// a second, D: seconds each). Poisoned: 2 + 1.5% of Max HP lost a second (it stops at 25% HP), no natural HP or SP regen, VIT DEF −25%
+const POISON_S=60;
+function poisonUp(m){const p=m&&m.poison;if(!p||m.atkMin==null)return 0;const c=C(),vit=Math.min(100,statVal(c,"vit")||0),luk=statVal(c,"luk")||0;
+  const A=swingsOnYou(m),dg=dodge(m);if(!(A>0))return 0;
+  const uses=crowdN(m)/(p[2]/1000+1/(A*p[1]/10000)),hit=Math.min(1,(dg==null?1:(100-dg)/100)*1.2);
+  const ch=Math.max(0,0.2*p[0]*(1-vit/100)-(luk+num(c.baseLv)-num(m.lv))/1000),D=Math.max(0,POISON_S*(1-0.0075*vit)-luk/10),a=uses*hit*ch;
+  return a*D/(1+a*D)}
+const poisonHpPerSec=()=>2+Math.floor(num(cf("maxHp"))*3/200);
+const mobHitDmg=m=>{if(m.atkMin==null)return null;const {soft,hard}=defParts(),k=crowdDef(crowdN(m)),s=soft*k*(1-0.25*poisonUp(m)),h=hard*k;
+  return Math.max(1,((m.atkMin+m.atkMax)/2*(4000+h)/(4000+10*h)-s)*takenMul(m))};
+// HP lost per minute: what the monster's hits take (after Energy Coat) less Hunter Fly and HP regen (hpRegenPerSec), already in defense().
+// Ranged and magic attackers count the same hits: aggressive monsters and ones that walk up to you while you cast still reach you
+// (× "swings reach you"). hpItemsPerMin is what HP items must cover: with Vitata your Heal casts cover it (paid in SP and time, see
+// healsPerSec), so none; hpTakenPerMin is the damage before regen
+// d: defense(m) when the caller already has it
+const hpLossPerMin=(m,d=defense(m))=>d?d.hp*60:null;
+const vitHeals=()=>CRD().vitata&&healHpEff()>0;
+const hpItemsPerMin=(m,d=defense(m))=>d?vitHeals()?0:d.hp*60:null;
+const hpTakenPerMin=(m,d=defense(m))=>d?(d.taken+d.psn)*60:null;
+// pz: share of the time poisoned, psn: HP a minute it drains
+const poisonOf=(m,d=defense(m))=>d?{pz:d.pz,psn:d.psn*60}:{pz:0,psn:0};
 // ---- Sage: full Spell Fist model (bolt choice, Hindsight, Double Bolt, SP items; Energy Coat from ECO(), Vitata, Hunter Fly and Side Winder from CRD()) ----
 const SAGE_D={sfLv:10,boltLv:10,bolts:{Fire:true,Water:true,Wind:true},hsOn:false,hsAuto:true,hsLv:10,hsWorth:50000,dbOn:false,dbLv:5};
 const G=()=>{const c=C();if(!c.sage)c.sage={};for(const k in SAGE_D)if(c.sage[k]==null)c.sage[k]=JSON.parse(JSON.stringify(SAGE_D[k]));return c.sage};
@@ -272,12 +299,16 @@ const sgItemsOn=()=>!NO_ITEMS&&hsOnNow()&&spItemAmt()>0; // SP items go with Hin
 // NO_ITEMS: worked out as if you carry no SP items (Farm without items, see susKill)
 let NO_ITEMS=false;
 const itemsOnNow=()=>isSF()?sgItemsOn():!NO_ITEMS&&!!C().autoSp&&spItemAmt()>0;
-// its hits that land on you per second: a swing every interval, times "swings reach you", less what you dodge, times the monsters on you at once
-const hitsOnYou=m=>{if(!m||m.atkMin==null)return 0;const dg=dodge(m);return MOBBED*Math.max(0,num(C().hitScale,1))*(dg==null?1:(100-dg)/100)/Math.max(.3,num(C().mobInterval,1.5))};
+// its hits that land on you per second: a swing every interval, times "swings reach you", less what you dodge
+// swingsOnYou: one monster's swings that reach you a second; hitsOnYou: every monster on you, less what you dodge
+const swingsOnYou=m=>!m||m.atkMin==null?0:Math.max(0,num(C().hitScale,1))/Math.max(.3,num(C().mobInterval,1.5));
+const hitsOnYou=m=>{if(!m||m.atkMin==null)return 0;const dg=dodge(m);return crowdN(m)*swingsOnYou(m)*(dg==null?1:(100-dg)/100)};
 function defense(m){
   const raw=mobHitDmg(m);if(raw==null)return null;const hits=hitsOnYou(m);
-  const sf=isSF(),max=num(cf("maxSp")),ec=ecOn(),hpBack=hfHpPerSec()+hpRegenPerSec(),regen=regenPerSec(),up=sf?sgUpkeep():skillSPPerSec(),hs=sf?hsFullSP():0,spMul=sf?sgSpMult():spCostMul();
-  const band=i=>{const red=ec?EC_BANDS[i][0]:0,ecSP=ec?hits*EC_BANDS[i][1]/100*max:0,taken=raw*(1-red/100)*hits,hp=Math.max(0,taken-hpBack),cd=CRD(),healSP=cd.vitata&&healHpEff()>0?hp/healHpEff()*num(cd.healSp)*spMul:0;return {i,red,ecSP,healSP,hp,taken,label:ec?EC_BANDS[i][2]:""}};
+  const sf=isSF(),max=num(cf("maxSp")),ec=ecOn(),hpBack=hfHpPerSec()+hpRegenPerSec(m),regen=regenPerSec(m),up=sf?sgUpkeep():skillSPPerSec(),hs=sf?hsFullSP():0,spMul=sf?sgSpMult():spCostMul();
+  // pz: share of the time you're poisoned, psn: HP a second it drains (Energy Coat doesn't cut it)
+  const pz=poisonUp(m),psn=pz*poisonHpPerSec();
+  const band=i=>{const red=ec?EC_BANDS[i][0]:0,ecSP=ec?hits*EC_BANDS[i][1]/100*max:0,taken=raw*(1-red/100)*hits,hp=Math.max(0,taken+psn-hpBack),cd=CRD(),healSP=cd.vitata&&healHpEff()>0?hp/healHpEff()*num(cd.healSp)*spMul:0;return {i,red,ecSP,healSP,hp,taken,pz,psn,label:ec?EC_BANDS[i][2]:""}};
   const cost=b=>up+b.ecSP+b.healSP;
   let b=null;for(let i=0;i<5;i++){const x=band(i);if(cost(x)+hs<=regen){b=x;break}}
   // fb: no band fits your regen, so SP items (or none) set it
@@ -335,8 +366,9 @@ function indulgeOpt(){const lv=skLv(C(),"indulge");if(!(lv>0))return null;const 
 // burst: HP lost over the fight alone (regen and Hunter Fly during it taken off). raw: rawFight(m) worked out with SP items as they are, which
 // is the same without them unless Spell Fist's Hindsight runs on SP items; d0: defense(m) likewise, the same unless SP items set Energy Coat's band
 function susKill(m,w,raw,d0){const k=SG_MOB,ki=NO_ITEMS;SG_MOB=m;const same=raw!=null&&!(isSF()&&sgItemsOn());NO_ITEMS=true;try{
-  const F=same?raw:rawFight(m);if(!isFinite(F))return null;const d=same&&d0!==undefined&&!(d0&&d0.fb&&ecOn())?d0:defense(m),T=F+w,hpBack=hpRegenPerSec(),spBack=(REGEN_OFF?0:spRegen8()/8+isrPer10()/10)+consSPPerSec();
-  const hpOut=d?d.taken*F:0,hf=hfHpPerSec()*F,spOut=(isSF()?sgUpkeep()*T+hsFullSP()*hsSustain()*F:skillSPPerSec()*F)+(d?d.ecSP*F:0);
+  // poison (poisonUp) drains HP over the whole kill, walking too, and stops natural regen part of the time
+  const F=same?raw:rawFight(m);if(!isFinite(F))return null;const d=same&&d0!==undefined&&!(d0&&d0.fb&&ecOn())?d0:defense(m),T=F+w,hpBack=hpRegenPerSec(m),spBack=(REGEN_OFF?0:(spRegen8()/8+isrPer10()/10)*(1-poisonUp(m)))+consSPPerSec();
+  const hpOut=d?d.taken*F+d.psn*T:0,hf=hfHpPerSec()*F,spOut=(isSF()?sgUpkeep()*T+hsFullSP()*hsSustain()*F:skillSPPerSec()*F)+(d?d.ecSP*F:0);
   return {F,T,hpOut,hpIn:hf+hpBack*T,hf,spOut,spIn:cardSPPerSec()*F+spBack*T,card:cardSPPerSec()*F,hpBack,spBack,burst:Math.max(0,hpOut-hf-hpBack*F),known:!!d,dodge:dodge(m)}}
   finally{SG_MOB=k;NO_ITEMS=ki}}
 // kills: [{k: susKill, n: spawns}] (a map's monsters, or one with n 1). Adds them up per kill, lets Heal and Indulge trade what's spare, and grades it
@@ -496,14 +528,19 @@ const pausedMs=(s,a,b)=>(s.pauses||[]).reduce((x,p)=>x+Math.max(0,Math.min(b,p.t
 const activeH=(s,a,b)=>(b-a-pausedMs(s,a,b))/36e5;
 // logging an entry after a pause started means you're back
 const autoResume=(s,t)=>{const p=openPause(s);if(p&&t>=p.from)p.to=Math.max(p.from,t)};
+// a death (entry.died: the EXP % it cost) isn't negative EXP/hr: the drop to that entry is given back, up to the penalty. With the
+// Died button the entry before it is your EXP just before dying, so that pair adds nothing; a pasted death after EXP gained keeps the gain
+const deathBack=(e,q,base)=>{if(!e.died)return 0;const pen=e.died/100*(lvExp(e.lv)||100),d=cumulative(e,base)-cumulative(q,base);return e.t-q.t<=6e4?Math.min(pen,Math.max(0,-d)):pen};
+// EXP gained from es[i] to es[j] (sorted), with deaths given back; never below 0 across a death
+function gained(es,i,j,base){let x=0;for(let k=i+1;k<=j;k++){const d=cumulative(es[k],base)-cumulative(es[k-1],base);x+=es[k].died?Math.max(0,d+deathBack(es[k],es[k-1],base)):d}return x}
 function stats(s){
   const es=[...s.entries].sort((a,b)=>a.t-b.t);if(es.length<2)return null;
   // the recent rate runs from the newest entry at least a minute (unpaused) before the last, so a death logged a second after your EXP doesn't blow it up
-  const base=es[0].lv,last=es[es.length-1],prev=es.slice(0,-1).reverse().find(e=>activeH(s,e.t,last.t)>=1/60)||es[es.length-2];const raw=e=>cumulative(e,base);const hrs=(a,b)=>activeH(s,a.t,b.t);
+  const base=es[0].lv,n=es.length-1,last=es[n],pi=es.slice(0,-1).map((e,i)=>i).reverse().find(i=>activeH(s,es[i].t,last.t)>=1/60)??n-1,prev=es[pi];const hrs=(a,b)=>activeH(s,a.t,b.t);
   if(hrs(es[0],last)<=0)return null;
-  const avgRaw=(raw(last)-raw(es[0]))/hrs(es[0],last);const recRaw=hrs(prev,last)>0?(raw(last)-raw(prev))/hrs(prev,last):0;const L=lvExp(last.lv)||100;
+  const avgRaw=gained(es,0,n,base)/hrs(es[0],last);const recRaw=hrs(prev,last)>0?gained(es,pi,n,base)/hrs(prev,last):0;const L=lvExp(last.lv)||100;
   return {es,last,prev,avgRaw,recRaw,avgPct:avgRaw/L*100,recPct:recRaw/L*100,L,recentMin:Math.round(hrs(prev,last)*60),spanMin:Math.round(hrs(es[0],last)*60),
-    fullH:avgRaw>0?L/avgRaw:Infinity,nextH:avgRaw>0?L*(1-last.pct/100)/avgRaw:Infinity};
+    fullH:avgRaw>0?L/avgRaw:Infinity,nextH:avgRaw>0?L*(1-last.pct/100)/avgRaw:Infinity,deaths:es.filter(e=>e.died).length};
 }
 // pace and walking only make sense for sessions of the job you have selected (fight time uses its attack)
 // a session's monsters are weighted by their spawn counts on the session's map: the open map where most of them spawn (ties: more spawns)
@@ -515,17 +552,41 @@ const spawnOn=(m,mp)=>((SPAWN[m.id]||[]).find(x=>x[0]===mp)||[])[1]||1;
 function sessMix(s,keep){const mp=sessMap(s);let list=sessMobs(s).map(m=>({m,w:spawnOn(m,mp)}));const kn=list.filter(x=>!x.m.expUnknown);if(kn.length)list=kn;if(keep){const k=list.filter(x=>keep(x.m));if(k.length)list=k}
   const W=list.reduce((a,x)=>a+x.w,0);if(!W)return null;
   const avg=f=>list.reduce((a,x)=>a+x.w*f(x.m),0)/W;return {list,W,mp,avg}}
-function sessionPace(s){
+function pace0(s,same){
   // with this job's attack, monsters you can't hurt aren't being killed, so they're left out of the mix
-  const same=(s.job||state.job)===state.job;const st=stats(s);const mix=sessMix(s,same?m=>isFinite(bestFight(m)):null);if(!st||!mix||st.avgRaw<=0||!(mix.avg(m=>m.exp)>0))return null;
+  const st=stats(s);const mix=sessMix(s,same?m=>isFinite(bestFight(m)):null);if(!st||!mix||st.avgRaw<=0||!(mix.avg(m=>m.exp)>0))return null;
   const kph=st.avgRaw/mix.avg(m=>killExp(m,s));const obs=3600/kph;const fight=same?mix.avg(bestFight):NaN;
-  return {kph,obs,fight,walk:isFinite(fight)&&obs>=fight?obs-fight:null,zk:mix.avg(zenyKill),mix,st};
+  return {kph,obs,fight,walk:isFinite(fight)&&obs>=fight?obs-fight:null,mix,st};
 }
-// the current session's walking time; without one, the first other session of this job that has one (the others are only worked out then)
-const walkSec=()=>{
-  const c=cur(),p=sessionPace(c);if(p&&p.walk!=null)return Math.max(1,p.walk);
-  for(const s of state.sessions){if(s===c||(s.job||state.job)!==state.job)continue;const q=sessionPace(s);if(q&&q.walk!=null)return Math.max(1,q.walk)}
-  return 2};
+// ---- a session's stats: the character as it was when you logged its entries (s.snap = {at, c}), so its fight time and the walking
+// worked out from it don't move when you change gear or stats afterwards (that only changes fight time). A session saved before
+// snapshots takes the stats you have when it's first worked out (est) ----
+// (gear bonuses, bx, are worked out again from the gear lines or Build from gear when it's used; the gear Try other gear goes back to isn't kept)
+const charSnap=(c=C())=>{const o=JSON.parse(JSON.stringify(c));delete o.bx;delete o.trial;if(o.sage)delete o.sage._note;return o};
+const snapSession=s=>{if((s.job||state.job)===state.job)s.snap={at:Date.now(),c:charSnap()}};
+// sessions of this job with a pace and no snapshot yet take the stats you have now, after renderAll has worked everything out
+const snapEst=()=>{let n=0;state.sessions.forEach(s=>{if(!s.snap&&(s.job||state.job)===state.job&&stats(s)){s.snap={at:Date.now(),c:charSnap(),est:true};n++}});if(n)save()};
+// the model with a copy of a session's snapshot swapped in: redoes what renderAll works out from it (not Hindsight auto: the snapshot
+// keeps the choice it had), then puts yours back as it was. Unlike build-ui.js withChar it leaves the snapshot untouched
+function withSnap(c,fn){const job=state.job,real=state.chars[job],k={SKFX,EFF,BUILD_LAST};state.chars[job]=JSON.parse(JSON.stringify(c));
+  try{SKFX=skillEffects(C());sageFromTree(C());applyBuild();applyConsumables();return fn()}
+  finally{state.chars[job]=real;SKFX=k.SKFX;EFF=k.EFF;BUILD_LAST=k.BUILD_LAST}}
+// what the walking depends on besides the snapshot: the entries, pauses, monsters, party and EXP bonus
+const calKey=s=>[s.snap?s.snap.at:0,s.mobIds.join("."),sessMap(s),partyN(s),num(state.bonus),...s.entries.map(e=>`${e.t}:${e.lv}:${e.pct}:${e.died||0}`),...(s.pauses||[]).map(p=>`${p.from}-${p.to??""}`)].join("|");
+// a session's pace with its own stats, worked out once and kept on it (s.walk = {key, sec, fight, kph}); null for another job's session
+// Until a session has a snapshot (one saved before them) it follows your stats; renderAll then gives it one (snapEst)
+function sessCal(s){if((s.job||state.job)!==state.job||!stats(s))return null;const key=calKey(s);if(s.walk&&s.walk.key===key)return s.walk;
+  if(!s.snap){const p=pace0(s,true);return {key,sec:p&&p.walk!=null?p.walk:null,fight:p&&isFinite(p.fight)?p.fight:null,kph:p?p.kph:null}}
+  const p=withSnap(s.snap.c,()=>pace0(s,true));
+  s.walk={key,sec:p&&p.walk!=null?p.walk:null,fight:p&&isFinite(p.fight)?p.fight:null,kph:p?p.kph:null};return s.walk}
+function sessionPace(s){const same=(s.job||state.job)===state.job,p=pace0(s,false);if(!p)return null;
+  const k=same?sessCal(s):null,mix=same?sessMix(s,m=>isFinite(bestFight(m))):p.mix;
+  return k?{...p,kph:k.kph,obs:3600/k.kph,fight:k.fight??NaN,walk:k.sec,zk:mix.avg(zenyKill),mix,cal:true}:{...p,zk:mix.avg(zenyKill)}}
+// the current session's walking time; without one, the first other session of this job that has one. s: the session it's calibrated from
+const walkInfo=()=>{const c=cur();for(const s of [c,...state.sessions.filter(x=>x!==c)]){const k=sessCal(s);if(k&&k.sec!=null)return {sec:Math.max(1,k.sec),s}}return {sec:2,s:null}};
+const walkSec=()=>walkInfo().sec;
+// for tooltips: "walk calibrated from <session>" (with when its stats were taken), or why it's 2s
+const walkSrcTxt=()=>{const {s}=walkInfo();return s?`walk calibrated from ${s.name}${s.snap&&s.snap.est?" (with the stats you had when it was first worked out)":s.snap?` (stats from ${fmtD(s.snap.at)} ${fmtT(s.snap.at)})`:""}`:"walk 2s until a session of this job has a pace"};
 // job EXP needed for your current job level (Novice / 1st / 2nd job table)
 const FIRST_JOBS=["Swordsman","Mage","Archer","Acolyte","Merchant","Thief"];
 const jobTier=(job=state.job)=>job==="Novice"?"novice":FIRST_JOBS.includes(job)?"first":"second";
@@ -595,30 +656,52 @@ function mobRow00(m,w){
   // zk: zeny per kill after what the skills use up; hc: SP items, ASPD potion and ground buffs per hour; zph: net zeny per hour
   // sph: SP items per hour (what huntCostHr counts)
   const zc=skillZeny(m),zk=zenyKill(m)-zc,sph=itemsPerSec()*3600,hc=sph*spItemPrice()+hourCostHr();
-  return {sec,tot,epm:ok?epk/tot*60:0,epk,jpm:ok?jpk/tot*60:0,jpk,hitc:hitChance(m),mult:hitPctOf(m),uses:usesPerKill(m),dodge:dodge(m),hpm:hpLossPerMin(m,def),zk,zc,hc,sph,zph:ok?zk/tot*3600-hc:0,raw,def};
+  return {sec,tot,epm:ok?epk/tot*60:0,epk,jpm:ok?jpk/tot*60:0,jpk,hitc:hitChance(m),mult:hitPctOf(m),uses:usesPerKill(m),dodge:dodge(m),hpm:hpLossPerMin(m,def),hpi:hpItemsPerMin(m,def),hpt:hpTakenPerMin(m,def),...poisonOf(m,def),zk,zc,hc,sph,zph:ok?zk/tot*3600-hc:0,raw,def};
 }
 // map averages, weighted by spawn counts; monsters you can't hurt are skipped (you walk past them). With the map's monsters on you at once
 const mapStats0=(mp,w)=>withMobbed(mp,()=>mapStats00(mp,w));
 function mapStats00(mp,w){
-  const list=(MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m));let N=0,n=0,exp=0,time=0,fight=0,z=0,zc=0,hc=0,spi=0,hp=0,hpN=0;const skip=[],unk=[],sus=[];
+  const list=(MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m));let N=0,n=0,exp=0,time=0,fight=0,z=0,zc=0,hc=0,spi=0,hp=0,hpi=0,hpt=0,pz=0,psn=0,hpN=0,wt=0;const skip=[],unk=[],sus=[];
   list.forEach(({m,n:c})=>{N+=c;if(m.expUnknown){unk.push(m.name);return}const r=mobRow0(m,w);if(!isFinite(r.sec)){skip.push(m.name);return}
-    n+=c;sus.push({k:susKill(m,w,r.raw,r.def),n:c});exp+=c*r.epk;time+=c*r.tot;fight+=c*r.sec;z+=c*r.zk;zc+=c*r.zc;hc+=c*r.hc*r.tot;spi+=c*r.sph*r.tot;if(r.hpm!=null){hp+=c*r.hpm*r.tot;hpN+=c*r.tot}});
+    n+=c;sus.push({k:susKill(m,w,r.raw,r.def),n:c});exp+=c*r.epk;time+=c*r.tot;fight+=c*r.sec;z+=c*r.zk;zc+=c*r.zc;hc+=c*r.hc*r.tot;spi+=c*r.sph*r.tot;wt+=c*weightKill(m);if(r.hpm!=null){hp+=c*r.hpm*r.tot;hpi+=c*r.hpi*r.tot;hpt+=c*r.hpt*r.tot;pz+=c*r.pz*r.tot;psn+=c*r.psn*r.tot;hpN+=c*r.tot}});
   if(!n)return null;
   // zg: zeny / hr after skill items and zeny; zph also takes off SP items, the ASPD potion and ground buffs (per monster, over the time spent on it)
   // healing (Recovery items): SP items (spHr a hour, spZ zeny) and HP items for the HP lost (hpHr, hpZ). zb: zeny / hr before healing, net: after it
-  const zg=z/time*3600,hcHr=hc/time,hpm=hpN?hp/hpN:null,spHr=spi/time,spZ=spHr*spItemPrice(),hh=hpHeal(hpm);
-  return {mp,N,epm:exp/time*60,secT:time/n,sec:fight/n,walk:w,sell:time/n-fight/n-w,epk:exp/n,zg,zph:zg-hcHr,zcost:zc/time*3600+hcHr,hpm,skip:skip.length,skipNames:skip,unk:unk.length,unkNames:unk,
-    spHr,spZ,hpHr:hh.n,hpZ:hh.z,heal:hh.z+spZ,zb:zg-hcHr+spZ,net:zg-hcHr-hh.z,sus:susCalc(sus)};
+  // weight: wk picked up a kill, wph an hour, trip the hours from leaving town to leaving it again (null with weight off or weightless drops)
+  const zg=z/time*3600,hcHr=hc/time,hpm=hpN?hp/hpN:null,hpiM=hpN?hpi/hpN:null,spHr=spi/time,spZ=spHr*spItemPrice(),hh=hpHeal(hpiM),wk=wt/n,room=wOn()?wRoom(sellLim()):0;
+  return {mp,N,epm:exp/time*60,secT:time/n,sec:fight/n,walk:w,sell:time/n-fight/n-w,epk:exp/n,zg,zph:zg-hcHr,zcost:zc/time*3600+hcHr,hpm,hpi:hpiM,hpt:hpN?hpt/hpN:null,pz:hpN?pz/hpN:0,psn:hpN?psn/hpN:0,skip:skip.length,skipNames:skip,unk:unk.length,unkNames:unk,
+    spHr,spZ,hpHr:hh.n,hpZ:hh.z,heal:hh.z+spZ,zb:zg-hcHr+spZ,net:zg-hcHr-hh.z,wk,wph:wt/time*3600,trip:wk>0&&room>0?room/wk*(time/n)/3600:null,sus:susCalc(sus)};
 }
 // best converter per monster (by EXP/min) and one converter per map
 function mobRow(m,w){let best=null;elOptions().forEach(el=>{const r=withEl(el,()=>mobRow0(m,w));r.el2=el;if(!best||r.epm>best.epm)best=r});return best}
 function mapStats(mp,w){let best=null;elOptions().forEach(el=>{const r=withEl(el,()=>mapStats0(mp,w));if(r){r.el2=el;if(!best||r.epm>best.epm)best=r}});return best}
-const bestFight=m=>{const r=mobRow(m,0);return withEl(r.el2,()=>fightSec(m))};
+// fight time with the best converter or bolt, its SP balance against that monster (not the one you have picked)
+const bestFight=m=>mobRow(m,0).sec;
 const currentMap=()=>sessMap(cur());
 // EXP/min for just the session's monsters (spawn-weighted, fight + walk), best converter like mapStats; the baseline for "Projected"
 function sessEpm(s,w){const mix=sessMix(s);if(!mix)return null;let best=null;
   elOptions().forEach(el=>{const v=withEl(el,()=>{let e=0,t=0;mix.list.forEach(({m,w:c})=>{const r=mobRow0(m,w);if(!isFinite(r.sec))return;e+=c*r.epk;t+=c*r.tot});return t>0?e/t*60:0});if(best==null||v>best)best=v});
   return best||null}
+// ---- real vs projected: each logged session of this job against what the EXP Hunter projects for it: kills / hr at the walking in
+// use (w), with the session's own stats (s.snap), monsters and spawn weights, the converter or bolt that kills fastest ----
+const PROJ={};
+function sessProj(s,w){const c=sessCal(s);if(!c||!(c.kph>0))return null;const key=calKey(s)+"|"+w.toFixed(4),o=PROJ[s.id];if(o&&o.key===key)return o.v;
+  const f=()=>{const mix=sessMix(s,m=>isFinite(bestFight(m)));if(!mix)return null;let best=null;
+    elOptions().forEach(el=>{const t=withEl(el,()=>mix.list.reduce((a,{m,w:n})=>a+n*mobRow0(m,w).tot,0))/mix.W;if(isFinite(t)&&t>0&&(best==null||3600/t>best))best=3600/t});return best};
+  const kph=s.snap?withSnap(s.snap.c,f):f(),v=kph?{real:c.kph,proj:kph,ratio:c.kph/kph}:null;PROJ[s.id]={key,v};return v}
+const median=a=>{const b=[...a].sort((x,y)=>x-y),h=b.length>>1;return !b.length?null:b.length%2?b[h]:(b[h-1]+b[h])/2};
+// k: the median of real ÷ projected over sessions longer than 60 min (n of them), which can calibrate the EXP Hunter (state.calOn);
+// maps: per map, its sessions, their median ratio and a tooltip
+function calInfo(w){const out={k:null,n:0,maps:{}},rs=[];
+  state.sessions.forEach(s=>{const p=sessProj(s,w);if(!p)return;const st=stats(s),mp=sessMap(s);if(st.spanMin>60)rs.push(p.ratio);
+    if(mp)(out.maps[mp]||(out.maps[mp]={list:[]})).list.push({s,st,...p})});
+  out.k=median(rs);out.n=rs.length;
+  for(const mp in out.maps){const m=out.maps[mp];m.ratio=median(m.list.map(x=>x.ratio));
+    m.tip=m.list.map(x=>`${x.s.name} (${x.st.spanMin} min): ${fmtN(x.real)} kills/hr logged vs ${fmtN(x.proj)} projected = ${x.ratio.toFixed(2)}×`).join("\n")+"\nprojected with each session's own stats and the walking in use"}
+  return out}
+// the calibration on one EXP Hunter row: kills come k times as fast, so EXP / min, loot and weight per hour scale by k; HP and SP
+// per hour and the hourly costs (SP items, the ASPD potion, ground buffs, HP items) don't
+function calApply(r,k){const hc=r.zg-r.zph;r.epm*=k;r.secT/=k;r.zg*=k;r.zph=r.zg-hc;r.zb=r.zph+r.spZ;r.net=r.zph-r.hpZ;r.wph*=k;if(r.trip!=null)r.trip/=k;r.cal=k}
 // ---- sell timer: how long the session's monsters take to fill you from the weight you have now to your sell point ----
 // spawn-weighted like the session pace: weight and seconds per kill are averaged over the mix, so minutes = room / weight per kill ×
 // seconds per kill (past 70% at the no-regen pace; if one monster can't keep fighting there, the trip stops at 70%)
@@ -647,7 +730,8 @@ function startTrip(s,now=Date.now()){const min=tripMinutes(s);if(!(min>0))return
 // for the HP lost (huntCosts: hpHr, hpZ, spHr, spZ, other, cost = all of them)
 const spItemsHr=m=>{const k=SG_MOB;SG_MOB=m||null;try{return itemsPerSec()*3600}finally{SG_MOB=k}};
 const huntCostHr=m=>spItemsHr(m)*spItemPrice()+hourCostHr();
-const huntCosts=(m,hpm)=>{const spHr=spItemsHr(m),spZ=spHr*spItemPrice(),other=hourCostHr(),hh=hpHeal(hpm);return {hpm,hpHr:hh.n,hpZ:hh.z,spHr,spZ,other,cost:hh.z+spZ+other}};
+// hpi: HP lost / min that HP items cover (hpItemsPerMin)
+const huntCosts=(m,hpi)=>{const spHr=spItemsHr(m),spZ=spHr*spItemPrice(),other=hourCostHr(),hh=hpHeal(hpi);return {hpi,hpHr:hh.n,hpZ:hh.z,spHr,spZ,other,cost:hh.z+spZ+other}};
 // the monsters you hunt on a map (in-game Monster tab): state.huntOff[map] lists the ones you pass by, set by hand in the Zeny Hunter.
 // "Best-paying only" (state.huntAuto) picks for the maps you haven't set: monsters ranked by zeny per second (fight + walk), keeping as many
 // as give the most net zeny/hr while still hunting at least minN spawns (the Zeny Hunter's "Min monsters on map"): a rare spawn is
@@ -673,10 +757,10 @@ function huntMap00(mp,w,minN){
   const list=(MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m));const N=list.reduce((a,x)=>a+x.n,0);
   const rows=list.map(({m,n})=>({m,n,r:mobRow0(m,0)})),ok=rows.filter(x=>isFinite(x.r.sec)),skip=rows.filter(x=>!isFinite(x.r.sec)).map(x=>x.m.name);
   const all=ok.reduce((a,x)=>a+x.n,0);if(!all)return null;
-  const at0=(h,n,walk,tele)=>{let time=0,z=0,exp=0,expT=0,hp=0,hpN=0,wt=0;
-    h.forEach(({m,n:c,r})=>{const tot=killTot(m,r.sec,walk);time+=c*tot;z+=c*r.zk;wt+=c*weightKill(m);if(!m.expUnknown){exp+=c*r.epk;expT+=c*tot}if(r.hpm!=null){hp+=c*r.hpm*tot;hpN+=c*tot}});
-    const top=h.reduce((a,x)=>!a||x.n>a.n?x:a,null),kph=n/time*3600,loot=z/time*3600,hc=huntCosts(top.m,hpN?hp/hpN:null);
-    return {mp,N,n,walk,tele,kph,secT:time/n,loot,...hc,net:loot-hc.cost,zk:z/n,wk:wt/n,wph:wt/time*3600,epm:expT?exp/expT*60:null,skip:skip.length,skipNames:skip,
+  const at0=(h,n,walk,tele)=>{let time=0,z=0,exp=0,expT=0,hp=0,hpi=0,hpN=0,wt=0;
+    h.forEach(({m,n:c,r})=>{const tot=killTot(m,r.sec,walk);time+=c*tot;z+=c*r.zk;wt+=c*weightKill(m);if(!m.expUnknown){exp+=c*r.epk;expT+=c*tot}if(r.hpm!=null){hp+=c*r.hpm*tot;hpi+=c*r.hpi*tot;hpN+=c*tot}});
+    const top=h.reduce((a,x)=>!a||x.n>a.n?x:a,null),kph=n/time*3600,loot=z/time*3600,hc=huntCosts(top.m,hpN?hpi/hpN:null);
+    return {mp,N,n,walk,tele,kph,secT:time/n,loot,...hc,hpm:hpN?hp/hpN:null,net:loot-hc.cost,zk:z/n,wk:wt/n,wph:wt/time*3600,epm:expT?exp/expT*60:null,skip:skip.length,skipNames:skip,
       earn:h.map(({m,n,r})=>({m,n,zk:r.zk})).sort((a,b)=>b.n*b.zk-a.n*a.zk)}};
   const at=h=>{const n=h.reduce((a,x)=>a+x.n,0);if(!n)return null;const walked=at0(h,n,w*Math.sqrt(all/n),0);
     if(n>=all||!canTele()||noTele(mp))return walked;const jumps=all/n-1,tp=at0(h,n,w+jumps*teleSec(),jumps);return tp.net>walked.net?tp:walked};
@@ -692,8 +776,8 @@ function huntMap00(mp,w,minN){
   return best;
 }
 // one monster farmed on its own: its zeny per kill over fight + walk time. Both hunters also give the weight you pick up a kill (wk) and an hour (wph)
-function huntMob0(m,w){const r=mobRow0(m,w);if(!isFinite(r.sec)||!(r.tot>0))return null;const loot=r.zk/r.tot*3600,hc=huntCosts(m,r.hpm),wk=weightKill(m);
-  return {m,kph:3600/r.tot,secT:r.tot,loot,...hc,net:loot-hc.cost,zk:r.zk,wk,wph:wk*3600/r.tot,epm:m.expUnknown?null:r.epm}}
+function huntMob0(m,w){const r=mobRow0(m,w);if(!isFinite(r.sec)||!(r.tot>0))return null;const loot=r.zk/r.tot*3600,hc=huntCosts(m,r.hpi),wk=weightKill(m);
+  return {m,kph:3600/r.tot,secT:r.tot,loot,...hc,hpm:r.hpm,net:loot-hc.cost,zk:r.zk,wk,wph:wk*3600/r.tot,epm:m.expUnknown?null:r.epm}}
 // best converter (or Spell Fist bolt) by net zeny rather than EXP
 const bestBy=(fn,k)=>{let best=null;elOptions().forEach(el=>{const r=withEl(el,fn);if(r){r.el2=el;if(!best||r[k]>best[k])best=r}});return best};
 const huntMap=(mp,w,minN)=>bestBy(()=>huntMap0(mp,w,minN),"net");

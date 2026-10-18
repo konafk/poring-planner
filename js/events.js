@@ -128,25 +128,26 @@ function formTime(){const [h,m]=($("fTime").dataset.auto==="1"?nowTime():$("fTim
 $("addForm").addEventListener("submit",e=>{e.preventDefault();const s=cur();const t=formTime();
   s.entries=s.entries.filter(x=>x.t!==t);const lvIn=num($("fLevel").value,60),pIn=num($("fPct").value),lvG=guessLevel(s,t,lvIn,pIn);
   $("pasteMsg").textContent=lvG!==lvIn?`EXP % went down a lot, so this entry is saved as Lv ${lvG}.`:"";
-  const ent={t,lv:lvG,pct:pIn};if($("fJob").value!==""){ent.jpct=num($("fJob").value);const pv=[...s.entries].filter(e=>e.t<t&&e.jpct!=null).sort((a,b)=>b.t-a.t)[0];if(pv&&pv.jpct-ent.jpct>=50&&num(C().jobLv))C().jobLv=Math.min(jobMax(),num(C().jobLv)+1)}s.entries.push(ent);autoResume(s,t);if(!s.job)s.job=state.job;
-  if(s.job===state.job&&num(C().jobLv)>0&&s.entries.every(x=>x.t<=t))ent.jlv=num(C().jobLv);
+  const ent={t,lv:lvG,pct:pIn};if($("fDied").checked){ent.died=diePct();$("fDied").checked=false}if($("fJob").value!==""){ent.jpct=num($("fJob").value);const pv=[...s.entries].filter(e=>e.t<t&&e.jpct!=null).sort((a,b)=>b.t-a.t)[0];if(pv&&pv.jpct-ent.jpct>=50&&num(C().jobLv))C().jobLv=Math.min(jobMax(),num(C().jobLv)+1)}s.entries.push(ent);autoResume(s,t);if(!s.job)s.job=state.job;
+  if(s.job===state.job&&num(C().jobLv)>0&&s.entries.every(x=>x.t<=t))ent.jlv=num(C().jobLv);snapSession(s);
   if(C().baseLv!==lvG&&s.entries.every(x=>x.t<=t)){const c0=C(),b0=derived(c0);c0.baseLv=lvG;shiftByStats(c0,b0)}save();renderAll();syncChar();resetForm(true);$("fPct").focus()});
 // a death costs 10% base EXP, 5% with the shop item. The EXP % box is your EXP just before dying: it goes in through the form like any entry,
 // then a second entry a second later has it less the penalty, so the EXP gained up to the death still counts
 $("dieItem").addEventListener("change",e=>{state.dieItem=e.target.checked;save();renderTracker()});
 $("dieBtn").addEventListener("click",()=>{const box=$("fPct").value,pen=diePct();
   if(box===""){$("pasteMsg").textContent="Type your EXP % from just before you died, then press Died.";$("fPct").focus();return}
-  const s=cur(),t=formTime(),before=num(box),after=Math.max(0,Math.round((before-pen)*100)/100);$("addForm").requestSubmit();
+  const s=cur(),t=formTime(),before=num(box),after=Math.max(0,Math.round((before-pen)*100)/100);$("fDied").checked=false;$("addForm").requestSubmit();
   const pre=s.entries.find(x=>x.t===t);if(!pre||$("fPct").value)return;
   const ent={t:t+1000,lv:pre.lv,pct:after,died:pen};if(pre.jpct!=null)ent.jpct=pre.jpct;if(pre.jlv)ent.jlv=pre.jlv;
   s.entries=s.entries.filter(x=>x.t!==ent.t);s.entries.push(ent);save();renderAll();
   $("pasteMsg").textContent=`Died: logged ${before}% then ${after}% (−${pen}%).`});
 $("pasteAdd").addEventListener("click",()=>{const s=cur();let lv=num($("fLevel").value,60),n=0,ups=0;
-  const [h0,m0]=nowTime().split(":").map(Number),lines=$("pasteBox").value.split(/\n/).map(pasteLine).filter(Boolean).map(([h,m,...r])=>h==null?[h0,m0,...r]:[h,m,...r]);
-  const ts=pasteTimes(lines,pickedDay()),parsed=[...new Map(lines.map(([,,pct,jpct],i)=>[ts[i],{t:ts[i],pct,jpct}])).values()].sort((a,b)=>a.t-b.t);
-  parsed.forEach(x=>{const g=guessLevel(s,x.t,lv,x.pct);if(g!==lv){ups++;lv=g}const ent={t:x.t,lv,pct:x.pct};if(x.jpct!=null)ent.jpct=x.jpct;s.entries=s.entries.filter(e=>e.t!==x.t);s.entries.push(ent);n++});
+  // a line with "died", "dead" or 💀 is the EXP after a death
+  const [h0,m0]=nowTime().split(":").map(Number),lines=$("pasteBox").value.split(/\n/).map(l=>{const p=pasteLine(l);return p&&[...p,/died|dead|💀/i.test(l)]}).filter(Boolean).map(([h,m,...r])=>h==null?[h0,m0,...r]:[h,m,...r]);
+  const ts=pasteTimes(lines,pickedDay()),parsed=[...new Map(lines.map(([,,pct,jpct,died],i)=>[ts[i],{t:ts[i],pct,jpct,died}])).values()].sort((a,b)=>a.t-b.t);
+  parsed.forEach(x=>{const g=guessLevel(s,x.t,lv,x.pct);if(g!==lv){ups++;lv=g}const ent={t:x.t,lv,pct:x.pct};if(x.jpct!=null)ent.jpct=x.jpct;if(x.died)ent.died=diePct();s.entries=s.entries.filter(e=>e.t!==x.t);s.entries.push(ent);n++});
   $("pasteMsg").textContent=n?`Added ${n} entr${n===1?"y":"ies"}${ups?` with ${ups} level-up${ups>1?"s":""} (now Lv ${lv})`:` at Lv ${lv}`}.`:"No lines matched. Use the format 15:05 17.9% 63% or 15:05 17.9 63 (time and job % optional; no time means now)";
-  if(n){autoResume(s,parsed[parsed.length-1].t);if(!s.job)s.job=state.job;$("pasteBox").value="";save();renderAll()}});
+  if(n){autoResume(s,parsed[parsed.length-1].t);if(!s.job)s.job=state.job;snapSession(s);$("pasteBox").value="";save();renderAll()}});
 $("pauseBtn").addEventListener("click",()=>{const s=cur(),p=openPause(s);if(!s.pauses)s.pauses=[];
   if(p){p.to=Date.now();save();renderAll();showTab("track");$("fPct").focus()}else{s.pauses.push({from:Date.now()});save();renderAll()}});
 // sell timer: its weight boxes are the Character tab's, so typing in one updates the other
@@ -193,6 +194,7 @@ function saveLogEdit(s,tr){const v=f=>{const i=tr.querySelector(`[data-f="${f}"]
   if(!(Number.isInteger(lv)&&lv>=1&&lv<=99))return "Base level is 1 to 99.";if(v("pct")===""||!(pc>=0&&pc<=100))return "EXP % is 0 to 100.";
   if(jp!==""&&!(+jp>=0&&+jp<=100))return "Job EXP % is 0 to 100.";if(jl!==""&&!(Number.isInteger(+jl)&&+jl>=1&&+jl<=jcap))return `Job level is 1 to ${jcap}.`;
   Object.assign(e,{t,lv,pct:pc});if(jp==="")delete e.jpct;else e.jpct=+jp;
+  {const d=tr.querySelector('[data-f="died"]');if(d){if(!d.checked)delete e.died;else if(!e.died)e.died=diePct()}}
   // a job level you changed is saved on the entry; one left as worked out stays worked out
   if(jl==="")delete e.jlv;else if(e.jlv||+jl!==was)e.jlv=+jl;
   // the newest entry is where you are now
@@ -272,6 +274,9 @@ $("minLv").value=state.minLv;$("maxLv").value=state.maxLv;
 $("hideClosed").checked=state.hideClosed;$("hideClosed").addEventListener("change",e=>{state.hideClosed=e.target.checked;save();renderMobs()});
 // EXP Hunter + closed regions
 $("bestMin").addEventListener("input",renderBest);$("bestN").addEventListener("change",renderBest);
+// aggressive or assisting monsters on you at once: blank goes back to the default (model.js CROWD_D)
+$("crowd").addEventListener("input",e=>{const v=e.target.value;C().crowd=v===""?null:Math.max(1,num(v,1));save();renderAll()});
+$("calOn").addEventListener("change",e=>{state.calOn=e.target.checked;save();renderBest()});
 $("bestTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.target.closest("tr[data-map]");if(!tr)return;state.map=tr.dataset.map;save();renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})});
 $("regions").addEventListener("click",e=>{const b=e.target.closest("[data-region]");if(!b)return;const id=b.dataset.region;state.regions[id]=state.regions[id]===false;syncClosed();save();renderAll()});
 $("closedMaps").addEventListener("change",e=>{state.closed=[...new Set(e.target.value.split(/[\s,]+/).map(x=>x.trim().toLowerCase()).filter(Boolean))];syncClosed();save();renderAll()});
@@ -321,7 +326,7 @@ ROOTQ('select[data-tf="group"]').forEach(sel=>sel.innerHTML=`<option value="">An
 // Compare sessions, Monster info, Item info, Market and the Hunter tables: click a header to sort (again to flip it), type under it to filter; saved per table
 [["cmpTable",renderCompare],["bestTable",renderBest],["huntTable",renderHunt],["recTable",renderRecovery],["mobInfoDrops",renderMobInfo],["mobInfoMaps",renderMobInfo],["itemTable",renderItems],["itemDropTable",renderItems],["priceTable",renderPrices]].forEach(([id,render])=>{const t=$(id);
   t.tHead.addEventListener("click",e=>{const th=e.target.closest("th[data-sk]");if(!th)return;const k=th.dataset.sk,[k0,d0]=tblSort(id);
-    const c=TABLES[id].cols[k];state.tsort[id]=[k,k===k0?-d0:c.n&&!c.asc?-1:1];save();render()});
+    const c=TABLES[id].cols[k];state.tsort[sortKey(id)]=[k,k===k0?-d0:c.n&&!c.asc?-1:1];save();render()});
   t.querySelectorAll("[data-tf]").forEach(inp=>{inp.value=(state.tfilt[id]||{})[inp.dataset.tf]||"";
     if(inp.value!==((state.tfilt[id]||{})[inp.dataset.tf]||""))delete state.tfilt[id][inp.dataset.tf]; // a typed filter a dropdown has no option for
     inp.addEventListener("input",()=>{(state.tfilt[id]=state.tfilt[id]||{})[inp.dataset.tf]=inp.value;save();render()})})});
@@ -337,7 +342,7 @@ $("mobbedIn").addEventListener("input",e=>{let mp=mapKey(state.map);if(!MAPMOBS[
   if(!state.mobbed)state.mobbed={};const v=e.target.value;if(v===""||!(+v>0))delete state.mobbed[mp];else state.mobbed[mp]=Math.min(12,Math.max(1,Math.round(+v)));save();renderAll()});
 $("mapTable").querySelector("tbody").addEventListener("click",e=>{const sm=e.target.closest("[data-sessmob]");if(sm){toggleSessMob(+sm.dataset.sessmob);save();renderAll();return}const sk=e.target.closest("[data-skip]");if(sk){const id=+sk.dataset.skip;if(!state.skipMobs)state.skipMobs=[];state.skipMobs=state.skipMobs.includes(id)?state.skipMobs.filter(x=>x!==id):[...state.skipMobs,id];save();renderAll();return}const tr=e.target.closest("tr[data-id]");if(tr)pickMob(MOBS.find(m=>m.id===+tr.dataset.id))});
 // goal
-// goal levels default to the max (base Lv 70, your job's max job level); typing past it stops at it, and a blank or too-low goal goes back to it
+// goal levels default to the max (base Lv MAX_BASE_LV, your job's max job level); typing past it stops at it, and a blank or too-low goal goes back to it
 [["goalLv","goalLv"],["goalJobLv","goalJobLv"]].forEach(([id,k])=>{const el=$(id);
   el.addEventListener("input",()=>{const v=num(el.value),mx=+el.max;if(v>mx)el.value=mx;state[k]=v>=+el.min?Math.min(v,mx):null;save();renderTracker()});
   el.addEventListener("change",()=>{if(!(num(el.value)>=+el.min)){state[k]=null;save();renderTracker()}})});
@@ -367,7 +372,9 @@ function packState(s){const o=JSON.parse(JSON.stringify(s));o.$p=1;
     for(const k in r){if(k in SHARE_SUB&&isObj(c[k])){for(const x in r[k])if(jsEq(c[k][x],r[k][x]))delete c[k][x];if(!Object.keys(c[k]).length)delete c[k]}
       else if(jsEq(c[k],r[k]))delete c[k]}}
   (Array.isArray(o.sessions)?o.sessions:[]).forEach(x=>{if(!x||!Array.isArray(x.entries))return;const E=x.entries,ks=[...new Set(E.flatMap(e=>Object.keys(objOr(e))))];
-    x.entries=Object.fromEntries(ks.map(k=>{let p=0;return [k,E.map(e=>{const v=objOr(e)[k]??null;if(v==null||!SHARE_DELTA.includes(k))return v;const d=v-p;p=v;return d})]}))});
+    x.entries=Object.fromEntries(ks.map(k=>{let p=0;return [k,E.map(e=>{const v=objOr(e)[k]??null;if(v==null||!SHARE_DELTA.includes(k))return v;const d=v-p;p=v;return d})]}));
+    // a session's stats snapshot keeps only what differs from that job's character; its walking is worked out again on load
+    delete x.walk;const ch=objOr(s.chars)[x.job||s.job];if(isObj(x.snap)&&isObj(x.snap.c)&&isObj(ch)){const d={};for(const k in x.snap.c)if(!jsEq(x.snap.c[k],ch[k]))d[k]=x.snap.c[k];x.snap.c=d;x.snap.$d=1}});
   return o}
 function unpackState(o){if(!isObj(o)||o.$p!==1)return o;delete o.$p;
   for(const k in D)if(!(k in o))o[k]=JSON.parse(JSON.stringify(D[k]));
@@ -375,6 +382,7 @@ function unpackState(o){if(!isObj(o)||o.$p!==1)return o;delete o.$p;
   (Array.isArray(o.sessions)?o.sessions:[]).forEach(x=>{const E=x&&x.entries;if(!isObj(E))return;const cols=Object.entries(E).filter(([,a])=>Array.isArray(a));
     x.entries=Array.from({length:Math.max(0,...cols.map(([,a])=>a.length))},()=>({}));
     cols.forEach(([k,a])=>{let p=0;a.forEach((v,i)=>{if(v==null)return;if(SHARE_DELTA.includes(k))v=p+=v;x.entries[i][k]=v})})});
+  (Array.isArray(o.sessions)?o.sessions:[]).forEach(x=>{if(!x||!isObj(x.snap)||x.snap.$d!==1)return;delete x.snap.$d;x.snap.c={...JSON.parse(JSON.stringify(objOr(objOr(o.chars)[x.job||o.job]))),...objOr(x.snap.c)}});
   return o}
 $("bkLink").addEventListener("click",async()=>{let url;try{save();url=location.origin+location.pathname+"#s="+await packShare(JSON.stringify(packState(state)))}catch(err){$("bkMsg").textContent="This browser can't make share links. Use Copy backup instead.";return}
   bkCopyText(url,`Share link (${url.length.toLocaleString()} characters)`)});
@@ -403,6 +411,11 @@ $("bkRestore").addEventListener("click",()=>{let data;try{data=JSON.parse($("bkT
 (function setupColPicks(){
   const IDS=["cmpTable","mobTable","bestTable","huntTable","recTable","mapTable","priceTable","mobInfoDrops","mobInfoMaps","itemTable","itemDropTable"];
   if(!state.hideCols)state.hideCols={};
+  // columns that start hidden; each is hidden once per account (state.colsShown remembers it), so showing it again sticks
+  const START_HIDDEN={bestTable:["Weight / kill","Weight / hr","Town trip every"]};
+  if(!state.colsShown||typeof state.colsShown!=="object")state.colsShown={};
+  for(const id in START_HIDDEN){const done=state.colsShown[id]=Array.isArray(state.colsShown[id])?state.colsShown[id]:[];
+    START_HIDDEN[id].forEach(n=>{if(done.includes(n))return;done.push(n);const h=state.hideCols[id]=state.hideCols[id]||[];if(!h.includes(n))h.push(n)})}
   const st=document.createElement("style");document.body.appendChild(st);
   // hidden columns are saved by header name, so adding or moving a column doesn't hide the wrong one; the position is looked up here
   const names=id=>{const t=document.getElementById(id);return t&&t.tHead?[...t.tHead.rows[0].cells].map(c=>(c.textContent||"").trim()):[]};
