@@ -1829,6 +1829,12 @@ t("other gear sets: up to 3 worked out next to your gear without touching it, sw
   run("altSwap(C(),0)"); assert.equal(run("buildOf(C()).gear.weapon.id"), pike);
   assert.equal(run("altOf(C(),2).gear.weapon.refine"), 10);               // the other sets stay as they were
   assert.equal(run("'alts' in (charSnap().build||{})"), false);           // session snapshots don't keep them
+  // as many sets as you add, up to ALT_MAX; removing one moves the ones after it up and the table back to your gear
+  run("C().gearEdit='alt2'"); assert.equal(run("altAdd(C())"), 3); assert.equal(run("altN(C())"), 4);
+  assert.equal(run("altList(C()).join()"), "0,2");                        // the new one is empty
+  run("altDel(C(),0)"); assert.equal(run("altN(C())"), 3); assert.equal(run("altOf(C(),1).gear.weapon.refine"), 10);
+  assert.equal(run("altIdx(C())"), -1); assert.equal(run("JSON.stringify(altList(C()))"), "[1]");
+  run("while(altAdd(C())>=0);"); assert.equal(run("altN(C())"), run("ALT_MAX")); assert.equal(run("altAdd(C())"), -1);
   // older saves: a Try other gear copy is your character again and the gear tried is set 1; one other set (build.alt) is set 1
   const B = id => ({ base: { str: 9 }, gear: { weapon: { id } } });
   const app = load({ job: "Knight", chars: { Knight: { mode: "build", baseLv: 60, build: B(2), trial: { base: { mode: "build", baseLv: 50, build: B(1) } } },
@@ -1836,6 +1842,11 @@ t("other gear sets: up to 3 worked out next to your gear without touching it, sw
   assert.equal(app("state.chars.Knight.baseLv"), 50);
   assert.equal(app("JSON.stringify([state.chars.Knight.build.gear,state.chars.Knight.build.alts[0].gear,'trial' in state.chars.Knight])"), JSON.stringify([{ weapon: { id: 1 } }, { weapon: { id: 2 } }, false]));
   assert.equal(app("JSON.stringify([state.chars.Wizard.build.alts[0].gear,'alt' in state.chars.Wizard.build,state.chars.Wizard.gearEdit])"), JSON.stringify([{ weapon: { id: 3 } }, false, "alt0"]));
+  // the three sets that were always there: empty ones at the end go, unless the table is editing one
+  const E = { gear: {} }, three = load({ job: "Knight", chars: { Knight: { mode: "build", build: { ...B(1), alts: [E, B(2), E, E] } },
+    Wizard: { mode: "build", gearEdit: "alt2", build: { ...B(1), alts: [B(2), null, E] } } } });
+  assert.equal(three("JSON.stringify(state.chars.Knight.build.alts)"), JSON.stringify([E, B(2)]));
+  assert.equal(three("JSON.stringify(state.chars.Wizard.build.alts)"), JSON.stringify([B(2), E, E]));
 });
 
 t("remembered gear and saved loadouts: swapping a part out and back keeps its refine, cards and affixes", () => {
@@ -1860,7 +1871,7 @@ t("remembered gear and saved loadouts: swapping a part out and back keeps its re
   assert.equal(run("memOf(C())[ZWEI].refine"), 9);                                               // what came off is remembered
   run("buildOf(C()).gear.weapon.refine=8;loadoutSave(C(),' farm ')");                           // same name, any case: replaced
   assert.equal(run("loadoutsOf(C()).length"), 2); assert.equal(run("loadoutsOf(C())[0].gear.weapon.refine"), 8);
-  run("C().gearEdit='alt1';loadoutLoad(C(),1)");                                                // into the set being edited
+  run("altAdd(C());altAdd(C());C().gearEdit='alt1';loadoutLoad(C(),1)");                                                // into the set being edited
   assert.equal(run("altOf(C(),1).gear.weapon.id"), run("ZWEI")); assert.equal(w().refine, 8);
   run("delete C().gearEdit");
   const snap = JSON.parse(run("JSON.stringify(charSnap().build)")); assert.equal("loadouts" in snap || "mem" in snap, false);
