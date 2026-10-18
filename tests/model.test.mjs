@@ -1033,7 +1033,7 @@ t("Blitz Beat: falcon hits that always land, ignore DEF and bonuses; auto Blitz 
   near(run(`perUse(${MOB})`), Math.floor(per / 10 * 5 * (55 + 99 / 5)));
 });
 
-t("Martyr's Reckoning, Guillotine Fist, the Chain Crush combo, Excruciating Palm's HP", () => {
+t("Martyr's Reckoning, Guillotine Fist, the Chain Crush combo, Excruciating Palm's HP, Cannon Spear crits", () => {
   const mr = JSON.parse(run(`JSON.stringify(JOBS.Crusader.p.find(p=>p.mr))`));
   setup("Crusader", { atkTxt: "100+150", wAtk: 120, weapon: "One-handed sword", wElem: "Neutral", hitTxt: "1", crit: 50, maxHp: 8000, maxSp: 400,
     st: {}, a: mr });
@@ -1053,6 +1053,12 @@ t("Martyr's Reckoning, Guillotine Fist, the Chain Crush combo, Excruciating Palm
   const ep = JSON.parse(run(`JSON.stringify(JOBS.Monk.p.find(p=>p.name==="Excruciating Palm"))`));
   run(`C().a=${JSON.stringify(ep)}`);
   near(run("selfHpPerSec()"), 200 / run("useSec()"));                        // Excruciating Palm costs 200 HP a use
+  const cs = JSON.parse(run(`JSON.stringify(JOBS.Crusader.p.find(p=>/Cannon Spear/.test(p.name)))`));
+  setup("Crusader", { atkTxt: "100+150", wAtk: 120, weapon: "Two-handed spear", wElem: "Neutral", hitTxt: "300", crit: 30, critDmg: 20, st: {}, a: cs });
+  near(run(`critChance(${MOB})`), 0.3);                                        // Cannon Spear crits with your CRIT
+  near(run("critMul()"), 1 + (1.4 * 1.2 - 1) / 2);                              // at half of a crit's extra damage
+  run(`C().a={...C().a,critHalf:false}`);
+  assert.equal(run(`critChance(${MOB})`), 0);                                  // other skills don't crit
 });
 
 t("auto-cast spells from cards work on any job's basic attacks", () => {
