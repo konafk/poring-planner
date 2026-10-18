@@ -25,4 +25,4 @@ jobs:
             echo "::endgroup::"
           done
       - name: Check the data exporters compile
-        run: python3 -m py_compile tools/export_prontera.py tools/export_jobs.py
+        run: python3 -m py_compile tools/export_prontera.py tools/export_jobs.py tools/export_mobskills.py

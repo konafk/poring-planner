@@ -274,6 +274,8 @@ $("minLv").value=state.minLv;$("maxLv").value=state.maxLv;
 $("hideClosed").checked=state.hideClosed;$("hideClosed").addEventListener("change",e=>{state.hideClosed=e.target.checked;save();renderMobs()});
 // EXP Hunter + closed regions
 $("bestMin").addEventListener("input",renderBest);$("bestN").addEventListener("change",renderBest);
+// aggressive or assisting monsters on you at once: blank goes back to the default (model.js CROWD_D)
+$("crowd").addEventListener("input",e=>{const v=e.target.value;C().crowd=v===""?null:Math.max(1,num(v,1));save();renderAll()});
 $("calOn").addEventListener("change",e=>{state.calOn=e.target.checked;save();renderBest()});
 $("bestTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.target.closest("tr[data-map]");if(!tr)return;state.map=tr.dataset.map;save();renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})});
 $("regions").addEventListener("click",e=>{const b=e.target.closest("[data-region]");if(!b)return;const id=b.dataset.region;state.regions[id]=state.regions[id]===false;syncClosed();save();renderAll()});

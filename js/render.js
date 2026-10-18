@@ -20,7 +20,11 @@ const syncChar=()=>{
 };
 // EXP gear lines at the max base level: base EXP no longer counts (gear EXP still raises job EXP until the max job level)
 const eqMaxNote=()=>{const t=!atMaxLv()?"":num(C().jobLv)>=jobMax()?"Max level: no effect":"Max level: no effect on base EXP (still raises job EXP)";ROOTQ("[data-eqmax]").forEach(el=>el.textContent=t)};
-function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();
+// the picked monster: how many are on you, what that does to FLEE and DEF, and how much of the time it keeps you poisoned
+function crowdInfo(){const c=C(),m=calcMob();if(document.activeElement!==$("crowd"))$("crowd").value=c.crowd??"";
+  if(!m){$("crowdInfo").textContent="";return}const n=crowdN(m),pz=poisonUp(m);
+  $("crowdInfo").textContent=`vs ${m.name}: ${m.agg||m.assist?`${m.agg?"aggressive":"assists its kind"}, ${fmtP(n)} on you`:"1 on you"}${n>2?` (FLEE −${Math.round((1-crowdFlee(n))*100)}%, DEF −${Math.round((1-crowdDef(n))*100)}%)`:""}${m.poison?` · poisons you ${Math.round(pz*100)}% of the time: −${fmtN(poisonHpPerSec())} HP/s, no HP or SP regen then`:""}`}
+function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   // converters vs the monster you picked: the element-table rate of each one, and the one the EXP/min picks
   {const m=convOn()&&calcMob();$("convInfo").innerHTML=m?`vs ${esc(m.name)} (${m.el||"Neutral"} ${m.elv||1}): ${convAll().map(el=>elRateHtml(el,elemMult(m,el))).join(" · ")} → ${convFixed()?`using ${convFixed()}`:`best ${esc(mobRow(m,walkSec()).el2)}`}`:""}
   if(typeof renderStatNote==="function")renderStatNote();
@@ -53,7 +57,7 @@ function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();
     {const k=hfCards(),lbl=`Hunter Fly${k>1?` ×${k}`:""}${cardsInGear(c,[HUNTER_FLY])>0?" (from your gear)":""}`;
       const hp=[];if(k)hp.push(hf>0?`${lbl} heals ~${fmtN(hf*60)} HP/min`:`${lbl}: only physical attacks trigger it`);if(hpRecPct())hp.push(`HP recovery +${hpRecPct()}% from gear`);
       $("hpCardInfo").innerHTML=hp.join(" · ");
-      $("hpInfo").textContent=`${fmtN(hpRegen6())} per 6s${ihrPer10()?` + ${ihrPer10()} per 10s (Increase HP Recovery)`:""}${consHPPerSec()>0?` + ${fmtSig(consHPPerSec()*60)}/min from consumables`:""} = ${fmtN(hpRegenPerSec()*60)} HP/min${hf>0?`, + ${fmtN(hf*60)} from Hunter Fly`:""}`}
+      $("hpInfo").textContent=`${fmtN(hpRegen6())} per 6s${ihrPer10()?` + ${ihrPer10()} per 10s (Increase HP Recovery)`:""}${consHPPerSec()>0?` + ${fmtSig(consHPPerSec()*60)}/min from consumables`:""} = ${fmtN(hpRegenPerSec(null)*60)} HP/min${hf>0?`, + ${fmtN(hf*60)} from Hunter Fly`:""}`}
     if(cd.vitata)parts.push((vitInGear(c)?"Vitata SP cost from your gear":`SP cost +${num(cd.spBonus)}%`)+(hs>0?` · vs ${esc(m.name)}: Heal ${(hs*60).toFixed(1)} casts/min${sh>=1?` <span class="bad">(can't keep up: more than all of your time)</span>`:` (${Math.round(sh*100)}% of your time not attacking)`}`:""));
     if(cd.creamy)parts.push("Creamy: the Zeny Hunter teleports past monsters you skip");
     if(noBreak())parts.push(cd.phen||cd.bbfly?`casts aren't interrupted${vctCards()?` · cast +${vctCards()}%`:" · cast time from your gear"}`:"Phen / Bloody Butterfly in your gear: casts aren't interrupted");
@@ -406,7 +410,7 @@ function renderMobTiles(){
   const r=mobRow(m,walkSec());const s=cur();const L=lvExp(num(C().baseLv))||null;const om=openMaps(m);
   $("mobTiles").innerHTML=`<div class="tile now"><div class="k">${esc(m.name)} · Lv ${m.lv}</div><div class="v mono">${r.epm?fmtN(r.epm):"–"}</div><div class="s">${m.expUnknown?"EXP unknown (no data yet) · ":""}EXP/min${r.el2&&convOn()?` with ${r.el2} converter`:""} · ${isFinite(r.sec)?r.sec.toFixed(1)+"s fight + "+walkSec().toFixed(1)+"s walk"+sellTxt(r.tot-r.sec-walkSec()," + "," selling"):"can't hurt it"}${L&&r.epm?` · ~${pct(r.epm*60/L*100)}/hr at Lv ${C().baseLv}`:""}</div></div>
    <div class="tile"><div class="k">Per kill</div><div class="v mono">${isFinite(r.uses)?r.uses.toFixed(1):"–"} uses</div><div class="s">${fmtN(withEl(r.el2,()=>dmgPerHit(m)))}${dualHit()?` + ${fmtN(withEl(r.el2,()=>leftDmg(m)))} left hand`:""} per hit · ${Math.round(r.hitc)}% land · ${fmtN(num(C().a.sp)*spCostMul()*r.uses/targets())} SP</div></div>
-   <div class="tile" title="${esc(hpTip(r))}"><div class="k">Defence</div><div class="v mono">${r.hpm==null?"–":fmtN(r.hpm)}</div><div class="s">HP lost/min${r.hpm>0&&vitHeals()?" (your Heals cover it)":""} · you dodge ${r.dodge??"–"}% · DEF ${m.def??"–"} · MDEF ${m.mdef??"–"}</div></div>
+   <div class="tile" title="${esc(hpTip(r))}"><div class="k">Defence</div><div class="v mono">${r.hpm==null?"–":fmtN(r.hpm)}</div><div class="s">HP lost/min${r.hpm>0&&vitHeals()?" (your Heals cover it)":""}${r.pz>0.005?` · poisoned ${Math.round(r.pz*100)}%`:""}${crowdN(m)>1?` · ${fmtP(crowdN(m))} on you`:""} · you dodge ${r.dodge??"–"}% · DEF ${m.def??"–"} · MDEF ${m.mdef??"–"}</div></div>
 ${weightTile(m)}
    <div class="tile"><div class="k">Maps</div><div class="v mono">${om.length?mapCode(om[0][0]):"–"}</div><div class="s">${om.length?om.slice(0,4).map(x=>`${esc(mapLabel(x[0]))} ≈${x[1]}`).join(" · "):"none open"} · <a href="${dbUrl(m)}" target="_blank" rel="noopener">rozerodb ↗</a></div></div>
    <div class="bar" style="grid-column:1/-1">${s.mobIds.includes(m.id)?'<span class="pill up">In this session</span> <button type="button" class="small" id="dropMobBtn">Remove from session</button>':`<button type="button" class="primary" id="useMobBtn">${s.mobIds.length?`Also killing ${esc(m.name)}`:`Farming ${esc(m.name)} now`}</button>`}</div>`;
@@ -422,7 +426,7 @@ const costTip=r=>healTip(r)+(r.other>=0.5?`\nASPD potion${fieldBuffs().length?",
 const UNK_PILL=' <span class="pill down" title="No EXP data for it yet, so it\'s left out of EXP / min">EXP ?</span>';
 // the EXP Hunter's tooltips: what a kill's seconds are made of and where the walking comes from; the HP a minute taken, regen and healing
 const secTip=r=>`${r.sec.toFixed(1)}s fighting + ${r.walk.toFixed(1)}s walking${r.sell>=0.05?` + ${r.sell.toFixed(1)}s of selling trips`:""} per kill${r.cal?`\ncalibrated to your logs (×${r.cal.toFixed(2)}): ~${r.secT.toFixed(1)}s a kill`:""}\n${walkSrcTxt()}`;
-const hpTip=r=>r.hpm==null?"no damage data":`${fmtN(r.hpt)} HP/min taken from hits, ${fmtN(Math.max(0,r.hpt-r.hpm))} of it back from HP regen${hfCards()?" and Hunter Fly":""}${r.hpm>0?vitHeals()?"; your Vitata Heals cover the rest (no HP items)":"; HP items cover the rest":""}`;
+const hpTip=r=>r.hpm==null?"no damage data":`${fmtN(r.hpt)} HP/min taken from hits${r.psn>0.5?` and poison (${fmtN(r.psn)} of it)`:""}, ${fmtN(Math.max(0,r.hpt-r.hpm))} back from HP regen${hfCards()?" and Hunter Fly":""}${r.hpm>0?vitHeals()?"; your Vitata Heals cover the rest (no HP items)":"; HP items cover the rest":""}${r.pz>0.005?`\npoisoned ${Math.round(r.pz*100)}% of the time: no natural HP or SP regen then`:""}`;
 const tripTxt=h=>h==null?"–":fmtDur(h).split("\n").pop();
 function renderBest(){
   const min=num($("bestMin").value),lim=num($("bestN").value,10);const w=walkSec();const s=cur(),st=stats(s);const curMap=currentMap(),max=atMaxLv();

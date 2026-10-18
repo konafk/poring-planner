@@ -213,6 +213,8 @@
       <div class="bar note"><span>Taking damage:</span>
         <label class="bar" style="flex-direction:row;gap:4px" title="Blank (auto): VIT/5 + Max HP/200, with HP Recovery +% gear. Increase HP Recovery (Skills card), Hunter Fly and consumables that restore HP over time are added on their own, so type only the natural regen tick">HP regen per 6s <input id="hpRegen6" type="number" placeholder="auto" style="width:72px"></label>
         <span class="muted" id="hpInfo"></span>
+        <label class="bar" style="flex-direction:row;gap:4px" title="Aggressive monsters, and ones that join a fight their kind is in, gang up on you: each one swings at you, and from 3 at once your FLEE drops 10% and your DEF 5% per monster past 2. Other monsters count as 1">aggressive or assisting monsters on you at once <input id="crowd" type="number" min="1" step="0.5" placeholder="2" style="width:60px"></label>
+        <span class="muted" id="crowdInfo"></span>
       </div>
       <details class="note">
         <summary>Advanced: monster attack timing</summary>
@@ -583,6 +585,7 @@
 <script src="data/prices.js"></script>
 <script src="data/itemtypes.js"></script>
 <script src="data/mstat.js"></script>
+<script src="data/mobskills.js"></script>
 <script src="data/elem.js"></script>
 <script src="data/sizes.js"></script>
 <script src="data/equipment.js"></script>

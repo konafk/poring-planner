@@ -43,6 +43,7 @@ Each table lives in its own file, so a re-export after a patch only touches that
 | `mobs.js` | Monsters (EXP is `null` where there's no data yet) |
 | `spawn.js` | Spawn maps and counts, normal and PvP channels. Written by `tools/export_spawns.py`. |
 | `maps.js` | In-game map code and name for each spawn map. Names written by `tools/export_mapnames.py`. |
+| `mobskills.js` | Monsters that poison you (Poison Attack level, rate, delay) and ones that assist their kind. Written by `tools/export_mobskills.py`. |
 | `loot.js` | Drops (chance `null` where no rate is published yet) |
 | `items.js` | Item names |
 | `prices.js` | NPC sell price for every drop. Written by `tools/export_prices.py`. |
@@ -74,6 +75,7 @@ All scripts use only the Python standard library.
 | `python tools/export_jobs.py [--refresh]` | Writes `data/jobs.js` from rAthena's pre-renewal job tables with Zero's changes (see the top of the script). |
 | `python tools/export_cardnames.py [--refresh]` | Writes `data/cardnames.js`: each card's name in the equipment window, from divine-pride.net's item pages, for the cards in `data/cards.js`. Run it after `export_prontera.py` picks up new cards. |
 | `python tools/export_affixes.py` | Writes `data/affixes.js` from rozerodb's Affixes Simulator page (its data is in the page itself; there is no API). |
+| `python tools/export_mobskills.py [--refresh]` | Writes `data/mobskills.js` from rAthena's pre-renewal monster skill and monster tables, for the monsters in `data/mobs.js`. |
 | `python tools/check_maps.py` | Compares `data/spawn.js` with the cross-check source and lists missing monsters and spawn counts that differ. Monsters marked as upcoming are expected to show up as missing. |
 | `python tools/check_drops.py` | Compares drops, drop rates and item names with the cross-check source. Loot value per kill isn't compared, because the two sources price items differently. |
 

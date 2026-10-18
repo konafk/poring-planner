@@ -1598,4 +1598,40 @@ t("try other gear: compared with the copy kept at Try, Back to my gear puts it b
   assert.equal(run("trialStats().dmg"), W.dmg);
 });
 
+t("crowds: aggressive or assisting monsters gang up, and from 3 at once FLEE and DEF drop", () => {
+  const agg = MOB.replace("drops:[]", "drops:[],agg:true"), calm = MOB;
+  setup("Knight", { atkTxt: "100+300", fleeTxt: "240", defTxt: "20+40", maxHp: 5000, hitScale: 0.3, mobInterval: 1.5, st: { vit: "1" }, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  assert.equal(run(`crowdN(${calm})`), 1); assert.equal(run(`crowdN(${agg})`), 2);         // 2 unless you change it
+  assert.equal(run(`crowdN({...${calm},assist:true})`), 2);                                // assist counts like aggressive
+  near(run(`hitsOnYou(${agg})`), 2 * run(`hitsOnYou(${calm})`));                         // two swinging, no penalty yet
+  near(run(`dodge(${agg})`), 85);                                                         // 95 + 240 − 250
+  run("C().crowd=4");
+  near(run(`dodge(${agg})`), 95 + 240 * 0.8 - 250);                                      // FLEE −20% with 4 on you
+  near(run("crowdDef(4)"), 0.9);
+  const hard = 40 * 0.9, soft = 20 * 0.9;                                                 // DEF −10%
+  near(run(`mobHitDmg(${agg})`), Math.max(1, 150 * (4000 + hard) / (4000 + 10 * hard) - soft));
+  run("C().crowd=null");
+  assert.equal(run(`crowdN(${agg})`), 2);
+});
+
+t("poison: monsters with Poison Attack poison you part of the time: HP drain, no regen, VIT DEF −25%", () => {
+  assert.equal(run(`JSON.stringify(MOBS.find(m=>m.name==="Argiope").poison)`), "[3,500,5000]");   // rAthena: Lv 3, 5% a swing, 5 s delay
+  assert.equal(run(`MOBS.find(m=>m.name==="Wolf").assist`), true);
+  const pm = MOB.replace("drops:[]", "drops:[],poison:[3,500,5000]");
+  setup("Knight", { atkTxt: "100+300", fleeTxt: "100", defTxt: "20+40", maxHp: 5000, hitScale: 0.3, mobInterval: 1.5, baseLv: 50, st: { vit: "0", luk: "0" }, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  assert.equal(run(`poisonUp(${MOB})`), 0);
+  // 1 monster: 0.2 swings/s reach you, 5% try it → once every 100 s + 5 s delay; dodge 0 so it lands (120%, capped at 100%); 60% to poison
+  const a = 1 / (5 + 1 / (0.2 * 0.05)) * 0.6, D = 60, u = a * D / (1 + a * D);
+  near(run(`poisonUp(${pm})`), u);
+  near(run("poisonHpPerSec()"), 2 + 75);                                                  // 2 + 1.5% of 5000
+  const d = run(`defense(${pm})`);
+  near(d.psn, u * 77);
+  near(run(`hpRegenPerSec(${pm})`), run("hpRegenPerSec(null)") * (1 - u));                // no natural regen while poisoned
+  near(run(`regenPerSec(${pm})`), run("regenPerSec(null)") * (1 - u));
+  near(run(`mobHitDmg(${pm})`), 150 * 4040 / 4400 - 20 * (1 - 0.25 * u));               // VIT DEF −25% while poisoned
+  run(`C().st={vit:"50",luk:"20"};applyConsumables()`);                                  // VIT and LUK resist it
+  const a2 = 1 / (5 + 1 / (0.2 * 0.05)) * Math.max(0, 0.6 * 0.5 - 20 / 1000), D2 = 60 * (1 - 0.0075 * 50) - 2;
+  near(run(`poisonUp(${pm})`), a2 * D2 / (1 + a2 * D2));
+});
+
 console.log(`${n} tests passed`);

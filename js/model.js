@@ -186,12 +186,13 @@ const isrPer10=()=>{const l=skLv(C(),"increase-sp-recovery");return l>0?Math.flo
 // Increase HP Recovery (Swordsman, Knight, Crusader; Skills card): every 10 s, Lv × (5 + 0.2% of Max HP) on top of natural regen (Zero's skill data)
 const ihrPer10=()=>{const l=skLv(C(),"increase-hp-recovery");return l>0?Math.floor(l*(5+num(cf("maxHp"))*0.002)):0};
 // HP back per second: natural regen and Increase HP Recovery (stop when you're overweight) plus HP-over-time consumables, which keep going
-const hpRegenPerSec=()=>(REGEN_OFF?0:hpRegen6()/6+ihrPer10()/10)+consHPPerSec();
+// m: the monster in play, whose poison stops natural regen and Increase HP Recovery part of the time (poisonUp)
+const hpRegenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(hpRegen6()/6+ihrPer10()/10)*(1-poisonUp(m)))+consHPPerSec();
 // SP the attack itself costs per second (Spell Fist: its upkeep); defSP adds Energy Coat and Vitata's heals against the monster in play
 const skillSPPerSec=()=>num(C().a.sp)*spCostMul()/useSec();
 const spNeedPerSec=()=>isSF()?sgUpkeep()+defSP()+hsFullSP()*hsSustain():skillSPPerSec()+defSP();
 // SP back per second: natural regen and Increase SP Recovery (stop when you're overweight) plus SP from cards and consumables, which keep going
-const regenPerSec=()=>(REGEN_OFF?0:spRegen8()/8+isrPer10()/10)+cardSPPerSec()+consSPPerSec();
+const regenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(spRegen8()/8+isrPer10()/10)*(1-poisonUp(m)))+cardSPPerSec()+consSPPerSec();
 // items per second when auto SP items are on (covers the gap); otherwise you rest, which stretches fight time
 // the SP item is the one picked in Consumables (spItemAmt: SP it restores, spItemPrice: what it costs)
 const itemsPerSec=()=>isSF()?sgItemsPerSec():C().autoSp&&spItemAmt()>0?Math.max(0,spNeedPerSec()-regenPerSec())/spItemAmt():0;
@@ -200,9 +201,29 @@ const rawFight=m=>{const u=usesPerKill(m);return isFinite(u)?u*useSec()/targets(
 const fightSec=m=>{const f=healShare(m);return f>=1?Infinity:rawFight(m)*restFactor()/(1-f)};
 // damage taken: monster ATK through your DEF, its hit chance on you, a swing every interval times "swings reach you"
 const defParts=()=>{const p=String(cf("defTxt")||"0").split("+").map(x=>parseFloat(x)||0);return {soft:p[0]||0,hard:p.slice(1).reduce((a,b)=>a+b,0)}};
-// dodge = 95 + your FLEE − the monster's "95% flee" value, 0–95%
-const dodge=m=>m.flee95==null?null:Math.max(0,Math.min(95,95+sumStat(cf("fleeTxt"))-m.flee95));
-const mobHitDmg=m=>{if(m.atkMin==null)return null;const {soft,hard}=defParts();return Math.max(1,((m.atkMin+m.atkMax)/2*(4000+hard)/(4000+10*hard)-soft)*takenMul(m))};
+// ---- crowds and poison (rAthena pre-renewal: conf/battle/battle.conf, status.cpp, skills/npc/poisonattack.cpp) ----
+// monsters on you at once: aggressive monsters, and ones that join a fight their kind is in (assist, data/mobskills.js), gang up:
+// c.crowd of them (2 unless you change it; others 1). Each one swings at you, and from 3 at once FLEE drops 10% and DEF (gear and
+// VIT) 5% per monster past 2
+const CROWD_D=2;
+const crowdN=m=>{if(!m||!(m.agg||m.assist))return 1;const v=C().crowd;return v==null||v===""?CROWD_D:Math.max(1,num(v,1))};
+const crowdFlee=n=>Math.max(0,1-0.1*Math.max(0,n-2));
+const crowdDef=n=>Math.max(0,1-0.05*Math.max(0,n-2));
+// dodge = 95 + your FLEE (less the crowd penalty) − the monster's "95% flee" value, 0–95%
+const dodge=m=>m.flee95==null?null:Math.max(0,Math.min(95,95+sumStat(cf("fleeTxt"))*crowdFlee(crowdN(m))-m.flee95));
+// Poison Attack (NPC_POISON, data/mobskills.js): a monster tries it on rate/10000 of its swings, then waits its delay; it hits at 120%
+// of the monster's hit chance and poisons on 20% × skill level, less VIT % and (LUK + your Lv − its Lv) / 10 points. Poison lasts
+// 60 s × (1 − 0.75% per VIT) − LUK / 10 s and a new one doesn't refresh it, so you're poisoned aD / (1 + aD) of the time (a: poisonings
+// a second, D: seconds each). Poisoned: 2 + 1.5% of Max HP lost a second (it stops at 25% HP), no natural HP or SP regen, VIT DEF −25%
+const POISON_S=60;
+function poisonUp(m){const p=m&&m.poison;if(!p||m.atkMin==null)return 0;const c=C(),vit=Math.min(100,statVal(c,"vit")||0),luk=statVal(c,"luk")||0;
+  const A=swingsOnYou(m),dg=dodge(m);if(!(A>0))return 0;
+  const uses=crowdN(m)/(p[2]/1000+1/(A*p[1]/10000)),hit=Math.min(1,(dg==null?1:(100-dg)/100)*1.2);
+  const ch=Math.max(0,0.2*p[0]*(1-vit/100)-(luk+num(c.baseLv)-num(m.lv))/1000),D=Math.max(0,POISON_S*(1-0.0075*vit)-luk/10),a=uses*hit*ch;
+  return a*D/(1+a*D)}
+const poisonHpPerSec=()=>2+Math.floor(num(cf("maxHp"))*3/200);
+const mobHitDmg=m=>{if(m.atkMin==null)return null;const {soft,hard}=defParts(),k=crowdDef(crowdN(m)),s=soft*k*(1-0.25*poisonUp(m)),h=hard*k;
+  return Math.max(1,((m.atkMin+m.atkMax)/2*(4000+h)/(4000+10*h)-s)*takenMul(m))};
 // HP lost per minute: what the monster's hits take (after Energy Coat) less Hunter Fly and HP regen (hpRegenPerSec), already in defense().
 // Ranged and magic attackers count the same hits: aggressive monsters and ones that walk up to you while you cast still reach you
 // (× "swings reach you"). hpItemsPerMin is what HP items must cover: with Vitata your Heal casts cover it (paid in SP and time, see
@@ -210,7 +231,9 @@ const mobHitDmg=m=>{if(m.atkMin==null)return null;const {soft,hard}=defParts();r
 const hpLossPerMin=m=>{const d=defense(m);return d?d.hp*60:null};
 const vitHeals=()=>CRD().vitata&&healHpEff()>0;
 const hpItemsPerMin=m=>{const d=defense(m);return d?vitHeals()?0:d.hp*60:null};
-const hpTakenPerMin=m=>{const d=defense(m);return d?d.taken*60:null};
+const hpTakenPerMin=m=>{const d=defense(m);return d?(d.taken+d.psn)*60:null};
+// pz: share of the time poisoned, psn: HP a minute it drains
+const poisonOf=m=>{const d=defense(m);return d?{pz:d.pz,psn:d.psn*60}:{pz:0,psn:0}};
 // ---- Sage: full Spell Fist model (bolt choice, Hindsight, Double Bolt, SP items; Energy Coat from ECO(), Vitata, Hunter Fly and Side Winder from CRD()) ----
 const SAGE_D={sfLv:10,boltLv:10,bolts:{Fire:true,Water:true,Wind:true},hsOn:false,hsAuto:true,hsLv:10,hsWorth:50000,dbOn:false,dbLv:5};
 const G=()=>{const c=C();if(!c.sage)c.sage={};for(const k in SAGE_D)if(c.sage[k]==null)c.sage[k]=JSON.parse(JSON.stringify(SAGE_D[k]));return c.sage};
@@ -266,11 +289,15 @@ const sgItemsOn=()=>hsOnNow()&&spItemAmt()>0; // SP items go with Hindsight
 // how full your SP is: the fullest band your regen can hold after the attack's own SP, else where SP items keep it, else nearly empty
 const itemsOnNow=()=>isSF()?sgItemsOn():!!C().autoSp&&spItemAmt()>0;
 // its hits that land on you per second: a swing every interval, times "swings reach you", less what you dodge
-const hitsOnYou=m=>{if(!m||m.atkMin==null)return 0;const dg=dodge(m);return Math.max(0,num(C().hitScale,1))*(dg==null?1:(100-dg)/100)/Math.max(.3,num(C().mobInterval,1.5))};
+// swingsOnYou: one monster's swings that reach you a second; hitsOnYou: every monster on you, less what you dodge
+const swingsOnYou=m=>!m||m.atkMin==null?0:Math.max(0,num(C().hitScale,1))/Math.max(.3,num(C().mobInterval,1.5));
+const hitsOnYou=m=>{if(!m||m.atkMin==null)return 0;const dg=dodge(m);return crowdN(m)*swingsOnYou(m)*(dg==null?1:(100-dg)/100)};
 function defense(m){
   const raw=mobHitDmg(m);if(raw==null)return null;const hits=hitsOnYou(m);
-  const sf=isSF(),max=num(cf("maxSp")),ec=ecOn(),hpBack=hfHpPerSec()+hpRegenPerSec(),regen=regenPerSec(),up=sf?sgUpkeep():skillSPPerSec(),hs=sf?hsFullSP():0,spMul=sf?sgSpMult():spCostMul();
-  const band=i=>{const red=ec?EC_BANDS[i][0]:0,ecSP=ec?hits*EC_BANDS[i][1]/100*max:0,taken=raw*(1-red/100)*hits,hp=Math.max(0,taken-hpBack),cd=CRD(),healSP=cd.vitata&&healHpEff()>0?hp/healHpEff()*num(cd.healSp)*spMul:0;return {i,red,ecSP,healSP,hp,taken,label:ec?EC_BANDS[i][2]:""}};
+  const sf=isSF(),max=num(cf("maxSp")),ec=ecOn(),hpBack=hfHpPerSec()+hpRegenPerSec(m),regen=regenPerSec(m),up=sf?sgUpkeep():skillSPPerSec(),hs=sf?hsFullSP():0,spMul=sf?sgSpMult():spCostMul();
+  // pz: share of the time you're poisoned, psn: HP a second it drains (Energy Coat doesn't cut it)
+  const pz=poisonUp(m),psn=pz*poisonHpPerSec();
+  const band=i=>{const red=ec?EC_BANDS[i][0]:0,ecSP=ec?hits*EC_BANDS[i][1]/100*max:0,taken=raw*(1-red/100)*hits,hp=Math.max(0,taken+psn-hpBack),cd=CRD(),healSP=cd.vitata&&healHpEff()>0?hp/healHpEff()*num(cd.healSp)*spMul:0;return {i,red,ecSP,healSP,hp,taken,pz,psn,label:ec?EC_BANDS[i][2]:""}};
   const cost=b=>up+b.ecSP+b.healSP;
   let b=null;for(let i=0;i<5;i++){const x=band(i);if(cost(x)+hs<=regen){b=x;break}}
   if(!b){const p=num(ECO().spPct,50);b=itemsOnNow()?band(p>80?0:p>60?1:p>40?2:p>20?3:4):band(4)}
@@ -574,19 +601,19 @@ function mobRow00(m,w){
   // zk: zeny per kill after what the skills use up; hc: SP items, ASPD potion and ground buffs per hour; zph: net zeny per hour
   // sph: SP items per hour (what huntCostHr counts)
   const zc=skillZeny(m),zk=zenyKill(m)-zc,sph=itemsPerSec()*3600,hc=sph*spItemPrice()+hourCostHr();
-  return {sec,tot,epm:ok?epk/tot*60:0,epk,jpm:ok?jpk/tot*60:0,jpk,hitc:hitChance(m),mult:hitPctOf(m),uses:usesPerKill(m),dodge:dodge(m),hpm:hpLossPerMin(m),hpi:hpItemsPerMin(m),hpt:hpTakenPerMin(m),zk,zc,hc,sph,zph:ok?zk/tot*3600-hc:0};
+  return {sec,tot,epm:ok?epk/tot*60:0,epk,jpm:ok?jpk/tot*60:0,jpk,hitc:hitChance(m),mult:hitPctOf(m),uses:usesPerKill(m),dodge:dodge(m),hpm:hpLossPerMin(m),hpi:hpItemsPerMin(m),hpt:hpTakenPerMin(m),...poisonOf(m),zk,zc,hc,sph,zph:ok?zk/tot*3600-hc:0};
 }
 // map averages, weighted by spawn counts; monsters you can't hurt are skipped (you walk past them)
 function mapStats0(mp,w){
-  const list=(MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m));let N=0,n=0,exp=0,time=0,fight=0,z=0,zc=0,hc=0,spi=0,hp=0,hpi=0,hpt=0,hpN=0,wt=0;const skip=[],unk=[];
+  const list=(MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m));let N=0,n=0,exp=0,time=0,fight=0,z=0,zc=0,hc=0,spi=0,hp=0,hpi=0,hpt=0,pz=0,psn=0,hpN=0,wt=0;const skip=[],unk=[];
   list.forEach(({m,n:c})=>{N+=c;if(m.expUnknown){unk.push(m.name);return}const r=mobRow0(m,w);if(!isFinite(r.sec)){skip.push(m.name);return}
-    n+=c;exp+=c*r.epk;time+=c*r.tot;fight+=c*r.sec;z+=c*r.zk;zc+=c*r.zc;hc+=c*r.hc*r.tot;spi+=c*r.sph*r.tot;wt+=c*weightKill(m);if(r.hpm!=null){hp+=c*r.hpm*r.tot;hpi+=c*r.hpi*r.tot;hpt+=c*r.hpt*r.tot;hpN+=c*r.tot}});
+    n+=c;exp+=c*r.epk;time+=c*r.tot;fight+=c*r.sec;z+=c*r.zk;zc+=c*r.zc;hc+=c*r.hc*r.tot;spi+=c*r.sph*r.tot;wt+=c*weightKill(m);if(r.hpm!=null){hp+=c*r.hpm*r.tot;hpi+=c*r.hpi*r.tot;hpt+=c*r.hpt*r.tot;pz+=c*r.pz*r.tot;psn+=c*r.psn*r.tot;hpN+=c*r.tot}});
   if(!n)return null;
   // zg: zeny / hr after skill items and zeny; zph also takes off SP items, the ASPD potion and ground buffs (per monster, over the time spent on it)
   // healing (Recovery items): SP items (spHr a hour, spZ zeny) and HP items for the HP lost (hpHr, hpZ). zb: zeny / hr before healing, net: after it
   // weight: wk picked up a kill, wph an hour, trip the hours from leaving town to leaving it again (null with weight off or weightless drops)
   const zg=z/time*3600,hcHr=hc/time,hpm=hpN?hp/hpN:null,hpiM=hpN?hpi/hpN:null,spHr=spi/time,spZ=spHr*spItemPrice(),hh=hpHeal(hpiM),wk=wt/n,room=wOn()?wRoom(sellLim()):0;
-  return {mp,N,epm:exp/time*60,secT:time/n,sec:fight/n,walk:w,sell:time/n-fight/n-w,epk:exp/n,zg,zph:zg-hcHr,zcost:zc/time*3600+hcHr,hpm,hpi:hpiM,hpt:hpN?hpt/hpN:null,skip:skip.length,skipNames:skip,unk:unk.length,unkNames:unk,
+  return {mp,N,epm:exp/time*60,secT:time/n,sec:fight/n,walk:w,sell:time/n-fight/n-w,epk:exp/n,zg,zph:zg-hcHr,zcost:zc/time*3600+hcHr,hpm,hpi:hpiM,hpt:hpN?hpt/hpN:null,pz:hpN?pz/hpN:0,psn:hpN?psn/hpN:0,skip:skip.length,skipNames:skip,unk:unk.length,unkNames:unk,
     spHr,spZ,hpHr:hh.n,hpZ:hh.z,heal:hh.z+spZ,zb:zg-hcHr+spZ,net:zg-hcHr-hh.z,wk,wph:wt/time*3600,trip:wk>0&&room>0?room/wk*(time/n)/3600:null};
 }
 // best converter per monster (by EXP/min) and one converter per map
