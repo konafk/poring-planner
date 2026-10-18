@@ -6,11 +6,14 @@ const CHECKS=[["atk","ATK",F=>sumStat(F.atkTxt)],["matk","MATK",F=>sumStat(F.mat
 const BUILT_IDS=["atkPct","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lw","lwAtk","lwElem","crit","critDmg","rangePct","skillPct","vctPct","fctPct","acdPct","ignDef","ignMdef","st_str","st_agi","st_vit","st_dex","st_luk","weapon","wElem"];
 let BUILD_LAST=null;
 const buildOf=c=>{if(!c.build)c.build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{}};return c.build};
-// the other gear set (build.alt: gear, stones, special like the build's own), worked out for the EXP & formulas tab only.
-// c.gearEdit "alt": the gear table edits it instead of your gear
-const altOf=c=>{const b=buildOf(c);if(!b.alt||typeof b.alt!=="object")b.alt={};if(!b.alt.gear||typeof b.alt.gear!=="object")b.alt.gear={};return b.alt};
-const editAlt=(c=C())=>c.mode==="build"&&c.gearEdit==="alt";
-const gearSet=(c=C())=>editAlt(c)?altOf(c):buildOf(c);
+// up to ALT_N other gear sets (build.alts[i]: gear, stones, special like the build's own), worked out for the EXP & formulas tab only.
+// c.gearEdit "alt0"…: the gear table edits that set instead of your gear
+const ALT_N=3;
+const altOf=(c,i)=>{const b=buildOf(c);if(!Array.isArray(b.alts))b.alts=[];let a=b.alts[i];if(!a||typeof a!=="object")a=b.alts[i]={};if(!a.gear||typeof a.gear!=="object")a.gear={};return a};
+// the set the table edits: 0…ALT_N−1, or −1 for your gear
+const altIdx=(c=C())=>{const m=c.mode==="build"&&/^alt(\d)$/.exec(c.gearEdit||"");return m&&+m[1]<ALT_N?+m[1]:-1};
+const editAlt=(c=C())=>altIdx(c)>=0;
+const gearSet=(c=C())=>editAlt(c)?altOf(c,altIdx(c)):buildOf(c);
 function applyBuild(){const c=C();if(c.mode!=="build"){BUILD_LAST=null;c.bx=eqToBx(c);return}
   const r=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,extra:[...consLines().lines,...(SKFX?[...SKFX.stat,...SKFX.buffStat]:[]),...aspdBuffLines(c)]},state.job,aspdBase);BUILD_LAST=r;const F=r.fields,A=r.acc;
   // skill-specific gear lines count when the attack's name contains the skill
@@ -323,7 +326,7 @@ function renderBuild(){const c=C(),on=c.mode==="build";
   if(!$("checkGrid").contains(document.activeElement))$("checkGrid").innerHTML=rows;
   // cards the Character tab's Cards rows model: they count once ticked there
   // the other gear set's own notes while the table shows it
-  const un=editAlt(c)?(x=>x?withSnap(x,()=>BUILD_LAST.unmodelled):[])(altChar(c)):r.unmodelled;
+  const un=editAlt(c)?(x=>x?withSnap(x,()=>BUILD_LAST.unmodelled):[])(altChar(c,altIdx(c))):r.unmodelled;
   const inRow=x=>CARD_ROW.some(n=>x.startsWith(n+":")),tick=un.filter(inRow),rest=un.filter(x=>!inRow(x));
   $("buildNote").innerHTML=(rest.length?`<b>Not counted</b> (procs, conditional or unsupported lines):<br>${rest.map(esc).join("<br>")}`:"")+
     (tick.length?`${rest.length?"<br>":""}<b>Tick in the Cards rows</b> (Character tab, under the attack) to count: ${tick.map(x=>esc(x.split(":")[0])).join(", ")}`:"")}
@@ -361,28 +364,33 @@ $("gearTable").addEventListener("input",e=>{if(e.target.dataset.optv!=null){cons
     const rows=BUILD.optRows(g.opts),x=rows[+e.target.dataset.optv];if(x){x.v=e.target.value===""?"":num(e.target.value);g.opts=rows;save();renderAll()}return}
   if(!e.target.classList.contains("ref"))return;const k=e.target.closest("tr").dataset.slot;const g=gearSet().gear[k];if(!g)return;
   g.refine=Math.max(0,Math.min(20,num(e.target.value)));save();renderAll()});
-// ---- the other gear set: the gear table edits it after "Other gear set" is picked; your gear stays what the page works with, and the
-// EXP & formulas tab works both out side by side. "Swap" makes it your gear (and yours the other set), so you can switch back ----
-const altSaved=c=>c.mode==="build"&&!!(c.build&&c.build.alt)&&setSaved(c.build.alt);
-// your character with the other set on instead of your gear (base stats, skills and buffs stay); the in-game Max HP / SP typed
+// ---- other gear sets: the gear table edits set i after "Set i" is picked; your gear stays what the page works with, and the
+// EXP & formulas tab works them all out side by side. "Swap" makes a set your gear (and yours that set), so you can switch back ----
+const altSaved=(c,i)=>c.mode==="build"&&!!(c.build&&Array.isArray(c.build.alts)&&c.build.alts[i])&&setSaved(c.build.alts[i]);
+// the sets with gear in them, by number
+const altList=(c=C())=>Array.from({length:ALT_N},(_,i)=>i).filter(i=>altSaved(c,i));
+// your character with set i on instead of your gear (base stats, skills and buffs stay); the in-game Max HP / SP typed
 // under "Check against the game" are for your gear, so they don't count for it
-const altChar=(c=C())=>{if(!altSaved(c))return null;const x=JSON.parse(JSON.stringify(c)),a=x.build.alt;
-  x.build={...x.build,gear:a.gear||{},stones:a.stones||{},special:a.special||{},check:{}};delete x.build.alt;delete x.gearEdit;return x};
+const altChar=(c,i)=>{if(!altSaved(c,i))return null;const x=JSON.parse(JSON.stringify(c)),a=x.build.alts[i];
+  x.build={...x.build,gear:a.gear||{},stones:a.stones||{},special:a.special||{},check:{}};delete x.build.alts;delete x.gearEdit;return x};
 const SET_KEYS=["gear","stones","special"];
 const setCopy=b=>JSON.parse(JSON.stringify(Object.fromEntries(SET_KEYS.map(k=>[k,b[k]||{}]))));
 const gearTxt=g=>{const it=g&&g.id&&BUILD.item(g.id);if(!it)return "none";const n=(g.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean);
   return `${num(g.refine)?`+${num(g.refine)} `:""}${it.name}${n.length?` [${n.join(", ")}]`:""}`};
-// what the other set changes: "Weapon: Pike → +7 Zweihander" per gear row (affixes count as a change too), then the special equipment
-function altDiff(c=C()){const b=buildOf(c),a=altOf(c),g0=b.gear||{},g1=a.gear||{},same=(x,y)=>JSON.stringify(x||null)===JSON.stringify(y||null);
+// what set i changes: "Weapon: Pike → +7 Zweihander" per gear row (affixes count as a change too), then the special equipment
+function altDiff(c,i){const b=buildOf(c),a=altOf(c,i),g0=b.gear||{},g1=a.gear||{},same=(x,y)=>JSON.stringify(x||null)===JSON.stringify(y||null);
   const rows=BUILD.SLOTS.filter(s=>!same(g0[s.k],g1[s.k])).map(s=>`${esc(s.label)}: ${esc(gearTxt(g0[s.k]))} → <b>${esc(gearTxt(g1[s.k]))}</b>${gearTxt(g0[s.k])===gearTxt(g1[s.k])?" (affixes)":""}`);
   if(!same(b.stones||{},a.stones||{})||!same(b.special||{},a.special||{}))rows.push("Special equipment");return rows}
-function renderAltBar(c=C()){const alt=editAlt(c),has=altSaved(c);
-  ROOTQ("[data-gset]").forEach(x=>x.setAttribute("aria-checked",String((x.dataset.gset==="alt")===alt)));$("buildPanel").classList.toggle("altedit",alt);
-  $("altSwap").disabled=!has;const d=has?altDiff(c):[];
-  $("altNote").innerHTML=(alt?"<b>Editing the other gear set.</b> The page still works with your gear. ":"")+
-    (has?(d.length?d.join(" · "):"Same as your gear")+" · compare them on the EXP &amp; formulas tab":alt?"Pick its gear below, or copy yours in and change a part.":"A second set of gear, worked out next to yours on the EXP &amp; formulas tab.")}
-ROOTQ("[data-gset]").forEach(x=>x.addEventListener("click",()=>{const c=C();if(x.dataset.gset==="alt")c.gearEdit="alt";else delete c.gearEdit;save();renderGearTable();renderAll()}));
-$("altCopy").addEventListener("click",()=>{const c=C();if(altSaved(c)&&altDiff(c).length&&!confirm("Replace the other gear set with a copy of your gear?"))return;
-  buildOf(c).alt=setCopy(buildOf(c));save();renderGearTable();renderAll()});
-const altSwap=(c=C())=>{const b=buildOf(c),mine=setCopy(b),other=setCopy(altOf(c));Object.assign(b,other);b.alt=mine};
-$("altSwap").addEventListener("click",()=>{altSwap();save();renderGearTable();renderAll()});
+const altDiffTxt=(c,i)=>{const d=altDiff(c,i);return d.length?d.join(" · "):"same as your gear"};
+function renderAltBar(c=C()){const i=altIdx(c),has=i>=0&&altSaved(c,i),list=altList(c);
+  ROOTQ("[data-gset]").forEach(x=>{const k=x.dataset.gset;x.setAttribute("aria-checked",String(k==="mine"?i<0:+k===i));
+    if(k!=="mine")x.textContent=`Set ${+k+1}${altSaved(c,+k)?" ●":""}`});
+  $("buildPanel").classList.toggle("altedit",i>=0);["altCopy","altSwap","altClear"].forEach(id=>$(id).hidden=i<0);$("altSwap").disabled=$("altClear").disabled=!has;
+  $("altNote").innerHTML=i>=0?`<b>Editing set ${i+1}.</b> The page still works with your gear. `+(has?`${altDiffTxt(c,i)} · compare on the EXP &amp; formulas tab`:"Pick its gear below, or copy yours in and change a part.")
+    :list.length?list.map(k=>`Set ${k+1}: ${altDiffTxt(c,k)}`).join("<br>")+"<br>Compare them on the EXP &amp; formulas tab":`Up to ${ALT_N} other sets of gear, worked out next to yours on the EXP &amp; formulas tab.`}
+ROOTQ("[data-gset]").forEach(x=>x.addEventListener("click",()=>{const c=C();if(x.dataset.gset==="mine")delete c.gearEdit;else c.gearEdit="alt"+x.dataset.gset;save();renderGearTable();renderAll()}));
+$("altCopy").addEventListener("click",()=>{const c=C(),i=altIdx(c);if(i<0)return;if(altSaved(c,i)&&altDiff(c,i).length&&!confirm(`Replace set ${i+1} with a copy of your gear?`))return;
+  buildOf(c).alts[i]=setCopy(buildOf(c));save();renderGearTable();renderAll()});
+const altSwap=(c,i)=>{const b=buildOf(c),mine=setCopy(b),other=setCopy(altOf(c,i));Object.assign(b,other);b.alts[i]=mine};
+$("altSwap").addEventListener("click",()=>{const c=C(),i=altIdx(c);if(i<0)return;altSwap(c,i);save();renderGearTable();renderAll()});
+$("altClear").addEventListener("click",()=>{const c=C(),i=altIdx(c);if(i<0||!confirm(`Empty set ${i+1}?`))return;buildOf(c).alts[i]={gear:{}};save();renderGearTable();renderAll()});

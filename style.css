@@ -192,7 +192,7 @@ table.cstats input{width:72px;padding:4px 8px;font-size:13px}
 #refFormulas td.f{white-space:normal;text-align:left;font-size:12.5px;min-width:260px}
 #refFormulas th:nth-child(2){text-align:left}
 /* with the other gear set's column, the two value columns wrap so the table fits */
-#refFormulas.withalt td:nth-child(n+3){white-space:normal;min-width:110px;max-width:220px}#refFormulas.withalt td.f{min-width:220px}
+#refFormulas.withalt td:nth-child(n+3){white-space:normal;min-width:90px;max-width:200px}#refFormulas.withalt td.f{min-width:200px}
 #refFormulas .fn{font-family:var(--body);font-size:12px;color:var(--muted);margin-top:2px}
 #refFormulas tr.grp td,#gearCmpTable tr.grp td{font-family:var(--display);font-weight:600;color:var(--muted);font-size:12px;padding-top:14px;text-align:left}
 #refElemTable td,#refSizeTable td{text-align:center}#refElemTable th,#refSizeTable th{text-align:center}
@@ -206,6 +206,7 @@ table.convtab td.name{text-align:left}
 #recTable input{padding:3px 6px;font-size:13px}
 #recTable td.nowrap{white-space:nowrap}
 table.cmptab th{cursor:default}
-table.cmptab td{padding:4px 8px}
+table.cmptab td{padding:4px 8px;vertical-align:top}
+table.cmptab td .d{font-size:11.5px}table.cmptab td.best{font-weight:700}
 table.formulas td.chg{background:var(--accent-soft)}
 #buildPanel.altedit #gearTable,#buildPanel.altedit #stoneRow,#buildPanel.altedit #specialOwn{background:var(--accent-soft)}

@@ -609,7 +609,7 @@ function pace0(s,same){
 // worked out from it don't move when you change gear or stats afterwards (that only changes fight time). A session saved before
 // snapshots takes the stats you have when it's first worked out (est) ----
 // (gear bonuses, bx, are worked out again from the gear lines or Build from gear when it's used; the other gear set isn't kept)
-const charSnap=(c=C())=>{const o=JSON.parse(JSON.stringify(c));delete o.bx;delete o.gearEdit;if(o.build)delete o.build.alt;if(o.sage)delete o.sage._note;return o};
+const charSnap=(c=C())=>{const o=JSON.parse(JSON.stringify(c));delete o.bx;delete o.gearEdit;if(o.build){delete o.build.alt;delete o.build.alts}if(o.sage)delete o.sage._note;return o};
 const snapSession=s=>{if((s.job||state.job)===state.job)s.snap={at:Date.now(),c:charSnap()}};
 // sessions of this job with a pace and no snapshot yet take the stats you have now, after renderAll has worked everything out
 const snapEst=()=>{let n=0;state.sessions.forEach(s=>{if(!s.snap&&(s.job||state.job)===state.job&&stats(s)){s.snap={at:Date.now(),c:charSnap(),est:true};n++}});if(n)save()};

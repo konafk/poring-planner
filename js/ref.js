@@ -1,12 +1,12 @@
 // ---- EXP & formulas tab: EXP tables, the formulas the calculator uses (with your numbers), element and size tables ----
 const yours=f=>{try{const v=f();return v==null||v===""||(typeof v==="number"&&!isFinite(v))?"–":v}catch(e){return "–"}};
-// alt: the "Yours" values worked out with the other gear set (same rows, same order), shown in a column of their own
-function refFormulas(alt){const vals=[],c=C(),m=calcMob(),ok=STATS.every(k=>statVal(c,k)!=null),d=ok?derived(c):null,lv=num(c.baseLv),ab=aspdBaseOf(c);
+// alts: the "Yours" values worked out with each other gear set (same rows, same order), each shown in a column of its own
+function refFormulas(alts=[]){const vals=[],c=C(),m=calcMob(),ok=STATS.every(k=>statVal(c,k)!=null),d=ok?derived(c):null,lv=num(c.baseLv),ab=aspdBaseOf(c);
   const sv=k=>statVal(c,k),ranged=RANGED.includes(c.weapon),mn=m?` (${esc(m.name)})`:"",need=f=>m?f(m):null;
-  const grp=t=>`<tr class="grp"><td colspan="${alt?4:3}">${t}</td></tr>`;
+  const grp=t=>`<tr class="grp"><td colspan="${3+alts.length}">${t}</td></tr>`;
   // f is the formula, n an optional short note shown under it
-  const R=(name,f,y,n)=>{const v=yours(y),a=alt&&(alt[vals.length]??"–");vals.push(v);
-    return `<tr><td class="name">${name}</td><td class="f">${f}${n?`<div class="fn">${n}</div>`:""}</td><td>${v}</td>${alt?`<td${a!==v?' class="chg"':""}>${a}</td>`:""}</tr>`};
+  const R=(name,f,y,n)=>{const v=yours(y),k=vals.length;vals.push(v);
+    return `<tr><td class="name">${name}</td><td class="f">${f}${n?`<div class="fn">${n}</div>`:""}</td><td>${v}</td>${alts.map(a=>{const x=a[k]??"–";return `<td${x!==v?' class="chg"':""}>${x}</td>`}).join("")}</tr>`};
   const html=grp("Status window")+
    R("Status ATK",ranged?"floor(BaseLv/4 + DEX + STR/5 + LUK/3)":"floor(BaseLv/4 + STR + DEX/5 + LUK/3)",()=>d&&d.atk,ranged?"bow, instrument, whip":"melee; ranged weapons swap STR and DEX")+
    R("Status MATK","floor(BaseLv/4) + INT + floor(INT/2) + floor(DEX/5) + floor(LUK/3)",()=>d&&d.matk)+
@@ -86,17 +86,22 @@ const GEAR_CMP=[["atk","ATK",1],["matk","MATK",1],["hit","HIT",1],["flee","FLEE"
   ["dmg","Damage per hit",1,0,"m"],["dps","Damage per second",1,0,"m"],["hitc","Hits that land %",1,0,"m"],["uses","Uses per kill",0,1,"m"],["sec","Kill time (s)",0,1,"m"],
   ["epm","EXP / min",1,0,"m"],["zph","Net zeny / hr",1,0,"m"],["hpm","HP lost / min",0,0,"m"],["mapEpm","EXP / min",1,0,"map"],["mapNet","Net zeny / hr (after healing)",1,0,"map"]];
 const cmpFmt=(v,d)=>v==null||!isFinite(v)?"–":d?(+v).toFixed(d):fmtN(v);
-function renderGearCmp(alt){const c=C(),T=$("gearCmpTable");T.hidden=!alt;
-  if(!alt){$("gearCmpNote").textContent=!refShown()?"":c.mode!=="build"?"Switch to Build from gear (Character tab) and set up the other gear set to compare it with your gear here."
-    :"Pick \"Other gear set\" above the gear table (Character tab) and set up the gear you want to compare with yours.";T.tBodies[0].innerHTML="";return}
-  const mine=gearStats(),oth=withSnap(alt,gearStats),m=calcMob(),mp=cmpMap(),d=altDiff(c);
-  $("gearCmpNote").innerHTML=(d.length?d.join(" · "):"Same gear as yours")+(m?"":" · pick a monster to compare damage, kill time and EXP / min");
+// sets: [{i, x: the character with set i on}]. Each set's column shows its value and the change from your gear; the best of a row is bold
+function renderGearCmp(sets){const c=C(),T=$("gearCmpTable");T.hidden=!sets.length;
+  if(!sets.length){$("gearCmpNote").textContent=!refShown()?"":c.mode!=="build"?"Switch to Build from gear (Character tab) and set up another gear set to compare it with your gear here."
+    :"Pick Set 1, 2 or 3 above the gear table (Character tab) and set up the gear you want to compare with yours.";T.tHead.innerHTML=T.tBodies[0].innerHTML="";return}
+  const mine=gearStats(),oth=sets.map(s=>withSnap(s.x,gearStats)),m=calcMob(),mp=cmpMap(),n=sets.length+2;
+  $("gearCmpNote").innerHTML=sets.map(s=>`<b>Set ${s.i+1}</b>: ${altDiffTxt(c,s.i)}`).join("<br>")+(m?"":"<br>Pick a monster to compare damage, kill time and EXP / min");
+  T.tHead.innerHTML=`<tr><th></th><th>Your gear</th>${sets.map(s=>`<th>Set ${s.i+1}</th>`).join("")}</tr>`;
   let grp="";
-  T.tBodies[0].innerHTML=GEAR_CMP.filter(([k])=>mine[k]!=null||oth[k]!=null).map(([k,label,up,dp,g])=>{
-    const a=mine[k],b=oth[k],ok=a!=null&&b!=null&&isFinite(a)&&isFinite(b),diff=ok?b-a:null,same=ok&&Math.abs(diff)<(dp?0.5*10**-dp:0.5);
-    const pc=ok&&!same&&a?` (${diff>0?"+":""}${(diff/Math.abs(a)*100).toFixed(1)}%)`:"",cls=same||diff==null?"":(diff>0)===!!up?"good":"bad";
-    const h=g&&g!==grp?`<tr class="grp"><td colspan="4">${g==="m"?`vs ${esc(m.name)}`:`On ${esc(mapLabel(mp))}`}</td></tr>`:"";if(g)grp=g;
-    return `${h}<tr><td class="name">${label}</td><td>${cmpFmt(a,dp)}</td><td>${cmpFmt(b,dp)}</td><td class="${cls}">${same?"same":diff==null?"–":`${diff>0?"+":""}${cmpFmt(diff,dp)}${pc}`}</td></tr>`}).join("")}
+  T.tBodies[0].innerHTML=GEAR_CMP.filter(([k])=>mine[k]!=null||oth.some(o=>o[k]!=null)).map(([k,label,up,dp,g])=>{
+    const a=mine[k],all=[a,...oth.map(o=>o[k])].filter(v=>v!=null&&isFinite(v)),tol=dp?0.5*10**-dp:0.5;
+    const best=all.length>1&&Math.max(...all)-Math.min(...all)>=tol?(up?Math.max(...all):Math.min(...all)):null,b=v=>best!=null&&v!=null&&Math.abs(v-best)<tol?' class="best"':"";
+    const cell=v=>{const ok=a!=null&&v!=null&&isFinite(a)&&isFinite(v),diff=ok?v-a:null,same=ok&&Math.abs(diff)<tol;
+      const pc=ok&&!same&&a?` (${diff>0?"+":""}${(diff/Math.abs(a)*100).toFixed(1)}%)`:"",cls=same||diff==null?"muted":(diff>0)===!!up?"good":"bad";
+      return `<td${b(v)}>${cmpFmt(v,dp)}<div class="d ${cls}">${same?"same":diff==null?"–":`${diff>0?"+":""}${cmpFmt(diff,dp)}${pc}`}</div></td>`};
+    const h=g&&g!==grp?`<tr class="grp"><td colspan="${n}">${g==="m"?`vs ${esc(m.name)}`:`On ${esc(mapLabel(mp))}`}</td></tr>`:"";if(g)grp=g;
+    return `${h}<tr><td class="name">${label}</td><td${b(a)}>${cmpFmt(a,dp)}</td>${oth.map(o=>cell(o[k])).join("")}</tr>`}).join("")}
 function renderRef(){const c=C(),m=calcMob(),blv=num(c.baseLv),jl=num(c.jobLv),per=m?killExp(m):0,jper=m?killJobExp(m):0;
   const kills=(e,p=per)=>p>0?fmtN(Math.ceil(e/p)):"–",kh=m?`<th>Kills of ${esc(m.name)}</th>`:"";
   // EXP to next compared with the level before, e.g. the Lv 68 row says how much more Lv 68 → 69 takes than Lv 67 → 68
@@ -110,9 +115,10 @@ function renderRef(){const c=C(),m=calcMob(),blv=num(c.baseLv),jl=num(c.jobLv),p
   $("refJobTable").tHead.innerHTML=`<tr><th>Job Lv</th><th>Job EXP to next</th>${ih}<th>Total</th>${kh}</tr>`;
   $("refJobTable").tBodies[0].innerHTML=t.map((e,i)=>{const row=`<tr${mine&&i+1===jl?' class="sel"':""}><td>${i+1}</td><td>${i+1<t.length?fmtN(e):"max"}</td><td>${i+1<t.length?inc(e,t[i-1]):"–"}</td><td>${fmtN(tot)}</td>${m?`<td>${i+1<t.length?kills(e,jper):"–"}</td>`:""}</tr>`;tot+=e;return row}).join("");
   renderPartyTable(m);
-  // the other gear set (Build from gear): worked out only while this tab shows, since it runs the model a second time
-  const alt=refShown()?altChar(c):null,av=alt?withSnap(alt,()=>refFormulas().vals):null;
-  $("refAltTh").hidden=!av;$("refFormulas").classList.toggle("withalt",!!av);$("refFormulas").tBodies[0].innerHTML=refFormulas(av).html;renderGearCmp(alt);
+  // other gear sets (Build from gear): worked out only while this tab shows, since each runs the model again
+  const sets=refShown()?altList(c).map(i=>({i,x:altChar(c,i)})):[],av=sets.map(s=>withSnap(s.x,()=>refFormulas().vals));
+  $("refFormulas").tHead.innerHTML=`<tr><th>Value</th><th>Formula</th><th>Yours</th>${sets.map(s=>`<th>Set ${s.i+1}</th>`).join("")}</tr>`;
+  $("refFormulas").classList.toggle("withalt",sets.length>0);$("refFormulas").tBodies[0].innerHTML=refFormulas(av).html;renderGearCmp(sets);
   const elv=Math.min(4,Math.max(1,num(state.refElv,1)));$("refElv").value=String(elv);const defs=Object.keys(ET),my=atkEl();
   $("refElemTable").tHead.innerHTML=`<tr><th>Attack ↓ / monster →</th>${defs.map(d=>`<th>${d} ${elv}</th>`).join("")}</tr>`;
   $("refElemTable").tBodies[0].innerHTML=AE.map((a,i)=>`<tr${a===my?' class="sel"':""}><td class="name"><span class="el ${a}">${a}</span></td>${defs.map(d=>{const v=ET[d][elv-1][i];return `<td class="${v>100?"good":v<100?"bad":"muted"}">${v}</td>`}).join("")}</tr>`).join("");
