@@ -46,10 +46,10 @@ const SK_BUFF={"two-hand-quicken":{w:["Two-handed sword"]},"spear-quicken":{w:["
   "power-thrust":{},"improve-concentration":{},"increase-agility":{},"blessing":{},"falcon-eyes":{},"fury":{},"impositio-manus":{},"endow-quake":{},"endow-tsunami":{},
   "endow-tornado":{},"endow-blaze":{},"volcano":{},"deluge":{},"whirlwind":{},"battle-theme":{},"lady-luck":{},"focus-ballet":{},"perfect-tablature":{}};
 // ASPD the skill descriptions leave out, from the RO樂園攻速計算機 sheet ("增益"): potion/skill value (× AGI/200 into ASPD1) and ASPD %.
-// Study's "ASPD +x%" is really a potion/skill value of 0.5 per level (the sheet's Book of Evolution, books only).
+// Study's "ASPD +x%" is really a potion/skill value: a flat 4 at any level on Zero (the sheet's Book of Evolution, books only).
 // Falcon Eyes is True Sight (SN_SIGHT, the sheet's 狙殺瞄準): its description leaves out the +5 to every stat
 const SK_ASPD={"two-hand-quicken":l=>[["aspd_mod",null,null,7],["aspd_percent",null,null,10]],"spear-quicken":l=>[["aspd_mod",null,null,7],["aspd_percent",null,null,10]],
-  "adrenaline-rush":l=>[["aspd_mod",null,null,7],["aspd_percent",null,null,10]],"study":l=>[["aspd_mod",null,null,0.5*l]],
+  "adrenaline-rush":l=>[["aspd_mod",null,null,7],["aspd_percent",null,null,10]],"study":()=>[["aspd_mod",null,null,4]],
   "falcon-eyes":l=>["str","agi","vit","int","dex","luk"].map(k=>[k,null,null,5])};
 const SECOND=job=>!["Novice",...FIRST_JOBS].includes(job);
 // description -> effects: {mastery, pct (physical damage %), spCost, myEle {el: %} (your spells of that element), physEle {el: %} (your physical

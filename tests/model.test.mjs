@@ -1092,7 +1092,10 @@ t("consumables: + and +% per main stat, old food buffs move into the table", () 
   const eff = (k, lv) => run(`pbEff(PBUFF.find(b=>b.k==="${k}"),${lv})`);
   assert.equal(eff("blessing", 5), "STR +5, INT +5, DEX +5, HIT +10");
   assert.equal(eff("incAgi", 3), "AGI +5, ASPD +3%");
-  assert.equal(eff("riff", 3), "ASPD +5%");
+  assert.equal(eff("riff", 3), "ASPD +5% (Zero: 17% at Lv 10, not the description's 20%)");
+  assert.equal(eff("riff", 10), "ASPD +17% (Zero: 17% at Lv 10, not the description's 20%)");   // Zero: 17%, not 20%
+  assert.equal(run(`JSON.stringify(SK_ASPD.study(1))`), run(`JSON.stringify(SK_ASPD.study(10))`)); // Study: a flat potion/skill value 4
+  assert.equal(run(`SK_ASPD.study(10)[0][3]`), 4);
   assert.equal(eff("clementia", 70), "STR +17, INT +17, DEX +17 (Blessing Lv 10 + Priest Job Lv/10)");
   run(`C().pbuffs={bandage:{on:true}};SKFX=skillEffects(C());applyBuild();applyConsumables()`);
   assert.equal(run(`statVal(C(),"luk")`), 1);                               // an old save's tick adds nothing
