@@ -252,7 +252,7 @@
       </details>
     </details>
     <details class="card" id="sagePanel" style="padding:12px 14px;gap:8px;background:var(--bg)" open>
-      <summary><b>Sage options</b> <span class="note">used by the "Spell Fist (full Sage model)" attack</span></summary>
+      <summary><b>Sage options</b> <span class="note">used by the Spell Fist and Hindsight attacks; Foresight by attacks with a cast time</span></summary>
       <div class="bar note"><span>Spell Fist:</span>
         <label class="bar" style="flex-direction:row;gap:4px">Lv <input data-sg="sfLv" type="number" min="1" max="10" style="width:56px"></label>
         <label class="bar" style="flex-direction:row;gap:4px">bolt Lv <input data-sg="boltLv" type="number" min="1" max="10" style="width:56px"></label>
@@ -262,16 +262,17 @@
         <label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-sgbolt="Wind" style="width:auto"> Lightning</label>
       </div>
       <div class="bar note"><span>Hindsight:</span>
-        <label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-sg="hsOn" id="sg_hsOn" style="width:auto"> on</label>
-        <label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-sg="hsAuto" style="width:auto"> auto</label>
         <label class="bar" style="flex-direction:row;gap:4px">learned Lv <input data-sg="hsLv" type="number" min="0" max="10" style="width:56px"></label>
-        <label class="bar" style="flex-direction:row;gap:4px">worth it under <input data-sg="hsWorth" type="number" step="5000" style="width:100px"> z per 1% EXP</label>
         <span>Double Bolt:</span>
         <label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-sg="dbOn" style="width:auto"> on</label>
         <label class="bar" style="flex-direction:row;gap:4px">Lv <input data-sg="dbLv" type="number" min="1" max="5" style="width:56px"></label>
       </div>
+      <div class="bar note"><span>Foresight:</span>
+        <label class="bar" style="flex-direction:row;gap:4px" title="The next 5 casts take half their variable cast time; Foresight itself is a 1 s fixed cast and 1 SP. Counted only when it saves time"><input type="checkbox" data-sg="fsOn" style="width:auto"> use it when it saves time</label>
+        <span id="fsInfo"></span>
+      </div>
       <div class="note" id="sageInfo"></div>
-      <div class="note">SP items (Consumables card) only count with Hindsight on: regen pays SP first, items cover the rest.</div>
+      <div class="note">Pick a Hindsight attack to switch Hindsight on. SP items (Consumables card) only count with Hindsight on: regen pays SP first, items cover the rest.</div>
     </details>
     <details class="card" id="weightPanel" style="padding:12px 14px;gap:8px;background:var(--bg)" open>
       <summary><b>Weight</b> <span class="note">at 70% weight HP and SP don't regenerate; at 90% you can't attack or use skills</span></summary>

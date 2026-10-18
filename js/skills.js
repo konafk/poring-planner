@@ -19,7 +19,7 @@ const SK_ALIAS={"frost driver":"frost-diver"};
 const normSk=x=>String(x).toLowerCase().replace(/\(.*?\)/g,"").replace(/\blv\s*\d+\b/g,"").replace(/[^a-z ]/g," ").replace(/\s+/g," ").trim();
 function presetSkill(p){if(!p||p.type==="spellfist"||/^(copied:|basic attack|combo)/i.test(p.name))return null;const S=skOf(state.job),n=normSk(p.name);
   const slug=SK_ALIAS[n]||Object.keys(S).find(k=>normSk(S[k].name)===n)||Object.keys(S).find(k=>n.startsWith(normSk(S[k].name)));return slug?S[slug]:null}
-function levelPreset(p,c){const s=presetSkill(p),a={...p};if(!s||!hasTree(c))return {a};const lv=skLv(c,s.slug);if(lv>=s.max)return {a,lv,s};if(lv<=0)return {a,lv:0,s};
+function levelPreset(p,c){if(p.type==="spellfist")return sgPreset(p,c);const s=presetSkill(p),a={...p};if(!s||!hasTree(c))return {a};const lv=skLv(c,s.slug);if(lv>=s.max)return {a,lv,s};if(lv<=0)return {a,lv:0,s};
   const hi=skRow(s,s.max),lo=skRow(s,lv),k=i=>hi[i]&&lo[i]!=null?lo[i]/hi[i]:null;
   if(k(1)!=null)a.pct=Math.round(p.pct*k(1));if(k(2)!=null)a.hits=Math.round(p.hits*k(2)*100)/100;if(lo[0]!=null)a.sp=lo[0];
   const cHi=(hi[3]||0)+(hi[4]||0),cLo=(lo[3]||0)+(lo[4]||0);if(cHi>0){const f=cLo/cHi;a.cast=Math.round(num(p.cast)*f*100)/100;if(p.vct!=null)a.vct=p.vct*f;if(p.fct!=null)a.fct=p.fct*f}
@@ -28,6 +28,10 @@ function levelPreset(p,c){const s=presetSkill(p),a={...p};if(!s||!hasTree(c))ret
   // zeny per use follows the level's "Zeny Cost: 300Z" (Mammonite: 100 × Lv)
   if(p.zeny!=null){const z=String(lo[7]).match(/Zeny Cost:?\s*([\d,]+)/i);if(z)a.zeny=+z[1].replace(/,/g,"")}
   a.name=/Lv\s*\d+/.test(p.name)?p.name.replace(/Lv\s*\d+/,"Lv"+lv):`${p.name} Lv${lv}`;return {a,lv,s}}
+// Sage's Spell Fist and Hindsight attacks: named with their levels (learned ones with a skill tree, else Sage options); lv 0 when one isn't learned
+function sgPreset(p,c){const a={...p},g={...SAGE_D,...(c.sage||{})},t=hasTree(c),lvOf=(slug,k)=>t?skLv(c,slug):Math.max(0,num(g[k]));
+  const lv=[];a.name=p.name.replace(/Spell Fist Lv\d+/,()=>{const n=lvOf("spell-fist","sfLv");lv.push(n);return "Spell Fist Lv"+n}).replace(/Hindsight Lv\d+/,()=>{const n=lvOf("hindsight","hsLv");lv.push(n);return "Hindsight Lv"+n});
+  return {a,lv:Math.min(...lv),s:true,named:true}}
 const refreshPreset=c=>{if(c.preset>=0){const p=JOBS[state.job].p[c.preset];if(p)c.a=levelPreset(p,c).a}};
 // the skill check corrected four presets' damage % (Grimtooth 300%, the Monk combo's knuckle and STR, Acid Bomb's monster VIT, Axe Boomerang's
 // weight) and moved cast times and delays to the in-game table: saved characters still on a preset take the new numbers at their learned level
@@ -37,6 +41,11 @@ const refreshPreset=c=>{if(c.preset>=0){const p=JOBS[state.job].p[c.preset];if(p
 // and Napalm Vulcan their cooldown and after-cast delay apart, as the table has them
 (function presetsV8(){if(state.presetsV8)return;state.presetsV8=true;const job=state.job;
   for(const j in state.chars){const c=state.chars[j],p=JOBS[j]&&c&&c.preset>=0&&JOBS[j].p[c.preset];if(p){state.job=j;c.a=levelPreset(p,c).a}}state.job=job;save()})();
+// Sage: Hindsight moved from the on / auto boxes in Sage options to its own attacks. A Spell Fist character with Hindsight on takes
+// "Spell Fist + Hindsight"; every Sage preset takes its new name with its levels
+(function sageHsV1(){if(state.sageHsV1)return;state.sageHsV1=true;const c=state.chars&&state.chars.Sage;if(!c)return;const s=c.sage||{};
+  if(c.preset===0&&s.hsOn)c.preset=JOBS.Sage.p.findIndex(p=>p.type==="spellfist"&&p.sf!==false&&p.hs);delete s.hsOn;delete s.hsAuto;delete s.hsWorth;
+  const p=c.preset>=0&&JOBS.Sage.p[c.preset];if(p)c.a=levelPreset(p,c).a;save()})();
 // passives: values come from the skill's own description at the learned level; this table only says what they need.
 // any: bonus lines that count with any weapon (Music / Dance Lessons' Max SP %, checked on a Dancer with no whip)
 const SK_PASSIVE={"sword-mastery":{w:["Dagger","One-handed sword"]},"two-handed-sword-mastery":{w:["Two-handed sword"]},"spear-mastery":{w:["One-handed spear","Two-handed spear"]},
@@ -87,7 +96,7 @@ function skillEffects(c){const out={mastery:[],pct:0,spCost:0,myEle:{},physEle:{
 // Sage options follow the skill tree when one is set: Spell Fist, Hindsight, Double Bolt and bolt levels are the learned ones
 const SG_BOLT={Fire:"fire-bolt",Water:"cold-bolt",Wind:"lightning-bolt"};
 function sageFromTree(c){if(state.job!=="Sage"||!hasTree(c))return false;const g=G();
-  g.sfLv=skLv(c,"spell-fist");g.hsLv=skLv(c,"hindsight");if(!g.hsLv)g.hsOn=false;const db=skLv(c,"double-bolt");if(db)g.dbLv=db;else g.dbOn=false;
+  g.sfLv=skLv(c,"spell-fist");g.hsLv=skLv(c,"hindsight");const db=skLv(c,"double-bolt");if(db)g.dbLv=db;else g.dbOn=false;
   // your ticked bolts stay as chosen; unlearned ones are skipped in sfBolts(), and the bolt level is the lowest learned one in use
   const lv=Object.keys(SG_BOLT).filter(el=>g.bolts[el]&&skLv(c,SG_BOLT[el])).map(el=>skLv(c,SG_BOLT[el]));g.boltLv=lv.length?Math.min(...lv):1;return true}
 let SKFX=null; // skillEffects(C()) for this render
@@ -104,7 +113,7 @@ function renderSkills(){const c=C(),L=learned(c),S=skOf(state.job),trees=treesOf
     return `<div class="tree"><div class="bar"><b>${esc(t.job)}</b><span class="note${pts!=null&&used>pts?" bad":""}">${used}${pts!=null?" / "+pts:""} points</span></div><div class="skgrid">${cells}</div></div>`}).join(""):'<div class="note">No skill tree data for this job.</div>';
   const buffs=Object.keys(SK_BUFF).filter(k=>S[k]&&skLv(c,k)>0);
   $("buffList").innerHTML=buffs.length?`<span class="note">Self-buffs while farming (read your status window with them off):</span> `+buffs.map(k=>`<label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-buff="${k}" ${(c.buffs||{})[k]?"checked":""} style="width:auto"> ${esc(S[k].name)} <span class="muted">${esc(skRow(S[k],skLv(c,k))[7].replace(/Duration:[^,]*,?\s*/i,""))}</span>${SK_BUFF[k].w&&!SK_BUFF[k].w.includes(c.weapon)?` <span class="warnc">(needs ${esc(SK_BUFF[k].w.join(" / "))})</span>`:""}</label>`).join(""):"";
-  ROOTQ("#preset option").forEach(o=>{const p=JOBS[state.job].p[+o.value];if(!p)return;const r=levelPreset(p,c);o.textContent=r.s&&hasTree(c)?(r.lv?r.a.name:`${p.name} (not learned)`):p.name})}
+  ROOTQ("#preset option").forEach(o=>{const p=JOBS[state.job].p[+o.value];if(!p)return;const r=levelPreset(p,c);o.textContent=r.s&&(hasTree(c)||r.named)?(r.lv?r.a.name:`${p.name} (not learned)`):p.name})}
 $("skillTrees").addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const slug=b.closest("[data-sk]").dataset.sk,c=C(),s=skOf(state.job)[slug],lv=skLv(c,slug);let why=null;
   if(b.dataset.act==="up")raiseSkill(c,slug,lv+1);else if(b.dataset.act==="dn")why=lowerSkill(c,slug,lv-1);else if(lv<s.max)raiseSkill(c,slug,s.max);else why=lowerSkill(c,slug,0);
   $("skillNote").textContent=why?why.join(" · "):"";refreshPreset(c);save();renderSkills();syncChar();renderAll()});

@@ -983,6 +983,48 @@ t("Spell Fist: the bolt at 100%, then × (100 × bolt Lv + 100 × Spell Fist Lv)
   assert.equal(run("sfPct()"), 800);
 });
 
+t("Sage attacks: Spell Fist, Hindsight, or both, named with their levels", () => {
+  const sage = { matkTxt: "300+200", intTxt: "", st: {}, aspd: 170, sage: { sfLv: 10, boltLv: 10, bolts: { Fire: true, Water: false, Wind: false }, hsLv: 10, dbOn: false },
+    ec: { on: false }, cards: { daSF: false, vitata: false } };
+  const pick = name => `JOBS.Sage.p.findIndex(p=>p.name===${JSON.stringify(name)})`;
+  const on = name => { const i = run(pick(name)); assert.ok(i >= 0, name); setup("Sage", { ...sage, preset: i, a: JSON.parse(run(`JSON.stringify(JOBS.Sage.p[${i}])`)) }) };
+  on("Spell Fist Lv10");
+  near(run("sfChance()"), 0.5); near(run("hsChance()"), 0);
+  near(run("sgUpkeep()"), 106 / 300);                                            // Spell Fist's 76 SP and a bolt every 300 s
+  on("Hindsight Lv10");
+  near(run("sfChance()"), 0); near(run("hsChance()"), 0.2);                       // Lv × 2%, a Lv5 bolt at 100% MATK
+  near(run("sgUpkeep()"), 0);
+  near(run(`dmgPerHit(${MOB})`), 5 * run(`magicDmg(${MOB},100,'Fire')`));         // one proc is the Hindsight bolt, not Spell Fist's
+  near(run(`sfMagic(${MOB})`), 0.2 * run("hsSustain()") * 5 * run(`magicDmg(${MOB},100,'Fire')`));
+  on("Spell Fist Lv10 + Hindsight Lv10");
+  near(run("sfChance()"), 0.5); near(run("hsChance()"), 0.2);
+  near(run(`sfMagic(${MOB})`), 0.5 * run(`sfHit(${MOB},'Fire')`) + 0.2 * run("hsSustain()") * 5 * run(`magicDmg(${MOB},100,'Fire')`));
+  // names follow Sage options, or the learned levels with a skill tree; "not learned" at 0
+  run("G().sfLv=7;G().hsLv=4");
+  assert.equal(run(`levelPreset(JOBS.Sage.p[C().preset],C()).a.name`), "Spell Fist Lv7 + Hindsight Lv4");
+  run("C().skills={'spell-fist':3}");
+  assert.equal(run(`levelPreset(JOBS.Sage.p[C().preset],C()).lv`), 0);
+  assert.equal(run(`levelPreset(JOBS.Sage.p[0],C()).a.name`), "Spell Fist Lv3");
+});
+
+t("Foresight: half the variable cast for 5 casts, plus its own 1 s cast, only when that saves time", () => {
+  // a made-up spell: 4 s variable + 1 s fixed cast, 0.5 s delay, no monster on you (no interrupted casts)
+  const BOLT = { name: "x", type: "magic", pct: 100, hits: 1, el: "Fire", vct: 4, fct: 1, cd: 0.5, gcd: 0, sp: 20, targets: 1, cast: 5, delay: 0.5 };
+  setup("Sage", { matkTxt: "300", intTxt: "0", st: { dex: "0" }, aspd: 150, sage: { fsOn: true }, cards: { vitata: false }, a: BOLT });
+  near(run("plainUseSec()"), 5.5);
+  near(run("fsUseSec()"), 2 + 1 + 0.5 + 1 / 5);                                  // half of 4 s, + 1 s, + 0.5 s, + Foresight's 1 s every 5 casts
+  assert.equal(run("fsUsed()"), true);
+  near(run("useSec()"), 3.7);
+  near(run("skillSPPerSec()"), (20 + 1 / 5) / 3.7);                               // Foresight's 1 SP every 5 casts
+  run("C().st.dex='200';C().intTxt='130'");                                       // 2 × DEX + INT ≥ 530: no variable cast left to halve
+  assert.equal(run("fsUsed()"), false);
+  near(run("useSec()"), run("plainUseSec()"));
+  run("C().st.dex='0';C().skills={'study':1}");                                   // a skill tree without Foresight learned
+  assert.equal(run("fsUsed()"), false);
+  run("C().skills={};G().fsOn=false");
+  assert.equal(run("fsUsed()"), false);
+});
+
 t("Auto Shadow Spell procs on a miss too; card auto-casts need a hit", () => {
   setup("Rogue", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", matkTxt: "100+50", intTxt: "40", hitTxt: "1", crit: 0, st: {},
     a: JSON.parse(run(`JSON.stringify(JOBS.Rogue.p.find(p=>p.name.startsWith("Shadow Spell: Fire Bolt")))`)) });
@@ -1477,7 +1519,7 @@ t("share links leave out defaults and get every value back", () => {
   const has = (a, b, at) => { if (a && typeof a === "object" && !Array.isArray(a)) for (const k in a) has(a[k], b?.[k], `${at}.${k}`); else assert.deepEqual(b, a, at) };
   has(before, after, "state");
   assert.deepEqual(after.sessions[0].entries, before.sessions[0].entries);
-  assert.equal(after.chars.Sage.sage.hsAuto, true);
+  assert.equal(after.chars.Sage.sage.sfLv, 10);
   assert.equal(run("JSON.stringify(unpackState({sessions:[]}))"), '{"sessions":[]}');  // older links, not packed, load as they are
 });
 

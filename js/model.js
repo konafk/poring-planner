@@ -48,19 +48,29 @@ const noBreak=()=>{const cd=CRD();return !!(cd.phen||cd.bbfly)||cardInGear(C(),[
 // fixed cast % cut: only the highest one counts (the box, or a consumable such as Challenge Drink)
 const fctPctEff=()=>Math.max(num(C().fctPct),-consSum("fct_percent"));
 const vctCards=()=>{const cd=CRD(),c=C();return (cd.phen&&!cardInGear(c,[PHEN])?25:0)+(cd.bbfly&&!cardInGear(c,[BBFLY])?30:0)};
-const castSec=()=>{const c=C(),a=c.a,vp=num(c.vctPct)-vctCards();
-  if(a.fct!=null||a.vct!=null)return Math.max(0,num(a.vct)*vctFactor()*(1-vp/100))+Math.max(0,(num(a.fct)-num(c.fctSec))*(1-fctPctEff()/100));
+// vk: share of the variable cast left (Foresight halves it)
+const castSec=(vk=1)=>{const c=C(),a=c.a,vp=num(c.vctPct)-vctCards();
+  if(a.fct!=null||a.vct!=null)return Math.max(0,num(a.vct)*vctFactor()*(1-vp/100))*vk+Math.max(0,(num(a.fct)-num(c.fctSec))*(1-fctPctEff()/100));
   const base=num(a.cast),f=Math.min(100,Math.max(0,num(c.fixedShare)))/100;
-  return Math.max(0,base*(1-f)*vctFactor()*(1-vp/100))+Math.max(0,(base*f-num(c.fctSec))*(1-fctPctEff()/100))};
+  return Math.max(0,base*(1-f)*vctFactor()*(1-vp/100))*vk+Math.max(0,(base*f-num(c.fctSec))*(1-fctPctEff()/100))};
 // a hit that lands while you cast interrupts it and you start again (SP is only spent on a cast that finishes). With λ hits landing per
 // second from the monster in play, a T-second cast takes (e^(λT) − 1)/λ on average. Not with Phen or Bloody Butterfly
-const castEff=()=>{const T=castSec();if(T<=0||noBreak())return T;const l=hitsOnYou(SG_MOB||calcMob());return l>0?Math.expm1(l*T)/l:T};
+const castEff=(T=castSec())=>{if(T<=0||noBreak())return T;const l=hitsOnYou(SG_MOB||calcMob());return l>0?Math.expm1(l*T)/l:T};
 // delay after a skill: the longer of the after-cast delay (cut by after-cast delay %) and the skill's own cooldown (the % doesn't touch it).
 // Presets carry both (a.gcd, a.cd); a typed "Delay after" is an after-cast delay
 const delaySec=()=>{const a=C().a,k=1-num(C().acdPct)/100;
   return a.cd!=null||a.gcd!=null?Math.max(0,num(a.gcd)*k,num(a.cd)):Math.max(0,num(a.delay)*k)};
 // your attack interval runs from the start of the cast: a skill takes cast + delay or the attack interval, whichever is longer
-const useSec=()=>{const a=C().a;if(a.type==="auto"||a.type==="spellfist")return 1/atkPerSec();return Math.max(castEff()+delaySec(),1/atkPerSec(),0.1)};
+const useSec=()=>{const a=C().a;if(a.type==="auto"||a.type==="spellfist")return 1/atkPerSec();const u=plainUseSec();return fsUsed()?fsUseSec():u};
+const plainUseSec=()=>Math.max(castEff()+delaySec(),1/atkPerSec(),0.1);
+// Foresight (Sage, Sage options): the next 5 casts take half their variable cast time, for a cast of its own every 5 (Zero's skill data:
+// 1 s fixed, 1 SP), cut like any fixed cast and interrupted like any cast. Only used when it saves time
+const FS_USES=5;
+const fsRow=()=>skRowOf("foresight",1)||[1,null,null,0,1000];
+const fsCastSec=()=>{const r=fsRow(),c=C();return Math.max(castEff(Math.max(0,num(r[3])/1000*vctFactor()*(1-(num(c.vctPct)-vctCards())/100))+Math.max(0,(num(r[4])/1000-num(c.fctSec))*(1-fctPctEff()/100))),1/atkPerSec())};
+const fsUseSec=()=>Math.max(castEff(castSec(0.5))+delaySec(),1/atkPerSec(),0.1)+fsCastSec()/FS_USES;
+const fsAble=()=>{const c=C(),t=c.a.type;return state.job==="Sage"&&!!G().fsOn&&(t==="magic"||t==="phys")&&castSec(0)<castSec()&&(!hasTree(c)||skLv(c,"foresight")>0)};
+const fsUsed=()=>fsAble()&&fsUseSec()<plainUseSec();
 // base-level skills: × BaseLv/100 only above Lv100, except the three Zero skills missing that check (blvBug, see game.js)
 // cart skills (Cart Revolution): +a.cart % per 8,000 cart weight, capped at a full 8,000 cart
 // shield skills (a.shw: Shield Boomerang, Rapid Smiting): + shield weight + 4 × shield refine %. Build mode reads the Shield row
@@ -137,13 +147,13 @@ const leftEl=()=>EL_OVR||C().lwElem||"Neutral";
 const mobSoftDef=m=>Math.max(0,Math.floor(((m.lv||0)+(m.vit||0))/2));
 const mobSoftMdef=m=>Math.max(0,Math.floor(((m.lv||0)+(m.int||0))/4));
 // "Your hit %": skill % after element, size and your bonuses, as a share of your full ATK (before monster DEF/MDEF)
-const hitPctOf=m=>{const a=C().a;if(a.falcon)return elemMult(m,"Neutral");if(a.type==="spellfist")return sfPct()*elemMult(m,atkEl())/100*bonusMul(m,true);if(a.type==="magic")return pctEff(m)*elemMult(m,atkEl())/100*bonusMul(m,true);
+const hitPctOf=m=>{const a=C().a;if(a.falcon)return elemMult(m,"Neutral");if(a.type==="spellfist")return sgPct()*elemMult(m,atkEl())/100*bonusMul(m,true);if(a.type==="magic")return pctEff(m)*elemMult(m,atkEl())/100*bonusMul(m,true);
   const P=atkParts(),tot=P.weapon+P.eq+frontAtk();if(tot<=0)return 0;
   return pctEff(m)*handAtk(m,P.weapon,C().weapon,atkEl(),frontAtk())/tot*bonusParts(m).full};
 // hit chance = 100 + your HIT − the monster's "100% hit" value, 5–100%; magic always lands
 const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist"||C().a.falcon||C().a.mr)return 100;if(m.hit100==null)return 95;return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100))};
 function dmgPerHit(m){
-  const a=C().a;if(a.type==="spellfist")return sfHit(m,atkEl());if(a.mr)return mrHit(m);if(a.falcon==="assault")return faHit(m);if(a.falcon)return blitzHit(m,Math.round(num(a.hits,5)));
+  const a=C().a;if(a.type==="spellfist")return sfOn()?sfHit(m,atkEl()):hsHit(m,atkEl());if(a.mr)return mrHit(m);if(a.falcon==="assault")return faHit(m);if(a.falcon)return blitzHit(m,Math.round(num(a.hits,5)));
   if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor((sumStat(cf("matkTxt"))*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
   const P=atkParts(),d=physDmg(m,handAtk(m,P.weapon,C().weapon,atkEl(),frontAtk()));
   return dualHit()&&d>0?Math.max(1,Math.floor(d*handPct().right/100)):d}
@@ -234,7 +244,7 @@ const ihrPer10=()=>{const l=skLv(C(),"increase-hp-recovery");return l>0?Math.flo
 const hpRegenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(hpRegen6()/6+ihrPer10()/10)*(1-poisonUp(m)))+consHPPerSec();
 // SP the attack itself costs per second (Spell Fist: its upkeep); defSP adds Energy Coat and Vitata's heals against the monster in play
 // Guillotine Fist spends all your SP (Max SP each use), whatever SP cost cuts you have
-const skillSPPerSec=()=>(C().a.asura?num(cf("maxSp")):num(C().a.sp)*spCostMul())/useSec()+dlUpkeep();
+const skillSPPerSec=()=>(C().a.asura?num(cf("maxSp")):(num(C().a.sp)+(fsUsed()?num(fsRow()[0])/FS_USES:0))*spCostMul())/useSec()+dlUpkeep();
 // HP you spend yourself per second: Martyr's Reckoning 9% of Max HP per attack, a.hpCost per use (Excruciating Palm)
 const selfHpPerSec=()=>{const a=C().a;return a.mr?0.09*num(cf("maxHp"))/useSec():num(a.hpCost)/useSec()};
 const spNeedPerSec=()=>isSF()?sgUpkeep()+defSP()+hsFullSP()*hsSustain():skillSPPerSec()+defSP();
@@ -297,16 +307,18 @@ const hpItemsPerMin=(m,d=defense(m))=>d?vitHeals()?0:d.hp*60:null;
 const hpTakenPerMin=(m,d=defense(m))=>d?(d.taken+d.psn+d.self)*60:null;
 // pz: share of the time poisoned, psn: HP a minute it drains
 const poisonOf=(m,d=defense(m))=>d?{pz:d.pz,psn:d.psn*60}:{pz:0,psn:0};
-// ---- Sage: full Spell Fist model (bolt choice, Hindsight, Double Bolt, SP items; Energy Coat from ECO(), Vitata, Hunter Fly and Side Winder from CRD()) ----
-const SAGE_D={sfLv:10,boltLv:10,bolts:{Fire:true,Water:true,Wind:true},hsOn:false,hsAuto:true,hsLv:10,hsWorth:50000,dbOn:false,dbLv:5};
+// ---- Sage: Spell Fist and Hindsight on basic attacks (bolt choice, Double Bolt, SP items; Energy Coat from ECO(), Vitata, Hunter Fly and Side Winder from CRD()) ----
+// the attack picks which of the two are on: a.sf (Spell Fist, on unless false) and a.hs (Hindsight)
+const SAGE_D={sfLv:10,boltLv:10,bolts:{Fire:true,Water:true,Wind:true},hsLv:10,dbOn:false,dbLv:5,fsOn:false};
 const G=()=>{const c=C();if(!c.sage)c.sage={};for(const k in SAGE_D)if(c.sage[k]==null)c.sage[k]=JSON.parse(JSON.stringify(SAGE_D[k]));return c.sage};
 const isSF=()=>C().a.type==="spellfist";
 let HS_OVR=null; // Hindsight forced on/off while comparing
 const withHs=(v,fn)=>{const k=HS_OVR;HS_OVR=v;try{return fn()}finally{HS_OVR=k}};
-const hsOnNow=()=>HS_OVR!=null?HS_OVR:!!G().hsOn;
+const hsOnNow=()=>HS_OVR!=null?HS_OVR:!!C().a.hs;
+const sfOn=()=>C().a.sf!==false;
 const sfBolts=()=>["Fire","Water","Wind"].filter(b=>G().bolts[b]&&(state.job!=="Sage"||!hasTree(C())||skLv(C(),SG_BOLT[b])>0));
 // Spell Fist: Lv × 5% proc chance on each basic attack, hit or miss; damage in the bolt's element (checked in game)
-const sfChance=()=>Math.min(10,Math.max(0,num(G().sfLv)))*5/100;
+const sfChance=()=>sfOn()?Math.min(10,Math.max(0,num(G().sfLv)))*5/100:0;
 // Spell Fist %: 100 × bolt Lv + 100 × Spell Fist Lv. The bolt is worked out first at 100% (its MDEF steps included), then × that %
 const sfPct=()=>100*Math.min(10,Math.max(1,num(G().boltLv,10)))+100*Math.min(10,Math.max(1,num(G().sfLv,10)));
 const sfHit=(m,el)=>Math.floor(magicDmg(m,100,el)*sfPct()/100);
@@ -315,13 +327,16 @@ const magicDmg=(m,pct,el,addMatk=0)=>{const e=elemMult(m,el)/100;if(e<=0||pct<=0
 const hsLvN=()=>Math.min(10,Math.max(0,num(G().hsLv)));
 const hsChance=()=>hsOnNow()?hsLvN()*2/100:0;
 const hsBoltLv=()=>Math.floor(hsLvN()/2);
+const hsHit=(m,el)=>hsBoltLv()*magicDmg(m,100,el);
+// the % one proc deals: Spell Fist's, or the Hindsight bolt's when Spell Fist is off
+const sgPct=()=>sfOn()?sfPct():100*hsBoltLv();
 const sgSpMult=()=>1+(CRD().vitata?num(CRD().spBonus):0)/100; // Vitata Card: +25% SP cost
 const hsProcSP=()=>(10+2*hsBoltLv())*2/3*sgSpMult();
 // Double Bolt (needs Hindsight): (30 + 10 × Lv)% chance the auto-cast bolt fires again; recast every 90 s for 35 + 5 × Lv SP
 const dbLvN=()=>Math.min(5,Math.max(1,num(G().dbLv,5)));
 const dbChance=()=>hsOnNow()&&G().dbOn?(30+10*dbLvN())/100:0;
 // Spell Fist upkeep: 76 SP plus a bolt every 300 s
-const sgUpkeep=()=>(76+30)*sgSpMult()/300+(hsOnNow()&&G().dbOn?(35+5*dbLvN())*sgSpMult()/90:0);
+const sgUpkeep=()=>(sfOn()?(76+30)*sgSpMult()/300:0)+(hsOnNow()&&G().dbOn?(35+5*dbLvN())*sgSpMult()/90:0);
 // Side Winder Card: chance for a basic attack to hit twice; under Spell Fist the 2nd hit procs it too
 const daFactor=()=>CRD().daSF?1+num(CRD().daPct)/100:1;
 // Hunter Fly Card: each physical attack has a 5% chance to restore 100 HP/s for 5 s (refreshes, doesn't stack). Basic attacks
@@ -387,19 +402,18 @@ const hsSustain=()=>{const f=hsFullSP();if(f<=0||sgItemsOn())return 1;return Mat
 // the basic attack under Spell Fist still deals its own physical hit: weapon element, size, DEF, HIT and crits, plus card auto-casts
 const withAtk=(a,fn)=>{const c=C(),k=c.a;c.a=a;try{return fn()}finally{c.a=k}};
 const sfPhys=m=>withAtk(BASIC,()=>withEl(null,()=>useAvg(m,dmgPerHit(m),procPerUse(m))));
-const sfMagic=m=>{const el=atkEl();return sfChance()*sfHit(m,el)*daFactor()+hsChance()*hsSustain()*hsBoltLv()*magicDmg(m,100,el)*(1+dbChance())};
+const sfMagic=m=>{const el=atkEl();return sfChance()*sfHit(m,el)*daFactor()+hsChance()*hsSustain()*hsHit(m,el)*(1+dbChance())};
 const sfPerAttack=m=>sfMagic(m)+sfPhys(m)*daFactor();
-// Hindsight auto: on for the session's map only when the extra EXP costs less than your limit per 1% (after the extra loot)
-function applyHsAuto(){
-  const g=G();if(!isSF()||!g.hsAuto){g._note="";return}
-  const mp=currentMap()||(calcMob()&&(openMaps(calcMob())[0]||[])[0]);if(!mp||!MAPMOBS[mp]){g._note="Auto needs a monster with an open map";return}
+// Hindsight vs none on the session's map, as a note in Sage options: the extra EXP and what the extra SP items cost per 1% (after the extra loot)
+function hsCompare(){
+  const g=G();if(!isSF()||!hsLvN()){g._note="";return}
+  const mp=currentMap()||(calcMob()&&(openMaps(calcMob())[0]||[])[0]);if(!mp||!MAPMOBS[mp]){g._note="";return}
   const L=lvExp(num(C().baseLv))||lvExp(62);const w=walkSec();
   const top=MAPMOBS[mp].filter(x=>!x.m.boss&&!isSkipped(x.m)&&!x.m.expUnknown&&x.m.atkMin!=null).sort((a,b)=>b.n-a.n)[0];const mm=top?top.m:null;
   const run=v=>withHs(v,()=>{const k=SG_MOB;SG_MOB=mm;try{return {r:mapStats(mp,w),items:sgItemsPerSec()}}finally{SG_MOB=k}});
-  const on=run(true),off=run(false);if(!on.r||!off.r){g._note="Auto: no result for "+mp;return}
+  const on=run(true),off=run(false);if(!on.r||!off.r){g._note="";return}
   const costHr=(on.items-off.items)*3600*spItemPrice(),gain=(on.r.epm-off.r.epm)*60/L*100,net=costHr-(on.r.zg-off.r.zg),per=gain>0?net/gain:Infinity;
-  const want=gain>0&&(net<=0||per<=num(g.hsWorth));g.hsOn=want;
-  g._note=`Hindsight auto: ${want?"on":"off"} on ${mapCode(mp)} · ${gain<=0?"no EXP gain":net<=0?"extra loot pays for the SP items":`~${fmtN(per)} z per 1% EXP vs your ${fmtN(num(g.hsWorth))} z limit`} (+${gain.toFixed(2)}%/hr)`;
+  g._note=`Hindsight on ${mapCode(mp)}: ${gain<=0?"no EXP gain":`+${gain.toFixed(2)}%/hr EXP, ${net<=0?"the extra loot pays for its SP items":`~${fmtN(per)} z per 1% EXP in SP items`}`}`;
 }
 // ---- Farm without items: can your own recovery keep up with what a monster or map costs you, with no HP or SP items? ----
 // Per kill: the HP it takes off you while you fight it (its ATK through your DEF, its hits that get past your FLEE, Energy Coat's cut)

@@ -70,7 +70,9 @@ Cuts damage taken by 6–30% for 1–3% of Max SP per hit, the fuller your SP th
 
 ## Sage options
 
-Spell Fist with the best bolt per monster (a proc on every basic attack, hit or miss; the bolt is worked out at 100% MATK, then × (100 × bolt Lv + 100 × Spell Fist Lv)%, so the monster's MDEF counts that many times over), Hindsight (switched on or off automatically against your zeny limit), Double Bolt and SP items. The cards and Energy Coat above count for Spell Fist too: Side Winder's 2nd hit also procs Spell Fist.
+A Sage has three basic-attack attacks: **Spell Fist**, **Hindsight**, and **Spell Fist + Hindsight**, named with their levels (the learned ones with a skill tree, else the levels in Sage options). Spell Fist uses the best bolt per monster (a proc on every basic attack, hit or miss; the bolt is worked out at 100% MATK, then × (100 × bolt Lv + 100 × Spell Fist Lv)%, so the monster's MDEF counts that many times over). Hindsight auto-casts a bolt at half its level on Lv × 2% of basic attacks, with Double Bolt and SP items on top; Sage options show what Hindsight would add on the session's map and what its SP items cost per 1% EXP. The cards and Energy Coat above count for both: Side Winder's 2nd hit also procs Spell Fist.
+
+**Foresight** (tick it in Sage options) counts for attacks with a variable cast time: the next 5 casts take half their variable cast time (multiplied with your gear's cast %, not added to it), and every 5 casts Foresight's own 1 s fixed cast and 1 SP are added. It's only counted when that saves time, and the box says how much.
 
 ## Items skills use up
 
