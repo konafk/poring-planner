@@ -92,15 +92,11 @@
       </div>
       <div class="note" id="jobBonusNote"></div>
       <div class="bar">
-        <div class="seg" role="radiogroup" aria-label="Which gear the table shows">
-          <button type="button" role="radio" data-gset="mine">My gear</button>
-          <button type="button" role="radio" data-gset="0" title="Another set of gear, worked out next to yours on the EXP &amp; formulas tab">Set 1</button>
-          <button type="button" role="radio" data-gset="1" title="Another set of gear, worked out next to yours on the EXP &amp; formulas tab">Set 2</button>
-          <button type="button" role="radio" data-gset="2" title="Another set of gear, worked out next to yours on the EXP &amp; formulas tab">Set 3</button>
-        </div>
+        <div class="seg" role="radiogroup" aria-label="Which gear the table shows" id="gsetSeg"></div>
+        <button type="button" class="small" id="altAdd">+ Add set</button>
         <button type="button" class="small" id="altCopy" title="Start this set from your gear, then change a part">Copy my gear to it</button>
         <button type="button" class="small" id="altSwap" title="Wear this set: it becomes your gear, and yours this set (swap again to go back)">Swap with my gear</button>
-        <button type="button" class="small danger" id="altClear">Empty it</button>
+        <button type="button" class="small danger" id="altDel">Remove set</button>
       </div>
       <div class="note" id="altNote"></div>
       <div class="bar">

@@ -15,7 +15,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 
 ## What it does
 
-- **Character:** every 2nd job with Zero skill data, a build simulator that matches the status window, and a damage model covering elements, sizes, DEF, crits, dual wield, auto-casts, cards, buffs, consumables (HP / SP items included), skill items and weight. Up to 3 **other gear sets** are worked out next to your gear, so you can compare weapons or cards before you switch. Gear you take off keeps its refine, cards and affixes for when you put it back on, and whole setups can be saved as named **loadouts** to swap between.
+- **Character:** every 2nd job with Zero skill data, a build simulator that matches the status window, and a damage model covering elements, sizes, DEF, crits, dual wield, auto-casts, cards, buffs, consumables (HP / SP items included), skill items and weight. Up to 10 **other gear sets** (add or remove them as you need) are worked out next to your gear, so you can compare weapons or cards before you switch. Gear you take off keeps its refine, cards and affixes for when you put it back on, and whole setups can be saved as named **loadouts** to swap between.
 - **Session:** an EXP tracker with EXP/hr, time to level, a progress chart and level goals.
 - **Monsters & maps:** a monster table, the EXP Hunter and Zeny Hunter map rankings, a Map planner, and a green / yellow / red check of whether you can farm a map with no HP or SP items.
 - **Monster info, Item info, Market:** drops, prices, player prices and a sell timer.

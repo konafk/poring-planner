@@ -66,9 +66,13 @@ for(const j in state.chars){let c=state.chars[j];if(!c||typeof c!=="object"){del
   // trying is the first other gear set (build.alts)
   if(c.trial){const t=c.trial.base,b=c.build;delete c.trial;if(t&&typeof t==="object"&&!Array.isArray(t)){
     if(b&&b.gear&&t.build&&typeof t.build==="object")t.build.alts=[{gear:b.gear,stones:b.stones||{},special:b.special||{}}];state.chars[j]=c=t}}
-  // one other gear set (build.alt, the table editing it: gearEdit "alt") became up to three (build.alts, "alt0"…)
+  // one other gear set (build.alt, the table editing it: gearEdit "alt") became a list (build.alts, "alt0"…). The list was three
+  // sets that were always there, so empty ones at its end go, unless the table is editing one
   if(c.build&&typeof c.build==="object"){const b=c.build;if(b.alt){if(!Array.isArray(b.alts)&&typeof b.alt==="object")b.alts=[b.alt];delete b.alt}
-    if(b.alts!=null&&!Array.isArray(b.alts))delete b.alts}
+    if(b.alts!=null&&!Array.isArray(b.alts))delete b.alts;
+    if(b.alts){b.alts=b.alts.map(a=>a&&typeof a==="object"&&!Array.isArray(a)?a:{gear:{}});const ed=/^alt(\d+)$/.exec(c.gearEdit||""),keep=ed?+ed[1]:-1;
+      const empty=a=>!Object.keys(a.gear||{}).length&&!Object.values(a.stones||{}).some(Boolean)&&!(a.special&&(a.special.ring||(a.special.own||[]).length));
+      while(b.alts.length&&b.alts.length-1>keep&&empty(b.alts[b.alts.length-1]))b.alts.pop()}}
   if(c.gearEdit==="alt")c.gearEdit="alt0";
   // "HP back per minute" (hpRegen) became "HP regen per 6s" (hpRegen6, blank = worked out): a typed value carries over as 10 ticks a minute
   if(c.hpRegen!=null){const v=+c.hpRegen;if(v>0&&c.hpRegen6==null)c.hpRegen6=Math.max(1,Math.round(v/10));delete c.hpRegen}
