@@ -200,3 +200,6 @@ table.convtab td.name{text-align:left}
 #recTable tbody tr{cursor:default}
 #recTable input{padding:3px 6px;font-size:13px}
 #recTable td.nowrap{white-space:nowrap}
+.trial{background:var(--accent-soft);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:8px}
+table.trialtab th{cursor:default}
+table.trialtab td{padding:4px 8px}

@@ -1443,4 +1443,18 @@ t("preset cast times and delays match the in-game skill table", () => {
   assert.equal(bad, "");
 });
 
+t("try other gear: compared with the copy kept at Try, Back to my gear puts it back", () => {
+  setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed spear", wElem: "Neutral", st: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  run("state.calcMobId=1002;trialStart();C().atkTxt='100+400';trialPrep()");
+  const now = run("JSON.stringify(trialStats())"), was = run("JSON.stringify(withChar(trialOf(C()).base,trialStats))");
+  const N = JSON.parse(now), W = JSON.parse(was);
+  assert.equal(N.atk, 500); assert.equal(W.atk, 400);
+  assert.ok(N.dmg > W.dmg && N.dps > W.dps && N.sec <= W.sec);
+  assert.equal(run("JSON.stringify(trialStats())"), now);                 // the trial is back in place afterwards
+  assert.equal(run("'trial' in trialOf(C()).base"), false);                // the copy doesn't nest older copies
+  run("trialBack();trialPrep()");
+  assert.equal(run("C().atkTxt"), "100+300"); assert.equal(run("C().trial"), undefined);
+  assert.equal(run("trialStats().dmg"), W.dmg);
+});
+
 console.log(`${n} tests passed`);

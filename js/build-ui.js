@@ -345,3 +345,44 @@ $("gearTable").addEventListener("input",e=>{if(e.target.dataset.optv!=null){cons
     const rows=BUILD.optRows(g.opts),x=rows[+e.target.dataset.optv];if(x){x.v=e.target.value===""?"":num(e.target.value);g.opts=rows;save();renderAll()}return}
   if(!e.target.classList.contains("ref"))return;const k=e.target.closest("tr").dataset.slot;const g=buildOf(C()).gear[k];if(!g)return;
   g.refine=Math.max(0,Math.min(20,num(e.target.value)));save();renderAll()});
+// ---- try other gear: "Try other gear" keeps a copy of the character in c.trial.base, and every change after that is the trial. The page
+// works everything out with the trial; the card compares it with the copy, "Back to my gear" puts the copy back, "Keep this gear" drops it ----
+const trialOf=c=>c.trial&&c.trial.base&&typeof c.trial.base==="object"?c.trial:null;
+// the map compared: the Map planner's, else the monster's best open map, else the session's (as the HP and SP items use)
+const trialMap=()=>{let mp=mapKey(state.map);if(!MAPMOBS[mp]){const m=calcMob(),om=m?openMaps(m):[];mp=om.length?om[0][0]:currentMap()}return MAPMOBS[mp]?mp:null};
+function trialStats(){const m=calcMob(),w=walkSec(),mp=trialMap(),o={atk:sumStat(cf("atkTxt")),matk:sumStat(cf("matkTxt")),hit:sumStat(cf("hitTxt")),flee:sumStat(cf("fleeTxt")),
+    crit:num(cf("crit")),aspd:aspdEff(),hp:num(cf("maxHp")),sp:num(cf("maxSp"))};
+  if(m){const r=mobRow(m,w);Object.assign(o,{dmg:withEl(r.el2,()=>dmgPerHit(m)+(dualHit()?leftDmg(m):0)),dps:withEl(r.el2,()=>dpsOf(m)),hitc:r.hitc,uses:r.uses,
+    sec:r.sec,epm:m.expUnknown?null:r.epm,zph:r.zph,hpm:r.hpm})}
+  const s=mp&&mapStats(mp,w);if(s)Object.assign(o,{mapEpm:s.epm,mapNet:s.net});return o}
+// what renderAll works out before drawing, for the character C() gives
+const trialPrep=()=>{SKFX=skillEffects(C());applyBuild();applyConsumables();applyHsAuto()};
+// fn with c2 as this job's character, then the trial back as it was
+function withChar(c2,fn){const j=state.job,c1=state.chars[j];state.chars[j]=c2;try{trialPrep();return fn()}finally{state.chars[j]=c1;trialPrep()}}
+// [key, label, higher is better, decimals]; "m" rows are against the monster you picked, "map" rows on the map
+const TRIAL_ROWS=[["atk","ATK",1],["matk","MATK",1],["hit","HIT",1],["flee","FLEE",1],["crit","CRIT",1],["aspd","ASPD",1],["hp","Max HP",1],["sp","Max SP",1],
+  ["dmg","Damage per hit",1,0,"m"],["dps","Damage per second",1,0,"m"],["hitc","Hits that land %",1,0,"m"],["uses","Uses per kill",0,1,"m"],["sec","Kill time (s)",0,1,"m"],
+  ["epm","EXP / min",1,0,"m"],["zph","Net zeny / hr",1,0,"m"],["hpm","HP lost / min",0,0,"m"],["mapEpm","EXP / min",1,0,"map"],["mapNet","Net zeny / hr (after healing)",1,0,"map"]];
+const trialFmt=(v,d)=>v==null||!isFinite(v)?"–":d?(+v).toFixed(d):fmtN(v);
+const trialGear=g=>{const it=g&&g.id&&BUILD.item(g.id);if(!it)return "none";const n=(g.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean);
+  return `${num(g.refine)?`+${num(g.refine)} `:""}${it.name}${n.length?` [${n.join(", ")}]`:""}`};
+function renderTrial(){const c=C(),t=trialOf(c);$("trialStart").hidden=!!t;$("trialBar").hidden=!t;$("trialTab").hidden=!t;if(!t)return;
+  const now=trialStats(),was=withChar(t.base,trialStats),m=calcMob(),mp=trialMap();
+  // the gear rows that changed (build mode), so you can see what you're trying
+  const g0=(t.base.build||{}).gear||{},g1=(c.build||{}).gear||{},changed=c.mode==="build"&&t.base.mode==="build"?BUILD.SLOTS.filter(s=>trialGear(g0[s.k])!==trialGear(g1[s.k])):[];
+  $("trialNote").innerHTML=(changed.length?changed.map(s=>`${esc(s.label)}: ${esc(trialGear(g0[s.k]))} → <b>${esc(trialGear(g1[s.k]))}</b>`).join("<br>")+"<br>":
+    c.mode==="build"?"Change your gear below (or anything else on this tab) to compare it with what you wear now.<br>":"Type the status window numbers for the gear you're trying (or anything else on this tab) to compare it with what you wear now.<br>")+
+    (m?"":"Pick a monster on the Monsters &amp; maps tab to compare damage, kill time and EXP / min against it. ")+"Back to my gear also undoes anything else you changed on this tab since you pressed Try.";
+  const head=x=>`<tr><td class="name" colspan="4"><b>${x}</b></td></tr>`;let grp="";
+  $("trialTable").tBodies[0].innerHTML=TRIAL_ROWS.filter(([k])=>now[k]!=null||was[k]!=null).map(([k,label,up,d,g])=>{
+    const a=was[k],b=now[k],ok=a!=null&&b!=null&&isFinite(a)&&isFinite(b),diff=ok?b-a:null,same=ok&&Math.abs(diff)<(d?0.5*10**-d:0.5);
+    const pc=ok&&!same&&a?` (${diff>0?"+":""}${(diff/Math.abs(a)*100).toFixed(1)}%)`:"",cls=same||diff==null?"":(diff>0)===!!up?"good":"bad";
+    const h=g&&g!==grp?head(g==="m"?`vs ${esc(m.name)}`:`On ${esc(mapLabel(mp))}`):"";if(g)grp=g;
+    return `${h}<tr><td class="name">${label}</td><td>${trialFmt(a,d)}</td><td>${trialFmt(b,d)}</td><td class="${cls}">${same?"same":diff==null?"–":`${diff>0?"+":""}${trialFmt(diff,d)}${pc}`}</td></tr>`}).join("")}
+// after a copy goes back, redraw the whole tab from it, as switching jobs does
+const trialRedraw=()=>{save();renderBuild.job=null;syncChar();renderAll()};
+const trialStart=()=>{const c=C(),{trial,...rest}=c;c.trial={base:JSON.parse(JSON.stringify(rest))}};
+const trialBack=()=>{const t=trialOf(C());if(t)state.chars[state.job]=t.base};
+$("trialBtn").addEventListener("click",()=>{trialStart();save();renderAll()});
+$("trialBack").addEventListener("click",()=>{trialBack();trialRedraw()});
+$("trialKeep").addEventListener("click",()=>{delete C().trial;save();renderAll()});
