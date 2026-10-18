@@ -252,7 +252,15 @@ const toggleSessMob=id=>{const s=cur();const i=s.mobIds.indexOf(id);if(i>=0){s.m
   if(!s.mobIds.length)s.job=state.job;s.mobIds.push(id);const m=MOBS.find(x=>x.id===id);if(s.mobIds.length===1&&m&&s.name==="New session")s.name=m.name};
 // the monster you click is also the one Monster info shows
 const pickMob=m=>{if(!m)return;state.calcMobId=m.id;state.infoMobId=m.id;const s=cur();if(!s.mobIds.length)toggleSessMob(m.id);save();renderAll()};
-$("mobList").innerHTML=MOBS.map(m=>`<option value="${esc(m.name)}">Lv ${m.lv} · ${fmtExp(m)} EXP${m.mini?" · mini boss":m.boss?" · boss":""}</option>`).join("");
+$("mobList").innerHTML=MOBS.map(mobOpt).join("");
+// Element / Race / Size / Boss dropdowns: the Monsters card's narrow its table and its search, Monster info's its search; saved per account
+const mobFSel=(k,label,opts)=>`<label>${label}<select data-mf="${k}" style="width:auto">${opts.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("")}</select></label>`;
+const MOBF_HTML=mobFSel("el","Element",[["","Any"],...AE.map(x=>[x,x])])+mobFSel("race","Race",[["","Any"],...RACES.map(x=>[x,x])])
+  +mobFSel("size","Size",[["","Any"],["S","Small"],["M","Medium"],["L","Large"]])+mobFSel("boss","Boss",MOBF_BOSS);
+[["mobF","mobF","mobPickList",()=>renderMobs()],["mobInfoF","infoF","mobInfoList",()=>{}]].forEach(([box,k,list,render])=>{$(box).insertAdjacentHTML("beforeend",MOBF_HTML);
+  $(box).querySelectorAll("[data-mf]").forEach(sel=>{const f=sel.dataset.mf;sel.value=state[k][f]||"";if(sel.value!==(state[k][f]||""))delete state[k][f];
+    sel.addEventListener("change",()=>{state[k][f]=sel.value;save();fillMobList(list,state[k]);render()})});
+  fillMobList(list,state[k])});
 $("mobInput").addEventListener("change",e=>{pickMob(MOBS.find(x=>x.name.toLowerCase()===e.target.value.trim().toLowerCase()))});
 $("mobTable").querySelector("tbody").addEventListener("click",e=>{if(e.target.closest("a"))return;const tr=e.target.closest("tr[data-id]");if(tr)pickMob(MOBS.find(m=>m.id===+tr.dataset.id))});
 $("mobTable").querySelector("thead").addEventListener("click",e=>{if(e.target.closest(".filters"))return;const th=e.target.closest("th");if(!th||!th.dataset.k)return;
@@ -307,13 +315,15 @@ $("mobInfoInput").addEventListener("change",e=>{const m=MOBS.find(x=>x.name.toLo
 $("mobInfoDrops").addEventListener("click",e=>{const a=e.target.closest("[data-pitem]");if(a){e.preventDefault();addPrice(a.dataset.pitem,true)}});
 $("mobInfoMaps").addEventListener("click",e=>{const tr=e.target.closest("tr[data-map]");if(!tr)return;state.map=tr.dataset.map;save();showTab("maps");renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})});
 // Item info: search and filter; click an item for its droppers, a dropper for its Monster info
-$("itemGroup").insertAdjacentHTML("beforeend",LOOT_GROUPS.map(([g,n])=>`<option value="${g}">${n}</option>`).join(""));
-$("itemSearch").addEventListener("input",renderItems);$("itemGroup").addEventListener("change",renderItems);
+$("itemSearch").addEventListener("input",renderItems);
+// the auto-loot group filters (Monster info drops, Item info) are dropdowns
+ROOTQ('select[data-tf="group"]').forEach(sel=>sel.innerHTML=`<option value="">Any</option>${LOOT_GROUPS.map(([,n])=>`<option>${n}</option>`).join("")}<option value="not looted">Not looted</option>`);
 // Compare sessions, Monster info, Item info, Market and the Hunter tables: click a header to sort (again to flip it), type under it to filter; saved per table
 [["cmpTable",renderCompare],["bestTable",renderBest],["huntTable",renderHunt],["recTable",renderRecovery],["mobInfoDrops",renderMobInfo],["mobInfoMaps",renderMobInfo],["itemTable",renderItems],["itemDropTable",renderItems],["priceTable",renderPrices]].forEach(([id,render])=>{const t=$(id);
   t.tHead.addEventListener("click",e=>{const th=e.target.closest("th[data-sk]");if(!th)return;const k=th.dataset.sk,[k0,d0]=tblSort(id);
     const c=TABLES[id].cols[k];state.tsort[id]=[k,k===k0?-d0:c.n&&!c.asc?-1:1];save();render()});
   t.querySelectorAll("[data-tf]").forEach(inp=>{inp.value=(state.tfilt[id]||{})[inp.dataset.tf]||"";
+    if(inp.value!==((state.tfilt[id]||{})[inp.dataset.tf]||""))delete state.tfilt[id][inp.dataset.tf]; // a typed filter a dropdown has no option for
     inp.addEventListener("input",()=>{(state.tfilt[id]=state.tfilt[id]||{})[inp.dataset.tf]=inp.value;save();render()})})});
 $("itemCard").addEventListener("click",e=>{const a=e.target.closest("[data-pitem]");if(a){e.preventDefault();addPrice(a.dataset.pitem,true);return}
   const it=e.target.closest("tr[data-item]");if(it){state.infoItem=it.dataset.item;save();renderItems();$("itemTiles").scrollIntoView({behavior:"smooth",block:"nearest"});return}

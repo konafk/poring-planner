@@ -100,7 +100,7 @@ a{color:var(--accent)}
 .map{display:inline-flex;gap:4px;align-items:baseline;font-family:var(--mono);font-size:12px;padding:2px 8px;border-radius:6px;border:1px solid var(--line);background:var(--surface);cursor:pointer}
 .map b{font-weight:500;color:var(--fg)}.map span{color:var(--muted)}
 .filters td{padding:4px 3px;border-bottom:1px solid var(--line)}
-.filters input{width:100%;min-width:56px;padding:3px 6px;font-size:12px;font-family:var(--mono);border-radius:6px}
+.filters input,.filters select{width:100%;min-width:56px;padding:3px 6px;font-size:12px;font-family:var(--mono);border-radius:6px}
 .filters td:first-child input{min-width:90px}
 .map.off{opacity:.45;text-decoration:line-through}
 .maps{display:flex;flex-wrap:wrap;gap:6px}
