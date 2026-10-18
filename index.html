@@ -18,7 +18,7 @@
   </header>
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button type="button" role="tab" data-tabbtn="acct">Account</button>
-    <button type="button" role="tab" data-tabbtn="char">Character</button>
+    <button type="button" role="tab" data-tabbtn="char">Character <span class="pill down" id="trialTab" hidden title="You're trying other gear: every number uses it until you go back to your gear or keep it (Character tab)">trying gear</span></button>
     <button type="button" role="tab" data-tabbtn="track">Session</button>
     <button type="button" role="tab" data-tabbtn="maps">Monsters &amp; maps</button>
     <button type="button" role="tab" data-tabbtn="mobinfo">Monster info</button>
@@ -80,6 +80,12 @@
         <button type="button" role="radio" data-cmode="build">Build from gear</button>
       </div>
       <span class="note" id="modeNote"></span>
+    </div>
+    <div class="bar" id="trialStart"><button type="button" class="small" id="trialBtn">Try other gear</button><span class="note">Change your weapon, gear, cards or stats and compare damage, kill time, EXP/min and zeny/hr with what you wear now. One click puts your gear back.</span></div>
+    <div class="trial" id="trialBar" hidden>
+      <div class="bar"><b class="grow">Trying other gear: every number on the page uses it</b><button type="button" class="small primary" id="trialBack">Back to my gear</button><button type="button" class="small" id="trialKeep" title="Make the gear you're trying your gear">Keep this gear</button></div>
+      <div class="note" id="trialNote"></div>
+      <div class="scroll"><table id="trialTable" class="trialtab"><thead><tr><th></th><th>Your gear</th><th>Trying</th><th>Change</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div id="buildPanel" class="build" hidden>
       <div class="form" style="grid-template-columns:repeat(6,minmax(0,1fr))">
@@ -388,10 +394,12 @@
   <section class="card" data-tab="maps">
     <div class="bar"><h2 class="grow">Monsters</h2><span class="note" id="mobNote"></span></div>
     <div class="bar">
-      <label class="grow">Monster for this session<input id="mobInput" list="mobList" placeholder="Search monster"></label>
+      <label class="grow">Monster for this session<input id="mobInput" list="mobPickList" placeholder="Search monster"></label>
       <label>Level range<span class="bar"><input id="minLv" type="number" style="width:70px"> to <input id="maxLv" type="number" style="width:70px"></span></label>
       <label><span>&nbsp;</span><span class="bar"><input type="checkbox" id="hideClosed" style="width:auto"> Hide monsters with no open map</span></label>
     </div>
+    <div class="bar" id="mobF" title="Narrows this table and the monster search above it"></div>
+    <datalist id="mobPickList"></datalist>
     <datalist id="mobList"></datalist>
     <div class="calc" id="mobTiles"></div>
     <div class="scroll tall"><table id="mobTable"><thead><tr>
@@ -500,10 +508,11 @@
 
   <section class="card" id="mobInfoCard" data-tab="mobinfo">
     <div class="bar"><h2 class="grow">Monster info</h2><a class="ext" id="mobInfoDb" target="_blank" rel="noopener">rozerodb ↗</a></div>
-    <div class="bar"><label class="grow">Monster<input id="mobInfoInput" list="mobList" placeholder="Search monster"></label></div>
+    <div class="bar" id="mobInfoF" title="Element, Race, Size and Boss narrow the monster search"><label class="grow">Monster<input id="mobInfoInput" list="mobInfoList" placeholder="Search monster"></label></div>
+    <datalist id="mobInfoList"></datalist>
     <div class="calc" id="mobInfoTiles"></div>
     <h3 style="margin:16px 0 8px">Drops</h3>
-    <div class="scroll"><table id="mobInfoDrops"><thead><tr><th data-sk="name">Item</th><th data-sk="group">Auto-loot group</th><th data-sk="ch">Chance</th><th data-sk="your">Your chance</th><th data-sk="npc">NPC pays</th><th data-sk="pl">Players pay</th><th data-sk="z">Zeny / kill</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><input type="search" data-tf="group" placeholder="card"></td><td><input type="search" data-tf="ch" placeholder=">1"></td><td><input type="search" data-tf="your" placeholder=">1"></td><td><input type="search" data-tf="npc" placeholder=">100"></td><td><input type="search" data-tf="pl" placeholder="-"></td><td><input type="search" data-tf="z" placeholder=">1"></td></tr></thead><tbody></tbody></table></div>
+    <div class="scroll"><table id="mobInfoDrops"><thead><tr><th data-sk="name">Item</th><th data-sk="group">Auto-loot group</th><th data-sk="ch">Chance</th><th data-sk="your">Your chance</th><th data-sk="npc">NPC pays</th><th data-sk="pl">Players pay</th><th data-sk="z">Zeny / kill</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><select data-tf="group" aria-label="Auto-loot group"></select></td><td><input type="search" data-tf="ch" placeholder=">1"></td><td><input type="search" data-tf="your" placeholder=">1"></td><td><input type="search" data-tf="npc" placeholder=">100"></td><td><input type="search" data-tf="pl" placeholder="-"></td><td><input type="search" data-tf="z" placeholder=">1"></td></tr></thead><tbody></tbody></table></div>
     <h3 style="margin:16px 0 8px">Where it spawns</h3>
     <div class="scroll"><table id="mobInfoMaps"><thead><tr><th data-sk="map">Map</th><th data-sk="n">Spawns</th><th data-sk="others">Other monsters</th></tr><tr class="filters"><td><input type="search" data-tf="map" placeholder="map"></td><td><input type="search" data-tf="n" placeholder=">20"></td><td><input type="search" data-tf="others" placeholder="monster"></td></tr></thead><tbody></tbody></table></div>
     <div class="note">Your chance = drop chance after drop bonus and level penalty. Zeny / kill uses your Market price if set, else NPC; 0 if not auto looted. Click an item to price it, or a map to plan it.</div>
@@ -513,11 +522,10 @@
     <div class="bar"><h2 class="grow">Item info</h2></div>
     <div class="bar">
       <label class="grow">Item<input id="itemSearch" placeholder="name or #id"></label>
-      <label>Group<select id="itemGroup"><option value="">All</option></select></label>
     </div>
     <div class="calc" id="itemTiles"></div>
     <div id="itemDroppers" hidden><div class="scroll"><table id="itemDropTable"><thead><tr><th data-sk="name">Dropped by</th><th data-sk="lv">Lv</th><th data-sk="ch">Chance</th><th data-sk="your">Your chance</th><th data-sk="nz" title="what an NPC pays for it × your chance">NPC z / kill</th><th data-sk="z">Zeny / kill from it</th><th data-sk="sp" title="how many of it spawn on its best open map">Spawns</th><th data-sk="map">Best open map</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><input type="search" data-tf="lv" placeholder="30-60"></td><td><input type="search" data-tf="ch" placeholder=">1"></td><td><input type="search" data-tf="your" placeholder=">1"></td><td><input type="search" data-tf="nz" placeholder=">1"></td><td><input type="search" data-tf="z" placeholder=">1"></td><td><input type="search" data-tf="sp" placeholder=">20"></td><td><input type="search" data-tf="map" placeholder="map"></td></tr></thead><tbody></tbody></table></div></div>
-    <div class="scroll tall"><table id="itemTable"><thead><tr><th data-sk="name">Item</th><th data-sk="group">Group</th><th data-sk="npc">NPC pays</th><th data-sk="pl">Players pay</th><th data-sk="best" title="the monster with the best drop chance; sorts and filters by that chance, or by its name">Best drop</th><th data-sk="nz" title="what an NPC pays for it × your drop chance, at the monster where that comes to most">NPC z / kill</th><th data-sk="sp" title="the most of one monster that drops it on one open map, bosses left out; filters by count, map or monster">Spawns</th><th data-sk="cnt" title="how many monsters drop it">Dropped by</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><input type="search" data-tf="group" placeholder="card"></td><td><input type="search" data-tf="npc" placeholder=">1000"></td><td><input type="search" data-tf="pl" placeholder="-"></td><td><input type="search" data-tf="best" placeholder=">1"></td><td><input type="search" data-tf="nz" placeholder=">1"></td><td><input type="search" data-tf="sp" placeholder=">20"></td><td><input type="search" data-tf="cnt" placeholder=">5"></td></tr></thead><tbody></tbody></table></div>
+    <div class="scroll tall"><table id="itemTable"><thead><tr><th data-sk="name">Item</th><th data-sk="group">Group</th><th data-sk="npc">NPC pays</th><th data-sk="pl">Players pay</th><th data-sk="best" title="the monster with the best drop chance; sorts and filters by that chance, or by its name">Best drop</th><th data-sk="nz" title="what an NPC pays for it × your drop chance, at the monster where that comes to most">NPC z / kill</th><th data-sk="sp" title="the most of one monster that drops it on one open map, bosses left out; filters by count, map or monster">Spawns</th><th data-sk="cnt" title="how many monsters drop it">Dropped by</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><select data-tf="group" aria-label="Auto-loot group"></select></td><td><input type="search" data-tf="npc" placeholder=">1000"></td><td><input type="search" data-tf="pl" placeholder="-"></td><td><input type="search" data-tf="best" placeholder=">1"></td><td><input type="search" data-tf="nz" placeholder=">1"></td><td><input type="search" data-tf="sp" placeholder=">20"></td><td><input type="search" data-tf="cnt" placeholder=">5"></td></tr></thead><tbody></tbody></table></div>
     <div class="note">Every monster drop. Click a row to see who drops it. Players pay = your Market price. NPC z / kill = NPC price × your drop chance (after drop bonus and level penalty), at the best monster for it. Spawns = the most of one monster that drops it on one open map.</div>
   </section>
 

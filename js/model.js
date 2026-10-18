@@ -98,11 +98,12 @@ const partyCut=(v,s=cur())=>Math.floor(v*(100+partyBonus(s))/100/partyN(s));
 const killExp=(m,s=cur())=>Math.floor(partyCut(m.exp,s)*(1+(expGear(m)+num(state.bonus)+consSum("exp_base"))/100));
 const killJobExp=(m,s=cur())=>Math.floor(partyCut(m.job,s)*(1+(expGear(m)+num(state.jobBonus)+consSum("exp_job"))/100));
 const takenMul=m=>{const c=C();if(!c.bx)return 1;const t=c.bx.taken;return (1+(t.race[m.race]||0)/100)*(1+(t.ele[m.el||"Neutral"]||0)/100)*(1+(t.kind[m.boss?"boss":"normal"]||0)/100)};
-// ignore DEF / MDEF %: lowers the monster's hard defence before the (4000+DEF)/(4000+10·DEF) or (1000+MDEF)/(1000+10·MDEF) factor.
-// Gear that ignores it for one race ("Ignore P.DEF of Brute 8%", c.bx.ignRace) adds to it against that race
-const ignRace=(m,k)=>{const b=C().bx;return b&&b.ignRace?num(b.ignRace[k][m.race]):0};
-const effDef=m=>(m.def||0)*(1-Math.min(100,Math.max(0,num(C().ignDef)+ignRace(m,"def")))/100);
-const effMdef=m=>(m.mdef||0)*(1-Math.min(100,Math.max(0,num(C().ignMdef)+ignRace(m,"mdef")))/100);
+// ignore DEF / MDEF %: lowers the monster's hard defence before the (4000+DEF)/(4000+10·DEF) or (1000+MDEF)/(1000+10·MDEF) factor
+// ignOf: the plain ignore % plus gear that ignores it only against the monster's race, size, element or boss / normal (bx.ign)
+const ignOf=(k,m)=>{const c=C(),I=c.bx&&c.bx.ign&&c.bx.ign[k];let v=num(c[k==="def"?"ignDef":"ignMdef"]);
+  if(I&&m)v+=(I.race[m.race]||0)+(I.size[m.size]||0)+(I.ele[m.el||"Neutral"]||0)+(I.kind[m.boss?"boss":"normal"]||0);return Math.min(100,Math.max(0,v))};
+const effDef=m=>(m.def||0)*(1-ignOf("def",m)/100);
+const effMdef=m=>(m.mdef||0)*(1-ignOf("mdef",m)/100);
 // Formulas from roz.prontera.info/mechanics (Ragnarok Zero, renewal core)
 // ATK is "status + gear". The weapon share takes size and element; status ATK counts twice and, with other gear, stays Neutral.
 // Dual wield: the gear side holds both weapons, so the left one's ATK comes out of the Neutral share too
@@ -478,13 +479,14 @@ function pace0(s,same){
 // ---- a session's stats: the character as it was when you logged its entries (s.snap = {at, c}), so its fight time and the walking
 // worked out from it don't move when you change gear or stats afterwards (that only changes fight time). A session saved before
 // snapshots takes the stats you have when it's first worked out (est) ----
-// (gear bonuses, bx, are worked out again from the gear lines or Build from gear when it's used)
-const charSnap=(c=C())=>{const o=JSON.parse(JSON.stringify(c));delete o.bx;if(o.sage)delete o.sage._note;return o};
+// (gear bonuses, bx, are worked out again from the gear lines or Build from gear when it's used; the gear Try other gear goes back to isn't kept)
+const charSnap=(c=C())=>{const o=JSON.parse(JSON.stringify(c));delete o.bx;delete o.trial;if(o.sage)delete o.sage._note;return o};
 const snapSession=s=>{if((s.job||state.job)===state.job)s.snap={at:Date.now(),c:charSnap()}};
 // sessions of this job with a pace and no snapshot yet take the stats you have now, after renderAll has worked everything out
 const snapEst=()=>{let n=0;state.sessions.forEach(s=>{if(!s.snap&&(s.job||state.job)===state.job&&stats(s)){s.snap={at:Date.now(),c:charSnap(),est:true};n++}});if(n)save()};
-// the model with another copy of this job's character swapped in: redoes what renderAll works out from it, then puts yours back
-function withChar(c,fn){const job=state.job,real=state.chars[job],k={SKFX,EFF,BUILD_LAST};state.chars[job]=JSON.parse(JSON.stringify(c));
+// the model with a copy of a session's snapshot swapped in: redoes what renderAll works out from it (not Hindsight auto: the snapshot
+// keeps the choice it had), then puts yours back as it was. Unlike build-ui.js withChar it leaves the snapshot untouched
+function withSnap(c,fn){const job=state.job,real=state.chars[job],k={SKFX,EFF,BUILD_LAST};state.chars[job]=JSON.parse(JSON.stringify(c));
   try{SKFX=skillEffects(C());sageFromTree(C());applyBuild();applyConsumables();return fn()}
   finally{state.chars[job]=real;SKFX=k.SKFX;EFF=k.EFF;BUILD_LAST=k.BUILD_LAST}}
 // what the walking depends on besides the snapshot: the entries, pauses, monsters, party and EXP bonus
@@ -493,7 +495,7 @@ const calKey=s=>[s.snap?s.snap.at:0,s.mobIds.join("."),sessMap(s),partyN(s),num(
 // Until a session has a snapshot (one saved before them) it follows your stats; renderAll then gives it one (snapEst)
 function sessCal(s){if((s.job||state.job)!==state.job||!stats(s))return null;const key=calKey(s);if(s.walk&&s.walk.key===key)return s.walk;
   if(!s.snap){const p=pace0(s,true);return {key,sec:p&&p.walk!=null?p.walk:null,fight:p&&isFinite(p.fight)?p.fight:null,kph:p?p.kph:null}}
-  const p=withChar(s.snap.c,()=>pace0(s,true));
+  const p=withSnap(s.snap.c,()=>pace0(s,true));
   s.walk={key,sec:p&&p.walk!=null?p.walk:null,fight:p&&isFinite(p.fight)?p.fight:null,kph:p?p.kph:null};return s.walk}
 function sessionPace(s){const same=(s.job||state.job)===state.job,p=pace0(s,false);if(!p)return null;
   const k=same?sessCal(s):null,mix=same?sessMix(s,m=>isFinite(bestFight(m))):p.mix;
@@ -603,7 +605,7 @@ const PROJ={};
 function sessProj(s,w){const c=sessCal(s);if(!c||!(c.kph>0))return null;const key=calKey(s)+"|"+w.toFixed(4),o=PROJ[s.id];if(o&&o.key===key)return o.v;
   const f=()=>{const mix=sessMix(s,m=>isFinite(bestFight(m)));if(!mix)return null;let best=null;
     elOptions().forEach(el=>{const t=withEl(el,()=>mix.list.reduce((a,{m,w:n})=>a+n*mobRow0(m,w).tot,0))/mix.W;if(isFinite(t)&&t>0&&(best==null||3600/t>best))best=3600/t});return best};
-  const kph=s.snap?withChar(s.snap.c,f):f(),v=kph?{real:c.kph,proj:kph,ratio:c.kph/kph}:null;PROJ[s.id]={key,v};return v}
+  const kph=s.snap?withSnap(s.snap.c,f):f(),v=kph?{real:c.kph,proj:kph,ratio:c.kph/kph}:null;PROJ[s.id]={key,v};return v}
 const median=a=>{const b=[...a].sort((x,y)=>x-y),h=b.length>>1;return !b.length?null:b.length%2?b[h]:(b[h-1]+b[h])/2};
 // k: the median of real ÷ projected over sessions longer than 60 min (n of them), which can calibrate the EXP Hunter (state.calOn);
 // maps: per map, its sessions, their median ratio and a tooltip

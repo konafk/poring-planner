@@ -369,10 +369,18 @@ function matchF(expr,n,text){
   if(/^-?\d+(?:\.\d+)?$/.test(expr)&&!blank&&!text)return n==+expr;
   return String(text??n??"").toLowerCase().includes(expr);
 }
+// the Element / Race / Size / Boss dropdowns: does monster m pass f ({el, race, size, boss})? Boss: noboss leaves out Boss class (the farming
+// tables' default), normal also mini bosses, mini lists the mini bosses, boss the Boss-class monsters that aren't mini bosses
+const MOBF_BOSS=[["","Any"],["noboss","No bosses"],["normal","Normal only"],["mini","Mini bosses"],["boss","Bosses"]];
+const mobFOk=(m,f)=>(!f.el||m.el===f.el)&&(!f.race||m.race===f.race)&&(!f.size||m.size===f.size)
+  &&(f.boss==="noboss"?!m.boss:f.boss==="normal"?!m.boss&&!m.mini:f.boss==="mini"?m.mini:f.boss==="boss"?m.boss&&!m.mini:true);
+const mobOpt=m=>`<option value="${esc(m.name)}">Lv ${m.lv} · ${fmtExp(m)} EXP${m.mini?" · mini boss":m.boss?" · boss":""}</option>`;
+// a monster search's suggestions: the monsters that pass its dropdowns
+const fillMobList=(id,f)=>{$(id).innerHTML=MOBS.filter(m=>mobFOk(m,f)).map(mobOpt).join("")};
 const isMagicAtk=()=>C().a.type==="magic"||C().a.type==="spellfist";
 function renderMobs(){
   const w=walkSec();const lvMin=num(state.minLv),lvMax=num(state.maxLv)||999;
-  let rows=MOBS.filter(m=>!m.boss&&m.lv>=lvMin&&m.lv<=lvMax&&!(state.hideClosed&&SPAWN[m.id]&&!openMaps(m).length)).map(m=>{const om=openMaps(m);return {...m,om,topN:om.length?om[0][1]:0,ratio:m.hp>0?m.exp/m.hp:0,...mobRow(m,w)}});
+  let rows=MOBS.filter(m=>mobFOk(m,state.mobF)&&m.lv>=lvMin&&m.lv<=lvMax&&!(state.hideClosed&&SPAWN[m.id]&&!openMaps(m).length)).map(m=>{const om=openMaps(m);return {...m,om,topN:om.length?om[0][1]:0,ratio:m.hp>0?m.exp/m.hp:0,...mobRow(m,w)}});
   const F=state.filters;rows=rows.filter(m=>Object.entries(F).every(([k,v])=>!v||matchF(v,colNum(m,k),colText(m,k))));
   const k=state.sort,d=state.dir;const sv=m=>{const v=k==="name"||k==="el"||k==="size"||k==="race"?colText(m,k):colNum(m,k);return v==null||v===""?null:v};
   rows.sort((a,b)=>{const x=sv(a),y=sv(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return (x>y?1:x<y?-1:0)*d});
@@ -526,8 +534,8 @@ const bestNpcZ=id=>ITEM_DROPS[id].reduce((b,{m,ch})=>{const z=npcZ(m,id,ch);retu
 // the most of one monster that drops it on one open map, bosses left out: {n, mp, m} or null
 const mostSpawns=id=>ITEM_DROPS[id].reduce((b,{m})=>{const om=!m.boss&&openMaps(m)[0];return om&&(!b||om[1]>b.n)?{n:om[1],mp:om[0],m}:b},null);
 function renderItems(){
-  const q=$("itemSearch").value.trim().toLowerCase(),g=$("itemGroup").value;
-  const ids=Object.keys(ITEM_DROPS).filter(id=>(!g||groupOf(id)===g)&&(!q||itemName(id).toLowerCase().includes(q)||("#"+id).includes(q))).sort((a,b)=>itemName(a).localeCompare(itemName(b)));
+  const q=$("itemSearch").value.trim().toLowerCase();
+  const ids=Object.keys(ITEM_DROPS).filter(id=>(!q||itemName(id).toLowerCase().includes(q)||("#"+id).includes(q))).sort((a,b)=>itemName(a).localeCompare(itemName(b)));
   const hit=tableRows("itemTable",ids.map(id=>({id,b:ITEM_DROPS[id][0],npc:NPCSELL[id]==null?null:npcPays(id),pl:state.prices[id]>0?state.prices[id]:null,nz:bestNpcZ(id),sp:mostSpawns(id),cnt:ITEM_DROPS[id].length})));
   const sel=state.infoItem&&ITEM_DROPS[state.infoItem]?String(state.infoItem):null;
   $("itemTable").tBodies[0].innerHTML=hit.slice(0,300).map(({id,b,npc,pl,nz,sp,cnt})=>`<tr data-item="${esc(id)}" class="${id===sel?"sel":""}"><td class="name">${esc(itemName(id))} <span class="note">#${esc(id)}</span></td><td class="name">${GROUP_NAME[groupOf(id)]}${looted(id)?"":' <span class="note">not looted</span>'}</td><td>${npc==null?"–":fmtN(npc)}</td><td>${pl!=null?fmtN(pl):`<a href="#" data-pitem="${esc(id)}">set</a>`}</td><td class="name">${esc(b.m.name)} <span class="note">${chTxt(b.ch)}</span></td><td>${nz==null?"–":dropZTxt(nz)}</td><td class="name" title="${sp?esc(`${sp.m.name} on ${mapLabel(sp.mp)}`):""}">${sp?`≈${sp.n} <span class="note">${esc(sp.m.name)} · ${mapCode(sp.mp)}</span>`:'<span class="note">none open</span>'}</td><td>${cnt}</td></tr>`).join("")
@@ -599,5 +607,5 @@ function renderMap(){
   $("mapTable").querySelector("tbody").innerHTML=MAPMOBS[mp].slice().sort((a,b)=>b.n-a.n).map(({m,n})=>{const x=r&&r.el2?withEl(r.el2,()=>mobRow0(m,w)):mobRow(m,w);
     return `<tr data-id="${m.id}" class="${cur().mobIds.includes(m.id)?"sel":""}" style="${isSkipped(m)?"opacity:.55":""}"><td class="name">${esc(m.name)} <button type="button" class="small" data-sessmob="${m.id}">${cur().mobIds.includes(m.id)?"− Session":"+ Session"}</button>${BOSS_PILL(m)}${m.boss?"":` <button type="button" class="small" data-skip="${m.id}">${isSkipped(m)?"Unskip":"Skip"}</button>`}</td><td>≈${n}</td><td>${m.boss?"–":isSkipped(m)?"skipped":Math.round(n/tot*100)+"%"}</td><td>${m.lv}</td><td>${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"–"}</td><td>${(el=>elRateHtml(el,elemMult(m,el)))((r&&r.el2)||x.el2||atkEl())}</td><td>${m.size||"–"}</td><td class="${x.mult>100?"good":x.mult<=0?"bad":""}">${x.mult<=0?"can't hurt":Math.round(x.mult)+"%"}</td><td>${isFinite(x.sec)?x.sec.toFixed(1)+"s":"–"}</td><td>${fmtExp(m)}</td></tr>`}).join("");
 }
-function renderAll(){SKFX=skillEffects(C());const sgTree=sageFromTree(C());ROOTQ('[data-sg="sfLv"],[data-sg="boltLv"],[data-sg="hsLv"],[data-sg="dbLv"]').forEach(i=>{i.disabled=sgTree;i.title=sgTree?"Set by the Skills card":""});ROOTQ("[data-sgbolt]").forEach(i=>i.disabled=sgTree&&!skLv(C(),SG_BOLT[i.dataset.sgbolt]));applyBuild();applyConsumables();renderBuild();applyHsAuto();renderSessions();renderChar();renderTracker();renderMobs();renderBest();renderRecovery();if(state.tab==="maps")renderHunt();if(state.tab==="market")renderPrices();if(state.tab==="mobinfo")renderMobInfo();if(state.tab==="items")renderItems();renderMap();renderRef();snapEst()}
+function renderAll(){SKFX=skillEffects(C());const sgTree=sageFromTree(C());ROOTQ('[data-sg="sfLv"],[data-sg="boltLv"],[data-sg="hsLv"],[data-sg="dbLv"]').forEach(i=>{i.disabled=sgTree;i.title=sgTree?"Set by the Skills card":""});ROOTQ("[data-sgbolt]").forEach(i=>i.disabled=sgTree&&!skLv(C(),SG_BOLT[i.dataset.sgbolt]));applyBuild();applyConsumables();renderBuild();applyHsAuto();renderTrial();renderSessions();renderChar();renderTracker();renderMobs();renderBest();renderRecovery();if(state.tab==="maps")renderHunt();if(state.tab==="market")renderPrices();if(state.tab==="mobinfo")renderMobInfo();if(state.tab==="items")renderItems();renderMap();renderRef();snapEst()}
 

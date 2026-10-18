@@ -12,7 +12,7 @@ function applyBuild(){const c=C();if(c.mode!=="build"){BUILD_LAST=null;c.bx=eqTo
   const nm=String(c.a.name||"").toLowerCase(),match=o=>Object.entries(o).reduce((t,[k,v])=>t+(nm.includes(k.toLowerCase())?v:0),0);
   Object.assign(c,{atkTxt:F.atkTxt,matkTxt:F.matkTxt,hitTxt:F.hitTxt,fleeTxt:F.fleeTxt,defTxt:F.defTxt,intTxt:F.intTxt,wAtk:F.wAtk,crit:F.crit,critDmg:F.critDmg,
     rangePct:F.rangePct,skillPct:A.skill+match(A.skillOf),vctPct:F.vctPct+match(A.vctOf),fctPct:F.fctPct+match(A.fctOf),acdPct:F.acdPct,ignDef:F.ignDef,ignMdef:F.ignMdef,
-    weapon:F.weapon,wElem:F.wElem,lw:F.lw,lwAtk:F.lwAtk,lwElem:F.lwElem,st:{...(c.st||{}),...F.st},bx:{phys:A.phys,magic:A.magic,myEle:A.myEle,taken:A.taken,exp:A.exp,critRace:A.critRace,ignRace:A.ignRace,spCost:A.spCost,spRec:A.spRec,hpRec:A.hpRec}});
+    weapon:F.weapon,wElem:F.wElem,lw:F.lw,lwAtk:F.lwAtk,lwElem:F.lwElem,st:{...(c.st||{}),...F.st},bx:{phys:A.phys,magic:A.magic,myEle:A.myEle,taken:A.taken,exp:A.exp,critRace:A.critRace,spCost:A.spCost,spRec:A.spRec,hpRec:A.hpRec,ign:A.ign}});
   c.shield=r.shield;if(F.aspd!=null)c.aspd=F.aspd;if(F.maxHp!=null)c.maxHp=F.maxHp;if(F.maxSp!=null)c.maxSp=F.maxSp;
   // in-game Max HP / SP typed under "Check against the game" win: they include anything the build can't see (buffs, a stale job change)
   const ck=buildOf(c).check||{};if(num(ck.hp)>0)c.maxHp=num(ck.hp);if(num(ck.sp)>0)c.maxSp=num(ck.sp)}
@@ -182,20 +182,25 @@ OWN_LISTS.forEach(L=>{
 // ---- equipment stats (status-window mode): the % lines from the game's Equipment Stats window, as rows {by, t, ch, v} ----
 // [kind, label, has a Phys / Magic choice, flat (no %)]
 const EQ_KINDS=[["race","Damage to race",true],["size","Damage to size",true],["ele","Damage to element",true],["kind","Damage to boss / normal",true],["group","Damage to monster group",true],
-  ["all","Damage to all monsters",true],["myEle","Magic damage of an element (your spells)"],["critRace","CRIT when attacking race",false,true],["ignDefRace","Ignore physical DEF of race"],["ignMdefRace","Ignore magic DEF of race"],["takenRace","Damage taken from race"],["takenEle","Damage taken from element"],["takenKind","Damage taken from boss / normal"],
+  ["all","Damage to all monsters",true],["myEle","Magic damage of an element (your spells)"],["critRace","CRIT when attacking race",false,true],["takenRace","Damage taken from race"],["takenEle","Damage taken from element"],["takenKind","Damage taken from boss / normal"],
+  ["ignRace","Ignore DEF / MDEF of race",true],["ignSize","Ignore DEF / MDEF of size",true],["ignEle","Ignore DEF / MDEF of element",true],["ignKind","Ignore DEF / MDEF of boss / normal",true],
   ["exp","EXP gained from monsters"],["expRace","EXP gained from race"],["spCost","Skill SP consumption"],["spRec","SP recovery (natural regen)"],["hpRec","HP recovery (natural regen)"]];
 const EQ_TARGETS={race:()=>RACES,size:()=>[["S","Small"],["M","Medium"],["L","Large"]],ele:()=>AE,kind:()=>[["boss","Boss"],["normal","Normal"]],group:()=>[["Boulder Dwarf","Boulder Dwarves"]],
-  myEle:()=>AE,critRace:()=>RACES,ignDefRace:()=>RACES,ignMdefRace:()=>RACES,takenRace:()=>RACES,takenEle:()=>AE,takenKind:()=>[["boss","Boss"],["normal","Normal"]],expRace:()=>RACES};
+  ignRace:()=>RACES,ignSize:()=>EQ_TARGETS.size(),ignEle:()=>AE,ignKind:()=>EQ_TARGETS.kind(),myEle:()=>AE,critRace:()=>RACES,takenRace:()=>RACES,takenEle:()=>AE,takenKind:()=>[["boss","Boss"],["normal","Normal"]],expRace:()=>RACES};
 // older saves had one race / size / element box each; turn them into rows once
 const eqOf=c=>{if(!Array.isArray(c.eq))c.eq=[];
   [["raceSel","racePct","raceType","race"],["sizeSel","sizePct","sizeType","size"],["elSel","elPct","elType","ele"]].forEach(([s,p,t,by])=>{
     if(c[s]&&num(c[p]))c.eq.push({by,t:c[s],ch:c[t]||"both",v:num(c[p])});delete c[s];delete c[p];delete c[t]});return c.eq};
-function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},critRace:{},ignRace:{def:{},mdef:{}},taken:{race:{},ele:{},kind:{}},exp:{all:0,race:{}},spCost:0,spRec:0,hpRec:0};
+const IGN_BY={ignRace:"race",ignSize:"size",ignEle:"ele",ignKind:"kind"};
+function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},critRace:{},taken:{race:{},ele:{},kind:{}},exp:{all:0,race:{}},spCost:0,spRec:0,hpRec:0,
+    ign:{def:{race:{},size:{},ele:{},kind:{}},mdef:{race:{},size:{},ele:{},kind:{}}}};
   const add=(m,k,v)=>{m[k]=(m[k]||0)+v};
   eqOf(c).forEach(r=>{const v=num(r.v);if(!v)return;
     if(["race","size","ele","kind","group"].includes(r.by)){if(r.ch!=="magic")add(o.phys[r.by],r.t,v);if(r.ch!=="phys")add(o.magic[r.by],r.t,v)}
     else if(r.by==="all"){if(r.ch!=="magic")o.phys.all+=v;if(r.ch!=="phys")o.magic.all+=v}
-    else if(r.by==="myEle")add(o.myEle,r.t,v);else if(r.by==="critRace")add(o.critRace,r.t,v);else if(r.by==="ignDefRace")add(o.ignRace.def,r.t,v);else if(r.by==="ignMdefRace")add(o.ignRace.mdef,r.t,v);else if(r.by.startsWith("taken"))add(o.taken[{takenRace:"race",takenEle:"ele",takenKind:"kind"}[r.by]],r.t,v);
+    // ignore rows: Physical is DEF, Magic is MDEF
+    else if(IGN_BY[r.by]){if(r.ch!=="magic")add(o.ign.def[IGN_BY[r.by]],r.t,v);if(r.ch!=="phys")add(o.ign.mdef[IGN_BY[r.by]],r.t,v)}
+    else if(r.by==="myEle")add(o.myEle,r.t,v);else if(r.by==="critRace")add(o.critRace,r.t,v);else if(r.by.startsWith("taken"))add(o.taken[{takenRace:"race",takenEle:"ele",takenKind:"kind"}[r.by]],r.t,v);
     else if(r.by==="exp")o.exp.all+=v;else if(r.by==="expRace")add(o.exp.race,r.t,v);else if(r.by==="spCost")o.spCost+=v;else if(r.by==="spRec")o.spRec+=v;else if(r.by==="hpRec")o.hpRec+=v});return o}
 // "Fill from gear": the lines the gear saved in Build from gear gives (gear, cards, affixes, stones, Taming Ring, other special
 // equipment; not consumables or buffs), one row per bonus. A bonus with different physical and magic values gets a row for each
@@ -205,8 +210,8 @@ function gearEqRows(c){const A=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobL
   const both=(by,t,p,m)=>{if(p===m)add(by,t,p);else{add(by,t,p,"phys");add(by,t,m,"magic")}};
   ["race","size","ele","kind","group"].forEach(by=>new Set([...Object.keys(A.phys[by]),...Object.keys(A.magic[by])]).forEach(t=>both(by,t,A.phys[by][t]||0,A.magic[by][t]||0)));
   both("all","",A.phys.all,A.magic.all);
+  Object.entries(IGN_BY).forEach(([by,k])=>new Set([...Object.keys(A.ign.def[k]),...Object.keys(A.ign.mdef[k])]).forEach(t=>both(by,t,A.ign.def[k][t]||0,A.ign.mdef[k][t]||0)));
   Object.entries(A.myEle).forEach(([t,v])=>add("myEle",t,v));Object.entries(A.critRace).forEach(([t,v])=>add("critRace",t,v));
-  Object.entries(A.ignRace.def).forEach(([t,v])=>add("ignDefRace",t,v));Object.entries(A.ignRace.mdef).forEach(([t,v])=>add("ignMdefRace",t,v));
   [["race","takenRace"],["ele","takenEle"],["kind","takenKind"]].forEach(([k,by])=>Object.entries(A.taken[k]).forEach(([t,v])=>add(by,t,v)));
   add("exp","",A.exp.all);Object.entries(A.exp.race).forEach(([t,v])=>add("expRace",t,v));
   add("spCost","",A.spCost);add("spRec","",A.spRec);add("hpRec","",A.hpRec);return rows}
@@ -346,3 +351,44 @@ $("gearTable").addEventListener("input",e=>{if(e.target.dataset.optv!=null){cons
     const rows=BUILD.optRows(g.opts),x=rows[+e.target.dataset.optv];if(x){x.v=e.target.value===""?"":num(e.target.value);g.opts=rows;save();renderAll()}return}
   if(!e.target.classList.contains("ref"))return;const k=e.target.closest("tr").dataset.slot;const g=buildOf(C()).gear[k];if(!g)return;
   g.refine=Math.max(0,Math.min(20,num(e.target.value)));save();renderAll()});
+// ---- try other gear: "Try other gear" keeps a copy of the character in c.trial.base, and every change after that is the trial. The page
+// works everything out with the trial; the card compares it with the copy, "Back to my gear" puts the copy back, "Keep this gear" drops it ----
+const trialOf=c=>c.trial&&c.trial.base&&typeof c.trial.base==="object"?c.trial:null;
+// the map compared: the Map planner's, else the monster's best open map, else the session's (as the HP and SP items use)
+const trialMap=()=>{let mp=mapKey(state.map);if(!MAPMOBS[mp]){const m=calcMob(),om=m?openMaps(m):[];mp=om.length?om[0][0]:currentMap()}return MAPMOBS[mp]?mp:null};
+function trialStats(){const m=calcMob(),w=walkSec(),mp=trialMap(),o={atk:sumStat(cf("atkTxt")),matk:sumStat(cf("matkTxt")),hit:sumStat(cf("hitTxt")),flee:sumStat(cf("fleeTxt")),
+    crit:num(cf("crit")),aspd:aspdEff(),hp:num(cf("maxHp")),sp:num(cf("maxSp"))};
+  if(m){const r=mobRow(m,w);Object.assign(o,{dmg:withEl(r.el2,()=>dmgPerHit(m)+(dualHit()?leftDmg(m):0)),dps:withEl(r.el2,()=>dpsOf(m)),hitc:r.hitc,uses:r.uses,
+    sec:r.sec,epm:m.expUnknown?null:r.epm,zph:r.zph,hpm:r.hpm})}
+  const s=mp&&mapStats(mp,w);if(s)Object.assign(o,{mapEpm:s.epm,mapNet:s.net});return o}
+// what renderAll works out before drawing, for the character C() gives
+const trialPrep=()=>{SKFX=skillEffects(C());applyBuild();applyConsumables();applyHsAuto()};
+// fn with c2 as this job's character, then the trial back as it was
+function withChar(c2,fn){const j=state.job,c1=state.chars[j];state.chars[j]=c2;try{trialPrep();return fn()}finally{state.chars[j]=c1;trialPrep()}}
+// [key, label, higher is better, decimals]; "m" rows are against the monster you picked, "map" rows on the map
+const TRIAL_ROWS=[["atk","ATK",1],["matk","MATK",1],["hit","HIT",1],["flee","FLEE",1],["crit","CRIT",1],["aspd","ASPD",1],["hp","Max HP",1],["sp","Max SP",1],
+  ["dmg","Damage per hit",1,0,"m"],["dps","Damage per second",1,0,"m"],["hitc","Hits that land %",1,0,"m"],["uses","Uses per kill",0,1,"m"],["sec","Kill time (s)",0,1,"m"],
+  ["epm","EXP / min",1,0,"m"],["zph","Net zeny / hr",1,0,"m"],["hpm","HP lost / min",0,0,"m"],["mapEpm","EXP / min",1,0,"map"],["mapNet","Net zeny / hr (after healing)",1,0,"map"]];
+const trialFmt=(v,d)=>v==null||!isFinite(v)?"–":d?(+v).toFixed(d):fmtN(v);
+const trialGear=g=>{const it=g&&g.id&&BUILD.item(g.id);if(!it)return "none";const n=(g.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean);
+  return `${num(g.refine)?`+${num(g.refine)} `:""}${it.name}${n.length?` [${n.join(", ")}]`:""}`};
+function renderTrial(){const c=C(),t=trialOf(c);$("trialStart").hidden=!!t;$("trialBar").hidden=!t;$("trialTab").hidden=!t;if(!t)return;
+  const now=trialStats(),was=withChar(t.base,trialStats),m=calcMob(),mp=trialMap();
+  // the gear rows that changed (build mode), so you can see what you're trying
+  const g0=(t.base.build||{}).gear||{},g1=(c.build||{}).gear||{},changed=c.mode==="build"&&t.base.mode==="build"?BUILD.SLOTS.filter(s=>trialGear(g0[s.k])!==trialGear(g1[s.k])):[];
+  $("trialNote").innerHTML=(changed.length?changed.map(s=>`${esc(s.label)}: ${esc(trialGear(g0[s.k]))} → <b>${esc(trialGear(g1[s.k]))}</b>`).join("<br>")+"<br>":
+    c.mode==="build"?"Change your gear below (or anything else on this tab) to compare it with what you wear now.<br>":"Type the status window numbers for the gear you're trying (or anything else on this tab) to compare it with what you wear now.<br>")+
+    (m?"":"Pick a monster on the Monsters &amp; maps tab to compare damage, kill time and EXP / min against it. ")+"Back to my gear also undoes anything else you changed on this tab since you pressed Try.";
+  const head=x=>`<tr><td class="name" colspan="4"><b>${x}</b></td></tr>`;let grp="";
+  $("trialTable").tBodies[0].innerHTML=TRIAL_ROWS.filter(([k])=>now[k]!=null||was[k]!=null).map(([k,label,up,d,g])=>{
+    const a=was[k],b=now[k],ok=a!=null&&b!=null&&isFinite(a)&&isFinite(b),diff=ok?b-a:null,same=ok&&Math.abs(diff)<(d?0.5*10**-d:0.5);
+    const pc=ok&&!same&&a?` (${diff>0?"+":""}${(diff/Math.abs(a)*100).toFixed(1)}%)`:"",cls=same||diff==null?"":(diff>0)===!!up?"good":"bad";
+    const h=g&&g!==grp?head(g==="m"?`vs ${esc(m.name)}`:`On ${esc(mapLabel(mp))}`):"";if(g)grp=g;
+    return `${h}<tr><td class="name">${label}</td><td>${trialFmt(a,d)}</td><td>${trialFmt(b,d)}</td><td class="${cls}">${same?"same":diff==null?"–":`${diff>0?"+":""}${trialFmt(diff,d)}${pc}`}</td></tr>`}).join("")}
+// after a copy goes back, redraw the whole tab from it, as switching jobs does
+const trialRedraw=()=>{save();renderBuild.job=null;syncChar();renderAll()};
+const trialStart=()=>{const c=C(),{trial,...rest}=c;c.trial={base:JSON.parse(JSON.stringify(rest))}};
+const trialBack=()=>{const t=trialOf(C());if(t)state.chars[state.job]=t.base};
+$("trialBtn").addEventListener("click",()=>{trialStart();save();renderAll()});
+$("trialBack").addEventListener("click",()=>{trialBack();trialRedraw()});
+$("trialKeep").addEventListener("click",()=>{delete C().trial;save();renderAll()});

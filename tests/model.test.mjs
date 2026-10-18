@@ -1519,17 +1519,6 @@ t("another tab saved: a stale tab doesn't overwrite it, it adds its new entries 
   assert.deepEqual(JSON.parse(store[key]).sessions[0].entries.map(e => e.t), [1, 3, 4]);
 });
 
-t("status-window gear lines: ignore physical or magic DEF of a race", () => {
-  const plant = MOB.replace("'Brute'", "'Plant'");
-  setup("Assassin", { atkTxt: "100+300", wAtk: 0, weapon: "Katar", wElem: "Neutral", st: {}, eq: [{ by: "ignDefRace", t: "Brute", v: 8 }, { by: "ignMdefRace", t: "Brute", v: 20 }],
-    a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
-  near(run(`effDef(${MOB})`), 20 * 0.92); near(run(`effDef(${plant})`), 20);  // against Brutes only
-  near(run(`effMdef(${MOB})`), 10 * 0.8); near(run(`effMdef(${plant})`), 10);
-  assert.ok(run(`dmgPerHit(${MOB})`) > run(`dmgPerHit(${plant})`));
-  run("C().ignDef=50");                                                      // on top of plain ignore DEF
-  near(run(`effDef(${MOB})`), 20 * 0.42);
-});
-
 t("HP lost: casters and ranged attackers still take hits; Vitata's Heal covers it instead of HP items", () => {
   const agg = MOB.replace("drops:[]", "drops:[],agg:true");
   setup("Wizard", { matkTxt: "200+300", fleeTxt: "100", defTxt: "10+10", maxHp: 3000, hitScale: 0.3, mobInterval: 1.5, st: { vit: "1" }, a: { name: "x", type: "magic", pct: 100, hits: 3, el: "Fire", cast: 1, delay: 1, sp: 10, targets: 1 } });
@@ -1581,6 +1570,32 @@ t("EXP Hunter: weight columns and calibration to your logs", () => {
   const rb = at.find(x => x.s.id === "b").ratio;
   assert.ok(rb < 1);
   near(cal.k, (1 + rb) / 2);
+});
+
+t("ignore DEF / MDEF of one race, size, element or boss / normal only lowers that monster's defence", () => {
+  setup("Knight", { ignDef: 10, ignMdef: 0 });
+  const mob = MOB;                                                     // Brute, Large, Water, normal, DEF 20, MDEF 10
+  run(`C().bx={...C().bx,ign:{def:{race:{Brute:20},size:{L:5},ele:{Fire:50},kind:{normal:5}},mdef:{race:{Dragon:15},size:{},ele:{},kind:{boss:30}}}}`);
+  near(run(`effDef(${mob})`), 20 * (1 - 0.40));                       // 10 plain + 20 Brute + 5 Large + 5 normal; Fire doesn't match
+  near(run(`effMdef(${mob})`), 10);                                    // Dragon and boss don't match
+  near(run(`effMdef({...${mob},race:'Dragon'})`), 10 * 0.85);
+  near(run(`effDef({...${mob},boss:true})`), 20 * (1 - 0.35));         // not a normal monster
+  run(`C().bx.ign.def.race.Brute=200`);
+  near(run(`effDef(${mob})`), 0);                                      // at most 100%
+});
+
+t("try other gear: compared with the copy kept at Try, Back to my gear puts it back", () => {
+  setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed spear", wElem: "Neutral", st: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  run("state.calcMobId=1002;trialStart();C().atkTxt='100+400';trialPrep()");
+  const now = run("JSON.stringify(trialStats())"), was = run("JSON.stringify(withChar(trialOf(C()).base,trialStats))");
+  const N = JSON.parse(now), W = JSON.parse(was);
+  assert.equal(N.atk, 500); assert.equal(W.atk, 400);
+  assert.ok(N.dmg > W.dmg && N.dps > W.dps && N.sec <= W.sec);
+  assert.equal(run("JSON.stringify(trialStats())"), now);                 // the trial is back in place afterwards
+  assert.equal(run("'trial' in trialOf(C()).base"), false);                // the copy doesn't nest older copies
+  run("trialBack();trialPrep()");
+  assert.equal(run("C().atkTxt"), "100+300"); assert.equal(run("C().trial"), undefined);
+  assert.equal(run("trialStats().dmg"), W.dmg);
 });
 
 console.log(`${n} tests passed`);
