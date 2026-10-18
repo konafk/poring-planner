@@ -57,14 +57,16 @@ const JOBS={
  "Novice":{w:"Dagger",p:[BASIC]},
  "Swordsman":{w:"One-handed sword",p:[...SWORD,BASIC]},"Mage":{w:"One-handed staff",p:[...MAGE.filter(p=>!p.name.startsWith("Earth Spike")),BASIC]},"Archer":{w:"Bow",p:[...ARCH,BASIC]},
  "Acolyte":{w:"One-handed mace",p:[...ACO,BASIC]},"Merchant":{w:"One-handed axe",p:[...MERC,BASIC]},"Thief":{w:"Dagger",p:[...THIEF]},
- "Knight":{w:"Two-handed spear",p:[A2("Bowling Bash Lv10","phys",500,3,"W",38,2,"Hits 3–5 times (more with a two-handed sword); +STR% per hit",Z(0.4,1.6,4,0.3,{sadd:[["str",1]]})),
+ "Knight":{w:"Two-handed spear",p:[A2("Bowling Bash Lv10","phys",500,3,"W",38,2,"Hits 3 times (with a two-handed sword up to 5, with more monsters nearby); +STR% per hit",Z(0.4,1.6,4,0.3,{sadd:[["str",1]]})),
    A2("Brandish Spear Lv10","phys",1400,1,"W",24,3,"Spear, mounted only. +5×STR%",Z(0,0,2,0.3,{sadd:[["str",5]]})),A2("Pierce Lv10","phys",200,3,"W",10,1,"Spear only. Hits 2/3/4 times on small/medium/large; +2×STR%",Z(0,0,0,0,{sizeHits:[2,3,4],sadd:[["str",2]]})),
    A2("Spear Stab Lv10","phys",300,1,"W",9,2,"Spear only. Hits everything in a line",Z(0,0,0,0)),A2("Spear Boomerang Lv5","phys",350,1,"W",10,1,"Spear only. Range 11",Z(0,0,0.5,0.3)),
    A2("Clashing Spiral Lv5","phys",400,5,"W",30,1,"5 hits, scales with base level and weapon weight",Z(0.11,0.44,0.5,0.3,{blv:true})),A2("Traumatic Blow Lv5","phys",300,1,"W",23,1,"",Z(0,0,0,0.3)),A2("Vital Strike Lv10","phys",150,1,"W",20,1,"Spear only",Z(0,0,0.4,0.3)),...SWORD,BASIC]},
  "Crusader":{w:"One-handed sword",p:[A2("Holy Cross Lv10","phys",450,1,"Holy",20,1,"+2×VIT%",Z(0,0,0,0,{sadd:[["vit",2]]})),A2("Holy Cross Lv10 (spear)","phys",900,1,"Holy",20,1,"Spear: (450 + 5×VIT)% × 2",Z(0,0,0,0,{sadd:[["vit",10]]})),
    A2("Grand Cross Lv10","phys",500,3,"Holy",100,3,"Uses ATK and MATK, costs 20% of your HP. Modelled on ATK",Z(0.25,1,0.5,0.3)),A2("Shield Boomerang Lv5","phys",400,1,"Neutral",12,1,"+ shield weight + 4 × shield refine %",Z(0,0,0.35,0.3,{shw:true})),
    A2("Smite Lv5","phys",200,1,"W",10,1,"Shield only",Z(0,0,0,0)),A2("Rapid Smiting Lv5","phys",2600,1,"W",40,1,"Shield only, + shield weight + 4 × shield refine %",Z(0,1,0.3,0.3,{shw:true})),A2("Cannon Spear Lv5","phys",600,1,"W",28,3,"Spear only. (120 + STR)% × 5, × base level / 100 above Lv100",Z(0.1,0.4,1,0,{blv:true,sadd:[["str",5]]})),
-   A2("Gloria Domini Lv5","magic",1450,1,"Holy",50,1,"",Z(0.2,0.8,0,0.3)),...SWORD,BASIC]},
+   A2("Gloria Domini Lv5","magic",1450,1,"Holy",50,1,"",Z(0.2,0.8,0,0.3)),...SWORD,BASIC,
+   // appended so saved preset indexes stay put: Martyr's Reckoning (mrHit in model.js)
+   A("Basic attack + Martyr's Reckoning","auto",100,1,"W",0,0,20,1,"Each basic attack hits for 9% of your Max HP × 1.4 (Lv5) and costs you 9% of your Max HP; always hits, ignores DEF and your damage bonuses. 100 SP per 5 attacks",{mr:true})]},
  "Wizard":{w:"One-handed staff",p:[A2("Jupitel Thunder Lv10","magic",100,12,"Wind",47,1,"",Z(0.56,2.24,0,0)),A2("Heaven's Drive Lv5","magic",200,5,"Earth",44,3,"5x5 area, +INT%",Z(0.4,1.6,0.5,0.3,{sadd:[["int",1]]})),
    A2("Napalm Vulcan Lv5","magic",350,5,"Ghost",70,2,"3x3 area, scales with base level",Z(0.1,0.4,0.5,0.3,{blv:true})),A2("Storm Gust Lv10","magic",570,3,"Water",78,5,"(570 + INT)% per hit, up to 10 hits but monsters freeze after ~3",Z(1.2,4.8,2.5,0.3,{sadd:[["int",1]]})),
    A2("Lord of Vermilion Lv10","magic",1400,1,"Wind",96,5,"13x13 area, +INT%",Z(0.84,3.36,1.5,0.3,{sadd:[["int",1]]})),A2("Meteor Storm Lv10","magic",625,1,"Fire",64,4,"(125 + INT)% × 5 per meteor, 7 meteors over 13x13",Z(1.2,4.8,2.5,0.3,{sadd:[["int",5]]})),
@@ -80,8 +82,11 @@ const JOBS={
  "Priest":{w:"One-handed mace",p:[A2("Magnus Exorcismus Lv10","magic",100,10,"Holy",58,4,"Costs a Blue Gemstone. 130% vs Demon, Undead and Shadow",Z(0.5,2,3,0.3,{consumes:[{item:"Blue Gemstone",qty:1}]})),...ACO,BASIC,
    // appended so saved preset indexes stay put: basic attacks with Duple Light on (see dlDmg in model.js)
    A("Basic attack + Duple Light","auto",100,1,"W",0,0,0,1,"Each basic attack that hits adds a physical orb (1000% ATK at Lv10, its own hit roll) and, half the time, a magic orb (1600% MATK, Neutral, always hits). Recast every 6 min",{dl:true})]},
- "Monk":{w:"Knuckle",p:[A2("Throw Spirit Sphere Lv5","phys",2400,1,"W",28,1,"Uses 1 spirit sphere",Z(0,1,0.3,0.3)),A2("Occult Impaction Lv5","phys",500,1,"W",20,1,"Uses 1 spirit sphere. More vs high DEF",Z(0.2,0.8,0,0.3)),
-   A2("Excruciating Palm","phys",800,1,"W",40,1,"Costs 200 HP",Z(0,0,1,0.3)),A2("Combo: Quadruple Blow + Raging Thrust","phys",2100,1,"W",16,1,"After a Triple Attack proc; Thrust uses a sphere. Quadruple Blow 500% (1000% with a knuckle) + Thrust (1600 + 5×STR)%",Z(0,0,0,0,{sadd:[["str",5]],wpct:{Knuckle:500}})),...ACO,BASIC]},
+ "Monk":{w:"Knuckle",p:[A2("Throw Spirit Sphere Lv5","phys",1600,1,"W",28,1,"Uses 1 spirit sphere",Z(0,1,0.3,0.3)),A2("Occult Impaction Lv5","phys",500,1,"W",20,1,"Uses 1 spirit sphere. More vs high DEF",Z(0.2,0.8,0,0.3)),
+   A2("Excruciating Palm","phys",800,1,"W",40,1,"Costs 200 HP",Z(0,0,1,0.3,{hpCost:200})),A2("Combo: Quadruple Blow + Raging Thrust","phys",2100,1,"W",16,1,"After a Triple Attack proc; Thrust uses a sphere. Quadruple Blow 500% (1000% with a knuckle) + Thrust (1600 + 5×STR)%",Z(0,0,0,0,{sadd:[["str",5]],wpct:{Knuckle:500}})),...ACO,BASIC,
+   // appended so saved preset indexes stay put: the full combo, and Guillotine Fist (pctEff: (8 + SP/10) × 100%, all your SP)
+   A2("Combo: Quadruple Blow + Raging Thrust + Chain Crush","phys",4400,1,"W",38,1,"After a Triple Attack proc; Thrust and Chain Crush use a sphere each. Quadruple Blow 500% (1000% with a knuckle) + Thrust (1600 + 5×STR)% + Chain Crush Lv10 (2300 + 5×STR)%",Z(0,0,0,0,{sadd:[["str",10]],wpct:{Knuckle:500}})),
+   A2("Guillotine Fist Lv5","phys",800,1,"W",0,1,"Needs Fury and 5 spirit spheres; spends all your SP: (8 + SP/10) × 100%, with your Max SP. SP doesn't come back for a while after, not counted",Z(0.4,1.6,3,0.3,{asura:true}))]},
  "Blacksmith":{w:"Two-handed axe",p:[A2("Power Swing Lv10","phys",1300,1,"W",19,1,"+STR% +DEX%",Z(0,0,0,0.3,{sadd:[["str",1],["dex",1]]})),A2("Axe Tornado Lv5","phys",4300,1,"W",45,3,"Axe only. 7x7 around you. (4300 + 10×VIT)% × base level / 100 (Zero bug: applies below Lv100 too)",Z(0,0,2,0.3,{blv:true,blvBug:true,sadd:[["vit",10]]})),
    A2("Axe Boomerang Lv5","phys",500,1,"W",14,1,"(500 + axe weight)%, × base level / 100 above Lv100",Z(0,0,1,0,{blv:true,wgt:true})),...MERC,BASIC]},
  "Alchemist":{w:"Two-handed axe",p:[A2("Acid Terror Lv5","phys",1000,1,"W",15,1,"Costs an Acid Bottle",Z(0.2,0.8,0,0.3,{consumes:[{item:"Acid Bottle",qty:1}]})),A2("Acid Bomb Lv10","phys",4000,1,"W",50,1,"Costs an Acid Bottle and a Bottle Grenade. (4000 + 2×INT + 10 × monster VIT)%, × base level / 100 above Lv100",Z(0.2,0.8,0.5,0.3,{blv:true,sadd:[["int",2]],mvit:10,consumes:[{item:"Acid Bottle",qty:1},{item:"Bottle Grenade",qty:1}]})),...MERC,BASIC]},
@@ -109,7 +114,7 @@ const SUPPORT=[{key:"ankle-snare",sk:"anklesnare",name:"Ankle Snare",jobs:["Hunt
 const FIELD_ITEM={volcano:"Blue Gemstone",deluge:"Blue Gemstone",whirlwind:"Blue Gemstone"};
 // Rogue Plagiarism: one copied skill at Lv10, appended so saved preset indexes stay put. Only skills with no weapon a Rogue can't hold
 // (no katar/spear/instrument/whip/axe/shield); magic copies use your MATK
-(function plagiarism(){const all=Object.values(JOBS).flatMap(j=>j.p);const fix={"Bowling Bash Lv10":"Hits 3–5 times; +STR% per hit"};
+(function plagiarism(){const all=Object.values(JOBS).flatMap(j=>j.p);const fix={"Bowling Bash Lv10":"Hits 3 times; +STR% per hit"};
   ["Bowling Bash Lv10","Bash Lv10","Magnum Break Lv10","Holy Cross Lv10","Mammonite Lv10","Arrow Shower Lv10","Holy Light",
    "Fire Bolt Lv10","Cold Bolt Lv10","Lightning Bolt Lv10","Earth Spike Lv5","Soul Strike Lv10","Fire Ball Lv10","Frost Driver Lv10","Napalm Beat Lv10","Thunder Storm Lv10",
    "Jupitel Thunder Lv10","Heaven's Drive Lv5","Storm Gust Lv10","Lord of Vermilion Lv10","Meteor Storm Lv10"].forEach(n=>{const s=all.find(x=>x.name===n);

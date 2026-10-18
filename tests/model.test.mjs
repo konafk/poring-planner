@@ -1025,12 +1025,34 @@ t("Blitz Beat: falcon hits that always land, ignore DEF and bonuses; auto Blitz 
   assert.equal(run("autoBlitzLv()"), 3);
   const hc = run(`hitChance(${MOB})`) / 100;
   near(run(`usesPerKill(${MOB})`), 10000 / ((run(`dmgPerHit(${MOB})`) + run(`autoBlitzDmg(${MOB})`)) * hc));
-  assert.equal(run(`JOBS.Monk.p[0].pct`), 2400);                       // Throw Spirit Sphere Lv5: 900 + 300 × Lv
+  assert.equal(run(`JOBS.Monk.p[0].pct`), 1600);                       // Throw Spirit Sphere Lv5 on Global: 600 + 200 × Lv
   const fa = JSON.parse(run(`JSON.stringify(JOBS.Hunter.p.find(p=>p.falcon==="assault"))`));
   run(`C().a=${JSON.stringify(fa)};C().baseLv=99`);                    // Falcon Assault Lv5: the Lv5 Blitz Beat hit / 10 × 5 × (55 + 99/5)
   assert.equal(run(`dmgPerHit(${MOB})`), Math.floor(per / 10 * 5 * (55 + 99 / 5)));
   assert.equal(run(`hitChance(${MOB})`), 100);
   near(run(`perUse(${MOB})`), Math.floor(per / 10 * 5 * (55 + 99 / 5)));
+});
+
+t("Martyr's Reckoning, Guillotine Fist, the Chain Crush combo, Excruciating Palm's HP", () => {
+  const mr = JSON.parse(run(`JSON.stringify(JOBS.Crusader.p.find(p=>p.mr))`));
+  setup("Crusader", { atkTxt: "100+150", wAtk: 120, weapon: "One-handed sword", wElem: "Neutral", hitTxt: "1", crit: 50, maxHp: 8000, maxSp: 400,
+    st: {}, a: mr });
+  assert.equal(run(`dmgPerHit(${MOB})`), Math.floor(0.09 * 8000 * 1.4));     // 9% of Max HP × 1.4 at Lv5, Neutral vs Water 1
+  assert.equal(run(`hitChance(${MOB})`), 100);
+  assert.equal(run(`critChance(${MOB})`), 0);
+  near(run("selfHpPerSec()"), 0.09 * 8000 * run("atkPerSec()"));           // 9% of Max HP per attack
+  near(run("skillSPPerSec()"), 20 * run("atkPerSec()"));                    // 100 SP per 5 attacks
+  near(run(`(()=>{const d=defense(${MOB});return d.self})()`), 0.09 * 8000 * run("atkPerSec()"));
+  const gf = JSON.parse(run(`JSON.stringify(JOBS.Monk.p.find(p=>p.asura))`));
+  setup("Monk", { atkTxt: "100+150", wAtk: 120, weapon: "Knuckle", wElem: "Neutral", maxSp: 437, st: { str: "80" }, a: gf });
+  assert.equal(run(`pctEff()`), (8 + 43) * 100);                             // (8 + SP/10) × 100% with Max SP 437
+  near(run("skillSPPerSec()"), 437 / run("useSec()"));                       // all your SP every use
+  const cc = JSON.parse(run(`JSON.stringify(JOBS.Monk.p.find(p=>/Chain Crush/.test(p.name)))`));
+  run(`C().a=${JSON.stringify(cc)}`);
+  assert.equal(run(`pctEff()`), 4400 + 10 * 80 + 500);                       // 500 (+500 knuckle) + (1600 + 5×STR) + (2300 + 5×STR)
+  const ep = JSON.parse(run(`JSON.stringify(JOBS.Monk.p.find(p=>p.name==="Excruciating Palm"))`));
+  run(`C().a=${JSON.stringify(ep)}`);
+  near(run("selfHpPerSec()"), 200 / run("useSec()"));                        // Excruciating Palm costs 200 HP a use
 });
 
 t("auto-cast spells from cards work on any job's basic attacks", () => {

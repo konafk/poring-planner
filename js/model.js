@@ -73,7 +73,7 @@ const shieldPct=(c=C())=>{const s=shieldWR(c);return s.w+4*s.r};
 const weaponW=(c=C())=>{if(c.mode==="build"){const g=((c.build&&c.build.gear)||{}).weapon,it=g&&g.id&&BUILD.item(g.id);return it?{w:num(it.w),name:it.name}:{w:0,name:""}}
   return {w:Math.max(0,num(c.weaponW))}};
 // a.wpct: extra % with a weapon type (Raging Quadruple Blow doubles with a knuckle); a.mvit: + N × the monster's VIT % (Acid Bomb), only when m is given
-const pctEff=m=>{const c=C(),a=c.a;let p=num(a.pct);(a.sadd||[]).forEach(([k,f])=>{const v=statVal(c,k);if(v!=null)p+=v*f});if(num(a.cart))p+=num(a.cart)*Math.min(8000,Math.max(0,num(c.cartW)))/8000;if(a.shw)p+=shieldPct(c);
+const pctEff=m=>{const c=C(),a=c.a;let p=a.asura?(8+Math.floor(num(cf("maxSp"))/10))*100:num(a.pct);(a.sadd||[]).forEach(([k,f])=>{const v=statVal(c,k);if(v!=null)p+=v*f});if(num(a.cart))p+=num(a.cart)*Math.min(8000,Math.max(0,num(c.cartW)))/8000;if(a.shw)p+=shieldPct(c);
   if(a.wgt)p+=weaponW(c).w;if(a.wpct)p+=num(a.wpct[c.weapon]);if(m&&a.mvit)p+=num(a.mvit)*num(m.vit);if(!a.blv)return p;const lv=num(c.baseLv,99);return p*(a.blvBug?lv:Math.max(100,lv))/100};
 const targets=()=>Math.max(1,num(C().a.targets,1));
 // magic: true for magic damage (spells, Spell Fist, Shadow Spell auto-casts). Each race / size / element / name bonus is
@@ -141,9 +141,9 @@ const hitPctOf=m=>{const a=C().a;if(a.falcon)return elemMult(m,"Neutral");if(a.t
   const P=atkParts(),tot=P.weapon+P.eq+frontAtk();if(tot<=0)return 0;
   return pctEff(m)*handAtk(m,P.weapon,C().weapon,atkEl(),frontAtk())/tot*bonusParts(m).full};
 // hit chance = 100 + your HIT − the monster's "100% hit" value, 5–100%; magic always lands
-const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist"||C().a.falcon)return 100;if(m.hit100==null)return 95;return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100))};
+const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist"||C().a.falcon||C().a.mr)return 100;if(m.hit100==null)return 95;return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100))};
 function dmgPerHit(m){
-  const a=C().a;if(a.type==="spellfist")return sfHit(m,atkEl());if(a.falcon==="assault")return faHit(m);if(a.falcon)return blitzHit(m,Math.round(num(a.hits,5)));
+  const a=C().a;if(a.type==="spellfist")return sfHit(m,atkEl());if(a.mr)return mrHit(m);if(a.falcon==="assault")return faHit(m);if(a.falcon)return blitzHit(m,Math.round(num(a.hits,5)));
   if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor((sumStat(cf("matkTxt"))*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
   const P=atkParts(),d=physDmg(m,handAtk(m,P.weapon,C().weapon,atkEl(),frontAtk()));
   return dualHit()&&d>0?Math.max(1,Math.floor(d*handPct().right/100)):d}
@@ -162,7 +162,7 @@ const perUse=m=>{const a=C().a,h=a.sizeHits?a.sizeHits[{S:0,M:1,L:2}[m.size]??1]
 // crits (basic attacks only): chance = CRIT (doubled with a katar) − monster LUK × 0.2, always hit, × 1.4 × (1 + crit damage %)
 // m: the monster, for gear CRIT that only counts against its race (Cruiser Card: CRIT +7 vs Brute)
 const critRace=m=>{const c=C();return m&&c.bx&&c.bx.critRace?num(c.bx.critRace[m.race]):0};
-const critChance=m=>{const c=C();if(c.a.type!=="auto")return 0;return Math.min(100,Math.max(0,(num(cf("crit"))+critRace(m))*(c.weapon==="Katar"?2:1)-(m&&m.luk||0)*0.2))/100};
+const critChance=m=>{const c=C();if(c.a.type!=="auto"||c.a.mr)return 0;return Math.min(100,Math.max(0,(num(cf("crit"))+critRace(m))*(c.weapon==="Katar"?2:1)-(m&&m.luk||0)*0.2))/100};
 // uses needed per kill: whole hits that land, spread over misses
 // average damage of one use: hits that land (crits always do, × 1.4 × (1 + crit damage %)) plus auto-casts: card and scroll auto-casts
 // only proc on swings that connect, Auto Shadow Spell (free) procs on a miss too, like Spell Fist and Hindsight
@@ -189,6 +189,10 @@ const faLv=(c=C())=>hasTree(c)&&skLv(c,"falcon-assault")>0?skLv(c,"falcon-assaul
 const faHit=m=>{const e=elemMult(m,"Neutral")/100;return e<=0?0:Math.max(1,Math.floor(blitzBase(faLv())/10*5*(55+num(C().baseLv,99)/5)*e))};
 const autoBlitzLv=(c=C())=>!c.a.autoBlitz?0:Math.min(hasTree(c)?skLv(c,"blitz-beat"):5,Math.floor((num(c.jobLv,50)+9)/10));
 const autoBlitzDmg=m=>{const n=autoBlitzLv();return n?Math.min(1,num(statVal(C(),"luk"))/300)*blitzHit(m,n)*n:0};
+// Martyr's Reckoning (Crusader): each basic attack hits for 9% of Max HP × (0.9 + 0.1 × Lv) and costs 9% of Max HP (selfHpPerSec);
+// it always hits, ignores DEF and your damage bonuses, takes the Neutral element table. 100 SP per cast for 5 attacks. Lv5 without a skill tree
+const mrHit=m=>{const c=C(),e=elemMult(m,"Neutral")/100,lv=hasTree(c)&&skLv(c,"martyrs-reckoning")>0?skLv(c,"martyrs-reckoning"):5;
+  return e<=0?0:Math.max(1,Math.floor(0.09*num(cf("maxHp"))*(0.9+0.1*lv)*e))};
 const dlUpkeep=()=>{const lv=dlLv();return lv?(50+5*lv)*spCostMul()/(60+30*lv):0};
 const useAvg=(m,per,proc,free=0)=>{const cr=critChance(m),hc=hitChance(m)/100;return per*(cr*1.4*(1+(num(C().critDmg)+consSum("crit_dmg"))/100)+(1-cr)*hc)+proc*(cr+(1-cr)*hc)+free};
 const dpsOf=m=>{if(isSF())return null;return useAvg(m,perUse(m),procPerUse(m),procFree(m))*targets()/useSec()};
@@ -227,7 +231,10 @@ const ihrPer10=()=>{const l=skLv(C(),"increase-hp-recovery");return l>0?Math.flo
 // m: the monster in play, whose poison stops natural regen and Increase HP Recovery part of the time (poisonUp)
 const hpRegenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(hpRegen6()/6+ihrPer10()/10)*(1-poisonUp(m)))+consHPPerSec();
 // SP the attack itself costs per second (Spell Fist: its upkeep); defSP adds Energy Coat and Vitata's heals against the monster in play
-const skillSPPerSec=()=>num(C().a.sp)*spCostMul()/useSec()+dlUpkeep();
+// Guillotine Fist spends all your SP (Max SP each use), whatever SP cost cuts you have
+const skillSPPerSec=()=>(C().a.asura?num(cf("maxSp")):num(C().a.sp)*spCostMul())/useSec()+dlUpkeep();
+// HP you spend yourself per second: Martyr's Reckoning 9% of Max HP per attack, a.hpCost per use (Excruciating Palm)
+const selfHpPerSec=()=>{const a=C().a;return a.mr?0.09*num(cf("maxHp"))/useSec():num(a.hpCost)/useSec()};
 const spNeedPerSec=()=>isSF()?sgUpkeep()+defSP()+hsFullSP()*hsSustain():skillSPPerSec()+defSP();
 // SP back per second: natural regen and Increase SP Recovery (stop when you're overweight) plus SP from cards and consumables, which keep going
 const regenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(spRegen8()/8+isrPer10()/10)*(1-poisonUp(m)))+cardSPPerSec()+consSPPerSec();
@@ -285,7 +292,7 @@ const mobHitDmg=m=>{if(m.atkMin==null)return null;const {soft,hard}=defParts(),k
 const hpLossPerMin=(m,d=defense(m))=>d?d.hp*60:null;
 const vitHeals=()=>CRD().vitata&&healHpEff()>0;
 const hpItemsPerMin=(m,d=defense(m))=>d?vitHeals()?0:d.hp*60:null;
-const hpTakenPerMin=(m,d=defense(m))=>d?(d.taken+d.psn)*60:null;
+const hpTakenPerMin=(m,d=defense(m))=>d?(d.taken+d.psn+d.self)*60:null;
 // pz: share of the time poisoned, psn: HP a minute it drains
 const poisonOf=(m,d=defense(m))=>d?{pz:d.pz,psn:d.psn*60}:{pz:0,psn:0};
 // ---- Sage: full Spell Fist model (bolt choice, Hindsight, Double Bolt, SP items; Energy Coat from ECO(), Vitata, Hunter Fly and Side Winder from CRD()) ----
@@ -354,8 +361,8 @@ function defense(m){
   const raw=mobHitDmg(m);if(raw==null)return null;const hits=hitsOnYou(m);
   const sf=isSF(),max=num(cf("maxSp")),ec=ecOn(),hpBack=hfHpPerSec()+hpRegenPerSec(m),regen=regenPerSec(m),up=sf?sgUpkeep():skillSPPerSec(),hs=sf?hsFullSP():0,spMul=sf?sgSpMult():spCostMul();
   // pz: share of the time you're poisoned, psn: HP a second it drains (Energy Coat doesn't cut it)
-  const pz=poisonUp(m),psn=pz*poisonHpPerSec();
-  const band=i=>{const red=ec?EC_BANDS[i][0]:0,ecSP=ec?hits*EC_BANDS[i][1]/100*max:0,taken=raw*(1-red/100)*hits,hp=Math.max(0,taken+psn-hpBack),cd=CRD(),healSP=cd.vitata&&healHpEff()>0?hp/healHpEff()*num(cd.healSp)*spMul:0;return {i,red,ecSP,healSP,hp,taken,pz,psn,label:ec?EC_BANDS[i][2]:""}};
+  const pz=poisonUp(m),psn=pz*poisonHpPerSec(),self=selfHpPerSec(); // self: HP your own attack spends
+  const band=i=>{const red=ec?EC_BANDS[i][0]:0,ecSP=ec?hits*EC_BANDS[i][1]/100*max:0,taken=raw*(1-red/100)*hits,hp=Math.max(0,taken+psn+self-hpBack),cd=CRD(),healSP=cd.vitata&&healHpEff()>0?hp/healHpEff()*num(cd.healSp)*spMul:0;return {i,red,ecSP,healSP,hp,taken,pz,psn,self,label:ec?EC_BANDS[i][2]:""}};
   const cost=b=>up+b.ecSP+b.healSP;
   let b=null;for(let i=0;i<5;i++){const x=band(i);if(cost(x)+hs<=regen){b=x;break}}
   // fb: no band fits your regen, so SP items (or none) set it
