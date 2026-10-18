@@ -37,6 +37,8 @@
 
 Every non-MVP monster with HP, EXP, EXP/HP, your damage, kill time, EXP/min, dodge, HP lost, zeny per kill (after skill items) and net zeny/hr (after skill items, SP items, the ASPD potion and ground buffs).
 
+The Element, Race, Size and Boss dropdowns above the table narrow both the table and the monster search's suggestions. Boss: No bosses (the default) leaves out Boss-class monsters, Normal only also leaves out mini bosses, Mini bosses and Bosses list only those, and Any lists every monster. The dropdowns are saved per account.
+
 ### Mini bosses
 
 Vocal, Eclipse, Toad, Mastering, Dragon Fly and the other monsters that spawn one per map on a long respawn carry a `mini boss` tag wherever monsters are listed, including the monster search on the Session and Monster info tabs, and Monster info says so. Type `mini` in a Monster filter to find them.
@@ -73,11 +75,11 @@ With an elemental converter (or Spell Fist bolts), a table shows each element's 
 
 ## Monster info
 
-One monster's stats, how you do against it, and every map it spawns on. Its drops list shows the auto-loot group, chance, your chance, NPC and player price, and zeny per kill. Clicking a monster in the Monsters table, the Map planner or the Zeny Hunter opens it here too. Drops with no published rate yet (the Boulder Dwarves in Nordfeld Cave) show chance `?` and add nothing to zeny or weight figures.
+One monster's stats, how you do against it, and every map it spawns on. The Element, Race, Size and Boss dropdowns next to the search narrow its suggestions. Its drops list shows the auto-loot group, chance, your chance, NPC and player price, and zeny per kill. Clicking a monster in the Monsters table, the Map planner or the Zeny Hunter opens it here too. Drops with no published rate yet (the Boulder Dwarves in Nordfeld Cave) show chance `?` and add nothing to zeny or weight figures.
 
 ## Item info
 
-Every item monsters drop, searchable and filterable by auto-loot group, with NPC and player prices and NPC zeny per kill: the NPC price times your drop chance (after drop bonus and level penalty), at the monster where that comes to most, and spawns: the most of one monster that drops it on one open map. Click an item to see every monster that drops it, the drop chance, the NPC zeny per kill from each, and its best open map with how many spawn there.
+Every item monsters drop, searchable and filterable by auto-loot group (the Group dropdown in the filter row), with NPC and player prices and NPC zeny per kill: the NPC price times your drop chance (after drop bonus and level penalty), at the monster where that comes to most, and spawns: the most of one monster that drops it on one open map. Click an item to see every monster that drops it, the drop chance, the NPC zeny per kill from each, and its best open map with how many spawn there.
 
 ## Market
 
@@ -108,5 +110,6 @@ Every big table works the same way:
 
 - Click a column header to sort.
 - Type in the filter row under the header. Filters accept `<350`, `100-200`, `fire`, `-` for blank and `or`. In the EXP Hunter, `poring` under Main monsters finds every map with Porings; in the Zeny Hunter, `elunium` under Earns from finds every monster that drops it.
+- The auto-loot group filters in Monster info's drops and in Item info are dropdowns: pick a group, or Not looted for the groups you don't auto loot.
 - Show or hide columns with the column picker.
 - In the hunters, filters apply before the Show limit, and # stays the map's rank among all open maps.
