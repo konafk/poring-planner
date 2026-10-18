@@ -197,15 +197,25 @@ const regenPerSec=()=>(REGEN_OFF?0:spRegen8()/8+isrPer10()/10)+cardSPPerSec()+co
 const itemsPerSec=()=>isSF()?sgItemsPerSec():C().autoSp&&spItemAmt()>0?Math.max(0,spNeedPerSec()-regenPerSec())/spItemAmt():0;
 const restFactor=()=>{if(isSF())return 1;if(C().autoSp&&spItemAmt()>0)return 1;const need=spNeedPerSec(),r=regenPerSec();return need>r&&r>0?need/r:need>0&&r<=0?Infinity:1};
 const rawFight=m=>{const u=usesPerKill(m);return isFinite(u)?u*useSec()/targets():Infinity};
-const fightSec=m=>{const f=healShare(m);return f>=1?Infinity:rawFight(m)*restFactor()/(1-f)};
+// raw: rawFight(m) when the caller already has it
+const fightSec=(m,raw)=>{const f=healShare(m);return f>=1?Infinity:(raw??rawFight(m))*restFactor()/(1-f)};
 // damage taken: monster ATK through your DEF, its hit chance on you, a swing every interval times "swings reach you"
-const defParts=()=>{const p=String(cf("defTxt")||"0").split("+").map(x=>parseFloat(x)||0);return {soft:p[0]||0,hard:p.slice(1).reduce((a,b)=>a+b,0)}};
-// dodge = 95 + your FLEE − the monster's "95% flee" value, 0–95%
-const dodge=m=>m.flee95==null?null:Math.max(0,Math.min(95,95+sumStat(cf("fleeTxt"))-m.flee95));
+// monsters on you at once, per map (state.mobbed, else MOBBED_D; 1 = one at a time). Labyrinth Forest is a 5×5 maze where monsters spawn
+// anywhere and bunch up in the rooms, so a few hit you together. MOBBED is the count for the map being worked out (withMobbed), 1 elsewhere
+const MOBBED_D={maz_d01:3,prt_maze02:3,maz_d03:3};
+const mobbedOf=mp=>{const v=(state.mobbed||{})[mp];return Math.min(12,Math.max(1,Math.round(v!=null?num(v):MOBBED_D[mp]||1)))};
+let MOBBED=1;
+const withMobbed=(mp,fn)=>{const k=MOBBED;MOBBED=mp?mobbedOf(mp):1;try{return fn()}finally{MOBBED=k}};
+// crowd penalty (rAthena's defaults, not checked in game): from the 3rd monster on you, FLEE −10% and DEF −5% (hard and soft) per monster past the 2nd
+const crowdFlee=(n=MOBBED)=>Math.max(0,1-0.1*Math.max(0,n-2));
+const crowdDef=(n=MOBBED)=>Math.max(0,1-0.05*Math.max(0,n-2));
+const defParts=()=>{const p=String(cf("defTxt")||"0").split("+").map(x=>parseFloat(x)||0),k=crowdDef();return {soft:(p[0]||0)*k,hard:p.slice(1).reduce((a,b)=>a+b,0)*k}};
+// dodge = 95 + your FLEE (less the crowd penalty) − the monster's "95% flee" value, 0–95%: at least 5% of swings always land
+const dodge=m=>m.flee95==null?null:Math.max(0,Math.min(95,95+sumStat(cf("fleeTxt"))*crowdFlee()-m.flee95));
 const mobHitDmg=m=>{if(m.atkMin==null)return null;const {soft,hard}=defParts();return Math.max(1,((m.atkMin+m.atkMax)/2*(4000+hard)/(4000+10*hard)-soft)*takenMul(m))};
 // HP lost per minute that HP items must cover: defense() already takes off Hunter Fly and HP regen (hpRegenPerSec);
 // with Vitata your Heal casts cover the rest (paid in SP and time, see healsPerSec), so no HP items
-const hpLossPerMin=m=>{const d=defense(m);return d?CRD().vitata&&healHpEff()>0?0:d.hp*60:null};
+const hpLossPerMin=(m,d=defense(m))=>{return d?CRD().vitata&&healHpEff()>0?0:d.hp*60:null};
 // ---- Sage: full Spell Fist model (bolt choice, Hindsight, Double Bolt, SP items; Energy Coat from ECO(), Vitata, Hunter Fly and Side Winder from CRD()) ----
 const SAGE_D={sfLv:10,boltLv:10,bolts:{Fire:true,Water:true,Wind:true},hsOn:false,hsAuto:true,hsLv:10,hsWorth:50000,dbOn:false,dbLv:5};
 const G=()=>{const c=C();if(!c.sage)c.sage={};for(const k in SAGE_D)if(c.sage[k]==null)c.sage[k]=JSON.parse(JSON.stringify(SAGE_D[k]));return c.sage};
@@ -262,15 +272,16 @@ const sgItemsOn=()=>!NO_ITEMS&&hsOnNow()&&spItemAmt()>0; // SP items go with Hin
 // NO_ITEMS: worked out as if you carry no SP items (Farm without items, see susKill)
 let NO_ITEMS=false;
 const itemsOnNow=()=>isSF()?sgItemsOn():!NO_ITEMS&&!!C().autoSp&&spItemAmt()>0;
-// its hits that land on you per second: a swing every interval, times "swings reach you", less what you dodge
-const hitsOnYou=m=>{if(!m||m.atkMin==null)return 0;const dg=dodge(m);return Math.max(0,num(C().hitScale,1))*(dg==null?1:(100-dg)/100)/Math.max(.3,num(C().mobInterval,1.5))};
+// its hits that land on you per second: a swing every interval, times "swings reach you", less what you dodge, times the monsters on you at once
+const hitsOnYou=m=>{if(!m||m.atkMin==null)return 0;const dg=dodge(m);return MOBBED*Math.max(0,num(C().hitScale,1))*(dg==null?1:(100-dg)/100)/Math.max(.3,num(C().mobInterval,1.5))};
 function defense(m){
   const raw=mobHitDmg(m);if(raw==null)return null;const hits=hitsOnYou(m);
   const sf=isSF(),max=num(cf("maxSp")),ec=ecOn(),hpBack=hfHpPerSec()+hpRegenPerSec(),regen=regenPerSec(),up=sf?sgUpkeep():skillSPPerSec(),hs=sf?hsFullSP():0,spMul=sf?sgSpMult():spCostMul();
   const band=i=>{const red=ec?EC_BANDS[i][0]:0,ecSP=ec?hits*EC_BANDS[i][1]/100*max:0,taken=raw*(1-red/100)*hits,hp=Math.max(0,taken-hpBack),cd=CRD(),healSP=cd.vitata&&healHpEff()>0?hp/healHpEff()*num(cd.healSp)*spMul:0;return {i,red,ecSP,healSP,hp,taken,label:ec?EC_BANDS[i][2]:""}};
   const cost=b=>up+b.ecSP+b.healSP;
   let b=null;for(let i=0;i<5;i++){const x=band(i);if(cost(x)+hs<=regen){b=x;break}}
-  if(!b){const p=num(ECO().spPct,50);b=itemsOnNow()?band(p>80?0:p>60?1:p>40?2:p>20?3:4):band(4)}
+  // fb: no band fits your regen, so SP items (or none) set it
+  if(!b){const p=num(ECO().spPct,50);b={...(itemsOnNow()?band(p>80?0:p>60?1:p>40?2:p>20?3:4):band(4)),fb:true}}
   return {...b,extra:b.ecSP+b.healSP};
 }
 // Vitata Card gives Heal Lv1, which you cast yourself rather than an automatic heal: each cast (no cast time, 0.3 s after-cast delay,
@@ -321,9 +332,10 @@ function healOpt(){const lv=skLv(C(),"heal");
 function indulgeOpt(){const lv=skLv(C(),"indulge");if(!(lv>0))return null;const hp=num(cf("maxHp"))*0.1,r=skRowOf("indulge",lv),sp=hp*lv/10-num(r?r[0]:lv)*spCostMul();
   return sp>0?{name:`Indulge Lv${lv}`,hp,sp}:null}
 // one kill of m with w seconds walking: HP and SP out and back, fight time F being the attacking alone (no resting or heals).
-// burst: HP lost over the fight alone (regen and Hunter Fly during it taken off)
-function susKill(m,w){const k=SG_MOB,ki=NO_ITEMS;SG_MOB=m;NO_ITEMS=true;try{
-  const F=rawFight(m);if(!isFinite(F))return null;const d=defense(m),T=F+w,hpBack=hpRegenPerSec(),spBack=(REGEN_OFF?0:spRegen8()/8+isrPer10()/10)+consSPPerSec();
+// burst: HP lost over the fight alone (regen and Hunter Fly during it taken off). raw: rawFight(m) worked out with SP items as they are, which
+// is the same without them unless Spell Fist's Hindsight runs on SP items; d0: defense(m) likewise, the same unless SP items set Energy Coat's band
+function susKill(m,w,raw,d0){const k=SG_MOB,ki=NO_ITEMS;SG_MOB=m;const same=raw!=null&&!(isSF()&&sgItemsOn());NO_ITEMS=true;try{
+  const F=same?raw:rawFight(m);if(!isFinite(F))return null;const d=same&&d0!==undefined&&!(d0&&d0.fb&&ecOn())?d0:defense(m),T=F+w,hpBack=hpRegenPerSec(),spBack=(REGEN_OFF?0:spRegen8()/8+isrPer10()/10)+consSPPerSec();
   const hpOut=d?d.taken*F:0,hf=hfHpPerSec()*F,spOut=(isSF()?sgUpkeep()*T+hsFullSP()*hsSustain()*F:skillSPPerSec()*F)+(d?d.ecSP*F:0);
   return {F,T,hpOut,hpIn:hf+hpBack*T,hf,spOut,spIn:cardSPPerSec()*F+spBack*T,card:cardSPPerSec()*F,hpBack,spBack,burst:Math.max(0,hpOut-hf-hpBack*F),known:!!d,dodge:dodge(m)}}
   finally{SG_MOB=k;NO_ITEMS=ki}}
@@ -339,7 +351,7 @@ function susCalc(kills){const L=kills.filter(x=>x.k);if(!L.length)return null;co
   const burst=h||!(maxHp>0)?0:Math.max(...L.map(x=>x.k.burst))/maxHp,known=L.every(x=>x.k.known);
   const cls=score>=99.95&&burst<0.5?"good":score>=50&&burst<1?"warnc":"bad";
   const pm=v=>v/T*60;
-  return {score,hpCov:hpCov*100,spCov:spCov*100,cls,label:cls==="good"?"keeps up":cls==="warnc"?"with rests":"needs items",burst,rest,known,T,
+  return {mob:MOBBED,score,hpCov:hpCov*100,spCov:spCov*100,cls,label:cls==="good"?"keeps up":cls==="warnc"?"with rests":"needs items",burst,rest,known,T,
     hpOutM:pm(hpOut),hpInM:pm(hpIn),hfM:pm(sum(k=>k.hf)),spOutM:pm(spOut),spInM:pm(spIn),cardM:pm(sum(k=>k.card)),
     heal:h,healsM:pm(heals),healM:pm(heals*(h?h.hp:0)),ind,indsM:pm(inds),indM:pm(inds*(ind?ind.sp:0))}}
 const susMob=(m,w)=>susCalc([{k:susKill(m,w),n:1}]);
@@ -409,8 +421,8 @@ const spItemPrice=()=>{const p=recPick("sp");return p?num(p.price):0};
 const hpHeal=hpm=>{const p=recPick("hp");if(!p||!(hpm>0)||!(p.avg>0))return {n:0,z:0,p};const n=hpm*60/p.avg;return {n,z:n*num(p.price),p}};
 // SP your attack is short of per hour on a map (SP use less regen and cards), weighted by spawns and time like HP lost / min. It's what SP items
 // would cover; they're only bought with "auto-use when needed" on (Sage: with Hindsight), else you rest
-function mapSpShort(mp,w,el){let s=0,t=0;withEl(el,()=>(MAPMOBS[mp]||[]).forEach(({m,n})=>{if(m.boss||isSkipped(m)||m.expUnknown)return;const r=mobRow0(m,w);if(!isFinite(r.tot))return;
-  const k=SG_MOB;SG_MOB=m;try{s+=n*r.tot*Math.max(0,spNeedPerSec()-regenPerSec())}finally{SG_MOB=k}t+=n*r.tot}));return t?s/t*3600:0}
+function mapSpShort(mp,w,el){let s=0,t=0;withMobbed(mp,()=>withEl(el,()=>(MAPMOBS[mp]||[]).forEach(({m,n})=>{if(m.boss||isSkipped(m)||m.expUnknown)return;const r=mobRow0(m,w);if(!isFinite(r.tot))return;
+  const k=SG_MOB;SG_MOB=m;try{s+=n*r.tot*Math.max(0,spNeedPerSec()-regenPerSec())}finally{SG_MOB=k}t+=n*r.tot})));return t?s/t*3600:0}
 // zeny per kill: the exported loot value (rozerodb, NPC prices) scaled by your drop rate bonus. A drop you sell to players
 // counts at the market price you typed instead: the loot value already holds its NPC price, so the market price adds only what
 // it beats the NPC price by. Its chance is scaled by the drop bonus and the level penalty, capped at 100%
@@ -579,17 +591,18 @@ function tripInfo(m,w){const k=SG_MOB;SG_MOB=m;try{if(!wOn())return null;const w
   const {rA,rB,totB}=tripParts(m,tot,w);return {wk,kills:(rA+rB)/wk,min:(rA*tot+(rB?rB*totB:0))/wk/60,fell:sellFell(rA,rB)}}finally{SG_MOB=k}}
 function mobRow0(m,w){const kSG=SG_MOB;SG_MOB=m;try{return mobRow00(m,w)}finally{SG_MOB=kSG}}
 function mobRow00(m,w){
-  const sec=fightSec(m),tot=tripTot(m,sec+w,w),epk=killExp(m),jpk=killJobExp(m),ok=isFinite(tot)&&tot>0;
+  const raw=rawFight(m),sec=fightSec(m,raw),def=defense(m),tot=tripTot(m,sec+w,w),epk=killExp(m),jpk=killJobExp(m),ok=isFinite(tot)&&tot>0;
   // zk: zeny per kill after what the skills use up; hc: SP items, ASPD potion and ground buffs per hour; zph: net zeny per hour
   // sph: SP items per hour (what huntCostHr counts)
   const zc=skillZeny(m),zk=zenyKill(m)-zc,sph=itemsPerSec()*3600,hc=sph*spItemPrice()+hourCostHr();
-  return {sec,tot,epm:ok?epk/tot*60:0,epk,jpm:ok?jpk/tot*60:0,jpk,hitc:hitChance(m),mult:hitPctOf(m),uses:usesPerKill(m),dodge:dodge(m),hpm:hpLossPerMin(m),zk,zc,hc,sph,zph:ok?zk/tot*3600-hc:0};
+  return {sec,tot,epm:ok?epk/tot*60:0,epk,jpm:ok?jpk/tot*60:0,jpk,hitc:hitChance(m),mult:hitPctOf(m),uses:usesPerKill(m),dodge:dodge(m),hpm:hpLossPerMin(m,def),zk,zc,hc,sph,zph:ok?zk/tot*3600-hc:0,raw,def};
 }
-// map averages, weighted by spawn counts; monsters you can't hurt are skipped (you walk past them)
-function mapStats0(mp,w){
+// map averages, weighted by spawn counts; monsters you can't hurt are skipped (you walk past them). With the map's monsters on you at once
+const mapStats0=(mp,w)=>withMobbed(mp,()=>mapStats00(mp,w));
+function mapStats00(mp,w){
   const list=(MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m));let N=0,n=0,exp=0,time=0,fight=0,z=0,zc=0,hc=0,spi=0,hp=0,hpN=0;const skip=[],unk=[],sus=[];
   list.forEach(({m,n:c})=>{N+=c;if(m.expUnknown){unk.push(m.name);return}const r=mobRow0(m,w);if(!isFinite(r.sec)){skip.push(m.name);return}
-    n+=c;sus.push({k:susKill(m,w),n:c});exp+=c*r.epk;time+=c*r.tot;fight+=c*r.sec;z+=c*r.zk;zc+=c*r.zc;hc+=c*r.hc*r.tot;spi+=c*r.sph*r.tot;if(r.hpm!=null){hp+=c*r.hpm*r.tot;hpN+=c*r.tot}});
+    n+=c;sus.push({k:susKill(m,w,r.raw,r.def),n:c});exp+=c*r.epk;time+=c*r.tot;fight+=c*r.sec;z+=c*r.zk;zc+=c*r.zc;hc+=c*r.hc*r.tot;spi+=c*r.sph*r.tot;if(r.hpm!=null){hp+=c*r.hpm*r.tot;hpN+=c*r.tot}});
   if(!n)return null;
   // zg: zeny / hr after skill items and zeny; zph also takes off SP items, the ASPD potion and ground buffs (per monster, over the time spent on it)
   // healing (Recovery items): SP items (spHr a hour, spZ zeny) and HP items for the HP lost (hpHr, hpZ). zb: zeny / hr before healing, net: after it
@@ -655,7 +668,8 @@ const teleSec=()=>state.teleSec==null?1:num(state.teleSec);
 // the Zeny Hunter's level filter: monsters outside its Lv range (state.huntMinLv / huntMaxLv, null = any), or with a drop level penalty
 // when "Skip drop-penalty monsters" is on (state.huntNoPen), aren't ranked on their own and are passed by on a map, like ones you untick there
 const huntLvOk=m=>(state.huntMinLv==null||m.lv>=state.huntMinLv)&&(state.huntMaxLv==null||m.lv<=state.huntMaxLv)&&!(state.huntNoPen&&dropPenalty(m)>0);
-function huntMap0(mp,w,minN=0){
+const huntMap0=(mp,w,minN=0)=>withMobbed(mp,()=>huntMap00(mp,w,minN));
+function huntMap00(mp,w,minN){
   const list=(MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m));const N=list.reduce((a,x)=>a+x.n,0);
   const rows=list.map(({m,n})=>({m,n,r:mobRow0(m,0)})),ok=rows.filter(x=>isFinite(x.r.sec)),skip=rows.filter(x=>!isFinite(x.r.sec)).map(x=>x.m.name);
   const all=ok.reduce((a,x)=>a+x.n,0);if(!all)return null;

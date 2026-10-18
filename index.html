@@ -441,8 +441,9 @@
 
   <section class="card" id="mapCard" data-tab="maps">
     <div class="bar"><h2 class="grow">Map planner</h2></div>
-    <div class="form" style="grid-template-columns:2fr 1fr">
+    <div class="form" style="grid-template-columns:2fr 1fr 1fr">
       <label>Map<input id="mapInput" list="mapList" placeholder="e.g. gef_dun01 or Sphinx B5F"></label>
+      <label title="How many monsters attack you together on this map. Their hits add up, and from the 3rd one your FLEE drops 10% and DEF 5% for each past the 2nd. Labyrinth Forest (5×5 maze, monsters bunch up) starts at 3; blank goes back to the default">Monsters on you at once<input id="mobbedIn" type="number" min="1" max="12" step="1"></label>
       <label><span>&nbsp;</span><button type="button" id="mapFromMob">Use session monster's map</button></label>
     </div>
     <datalist id="mapList"></datalist>

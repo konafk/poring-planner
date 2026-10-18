@@ -87,6 +87,8 @@ The % is the share of what you use that comes back on its own, the lower of HP a
 - **Yellow (with rests):** 50% or more. You sit now and then; the tooltip says about how long a kill (at standing regen, so sitting is quicker).
 - **Red (needs items):** below 50%, or one kill can take all your HP before regen catches up and you have no Heal.
 
+**Monsters on you at once:** the Map planner's box next to the map says how many monsters attack you together there. Their hits add up, and from the 3rd one your FLEE drops 10% and your DEF 5% for each monster past the 2nd (rAthena's defaults, not checked in game). Labyrinth Forest (`prt_maze01`–`03`), a 5×5 maze where monsters spawn anywhere and bunch up in the rooms, starts at 3; every other map at 1. Type your own for any map, or clear the box to go back to the default. It counts in everything worked out for that map (HP lost / min, heal cost, interrupted casts, this check), and the EXP and Zeny Hunters tag those maps `×3 on you`. Dodge never goes above 95%, so even with very high FLEE 1 swing in 20 lands.
+
 With an elemental converter (or Spell Fist bolts), a table shows each element's rate against every monster on the map and the map's EXP/min with it, and warns about the monsters the one in use is weak against (for example Fire against Jakk, Fire 2, on Geffen Dungeon B2F). An Element % column shows the rate per monster. For physical attacks the rate applies to weapon ATK; status ATK always hits as Neutral.
 
 ## Monster info
