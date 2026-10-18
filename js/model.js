@@ -170,8 +170,8 @@ const procPerUse=m=>acDmg(m)*acChance()+dlDmg(m)+autoBlitzDmg(m);
 const procFree=m=>ssDmg(m)*SS_CHANCE;
 // Duple Light (Priest, Zero): each melee basic attack that hits adds a physical orb ((500 + 50 × Lv)% ATK, the weapon's element and size
 // penalty, rolling to hit again) and, DL_MAGIC of the time, a magic orb ((800 + 80 × Lv)% MATK, Neutral, always hits). No base-level scaling.
-// Recast every 60 + 30 × Lv s for 50 + 5 × Lv SP. The orb chances are the Lv10 ones (100% / 50%, checked in game) at every level
-// TODO: the chances below Lv10 aren't known; the skill description leaves them out
+// Recast every 60 + 30 × Lv s for 50 + 5 × Lv SP. The orb chances (100% / 50%, measured at Lv10) are the same at every level: Zero's skill
+// text, like the in-game tooltip, changes only the damage % and the duration with the level, and gives no chance
 const DL_PHYS=1,DL_MAGIC=0.5;
 const dlLv=(c=C())=>!c.a.dl?0:hasTree(c)?skLv(c,"duple-light"):10;
 const dlDmg=m=>{const lv=dlLv();if(!lv)return 0;const o={...C().a,dl:false,hits:1,sadd:[]};
