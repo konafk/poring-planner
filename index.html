@@ -18,7 +18,7 @@
   </header>
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button type="button" role="tab" data-tabbtn="acct">Account</button>
-    <button type="button" role="tab" data-tabbtn="char">Character</button>
+    <button type="button" role="tab" data-tabbtn="char">Character <span class="pill down" id="trialTab" hidden title="You're trying other gear: every number uses it until you go back to your gear or keep it (Character tab)">trying gear</span></button>
     <button type="button" role="tab" data-tabbtn="track">Session</button>
     <button type="button" role="tab" data-tabbtn="maps">Monsters &amp; maps</button>
     <button type="button" role="tab" data-tabbtn="mobinfo">Monster info</button>
@@ -80,6 +80,12 @@
         <button type="button" role="radio" data-cmode="build">Build from gear</button>
       </div>
       <span class="note" id="modeNote"></span>
+    </div>
+    <div class="bar" id="trialStart"><button type="button" class="small" id="trialBtn">Try other gear</button><span class="note">Change your weapon, gear, cards or stats and compare damage, kill time, EXP/min and zeny/hr with what you wear now. One click puts your gear back.</span></div>
+    <div class="trial" id="trialBar" hidden>
+      <div class="bar"><b class="grow">Trying other gear: every number on the page uses it</b><button type="button" class="small primary" id="trialBack">Back to my gear</button><button type="button" class="small" id="trialKeep" title="Make the gear you're trying your gear">Keep this gear</button></div>
+      <div class="note" id="trialNote"></div>
+      <div class="scroll"><table id="trialTable" class="trialtab"><thead><tr><th></th><th>Your gear</th><th>Trying</th><th>Change</th></tr></thead><tbody></tbody></table></div>
     </div>
     <div id="buildPanel" class="build" hidden>
       <div class="form" style="grid-template-columns:repeat(6,minmax(0,1fr))">

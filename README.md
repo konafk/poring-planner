@@ -15,7 +15,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 
 ## What it does
 
-- **Character:** every 2nd job with Zero skill data, a build simulator that matches the status window, and a damage model covering elements, sizes, DEF, crits, dual wield, auto-casts, cards, buffs, consumables (HP / SP items included), skill items and weight.
+- **Character:** every 2nd job with Zero skill data, a build simulator that matches the status window, and a damage model covering elements, sizes, DEF, crits, dual wield, auto-casts, cards, buffs, consumables (HP / SP items included), skill items and weight. **Try other gear** compares a different weapon or gear with what you wear now, and puts your gear back in one click.
 - **Session:** an EXP tracker with EXP/hr, time to level, a progress chart and level goals.
 - **Monsters & maps:** a monster table, the EXP Hunter and Zeny Hunter map rankings, and a Map planner.
 - **Monster info, Item info, Market:** drops, prices, player prices and a sell timer.
