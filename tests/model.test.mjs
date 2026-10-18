@@ -1630,18 +1630,30 @@ t("ignore DEF / MDEF of one race, size, element or boss / normal only lowers tha
   near(run(`effDef(${mob})`), 0);                                      // at most 100%
 });
 
-t("try other gear: compared with the copy kept at Try, Back to my gear puts it back", () => {
-  setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed spear", wElem: "Neutral", st: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
-  run("state.calcMobId=1002;trialStart();C().atkTxt='100+400';trialPrep()");
-  const now = run("JSON.stringify(trialStats())"), was = run("JSON.stringify(withChar(trialOf(C()).base,trialStats))");
-  const N = JSON.parse(now), W = JSON.parse(was);
-  assert.equal(N.atk, 500); assert.equal(W.atk, 400);
-  assert.ok(N.dmg > W.dmg && N.dps > W.dps && N.sec <= W.sec);
-  assert.equal(run("JSON.stringify(trialStats())"), now);                 // the trial is back in place afterwards
-  assert.equal(run("'trial' in trialOf(C()).base"), false);                // the copy doesn't nest older copies
-  run("trialBack();trialPrep()");
-  assert.equal(run("C().atkTxt"), "100+300"); assert.equal(run("C().trial"), undefined);
-  assert.equal(run("trialStats().dmg"), W.dmg);
+t("other gear set: worked out next to your gear without touching it, swapped in and out, and the old Try other gear copy moves over", () => {
+  run(`state.job="Knight";state.chars={};state.calcMobId=1002;const c=C();c.mode="build";const b=buildOf(c);b.base={str:50,agi:30,vit:10,int:1,dex:30,luk:1};
+    b.gear={weapon:{id:EQUIP.find(x=>x.name==="Pike").id}};b.check={hp:9999};altOf(c).gear={weapon:{id:EQUIP.find(x=>x.name==="Zweihander").id,refine:7}};
+    SKFX=skillEffects(C());applyBuild();applyConsumables()`);
+  const mine = run("JSON.stringify(gearStats())"), M = JSON.parse(mine), O = JSON.parse(run("JSON.stringify(withSnap(altChar(),gearStats))"));
+  assert.ok(O.atk > M.atk && O.dmg > M.dmg, `${O.atk} ${M.atk}`);
+  assert.equal(M.hp, 9999);                                               // the in-game Max HP typed for your gear
+  assert.notEqual(O.hp, 9999);                                            // doesn't count for the other set
+  assert.equal(run("JSON.stringify(gearStats())"), mine);                 // your gear is untouched afterwards
+  assert.equal(run("'alt' in altChar().build"), false);
+  // the formulas table: an "Other set" value for every row
+  const f = run("(()=>{const av=withSnap(altChar(),()=>refFormulas().vals),r=refFormulas(av);return [av.length,r.vals.length,(r.html.match(/class=\"chg\"/g)||[]).length]})()");
+  assert.equal(f[0], f[1]); assert.ok(f[2] > 0);
+  // the gear table edits the set picked; Swap wears the other set and keeps yours as the other
+  run("C().gearEdit='alt'"); assert.equal(run("gearSet()===altOf(C())"), true);
+  run("delete C().gearEdit"); assert.equal(run("gearSet()===buildOf(C())"), true);
+  const pike = run("buildOf(C()).gear.weapon.id"), zwei = run("altOf(C()).gear.weapon.id");
+  run("altSwap()"); assert.equal(run("buildOf(C()).gear.weapon.id"), zwei); assert.equal(run("altOf(C()).gear.weapon.id"), pike);
+  run("altSwap()"); assert.equal(run("buildOf(C()).gear.weapon.id"), pike);
+  assert.equal(run("'alt' in (charSnap().build||{})"), false);            // session snapshots don't keep it
+  // a save from Try other gear: the copy it would go back to is your character again, the gear tried is the other set
+  const app = load({ job: "Knight", chars: { Knight: { mode: "build", baseLv: 60, build: { base: { str: 9 }, gear: { weapon: { id: 2 } } }, trial: { base: { mode: "build", baseLv: 50, build: { base: { str: 9 }, gear: { weapon: { id: 1 } } } } } } } });
+  assert.equal(app("state.chars.Knight.baseLv"), 50);
+  assert.equal(app("JSON.stringify([state.chars.Knight.build.gear,state.chars.Knight.build.alt.gear,'trial' in state.chars.Knight])"), JSON.stringify([{ weapon: { id: 1 } }, { weapon: { id: 2 } }, false]));
 });
 
 t("crowds: aggressive or assisting monsters gang up, and from 3 at once FLEE and DEF drop", () => {

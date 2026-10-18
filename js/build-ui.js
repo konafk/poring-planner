@@ -6,6 +6,11 @@ const CHECKS=[["atk","ATK",F=>sumStat(F.atkTxt)],["matk","MATK",F=>sumStat(F.mat
 const BUILT_IDS=["atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lw","lwAtk","lwElem","crit","critDmg","rangePct","skillPct","vctPct","fctPct","acdPct","ignDef","ignMdef","st_str","st_agi","st_vit","st_dex","st_luk","weapon","wElem"];
 let BUILD_LAST=null;
 const buildOf=c=>{if(!c.build)c.build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{}};return c.build};
+// the other gear set (build.alt: gear, stones, special like the build's own), worked out for the EXP & formulas tab only.
+// c.gearEdit "alt": the gear table edits it instead of your gear
+const altOf=c=>{const b=buildOf(c);if(!b.alt||typeof b.alt!=="object")b.alt={};if(!b.alt.gear||typeof b.alt.gear!=="object")b.alt.gear={};return b.alt};
+const editAlt=(c=C())=>c.mode==="build"&&c.gearEdit==="alt";
+const gearSet=(c=C())=>editAlt(c)?altOf(c):buildOf(c);
 function applyBuild(){const c=C();if(c.mode!=="build"){BUILD_LAST=null;c.bx=eqToBx(c);return}
   const r=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,extra:[...consLines().lines,...(SKFX?[...SKFX.stat,...SKFX.buffStat]:[]),...aspdBuffLines(c)]},state.job,aspdBase);BUILD_LAST=r;const F=r.fields,A=r.acc;
   // skill-specific gear lines count when the attack's name contains the skill
@@ -204,7 +209,8 @@ function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}}
     else if(r.by==="exp")o.exp.all+=v;else if(r.by==="expRace")add(o.exp.race,r.t,v);else if(r.by==="spCost")o.spCost+=v;else if(r.by==="spRec")o.spRec+=v;else if(r.by==="hpRec")o.hpRec+=v});return o}
 // "Fill from gear": the lines the gear saved in Build from gear gives (gear, cards, affixes, stones, Taming Ring, other special
 // equipment; not consumables or buffs), one row per bonus. A bonus with different physical and magic values gets a row for each
-const gearSaved=c=>{const b=c.build||{},sp=b.special||{};return Object.keys(b.gear||{}).length>0||Object.values(b.stones||{}).some(Boolean)||!!sp.ring||(sp.own||[]).length>0};
+const setSaved=b=>{const sp=b.special||{};return Object.keys(b.gear||{}).length>0||Object.values(b.stones||{}).some(Boolean)||!!sp.ring||(sp.own||[]).length>0};
+const gearSaved=c=>setSaved(c.build||{});
 function gearEqRows(c){const A=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,extra:[]},state.job,aspdBase).acc,rows=[];
   const add=(by,t,v,ch="both")=>{v=Math.round(v*100)/100;if(v)rows.push({by,t,ch,v})};
   const both=(by,t,p,m)=>{if(p===m)add(by,t,p);else{add(by,t,p,"phys");add(by,t,m,"magic")}};
@@ -265,12 +271,12 @@ const STONE_FX={str:"STR",agi:"AGI",vit:"VIT",int:"INT",dex:"DEX",luk:"LUK",crit
 const stoneFx=x=>x.off&&!x.b.length?x.off:x.b.map(([t,k,g,v])=>{const l=k==="size"?`Damage vs ${g} %`:t==="damage_taken_percent"?`${g[0].toUpperCase()+g.slice(1)} resist %`:STONE_FX[t]||t,pc=/ %$/.test(l);
   if(t==="damage_taken_percent")v=-v;return `${l.replace(/ %$/,"")} ${v>0?"+":""}${v}${pc?"%":""}`}).join(", ");
 // the Taming Ring (Special Equipment, Accessory Right) holds one pet egg enchant; "none" = no ring or an empty one
-function renderStones(){const b=buildOf(C()),sel=b.stones||{},ring=(b.special||{}).ring,all=typeof STONES!=="undefined"?STONES:[],eggs=typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[];
+function renderStones(){const b=gearSet(),sel=b.stones||{},ring=(b.special||{}).ring,all=typeof STONES!=="undefined"?STONES:[],eggs=typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[];
   $("stoneRow").innerHTML=BUILD.STONE_SLOTS.map(z=>`<label>Costume ${z.label.toLowerCase()} stone<select data-stone="${z.k}"><option value="">none</option>${all.filter(x=>x.slot===z.k)
     .map(x=>`<option value="${x.id}"${+sel[z.k]===x.id?" selected":""}>${esc(x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""))}: ${esc(stoneFx(x))}</option>`).join("")}</select></label>`).join("")+
     `<label>Taming Ring pet egg<select data-ring="1"><option value="">none</option>${eggs.map(x=>`<option value="${x.id}"${+ring===x.id?" selected":""}>${esc(x.name)}: ${esc([x.b.length?stoneFx({b:x.b}):"",x.off||""].filter(Boolean).join(", "))}</option>`).join("")}</select></label>`;renderSpecialOwn()}
 // other special equipment: rows {on, name, opts} in b.special.own, each with up to OPT_MAX effects from the full affix list
-const specialOwn=()=>{const b=buildOf(C());b.special=b.special||{};if(!Array.isArray(b.special.own))b.special.own=[];return b.special.own};
+const specialOwn=()=>{const b=gearSet();b.special=b.special||{};if(!Array.isArray(b.special.own))b.special.own=[];return b.special.own};
 function renderSpecialOwn(){$("specialOwn").innerHTML=specialOwn().map((x,i)=>`<div class="eqrow" data-i="${i}">
     <input type="checkbox" data-f="on" ${x.on!==false?"checked":""} aria-label="Wearing it" style="width:auto">
     <input data-f="name" value="${esc(x.name||"")}" placeholder="name" style="width:180px">${optBoxes("special",x,null)}
@@ -286,11 +292,11 @@ $("specialOwn").addEventListener("input",e=>{const row=e.target.closest(".eqrow"
   if(f)x[f]=f==="on"?e.target.checked:e.target.value;
   else if(e.target.dataset.optv!=null){const rows=BUILD.optRows(x.opts),o=rows[+e.target.dataset.optv];if(!o)return;o.v=e.target.value===""?"":num(e.target.value);x.opts=rows}else return;
   save();renderAll()});
-$("stoneRow").addEventListener("change",e=>{const b=buildOf(C());
+$("stoneRow").addEventListener("change",e=>{const b=gearSet();
   if(e.target.dataset.ring){b.special=b.special||{};if(e.target.value)b.special.ring=+e.target.value;else delete b.special.ring;save();renderAll();return}
   const k=e.target.dataset.stone;if(!k)return;b.stones=b.stones||{};
   if(e.target.value)b.stones[k]=+e.target.value;else delete b.stones[k];save();renderAll()});
-function renderGearTable(){const c=C(),b=buildOf(c);GEAR_LISTS={};let lists="";
+function renderGearTable(){const c=C(),b=gearSet(c);GEAR_LISTS={};let lists="";
   const rows=BUILD.SLOTS.map(s=>{const g0=b.gear[s.k]||{},items=gearChoices(s.k),cards=cardChoices(s.k,g0.id&&BUILD.item(g0.id));GEAR_LISTS["g_"+s.k]=pickList(items);GEAR_LISTS["c_"+s.k]=pickList(cards);
     lists+=`<datalist id="gl_${s.k}">${[...GEAR_LISTS["g_"+s.k].keys()].map(n=>`<option value="${esc(n)}">`).join("")}</datalist><datalist id="cl_${s.k}">${[...GEAR_LISTS["c_"+s.k]].map(([n,id])=>{const p=cardName({id});return `<option value="${esc(n)}"${p?` label="${esc(p)}"`:""}>`}).join("")}</datalist>`;
     const g=b.gear[s.k]||{},it=g.id&&BUILD.item(g.id),label=n=>{const x=BUILD.item(n);return x?labelOf(x,cards):""};
@@ -306,7 +312,7 @@ function renderBuild(){const c=C(),on=c.mode==="build";
   ROOTQ("[data-cmode]").forEach(x=>x.setAttribute("aria-checked",String(x.dataset.cmode===(on?"build":"status"))));
   $("buildPanel").hidden=!on;$("statNote").hidden=on;$("shieldRow").hidden=on;$("onTopWrap").hidden=on;$("addOnTop").checked=c.addOnTop!==false;BUILT_IDS.forEach(id=>{const el=$(id);el.disabled=on;if(on&&document.activeElement!==el)el.value=id.startsWith("st_")?(c.st||{})[id.slice(3)]??"":c[id]??""});
   $("modeNote").textContent=on?"Stats below are worked out from your base stats, job level and gear.":"Type the numbers from your in-game status window.";
-  if(!on)return;const b=buildOf(c);ROOTQ("[data-bs]").forEach(x=>{if(document.activeElement!==x)x.value=b.base[x.dataset.bs]??""});
+  if(!on)return;renderAltBar(c);const b=buildOf(c);ROOTQ("[data-bs]").forEach(x=>{if(document.activeElement!==x)x.value=b.base[x.dataset.bs]??""});
   const r=BUILD_LAST;if(!r)return;const jb=r.jobBonus;
   $("jobBonusNote").textContent=`Job Lv ${r.fields.jobLv} bonus: `+BUILD.STAT6.map(k=>`${k.toUpperCase()} +${jb[k]}`).join(" · ")+(BUILD.curve(state.job,"hp",num(c.baseLv))==null?" · no HP/SP table for this job, type Max HP/SP after switching back":"");
   // check against the game: type the in-game totals, see the difference per stat
@@ -314,7 +320,9 @@ function renderBuild(){const c=C(),on=c.mode==="build";
     return `<label>${label}<span class="bar"><input data-ck="${k}" type="number" value="${esc(g??"")}" placeholder="${mine??"–"}" style="flex:1;min-width:0">${d==null?"":`<span class="${Math.abs(d)<0.5?"good":"bad"}">${d===0?"✓":(d>0?"+":"")+fmtP(+d.toFixed(1))}</span>`}</span></label>`}).join("");
   if(!$("checkGrid").contains(document.activeElement))$("checkGrid").innerHTML=rows;
   // cards the Character tab's Cards rows model: they count once ticked there
-  const inRow=x=>CARD_ROW.some(n=>x.startsWith(n+":")),tick=r.unmodelled.filter(inRow),rest=r.unmodelled.filter(x=>!inRow(x));
+  // the other gear set's own notes while the table shows it
+  const un=editAlt(c)?(x=>x?withSnap(x,()=>BUILD_LAST.unmodelled):[])(altChar(c)):r.unmodelled;
+  const inRow=x=>CARD_ROW.some(n=>x.startsWith(n+":")),tick=un.filter(inRow),rest=un.filter(x=>!inRow(x));
   $("buildNote").innerHTML=(rest.length?`<b>Not counted</b> (procs, conditional or unsupported lines):<br>${rest.map(esc).join("<br>")}`:"")+
     (tick.length?`${rest.length?"<br>":""}<b>Tick in the Cards rows</b> (Character tab, under the attack) to count: ${tick.map(x=>esc(x.split(":")[0])).join(", ")}`:"")}
 const CARD_ROW=["Hunter Fly Card","Sidewinder Card","Creamy Card","Dracula Card","Dark Priest Card",...Object.values(KILL_SP).map(n=>n+" Card")];
@@ -325,7 +333,7 @@ ROOTQ("[data-cmode]").forEach(x=>x.addEventListener("click",()=>{const c=C(),to=
   else if(c.statusSnap){SNAP_KEYS.forEach(k=>{const v=c.statusSnap[k];if(v==null)delete c[k];else c[k]=v});delete c.statusSnap}
   c.mode=to;save();if(to==="build")renderGearTable();renderAll();syncChar()}));
 ROOTQ("[data-bs]").forEach(x=>x.addEventListener("input",()=>{buildOf(C()).base[x.dataset.bs]=num(x.value)||1;save();renderAll()}));
-$("gearTable").addEventListener("change",e=>{const tr=e.target.closest("tr[data-slot]");if(!tr)return;const k=tr.dataset.slot,b=buildOf(C()),g=b.gear[k]||(b.gear[k]={});
+$("gearTable").addEventListener("change",e=>{const tr=e.target.closest("tr[data-slot]");if(!tr)return;const k=tr.dataset.slot,b=gearSet(),g=b.gear[k]||(b.gear[k]={});
   if(e.target.classList.contains("item")){const v=e.target.value.trim();const id=GEAR_LISTS["g_"+k].get(v);
     // not on the list: read it as the equipment window names it, refine and cards included
     const r=id==null&&v?readGear(k,v):null;
@@ -347,48 +355,32 @@ $("checkGrid").addEventListener("input",e=>{const k=e.target.dataset.ck;if(!k)re
   // refresh just the difference marks while typing, so the box keeps focus
   CHECKS.forEach(([kk,,get])=>{const inp=$("checkGrid").querySelector(`[data-ck="${kk}"]`),mark=inp.nextElementSibling,g=b.check[kk],mine=BUILD_LAST?get(BUILD_LAST.fields):null;
     const d=g!=null&&mine!=null?g-mine:null;if(mark)mark.remove();if(d!=null)inp.insertAdjacentHTML("afterend",`<span class="${Math.abs(d)<0.5?"good":"bad"}">${d===0?"✓":(d>0?"+":"")+fmtP(+d.toFixed(1))}</span>`)})});
-$("gearTable").addEventListener("input",e=>{if(e.target.dataset.optv!=null){const g=buildOf(C()).gear[e.target.closest("tr").dataset.slot];if(!g)return;
+$("gearTable").addEventListener("input",e=>{if(e.target.dataset.optv!=null){const g=gearSet().gear[e.target.closest("tr").dataset.slot];if(!g)return;
     const rows=BUILD.optRows(g.opts),x=rows[+e.target.dataset.optv];if(x){x.v=e.target.value===""?"":num(e.target.value);g.opts=rows;save();renderAll()}return}
-  if(!e.target.classList.contains("ref"))return;const k=e.target.closest("tr").dataset.slot;const g=buildOf(C()).gear[k];if(!g)return;
+  if(!e.target.classList.contains("ref"))return;const k=e.target.closest("tr").dataset.slot;const g=gearSet().gear[k];if(!g)return;
   g.refine=Math.max(0,Math.min(20,num(e.target.value)));save();renderAll()});
-// ---- try other gear: "Try other gear" keeps a copy of the character in c.trial.base, and every change after that is the trial. The page
-// works everything out with the trial; the card compares it with the copy, "Back to my gear" puts the copy back, "Keep this gear" drops it ----
-const trialOf=c=>c.trial&&c.trial.base&&typeof c.trial.base==="object"?c.trial:null;
-// the map compared: the Map planner's, else the monster's best open map, else the session's (as the HP and SP items use)
-const trialMap=()=>{let mp=mapKey(state.map);if(!MAPMOBS[mp]){const m=calcMob(),om=m?openMaps(m):[];mp=om.length?om[0][0]:currentMap()}return MAPMOBS[mp]?mp:null};
-function trialStats(){const m=calcMob(),w=walkSec(),mp=trialMap(),o={atk:sumStat(cf("atkTxt")),matk:sumStat(cf("matkTxt")),hit:sumStat(cf("hitTxt")),flee:sumStat(cf("fleeTxt")),
-    crit:num(cf("crit")),aspd:aspdEff(),hp:num(cf("maxHp")),sp:num(cf("maxSp"))};
-  if(m){const r=mobRow(m,w);Object.assign(o,{dmg:withEl(r.el2,()=>dmgPerHit(m)+(dualHit()?leftDmg(m):0)),dps:withEl(r.el2,()=>dpsOf(m)),hitc:r.hitc,uses:r.uses,
-    sec:r.sec,epm:m.expUnknown?null:r.epm,zph:r.zph,hpm:r.hpm})}
-  const s=mp&&mapStats(mp,w);if(s)Object.assign(o,{mapEpm:s.epm,mapNet:s.net});return o}
-// what renderAll works out before drawing, for the character C() gives
-const trialPrep=()=>{SKFX=skillEffects(C());applyBuild();applyConsumables();applyHsAuto()};
-// fn with c2 as this job's character, then the trial back as it was
-function withChar(c2,fn){const j=state.job,c1=state.chars[j];state.chars[j]=c2;try{trialPrep();return fn()}finally{state.chars[j]=c1;trialPrep()}}
-// [key, label, higher is better, decimals]; "m" rows are against the monster you picked, "map" rows on the map
-const TRIAL_ROWS=[["atk","ATK",1],["matk","MATK",1],["hit","HIT",1],["flee","FLEE",1],["crit","CRIT",1],["aspd","ASPD",1],["hp","Max HP",1],["sp","Max SP",1],
-  ["dmg","Damage per hit",1,0,"m"],["dps","Damage per second",1,0,"m"],["hitc","Hits that land %",1,0,"m"],["uses","Uses per kill",0,1,"m"],["sec","Kill time (s)",0,1,"m"],
-  ["epm","EXP / min",1,0,"m"],["zph","Net zeny / hr",1,0,"m"],["hpm","HP lost / min",0,0,"m"],["mapEpm","EXP / min",1,0,"map"],["mapNet","Net zeny / hr (after healing)",1,0,"map"]];
-const trialFmt=(v,d)=>v==null||!isFinite(v)?"–":d?(+v).toFixed(d):fmtN(v);
-const trialGear=g=>{const it=g&&g.id&&BUILD.item(g.id);if(!it)return "none";const n=(g.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean);
+// ---- the other gear set: the gear table edits it after "Other gear set" is picked; your gear stays what the page works with, and the
+// EXP & formulas tab works both out side by side. "Swap" makes it your gear (and yours the other set), so you can switch back ----
+const altSaved=c=>c.mode==="build"&&!!(c.build&&c.build.alt)&&setSaved(c.build.alt);
+// your character with the other set on instead of your gear (base stats, skills and buffs stay); the in-game Max HP / SP typed
+// under "Check against the game" are for your gear, so they don't count for it
+const altChar=(c=C())=>{if(!altSaved(c))return null;const x=JSON.parse(JSON.stringify(c)),a=x.build.alt;
+  x.build={...x.build,gear:a.gear||{},stones:a.stones||{},special:a.special||{},check:{}};delete x.build.alt;delete x.gearEdit;return x};
+const SET_KEYS=["gear","stones","special"];
+const setCopy=b=>JSON.parse(JSON.stringify(Object.fromEntries(SET_KEYS.map(k=>[k,b[k]||{}]))));
+const gearTxt=g=>{const it=g&&g.id&&BUILD.item(g.id);if(!it)return "none";const n=(g.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean);
   return `${num(g.refine)?`+${num(g.refine)} `:""}${it.name}${n.length?` [${n.join(", ")}]`:""}`};
-function renderTrial(){const c=C(),t=trialOf(c);$("trialStart").hidden=!!t;$("trialBar").hidden=!t;$("trialTab").hidden=!t;if(!t)return;
-  const now=trialStats(),was=withChar(t.base,trialStats),m=calcMob(),mp=trialMap();
-  // the gear rows that changed (build mode), so you can see what you're trying
-  const g0=(t.base.build||{}).gear||{},g1=(c.build||{}).gear||{},changed=c.mode==="build"&&t.base.mode==="build"?BUILD.SLOTS.filter(s=>trialGear(g0[s.k])!==trialGear(g1[s.k])):[];
-  $("trialNote").innerHTML=(changed.length?changed.map(s=>`${esc(s.label)}: ${esc(trialGear(g0[s.k]))} → <b>${esc(trialGear(g1[s.k]))}</b>`).join("<br>")+"<br>":
-    c.mode==="build"?"Change your gear below (or anything else on this tab) to compare it with what you wear now.<br>":"Type the status window numbers for the gear you're trying (or anything else on this tab) to compare it with what you wear now.<br>")+
-    (m?"":"Pick a monster on the Monsters &amp; maps tab to compare damage, kill time and EXP / min against it. ")+"Back to my gear also undoes anything else you changed on this tab since you pressed Try.";
-  const head=x=>`<tr><td class="name" colspan="4"><b>${x}</b></td></tr>`;let grp="";
-  $("trialTable").tBodies[0].innerHTML=TRIAL_ROWS.filter(([k])=>now[k]!=null||was[k]!=null).map(([k,label,up,d,g])=>{
-    const a=was[k],b=now[k],ok=a!=null&&b!=null&&isFinite(a)&&isFinite(b),diff=ok?b-a:null,same=ok&&Math.abs(diff)<(d?0.5*10**-d:0.5);
-    const pc=ok&&!same&&a?` (${diff>0?"+":""}${(diff/Math.abs(a)*100).toFixed(1)}%)`:"",cls=same||diff==null?"":(diff>0)===!!up?"good":"bad";
-    const h=g&&g!==grp?head(g==="m"?`vs ${esc(m.name)}`:`On ${esc(mapLabel(mp))}`):"";if(g)grp=g;
-    return `${h}<tr><td class="name">${label}</td><td>${trialFmt(a,d)}</td><td>${trialFmt(b,d)}</td><td class="${cls}">${same?"same":diff==null?"–":`${diff>0?"+":""}${trialFmt(diff,d)}${pc}`}</td></tr>`}).join("")}
-// after a copy goes back, redraw the whole tab from it, as switching jobs does
-const trialRedraw=()=>{save();renderBuild.job=null;syncChar();renderAll()};
-const trialStart=()=>{const c=C(),{trial,...rest}=c;c.trial={base:JSON.parse(JSON.stringify(rest))}};
-const trialBack=()=>{const t=trialOf(C());if(t)state.chars[state.job]=t.base};
-$("trialBtn").addEventListener("click",()=>{trialStart();save();renderAll()});
-$("trialBack").addEventListener("click",()=>{trialBack();trialRedraw()});
-$("trialKeep").addEventListener("click",()=>{delete C().trial;save();renderAll()});
+// what the other set changes: "Weapon: Pike → +7 Zweihander" per gear row (affixes count as a change too), then the special equipment
+function altDiff(c=C()){const b=buildOf(c),a=altOf(c),g0=b.gear||{},g1=a.gear||{},same=(x,y)=>JSON.stringify(x||null)===JSON.stringify(y||null);
+  const rows=BUILD.SLOTS.filter(s=>!same(g0[s.k],g1[s.k])).map(s=>`${esc(s.label)}: ${esc(gearTxt(g0[s.k]))} → <b>${esc(gearTxt(g1[s.k]))}</b>${gearTxt(g0[s.k])===gearTxt(g1[s.k])?" (affixes)":""}`);
+  if(!same(b.stones||{},a.stones||{})||!same(b.special||{},a.special||{}))rows.push("Special equipment");return rows}
+function renderAltBar(c=C()){const alt=editAlt(c),has=altSaved(c);
+  ROOTQ("[data-gset]").forEach(x=>x.setAttribute("aria-checked",String((x.dataset.gset==="alt")===alt)));$("buildPanel").classList.toggle("altedit",alt);
+  $("altSwap").disabled=!has;const d=has?altDiff(c):[];
+  $("altNote").innerHTML=(alt?"<b>Editing the other gear set.</b> The page still works with your gear. ":"")+
+    (has?(d.length?d.join(" · "):"Same as your gear")+" · compare them on the EXP &amp; formulas tab":alt?"Pick its gear below, or copy yours in and change a part.":"A second set of gear, worked out next to yours on the EXP &amp; formulas tab.")}
+ROOTQ("[data-gset]").forEach(x=>x.addEventListener("click",()=>{const c=C();if(x.dataset.gset==="alt")c.gearEdit="alt";else delete c.gearEdit;save();renderGearTable();renderAll()}));
+$("altCopy").addEventListener("click",()=>{const c=C();if(altSaved(c)&&altDiff(c).length&&!confirm("Replace the other gear set with a copy of your gear?"))return;
+  buildOf(c).alt=setCopy(buildOf(c));save();renderGearTable();renderAll()});
+const altSwap=(c=C())=>{const b=buildOf(c),mine=setCopy(b),other=setCopy(altOf(c));Object.assign(b,other);b.alt=mine};
+$("altSwap").addEventListener("click",()=>{altSwap();save();renderGearTable();renderAll()});

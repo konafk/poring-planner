@@ -18,7 +18,7 @@
   </header>
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button type="button" role="tab" data-tabbtn="acct">Account</button>
-    <button type="button" role="tab" data-tabbtn="char">Character <span class="pill down" id="trialTab" hidden title="You're trying other gear: every number uses it until you go back to your gear or keep it (Character tab)">trying gear</span></button>
+    <button type="button" role="tab" data-tabbtn="char">Character</button>
     <button type="button" role="tab" data-tabbtn="track">Session</button>
     <button type="button" role="tab" data-tabbtn="maps">Monsters &amp; maps</button>
     <button type="button" role="tab" data-tabbtn="mobinfo">Monster info</button>
@@ -81,12 +81,6 @@
       </div>
       <span class="note" id="modeNote"></span>
     </div>
-    <div class="bar" id="trialStart"><button type="button" class="small" id="trialBtn">Try other gear</button><span class="note">Change your weapon, gear, cards or stats and compare damage, kill time, EXP/min and zeny/hr with what you wear now. One click puts your gear back.</span></div>
-    <div class="trial" id="trialBar" hidden>
-      <div class="bar"><b class="grow">Trying other gear: every number on the page uses it</b><button type="button" class="small primary" id="trialBack">Back to my gear</button><button type="button" class="small" id="trialKeep" title="Make the gear you're trying your gear">Keep this gear</button></div>
-      <div class="note" id="trialNote"></div>
-      <div class="scroll"><table id="trialTable" class="trialtab"><thead><tr><th></th><th>Your gear</th><th>Trying</th><th>Change</th></tr></thead><tbody></tbody></table></div>
-    </div>
     <div id="buildPanel" class="build" hidden>
       <div class="form" style="grid-template-columns:repeat(6,minmax(0,1fr))">
         <label>Base STR<input data-bs="str" type="number" min="1" max="99"></label>
@@ -97,6 +91,15 @@
         <label>Base LUK<input data-bs="luk" type="number" min="1" max="99"></label>
       </div>
       <div class="note" id="jobBonusNote"></div>
+      <div class="bar">
+        <div class="seg" role="radiogroup" aria-label="Which gear the table shows">
+          <button type="button" role="radio" data-gset="mine">My gear</button>
+          <button type="button" role="radio" data-gset="alt" title="A second set of gear, worked out next to yours on the EXP &amp; formulas tab">Other gear set</button>
+        </div>
+        <button type="button" class="small" id="altCopy" title="Start the other set from your gear, then change a part">Copy my gear to it</button>
+        <button type="button" class="small" id="altSwap" title="Wear the other set: it becomes your gear, and yours the other set (swap again to go back)">Swap sets</button>
+        <span class="note" id="altNote"></span>
+      </div>
       <div class="scroll"><table id="gearTable"><thead><tr><th>Slot</th><th>Item</th><th>Refine</th><th>Cards</th><th>Affixes</th></tr></thead><tbody></tbody></table></div>
       <div id="gearLists"></div>
       <div class="note" style="margin-top:6px" title="The Special Equipment tab: one enchant stone per costume slot (Costume Enchanter, Prontera Cash Room; stones that complete a set add its bonus too) and the Taming Ring with the pet egg sealed in it">Special equipment: costume enchant stones and the Taming Ring</div>
@@ -556,8 +559,13 @@
     <div class="note">How it's worked out: Game formulas below.</div>
   </section>
   <section class="card" data-tab="ref">
-    <div class="bar"><h2 class="grow">Game formulas</h2><span class="note">"Yours" uses your Character tab</span></div>
-    <div class="scroll"><table id="refFormulas" class="formulas"><thead><tr><th>Value</th><th>Formula</th><th>Yours</th></tr></thead><tbody></tbody></table></div>
+    <div class="bar"><h2 class="grow">Your gear vs the other gear set</h2></div>
+    <div class="note" id="gearCmpNote"></div>
+    <div class="scroll"><table id="gearCmpTable" class="cmptab"><thead><tr><th></th><th>Your gear</th><th>Other set</th><th>Change</th></tr></thead><tbody></tbody></table></div>
+  </section>
+  <section class="card" data-tab="ref">
+    <div class="bar"><h2 class="grow">Game formulas</h2><span class="note">"Yours" uses your Character tab; "Other set" the other gear set from Build from gear</span></div>
+    <div class="scroll"><table id="refFormulas" class="formulas"><thead><tr><th>Value</th><th>Formula</th><th>Yours</th><th id="refAltTh" hidden>Other set</th></tr></thead><tbody></tbody></table></div>
     <div class="note">floor(…) = round down. Stats are totals (base + job bonus + gear).</div>
   </section>
   <section class="card" data-tab="ref">

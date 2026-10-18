@@ -1,11 +1,13 @@
 // ---- EXP & formulas tab: EXP tables, the formulas the calculator uses (with your numbers), element and size tables ----
 const yours=f=>{try{const v=f();return v==null||v===""||(typeof v==="number"&&!isFinite(v))?"–":v}catch(e){return "–"}};
-function refFormulas(){const c=C(),m=calcMob(),ok=STATS.every(k=>statVal(c,k)!=null),d=ok?derived(c):null,lv=num(c.baseLv),ab=aspdBaseOf(c);
+// alt: the "Yours" values worked out with the other gear set (same rows, same order), shown in a column of their own
+function refFormulas(alt){const vals=[],c=C(),m=calcMob(),ok=STATS.every(k=>statVal(c,k)!=null),d=ok?derived(c):null,lv=num(c.baseLv),ab=aspdBaseOf(c);
   const sv=k=>statVal(c,k),ranged=RANGED.includes(c.weapon),mn=m?` (${esc(m.name)})`:"",need=f=>m?f(m):null;
-  const grp=t=>`<tr class="grp"><td colspan="3">${t}</td></tr>`;
+  const grp=t=>`<tr class="grp"><td colspan="${alt?4:3}">${t}</td></tr>`;
   // f is the formula, n an optional short note shown under it
-  const R=(name,f,y,n)=>`<tr><td class="name">${name}</td><td class="f">${f}${n?`<div class="fn">${n}</div>`:""}</td><td>${yours(y)}</td></tr>`;
-  return grp("Status window")+
+  const R=(name,f,y,n)=>{const v=yours(y),a=alt&&(alt[vals.length]??"–");vals.push(v);
+    return `<tr><td class="name">${name}</td><td class="f">${f}${n?`<div class="fn">${n}</div>`:""}</td><td>${v}</td>${alt?`<td${a!==v?' class="chg"':""}>${a}</td>`:""}</tr>`};
+  const html=grp("Status window")+
    R("Status ATK",ranged?"floor(BaseLv/4 + DEX + STR/5 + LUK/3)":"floor(BaseLv/4 + STR + DEX/5 + LUK/3)",()=>d&&d.atk,ranged?"bow, instrument, whip":"melee; ranged weapons swap STR and DEX")+
    R("Status MATK","floor(BaseLv/4) + INT + floor(INT/2) + floor(DEX/5) + floor(LUK/3)",()=>d&&d.matk)+
    R("HIT","175 + BaseLv + DEX + floor(LUK/3)",()=>d&&d.hit)+
@@ -64,12 +66,37 @@ function refFormulas(){const c=C(),m=calcMob(),ok=STATS.every(k=>statVal(c,k)!=n
    R("Skill items per hour","(items per use × price + zeny per use) × uses per kill ÷ monsters hit × kills/hr + support casts per kill × items × price × kills/hr + ground buffs: 3600 ÷ (60 s × Lv) casts/hr × price",()=>need(x=>{const h=useHour(x,walkSec());return h?`${fmtN(h.z)} z/hr${mn}`:"–"}),"taken off every zeny/hr with SP items and the ASPD potion; price = yours, else the NPC price, less Discount")+
    R("Zeny Hunter walking","walking per kill × √(spawns you can hurt / spawns you hunt)",()=>`${walkSec().toFixed(1)}s with every monster hunted`,"the nearest target is about 1 / √density away")+
    R("Zeny Hunter teleporting","extra teleports per kill = spawns you can hurt / spawns you hunt − 1",()=>canTele()?`${teleSec()}s per teleport (${creamyOn()?"Creamy Card":"Teleport skill"})`:"off: no Creamy Card or Teleport skill, so you walk","only with a free teleport, never Fly Wings; \"no teleport\" maps only walk");
-}
+  return {html,vals}}
 // Even Share by party size, with your base and job EXP per kill of the picked monster for each size
 function renderPartyTable(m){const s=cur(),n0=partyN(s),known=m&&!m.expUnknown,sz=n=>({...s,partyN:n});
   $("refPartyNote").textContent=known?`per ${m.name} with your EXP bonuses`:"pick a monster to see your EXP per kill";
   $("refPartyTable").tHead.innerHTML=`<tr><th>Members</th><th>Party total</th><th>Each</th>${known?"<th>Base EXP</th><th>Job EXP</th>":""}</tr>`;
   $("refPartyTable").tBodies[0].innerHTML=Array.from({length:12},(_,i)=>i+1).map(n=>`<tr${n===n0?' class="sel"':""}><td>${n===1?"Solo":n}</td><td>${100+partyBonus(sz(n))}%</td><td>${partyPct(sz(n))}%</td>${known?`<td>${fmtN(killExp(m,sz(n)))}</td><td>${fmtN(killJobExp(m,sz(n)))}</td>`:""}</tr>`).join("")}
+// ---- your gear vs the other gear set: the numbers that decide a farming spot, against the monster you picked and on the map ----
+const refShown=()=>!$("refFormulas").closest("[data-tab]").hidden;
+// the map compared: the Map planner's, else the monster's best open map, else the session's (as the HP and SP items use)
+const cmpMap=()=>{let mp=mapKey(state.map);if(!MAPMOBS[mp]){const m=calcMob(),om=m?openMaps(m):[];mp=om.length?om[0][0]:currentMap()}return MAPMOBS[mp]?mp:null};
+function gearStats(){const m=calcMob(),w=walkSec(),mp=cmpMap(),o={atk:sumStat(cf("atkTxt")),matk:sumStat(cf("matkTxt")),hit:sumStat(cf("hitTxt")),flee:sumStat(cf("fleeTxt")),
+    crit:num(cf("crit")),aspd:aspdEff(),hp:num(cf("maxHp")),sp:num(cf("maxSp"))};
+  if(m){const r=mobRow(m,w);Object.assign(o,{dmg:withEl(r.el2,()=>dmgPerHit(m)+(dualHit()?leftDmg(m):0)),dps:withEl(r.el2,()=>dpsOf(m)),hitc:r.hitc,uses:r.uses,
+    sec:r.sec,epm:m.expUnknown?null:r.epm,zph:r.zph,hpm:r.hpm})}
+  const s=mp&&mapStats(mp,w);if(s)Object.assign(o,{mapEpm:s.epm,mapNet:s.net});return o}
+// [key, label, higher is better, decimals, "m": against the monster / "map": on the map]
+const GEAR_CMP=[["atk","ATK",1],["matk","MATK",1],["hit","HIT",1],["flee","FLEE",1],["crit","CRIT",1],["aspd","ASPD",1],["hp","Max HP",1],["sp","Max SP",1],
+  ["dmg","Damage per hit",1,0,"m"],["dps","Damage per second",1,0,"m"],["hitc","Hits that land %",1,0,"m"],["uses","Uses per kill",0,1,"m"],["sec","Kill time (s)",0,1,"m"],
+  ["epm","EXP / min",1,0,"m"],["zph","Net zeny / hr",1,0,"m"],["hpm","HP lost / min",0,0,"m"],["mapEpm","EXP / min",1,0,"map"],["mapNet","Net zeny / hr (after healing)",1,0,"map"]];
+const cmpFmt=(v,d)=>v==null||!isFinite(v)?"–":d?(+v).toFixed(d):fmtN(v);
+function renderGearCmp(alt){const c=C(),T=$("gearCmpTable");T.hidden=!alt;
+  if(!alt){$("gearCmpNote").textContent=!refShown()?"":c.mode!=="build"?"Switch to Build from gear (Character tab) and set up the other gear set to compare it with your gear here."
+    :"Pick \"Other gear set\" above the gear table (Character tab) and set up the gear you want to compare with yours.";T.tBodies[0].innerHTML="";return}
+  const mine=gearStats(),oth=withSnap(alt,gearStats),m=calcMob(),mp=cmpMap(),d=altDiff(c);
+  $("gearCmpNote").innerHTML=(d.length?d.join(" · "):"Same gear as yours")+(m?"":" · pick a monster to compare damage, kill time and EXP / min");
+  let grp="";
+  T.tBodies[0].innerHTML=GEAR_CMP.filter(([k])=>mine[k]!=null||oth[k]!=null).map(([k,label,up,dp,g])=>{
+    const a=mine[k],b=oth[k],ok=a!=null&&b!=null&&isFinite(a)&&isFinite(b),diff=ok?b-a:null,same=ok&&Math.abs(diff)<(dp?0.5*10**-dp:0.5);
+    const pc=ok&&!same&&a?` (${diff>0?"+":""}${(diff/Math.abs(a)*100).toFixed(1)}%)`:"",cls=same||diff==null?"":(diff>0)===!!up?"good":"bad";
+    const h=g&&g!==grp?`<tr class="grp"><td colspan="4">${g==="m"?`vs ${esc(m.name)}`:`On ${esc(mapLabel(mp))}`}</td></tr>`:"";if(g)grp=g;
+    return `${h}<tr><td class="name">${label}</td><td>${cmpFmt(a,dp)}</td><td>${cmpFmt(b,dp)}</td><td class="${cls}">${same?"same":diff==null?"–":`${diff>0?"+":""}${cmpFmt(diff,dp)}${pc}`}</td></tr>`}).join("")}
 function renderRef(){const c=C(),m=calcMob(),blv=num(c.baseLv),jl=num(c.jobLv),per=m?killExp(m):0,jper=m?killJobExp(m):0;
   const kills=(e,p=per)=>p>0?fmtN(Math.ceil(e/p)):"–",kh=m?`<th>Kills of ${esc(m.name)}</th>`:"";
   // EXP to next compared with the level before, e.g. the Lv 68 row says how much more Lv 68 → 69 takes than Lv 67 → 68
@@ -83,7 +110,9 @@ function renderRef(){const c=C(),m=calcMob(),blv=num(c.baseLv),jl=num(c.jobLv),p
   $("refJobTable").tHead.innerHTML=`<tr><th>Job Lv</th><th>Job EXP to next</th>${ih}<th>Total</th>${kh}</tr>`;
   $("refJobTable").tBodies[0].innerHTML=t.map((e,i)=>{const row=`<tr${mine&&i+1===jl?' class="sel"':""}><td>${i+1}</td><td>${i+1<t.length?fmtN(e):"max"}</td><td>${i+1<t.length?inc(e,t[i-1]):"–"}</td><td>${fmtN(tot)}</td>${m?`<td>${i+1<t.length?kills(e,jper):"–"}</td>`:""}</tr>`;tot+=e;return row}).join("");
   renderPartyTable(m);
-  $("refFormulas").tBodies[0].innerHTML=refFormulas();
+  // the other gear set (Build from gear): worked out only while this tab shows, since it runs the model a second time
+  const alt=refShown()?altChar(c):null,av=alt?withSnap(alt,()=>refFormulas().vals):null;
+  $("refAltTh").hidden=!av;$("refFormulas").classList.toggle("withalt",!!av);$("refFormulas").tBodies[0].innerHTML=refFormulas(av).html;renderGearCmp(alt);
   const elv=Math.min(4,Math.max(1,num(state.refElv,1)));$("refElv").value=String(elv);const defs=Object.keys(ET),my=atkEl();
   $("refElemTable").tHead.innerHTML=`<tr><th>Attack ↓ / monster →</th>${defs.map(d=>`<th>${d} ${elv}</th>`).join("")}</tr>`;
   $("refElemTable").tBodies[0].innerHTML=AE.map((a,i)=>`<tr${a===my?' class="sel"':""}><td class="name"><span class="el ${a}">${a}</span></td>${defs.map(d=>{const v=ET[d][elv-1][i];return `<td class="${v>100?"good":v<100?"bad":"muted"}">${v}</td>`}).join("")}</tr>`).join("");

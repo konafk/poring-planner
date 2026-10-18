@@ -191,8 +191,10 @@ table.cstats input{width:72px;padding:4px 8px;font-size:13px}
 #refBaseTable tbody tr,#refJobTable tbody tr,#refFormulas tbody tr,#refElemTable tbody tr,#refSizeTable tbody tr{cursor:default}
 #refFormulas td.f{white-space:normal;text-align:left;font-size:12.5px;min-width:260px}
 #refFormulas th:nth-child(2){text-align:left}
+/* with the other gear set's column, the two value columns wrap so the table fits */
+#refFormulas.withalt td:nth-child(n+3){white-space:normal;min-width:110px;max-width:220px}#refFormulas.withalt td.f{min-width:220px}
 #refFormulas .fn{font-family:var(--body);font-size:12px;color:var(--muted);margin-top:2px}
-#refFormulas tr.grp td{font-family:var(--display);font-weight:600;color:var(--muted);font-size:12px;padding-top:14px;text-align:left}
+#refFormulas tr.grp td,#gearCmpTable tr.grp td{font-family:var(--display);font-weight:600;color:var(--muted);font-size:12px;padding-top:14px;text-align:left}
 #refElemTable td,#refSizeTable td{text-align:center}#refElemTable th,#refSizeTable th{text-align:center}
 #refElemTable th:first-child,#refSizeTable th:first-child,#refElemTable td:first-child,#refSizeTable td:first-child{text-align:left}
 td.muted{color:var(--muted)}
@@ -203,6 +205,7 @@ table.convtab td.name{text-align:left}
 #recTable tbody tr{cursor:default}
 #recTable input{padding:3px 6px;font-size:13px}
 #recTable td.nowrap{white-space:nowrap}
-.trial{background:var(--accent-soft);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:8px}
-table.trialtab th{cursor:default}
-table.trialtab td{padding:4px 8px}
+table.cmptab th{cursor:default}
+table.cmptab td{padding:4px 8px}
+table.formulas td.chg{background:var(--accent-soft)}
+#buildPanel.altedit #gearTable,#buildPanel.altedit #stoneRow,#buildPanel.altedit #specialOwn{background:var(--accent-soft)}
