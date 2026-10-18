@@ -55,8 +55,12 @@ const castSec=()=>{const c=C(),a=c.a,vp=num(c.vctPct)-vctCards();
 // a hit that lands while you cast interrupts it and you start again (SP is only spent on a cast that finishes). With λ hits landing per
 // second from the monster in play, a T-second cast takes (e^(λT) − 1)/λ on average. Not with Phen or Bloody Butterfly
 const castEff=()=>{const T=castSec();if(T<=0||noBreak())return T;const l=hitsOnYou(SG_MOB||calcMob());return l>0?Math.expm1(l*T)/l:T};
-const delaySec=()=>Math.max(0,num(C().a.delay)*(1-num(C().acdPct)/100));
-const useSec=()=>{const a=C().a;if(a.type==="auto"||a.type==="spellfist")return 1/atkPerSec();return Math.max(castEff()+Math.max(delaySec(),1/atkPerSec()),0.1)};
+// delay after a skill: the longer of the after-cast delay (cut by after-cast delay %) and the skill's own cooldown (the % doesn't touch it).
+// Presets carry both (a.gcd, a.cd); a typed "Delay after" is an after-cast delay
+const delaySec=()=>{const a=C().a,k=1-num(C().acdPct)/100;
+  return a.cd!=null||a.gcd!=null?Math.max(0,num(a.gcd)*k,num(a.cd)):Math.max(0,num(a.delay)*k)};
+// your attack interval runs from the start of the cast: a skill takes cast + delay or the attack interval, whichever is longer
+const useSec=()=>{const a=C().a;if(a.type==="auto"||a.type==="spellfist")return 1/atkPerSec();return Math.max(castEff()+delaySec(),1/atkPerSec(),0.1)};
 // base-level skills: × BaseLv/100 only above Lv100, except the three Zero skills missing that check (blvBug, see game.js)
 // cart skills (Cart Revolution): +a.cart % per 8,000 cart weight, capped at a full 8,000 cart
 // shield skills (a.shw: Shield Boomerang, Rapid Smiting): + shield weight + 4 × shield refine %. Build mode reads the Shield row

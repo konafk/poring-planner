@@ -25,7 +25,7 @@ function refFormulas(alt){const vals=[],c=C(),m=calcMob(),ok=STATS.every(k=>stat
    R("Variable cast time","cast × (1 − √((2 × DEX + INT) / 530)) × (1 − cast %)",()=>sv("dex")!=null?`× ${vctFactor().toFixed(3)}`:null,"none once 2 × DEX + INT ≥ 530")+
    R("Fixed cast time","(fixed cast − flat reduction) × (1 − fixed cast %)",()=>null)+
    R("Interrupted casts","cast takes (e^(λ × cast) − 1) / λ, λ = its hits landing on you per second",()=>noBreak()?"off: Phen / Bloody Butterfly":castEff()>castSec()+0.005?`${castSec().toFixed(2)} s → ${castEff().toFixed(2)} s`:null,"a hit restarts the cast; no SP is spent on it")+
-   R("Time per skill use","cast time + max(after-cast delay × (1 − delay %), 1 / attacks per second)",()=>`${useSec().toFixed(2)} s (${esc(c.a.name||"attack")})`)+
+   R("Time per skill use","max(cast time + max(after-cast delay × (1 − after-cast delay %), cooldown), 1 / attacks per second)",()=>`${useSec().toFixed(2)} s (${esc(c.a.name||"attack")})`)+
    grp("Damage")+
    R("Weapon ATK",`weapon ATK × (1 + ${ranged?"DEX":"STR"}/200)`,()=>{const P=atkParts();return P.weapon?fmtN(P.weapon):null},"weapon ATK includes refine")+
    R("Physical damage","floor(((weapon ATK × size % × element % + (2 × status ATK + other gear ATK) × Neutral %) × skill % + mastery ATK × Neutral %) × damage bonuses × (1 + ranged/melee %) × (1 + skill damage %) × (4000 + DEF) / (4000 + 10 × DEF) − monster soft DEF)",()=>m&&c.a.type!=="magic"&&c.a.type!=="spellfist"?`${fmtN(dmgPerHit(m))} per hit${mn}`:null,"at least 1; skill damage % counts for skills only")+

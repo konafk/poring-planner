@@ -82,7 +82,7 @@ $("weaponW").addEventListener("input",e=>{C().weaponW=Math.max(0,num(e.target.va
 $("shieldW").addEventListener("input",e=>{C().shieldW=Math.max(0,num(e.target.value));save();renderAll()});
 $("shieldRef").addEventListener("input",e=>{C().shieldRef=Math.min(20,Math.max(0,num(e.target.value)));save();renderAll()});
 const aMap={aType:"type",aPct:"pct",aHits:"hits",aElem:"el",aCast:"cast",aDelay:"delay",aSp:"sp",aTargets:"targets",aZeny:"zeny"};
-Object.entries(aMap).forEach(([id,k])=>{const h=e=>{const c=C();const v=e.target.value;if(k==="cast"){delete c.a.fct;delete c.a.vct}c.a[k]=(k==="type"||k==="el")?v:Math.max(k==="hits"||k==="targets"?(k==="targets"?1:0.01):0,num(v));
+Object.entries(aMap).forEach(([id,k])=>{const h=e=>{const c=C();const v=e.target.value;if(k==="cast"){delete c.a.fct;delete c.a.vct}if(k==="delay"){delete c.a.cd;delete c.a.gcd}c.a[k]=(k==="type"||k==="el")?v:Math.max(k==="hits"||k==="targets"?(k==="targets"?1:0.01):0,num(v));
   if(c.preset>=0){c.a.name=(JOBS[state.job].p[c.preset]||{}).name+" (edited)";c.preset=-1;$("preset").value="-1"}save();renderAll()};
   $(id).addEventListener(id==="aType"||id==="aElem"?"change":"input",h)});
 // items skills use up: casts per kill of support skills and your price per item (blank = NPC price), saved per job

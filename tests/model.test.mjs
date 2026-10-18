@@ -127,6 +127,29 @@ t("cast time: variable part shrinks with DEX and INT, fixed part doesn't", () =>
   near(run(`castSec()`), 1);
 });
 
+t("skill delay: after-cast delay % only cuts the after-cast delay; the attack interval overlaps the cast", () => {
+  const SK = { name: "x", type: "magic", pct: 100, hits: 1, el: "Fire", vct: 0, fct: 0, cast: 0, delay: 0.7, gcd: 0.3, cd: 0.7, sp: 0, targets: 1 };
+  setup("Wizard", { st: {}, intTxt: "", aspd: 190, acdPct: 30, hitScale: 0, a: SK });
+  near(run("delaySec()"), 0.7);                                       // the cooldown holds you: 30% off the 0.3 s after-cast delay is wasted
+  run(`C().a={...C().a,cd:0.1}`);
+  near(run("delaySec()"), 0.21);                                      // no long cooldown: the % now counts
+  run(`C().a={...C().a,cd:0,gcd:0.3};C().acdPct=0`);
+  near(run("useSec()"), 0.3);                                         // no cast, 0.3 s delay: ASPD 190 (0.2 s) is past the cap
+  run(`C().aspd=175`);
+  near(run("useSec()"), 0.5);                                         // ASPD 175: the 0.5 s attack interval holds you
+  run(`C().aspd=150;C().a={...C().a,vct:2,cast:2}`);
+  near(run("useSec()"), 2.3);                                         // a 2 s cast covers the 1 s attack interval: 2 + 0.3, not 2 + 1
+  run(`C().a={...C().a,delay:0.5};delete C().a.cd;delete C().a.gcd;C().acdPct=20`);
+  near(run("delaySec()"), 0.4);                                       // a typed delay is an after-cast delay
+});
+
+t("fixed cast %: only the highest cut counts", () => {
+  run(`C().mode='build';C().a={name:'x',type:'magic',pct:100,hits:1,el:'Fire',cast:1,delay:0,sp:0,targets:1};C().build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{}}`);
+  const r = run(`BUILD.compute({base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{},extra:[["cast_time_fixed_percent",null,null,-30],["cast_time_fixed_percent",null,null,-50],["cast_time_variable_percent",null,null,-10],["cast_time_variable_percent",null,null,-20]]},"Wizard",aspdBase).fields`);
+  assert.equal(r.fctPct, 50);
+  assert.equal(r.vctPct, 30);                                          // variable cast % cuts add up
+});
+
 t("party Even Share and EXP bonus", () => {
   // in-game kills with +10% EXP item and +10% EXP gear
   run(`state.bonus=10;C().bx={exp:{all:10,race:{}}};cur().partyN=3`);
@@ -1306,7 +1329,7 @@ t("hits interrupt casts unless Phen or Bloody Butterfly", () => {
   near(at(`hitsOnYou(${MOB})`), l);
   near(run("castSec()"), 2);
   near(at("castEff()"), Math.expm1(l * 2) / l);                              // restarts after each hit: ~2.9 s on average
-  near(at("useSec()"), Math.expm1(l * 2) / l + Math.max(0, 1 / run("atkPerSec()")));
+  near(at("useSec()"), Math.max(Math.expm1(l * 2) / l, 1 / run("atkPerSec()")));
   run("C().hitScale=0");                                                    // nothing reaches you: the plain cast
   near(at("castEff()"), 2);
   run("C().hitScale=1;CRD().phen=true");                                    // Phen: never interrupted, cast +25%

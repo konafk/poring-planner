@@ -24,13 +24,15 @@ function levelPreset(p,c){const s=presetSkill(p),a={...p};if(!s||!hasTree(c))ret
   if(k(1)!=null)a.pct=Math.round(p.pct*k(1));if(k(2)!=null)a.hits=Math.round(p.hits*k(2)*100)/100;if(lo[0]!=null)a.sp=lo[0];
   const cHi=(hi[3]||0)+(hi[4]||0),cLo=(lo[3]||0)+(lo[4]||0);if(cHi>0){const f=cLo/cHi;a.cast=Math.round(num(p.cast)*f*100)/100;if(p.vct!=null)a.vct=p.vct*f;if(p.fct!=null)a.fct=p.fct*f}
   const dHi=Math.max(hi[5]||0,hi[6]||0),dLo=Math.max(lo[5]||0,lo[6]||0);if(dHi>0)a.delay=Math.round(num(p.delay)*dLo/dHi*100)/100;
+  if(p.gcd!=null&&hi[5])a.gcd=p.gcd*(lo[5]||0)/hi[5];if(p.cd!=null&&hi[6])a.cd=p.cd*(lo[6]||0)/hi[6];
   // zeny per use follows the level's "Zeny Cost: 300Z" (Mammonite: 100 × Lv)
   if(p.zeny!=null){const z=String(lo[7]).match(/Zeny Cost:?\s*([\d,]+)/i);if(z)a.zeny=+z[1].replace(/,/g,"")}
   a.name=/Lv\s*\d+/.test(p.name)?p.name.replace(/Lv\s*\d+/,"Lv"+lv):`${p.name} Lv${lv}`;return {a,lv,s}}
 const refreshPreset=c=>{if(c.preset>=0){const p=JOBS[state.job].p[c.preset];if(p)c.a=levelPreset(p,c).a}};
 // the skill check corrected four presets' damage % (Grimtooth 300%, the Monk combo's knuckle and STR, Acid Bomb's monster VIT, Axe Boomerang's
 // weight) and moved cast times and delays to the in-game table: saved characters still on a preset take the new numbers at their learned level
-(function presetsV4(){if(state.presetsV4)return;state.presetsV4=true;const job=state.job;
+// V5: cooldown and after-cast delay are kept apart (after-cast delay % only cuts the after-cast delay) and follow the learned level
+(function presetsV5(){if(state.presetsV5)return;state.presetsV5=true;const job=state.job;
   for(const j in state.chars){const c=state.chars[j],p=JOBS[j]&&c&&c.preset>=0&&JOBS[j].p[c.preset];if(p){state.job=j;c.a=levelPreset(p,c).a}}state.job=job;save()})();
 // passives: values come from the skill's own description at the learned level; this table only says what they need.
 // any: bonus lines that count with any weapon (Music / Dance Lessons' Max SP %, checked on a Dancer with no whip)
