@@ -1007,6 +1007,24 @@ t("Sage attacks: Spell Fist, Hindsight, or both, named with their levels", () =>
   assert.equal(run(`levelPreset(JOBS.Sage.p[0],C()).a.name`), "Spell Fist Lv3");
 });
 
+t("Foresight: half the variable cast for 5 casts, plus its own 1 s cast, only when that saves time", () => {
+  // a made-up spell: 4 s variable + 1 s fixed cast, 0.5 s delay, no monster on you (no interrupted casts)
+  const BOLT = { name: "x", type: "magic", pct: 100, hits: 1, el: "Fire", vct: 4, fct: 1, cd: 0.5, gcd: 0, sp: 20, targets: 1, cast: 5, delay: 0.5 };
+  setup("Sage", { matkTxt: "300", intTxt: "0", st: { dex: "0" }, aspd: 150, sage: { fsOn: true }, cards: { vitata: false }, a: BOLT });
+  near(run("plainUseSec()"), 5.5);
+  near(run("fsUseSec()"), 2 + 1 + 0.5 + 1 / 5);                                  // half of 4 s, + 1 s, + 0.5 s, + Foresight's 1 s every 5 casts
+  assert.equal(run("fsUsed()"), true);
+  near(run("useSec()"), 3.7);
+  near(run("skillSPPerSec()"), (20 + 1 / 5) / 3.7);                               // Foresight's 1 SP every 5 casts
+  run("C().st.dex='200';C().intTxt='130'");                                       // 2 × DEX + INT ≥ 530: no variable cast left to halve
+  assert.equal(run("fsUsed()"), false);
+  near(run("useSec()"), run("plainUseSec()"));
+  run("C().st.dex='0';C().skills={'study':1}");                                   // a skill tree without Foresight learned
+  assert.equal(run("fsUsed()"), false);
+  run("C().skills={};G().fsOn=false");
+  assert.equal(run("fsUsed()"), false);
+});
+
 t("Auto Shadow Spell procs on a miss too; card auto-casts need a hit", () => {
   setup("Rogue", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", matkTxt: "100+50", intTxt: "40", hitTxt: "1", crit: 0, st: {},
     a: JSON.parse(run(`JSON.stringify(JOBS.Rogue.p.find(p=>p.name.startsWith("Shadow Spell: Fire Bolt")))`)) });

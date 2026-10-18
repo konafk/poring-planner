@@ -48,19 +48,29 @@ const noBreak=()=>{const cd=CRD();return !!(cd.phen||cd.bbfly)||cardInGear(C(),[
 // fixed cast % cut: only the highest one counts (the box, or a consumable such as Challenge Drink)
 const fctPctEff=()=>Math.max(num(C().fctPct),-consSum("fct_percent"));
 const vctCards=()=>{const cd=CRD(),c=C();return (cd.phen&&!cardInGear(c,[PHEN])?25:0)+(cd.bbfly&&!cardInGear(c,[BBFLY])?30:0)};
-const castSec=()=>{const c=C(),a=c.a,vp=num(c.vctPct)-vctCards();
-  if(a.fct!=null||a.vct!=null)return Math.max(0,num(a.vct)*vctFactor()*(1-vp/100))+Math.max(0,(num(a.fct)-num(c.fctSec))*(1-fctPctEff()/100));
+// vk: share of the variable cast left (Foresight halves it)
+const castSec=(vk=1)=>{const c=C(),a=c.a,vp=num(c.vctPct)-vctCards();
+  if(a.fct!=null||a.vct!=null)return Math.max(0,num(a.vct)*vctFactor()*(1-vp/100))*vk+Math.max(0,(num(a.fct)-num(c.fctSec))*(1-fctPctEff()/100));
   const base=num(a.cast),f=Math.min(100,Math.max(0,num(c.fixedShare)))/100;
-  return Math.max(0,base*(1-f)*vctFactor()*(1-vp/100))+Math.max(0,(base*f-num(c.fctSec))*(1-fctPctEff()/100))};
+  return Math.max(0,base*(1-f)*vctFactor()*(1-vp/100))*vk+Math.max(0,(base*f-num(c.fctSec))*(1-fctPctEff()/100))};
 // a hit that lands while you cast interrupts it and you start again (SP is only spent on a cast that finishes). With λ hits landing per
 // second from the monster in play, a T-second cast takes (e^(λT) − 1)/λ on average. Not with Phen or Bloody Butterfly
-const castEff=()=>{const T=castSec();if(T<=0||noBreak())return T;const l=hitsOnYou(SG_MOB||calcMob());return l>0?Math.expm1(l*T)/l:T};
+const castEff=(T=castSec())=>{if(T<=0||noBreak())return T;const l=hitsOnYou(SG_MOB||calcMob());return l>0?Math.expm1(l*T)/l:T};
 // delay after a skill: the longer of the after-cast delay (cut by after-cast delay %) and the skill's own cooldown (the % doesn't touch it).
 // Presets carry both (a.gcd, a.cd); a typed "Delay after" is an after-cast delay
 const delaySec=()=>{const a=C().a,k=1-num(C().acdPct)/100;
   return a.cd!=null||a.gcd!=null?Math.max(0,num(a.gcd)*k,num(a.cd)):Math.max(0,num(a.delay)*k)};
 // your attack interval runs from the start of the cast: a skill takes cast + delay or the attack interval, whichever is longer
-const useSec=()=>{const a=C().a;if(a.type==="auto"||a.type==="spellfist")return 1/atkPerSec();return Math.max(castEff()+delaySec(),1/atkPerSec(),0.1)};
+const useSec=()=>{const a=C().a;if(a.type==="auto"||a.type==="spellfist")return 1/atkPerSec();const u=plainUseSec();return fsUsed()?fsUseSec():u};
+const plainUseSec=()=>Math.max(castEff()+delaySec(),1/atkPerSec(),0.1);
+// Foresight (Sage, Sage options): the next 5 casts take half their variable cast time, for a cast of its own every 5 (Zero's skill data:
+// 1 s fixed, 1 SP), cut like any fixed cast and interrupted like any cast. Only used when it saves time
+const FS_USES=5;
+const fsRow=()=>skRowOf("foresight",1)||[1,null,null,0,1000];
+const fsCastSec=()=>{const r=fsRow(),c=C();return Math.max(castEff(Math.max(0,num(r[3])/1000*vctFactor()*(1-(num(c.vctPct)-vctCards())/100))+Math.max(0,(num(r[4])/1000-num(c.fctSec))*(1-fctPctEff()/100))),1/atkPerSec())};
+const fsUseSec=()=>Math.max(castEff(castSec(0.5))+delaySec(),1/atkPerSec(),0.1)+fsCastSec()/FS_USES;
+const fsAble=()=>{const c=C(),t=c.a.type;return state.job==="Sage"&&!!G().fsOn&&(t==="magic"||t==="phys")&&castSec(0)<castSec()&&(!hasTree(c)||skLv(c,"foresight")>0)};
+const fsUsed=()=>fsAble()&&fsUseSec()<plainUseSec();
 // base-level skills: × BaseLv/100 only above Lv100, except the three Zero skills missing that check (blvBug, see game.js)
 // cart skills (Cart Revolution): +a.cart % per 8,000 cart weight, capped at a full 8,000 cart
 // shield skills (a.shw: Shield Boomerang, Rapid Smiting): + shield weight + 4 × shield refine %. Build mode reads the Shield row
@@ -234,7 +244,7 @@ const ihrPer10=()=>{const l=skLv(C(),"increase-hp-recovery");return l>0?Math.flo
 const hpRegenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(hpRegen6()/6+ihrPer10()/10)*(1-poisonUp(m)))+consHPPerSec();
 // SP the attack itself costs per second (Spell Fist: its upkeep); defSP adds Energy Coat and Vitata's heals against the monster in play
 // Guillotine Fist spends all your SP (Max SP each use), whatever SP cost cuts you have
-const skillSPPerSec=()=>(C().a.asura?num(cf("maxSp")):num(C().a.sp)*spCostMul())/useSec()+dlUpkeep();
+const skillSPPerSec=()=>(C().a.asura?num(cf("maxSp")):(num(C().a.sp)+(fsUsed()?num(fsRow()[0])/FS_USES:0))*spCostMul())/useSec()+dlUpkeep();
 // HP you spend yourself per second: Martyr's Reckoning 9% of Max HP per attack, a.hpCost per use (Excruciating Palm)
 const selfHpPerSec=()=>{const a=C().a;return a.mr?0.09*num(cf("maxHp"))/useSec():num(a.hpCost)/useSec()};
 const spNeedPerSec=()=>isSF()?sgUpkeep()+defSP()+hsFullSP()*hsSustain():skillSPPerSec()+defSP();
@@ -299,7 +309,7 @@ const hpTakenPerMin=(m,d=defense(m))=>d?(d.taken+d.psn+d.self)*60:null;
 const poisonOf=(m,d=defense(m))=>d?{pz:d.pz,psn:d.psn*60}:{pz:0,psn:0};
 // ---- Sage: Spell Fist and Hindsight on basic attacks (bolt choice, Double Bolt, SP items; Energy Coat from ECO(), Vitata, Hunter Fly and Side Winder from CRD()) ----
 // the attack picks which of the two are on: a.sf (Spell Fist, on unless false) and a.hs (Hindsight)
-const SAGE_D={sfLv:10,boltLv:10,bolts:{Fire:true,Water:true,Wind:true},hsLv:10,dbOn:false,dbLv:5};
+const SAGE_D={sfLv:10,boltLv:10,bolts:{Fire:true,Water:true,Wind:true},hsLv:10,dbOn:false,dbLv:5,fsOn:false};
 const G=()=>{const c=C();if(!c.sage)c.sage={};for(const k in SAGE_D)if(c.sage[k]==null)c.sage[k]=JSON.parse(JSON.stringify(SAGE_D[k]));return c.sage};
 const isSF=()=>C().a.type==="spellfist";
 let HS_OVR=null; // Hindsight forced on/off while comparing
