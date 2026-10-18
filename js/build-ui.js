@@ -12,7 +12,7 @@ function applyBuild(){const c=C();if(c.mode!=="build"){BUILD_LAST=null;c.bx=eqTo
   const nm=String(c.a.name||"").toLowerCase(),match=o=>Object.entries(o).reduce((t,[k,v])=>t+(nm.includes(k.toLowerCase())?v:0),0);
   Object.assign(c,{atkTxt:F.atkTxt,matkTxt:F.matkTxt,hitTxt:F.hitTxt,fleeTxt:F.fleeTxt,defTxt:F.defTxt,intTxt:F.intTxt,wAtk:F.wAtk,crit:F.crit,critDmg:F.critDmg,
     rangePct:F.rangePct,skillPct:A.skill+match(A.skillOf),vctPct:F.vctPct+match(A.vctOf),fctPct:F.fctPct+match(A.fctOf),acdPct:F.acdPct,ignDef:F.ignDef,ignMdef:F.ignMdef,
-    weapon:F.weapon,wElem:F.wElem,lw:F.lw,lwAtk:F.lwAtk,lwElem:F.lwElem,st:{...(c.st||{}),...F.st},bx:{phys:A.phys,magic:A.magic,myEle:A.myEle,taken:A.taken,exp:A.exp,critRace:A.critRace,spCost:A.spCost,spRec:A.spRec,hpRec:A.hpRec}});
+    weapon:F.weapon,wElem:F.wElem,lw:F.lw,lwAtk:F.lwAtk,lwElem:F.lwElem,st:{...(c.st||{}),...F.st},bx:{phys:A.phys,magic:A.magic,myEle:A.myEle,taken:A.taken,exp:A.exp,critRace:A.critRace,spCost:A.spCost,spRec:A.spRec,hpRec:A.hpRec,ign:A.ign}});
   c.shield=r.shield;if(F.aspd!=null)c.aspd=F.aspd;if(F.maxHp!=null)c.maxHp=F.maxHp;if(F.maxSp!=null)c.maxSp=F.maxSp;
   // in-game Max HP / SP typed under "Check against the game" win: they include anything the build can't see (buffs, a stale job change)
   const ck=buildOf(c).check||{};if(num(ck.hp)>0)c.maxHp=num(ck.hp);if(num(ck.sp)>0)c.maxSp=num(ck.sp)}
@@ -183,18 +183,23 @@ OWN_LISTS.forEach(L=>{
 // [kind, label, has a Phys / Magic choice, flat (no %)]
 const EQ_KINDS=[["race","Damage to race",true],["size","Damage to size",true],["ele","Damage to element",true],["kind","Damage to boss / normal",true],["group","Damage to monster group",true],
   ["all","Damage to all monsters",true],["myEle","Magic damage of an element (your spells)"],["critRace","CRIT when attacking race",false,true],["takenRace","Damage taken from race"],["takenEle","Damage taken from element"],["takenKind","Damage taken from boss / normal"],
+  ["ignRace","Ignore DEF / MDEF of race",true],["ignSize","Ignore DEF / MDEF of size",true],["ignEle","Ignore DEF / MDEF of element",true],["ignKind","Ignore DEF / MDEF of boss / normal",true],
   ["exp","EXP gained from monsters"],["expRace","EXP gained from race"],["spCost","Skill SP consumption"],["spRec","SP recovery (natural regen)"],["hpRec","HP recovery (natural regen)"]];
 const EQ_TARGETS={race:()=>RACES,size:()=>[["S","Small"],["M","Medium"],["L","Large"]],ele:()=>AE,kind:()=>[["boss","Boss"],["normal","Normal"]],group:()=>[["Boulder Dwarf","Boulder Dwarves"]],
-  myEle:()=>AE,critRace:()=>RACES,takenRace:()=>RACES,takenEle:()=>AE,takenKind:()=>[["boss","Boss"],["normal","Normal"]],expRace:()=>RACES};
+  ignRace:()=>RACES,ignSize:()=>EQ_TARGETS.size(),ignEle:()=>AE,ignKind:()=>EQ_TARGETS.kind(),myEle:()=>AE,critRace:()=>RACES,takenRace:()=>RACES,takenEle:()=>AE,takenKind:()=>[["boss","Boss"],["normal","Normal"]],expRace:()=>RACES};
 // older saves had one race / size / element box each; turn them into rows once
 const eqOf=c=>{if(!Array.isArray(c.eq))c.eq=[];
   [["raceSel","racePct","raceType","race"],["sizeSel","sizePct","sizeType","size"],["elSel","elPct","elType","ele"]].forEach(([s,p,t,by])=>{
     if(c[s]&&num(c[p]))c.eq.push({by,t:c[s],ch:c[t]||"both",v:num(c[p])});delete c[s];delete c[p];delete c[t]});return c.eq};
-function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},critRace:{},taken:{race:{},ele:{},kind:{}},exp:{all:0,race:{}},spCost:0,spRec:0,hpRec:0};
+const IGN_BY={ignRace:"race",ignSize:"size",ignEle:"ele",ignKind:"kind"};
+function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},critRace:{},taken:{race:{},ele:{},kind:{}},exp:{all:0,race:{}},spCost:0,spRec:0,hpRec:0,
+    ign:{def:{race:{},size:{},ele:{},kind:{}},mdef:{race:{},size:{},ele:{},kind:{}}}};
   const add=(m,k,v)=>{m[k]=(m[k]||0)+v};
   eqOf(c).forEach(r=>{const v=num(r.v);if(!v)return;
     if(["race","size","ele","kind","group"].includes(r.by)){if(r.ch!=="magic")add(o.phys[r.by],r.t,v);if(r.ch!=="phys")add(o.magic[r.by],r.t,v)}
     else if(r.by==="all"){if(r.ch!=="magic")o.phys.all+=v;if(r.ch!=="phys")o.magic.all+=v}
+    // ignore rows: Physical is DEF, Magic is MDEF
+    else if(IGN_BY[r.by]){if(r.ch!=="magic")add(o.ign.def[IGN_BY[r.by]],r.t,v);if(r.ch!=="phys")add(o.ign.mdef[IGN_BY[r.by]],r.t,v)}
     else if(r.by==="myEle")add(o.myEle,r.t,v);else if(r.by==="critRace")add(o.critRace,r.t,v);else if(r.by.startsWith("taken"))add(o.taken[{takenRace:"race",takenEle:"ele",takenKind:"kind"}[r.by]],r.t,v);
     else if(r.by==="exp")o.exp.all+=v;else if(r.by==="expRace")add(o.exp.race,r.t,v);else if(r.by==="spCost")o.spCost+=v;else if(r.by==="spRec")o.spRec+=v;else if(r.by==="hpRec")o.hpRec+=v});return o}
 // "Fill from gear": the lines the gear saved in Build from gear gives (gear, cards, affixes, stones, Taming Ring, other special
@@ -205,6 +210,7 @@ function gearEqRows(c){const A=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobL
   const both=(by,t,p,m)=>{if(p===m)add(by,t,p);else{add(by,t,p,"phys");add(by,t,m,"magic")}};
   ["race","size","ele","kind","group"].forEach(by=>new Set([...Object.keys(A.phys[by]),...Object.keys(A.magic[by])]).forEach(t=>both(by,t,A.phys[by][t]||0,A.magic[by][t]||0)));
   both("all","",A.phys.all,A.magic.all);
+  Object.entries(IGN_BY).forEach(([by,k])=>new Set([...Object.keys(A.ign.def[k]),...Object.keys(A.ign.mdef[k])]).forEach(t=>both(by,t,A.ign.def[k][t]||0,A.ign.mdef[k][t]||0)));
   Object.entries(A.myEle).forEach(([t,v])=>add("myEle",t,v));Object.entries(A.critRace).forEach(([t,v])=>add("critRace",t,v));
   [["race","takenRace"],["ele","takenEle"],["kind","takenKind"]].forEach(([k,by])=>Object.entries(A.taken[k]).forEach(([t,v])=>add(by,t,v)));
   add("exp","",A.exp.all);Object.entries(A.exp.race).forEach(([t,v])=>add("expRace",t,v));

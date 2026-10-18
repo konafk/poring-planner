@@ -209,12 +209,30 @@ t("random options come from rozerodb's affixes, filtered to what the row's gear 
   const r = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { weapon: { id: 1, opts } } }, "Knight", aspdBase);
   assert.ok(r.unmodelled.includes("Blade option not counted: Heal increase 8%"));
   assert.ok(r.unmodelled.includes("Blade option not counted: Magic Damage to Fire enemies 5%"));
-  assert.ok(r.unmodelled.some(x => x.includes("ignore_def_percent demon")));
-  assert.equal(r.acc.ignDef, 5);
+  // ignore DEF of a race or of normal monsters counts against those monsters only (acc.ign), not as plain ignore DEF
+  assert.ok(!r.unmodelled.some(x => x.includes("ignore_def_percent")));
+  assert.equal(r.acc.ignDef, 0);
+  assert.equal(r.acc.ign.def.race.Demon, 10);
+  assert.equal(r.acc.ign.def.kind.normal, 5);
   assert.equal(r.acc.taken.race.Demon, -5);
   assert.equal(r.acc.taken.ele.Water, -6);
   assert.equal(r.acc.spCost, -4);
   assert.equal(r.acc.myEle.Fire, 3);                                          // a key from the hand-made list still counts
+});
+
+t("ignore DEF / MDEF of a race, size, element or boss / normal monsters", () => {
+  const keys = (slot, it) => BUILD.optChoices(slot, it).map(o => o.k);
+  // rozerodb's race and Normal Enemy affixes go on the weapons that roll them; the sizes, elements and boss it has none for yet on every part
+  assert.ok(keys("weapon", { slot: ["weapon"], type: "staff_1h" }).includes("ign_mdef_race_dragon") && keys("weapon", BUILD.item(1)).includes("ign_def_kind_normal"));
+  for (const k of ["ign_def_kind_boss", "ign_def_size_small", "ign_mdef_size_large", "ign_def_ele_fire", "ign_mdef_ele_undead"])
+    assert.ok(keys("weapon", BUILD.item(1)).includes(k) && keys("armor", BUILD.item(2)).includes(k), k);
+  const lab = k => BUILD.OPTIONS.find(o => o.k === k).label;
+  assert.equal(lab("ign_mdef_race_dragon"), "Ignore Dragon Magic Def %");
+  assert.equal(lab("ign_def_ele_undead"), "Ignore Undead element Phys Def %");      // the element, not the Undead race
+  const opts = [{ k: "ign_mdef_race_dragon", v: 15 }, { k: "ign_def_size_small", v: 10 }, { k: "ign_def_ele_undead", v: 20 }, { k: "ign_mdef_kind_boss", v: 5 }];
+  const A = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { weapon: { id: 1, opts } } }, "Knight", aspdBase).acc;
+  assert.equal(A.ign.mdef.race.Dragon, 15); assert.equal(A.ign.def.size.S, 10); assert.equal(A.ign.def.ele.Undead, 20); assert.equal(A.ign.mdef.kind.boss, 5);
+  assert.equal(A.ignDef + A.ignMdef, 0);
 });
 
 t("costume enchant stones: one per slot, plus the sets they complete", () => {

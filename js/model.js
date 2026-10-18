@@ -99,8 +99,11 @@ const killExp=(m,s=cur())=>Math.floor(partyCut(m.exp,s)*(1+(expGear(m)+num(state
 const killJobExp=(m,s=cur())=>Math.floor(partyCut(m.job,s)*(1+(expGear(m)+num(state.jobBonus)+consSum("exp_job"))/100));
 const takenMul=m=>{const c=C();if(!c.bx)return 1;const t=c.bx.taken;return (1+(t.race[m.race]||0)/100)*(1+(t.ele[m.el||"Neutral"]||0)/100)*(1+(t.kind[m.boss?"boss":"normal"]||0)/100)};
 // ignore DEF / MDEF %: lowers the monster's hard defence before the (4000+DEF)/(4000+10·DEF) or (1000+MDEF)/(1000+10·MDEF) factor
-const effDef=m=>(m.def||0)*(1-Math.min(100,Math.max(0,num(C().ignDef)))/100);
-const effMdef=m=>(m.mdef||0)*(1-Math.min(100,Math.max(0,num(C().ignMdef)))/100);
+// ignOf: the plain ignore % plus gear that ignores it only against the monster's race, size, element or boss / normal (bx.ign)
+const ignOf=(k,m)=>{const c=C(),I=c.bx&&c.bx.ign&&c.bx.ign[k];let v=num(c[k==="def"?"ignDef":"ignMdef"]);
+  if(I&&m)v+=(I.race[m.race]||0)+(I.size[m.size]||0)+(I.ele[m.el||"Neutral"]||0)+(I.kind[m.boss?"boss":"normal"]||0);return Math.min(100,Math.max(0,v))};
+const effDef=m=>(m.def||0)*(1-ignOf("def",m)/100);
+const effMdef=m=>(m.mdef||0)*(1-ignOf("mdef",m)/100);
 // Formulas from roz.prontera.info/mechanics (Ragnarok Zero, renewal core)
 // ATK is "status + gear". The weapon share takes size and element; status ATK counts twice and, with other gear, stays Neutral.
 // Dual wield: the gear side holds both weapons, so the left one's ATK comes out of the Neutral share too

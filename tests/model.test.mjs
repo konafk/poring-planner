@@ -1443,6 +1443,18 @@ t("preset cast times and delays match the in-game skill table", () => {
   assert.equal(bad, "");
 });
 
+t("ignore DEF / MDEF of one race, size, element or boss / normal only lowers that monster's defence", () => {
+  setup("Knight", { ignDef: 10, ignMdef: 0 });
+  const mob = MOB;                                                     // Brute, Large, Water, normal, DEF 20, MDEF 10
+  run(`C().bx={...C().bx,ign:{def:{race:{Brute:20},size:{L:5},ele:{Fire:50},kind:{normal:5}},mdef:{race:{Dragon:15},size:{},ele:{},kind:{boss:30}}}}`);
+  near(run(`effDef(${mob})`), 20 * (1 - 0.40));                       // 10 plain + 20 Brute + 5 Large + 5 normal; Fire doesn't match
+  near(run(`effMdef(${mob})`), 10);                                    // Dragon and boss don't match
+  near(run(`effMdef({...${mob},race:'Dragon'})`), 10 * 0.85);
+  near(run(`effDef({...${mob},boss:true})`), 20 * (1 - 0.35));         // not a normal monster
+  run(`C().bx.ign.def.race.Brute=200`);
+  near(run(`effDef(${mob})`), 0);                                      // at most 100%
+});
+
 t("try other gear: compared with the copy kept at Try, Back to my gear puts it back", () => {
   setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed spear", wElem: "Neutral", st: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
   run("state.calcMobId=1002;trialStart();C().atkTxt='100+400';trialPrep()");
