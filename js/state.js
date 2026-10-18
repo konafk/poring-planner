@@ -63,9 +63,13 @@ if(!state.chars||typeof state.chars!=="object")state.chars={};
 const numMap=o=>Object.fromEntries(Object.entries(o&&typeof o==="object"?o:{}).map(([k,v])=>[k,v===""||v==null?NaN:+v]).filter(([,v])=>Number.isFinite(v)));
 for(const j in state.chars){let c=state.chars[j];if(!c||typeof c!=="object"){delete state.chars[j];continue}
   // "Try other gear" kept a copy of the character to go back to (c.trial.base): the copy is your character again, and the gear you were
-  // trying is the other gear set (build.alt)
+  // trying is the first other gear set (build.alts)
   if(c.trial){const t=c.trial.base,b=c.build;delete c.trial;if(t&&typeof t==="object"&&!Array.isArray(t)){
-    if(b&&b.gear&&t.build&&typeof t.build==="object")t.build.alt={gear:b.gear,stones:b.stones||{},special:b.special||{}};state.chars[j]=c=t}}
+    if(b&&b.gear&&t.build&&typeof t.build==="object")t.build.alts=[{gear:b.gear,stones:b.stones||{},special:b.special||{}}];state.chars[j]=c=t}}
+  // one other gear set (build.alt, the table editing it: gearEdit "alt") became up to three (build.alts, "alt0"…)
+  if(c.build&&typeof c.build==="object"){const b=c.build;if(b.alt){if(!Array.isArray(b.alts)&&typeof b.alt==="object")b.alts=[b.alt];delete b.alt}
+    if(b.alts!=null&&!Array.isArray(b.alts))delete b.alts}
+  if(c.gearEdit==="alt")c.gearEdit="alt0";
   // "HP back per minute" (hpRegen) became "HP regen per 6s" (hpRegen6, blank = worked out): a typed value carries over as 10 ticks a minute
   if(c.hpRegen!=null){const v=+c.hpRegen;if(v>0&&c.hpRegen6==null)c.hpRegen6=Math.max(1,Math.round(v/10));delete c.hpRegen}
   if(c.skills!=null)c.skills=Object.fromEntries(Object.entries(numMap(c.skills)).map(([k,v])=>[k,Math.max(0,Math.round(v))]).filter(([,v])=>v>0));

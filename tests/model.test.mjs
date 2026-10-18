@@ -1770,30 +1770,39 @@ t("ignore DEF / MDEF of one race, size, element or boss / normal only lowers tha
   near(run(`effDef(${mob})`), 0);                                      // at most 100%
 });
 
-t("other gear set: worked out next to your gear without touching it, swapped in and out, and the old Try other gear copy moves over", () => {
+t("other gear sets: up to 3 worked out next to your gear without touching it, swapped in and out; older saves move over", () => {
   run(`state.job="Knight";state.chars={};state.calcMobId=1002;const c=C();c.mode="build";const b=buildOf(c);b.base={str:50,agi:30,vit:10,int:1,dex:30,luk:1};
-    b.gear={weapon:{id:EQUIP.find(x=>x.name==="Pike").id}};b.check={hp:9999};altOf(c).gear={weapon:{id:EQUIP.find(x=>x.name==="Zweihander").id,refine:7}};
+    const id=n=>EQUIP.find(x=>x.name===n).id;b.gear={weapon:{id:id("Pike")}};b.check={hp:9999};
+    altOf(c,0).gear={weapon:{id:id("Zweihander"),refine:7}};altOf(c,2).gear={weapon:{id:id("Pike"),refine:10}};
     SKFX=skillEffects(C());applyBuild();applyConsumables()`);
-  const mine = run("JSON.stringify(gearStats())"), M = JSON.parse(mine), O = JSON.parse(run("JSON.stringify(withSnap(altChar(),gearStats))"));
-  assert.ok(O.atk > M.atk && O.dmg > M.dmg, `${O.atk} ${M.atk}`);
+  assert.deepEqual(JSON.parse(run("JSON.stringify(altList(C()))")), [0, 2]);   // set 2 is empty
+  const mine = run("JSON.stringify(gearStats())"), M = JSON.parse(mine);
+  const [S1, S3] = [0, 2].map(i => JSON.parse(run(`JSON.stringify(withSnap(altChar(C(),${i}),gearStats))`)));
+  assert.ok(S1.atk > S3.atk && S3.atk > M.atk, `${S1.atk} ${S3.atk} ${M.atk}`);
   assert.equal(M.hp, 9999);                                               // the in-game Max HP typed for your gear
-  assert.notEqual(O.hp, 9999);                                            // doesn't count for the other set
+  assert.notEqual(S1.hp, 9999);                                           // doesn't count for the other sets
   assert.equal(run("JSON.stringify(gearStats())"), mine);                 // your gear is untouched afterwards
-  assert.equal(run("'alt' in altChar().build"), false);
-  // the formulas table: an "Other set" value for every row
-  const f = run("(()=>{const av=withSnap(altChar(),()=>refFormulas().vals),r=refFormulas(av);return [av.length,r.vals.length,(r.html.match(/class=\"chg\"/g)||[]).length]})()");
-  assert.equal(f[0], f[1]); assert.ok(f[2] > 0);
-  // the gear table edits the set picked; Swap wears the other set and keeps yours as the other
-  run("C().gearEdit='alt'"); assert.equal(run("gearSet()===altOf(C())"), true);
+  assert.equal(run("'alts' in altChar(C(),0).build"), false);
+  assert.equal(run("altChar(C(),1)"), null);
+  // the formulas table: a value per row for each set
+  const f = run("(()=>{const av=[0,2].map(i=>withSnap(altChar(C(),i),()=>refFormulas().vals)),r=refFormulas(av);return [av[0].length,av[1].length,r.vals.length,(r.html.match(/class=\"chg\"/g)||[]).length]})()");
+  assert.equal(f[0], f[2]); assert.equal(f[1], f[2]); assert.ok(f[3] > 0);
+  // the gear table edits the set picked; Swap wears a set and keeps yours in its place
+  run("C().gearEdit='alt2'"); assert.equal(run("gearSet()===altOf(C(),2)"), true);
+  run("C().gearEdit='alt7'"); assert.equal(run("gearSet()===buildOf(C())"), true);   // no such set
   run("delete C().gearEdit"); assert.equal(run("gearSet()===buildOf(C())"), true);
-  const pike = run("buildOf(C()).gear.weapon.id"), zwei = run("altOf(C()).gear.weapon.id");
-  run("altSwap()"); assert.equal(run("buildOf(C()).gear.weapon.id"), zwei); assert.equal(run("altOf(C()).gear.weapon.id"), pike);
-  run("altSwap()"); assert.equal(run("buildOf(C()).gear.weapon.id"), pike);
-  assert.equal(run("'alt' in (charSnap().build||{})"), false);            // session snapshots don't keep it
-  // a save from Try other gear: the copy it would go back to is your character again, the gear tried is the other set
-  const app = load({ job: "Knight", chars: { Knight: { mode: "build", baseLv: 60, build: { base: { str: 9 }, gear: { weapon: { id: 2 } } }, trial: { base: { mode: "build", baseLv: 50, build: { base: { str: 9 }, gear: { weapon: { id: 1 } } } } } } } });
+  const pike = run("buildOf(C()).gear.weapon.id"), zwei = run("altOf(C(),0).gear.weapon.id");
+  run("altSwap(C(),0)"); assert.equal(run("buildOf(C()).gear.weapon.id"), zwei); assert.equal(run("altOf(C(),0).gear.weapon.id"), pike);
+  run("altSwap(C(),0)"); assert.equal(run("buildOf(C()).gear.weapon.id"), pike);
+  assert.equal(run("altOf(C(),2).gear.weapon.refine"), 10);               // the other sets stay as they were
+  assert.equal(run("'alts' in (charSnap().build||{})"), false);           // session snapshots don't keep them
+  // older saves: a Try other gear copy is your character again and the gear tried is set 1; one other set (build.alt) is set 1
+  const B = id => ({ base: { str: 9 }, gear: { weapon: { id } } });
+  const app = load({ job: "Knight", chars: { Knight: { mode: "build", baseLv: 60, build: B(2), trial: { base: { mode: "build", baseLv: 50, build: B(1) } } },
+    Wizard: { mode: "build", gearEdit: "alt", build: { ...B(1), alt: { gear: { weapon: { id: 3 } } } } } } });
   assert.equal(app("state.chars.Knight.baseLv"), 50);
-  assert.equal(app("JSON.stringify([state.chars.Knight.build.gear,state.chars.Knight.build.alt.gear,'trial' in state.chars.Knight])"), JSON.stringify([{ weapon: { id: 1 } }, { weapon: { id: 2 } }, false]));
+  assert.equal(app("JSON.stringify([state.chars.Knight.build.gear,state.chars.Knight.build.alts[0].gear,'trial' in state.chars.Knight])"), JSON.stringify([{ weapon: { id: 1 } }, { weapon: { id: 2 } }, false]));
+  assert.equal(app("JSON.stringify([state.chars.Wizard.build.alts[0].gear,'alt' in state.chars.Wizard.build,state.chars.Wizard.gearEdit])"), JSON.stringify([{ weapon: { id: 3 } }, false, "alt0"]));
 });
 
 t("crowds: aggressive or assisting monsters gang up, and from 3 at once FLEE and DEF drop", () => {
