@@ -18,9 +18,10 @@ JOBS = ["Novice", "Swordsman", "Mage", "Archer", "Acolyte", "Merchant", "Thief",
 sys.setrecursionlimit(10000)
 # values roz.prontera.info is missing, from the official client (skillinfoz/skilldelaylist.lub): only fill in what it leaves blank
 CLIENT_FIX = {"falcon-assault": {"cooldown_ms": 500}}
-# Zero Global skill ratios that differ from roz.prontera.info (kRO Zero): slug -> (prontera's max-level damage %, % to add at every level);
-# applied only while prontera still shows its own value. Sonic Blow is 100% lower on Global (1100% at Lv10, not 1200%)
-GLOBAL_PCT = {"sonic-blow": (1200, -100)}
+# Zero Global skill ratios that differ from roz.prontera.info (kRO Zero): slug -> (prontera's max-level damage %, % to add at every
+# level, or the % per level); applied only while prontera still shows its own value. Sonic Blow is 100% lower on Global (1100% at
+# Lv10, not 1200%); Throw Spirit Sphere is 900 + 300 × Lv (2400% at Lv5, the official client's skill text), not 600 + 200 × Lv
+GLOBAL_PCT = {"sonic-blow": (1200, -100), "throw-spirit-sphere": (1600, [1200, 1500, 1800, 2100, 2400])}
 # skill points per tree that roz.prontera.info gets wrong: a Novice gets one point per job level after the first, so Job Lv 10 = 9 (Basic Skill's 9 levels)
 POINTS_FIX = {"Novice": 9}
 
@@ -30,6 +31,9 @@ def global_pct(slug, lv, f):
     if not fix or not lv or lv[-1][1] != fix[0]:
         return lv, f
     d = fix[1]
+    if isinstance(d, list):
+        lv = [[r[0], d[i], *r[2:7], r[7].replace(f"ATK {r[1]}%", f"ATK {d[i]}%")] if r[1] is not None else r for i, r in enumerate(lv)]
+        return lv, None
     lv = [[r[0], r[1] + d, *r[2:7], r[7].replace(f"ATK {r[1]}%", f"ATK {r[1] + d}%")] if r[1] is not None else r for r in lv]
     return lv, f and re.sub(r"^(\d+)", lambda m: str(int(m.group(1)) + d), f)
 # gear checked against the official client's item descriptions (System/iteminfo_enUS.lub):

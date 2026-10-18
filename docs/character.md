@@ -30,7 +30,7 @@ One card for everything you buy and use up: the Discount setting, HP and SP item
 
 ## Auto-cast spells
 
-Any job, Mages included, can add a spell from a card, weapon or scroll that procs on basic attacks with your MATK. Sage Spell Fist counts the basic attack's own physical hit as well as the procs. The Priest's "Basic attack + Duple Light" preset adds, on each basic attack that hits, a physical orb ((500 + 50 × Lv)% ATK, weapon element and size penalty, its own hit roll) and half the time a magic orb ((800 + 80 × Lv)% MATK, Neutral, always hits), plus the recast's SP every 60 + 30 × Lv seconds. Rogue Auto Shadow Spell procs on a miss too; card and scroll auto-casts need a hit.
+Any job, Mages included, can add a spell from a card, weapon or scroll that procs on basic attacks with your MATK. Sage Spell Fist counts the basic attack's own physical hit as well as the procs. The Priest's "Basic attack + Duple Light" preset adds, on each basic attack that hits, a physical orb ((500 + 50 × Lv)% ATK, weapon element and size penalty, its own hit roll) and half the time a magic orb ((800 + 80 × Lv)% MATK, Neutral, always hits), plus the recast's SP every 60 + 30 × Lv seconds. Rogue Auto Shadow Spell procs on a miss too; card and scroll auto-casts need a hit. Hunters have a Blitz Beat preset and "Basic attack + auto Blitz Beat": each falcon hit is (AGI/2 + DEX/10) × 2 + 6 × Steel Crow Lv + 20 × Blitz Beat Lv, Neutral, always lands and ignores DEF and your damage bonuses; auto Blitz has LUK/3 % on each basic attack that hits, at Lv (Job Lv + 9)/10 up to your Blitz Beat Lv.
 
 ## Cards any job can slot
 
