@@ -58,7 +58,7 @@ const BUILD=(()=>{
 
   // ---- bonus accumulation ----
   const blank=()=>({st:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},stPct:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},atk:0,matk:0,atkPct:0,matkPct:0,hit:0,flee:0,crit:0,critDmg:0,aspd:0,aspdPct:0,aspdMod:0,
-    hp:0,hpPct:0,sp:0,spPct:0,def:0,mdef:0,ranged:0,melee:0,skill:0,skillOf:{},vct:0,fct:0,acd:0,vctOf:{},fctOf:{},ignDef:0,ignMdef:0,
+    hp:0,hpPct:0,sp:0,spPct:0,def:0,mdef:0,ranged:0,melee:0,skill:0,skillOf:{},vct:0,fct:0,acd:0,vctOf:{},fctOf:{},ignDef:0,ignMdef:0,ignRace:{def:{},mdef:{}},
     phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},taken:{race:{},ele:{},kind:{}},exp:{all:0,race:{}},critRace:{},spCost:0,spRec:0,hpRec:0,wEle:null,unmodelled:[]});
   // lines that only matter for PvP survival, healing or status resistance: not part of the farming maths, so not reported either
   const QUIET=["resistance_percent","heal_amount_percent","item_heal_percent","sp_recovery_percent","hp_recovery_percent","perfect_dodge","perfect_hit","magic_damage_taken_percent","sp_per_hit","hp_per_hit"];
@@ -95,6 +95,8 @@ const BUILD=(()=>{
     if((type==="damage_percent"||type==="magic_damage_percent"||type==="physical_damage_percent")&&bucket(kind)){
       const ch=bucket(kind),t=tgt(kind,target);if(type!=="magic_damage_percent")addTo(A.phys[ch],t,v);if(type!=="physical_damage_percent"&&type!=="damage_percent")addTo(A.magic[ch],t,v);return true}
     if((type==="ignore_def_percent"||type==="ignore_mdef_percent")&&(!kind||kind==="monster_kind")){if(type==="ignore_def_percent")A.ignDef+=v;else A.ignMdef+=v;return true}
+    // of one race ("Ignore P.DEF of Brute 8%"): on top of plain ignore DEF / MDEF against that race
+    if((type==="ignore_def_percent"||type==="ignore_mdef_percent")&&kind==="race"){addTo(A.ignRace[type==="ignore_def_percent"?"def":"mdef"],tgt(kind,target),v);return true}
     if(type==="damage_taken_percent"&&bucket(kind)&&bucket(kind)!=="size"){addTo(A.taken[bucket(kind)],tgt(kind,target),v);return true}
     if(type==="exp_percent"&&kind==="race"){addTo(A.exp.race,tgt(kind,target),v);return true}
         if(type==="weapon_element"&&target){A.wEle=cap(target);return true}
@@ -141,7 +143,7 @@ const BUILD=(()=>{
     if((m=n.match(/^Physical Damage to (.+) enemies$/))&&ele(m[1]))return ["dmg_ele_"+ele(m[1]),"Element",L("damage_percent","element",ele(m[1]))];
     // magic damage vs a monster's element: apply() has no line for it ("Fire magic damage" lines boost your own Fire spells)
     if((m=n.match(/^Magic Damage to (.+) enemies$/))&&ele(m[1]))return ["mdmg_ele_"+ele(m[1]),"Element",null];
-    // ignore DEF / MDEF of one race: apply() reports these itself; vs normal monsters it counts as plain ignore DEF / MDEF
+    // ignore DEF / MDEF of one race (counted against that race); vs normal monsters it counts as plain ignore DEF / MDEF
     if((m=n.match(/^Ignore (.+) (Phys|Magic) Def$/))){const t=m[2]==="Phys"?"ignore_def_percent":"ignore_mdef_percent",k=m[2]==="Phys"?"ign_def":"ign_mdef";
       if(m[1]==="Normal Enemy")return [k+"_kind_normal","Monster type",L(t,"monster_kind","normal")];if(race(m[1]))return [k+"_race_"+race(m[1]),"Race",L(t,"race",race(m[1]))]}
     if((m=n.match(/^Phys Damage from (.+) enemies reduction$/))&&ele(m[1]))return ["pres_ele_"+ele(m[1]),"Resist",L("damage_taken_percent","element",ele(m[1])),true];

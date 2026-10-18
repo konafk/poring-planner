@@ -11,11 +11,36 @@ const accts=(()=>{let a=null;try{a=JSON.parse(localStorage.getItem(ACCT_KEY))}ca
   if(!a||!Array.isArray(a.list)||!a.list.length)a={list:[{id:"a0",name:"Account 1"}],active:"a0"};
   if(VIEW&&a.list.some(x=>x.id===VIEW.acct))a.active=VIEW.acct;
   if(!a.list.some(x=>x.id===a.active))a.active=a.list[0].id;return a})();
-// STALE: another tab saved since this one loaded. Each tab writes its whole save, so a stale one would wipe what the other logged; it writes nothing and reloads
+// STALE: another tab changed the account list (or this tab found a newer save, below); it writes nothing more and reloads
 let STALE=false;
 const saveAccts=()=>{if(STALE)return;try{localStorage.setItem(ACCT_KEY,JSON.stringify(accts))}catch(e){}};
 const acctKey=id=>id==="a0"?KEY:KEY+":"+id;
-const store={get(){try{return JSON.parse(localStorage.getItem(acctKey(accts.active)))}catch(e){return null}},set(v){if(STALE)return;try{localStorage.setItem(acctKey(accts.active),JSON.stringify(v))}catch(e){}}};
+// ---- other browser tabs: each tab writes its whole save, so a tab left open on an old copy would wipe what another one logged.
+// Every save carries a revision (state.rev), one more than the save it replaces, and the tab keeps the text it last read or wrote
+// (LAST_RAW). When storage holds anything else at its next save, another tab (or another tool) wrote since: it doesn't overwrite
+// that. The log entries and pauses this tab added since (by time; KNOWN holds the ones storage already had) go into the newer
+// save, then the tab reloads with it and says "Updated from another tab" (start.js also reloads when the storage event fires) ----
+let LAST_RAW=null,KNOWN=new Set();
+const revOf=v=>Number.isFinite(+(v&&v.rev))?+v.rev:0;
+const readRaw=()=>{try{return localStorage.getItem(acctKey(accts.active))}catch(e){return null}};
+const knownOf=v=>new Set((v&&Array.isArray(v.sessions)?v.sessions:[]).flatMap(s=>[String(s.id),...(s.entries||[]).map(e=>s.id+"@"+e.t),...(s.pauses||[]).map(p=>s.id+"#"+p.from)]));
+// reload this tab with what's in storage, keeping its account, page tab, scroll and unsent log entry, and a message to show after it
+function reloadView(toast){try{const drafts={};["fPct","fJob","pasteBox"].forEach(id=>{const el=$(id);if(el&&el.value)drafts[id]=el.value});
+    sessionStorage.setItem(VIEW_KEY,JSON.stringify({acct:accts.active,tab:document.querySelector('[data-tabbtn][aria-selected="true"]')?.dataset.tabbtn,y:scrollY,drafts,toast}))}catch(e){}
+  location.reload()}
+function mergeNewer(v,raw){STALE=true;let o=null;try{o=JSON.parse(raw)}catch(e){}
+  if(o&&typeof o==="object"&&Array.isArray(o.sessions)){let n=0;
+    v.sessions.forEach(s=>{const os=o.sessions.find(x=>x&&String(x.id)===s.id);
+      if(!os){if(!KNOWN.has(s.id)&&s.entries.length){o.sessions.push(s);n++}return}// a session started in this tab
+      if(!Array.isArray(os.entries))os.entries=[];const ts=new Set(os.entries.map(e=>+(e&&e.t)));
+      s.entries.forEach(e=>{if(!KNOWN.has(s.id+"@"+e.t)&&!ts.has(e.t)){os.entries.push(e);n++}});os.entries.sort((a,b)=>a.t-b.t);
+      const ps=(s.pauses||[]).filter(p=>!KNOWN.has(s.id+"#"+p.from));if(ps.length){if(!Array.isArray(os.pauses))os.pauses=[];const fs=new Set(os.pauses.map(p=>+(p&&p.from)));
+        ps.forEach(p=>{if(!fs.has(p.from)){os.pauses.push(p);n++}});os.pauses.sort((a,b)=>a.from-b.from)}});
+    if(n){o.rev=Math.max(revOf(o),revOf(v))+1;try{localStorage.setItem(acctKey(accts.active),JSON.stringify(o))}catch(e){}}}
+  reloadView("Updated from another tab")}
+const store={get(){LAST_RAW=readRaw();let v=null;try{v=JSON.parse(LAST_RAW)}catch(e){}return v},
+  set(v){if(STALE)return;const raw=readRaw();if(raw!==LAST_RAW){mergeNewer(v,raw);return}
+    v.rev=revOf(v)+1;const txt=JSON.stringify(v);try{localStorage.setItem(acctKey(accts.active),txt);LAST_RAW=txt;KNOWN=knownOf(v)}catch(e){}}};
 let state=store.get()||{};
 if(!Array.isArray(state.sessions)||!state.sessions.length)state.sessions=[{id:"s"+Date.now(),name:"New session",mobIds:[],entries:[]}];
 // sessions hold a list of monsters (one map, plus the aggressive ones you end up killing); older saves had a single mobId
@@ -25,7 +50,12 @@ state.sessions.forEach(s=>{s.id=String(s.id);s.name=String(s.name??"Session");s.
   s.entries=(Array.isArray(s.entries)?s.entries:[]).map(e=>{const o={t:+(e&&e.t),lv:+(e&&e.lv),pct:+(e&&e.pct)};if(e&&e.jpct!=null&&e.jpct!==""&&isFinite(+e.jpct))o.jpct=+e.jpct;if(e&&+e.jlv>0)o.jlv=+e.jlv;if(e&&+e.died>0)o.died=+e.died;return o})
     .filter(e=>Number.isFinite(e.t)&&Number.isFinite(e.lv)&&Number.isFinite(e.pct));
   if(s.trip!=null)s.trip=s.trip&&Number.isFinite(+s.trip.from)&&Number.isFinite(+s.trip.due)?{from:+s.trip.from,due:+s.trip.due,...(s.trip.rang===true?{rang:true}:{})}:undefined;
-  if(s.pauses!=null)s.pauses=(Array.isArray(s.pauses)?s.pauses:[]).filter(p=>p&&Number.isFinite(+p.from)&&(p.to==null||Number.isFinite(+p.to))).map(p=>p.to==null?{from:+p.from}:{from:+p.from,to:+p.to})});
+  if(s.pauses!=null)s.pauses=(Array.isArray(s.pauses)?s.pauses:[]).filter(p=>p&&Number.isFinite(+p.from)&&(p.to==null||Number.isFinite(+p.to))).map(p=>p.to==null?{from:+p.from}:{from:+p.from,to:+p.to});
+  // the character as it was when entries were logged (model.js charSnap), and the walking worked out from it: a character object and numbers
+  if(s.snap!=null)s.snap=s.snap&&typeof s.snap==="object"&&s.snap.c&&typeof s.snap.c==="object"&&!Array.isArray(s.snap.c)&&Number.isFinite(+s.snap.at)?{at:+s.snap.at,c:s.snap.c,...(s.snap.est===true?{est:true}:{})}:undefined;
+  if(s.walk!=null){const w=s.walk,n=x=>x==null||!Number.isFinite(+x)?null:+x;s.walk=w&&typeof w==="object"&&typeof w.key==="string"?{key:w.key,sec:n(w.sec),fight:n(w.fight),kph:n(w.kph)}:undefined}});
+// what storage already holds (see mergeNewer)
+KNOWN=knownOf(state);
 // new accounts start as Novice; change it on the Character tab
 if(!JOBS[state.job])state.job="Novice";
 if(!state.chars||typeof state.chars!=="object")state.chars={};
@@ -55,6 +85,8 @@ state.huntAuto=state.huntAuto===true;
 // the Zeny Hunter's level filter: a monster Lv range (whole numbers, null = any) and "Skip drop-penalty monsters" (true/false)
 ["huntMinLv","huntMaxLv"].forEach(k=>{state[k]=state[k]!=null&&state[k]!==""&&Number.isFinite(+state[k])?Math.round(+state[k]):null});
 state.huntNoPen=state.huntNoPen===true;
+// the EXP Hunter's "Calibrate to my logs" (model.js calInfo)
+state.calOn=state.calOn===true;
 // sort ([column, 1 or -1]) and column filters (text) of the Monster info, Item info, Market and Hunter tables, by table id
 const objOr=o=>o&&typeof o==="object"&&!Array.isArray(o)?o:{};
 state.tsort=Object.fromEntries(Object.entries(objOr(state.tsort)).filter(([,v])=>Array.isArray(v)&&typeof v[0]==="string"&&(v[1]===1||v[1]===-1)));
@@ -87,6 +119,9 @@ const cur=()=>state.sessions.find(s=>s.id===state.current)||state.sessions[0];
 (function ecV1(){if(state.ecV1)return;state.ecV1=true;for(const j in state.chars){const c=state.chars[j],s=c&&c.sage;if(!s||typeof s!=="object")continue;
   if(j==="Sage"&&!c.ec)c.ec={on:s.ecOn!=null?!!s.ecOn:true,spPct:s.autoSpPct!=null?s.autoSpPct:EC_D.spPct};delete s.ecOn;delete s.autoSpPct}save()})();
 // ---- helpers ----
+// a short message at the bottom of the screen
+let TOAST_T=0;
+function showToast(msg,ms=4000){const el=$("toast");if(!el)return;el.textContent=msg;el.hidden=false;clearTimeout(TOAST_T);TOAST_T=setTimeout(()=>{el.hidden=true},ms)}
 const sumStat=v=>String(v??"").split("+").reduce((a,x)=>a+(parseFloat(x)||0),0);
 const fmtN=n=>isFinite(n)?Math.round(n).toLocaleString("en-GB"):"–";
 const fmtT=t=>new Date(t).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
@@ -100,6 +135,9 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;","
 const num=(v,d=0)=>{const x=+v;return isFinite(x)?x:d};
 const dbUrl=m=>`https://rozerodb.com/monsters/${m.id}`;
 const lvExp=lv=>EXP_TABLE[lv]||null;
+// the server's base level cap: raise it when a patch does. At it base EXP no longer counts, so the EXP Hunter ranks by zeny
+const MAX_BASE_LV=70;
+const atMaxLv=()=>num(C().baseLv)>=MAX_BASE_LV;
 // Even Share: a kill gives the party 100% + 10% per member beyond the first, split evenly (110% for 2, 120% for 3 ... 210% for 12),
 // for base and job EXP alike. Checked in game with +20% EXP: Boulder Dwarf Captain (32,822) → 15,753 each for 3 members, 12,800 for 4;
 // Squad Leader (33,361) → 22,017 for 2. The game shares EXP by damage dealt, so a kill can come out 1 EXP off

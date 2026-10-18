@@ -1347,6 +1347,7 @@ t("share links get a real two-account backup back", () => {
     const before = JSON.parse(r("JSON.stringify(state)")), packed = r("JSON.stringify(packState(state))");
     const after = JSON.parse(r(`JSON.stringify(unpackState(JSON.parse(${JSON.stringify(packed)})))`));
     for (const j in before.chars) delete before.chars[j].bx;
+    before.sessions.forEach(s => delete s.walk);                              // worked out again from the snapshot
     const has = (x, y, at) => { if (x && typeof x === "object" && !Array.isArray(x)) for (const k in x) has(x[k], y?.[k], `${at}.${k}`); else assert.deepEqual(y, x, at) };
     has(before, after, a.name);
     assert.ok(packed.length < JSON.stringify(before).length, a.name);
@@ -1441,6 +1442,145 @@ t("preset cast times and delays match the in-game skill table", () => {
     const r=skRow(s,s.max),near=(a,b)=>Math.abs(a-b)<1e-9;
     if(!near(p.fct,(r[4]||0)/1000)||!near(p.vct,(r[3]||0)/1000)||!near(p.delay,Math.max(r[5]||0,r[6]||0)/1000))out.push(j+": "+p.name)}}return out.join(", ")})()`);
   assert.equal(bad, "");
+});
+
+t("walking comes from the stats a session was logged with: lowering ATK or MATK only adds fight time", () => {
+  const bk = JSON.parse(readFileSync(new URL("tests/fixtures/backup-2-accounts.json", root), "utf8"));
+  const app = load(bk.accounts[0].data);                                     // a Sage on Spell Fist (Hindsight auto) with 17 sessions
+  app("renderAll()");
+  assert.equal(app("state.sessions.filter(s=>s.snap&&s.snap.est).length"), 17);   // saved before snapshots: they take today's stats once
+  const w0 = app("walkSec()"), maps = app(`JSON.stringify(Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)))`);
+  const secs = () => JSON.parse(app(`JSON.stringify(${maps}.map(mp=>{const r=mapStats(mp,walkSec());return r?r.secT:null}))`));
+  assert.match(app("walkSrcTxt()"), /^walk calibrated from nrd_dun02 run 8/);
+  // the self-check: on every open map, sec / kill never falls when MATK or ATK goes down, and the walking stays put
+  let before = secs();
+  for (const lower of [`C().matkTxt="114+172"`, `C().matkTxt="114+100"`, `C().atkTxt="29+60"`]) {
+    app(`${lower};renderAll()`);
+    near(app("walkSec()"), w0, lower);
+    const after = secs();
+    JSON.parse(maps).forEach((mp, i) => { if (before[i] != null && after[i] != null) assert.ok(after[i] >= before[i] - 1e-9, `${mp}: ${before[i]} → ${after[i]} after ${lower}`) });
+    before = after;
+  }
+  assert.equal(app("C().matkTxt"), "114+100");                               // working a session out puts your character back
+});
+
+t("a session keeps the stats it was logged with", () => {
+  setup("Knight", { atkTxt: "100+300", hitTxt: "400", wAtk: 0, weapon: "Two-handed spear", wElem: "Neutral", st: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  const t0 = 1e12;
+  run(`state.sessions=[{id:'b',name:'b',job:'Knight',mobIds:[1013],entries:[{t:${t0},lv:30,pct:10},{t:${t0 + 36e5},lv:30,pct:15}]}];state.current='b';snapSession(cur())`);   // Wolves
+  const w = run("walkSec()");
+  near(w, run("pace0(cur(),true).walk"));
+  run(`C().atkTxt="100+100";applyConsumables()`);                           // less weapon ATK: longer fights
+  near(run("walkSec()"), w);                                                 // the session's walking doesn't move
+  assert.ok(run("pace0(cur(),true).walk") < w);                              // (worked out from today's stats it would shrink)
+  near(run("sessionPace(cur()).fight") + w, run("sessionPace(cur()).obs"));  // its fight time is the logged one too
+  assert.equal(run("C().atkTxt"), "100+100");
+  assert.match(run("walkSrcTxt()"), /^walk calibrated from b \(stats from /);
+  run(`cur().entries.push({t:${t0 + 72e5},lv:30,pct:20});snapSession(cur())`);   // logging again takes the stats you have then
+  assert.ok(run("walkSec()") < w);
+});
+
+t("deaths: the EXP a death costs isn't negative EXP / hr", () => {
+  const t0 = 1e12, L = run("lvExp(30)"), st = es => run(`cur().entries=${JSON.stringify(es)};cur().pauses=[];stats(cur())`);
+  // the Died button: your EXP just before (20%), then a second later 10% less
+  const b = st([{ t: t0, lv: 30, pct: 10 }, { t: t0 + 36e5, lv: 30, pct: 20 }, { t: t0 + 36e5 + 1000, lv: 30, pct: 10, died: 10 }]);
+  near(b.avgRaw, 0.1 * L / ((36e5 + 1000) / 36e5));
+  assert.equal(b.deaths, 1);
+  near(b.recRaw, 0.1 * L / ((36e5 + 1000) / 36e5));                         // the last minute runs from before the death
+  // only the EXP after a death, noted later (the form's "Died since the last entry" or "died" on a pasted line): the 10% comes back
+  near(st([{ t: t0, lv: 30, pct: 10 }, { t: t0 + 36e5, lv: 30, pct: 15, died: 10 }]).avgRaw, 0.15 * L);
+  // dying at 3%: it takes you to 0%, so only 3% is given back
+  near(st([{ t: t0, lv: 30, pct: 0 }, { t: t0 + 36e5, lv: 30, pct: 3 }, { t: t0 + 36e5 + 1000, lv: 30, pct: 0, died: 10 }]).avgRaw, 0.03 * L / ((36e5 + 1000) / 36e5));
+  near(st([{ t: t0, lv: 30, pct: 10 }, { t: t0 + 36e5, lv: 30, pct: 5 }]).avgRaw, -0.05 * L);   // a drop not marked as a death still counts
+});
+
+t("another tab saved: a stale tab doesn't overwrite it, it adds its new entries and reloads", () => {
+  const key = "rozero-farm-planner-v1", sess = (es) => ({ id: "s1", name: "x", mobIds: [], entries: es.map(t => ({ t, lv: 30, pct: t })) });
+  const store = { [key]: JSON.stringify({ job: "Knight", current: "s1", tab: "char", sessions: [sess([1, 2])] }) };
+  const a = load(null, store), b = load(null, store);                        // two tabs on one account
+  for (const tab of [a, b]) tab("globalThis.RELOADS=0;location={reload(){RELOADS++}}");
+  a("cur().entries.push({t:3,lv:30,pct:3});save()");
+  const rev = JSON.parse(store[key]).rev;
+  assert.ok(rev > 0);
+  b("cur().entries=cur().entries.filter(e=>e.t!==1);cur().entries.push({t:4,lv:30,pct:4});cur().pauses=[{from:5,to:6}];C().baseLv=55;save()");
+  const s = JSON.parse(store[key]);
+  assert.deepEqual(s.sessions[0].entries.map(e => e.t), [1, 2, 3, 4]);       // a's entry stays, b's new one is added by time
+  assert.deepEqual(s.sessions[0].pauses, [{ from: 5, to: 6 }]);
+  assert.equal(s.rev, rev + 1);
+  assert.notEqual(s.chars && s.chars.Knight && s.chars.Knight.baseLv, 55);   // b's other changes give way to the newer save
+  assert.equal(b("RELOADS"), 1);
+  b("cur().entries.push({t:7,lv:30,pct:7});save()");                         // until it has reloaded it writes nothing more
+  assert.equal(JSON.parse(store[key]).sessions[0].entries.length, 4);
+  a("cur().entries=cur().entries.filter(e=>e.t!==2);save()");               // a, also behind now, merges too: nothing of its own is new
+  assert.deepEqual(JSON.parse(store[key]).sessions[0].entries.map(e => e.t), [1, 2, 3, 4]);
+  assert.equal(a("RELOADS"), 1);
+  const c = load(null, store);                                               // a fresh tab saves as usual
+  c("cur().entries=cur().entries.filter(e=>e.t!==2);save()");
+  assert.deepEqual(JSON.parse(store[key]).sessions[0].entries.map(e => e.t), [1, 3, 4]);
+});
+
+t("status-window gear lines: ignore physical or magic DEF of a race", () => {
+  const plant = MOB.replace("'Brute'", "'Plant'");
+  setup("Assassin", { atkTxt: "100+300", wAtk: 0, weapon: "Katar", wElem: "Neutral", st: {}, eq: [{ by: "ignDefRace", t: "Brute", v: 8 }, { by: "ignMdefRace", t: "Brute", v: 20 }],
+    a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  near(run(`effDef(${MOB})`), 20 * 0.92); near(run(`effDef(${plant})`), 20);  // against Brutes only
+  near(run(`effMdef(${MOB})`), 10 * 0.8); near(run(`effMdef(${plant})`), 10);
+  assert.ok(run(`dmgPerHit(${MOB})`) > run(`dmgPerHit(${plant})`));
+  run("C().ignDef=50");                                                      // on top of plain ignore DEF
+  near(run(`effDef(${MOB})`), 20 * 0.42);
+});
+
+t("HP lost: casters and ranged attackers still take hits; Vitata's Heal covers it instead of HP items", () => {
+  const agg = MOB.replace("drops:[]", "drops:[],agg:true");
+  setup("Wizard", { matkTxt: "200+300", fleeTxt: "100", defTxt: "10+10", maxHp: 3000, hitScale: 0.3, mobInterval: 1.5, st: { vit: "1" }, a: { name: "x", type: "magic", pct: 100, hits: 3, el: "Fire", cast: 1, delay: 1, sp: 10, targets: 1 } });
+  const loss = run(`hpLossPerMin(${agg})`);
+  assert.ok(loss > 0);
+  near(run(`hpItemsPerMin(${agg})`), loss);
+  near(run(`hpTakenPerMin(${agg})`) - run("hpRegenPerSec()") * 60, loss);
+  run("CRD().vitata=true");
+  assert.ok(run(`hpLossPerMin(${agg})`) > 0);                               // still lost: the Heals cost SP and time instead
+  assert.equal(run(`hpItemsPerMin(${agg})`), 0);
+  const m = run(`mapStats0("mjolnir_05",2)`);                                // Argiope, Mantis and Driller on Mt. Mjolnir
+  assert.ok(m.hpm > 0); assert.equal(m.hpi, 0); assert.equal(m.hpZ, 0);
+  setup("Hunter", { atkTxt: "100+300", fleeTxt: "100", defTxt: "10+10", maxHp: 3000, weapon: "Bow", st: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  assert.ok(run(`hpLossPerMin(${agg})`) > 0);                               // a bow too
+});
+
+t("max base level: the EXP Hunter ranks by net zeny, EXP gear lines are flagged", () => {
+  setup("Knight", { baseLv: 69 });
+  run("state.tsort={}");
+  assert.equal(run("MAX_BASE_LV"), 70);
+  assert.equal(run(`JSON.stringify(tblSort("bestTable"))`), '["epm",-1]');
+  run("C().baseLv=MAX_BASE_LV");
+  assert.equal(run(`JSON.stringify(tblSort("bestTable"))`), '["net",-1]');
+  run(`state.tsort["bestTable@max"]=["zph",-1]`);                            // a column you pick at the max level is kept for it
+  assert.equal(run(`JSON.stringify(tblSort("bestTable"))`), '["zph",-1]');
+  run("C().baseLv=60");
+  assert.equal(run(`JSON.stringify(tblSort("bestTable"))`), '["epm",-1]');
+});
+
+t("EXP Hunter: weight columns and calibration to your logs", () => {
+  setup("Knight", { atkTxt: "100+300", hitTxt: "400", wAtk: 0, weapon: "Two-handed spear", wElem: "Neutral", maxW: 3000, curW: 300, sellAt: 70, townMin: 3, st: {},
+    a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  const r = run(`mapStats0("prt_f08",2)`), wk = run(`(()=>{let a=0,n=0;MAPMOBS.prt_f08.forEach(({m,n:c})=>{if(m.boss||m.expUnknown||!isFinite(fightSec(m)))return;a+=c*weightKill(m);n+=c});return a/n})()`);
+  near(r.wk, wk);
+  near(r.wph, r.wk * 3600 / r.secT);
+  near(r.trip, (3000 * 0.7 - 300) / r.wk * r.secT / 3600);                 // kills to the sell point × seconds a kill
+  run("C().maxW=0;C().st={}");
+  assert.equal(run(`mapStats0("prt_f08",2).trip`), null);                    // weight off
+  const c = run(`(()=>{const r=mapStats0("prt_f08",2),o={...r};calApply(r,0.5);return {o,r}})()`);
+  near(c.r.epm, c.o.epm / 2); near(c.r.secT, c.o.secT * 2);
+  near(c.r.net, c.o.zg / 2 - (c.o.zg - c.o.zph) - c.o.hpZ);                // loot halves, hourly costs don't
+  assert.equal(run("median([3,1,2])"), 2); assert.equal(run("median([4,1,2,3])"), 2.5); assert.equal(run("median([])"), null);
+  // two 2-hour sessions: the one the walking comes from projects exactly; the slower one is under its projection
+  const t0 = 1e12, sess = (id, pct) => `{id:'${id}',name:'${id}',job:'Knight',mobIds:[1002],entries:[{t:${t0},lv:30,pct:10},{t:${t0 + 72e5},lv:30,pct:${pct}}]}`;
+  run(`state.sessions=[${sess("a", 20)},${sess("b", 15)}];state.current='a';state.sessions.forEach(snapSession)`);
+  const cal = run(`calInfo(walkSec())`), at = cal.maps[run("sessMap(cur())")].list;
+  assert.equal(cal.n, 2);
+  near(at.find(x => x.s.id === "a").ratio, 1);
+  const rb = at.find(x => x.s.id === "b").ratio;
+  assert.ok(rb < 1);
+  near(cal.k, (1 + rb) / 2);
 });
 
 console.log(`${n} tests passed`);

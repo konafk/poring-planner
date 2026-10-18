@@ -98,9 +98,11 @@ const partyCut=(v,s=cur())=>Math.floor(v*(100+partyBonus(s))/100/partyN(s));
 const killExp=(m,s=cur())=>Math.floor(partyCut(m.exp,s)*(1+(expGear(m)+num(state.bonus)+consSum("exp_base"))/100));
 const killJobExp=(m,s=cur())=>Math.floor(partyCut(m.job,s)*(1+(expGear(m)+num(state.jobBonus)+consSum("exp_job"))/100));
 const takenMul=m=>{const c=C();if(!c.bx)return 1;const t=c.bx.taken;return (1+(t.race[m.race]||0)/100)*(1+(t.ele[m.el||"Neutral"]||0)/100)*(1+(t.kind[m.boss?"boss":"normal"]||0)/100)};
-// ignore DEF / MDEF %: lowers the monster's hard defence before the (4000+DEF)/(4000+10·DEF) or (1000+MDEF)/(1000+10·MDEF) factor
-const effDef=m=>(m.def||0)*(1-Math.min(100,Math.max(0,num(C().ignDef)))/100);
-const effMdef=m=>(m.mdef||0)*(1-Math.min(100,Math.max(0,num(C().ignMdef)))/100);
+// ignore DEF / MDEF %: lowers the monster's hard defence before the (4000+DEF)/(4000+10·DEF) or (1000+MDEF)/(1000+10·MDEF) factor.
+// Gear that ignores it for one race ("Ignore P.DEF of Brute 8%", c.bx.ignRace) adds to it against that race
+const ignRace=(m,k)=>{const b=C().bx;return b&&b.ignRace?num(b.ignRace[k][m.race]):0};
+const effDef=m=>(m.def||0)*(1-Math.min(100,Math.max(0,num(C().ignDef)+ignRace(m,"def")))/100);
+const effMdef=m=>(m.mdef||0)*(1-Math.min(100,Math.max(0,num(C().ignMdef)+ignRace(m,"mdef")))/100);
 // Formulas from roz.prontera.info/mechanics (Ragnarok Zero, renewal core)
 // ATK is "status + gear". The weapon share takes size and element; status ATK counts twice and, with other gear, stays Neutral.
 // Dual wield: the gear side holds both weapons, so the left one's ATK comes out of the Neutral share too
@@ -200,9 +202,14 @@ const defParts=()=>{const p=String(cf("defTxt")||"0").split("+").map(x=>parseFlo
 // dodge = 95 + your FLEE − the monster's "95% flee" value, 0–95%
 const dodge=m=>m.flee95==null?null:Math.max(0,Math.min(95,95+sumStat(cf("fleeTxt"))-m.flee95));
 const mobHitDmg=m=>{if(m.atkMin==null)return null;const {soft,hard}=defParts();return Math.max(1,((m.atkMin+m.atkMax)/2*(4000+hard)/(4000+10*hard)-soft)*takenMul(m))};
-// HP lost per minute that HP items must cover: defense() already takes off Hunter Fly and HP regen (hpRegenPerSec);
-// with Vitata your Heal casts cover the rest (paid in SP and time, see healsPerSec), so no HP items
-const hpLossPerMin=m=>{const d=defense(m);return d?CRD().vitata&&healHpEff()>0?0:d.hp*60:null};
+// HP lost per minute: what the monster's hits take (after Energy Coat) less Hunter Fly and HP regen (hpRegenPerSec), already in defense().
+// Ranged and magic attackers count the same hits: aggressive monsters and ones that walk up to you while you cast still reach you
+// (× "swings reach you"). hpItemsPerMin is what HP items must cover: with Vitata your Heal casts cover it (paid in SP and time, see
+// healsPerSec), so none; hpTakenPerMin is the damage before regen
+const hpLossPerMin=m=>{const d=defense(m);return d?d.hp*60:null};
+const vitHeals=()=>CRD().vitata&&healHpEff()>0;
+const hpItemsPerMin=m=>{const d=defense(m);return d?vitHeals()?0:d.hp*60:null};
+const hpTakenPerMin=m=>{const d=defense(m);return d?d.taken*60:null};
 // ---- Sage: full Spell Fist model (bolt choice, Hindsight, Double Bolt, SP items; Energy Coat from ECO(), Vitata, Hunter Fly and Side Winder from CRD()) ----
 const SAGE_D={sfLv:10,boltLv:10,bolts:{Fire:true,Water:true,Wind:true},hsOn:false,hsAuto:true,hsLv:10,hsWorth:50000,dbOn:false,dbLv:5};
 const G=()=>{const c=C();if(!c.sage)c.sage={};for(const k in SAGE_D)if(c.sage[k]==null)c.sage[k]=JSON.parse(JSON.stringify(SAGE_D[k]));return c.sage};
@@ -438,14 +445,19 @@ const pausedMs=(s,a,b)=>(s.pauses||[]).reduce((x,p)=>x+Math.max(0,Math.min(b,p.t
 const activeH=(s,a,b)=>(b-a-pausedMs(s,a,b))/36e5;
 // logging an entry after a pause started means you're back
 const autoResume=(s,t)=>{const p=openPause(s);if(p&&t>=p.from)p.to=Math.max(p.from,t)};
+// a death (entry.died: the EXP % it cost) isn't negative EXP/hr: the drop to that entry is given back, up to the penalty. With the
+// Died button the entry before it is your EXP just before dying, so that pair adds nothing; a pasted death after EXP gained keeps the gain
+const deathBack=(e,q,base)=>{if(!e.died)return 0;const pen=e.died/100*(lvExp(e.lv)||100),d=cumulative(e,base)-cumulative(q,base);return e.t-q.t<=6e4?Math.min(pen,Math.max(0,-d)):pen};
+// EXP gained from es[i] to es[j] (sorted), with deaths given back; never below 0 across a death
+function gained(es,i,j,base){let x=0;for(let k=i+1;k<=j;k++){const d=cumulative(es[k],base)-cumulative(es[k-1],base);x+=es[k].died?Math.max(0,d+deathBack(es[k],es[k-1],base)):d}return x}
 function stats(s){
   const es=[...s.entries].sort((a,b)=>a.t-b.t);if(es.length<2)return null;
   // the recent rate runs from the newest entry at least a minute (unpaused) before the last, so a death logged a second after your EXP doesn't blow it up
-  const base=es[0].lv,last=es[es.length-1],prev=es.slice(0,-1).reverse().find(e=>activeH(s,e.t,last.t)>=1/60)||es[es.length-2];const raw=e=>cumulative(e,base);const hrs=(a,b)=>activeH(s,a.t,b.t);
+  const base=es[0].lv,n=es.length-1,last=es[n],pi=es.slice(0,-1).map((e,i)=>i).reverse().find(i=>activeH(s,es[i].t,last.t)>=1/60)??n-1,prev=es[pi];const hrs=(a,b)=>activeH(s,a.t,b.t);
   if(hrs(es[0],last)<=0)return null;
-  const avgRaw=(raw(last)-raw(es[0]))/hrs(es[0],last);const recRaw=hrs(prev,last)>0?(raw(last)-raw(prev))/hrs(prev,last):0;const L=lvExp(last.lv)||100;
+  const avgRaw=gained(es,0,n,base)/hrs(es[0],last);const recRaw=hrs(prev,last)>0?gained(es,pi,n,base)/hrs(prev,last):0;const L=lvExp(last.lv)||100;
   return {es,last,prev,avgRaw,recRaw,avgPct:avgRaw/L*100,recPct:recRaw/L*100,L,recentMin:Math.round(hrs(prev,last)*60),spanMin:Math.round(hrs(es[0],last)*60),
-    fullH:avgRaw>0?L/avgRaw:Infinity,nextH:avgRaw>0?L*(1-last.pct/100)/avgRaw:Infinity};
+    fullH:avgRaw>0?L/avgRaw:Infinity,nextH:avgRaw>0?L*(1-last.pct/100)/avgRaw:Infinity,deaths:es.filter(e=>e.died).length};
 }
 // pace and walking only make sense for sessions of the job you have selected (fight time uses its attack)
 // a session's monsters are weighted by their spawn counts on the session's map: the open map where most of them spawn (ties: more spawns)
@@ -457,17 +469,40 @@ const spawnOn=(m,mp)=>((SPAWN[m.id]||[]).find(x=>x[0]===mp)||[])[1]||1;
 function sessMix(s,keep){const mp=sessMap(s);let list=sessMobs(s).map(m=>({m,w:spawnOn(m,mp)}));const kn=list.filter(x=>!x.m.expUnknown);if(kn.length)list=kn;if(keep){const k=list.filter(x=>keep(x.m));if(k.length)list=k}
   const W=list.reduce((a,x)=>a+x.w,0);if(!W)return null;
   const avg=f=>list.reduce((a,x)=>a+x.w*f(x.m),0)/W;return {list,W,mp,avg}}
-function sessionPace(s){
+function pace0(s,same){
   // with this job's attack, monsters you can't hurt aren't being killed, so they're left out of the mix
-  const same=(s.job||state.job)===state.job;const st=stats(s);const mix=sessMix(s,same?m=>isFinite(bestFight(m)):null);if(!st||!mix||st.avgRaw<=0||!(mix.avg(m=>m.exp)>0))return null;
+  const st=stats(s);const mix=sessMix(s,same?m=>isFinite(bestFight(m)):null);if(!st||!mix||st.avgRaw<=0||!(mix.avg(m=>m.exp)>0))return null;
   const kph=st.avgRaw/mix.avg(m=>killExp(m,s));const obs=3600/kph;const fight=same?mix.avg(bestFight):NaN;
-  return {kph,obs,fight,walk:isFinite(fight)&&obs>=fight?obs-fight:null,zk:mix.avg(zenyKill),mix,st};
+  return {kph,obs,fight,walk:isFinite(fight)&&obs>=fight?obs-fight:null,mix,st};
 }
-// the current session's walking time; without one, the first other session of this job that has one (the others are only worked out then)
-const walkSec=()=>{
-  const c=cur(),p=sessionPace(c);if(p&&p.walk!=null)return Math.max(1,p.walk);
-  for(const s of state.sessions){if(s===c||(s.job||state.job)!==state.job)continue;const q=sessionPace(s);if(q&&q.walk!=null)return Math.max(1,q.walk)}
-  return 2};
+// ---- a session's stats: the character as it was when you logged its entries (s.snap = {at, c}), so its fight time and the walking
+// worked out from it don't move when you change gear or stats afterwards (that only changes fight time). A session saved before
+// snapshots takes the stats you have when it's first worked out (est) ----
+// (gear bonuses, bx, are worked out again from the gear lines or Build from gear when it's used)
+const charSnap=(c=C())=>{const o=JSON.parse(JSON.stringify(c));delete o.bx;if(o.sage)delete o.sage._note;return o};
+const snapSession=s=>{if((s.job||state.job)===state.job)s.snap={at:Date.now(),c:charSnap()}};
+// sessions of this job with a pace and no snapshot yet take the stats you have now, after renderAll has worked everything out
+const snapEst=()=>{let n=0;state.sessions.forEach(s=>{if(!s.snap&&(s.job||state.job)===state.job&&stats(s)){s.snap={at:Date.now(),c:charSnap(),est:true};n++}});if(n)save()};
+// the model with another copy of this job's character swapped in: redoes what renderAll works out from it, then puts yours back
+function withChar(c,fn){const job=state.job,real=state.chars[job],k={SKFX,EFF,BUILD_LAST};state.chars[job]=JSON.parse(JSON.stringify(c));
+  try{SKFX=skillEffects(C());sageFromTree(C());applyBuild();applyConsumables();return fn()}
+  finally{state.chars[job]=real;SKFX=k.SKFX;EFF=k.EFF;BUILD_LAST=k.BUILD_LAST}}
+// what the walking depends on besides the snapshot: the entries, pauses, monsters, party and EXP bonus
+const calKey=s=>[s.snap?s.snap.at:0,s.mobIds.join("."),sessMap(s),partyN(s),num(state.bonus),...s.entries.map(e=>`${e.t}:${e.lv}:${e.pct}:${e.died||0}`),...(s.pauses||[]).map(p=>`${p.from}-${p.to??""}`)].join("|");
+// a session's pace with its own stats, worked out once and kept on it (s.walk = {key, sec, fight, kph}); null for another job's session
+// Until a session has a snapshot (one saved before them) it follows your stats; renderAll then gives it one (snapEst)
+function sessCal(s){if((s.job||state.job)!==state.job||!stats(s))return null;const key=calKey(s);if(s.walk&&s.walk.key===key)return s.walk;
+  if(!s.snap){const p=pace0(s,true);return {key,sec:p&&p.walk!=null?p.walk:null,fight:p&&isFinite(p.fight)?p.fight:null,kph:p?p.kph:null}}
+  const p=withChar(s.snap.c,()=>pace0(s,true));
+  s.walk={key,sec:p&&p.walk!=null?p.walk:null,fight:p&&isFinite(p.fight)?p.fight:null,kph:p?p.kph:null};return s.walk}
+function sessionPace(s){const same=(s.job||state.job)===state.job,p=pace0(s,false);if(!p)return null;
+  const k=same?sessCal(s):null,mix=same?sessMix(s,m=>isFinite(bestFight(m))):p.mix;
+  return k?{...p,kph:k.kph,obs:3600/k.kph,fight:k.fight??NaN,walk:k.sec,zk:mix.avg(zenyKill),mix,cal:true}:{...p,zk:mix.avg(zenyKill)}}
+// the current session's walking time; without one, the first other session of this job that has one. s: the session it's calibrated from
+const walkInfo=()=>{const c=cur();for(const s of [c,...state.sessions.filter(x=>x!==c)]){const k=sessCal(s);if(k&&k.sec!=null)return {sec:Math.max(1,k.sec),s}}return {sec:2,s:null}};
+const walkSec=()=>walkInfo().sec;
+// for tooltips: "walk calibrated from <session>" (with when its stats were taken), or why it's 2s
+const walkSrcTxt=()=>{const {s}=walkInfo();return s?`walk calibrated from ${s.name}${s.snap&&s.snap.est?" (with the stats you had when it was first worked out)":s.snap?` (stats from ${fmtD(s.snap.at)} ${fmtT(s.snap.at)})`:""}`:"walk 2s until a session of this job has a pace"};
 // job EXP needed for your current job level (Novice / 1st / 2nd job table)
 const FIRST_JOBS=["Swordsman","Mage","Archer","Acolyte","Merchant","Thief"];
 const jobTier=(job=state.job)=>job==="Novice"?"novice":FIRST_JOBS.includes(job)?"first":"second";
@@ -537,29 +572,51 @@ function mobRow00(m,w){
   // zk: zeny per kill after what the skills use up; hc: SP items, ASPD potion and ground buffs per hour; zph: net zeny per hour
   // sph: SP items per hour (what huntCostHr counts)
   const zc=skillZeny(m),zk=zenyKill(m)-zc,sph=itemsPerSec()*3600,hc=sph*spItemPrice()+hourCostHr();
-  return {sec,tot,epm:ok?epk/tot*60:0,epk,jpm:ok?jpk/tot*60:0,jpk,hitc:hitChance(m),mult:hitPctOf(m),uses:usesPerKill(m),dodge:dodge(m),hpm:hpLossPerMin(m),zk,zc,hc,sph,zph:ok?zk/tot*3600-hc:0};
+  return {sec,tot,epm:ok?epk/tot*60:0,epk,jpm:ok?jpk/tot*60:0,jpk,hitc:hitChance(m),mult:hitPctOf(m),uses:usesPerKill(m),dodge:dodge(m),hpm:hpLossPerMin(m),hpi:hpItemsPerMin(m),hpt:hpTakenPerMin(m),zk,zc,hc,sph,zph:ok?zk/tot*3600-hc:0};
 }
 // map averages, weighted by spawn counts; monsters you can't hurt are skipped (you walk past them)
 function mapStats0(mp,w){
-  const list=(MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m));let N=0,n=0,exp=0,time=0,fight=0,z=0,zc=0,hc=0,spi=0,hp=0,hpN=0;const skip=[],unk=[];
+  const list=(MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m));let N=0,n=0,exp=0,time=0,fight=0,z=0,zc=0,hc=0,spi=0,hp=0,hpi=0,hpt=0,hpN=0,wt=0;const skip=[],unk=[];
   list.forEach(({m,n:c})=>{N+=c;if(m.expUnknown){unk.push(m.name);return}const r=mobRow0(m,w);if(!isFinite(r.sec)){skip.push(m.name);return}
-    n+=c;exp+=c*r.epk;time+=c*r.tot;fight+=c*r.sec;z+=c*r.zk;zc+=c*r.zc;hc+=c*r.hc*r.tot;spi+=c*r.sph*r.tot;if(r.hpm!=null){hp+=c*r.hpm*r.tot;hpN+=c*r.tot}});
+    n+=c;exp+=c*r.epk;time+=c*r.tot;fight+=c*r.sec;z+=c*r.zk;zc+=c*r.zc;hc+=c*r.hc*r.tot;spi+=c*r.sph*r.tot;wt+=c*weightKill(m);if(r.hpm!=null){hp+=c*r.hpm*r.tot;hpi+=c*r.hpi*r.tot;hpt+=c*r.hpt*r.tot;hpN+=c*r.tot}});
   if(!n)return null;
   // zg: zeny / hr after skill items and zeny; zph also takes off SP items, the ASPD potion and ground buffs (per monster, over the time spent on it)
   // healing (Recovery items): SP items (spHr a hour, spZ zeny) and HP items for the HP lost (hpHr, hpZ). zb: zeny / hr before healing, net: after it
-  const zg=z/time*3600,hcHr=hc/time,hpm=hpN?hp/hpN:null,spHr=spi/time,spZ=spHr*spItemPrice(),hh=hpHeal(hpm);
-  return {mp,N,epm:exp/time*60,secT:time/n,sec:fight/n,walk:w,sell:time/n-fight/n-w,epk:exp/n,zg,zph:zg-hcHr,zcost:zc/time*3600+hcHr,hpm,skip:skip.length,skipNames:skip,unk:unk.length,unkNames:unk,
-    spHr,spZ,hpHr:hh.n,hpZ:hh.z,heal:hh.z+spZ,zb:zg-hcHr+spZ,net:zg-hcHr-hh.z};
+  // weight: wk picked up a kill, wph an hour, trip the hours from leaving town to leaving it again (null with weight off or weightless drops)
+  const zg=z/time*3600,hcHr=hc/time,hpm=hpN?hp/hpN:null,hpiM=hpN?hpi/hpN:null,spHr=spi/time,spZ=spHr*spItemPrice(),hh=hpHeal(hpiM),wk=wt/n,room=wOn()?wRoom(sellLim()):0;
+  return {mp,N,epm:exp/time*60,secT:time/n,sec:fight/n,walk:w,sell:time/n-fight/n-w,epk:exp/n,zg,zph:zg-hcHr,zcost:zc/time*3600+hcHr,hpm,hpi:hpiM,hpt:hpN?hpt/hpN:null,skip:skip.length,skipNames:skip,unk:unk.length,unkNames:unk,
+    spHr,spZ,hpHr:hh.n,hpZ:hh.z,heal:hh.z+spZ,zb:zg-hcHr+spZ,net:zg-hcHr-hh.z,wk,wph:wt/time*3600,trip:wk>0&&room>0?room/wk*(time/n)/3600:null};
 }
 // best converter per monster (by EXP/min) and one converter per map
 function mobRow(m,w){let best=null;elOptions().forEach(el=>{const r=withEl(el,()=>mobRow0(m,w));r.el2=el;if(!best||r.epm>best.epm)best=r});return best}
 function mapStats(mp,w){let best=null;elOptions().forEach(el=>{const r=withEl(el,()=>mapStats0(mp,w));if(r){r.el2=el;if(!best||r.epm>best.epm)best=r}});return best}
-const bestFight=m=>{const r=mobRow(m,0);return withEl(r.el2,()=>fightSec(m))};
+// fight time with the best converter or bolt, its SP balance against that monster (not the one you have picked)
+const bestFight=m=>mobRow(m,0).sec;
 const currentMap=()=>sessMap(cur());
 // EXP/min for just the session's monsters (spawn-weighted, fight + walk), best converter like mapStats; the baseline for "Projected"
 function sessEpm(s,w){const mix=sessMix(s);if(!mix)return null;let best=null;
   elOptions().forEach(el=>{const v=withEl(el,()=>{let e=0,t=0;mix.list.forEach(({m,w:c})=>{const r=mobRow0(m,w);if(!isFinite(r.sec))return;e+=c*r.epk;t+=c*r.tot});return t>0?e/t*60:0});if(best==null||v>best)best=v});
   return best||null}
+// ---- real vs projected: each logged session of this job against what the EXP Hunter projects for it: kills / hr at the walking in
+// use (w), with the session's own stats (s.snap), monsters and spawn weights, the converter or bolt that kills fastest ----
+const PROJ={};
+function sessProj(s,w){const c=sessCal(s);if(!c||!(c.kph>0))return null;const key=calKey(s)+"|"+w.toFixed(4),o=PROJ[s.id];if(o&&o.key===key)return o.v;
+  const f=()=>{const mix=sessMix(s,m=>isFinite(bestFight(m)));if(!mix)return null;let best=null;
+    elOptions().forEach(el=>{const t=withEl(el,()=>mix.list.reduce((a,{m,w:n})=>a+n*mobRow0(m,w).tot,0))/mix.W;if(isFinite(t)&&t>0&&(best==null||3600/t>best))best=3600/t});return best};
+  const kph=s.snap?withChar(s.snap.c,f):f(),v=kph?{real:c.kph,proj:kph,ratio:c.kph/kph}:null;PROJ[s.id]={key,v};return v}
+const median=a=>{const b=[...a].sort((x,y)=>x-y),h=b.length>>1;return !b.length?null:b.length%2?b[h]:(b[h-1]+b[h])/2};
+// k: the median of real ÷ projected over sessions longer than 60 min (n of them), which can calibrate the EXP Hunter (state.calOn);
+// maps: per map, its sessions, their median ratio and a tooltip
+function calInfo(w){const out={k:null,n:0,maps:{}},rs=[];
+  state.sessions.forEach(s=>{const p=sessProj(s,w);if(!p)return;const st=stats(s),mp=sessMap(s);if(st.spanMin>60)rs.push(p.ratio);
+    if(mp)(out.maps[mp]||(out.maps[mp]={list:[]})).list.push({s,st,...p})});
+  out.k=median(rs);out.n=rs.length;
+  for(const mp in out.maps){const m=out.maps[mp];m.ratio=median(m.list.map(x=>x.ratio));
+    m.tip=m.list.map(x=>`${x.s.name} (${x.st.spanMin} min): ${fmtN(x.real)} kills/hr logged vs ${fmtN(x.proj)} projected = ${x.ratio.toFixed(2)}×`).join("\n")+"\nprojected with each session's own stats and the walking in use"}
+  return out}
+// the calibration on one EXP Hunter row: kills come k times as fast, so EXP / min, loot and weight per hour scale by k; HP and SP
+// per hour and the hourly costs (SP items, the ASPD potion, ground buffs, HP items) don't
+function calApply(r,k){const hc=r.zg-r.zph;r.epm*=k;r.secT/=k;r.zg*=k;r.zph=r.zg-hc;r.zb=r.zph+r.spZ;r.net=r.zph-r.hpZ;r.wph*=k;if(r.trip!=null)r.trip/=k;r.cal=k}
 // ---- sell timer: how long the session's monsters take to fill you from the weight you have now to your sell point ----
 // spawn-weighted like the session pace: weight and seconds per kill are averaged over the mix, so minutes = room / weight per kill ×
 // seconds per kill (past 70% at the no-regen pace; if one monster can't keep fighting there, the trip stops at 70%)
@@ -588,7 +645,8 @@ function startTrip(s,now=Date.now()){const min=tripMinutes(s);if(!(min>0))return
 // for the HP lost (huntCosts: hpHr, hpZ, spHr, spZ, other, cost = all of them)
 const spItemsHr=m=>{const k=SG_MOB;SG_MOB=m||null;try{return itemsPerSec()*3600}finally{SG_MOB=k}};
 const huntCostHr=m=>spItemsHr(m)*spItemPrice()+hourCostHr();
-const huntCosts=(m,hpm)=>{const spHr=spItemsHr(m),spZ=spHr*spItemPrice(),other=hourCostHr(),hh=hpHeal(hpm);return {hpm,hpHr:hh.n,hpZ:hh.z,spHr,spZ,other,cost:hh.z+spZ+other}};
+// hpi: HP lost / min that HP items cover (hpItemsPerMin)
+const huntCosts=(m,hpi)=>{const spHr=spItemsHr(m),spZ=spHr*spItemPrice(),other=hourCostHr(),hh=hpHeal(hpi);return {hpi,hpHr:hh.n,hpZ:hh.z,spHr,spZ,other,cost:hh.z+spZ+other}};
 // the monsters you hunt on a map (in-game Monster tab): state.huntOff[map] lists the ones you pass by, set by hand in the Zeny Hunter.
 // "Best-paying only" (state.huntAuto) picks for the maps you haven't set: monsters ranked by zeny per second (fight + walk), keeping as many
 // as give the most net zeny/hr while still hunting at least minN spawns (the Zeny Hunter's "Min monsters on map"): a rare spawn is
@@ -613,10 +671,10 @@ function huntMap0(mp,w,minN=0){
   const list=(MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m));const N=list.reduce((a,x)=>a+x.n,0);
   const rows=list.map(({m,n})=>({m,n,r:mobRow0(m,0)})),ok=rows.filter(x=>isFinite(x.r.sec)),skip=rows.filter(x=>!isFinite(x.r.sec)).map(x=>x.m.name);
   const all=ok.reduce((a,x)=>a+x.n,0);if(!all)return null;
-  const at0=(h,n,walk,tele)=>{let time=0,z=0,exp=0,expT=0,hp=0,hpN=0,wt=0;
-    h.forEach(({m,n:c,r})=>{const tot=killTot(m,r.sec,walk);time+=c*tot;z+=c*r.zk;wt+=c*weightKill(m);if(!m.expUnknown){exp+=c*r.epk;expT+=c*tot}if(r.hpm!=null){hp+=c*r.hpm*tot;hpN+=c*tot}});
-    const top=h.reduce((a,x)=>!a||x.n>a.n?x:a,null),kph=n/time*3600,loot=z/time*3600,hc=huntCosts(top.m,hpN?hp/hpN:null);
-    return {mp,N,n,walk,tele,kph,secT:time/n,loot,...hc,net:loot-hc.cost,zk:z/n,wk:wt/n,wph:wt/time*3600,epm:expT?exp/expT*60:null,skip:skip.length,skipNames:skip,
+  const at0=(h,n,walk,tele)=>{let time=0,z=0,exp=0,expT=0,hp=0,hpi=0,hpN=0,wt=0;
+    h.forEach(({m,n:c,r})=>{const tot=killTot(m,r.sec,walk);time+=c*tot;z+=c*r.zk;wt+=c*weightKill(m);if(!m.expUnknown){exp+=c*r.epk;expT+=c*tot}if(r.hpm!=null){hp+=c*r.hpm*tot;hpi+=c*r.hpi*tot;hpN+=c*tot}});
+    const top=h.reduce((a,x)=>!a||x.n>a.n?x:a,null),kph=n/time*3600,loot=z/time*3600,hc=huntCosts(top.m,hpN?hpi/hpN:null);
+    return {mp,N,n,walk,tele,kph,secT:time/n,loot,...hc,hpm:hpN?hp/hpN:null,net:loot-hc.cost,zk:z/n,wk:wt/n,wph:wt/time*3600,epm:expT?exp/expT*60:null,skip:skip.length,skipNames:skip,
       earn:h.map(({m,n,r})=>({m,n,zk:r.zk})).sort((a,b)=>b.n*b.zk-a.n*a.zk)}};
   const at=h=>{const n=h.reduce((a,x)=>a+x.n,0);if(!n)return null;const walked=at0(h,n,w*Math.sqrt(all/n),0);
     if(n>=all||!canTele()||noTele(mp))return walked;const jumps=all/n-1,tp=at0(h,n,w+jumps*teleSec(),jumps);return tp.net>walked.net?tp:walked};
@@ -632,8 +690,8 @@ function huntMap0(mp,w,minN=0){
   return best;
 }
 // one monster farmed on its own: its zeny per kill over fight + walk time. Both hunters also give the weight you pick up a kill (wk) and an hour (wph)
-function huntMob0(m,w){const r=mobRow0(m,w);if(!isFinite(r.sec)||!(r.tot>0))return null;const loot=r.zk/r.tot*3600,hc=huntCosts(m,r.hpm),wk=weightKill(m);
-  return {m,kph:3600/r.tot,secT:r.tot,loot,...hc,net:loot-hc.cost,zk:r.zk,wk,wph:wk*3600/r.tot,epm:m.expUnknown?null:r.epm}}
+function huntMob0(m,w){const r=mobRow0(m,w);if(!isFinite(r.sec)||!(r.tot>0))return null;const loot=r.zk/r.tot*3600,hc=huntCosts(m,r.hpi),wk=weightKill(m);
+  return {m,kph:3600/r.tot,secT:r.tot,loot,...hc,hpm:r.hpm,net:loot-hc.cost,zk:r.zk,wk,wph:wk*3600/r.tot,epm:m.expUnknown?null:r.epm}}
 // best converter (or Spell Fist bolt) by net zeny rather than EXP
 const bestBy=(fn,k)=>{let best=null;elOptions().forEach(el=>{const r=withEl(el,fn);if(r){r.el2=el;if(!best||r[k]>best[k])best=r}});return best};
 const huntMap=(mp,w,minN)=>bestBy(()=>huntMap0(mp,w,minN),"net");

@@ -209,7 +209,7 @@ t("random options come from rozerodb's affixes, filtered to what the row's gear 
   const r = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { weapon: { id: 1, opts } } }, "Knight", aspdBase);
   assert.ok(r.unmodelled.includes("Blade option not counted: Heal increase 8%"));
   assert.ok(r.unmodelled.includes("Blade option not counted: Magic Damage to Fire enemies 5%"));
-  assert.ok(r.unmodelled.some(x => x.includes("ignore_def_percent demon")));
+  assert.equal(r.acc.ignRace.def.Demon, 10);                                // ignore DEF of one race counts against that race
   assert.equal(r.acc.ignDef, 5);
   assert.equal(r.acc.taken.race.Demon, -5);
   assert.equal(r.acc.taken.ele.Water, -6);
