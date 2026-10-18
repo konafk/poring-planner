@@ -71,7 +71,10 @@ const JOBS={
    A2("Napalm Vulcan Lv5","magic",350,5,"Ghost",70,2,"3x3 area, scales with base level",Z(0.1,0.4,0.5,0.3,{blv:true})),A2("Storm Gust Lv10","magic",570,3,"Water",78,5,"(570 + INT)% per hit, up to 10 hits but monsters freeze after ~3",Z(1.2,4.8,2.5,0.3,{sadd:[["int",1]]})),
    A2("Lord of Vermilion Lv10","magic",1400,1,"Wind",96,5,"13x13 area, +INT%",Z(0.84,3.36,1.5,0.3,{sadd:[["int",1]]})),A2("Meteor Storm Lv10","magic",625,1,"Fire",64,4,"(125 + INT)% × 5 per meteor, 7 meteors over 13x13",Z(1.2,4.8,2.5,0.3,{sadd:[["int",5]]})),
    A2("Gravitational Field Lv5","magic",500,10,"Neutral",100,4,"5x5 area, scales with base level",Z(1,4,4.5,0.3,{blv:true})),A2("Sightrasher Lv10","magic",300,1,"Fire",53,3,"Needs Sight",Z(0.04,0.16,1,0.3)),...MAGE,BASIC]},
- "Sage":{w:"Book",p:[A("Spell Fist (full Sage model)","spellfist",0,1,"Fire",0,0,0,1,"Spell Fist procs with the best of your ticked bolts, plus the Sage options below"),A2("Heaven's Drive Lv5","magic",200,5,"Earth",44,3,"5x5 area, +INT%",Z(0.4,1.6,0.5,0.3,{sadd:[["int",1]]})),...MAGE,BASIC]},
+ "Sage":{w:"Book",p:[A("Spell Fist Lv10","spellfist",0,1,"Fire",0,0,0,1,"Spell Fist procs on basic attacks with the best of your ticked bolts, plus the Sage options below"),A2("Heaven's Drive Lv5","magic",200,5,"Earth",44,3,"5x5 area, +INT%",Z(0.4,1.6,0.5,0.3,{sadd:[["int",1]]})),...MAGE,BASIC,
+   // appended so saved preset indexes stay put: Hindsight's auto-cast bolts on basic attacks, alone and with Spell Fist (sf: Spell Fist, hs: Hindsight)
+   A("Hindsight Lv10","spellfist",0,1,"Fire",0,0,0,1,"Hindsight auto-casts the best of your ticked bolts on basic attacks, plus the Sage options below",{sf:false,hs:true}),
+   A("Spell Fist Lv10 + Hindsight Lv10","spellfist",0,1,"Fire",0,0,0,1,"Spell Fist and Hindsight both proc on basic attacks with the best of your ticked bolts, plus the Sage options below",{hs:true})]},
  "Hunter":{w:"Bow",p:[A2("Focused Arrow Strike Lv5","phys",1800,1,"W",24,2,"5x5 around the target, scales with base level. 1 arrow per use",Z(0.2,0.8,1.2,0.3,{blv:true,arrows:1})),...ARCH,BASIC,
    // appended so saved preset indexes stay put: the falcon (blitzHit in model.js). Blitz Beat's 3x3 area isn't counted
    A2("Blitz Beat Lv5","phys",100,5,"Neutral",22,1,"Falcon: 5 hits of (AGI/2 + DEX/10) × 2 + 6 × Steel Crow Lv + 20 × Lv each. Always hits, ignores DEF and your damage bonuses",Z(0,0.5,0.3,0.3,{falcon:true})),
@@ -163,6 +166,6 @@ const charDefault=job=>{const J=JOBS[job]||JOBS.Novice;const mag=J.p[0].type==="
     preset:0,a:{...J.p[0]},dmgBonus:0,eq:[],
     nameType:MAGIC_JOBS.includes(job)?"magic":"phys", // name bonus defaults to the job's damage type
     autoSp:false,itemSp:37,itemPrice:200,itemHp:175,itemHpPrice:180,potOn:false,potType:"",potPrice:2200,potMin:30,mobInterval:1.5,hitScale:0.3,hpRegen6:0,curW:0,maxW:0,sellAt:70,townMin:3};
-  if(job==="Sage")Object.assign(c,{matkTxt:"100+200",intTxt:"40+10",maxSp:800,maxHp:4000,sage:{hsAuto:true,hsWorth:50000,hsLv:10},cards:{vitata:true},ec:{on:true}});
+  if(job==="Sage")Object.assign(c,{matkTxt:"100+200",intTxt:"40+10",maxSp:800,maxHp:4000,sage:{hsLv:10},cards:{vitata:true},ec:{on:true}});
   return c};
 

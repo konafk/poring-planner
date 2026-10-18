@@ -63,7 +63,7 @@ $("potOn").addEventListener("change",e=>{C().potOn=e.target.checked;save();potIn
 $("yggOn").addEventListener("change",e=>{C().yggOn=e.target.checked;save();renderAll()});
 ROOTQ("#sagePanel").forEach(p=>p.addEventListener("input",e=>{const i=e.target;const g=G();
   if(i.dataset.sgbolt){g.bolts[i.dataset.sgbolt]=i.checked}else if(i.dataset.sg){const k=i.dataset.sg;g[k]=i.type==="checkbox"?i.checked:num(i.value)}else return;
-  if(i.dataset.sg==="hsOn")g.hsAuto=false;save();syncChar();renderAll()}));
+  refreshPreset(C());save();syncChar();renderAll()}));
 // cards any job can slot (Vitata, Side Winder…) and the cards that give HP or SP back
 ["cardRow","hpCardRow","spCardRow"].forEach(id=>$(id).addEventListener("input",e=>{const i=e.target,cd=CRD();
   if(i.dataset.cdkill){const r=i.dataset.cdkill;cd.killSp=cd.killSp.filter(x=>x!==r);if(i.checked)cd.killSp.push(r)}

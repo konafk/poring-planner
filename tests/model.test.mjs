@@ -983,6 +983,30 @@ t("Spell Fist: the bolt at 100%, then × (100 × bolt Lv + 100 × Spell Fist Lv)
   assert.equal(run("sfPct()"), 800);
 });
 
+t("Sage attacks: Spell Fist, Hindsight, or both, named with their levels", () => {
+  const sage = { matkTxt: "300+200", intTxt: "", st: {}, aspd: 170, sage: { sfLv: 10, boltLv: 10, bolts: { Fire: true, Water: false, Wind: false }, hsLv: 10, dbOn: false },
+    ec: { on: false }, cards: { daSF: false, vitata: false } };
+  const pick = name => `JOBS.Sage.p.findIndex(p=>p.name===${JSON.stringify(name)})`;
+  const on = name => { const i = run(pick(name)); assert.ok(i >= 0, name); setup("Sage", { ...sage, preset: i, a: JSON.parse(run(`JSON.stringify(JOBS.Sage.p[${i}])`)) }) };
+  on("Spell Fist Lv10");
+  near(run("sfChance()"), 0.5); near(run("hsChance()"), 0);
+  near(run("sgUpkeep()"), 106 / 300);                                            // Spell Fist's 76 SP and a bolt every 300 s
+  on("Hindsight Lv10");
+  near(run("sfChance()"), 0); near(run("hsChance()"), 0.2);                       // Lv × 2%, a Lv5 bolt at 100% MATK
+  near(run("sgUpkeep()"), 0);
+  near(run(`dmgPerHit(${MOB})`), 5 * run(`magicDmg(${MOB},100,'Fire')`));         // one proc is the Hindsight bolt, not Spell Fist's
+  near(run(`sfMagic(${MOB})`), 0.2 * run("hsSustain()") * 5 * run(`magicDmg(${MOB},100,'Fire')`));
+  on("Spell Fist Lv10 + Hindsight Lv10");
+  near(run("sfChance()"), 0.5); near(run("hsChance()"), 0.2);
+  near(run(`sfMagic(${MOB})`), 0.5 * run(`sfHit(${MOB},'Fire')`) + 0.2 * run("hsSustain()") * 5 * run(`magicDmg(${MOB},100,'Fire')`));
+  // names follow Sage options, or the learned levels with a skill tree; "not learned" at 0
+  run("G().sfLv=7;G().hsLv=4");
+  assert.equal(run(`levelPreset(JOBS.Sage.p[C().preset],C()).a.name`), "Spell Fist Lv7 + Hindsight Lv4");
+  run("C().skills={'spell-fist':3}");
+  assert.equal(run(`levelPreset(JOBS.Sage.p[C().preset],C()).lv`), 0);
+  assert.equal(run(`levelPreset(JOBS.Sage.p[0],C()).a.name`), "Spell Fist Lv3");
+});
+
 t("Auto Shadow Spell procs on a miss too; card auto-casts need a hit", () => {
   setup("Rogue", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", matkTxt: "100+50", intTxt: "40", hitTxt: "1", crit: 0, st: {},
     a: JSON.parse(run(`JSON.stringify(JOBS.Rogue.p.find(p=>p.name.startsWith("Shadow Spell: Fire Bolt")))`)) });
@@ -1477,7 +1501,7 @@ t("share links leave out defaults and get every value back", () => {
   const has = (a, b, at) => { if (a && typeof a === "object" && !Array.isArray(a)) for (const k in a) has(a[k], b?.[k], `${at}.${k}`); else assert.deepEqual(b, a, at) };
   has(before, after, "state");
   assert.deepEqual(after.sessions[0].entries, before.sessions[0].entries);
-  assert.equal(after.chars.Sage.sage.hsAuto, true);
+  assert.equal(after.chars.Sage.sage.sfLv, 10);
   assert.equal(run("JSON.stringify(unpackState({sessions:[]}))"), '{"sessions":[]}');  // older links, not packed, load as they are
 });
 
