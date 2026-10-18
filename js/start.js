@@ -6,7 +6,7 @@ function showTab(t,local){
   document.querySelectorAll("[data-tab]").forEach(el=>el.hidden=el.dataset.tab!==t);
   document.querySelectorAll("[data-tabbtn]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tabbtn===t)));
   if(!local&&state.tab!==t){state.tab=t;save()}
-  if(t==="ref")refScroll();
+  if(t==="ref"){renderRef();refScroll()}
   // renderAll only draws these while their tab is showing
   if(t==="maps")renderHunt();if(t==="market")renderPrices();if(t==="mobinfo")renderMobInfo();if(t==="items")renderItems();
 }

@@ -124,6 +124,7 @@ The game's auto return only takes you to town at a weight %; it doesn't sell or 
 - **Party EXP (Even Share):** the bonus is +10% per extra member (2 members 110%, 3: 120% … 12: 210%), split evenly.
 - **EXP bonuses** add together. Gear EXP counts for both base and job; an item's "EXP +X%" goes in EXP bonus % (base only) and "Job EXP +X%" in Job EXP bonus % (job only).
 - Every formula the calculator uses, with your own numbers next to it.
+- **Your gear vs the other gear set:** with an other gear set set up in Build from gear (Character tab), a table lists the parts it changes and puts both side by side, with the change: ATK, MATK, HIT, FLEE, CRIT, ASPD, Max HP / SP; damage per hit, damage per second, hit %, uses per kill, kill time, EXP/min, net zeny/hr and HP lost/min against the monster you picked; and EXP/min and net zeny/hr on the Map planner's map (else the monster's best open map). The formulas table gets an **Other set** column too, with the values that differ highlighted.
 - The element and weapon size tables.
 
 ## Tables everywhere
