@@ -32,7 +32,7 @@ Plain scripts that `index.html` loads in this order. They share one global scope
 | `skills.js` | Skill trees, passives and buffs. |
 | `build-ui.js` | Build mode, consumables and the equipment stats rows. |
 | `ref.js` | The EXP & formulas tab, and the Character tab's Your gear vs other gear sets. |
-| `start.js` | Tabs, collapsible cards and the first render. |
+| `start.js` | Tabs, collapsible cards, the sidebar's Compact / Theme / Full width buttons and the first render. |
 
 ### `data/`
 

@@ -30,6 +30,22 @@ showTab(VIEW&&VIEW.tab||state.tab||"char",!!VIEW);
   set(document.documentElement.classList.contains("wide"));
   btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.setItem(KEY_WIDE,"1"):localStorage.removeItem(KEY_WIDE)}catch(e){}});
 })();
+// ---- compact sidebar: icons only, per device like full width ----
+(function setupCompact(){
+  const KEY_COMPACT="rozero-farm-planner-compact",btn=$("sideBtn");
+  const set=v=>{document.documentElement.classList.toggle("compact",v);btn.setAttribute("aria-pressed",String(v));
+    btn.querySelector("span").textContent=v?"Expand sidebar":"Compact sidebar";btn.title=v?"Show the sidebar's labels":"Shrink the sidebar to icons"};
+  set(document.documentElement.classList.contains("compact"));
+  btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.setItem(KEY_COMPACT,"1"):localStorage.removeItem(KEY_COMPACT)}catch(e){}});
+})();
+// ---- colour theme: auto (follows the device) → light → dark, per device like full width ----
+(function setupTheme(){
+  const KEY_THEME="rozero-farm-planner-theme",btn=$("themeBtn"),root=document.documentElement,NEXT={auto:"light",light:"dark",dark:"auto"};
+  const set=t=>{t==="auto"?delete root.dataset.theme:root.dataset.theme=t;btn.querySelector("span").textContent=`Theme: ${t}`;
+    btn.title=t==="auto"?"Colour theme: follows your device":`Colour theme: always ${t}`};
+  set(root.dataset.theme||"auto");
+  btn.addEventListener("click",()=>{const t=NEXT[root.dataset.theme||"auto"];set(t);try{t==="auto"?localStorage.removeItem(KEY_THEME):localStorage.setItem(KEY_THEME,t)}catch(e){}});
+})();
 // ---- start ----
 syncClosed();syncChar();renderAll();resetForm();
 if(VIEW){if(VIEW.drafts)for(const id in VIEW.drafts)if(["fPct","fJob","pasteBox"].includes(id)&&typeof VIEW.drafts[id]==="string")$(id).value=VIEW.drafts[id];
