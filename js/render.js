@@ -168,7 +168,9 @@ function renderTracker(){renderStart();
   {const sel=$("sessMapSel"),o=sel.options[sel.selectedIndex],n=partyN(s),bits=[];if(maps.length&&o)bits.push(o.textContent.replace(/ · ≈\d+ spawns$/,""));
     if(n>1)bits.push(`party of ${n}`);if($("fTime").dataset.auto!=="1"||$("fDate").dataset.auto!=="1")bits.push("time set by hand");if(state.dieItem)bits.push("death item");
     $("logMoreMeta").textContent=bits.join(" · ")}
-  $("subtitle").innerHTML=ms.length>1?`Farming ${ms.map(m=>esc(m.name)).join(", ")}${smp?` on ${esc(mapLabel(smp))}`:""} · weighted by spawn counts`:mob?`Farming ${esc(mob.name)} · Lv ${mob.lv} · ${mob.el?`<span class="el ${mob.el}">${mob.el} ${mob.elv}</span> · `:""}${mob.size||""} ${mob.race||""} · ${fmtExp(mob)} base EXP${smp?` · on ${esc(mapLabel(smp))}`:""} · <a href="${dbUrl(mob)}" target="_blank" rel="noopener">rozerodb ↗</a>`:"Pick a monster in the Monsters &amp; maps tab and press \"Farming this now\"";
+  // several monsters: just the map (the monsters are in the tooltip), so the line stays short
+  $("subtitle").title=ms.length>1?`Farming ${ms.map(m=>m.name).join(", ")} · weighted by spawn counts`:"";
+  $("subtitle").innerHTML=ms.length>1?(smp?`Farming on ${esc(mapLabel(smp))}`:`Farming ${ms.length} monsters`):mob?`Farming ${esc(mob.name)} · Lv ${mob.lv} · ${mob.el?`<span class="el ${mob.el}">${mob.el} ${mob.elv}</span> · `:""}${mob.size||""} ${mob.race||""} · ${fmtExp(mob)} base EXP${smp?` · on ${esc(mapLabel(smp))}`:""} · <a href="${dbUrl(mob)}" target="_blank" rel="noopener">rozerodb ↗</a>`:"Pick a monster in the Monsters &amp; maps tab and press \"Farming this now\"";
   const lastE=[...s.entries].sort((a,b)=>a.t-b.t).pop();
   if(lastE){$("tCurLv").textContent=`Lv ${lastE.lv}`;$("tCurLvS").textContent=lvExp(lastE.lv)?`${fmtN(lvExp(lastE.lv))} EXP to level`:"Lv outside EXP table";
     $("tCurPct").textContent=pct(lastE.pct,1);$("tCurPctS").textContent=`logged ${fmtT(lastE.t)}`}
