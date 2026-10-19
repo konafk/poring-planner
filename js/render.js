@@ -585,7 +585,9 @@ const tableRows=(id,rows)=>sortRows(id,filterRows(id,rows));
 function sortRows(id,rows){
   const [k,d]=tblSort(id),c=TABLES[id].cols[k];
   const val=r=>{const v=c.n?c.n(r):c.t(r).toLowerCase();return v==null||v===""||(typeof v==="number"&&!isFinite(v))?null:v};
-  rows.sort((a,b)=>{const x=val(a),y=val(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return (x>y?1:x<y?-1:0)*d});
+  // the hunters' "too slow" rows stay after the rest in the table's default sort; pick a column to see them in place
+  const slow=k===sortDef(id)[0]&&rows.some(r=>r.slow);
+  rows.sort((a,b)=>{if(slow&&!!a.slow!==!!b.slow)return a.slow?1:-1;const x=val(a),y=val(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return (x>y?1:x<y?-1:0)*d});
   ROOTQ(`#${id} th[data-sk]`).forEach(th=>th.classList.toggle("on",th.dataset.sk===k));
   return rows;
 }

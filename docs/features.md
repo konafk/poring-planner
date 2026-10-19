@@ -70,7 +70,7 @@ Mini boss is how they spawn, not the game's Boss class, which is what boss / nor
 Open maps ranked by EXP/min, weighted by spawn counts. At the max base level (70, `MAX_BASE_LV` in `js/state.js`) EXP no longer counts: the table says so, ranks and sorts by Net zeny / hr (until you click another column) and greys out EXP / min.
 
 - Zeny / hr is loot less skill items, the ASPD potion and ground buffs. Heal cost / hr is the HP items for the map's HP lost / min plus the SP items, from Consumables (hover it to see which items and how many an hour), and Net zeny / hr is what's left. Sort by any of them.
-- **Max sec / kill** (60 by default, 0 for no limit; the same box is on the Zeny Hunter): maps that take longer a kill, like a Lv 45 Thief on nrd_dun02's Boulder Dwarves, get a **too slow** badge and rank after every other map, so a huge EXP per kill can't put a map you can't really farm at #1. Sort by a column to see them in place.
+- **Max sec / kill** (60 by default, 0 for no limit; the same box is on the Zeny Hunter): maps that take longer a kill, like a Lv 45 Thief on nrd_dun02's Boulder Dwarves, get a **too slow** badge and rank after every other map, so a huge EXP per kill can't put a map you can't really farm at #1. They stay last in the default sort too; sort by another column to see them in place.
 - Maps with an entry level (nrd_dun02 needs base Lv 50) are left out of both hunters below it, with a note in the line above the table, and show a "Lv 50+" badge on Monster info.
 - Maps show their in-game code and name (`in_sphinx5` · Sphinx B5F). You can also type the database code (`sp_d05`).
 - Monsters with no EXP data yet (Myst, Isis, Anubis…) show EXP `?` and are left out of EXP/min.

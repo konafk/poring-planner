@@ -1345,6 +1345,15 @@ t("maps too slow to farm rank last with a badge; nrd_dun02 needs base Lv 50", ()
   const first = rows.findIndex(r => r.slow);
   assert.ok(first > 0 && rows.slice(first).every(r => r.slow) && rows.slice(0, first).every(r => r.secT <= 60));
   assert.match(run("slowPill({slow:true,secT:175})"), /too slow/);
+  // the table's default sort (EXP / min) keeps them last too; another column sorts them in place
+  run("state.tsort={}");
+  const shown = JSON.parse(run(`JSON.stringify(sortRows("bestTable",[{mp:"a",epm:9,slow:true},{mp:"b",epm:5,slow:false},{mp:"c",epm:7,slow:false}]).map(r=>r.mp))`));
+  assert.deepEqual(shown, ["c", "b", "a"]);
+  run(`state.tsort={bestTable:["secT",1]}`);
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(sortRows("bestTable",[{mp:"a",secT:9,slow:true},{mp:"b",secT:5}]).map(r=>r.mp))`)), ["b", "a"]);
+  run(`state.tsort={bestTable:["epm",-1]}`);                                  // epm picked by hand is the default column: still last
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(sortRows("bestTable",[{mp:"a",epm:9,slow:true},{mp:"b",epm:5}]).map(r=>r.mp))`)), ["b", "a"]);
+  run("state.tsort={}");
   // 0 is no limit: back to plain EXP / min
   run("state.maxSec=0"); rows = rank(); assert.equal(rows[0].mp, "nrd_dun02"); assert.ok(!rows.some(r => r.slow));
   run("state.maxSec=200"); assert.equal(rank()[0].mp, "nrd_dun02");                    // an editable limit
