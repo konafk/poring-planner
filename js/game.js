@@ -96,8 +96,7 @@ const JOBS={
  "Assassin":{w:"Katar",p:[A2("Sonic Blow Lv10","phys",1100,1,"W",28,1,"Katar only. +50% below half HP. (100 + 100 × level)% on Zero Global",Z(0,0,1,0)),A2("Meteor Assault Lv10","phys",1400,1,"W",40,3,"5x5 around you. (1400 + 5×AGI)%, × base level / 100 above Lv100",Z(0,0,0.7,0.3,{blv:true,sadd:[["agi",5]]})),
    A2("Soul Destroyer Lv10","phys",1500,1,"W",60,1,"(1500 + STR + INT)% × base level / 100 (Zero bug: applies below Lv100 too)",Z(0.1,0.4,0.5,0.3,{blv:true,blvBug:true,sadd:[["str",1],["int",1]]})),A2("Venom Splasher Lv10","phys",1400,1,"W",30,2,"Explodes after 2s, 5x5",Z(0.2,0.8,1,0)),
    A2("Grimtooth Lv5","phys",300,1,"W",8,2,"Katar, from Hiding. (300 + AGI)%",Z(0,0,0,0,{sadd:[["agi",1]]})),
-   // TODO: Venom Knife uses up a Venom Knife (ammo); its item id and NPC price aren't in data/consumables.js yet, so it costs nothing here
-   A2("Venom Knife","phys",500,1,"W",35,1,"Costs a Venom Knife (not counted)",Z(0,0,0,0)),A("Basic attack (katar)","auto",100,1.2,"W",0,0,0,1,"Katar extra hit averaged in"),...THIEF,
+   A2("Venom Knife","phys",500,1,"W",35,1,"Costs a Venom Knife",Z(0,0,0,0,{consumes:[{item:"Venom Knife",qty:1}]})),A("Basic attack (katar)","auto",100,1.2,"W",0,0,0,1,"Katar extra hit averaged in"),...THIEF,
    // appended so saved preset indexes stay put: dual wield with a one-handed sword or axe in the right hand (no Double Attack)
    A("Basic attack","auto",100,1,"W",0,0,0,1,"No Double Attack: for a one-handed sword or axe in the right hand")]},
  "Rogue":{w:"Dagger",p:[A2("Back Stab Lv10","phys",700,2,"W",12,1,"Hits twice with a dagger, half damage with a bow",Z(0,0,0.7,0.3)),A2("Triangle Shot Lv10","phys",2300,1,"W",20,1,"Bow, costs 3 arrows. (2300 + 3×AGI)% × base level / 100 (Zero bug: applies below Lv100 too)",Z(0.2,0.8,0,0.2,{blv:true,blvBug:true,sadd:[["agi",3]],arrows:3})),
@@ -105,7 +104,7 @@ const JOBS={
 };
 // support skills cast between attacks that use up an item (not damage presets: trap damage is DEX/INT-based and isn't modelled). You type
 // how many you cast per kill; each cast costs items [name, qty] (rAthena renewal skill_db). Their cast time isn't counted.
-// TODO: pre-renewal rAthena has Blast Mine and Freezing Trap at 1 Trap; Zero's number isn't confirmed. Quagmire uses no item in either.
+// Blast Mine, Claymore Trap and Freezing Trap take 2 Traps (Zero's skill text: "Uses 2 Deployable Trap"). Quagmire uses no item.
 // Stone Curse is the Mage skill, so Wizards and Sages have it too
 const SUPPORT=[{key:"ankle-snare",sk:"anklesnare",name:"Ankle Snare",jobs:["Hunter"],items:[["Trap",1]]},{key:"land-mine",name:"Land Mine",jobs:["Hunter"],items:[["Trap",1]]},
   {key:"blast-mine",name:"Blast Mine",jobs:["Hunter"],items:[["Trap",2]]},{key:"claymore-trap",name:"Claymore Trap",jobs:["Hunter"],items:[["Trap",2]]},
@@ -113,7 +112,7 @@ const SUPPORT=[{key:"ankle-snare",sk:"anklesnare",name:"Ankle Snare",jobs:["Hunt
   {key:"stone-curse",name:"Stone Curse",jobs:["Mage","Wizard","Sage"],items:[["Red Gemstone",1]]},
   {key:"bomb",name:"Bomb (Demonstration)",jobs:["Alchemist"],items:[["Bottle Grenade",1]]}];
 // Sage ground buffs (switched on in the Skills card): one item per cast, recast every 60 s × level (rAthena Duration1)
-// TODO: renewal rAthena uses a Blue Gemstone, pre-renewal a Yellow Gemstone (same NPC price); Zero's isn't confirmed
+// Zero's skill text: "Consumes 1 Blue Gemstone"; recasting one of the three while a zone is up uses none
 const FIELD_ITEM={volcano:"Blue Gemstone",deluge:"Blue Gemstone",whirlwind:"Blue Gemstone"};
 // Rogue Plagiarism: one copied skill at Lv10, appended so saved preset indexes stay put. Only skills with no weapon a Rogue can't hold
 // (no katar/spear/instrument/whip/axe/shield); magic copies use your MATK

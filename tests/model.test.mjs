@@ -554,6 +554,11 @@ t("skill items: catalysts and arrows per use, your prices, support casts and gro
   assert.equal(run(`useItems()[0].qty`), 3);
   run(`C().weapon="Dagger"`);
   assert.equal(run(`useItems().length`), 0);
+  // Venom Knife throws, and uses up, a Venom Knife
+  setup("Assassin", { st: {} });
+  run(`C().a=${pre("Assassin", "Venom Knife")}`);
+  assert.equal(run(`useItems().map(x=>consName(x.id)+" "+x.qty).join()`), "Venom Knife 1");
+  near(run(`useZeny()`), 50);
   // Mammonite costs 100 z × the learned level
   setup("Merchant", { st: {} });
   run(`C().skills={mammonite:3}`);

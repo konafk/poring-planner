@@ -90,6 +90,7 @@ Each use of an attack takes its catalysts and arrows:
 - Acid Terror: an Acid Bottle
 - Acid Bomb: an Acid Bottle and a Bottle Grenade
 - Magnus Exorcismus: a Blue Gemstone
+- Venom Knife: a Venom Knife (the thrown dagger, 50 z at an NPC)
 - One arrow per shot with a bow, instrument or whip (basic attacks, Double Strafe, Arrow Shower, Focused Arrow Strike, Arrow Vulcan…; Triangle Shot takes 3). The arrow matches your attack element (Fire Arrow, Crystal Arrow, Silver Arrow…).
 - Mammonite costs 100 z × its level.
 
