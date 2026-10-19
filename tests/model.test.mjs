@@ -323,6 +323,19 @@ t("session map: auto is the best open map, a picked one wins while its monsters 
   assert.equal(run(`cur().map`), undefined);                         // removing its monsters drops the pick
 });
 
+t("Map planner's Farming this map now: the map's hunted monsters, and a picked map holds even when marked closed", () => {
+  const mp = run(`JSON.stringify(openMaps(MOBS.find(m=>m.id===1002))[1][0])`);
+  const ids = JSON.parse(run(`JSON.stringify(mapHuntIds(${mp}))`));
+  assert.ok(ids.includes(1002) && ids.length > 1);
+  assert.ok(!run(`mapHuntIds(${mp}).some(id=>MOBS.find(m=>m.id===id).boss)`));
+  run(`cur().mobIds=mapHuntIds(${mp});cur().map=${mp}`);
+  assert.equal(run(`sessMap(cur())`), JSON.parse(mp));
+  run(`state.closed=[...(state.closed||[]),${mp}]`);
+  assert.equal(run(`sessMap(cur())`), JSON.parse(mp));              // closed: no longer in the auto list, but your pick stays
+  assert.notEqual(run(`sessMapAuto(cur())`), JSON.parse(mp));
+  run(`state.closed=state.closed.filter(c=>c!==${mp})`);
+});
+
 t("zeny per kill: the loot value scaled by the drop rate bonus", () => {
   assert.equal(run(`zenyKill({loot:200})`), 200);
   assert.equal(run(`state.dropBonus=50;zenyKill({loot:200})`), 300);
