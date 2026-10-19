@@ -312,7 +312,8 @@ const BUILD=(()=>{
         if(k===w.length)continue;pre=w.slice(0,k).join(" ");post="";len=s.length-pre.length}
       const cs=cardsOf(it),a=pre.trim()?readCardNames(pre,cs,nameOf):[],b=post.trim()?readCardNames(post,cs,nameOf):[];if(!a||!b)continue;
       if(a.length+b.length&&!it.slots)continue; // cards named: not the slotless copy of an item
-      const score=(full?1e4:0)+len;
+      // the copy with room for the most of the cards named wins ("Double Bloody Damascus": the 2-slot Damascus, not the 1-slot one)
+      const score=(full?1e4:0)+Math.min(a.length+b.length,it.slots||0)*1e3+len;
       if(!best||score>best.score)best={score,id:it.id,refine,cards:[...a,...b].slice(0,it.slots||0)}}
     return best&&{id:best.id,refine:best.refine,cards:best.cards}}
 

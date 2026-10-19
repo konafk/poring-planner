@@ -1400,6 +1400,21 @@ t("option lines typed before the lists aren't lost when the rows replace them", 
   assert.equal(run("buildOf(C()).gear.headTop.opts.length"), 3);
 });
 
+t("in-game gear names fill the item and its cards: card prefixes and suffixes, Double / Triple, cut-off names", () => {
+  run(`state.job="Thief";state.chars={};Object.assign(C(),{mode:"build",baseLv:60})`);
+  const rd = (slot, txt) => JSON.parse(run(`JSON.stringify(readGear(${JSON.stringify(slot)},${JSON.stringify(txt)}))`));
+  assert.deepEqual(rd("headTop", "Novice Criatura Academy Hat"), { id: 18730, refine: null, cards: [4545] });   // Novice Poring Card
+  // two Hydra Cards ("Bloody"): the 2-slot Damascus, not the 1-slot copy that would drop one; Triple keeps as many as fit
+  assert.deepEqual(rd("weapon", "Double Bloody Damascus"), { id: 510132, refine: null, cards: [4035, 4035] });
+  assert.deepEqual(rd("weapon", "+7 Triple Bloody Damascus"), { id: 510132, refine: 7, cards: [4035, 4035] });
+  assert.equal(rd("weapon", "Bloody Damascus").cards.length, 1);
+  // the equipment window cuts long names: "Hard Nordfeld Soldier" is Nordfeld Soldier's Armor with a Pupa Card
+  assert.deepEqual(rd("armor", "Hard Nordfeld Soldier"), { id: 450588, refine: null, cards: [4003] });
+  // Poo Poo Hat: damage from Demi-Human −10% of its own
+  run(`C().build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{headTop:{id:2289}}};SKFX=skillEffects(C());applyBuild()`);
+  assert.deepEqual(JSON.parse(run("JSON.stringify(C().bx.taken.race)")), { "Demi-Human": -10 });
+});
+
 t("cards any job can slot: Side Winder, Hunter Fly, Vitata", () => {
   const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
   setup("Knight", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", hitTxt: "300", crit: 0, aspd: 170, defTxt: "10+10", hitScale: 1, mobInterval: 1.5,
