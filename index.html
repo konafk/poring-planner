@@ -25,6 +25,8 @@
       <span class="navGrp" role="presentation">Look up</span>
       <button type="button" role="tab" data-tabbtn="mobinfo" title="Monster info"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a7 7 0 0 0-7 7v10l2.5-2 2.5 2 2-2 2 2 2.5-2 2.5 2V10a7 7 0 0 0-7-7z"/><circle cx="9.5" cy="10.5" r=".8"/><circle cx="14.5" cy="10.5" r=".8"/></svg><span>Monster info</span></button>
       <button type="button" role="tab" data-tabbtn="items" title="Item info"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><span>Item info</span></button>
+      <button type="button" role="tab" data-tabbtn="equip" title="Equipment"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3z"/></svg><span>Equipment</span></button>
+      <button type="button" role="tab" data-tabbtn="cards" title="Cards"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>Cards</span></button>
       <button type="button" role="tab" data-tabbtn="market" title="Market"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="M15.5 9.5A6 6 0 1 1 9.5 15.5"/></svg><span>Market</span></button>
       <button type="button" role="tab" data-tabbtn="ref" title="EXP &amp; formulas"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg><span>EXP &amp; formulas</span></button>
       <span class="navGrp" role="presentation">Data</span>
@@ -611,6 +613,36 @@
     <div class="note hint">Every monster drop. Click a row to see who drops it. Players pay = your Market price. NPC z / kill = NPC price × your drop chance (after drop bonus and level penalty), at the best monster for it. Spawns = the most of one monster that drops it on one open map.</div>
   </section>
 
+  <section class="card" id="eqDbCard" data-tab="equip">
+    <div class="bar"><h2 class="grow">Equipment</h2><span class="note" id="eqDbCount"></span></div>
+    <div class="bar dbF">
+      <label class="grow">Search<input id="eqDbQ" data-eqf="q" type="search" placeholder="name, #id or effect (STR, Demon…)"></label>
+      <label>Type<select id="eqDbType" data-eqf="type"></select></label>
+      <label title="Weapons only">Element<select id="eqDbEl" data-eqf="el"></select></label>
+      <label>Job<select id="eqDbJob" data-eqf="job"></select></label>
+      <label title="The base level it needs">Required Lv<span class="bar"><input class="w-xs" data-eqf="lvMin" type="number" min="0" max="99" placeholder="any"> to <input class="w-xs" data-eqf="lvMax" type="number" min="0" max="99" placeholder="any"></span></label>
+      <label>Card slots<select data-eqf="slots"><option value="">Any</option><option value="1+">1 or more</option><option value="0">None</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+      <label>ATK at least<input class="w-sm" data-eqf="atk" type="number" min="0" placeholder="any"></label>
+      <label>MATK at least<input class="w-sm" data-eqf="matk" type="number" min="0" placeholder="any"></label>
+      <label>DEF at least<input class="w-sm" data-eqf="def" type="number" min="0" placeholder="any"></label>
+      <label>Sort<select id="eqDbSort"></select></label>
+      <label><span>&nbsp;</span><button type="button" id="eqDbReset">Reset</button></label>
+    </div>
+    <div class="scroll tall"><table id="equipTable" class="dbTable"><thead><tr><th data-sk="name">Item</th><th data-sk="type" class="l">Type</th><th data-sk="lv">Lv</th><th data-sk="slots">Slots</th><th data-sk="atk">ATK</th><th data-sk="matk">MATK</th><th data-sk="def">DEF</th><th data-sk="w">Weight</th><th data-sk="jobs" class="l">Jobs</th><th data-sk="fx" class="l">Effects</th></tr></thead><tbody></tbody></table></div>
+    <div class="note hint">Every piece of gear the build simulator knows. Click a row (or Equip) to put it in your gear or one of your other gear sets; it keeps the refine, cards and affixes it had when it last came off. Click a header to sort. Search also looks through the effects, so “Demon” finds gear that does more damage to Demons.</div>
+  </section>
+
+  <section class="card" id="cardDbCard" data-tab="cards">
+    <div class="bar"><h2 class="grow">Cards</h2><span class="note" id="cardDbCount"></span></div>
+    <div class="bar dbF">
+      <label class="grow">Search<input data-cdf="q" type="search" placeholder="name, #id, in-game name (Healing) or effect"></label>
+      <label>Equipment slot<select id="cardDbSlot" data-cdf="slot"></select></label>
+      <label><span>&nbsp;</span><button type="button" id="cardDbReset">Reset</button></label>
+    </div>
+    <div class="scroll tall"><table id="cardTable" class="dbTable"><thead><tr><th data-sk="name">Card</th><th data-sk="part" class="l">Goes in</th><th data-sk="nm" class="l" title="the name it gives the gear it's in, as the equipment window shows it">In-game name</th><th data-sk="fx" class="l">Effects</th></tr></thead><tbody></tbody></table></div>
+    <div class="note hint">Click a row (or Equip) to put a card in a card slot of your gear or one of your other gear sets. The item has to be on and have a free (or replaceable) slot: equip one from the Equipment tab first.</div>
+  </section>
+
   <section class="card" data-tab="ref">
     <div class="bar"><h2 class="grow">EXP tables</h2><span class="note" id="refExpNote"></span></div>
     <div class="row2">
@@ -688,6 +720,10 @@
   <div class="jumpList" id="jumpList" role="listbox"></div>
   <div class="jumpFoot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>Enter</kbd> open</span><span><kbd>Ctrl</kbd><kbd>K</kbd> or <kbd>/</kbd> from anywhere</span></div>
 </dialog>
+<dialog class="jump eqDlg" id="eqDlg" aria-labelledby="eqDlgTitle">
+  <div class="eqDlgHead"><div class="grow"><b id="eqDlgTitle"></b><div class="note" id="eqDlgSub"></div></div><button type="button" class="small" id="eqDlgClose" aria-label="Close">✕</button></div>
+  <div class="eqDlgBody" id="eqDlgBody"></div>
+</dialog>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <!-- app code, split by section; these run in order and share one global scope (plain scripts, so the page still opens from file://) -->
 <script src="js/game.js"></script>
@@ -698,6 +734,7 @@
 <script src="js/skills.js"></script>
 <script src="js/build-ui.js"></script>
 <script src="js/ref.js"></script>
+<script src="js/gear-db.js"></script>
 <script src="js/start.js"></script>
 </body>
 </html>

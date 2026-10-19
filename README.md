@@ -19,13 +19,14 @@ It's a single page that runs entirely in your browser. There's no server, no log
 - **Session:** an EXP tracker with EXP/hr, time to level, a progress chart and level goals.
 - **Monsters & maps:** a monster table, the EXP Hunter and Zeny Hunter map rankings, a Map planner, and a green / yellow / red check of whether you can farm a map with no HP or SP items.
 - **Monster info, Item info, Market:** drops, prices, player prices and a sell timer.
+- **Equipment, Cards:** every weapon, armor and card, filtered by type, job, level, card slots and ATK / MATK / DEF, with one click to put it in your gear or another gear set.
 - **EXP & formulas:** EXP tables, party share and every formula with your numbers.
 - **Accounts:** separate characters per account, text backups and share links.
 
 ## Docs
 
 - [Character tab](docs/character.md): build mode, damage model, cards, buffs, consumables, skill items and weight
-- [Other tabs](docs/features.md): Account, Session, Monsters & maps, Monster info, Item info, Market, EXP & formulas, and how tables work
+- [Other tabs](docs/features.md): Account, Session, Monsters & maps, Monster info, Item info, Equipment and Cards, Market, EXP & formulas, and how tables work
 - [Development](docs/development.md): project layout, data export tools and tests
 - [Data sources](docs/data-sources.md): where the data and formulas come from
 

@@ -1995,4 +1995,63 @@ t("a fresh session is named after its map and follows it while the name is the d
   assert.equal(run(`cur().name`), "my run");
 });
 
+t("Equipment and Cards tabs: effects text, filters and job names", () => {
+  assert.equal(run(`fxLine(["damage_percent","race","demi_human",20])`), "Physical damage vs Demi-Human +20%");
+  assert.equal(run(`fxLine(["str",null,null,2])`), "STR +2");
+  assert.equal(run(`fxLine(["matk_percent",null,null,1,2])`), "MATK +1% per 2 refines");
+  assert.equal(run(`fxLine(["skill_damage_percent",null,null,20,null,"Sonic Blow"])`), "Sonic Blow: Skill damage +20%");
+  assert.equal(run(`fxLine(["magic_damage_percent","element","fire",10])`), "Fire magic damage +10%");
+  assert.equal(run(`fxGroup({r:7,b:[["hp",null,null,150],["sp",null,null,50]]})`), "at +7: MaxHP +150, MaxSP +50");
+  assert.equal(run(`jobsTxt(BUILD.item(480378))`), "All but Novice");                                // Muffler
+  assert.equal(run(`jobsTxt(BUILD.item(1407))`), "Swordsman");                                      // Pike
+  assert.equal(run(`jobsTxt(BUILD.item(2607))`), "All jobs");                                       // Clip: no job list
+  assert.equal(run(`gearKind(BUILD.item(5093))`), "Upper / Middle headgear");                      // Coif
+  const ok = (id, f, job = "Knight") => run(`eqDbOk(BUILD.item(${id}),{...EQDB_D,...${JSON.stringify(f)}},${JSON.stringify(job)})`);
+  assert.equal(ok(1407, {}), true);                                                                   // a Knight wears Swordsman gear
+  assert.equal(ok(1407, {}, "Mage"), false);                                                          // "Your job" by default
+  assert.equal(ok(1407, { job: "" }, "Mage"), true);
+  assert.equal(ok(1407, { type: "w:spear_1h" }), true); assert.equal(ok(1407, { type: "w:dagger" }), false); assert.equal(ok(1407, { type: "a:" }), false);
+  assert.equal(ok(2607, { type: "a:accessory" }), true); assert.equal(ok(5093, { type: "a:head_middle", job: "" }), true);
+  assert.equal(ok(1407, { slots: "3" }), true); assert.equal(ok(1407, { slots: "1+" }), true); assert.equal(ok(1168, { slots: "1+" }), false);
+  assert.equal(ok(1168, { atk: "200" }), true); assert.equal(ok(1168, { atk: "201" }), false);
+  assert.equal(ok(1168, { lvMin: "50" }), false); assert.equal(ok(1168, { lvMax: "48" }), true);
+  assert.equal(ok(1407, { q: "pik" }), true); assert.equal(ok(1407, { q: "#1407" }), true);
+  const cd = (id, f) => run(`cardDbOk(BUILD.item(${id}),{...CARDDB_D,...${JSON.stringify(f)}})`);
+  assert.equal(cd(4122, { slot: "head" }), true); assert.equal(cd(4053, { slot: "accessory" }), true); assert.equal(cd(4035, { slot: "armor" }), false);
+  assert.equal(cd(4053, { q: "healing" }), true);                                                    // its in-game name
+  assert.equal(cd(4035, { q: "demi-human" }), true);                                                 // its effect
+});
+
+t("Equip from the Equipment and Cards tabs: into your gear or another set, headgear in every row it covers, cards in a slot", () => {
+  run("state.job='Knight';C().mode='build'");
+  assert.equal(run(`JSON.stringify(eqPlaces(BUILD.item(1407),'Knight'))`), JSON.stringify([["weapon"]]));
+  assert.equal(run(`JSON.stringify(eqPlaces(BUILD.item(1207),'Assassin'))`), JSON.stringify([["weapon"], ["shield"]]));   // dual wield
+  assert.equal(run(`JSON.stringify(eqPlaces(BUILD.item(2607),'Knight'))`), JSON.stringify([["acc1"], ["acc2"]]));
+  assert.equal(run(`JSON.stringify(eqPlaces(BUILD.item(5093),'Knight'))`), JSON.stringify([["headTop", "headMid"]]));
+  run("eqPut(C(),-1,['weapon'],1407);buildOf(C()).gear.weapon.refine=7");
+  assert.equal(run("buildOf(C()).gear.weapon.id"), 1407);
+  run("eqPut(C(),-1,['headTop','headMid'],5093)");                                                  // Coif covers upper and middle
+  assert.equal(run("JSON.stringify([buildOf(C()).gear.headTop.id,buildOf(C()).gear.headMid.id])"), "[5093,5093]");
+  run("eqPut(C(),-1,['headTop'],2217)");                                                             // Biretta: the Coif comes off both rows
+  assert.equal(run("JSON.stringify([buildOf(C()).gear.headTop.id,'headMid' in buildOf(C()).gear])"), "[2217,false]");
+  // a new set: only that item on, your gear untouched
+  run("const i=altAdd(C());eqPut(C(),i,['weapon'],530055)");
+  assert.equal(run("JSON.stringify([buildOf(C()).alts[0].gear.weapon.id,buildOf(C()).gear.weapon.id])"), "[530055,1407]");
+  assert.equal(run("JSON.stringify(wornIn(C(),1407))"), JSON.stringify(["My gear"]));
+  assert.equal(run("JSON.stringify(wornIn(C(),530055))"), JSON.stringify(["Set 1"]));
+  // a weapon card: 3 boxes on your Pike, 4 on the set's Pike; none for a garment card
+  const ts = JSON.parse(run("JSON.stringify(cardTargets(C(),BUILD.item(4035)).map(x=>[x.set,x.row,x.box]))"));
+  assert.equal(ts.length, 7); assert.deepEqual(ts[0], [-1, "weapon", 0]); assert.deepEqual(ts[6], [0, "weapon", 3]);
+  assert.equal(run("cardTargets(C(),BUILD.item(4102)).length"), 0);
+  run("cardPut(C(),-1,'weapon',2,4035)");
+  assert.equal(run("JSON.stringify(buildOf(C()).gear.weapon.cards)"), JSON.stringify([null, null, 4035]));
+  assert.equal(run("JSON.stringify(wornIn(C(),4035,true))"), JSON.stringify(["My gear"]));
+  // swapping the Pike out and back keeps its refine and card
+  run("eqPut(C(),-1,['weapon'],1168);eqPut(C(),-1,['weapon'],1407)");
+  assert.equal(run("JSON.stringify([buildOf(C()).gear.weapon.refine,buildOf(C()).gear.weapon.cards])"), JSON.stringify([7, [null, null, 4035]]));
+  // a set made here has no "Special equipment" difference from your gear when neither has any
+  run("buildOf(C()).special={own:[]};delete buildOf(C()).alts[0].special");
+  assert.equal(run("altDiff(C(),0).includes('Special equipment')"), false);
+});
+
 console.log(`${n} tests passed`);

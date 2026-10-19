@@ -8,17 +8,18 @@
 - [Monsters & maps](#monsters--maps)
 - [Monster info](#monster-info)
 - [Item info](#item-info)
+- [Equipment and Cards](#equipment-and-cards)
 - [Market](#market)
 - [EXP & formulas](#exp--formulas)
 - [Tables everywhere](#tables-everywhere)
 
 ## Page layout
 
-The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Monsters & maps), Look up (Monster info, Item info, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
+The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Monsters & maps), Look up (Monster info, Item info, Equipment, Cards, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
 
 **Log EXP from any tab:** type in the Log EXP box on the right of the top bar, or press **L** on any tab to jump to it. It takes a line like the paste box does: `17.9` (EXP %), `17.9 63` (with job %), `15:05 17.9 63` (at that time), and `died` on the line for EXP after a death. The entry goes in at the level of your last one, and a level-up is picked up the same way as in the Log EXP card. On a phone the box opens as a sheet from the round **+** button. At the max base level (70) base EXP no longer counts, so the box, the + button and **L** go away.
 
-**Search:** press **Ctrl+K** (⌘K on a Mac) or **/** on any tab, or the Search button at the top of the sidebar, and type part of a name. It finds tabs, a few actions (Log EXP, theme, hints, new session), every monster, every item a monster drops and every map, by name, map code or item number. **Enter** opens it where it lives: a monster in Monster info, an item in Item info, a map in the Map planner.
+**Search:** press **Ctrl+K** (⌘K on a Mac) or **/** on any tab, or the Search button at the top of the sidebar, and type part of a name. It finds tabs, a few actions (Log EXP, theme, hints, new session), every monster, every item a monster drops, every piece of gear and card, and every map, by name, map code or item number. **Enter** opens it where it lives: a monster in Monster info, an item in Item info, gear on the Equipment tab, a card on the Cards tab, a map in the Map planner.
 
 **Get started:** a new player sees three steps over the Character, Session and Monsters & maps tabs: set up your character (type all six stats, or use build mode), pick the monster you farm, and log your EXP twice. Each one ticks off as you do it, and the card goes away for good once all three are done, or when you close it.
 
@@ -122,6 +123,14 @@ One monster's stats, how you do against it, and every map it spawns on. The Elem
 ## Item info
 
 Every item monsters drop, searchable and filterable by auto-loot group (the Group dropdown in the filter row), with NPC and player prices and NPC zeny per kill: the NPC price times your drop chance (after drop bonus and level penalty), at the monster where that comes to most, and spawns: the most of one monster that drops it on one open map. Click an item to see every monster that drops it, the drop chance, the NPC zeny per kill from each, and its best open map with how many spawn there.
+
+## Equipment and Cards
+
+Every piece of gear and every card the build simulator knows, like rozerodb's equipment list.
+
+- **Equipment:** search by name, item number or effect (`demon` finds gear that does more to Demons), and filter by **Type** (one weapon type, all weapons, one armor part such as upper headgear, shield or accessory, or all armor), weapon **Element**, **Job** (your job by default; a 2nd job wears its 1st job's gear), **Required Lv** (from–to), **Card slots** (none, 1–4 or 1 or more), and the least **ATK**, **MATK** and **DEF**. **Sort** by name, level, ATK, MATK, DEF, card slots, weight or ID, or click a column header. Each row shows the item's type and weapon level, required level, slots, ATK, MATK, DEF, weight, the jobs that wear it and its effects (refine and level conditions included).
+- **Cards:** search by name, item number, the name it gives its gear in game (`healing` finds Vitata Card) or effect, and filter by the **Equipment slot** it goes in.
+- **Equip:** click a row (or its Equip button) and pick which gear set it goes in: **My gear**, any of your other gear sets, or a **New set** with only it on. An accessory asks which accessory slot, and an Assassin's dagger, one-handed sword or one-handed axe which hand. A headgear that covers more than one row (Coif: upper and middle) fills them all, and takes off whatever was there. Gear you take off keeps its refine, cards and affixes for when you put it back on. A card asks for the set, the item and the card slot, from the gear in each set that takes it; a set with no slotted item for it links to the Equipment tab with the matching filter. Items your job can't wear can't be equipped. If the Character tab is on typed status window values, equipping switches it to Build from gear (switching back brings your typed values back). Rows mark the sets each item or card is in now.
 
 ## Market
 
