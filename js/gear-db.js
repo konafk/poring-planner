@@ -51,12 +51,27 @@ function eqDbOk(it,f,job){const n=k=>f[k]!==""&&f[k]!=null&&isFinite(+f[k])?+f[k
   if(n("lvMin")!=null&&(it.lv||0)<n("lvMin"))return false;if(n("lvMax")!=null&&(it.lv||0)>n("lvMax"))return false;
   if(f.slots==="1+"?!(it.slots>0):f.slots!==""&&f.slots!=null&&(it.slots||0)!==+f.slots)return false;
   for(const k of ["atk","matk","def"])if(n(k)!=null&&(it[k]||0)<n(k))return false;
-  return !q||it.name.toLowerCase().includes(q)||("#"+it.id).includes(q)||fxOf(it).join(" ").toLowerCase().includes(q)}
+  if(!fromOk(it.id,f.from))return false;
+  return !q||[it.name,"#"+it.id,fxOf(it).join(" "),itemText(it.id),fromTxt(it.id)].some(x=>x.toLowerCase().includes(q))}
 // cards: where they go ("head" for any headgear, "accessory" for either hand)
 const CARD_PART={weapon:"Weapon",shield:"Shield",head:"Headgear",armor:"Armor",garment:"Garment",footgear:"Shoes",accessory:"Accessory"};
 const cardPart=c=>{const s=(c.slot||[])[0]||"";return s.startsWith("head")?"head":s.startsWith("accessory")?"accessory":s};
-function cardDbOk(c,f){const q=String(f.q||"").trim().toLowerCase();if(f.slot&&cardPart(c)!==f.slot)return false;
-  return !q||c.name.toLowerCase().includes(q)||("#"+c.id).includes(q)||cardName(c).toLowerCase().includes(q)||fxOf(c).join(" ").toLowerCase().includes(q)}
+// an item's in-game text and where to get it (data/iteminfo.js, tools/export_iteminfo.py): t description, d the monsters that drop
+// it [[id, name, level, "mvp" | "mini" | "normal", drop %]] best rate first, q the quests that give it
+const itemInfo=id=>typeof ITEM_INFO!=="undefined"&&ITEM_INFO[id]||{};
+const itemText=id=>itemInfo(id).t||"";
+const FROM_TAG={mvp:"MVP",mini:"mini boss"};
+const fromTxt=id=>[...(itemInfo(id).d||[]).map(([,n,lv,k,ch])=>`${n} Lv ${lv}${FROM_TAG[k]?` (${FROM_TAG[k]})`:""}${ch!=null?` ${ch}%`:""}`),
+  ...(itemInfo(id).q||[]).map(q=>`Quest: ${q}`)].join(", ");
+// the Where to get filter: "mvp", "mini", "normal" (a monster of that kind drops it), "quest", "none" (no known source)
+const fromOk=(id,v)=>{const x=itemInfo(id),d=x.d||[];return !v||(v==="none"?!d.length&&!(x.q||[]).length:v==="quest"?!!(x.q||[]).length:d.some(r=>r[3]===v))};
+// the column: each monster (a link to Monster info when the farm tables know it), its level, MVP / mini boss and drop %, then quests
+const MOB_BY_ID=new Map(MOBS.map(m=>[m.id,m]));
+const fromHtml=id=>[...(itemInfo(id).d||[]).map(([mid,n,lv,k,ch])=>`${MOB_BY_ID.has(mid)?`<a href="#" data-mob="${mid}">${esc(n)}</a>`:esc(n)} <span class="note">Lv ${lv}${ch!=null?` · ${ch}%`:""}</span>${FROM_TAG[k]?` <span class="pill${k==="mvp"?" mvp":""}">${FROM_TAG[k]}</span>`:""}`),
+  ...(itemInfo(id).q||[]).map(q=>`<span class="pill">quest</span> ${esc(q)}`)].join("<br>")||'<span class="muted">no known source</span>';
+const FROM_OPTS=`<option value="">Any</option><option value="mvp">MVP drop</option><option value="mini">Mini boss drop</option><option value="normal">Normal monster drop</option><option value="quest">Quest</option><option value="none">No known source</option>`;
+function cardDbOk(c,f){const q=String(f.q||"").trim().toLowerCase();if(f.slot&&cardPart(c)!==f.slot)return false;if(!fromOk(c.id,f.from))return false;
+  return !q||c.name.toLowerCase().includes(q)||("#"+c.id).includes(q)||cardName(c).toLowerCase().includes(q)||fromTxt(c.id).toLowerCase().includes(q)||itemText(c.id).toLowerCase().includes(q)||fxOf(c).join(" ").toLowerCase().includes(q)}
 
 // ---- putting gear on: set i is your gear (−1) or other gear set i ----
 const setAt=(c,i)=>i<0?buildOf(c):altOf(c,i);
@@ -92,11 +107,11 @@ function wornIn(c,id,card){const b=c.build;if(!b)return [];const has=s=>Object.v
   return [-1,...Array.from({length:altN(c)},(_,i)=>i)].filter(i=>has(i<0?b:b.alts[i])).map(setLabel)}
 
 // ---- the Equipment tab ----
-const EQDB_D={q:"",type:"",el:"",job:"mine",lvMin:"",lvMax:"",slots:"",atk:"",matk:"",def:""};
+const EQDB_D={q:"",type:"",el:"",job:"mine",lvMin:"",lvMax:"",slots:"",atk:"",matk:"",def:"",from:""};
 const eqDbF=()=>({...EQDB_D,...state.eqDb});
 TABLES.equipTable={def:["name",1],cols:{name:{t:r=>r.it.name},id:{n:r=>r.it.id,asc:1},type:{t:r=>gearKind(r.it)},lv:{n:r=>r.it.lv||0},slots:{n:r=>r.it.slots||0},
-  atk:{n:r=>r.it.atk||0},matk:{n:r=>r.it.matk||0},def:{n:r=>r.it.def||0},w:{n:r=>r.it.w||0,asc:1},jobs:{t:r=>jobsTxt(r.it)},fx:{t:r=>r.fx.join(" ")}}};
-TABLES.cardTable={def:["name",1],cols:{name:{t:r=>r.c.name},id:{n:r=>r.c.id,asc:1},part:{t:r=>CARD_PART[cardPart(r.c)]||"–"},nm:{t:r=>cardName(r.c)},fx:{t:r=>r.fx.join(" ")}}};
+  atk:{n:r=>r.it.atk||0},matk:{n:r=>r.it.matk||0},def:{n:r=>r.it.def||0},w:{n:r=>r.it.w||0,asc:1},jobs:{t:r=>jobsTxt(r.it)},from:{t:r=>fromTxt(r.it.id)},fx:{t:r=>r.fx.join(" ")}}};
+TABLES.cardTable={def:["name",1],cols:{name:{t:r=>r.c.name},id:{n:r=>r.c.id,asc:1},part:{t:r=>CARD_PART[cardPart(r.c)]||"–"},nm:{t:r=>cardName(r.c)},from:{t:r=>fromTxt(r.c.id)},fx:{t:r=>r.fx.join(" ")}}};
 const EQ_SORTS=[["name:1","Name A–Z"],["name:-1","Name Z–A"],["lv:-1","Highest Lv"],["lv:1","Lowest Lv"],["atk:-1","Highest ATK"],["matk:-1","Highest MATK"],
   ["def:-1","Highest DEF"],["slots:-1","Most card slots"],["w:1","Lightest"],["id:1","ID"]];
 const wornPills=(c,id,card)=>wornIn(c,id,card).map(x=>` <span class="pill up">${x}</span>`).join("");
@@ -108,21 +123,23 @@ function renderEquipDb(){const c=C(),f=eqDbF(),all=typeof EQUIP!=="undefined"?EQ
   const rows=tableRows("equipTable",all.filter(it=>eqDbOk(it,f,state.job)).map(it=>({it,fx:fxOf(it)})));
   $("eqDbCount").textContent=`${rows.length} of ${all.length} items`;
   $("equipTable").tBodies[0].innerHTML=rows.slice(0,400).map(({it,fx})=>{const pl=eqPlaces(it,state.job),ok=pl.length&&wearsJob(it,state.job);
-    return `<tr data-eqrow="${it.id}"><td class="name"><div class="dbName">${iconHtml("gear",it.id)}<div>${eqBtn("item",it.id,ok,!pl.length?"Not something you wear":`A ${state.job} can't wear it`)} ${esc(it.name)} <span class="note">#${it.id}</span>${wornPills(c,it.id)}</div></div></td><td class="name l">${esc(gearKind(it))}${it.wlv?` <span class="note">Lv ${it.wlv}</span>`:""}${it.el&&it.el!=="neutral"?` <span class="el ${fxCap(it.el)}">${fxCap(it.el)}</span>`:""}</td>
+    return `<tr data-eqrow="${it.id}"><td class="name"><div class="dbName">${iconHtml("gear",it.id)}<div>${eqBtn("item",it.id,ok,!pl.length?"Not something you wear":`A ${state.job} can't wear it`)} ${esc(it.name)} <span class="note">#${it.id}</span>${wornPills(c,it.id)}</div></div></td><td class="name l kind">${esc(gearKind(it))}${it.wlv?` <span class="note">Lv ${it.wlv}</span>`:""}${it.el&&it.el!=="neutral"?` <span class="el ${fxCap(it.el)}">${fxCap(it.el)}</span>`:""}</td>
       <td>${it.lv||"–"}</td><td>${it.slots?`[${it.slots}]`:"–"}</td><td>${it.atk||"–"}</td><td>${it.matk||"–"}</td><td>${it.def||"–"}</td><td>${it.w!=null?it.w:"–"}</td>
-      <td class="name l jobs">${esc(jobsTxt(it))}</td><td class="name fx">${fx.map(esc).join("<br>")||'<span class="muted">–</span>'}</td></tr>`}).join("")
-    +(rows.length>400?`<tr><td colspan="10" class="name muted">${rows.length-400} more: narrow the filters</td></tr>`:"")
-    ||'<tr><td colspan="10" class="name muted">No equipment matches these filters.</td></tr>'}
+      <td class="name l jobs">${esc(jobsTxt(it))}</td><td class="name l from">${fromHtml(it.id)}</td>
+      <td class="name fx">${fx.map(esc).join("<br>")||'<span class="muted">–</span>'}${itemText(it.id)?`<details class="desc"><summary>In-game text</summary>${esc(itemText(it.id))}</details>`:""}</td></tr>`}).join("")
+    +(rows.length>400?`<tr><td colspan="11" class="name muted">${rows.length-400} more: narrow the filters</td></tr>`:"")
+    ||'<tr><td colspan="11" class="name muted">No equipment matches these filters.</td></tr>'}
 // ---- the Cards tab ----
-const CARDDB_D={q:"",slot:""};
+const CARDDB_D={q:"",slot:"",from:""};
 const cardDbF=()=>({...CARDDB_D,...state.cardDb});
 function renderCardDb(){const c=C(),f=cardDbF(),all=typeof CARDS!=="undefined"?CARDS:[];
   ROOTQ("[data-cdf]").forEach(x=>{if(document.activeElement!==x)x.value=f[x.dataset.cdf]??""});
   const rows=tableRows("cardTable",all.filter(x=>cardDbOk(x,f)).map(x=>({c:x,fx:fxOf(x)})));
   $("cardDbCount").textContent=`${rows.length} of ${all.length} cards`;
   $("cardTable").tBodies[0].innerHTML=rows.map(({c:x,fx})=>`<tr data-cdrow="${x.id}"><td class="name"><div class="dbName">${iconHtml("card",x.id)}<div>${eqBtn("card",x.id,!!cardPart(x),"Not a card that goes in gear")} ${esc(x.name)} <span class="note">#${x.id}</span>${wornPills(c,x.id,true)}</div></div></td>
-      <td class="name l">${CARD_PART[cardPart(x)]||"–"}</td><td class="name l">${esc(cardName(x))||"–"}</td><td class="name fx">${fx.map(esc).join("<br>")||'<span class="muted">–</span>'}</td></tr>`).join("")
-    ||'<tr><td colspan="4" class="name muted">No cards match these filters.</td></tr>'}
+      <td class="name l">${CARD_PART[cardPart(x)]||"–"}</td><td class="name l">${esc(cardName(x))||"–"}</td>
+      <td class="name l from">${fromHtml(x.id)}</td><td class="name fx">${itemText(x.id)?esc(itemText(x.id)):fx.map(esc).join("<br>")||'<span class="muted">–</span>'}</td></tr>`).join("")
+    ||'<tr><td colspan="5" class="name muted">No cards match these filters.</td></tr>'}
 
 // ---- the Equip dialog: pick the gear set (and the place, or for a card the card slot) ----
 let EQ_DLG=null;
@@ -171,6 +188,7 @@ $("eqDlg").addEventListener("click",e=>{if(e.target===$("eqDlg"))$("eqDlg").clos
   $("eqDbEl").innerHTML=`<option value="">Any</option>${["neutral","water","earth","fire","wind","poison","holy","shadow","ghost","undead"].map(e=>`<option value="${e}">${fxCap(e)}</option>`).join("")}`;
   $("eqDbJob").innerHTML=`<option value="">Any job</option><option value="mine">Your job</option>${DB_JOBS.map(j=>`<option>${j}</option>`).join("")}`;
   $("eqDbSort").innerHTML=`<option value="" hidden>By column</option>${EQ_SORTS.map(([v,n])=>`<option value="${v}">${n}</option>`).join("")}`;
+  ROOTQ(".fromSel").forEach(x=>x.innerHTML=FROM_OPTS);
   $("cardDbSlot").innerHTML=`<option value="">Any</option>${Object.entries(CARD_PART).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}`;
   ROOTQ("[data-eqf]").forEach(x=>x.addEventListener("input",()=>{state.eqDb={...eqDbF(),[x.dataset.eqf]:x.value};save();renderEquipDb()}));
   ROOTQ("[data-cdf]").forEach(x=>x.addEventListener("input",()=>{state.cardDb={...cardDbF(),[x.dataset.cdf]:x.value};save();renderCardDb()}));
@@ -179,7 +197,10 @@ $("eqDlg").addEventListener("click",e=>{if(e.target===$("eqDlg"))$("eqDlg").clos
   $("cardDbReset").addEventListener("click",()=>{state.cardDb={...CARDDB_D};delete state.tsort.cardTable;save();renderCardDb()});
   [["equipTable",renderEquipDb],["cardTable",renderCardDb]].forEach(([id,render])=>$(id).tHead.addEventListener("click",e=>{const th=e.target.closest("th[data-sk]");if(!th)return;
     const k=th.dataset.sk,[k0,d0]=tblSort(id),col=TABLES[id].cols[k];state.tsort[id]=[k,k===k0?-d0:col.n&&!col.asc?-1:1];save();render()}));
+  // a monster in Where to get opens it in Monster info; the In-game text folds open without equipping
+  const dbLink=e=>{const m=e.target.closest("[data-mob]");if(m){e.preventDefault();state.infoMobId=+m.dataset.mob;save();showTab("mobinfo");scrollTo({top:0});return true}
+    return !!e.target.closest("details.desc")};
   // a click anywhere on a row equips it, unless the item can't be worn
-  $("equipTable").tBodies[0].addEventListener("click",e=>{const tr=e.target.closest("tr[data-eqrow]"),b=tr&&tr.querySelector("[data-eqitem]");if(b&&!b.disabled)openEquip("item",+tr.dataset.eqrow)});
-  $("cardTable").tBodies[0].addEventListener("click",e=>{const tr=e.target.closest("tr[data-cdrow]"),b=tr&&tr.querySelector("[data-eqcard]");if(b&&!b.disabled)openEquip("card",+tr.dataset.cdrow)});
+  $("equipTable").tBodies[0].addEventListener("click",e=>{if(dbLink(e))return;const tr=e.target.closest("tr[data-eqrow]"),b=tr&&tr.querySelector("[data-eqitem]");if(b&&!b.disabled)openEquip("item",+tr.dataset.eqrow)});
+  $("cardTable").tBodies[0].addEventListener("click",e=>{if(dbLink(e))return;const tr=e.target.closest("tr[data-cdrow]"),b=tr&&tr.querySelector("[data-eqcard]");if(b&&!b.disabled)openEquip("card",+tr.dataset.cdrow)});
 })();

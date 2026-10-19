@@ -2070,4 +2070,25 @@ t("Equipment and Cards tabs: each item's cell in the icon and card picture sheet
   assert.ok(h.includes('class="ico ico-card"')); assert.ok(!/class="([^"]*)"/.exec(run(`iconHtml("card",4035)`))[1].split(" ").includes("card"));
 });
 
+t("Equipment and Cards tabs: in-game text, where to get it and the Where to get filter", () => {
+  // Eddga Card: its bonus line is only MaxHP -25%; Endure is in the in-game text, which the search and the card's effects use
+  assert.match(run(`itemText(4123)`), /Endure/);
+  const cd = (id, f) => run(`cardDbOk(BUILD.item(${id}),{...CARDDB_D,...${JSON.stringify(f)}})`);
+  assert.equal(cd(4123, { q: "endure" }), true);
+  assert.equal(cd(4123, { from: "mvp" }), true); assert.equal(cd(4123, { from: "normal" }), false);    // Eddga is an MVP
+  assert.equal(cd(4035, { from: "normal" }), true); assert.equal(cd(4035, { from: "mvp" }), false);    // Hydra
+  assert.equal(cd(300834, { from: "none" }), true);                                                   // Baby Shark Card: an event card
+  assert.equal(cd(4123, { q: "eddga lv 84" }), true);                                                 // by monster
+  assert.match(run(`fromTxt(4123)`), /^Eddga Lv 84 \(MVP\) [\d.]+%$/);
+  // gear: monster drops (Zweihander from Doppelganger, an MVP), quests (Antlers), the filter on the Equipment tab
+  const ok = (id, f) => run(`eqDbOk(BUILD.item(${id}),{...EQDB_D,job:"",...${JSON.stringify(f)}},"Knight")`);
+  assert.equal(ok(1168, { from: "mvp" }), true); assert.equal(ok(1168, { from: "quest" }), false);
+  assert.equal(ok(2284, { from: "quest" }), true); assert.equal(ok(2284, { from: "none" }), false);
+  assert.equal(ok(1168, { q: "doppelganger" }), true);
+  assert.match(run(`fromHtml(2284)`), /quest/);
+  assert.match(run(`fromHtml(-1)`), /no known source/);
+  // champion monsters read as their name, not rozerodb's code
+  assert.equal(run(`JSON.stringify(ITEM_INFO)`).includes("C5_"), false);
+});
+
 console.log(`${n} tests passed`);
