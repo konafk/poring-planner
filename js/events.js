@@ -276,7 +276,7 @@ $("cmpTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.tar
 const sessAutoName=s=>{const mp=sessMap(s),m=sessMobs(s)[0];return mp?mapCode(mp):m?m.name:""};
 const toggleSessMob=id=>{const s=cur(),auto=s.name==="New session"||s.name===sessAutoName(s);const i=s.mobIds.indexOf(id);
   if(i>=0)s.mobIds.splice(i,1);else{if(!s.mobIds.length)s.job=state.job;s.mobIds.push(id)}
-  if(s.map&&!sessMaps(s).some(x=>x[0]===s.map))delete s.map;
+  if(s.map&&!sessOn(s,s.map))delete s.map;
   const nm=sessAutoName(s);if(auto&&nm)s.name=nm};
 // the session's map: blank is the auto pick; the name follows it while it's still the default
 $("sessMapSel").addEventListener("change",e=>{const s=cur(),auto=s.name==="New session"||s.name===sessAutoName(s);
@@ -369,6 +369,9 @@ $("itemCard").addEventListener("click",e=>{const a=e.target.closest("[data-pitem
 $("mapList").innerHTML=Object.keys(MAPMOBS).sort((a,b)=>mapCode(a).localeCompare(mapCode(b))).map(m=>`<option value="${mapCode(m)}">${esc(mapName(m))} · ${MAPMOBS[m].length} monsters</option>`).join("");
 $("mapInput").addEventListener("change",e=>{state.map=mapKey(e.target.value);save();renderMap()});
 $("mapFromMob").addEventListener("click",()=>{state.map="";save();renderMap()});
+// the Map planner's map becomes the session's, with the monsters you hunt there; the name follows it while it's still the default
+$("mapToSess").addEventListener("click",()=>{const mp=$("mapToSess").dataset.map;if(!MAPMOBS[mp])return;const s=cur(),auto=s.name==="New session"||s.name===sessAutoName(s);
+  if(!s.mobIds.length)s.job=state.job;s.mobIds=mapHuntIds(mp);s.map=mp;state.map=mp;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;state.calcMobId=null;save();renderAll()});
 // possible rampage (monsters attacking you together) on the Map planner's map; blank goes back to the default (3 in Labyrinth Forest, else 1)
 $("mobbedIn").addEventListener("input",e=>{let mp=mapKey(state.map);if(!MAPMOBS[mp])mp=mobMap(calcMob());if(!MAPMOBS[mp])return;
   if(!state.mobbed)state.mobbed={};const v=e.target.value;if(v===""||!(+v>0))delete state.mobbed[mp];else state.mobbed[mp]=Math.min(12,Math.max(1,Math.round(+v)));save();renderAll()});

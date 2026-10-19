@@ -162,7 +162,8 @@ function renderTracker(){renderStart();
   const ms=sessMobs(s),mob=ms.length===1?ms[0]:null,maps=sessMaps(s),auto=sessMapAuto(s),smp=sessMap(s);
   {const sel=$("sessMapSel"),of=ms.length>1?x=>` · ${x[1]} of ${ms.length} monsters`:()=>"";sel.disabled=!maps.length;
     sel.innerHTML=!maps.length?`<option value="">${ms.length?"No open map for these monsters":"Pick a monster first"}</option>`
-      :`<option value="">Auto: ${esc(mapLabel(auto))}</option>`+maps.map(x=>`<option value="${esc(x[0])}">${esc(mapLabel(x[0]))}${of(x)} · ≈${x[2]} spawns</option>`).join("");
+      :`<option value="">Auto: ${esc(mapLabel(auto))}</option>`+maps.map(x=>`<option value="${esc(x[0])}">${esc(mapLabel(x[0]))}${of(x)} · ≈${x[2]} spawns</option>`).join("")
+      +(s.map&&smp===s.map&&!maps.some(x=>x[0]===s.map)?`<option value="${esc(s.map)}">${esc(mapLabel(s.map))} · not open</option>`:"");
     sel.value=s.map&&smp===s.map?s.map:""}
   // the folded part of the Log EXP card says what it's set to, so you know without opening it
   {const sel=$("sessMapSel"),o=sel.options[sel.selectedIndex],n=partyN(s),bits=[];if(maps.length&&o)bits.push(o.textContent.replace(/ · ≈\d+ spawns$/,""));
@@ -676,6 +677,9 @@ function renderMap(){
   if(!mp)mp=mobMap(mob);
   $("mapInput").value=mp?mapCode(mp):"";$("mapName").textContent=mapName(mp)+(isRoomMap(mp)?` · room dungeon: one map cut into small rooms, so monsters crowd into yours (a possible rampage of ${ROOM_CROWD} unless you change it)`:"");
   {const b=$("mobbedIn");b.disabled=!MAPMOBS[mp];b.placeholder=MAPMOBS[mp]?(mobbedDef(mp)?`${mobbedDef(mp)} (room dungeon)`:"Character tab's number"):"";if(document.activeElement!==b)b.value=MAPMOBS[mp]&&(state.mobbed||{})[mp]!=null?state.mobbed[mp]:""}
+  {const b=$("mapToSess"),s=cur(),here=!!MAPMOBS[mp]&&sessMap(s)===mp,ids=MAPMOBS[mp]?mapHuntIds(mp):[],same=here&&ids.length===s.mobIds.length&&ids.every(id=>s.mobIds.includes(id));
+    b.dataset.map=mp||"";b.disabled=!MAPMOBS[mp]||same;b.textContent=same?"✓ Farming this map":here?"Farming here: hunt all its monsters":"Farming this map now";
+    $("mapSessNote").textContent=!MAPMOBS[mp]?"":same?`Session "${s.name}" is on this map`:here?`Session "${s.name}" is on this map with ${s.mobIds.length} of its monsters`:`Session "${s.name}"${sessMap(s)?` is on ${mapCode(sessMap(s))}`:" has no map yet"}`}
   if(!MAPMOBS[mp]){$("mapTiles").innerHTML='<div class="note">Pick a map to see how this job does there.</div>';$("mapTable").querySelector("tbody").innerHTML="";return}
   const w=walkSec(),r=mapStats(mp,w);const L=lvExp(num(C().baseLv));const st=stats(cur());const L2=st?st.L:L;
   $("mapTiles").innerHTML=r?`<div class="tile now"><div class="k">Average EXP / min</div><div class="v mono">${fmtN(r.epm)}</div><div class="s">weighted by spawn counts${r.el2&&convOn()?` · bring ${r.el2} converters`:""}${r.skip?` · skips ${r.skip} you can't hurt`:""}${r.unk?` · leaves out ${esc(r.unkNames.join(", "))} (EXP unknown)`:""}</div></div>
