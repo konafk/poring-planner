@@ -107,7 +107,7 @@ const bonusParts=(m,magic=false)=>{const c=C();let post=1,full=1+num(c.dmgBonus)
   // and, for an element's plain "Damage" bonus (Volcano, Deluge, Whirlwind), for physical attacks of that element too
   if(SKFX){if(!magic){full*=1+SKFX.pct/100;post*=1+(SKFX.physEle[atkEl()]||0)/100}else post*=1+(SKFX.myEle[atkEl()]||0)/100}return {post,full}};
 const bonusMul=(m,magic=false)=>{const b=bonusParts(m,magic);return b.post*b.full};
-// build mode: gear EXP bonus % (plus vs a monster's race), and damage taken from its race / element / boss-normal kind
+// build mode: gear EXP bonus % (plus vs a monster's race), and damage taken from its race / size / element / boss-normal kind
 const expGear=m=>{const c=C();return c.bx?(c.bx.exp.all||0)+((c.bx.exp.race||{})[m.race]||0):0};
 // your EXP per kill: your Even Share cut (rounded down), then every EXP bonus added together, not multiplied (10% + 10% is ×1.20,
 // matching the in-game kills noted at partyN). Gear EXP counts for base and job EXP; an item's "EXP +X%" is base EXP only and
@@ -115,7 +115,7 @@ const expGear=m=>{const c=C();return c.bx?(c.bx.exp.all||0)+((c.bx.exp.race||{})
 const partyCut=(v,s=cur())=>Math.floor(v*(100+partyBonus(s))/100/partyN(s));
 const killExp=(m,s=cur())=>Math.floor(partyCut(m.exp,s)*(1+(expGear(m)+num(state.bonus)+consSum("exp_base"))/100));
 const killJobExp=(m,s=cur())=>Math.floor(partyCut(m.job,s)*(1+(expGear(m)+num(state.jobBonus)+consSum("exp_job"))/100));
-const takenMul=m=>{const c=C();if(!c.bx)return 1;const t=c.bx.taken;return (1+(t.race[m.race]||0)/100)*(1+(t.ele[m.el||"Neutral"]||0)/100)*(1+(t.kind[m.boss?"boss":"normal"]||0)/100)};
+const takenMul=m=>{const c=C();if(!c.bx)return 1;const t=c.bx.taken;return Math.max(0,(1+(t.race[m.race]||0)/100)*(1+((t.size||{})[m.size]||0)/100)*(1+(t.ele[m.el||"Neutral"]||0)/100)*(1+(t.kind[m.boss?"boss":"normal"]||0)/100))};
 // ignore DEF / MDEF %: lowers the monster's hard defence before the (4000+DEF)/(4000+10·DEF) or (1000+MDEF)/(1000+10·MDEF) factor
 // ignOf: the plain ignore % plus gear that ignores it only against the monster's race, size, element or boss / normal (bx.ign)
 const ignOf=(k,m)=>{const c=C(),I=c.bx&&c.bx.ign&&c.bx.ign[k];let v=num(c[k==="def"?"ignDef":"ignMdef"]);
@@ -151,7 +151,8 @@ const hitPctOf=m=>{const a=C().a;if(a.falcon)return elemMult(m,"Neutral");if(a.t
   const P=atkParts(),tot=P.weapon+P.eq+frontAtk();if(tot<=0)return 0;
   return pctEff(m)*handAtk(m,P.weapon,C().weapon,atkEl(),frontAtk())/tot*bonusParts(m).full};
 // hit chance = 100 + your HIT − the monster's "100% hit" value, 5–100%; magic always lands
-const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist"||C().a.falcon||C().a.mr)return 100;if(m.hit100==null)return 95;return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100))};
+// (Double Attack's HIT bonus adds its % to the hit chance of basic attacks with a dagger)
+const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist"||C().a.falcon||C().a.mr)return 100;if(m.hit100==null)return Math.min(100,95+daSkill().hit);return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100+daSkill().hit))};
 function dmgPerHit(m){
   const a=C().a;if(a.type==="spellfist")return sfOn()?sfHit(m,atkEl()):hsHit(m,atkEl());if(a.mr)return mrHit(m);if(a.falcon==="assault")return faHit(m);if(a.falcon)return blitzHit(m,Math.round(num(a.hits,5)));
   if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor((sumStat(cf("matkTxt"))*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
@@ -166,8 +167,14 @@ function physDmg(m,pool){if(pool<=0)return 0;
 function leftDmg(m){if(!dualHit())return 0;const P=atkParts(),d=physDmg(m,handAtk(m,P.left,C().lw,leftEl(),P.st));
   return d>0?Math.max(1,Math.floor(d*handPct().left/100)):0}
 // damage of one use before hit and crit: every hit of the attack, plus the left hand once
-// Side Winder adds its double attack to basic attacks, right hand only, unless you learned Double Attack (the card then follows the skill)
-const swMul=()=>C().a.type==="auto"&&!skLv(C(),"double-attack")?daFactor():1;
+// Double Attack (Thief, so Assassin and Rogue too): with a dagger in the right hand, basic attacks hit twice and get HIT, both from the
+// level's description ("Activation Chance: 7%, HIT Bonus: 1%" a level). With a skill tree it's the learned level; without one, attacks that
+// name it (a.da) take Lv10. No effect with any other weapon
+const daLv=(c=C())=>c.a.type!=="auto"||c.weapon!=="Dagger"?0:hasTree(c)?skLv(c,"double-attack"):c.a.da?10:0;
+const daSkill=()=>{const lv=daLv();if(!lv)return {lv:0,ch:0,hit:0};const d=String((skRowOf("double-attack",lv)||[])[7]||""),m=d.match(/Chance:\s*(\d+)%/i),h=d.match(/HIT Bonus:\s*(\d+)%/i);
+  return {lv,ch:(m?+m[1]:7*lv)/100,hit:h?+h[1]:lv}};
+// basic attacks hit twice (right hand only) at the higher of Double Attack's chance and Side Winder's (any weapon)
+const swMul=()=>C().a.type!=="auto"?1:1+Math.max(daSkill().ch,CRD().daSF?num(CRD().daPct)/100:0);
 const perUse=m=>{const a=C().a,h=a.sizeHits?a.sizeHits[{S:0,M:1,L:2}[m.size]??1]:num(a.hits,1);return dmgPerHit(m)*Math.max(0.01,h)*swMul()+leftDmg(m)};
 // crits (basic attacks only): chance = CRIT (doubled with a katar) − monster LUK × 0.2, always hit, × 1.4 × (1 + crit damage %)
 // m: the monster, for gear CRIT that only counts against its race (Cruiser Card: CRIT +7 vs Brute)
@@ -580,7 +587,18 @@ const MAPALIAS={};{const byName={};Object.entries(MAPNAMES).forEach(([k,[g,n,...
   Object.entries(byName).forEach(([n,k])=>{if(k&&!(n in MAPALIAS))MAPALIAS[n]=k})}
 const mapKey=s=>{const t=String(s??"").trim().toLowerCase();return MAPALIAS[t]||t};
 const isClosed=map=>{const r=regionOf(map);return (r&&state.regions[r.id]!==false)||state.closed.some(c=>mapKey(c)===mapKey(map))};
-const openMaps=m=>(SPAWN[m.id]||[]).filter(x=>!isClosed(x[0])).sort((a,b)=>b[1]-a[1]);
+// maps that need a base level to enter: below it they're left out of the EXP and Zeny Hunters and aren't a monster's open map
+const MAP_MINLV={nrd_dun02:50};
+const mapMinLv=mp=>MAP_MINLV[mapKey(mp)]||0;
+const lvLocked=mp=>num(C().baseLv)<mapMinLv(mp);
+const openMaps=m=>(SPAWN[m.id]||[]).filter(x=>!isClosed(x[0])&&!lvLocked(x[0])).sort((a,b)=>b[1]-a[1]);
+// the EXP and Zeny Hunters' max sec / kill (state.maxSec, 60 by default, 0 for none): slower maps and monsters get a "too slow" badge and
+// rank after all the others. rankRows ranks rows best first by score (sec / kill: r.secT, or 3600 / kills an hour)
+const maxSecKill=()=>state.maxSec===""||state.maxSec==null?60:Math.max(0,num(state.maxSec));
+const rankRows=(rows,score)=>{const lim=maxSecKill();rows.forEach(r=>{const t=r.secT!=null?r.secT:3600/r.kph;r.slow=lim>0&&!(t<=lim)});
+  rows.sort((a,b)=>a.slow-b.slow||score(b)-score(a));rows.forEach((r,i)=>r.rank=i+1);return rows};
+const slowPill=r=>r.slow?` <span class="pill down" title="Over your max ${maxSecKill()}s a kill (~${fmtN(r.secT!=null?r.secT:3600/r.kph)}s): ranked after the rest">too slow</span>`:"";
+const lockPill=mp=>lvLocked(mp)?` <span class="pill down" title="Needs base Lv ${mapMinLv(mp)} to enter">Lv ${mapMinLv(mp)}+</span>`:"";
 // monsters you skip (e.g. ones that stun you): left out of map averages, you walk past them
 const isSkipped=m=>!!(state.skipMobs&&state.skipMobs.includes(m.id));
 // rozerodb has no EXP for some monsters yet (Myst, Isis, Anubis...): shown as "?" and left out of EXP averages
@@ -644,7 +662,15 @@ function pace0(s,same){
 // snapshots takes the stats you have when it's first worked out (est) ----
 // (gear bonuses, bx, are worked out again from the gear lines or Build from gear when it's used; the other gear sets, saved loadouts and remembered gear aren't kept)
 const charSnap=(c=C())=>{const o=JSON.parse(JSON.stringify(c));delete o.bx;delete o.gearEdit;if(o.build){delete o.build.alt;delete o.build.alts;delete o.build.loadouts;delete o.build.mem}if(o.sage)delete o.sage._note;return o};
-const snapSession=s=>{if((s.job||state.job)===state.job)s.snap={at:Date.now(),c:charSnap()}};
+// A log with stats that change the session's fight time keeps the ones before in s.snapHist = [{t, c}] (oldest first; t: the newest entry
+// they cover), so the part of the session logged with them keeps its fight time: lowering ATK or MATK and logging again doesn't make
+// the walking of the hour before shrink. was: the entry times the session had before this log (the new entries take the new stats)
+const SNAP_HIST_MAX=8;
+const snapFight=(s,c)=>withSnap(c,()=>{const p=pace0(s,true);return p&&isFinite(p.fight)?p.fight:null});
+const snapSession=(s,was)=>{if((s.job||state.job)!==state.job)return;was=Array.isArray(was)?was:[];const c=charSnap(),prev=s.snap,t=Math.max(-Infinity,...was);
+  if(prev&&was.length>=2&&stats(s)&&JSON.stringify(prev.c)!==JSON.stringify(c)){const a=snapFight(s,prev.c),b=snapFight(s,c);
+    if(a!=null&&(b==null||Math.abs(a-b)>1e-6)){const h=(s.snapHist||[]).filter(x=>x.t<t);h.push({t,c:prev.c});s.snapHist=h.slice(-SNAP_HIST_MAX)}}
+  s.snap={at:Date.now(),c}};
 // sessions of this job with a pace and no snapshot yet take the stats you have now, after renderAll has worked everything out
 const snapEst=()=>{let n=0;state.sessions.forEach(s=>{if(!s.snap&&(s.job||state.job)===state.job&&stats(s)){s.snap={at:Date.now(),c:charSnap(),est:true};n++}});if(n)save()};
 // the model with a copy of a session's snapshot swapped in: redoes what renderAll works out from it (not Hindsight auto: the snapshot
@@ -653,13 +679,18 @@ function withSnap(c,fn){const job=state.job,real=state.chars[job],k={SKFX,EFF,BU
   try{SKFX=skillEffects(C());sageFromTree(C());applyBuild();applyConsumables();return fn()}
   finally{state.chars[job]=real;SKFX=k.SKFX;EFF=k.EFF;BUILD_LAST=k.BUILD_LAST}}
 // what the walking depends on besides the snapshot: the entries, pauses, monsters, party and EXP bonus
-const calKey=s=>[s.snap?s.snap.at:0,s.mobIds.join("."),sessMap(s),partyN(s),num(state.bonus),...s.entries.map(e=>`${e.t}:${e.lv}:${e.pct}:${e.died||0}`),...(s.pauses||[]).map(p=>`${p.from}-${p.to??""}`)].join("|");
+const calKey=s=>[s.snap?s.snap.at:0,...(s.snapHist||[]).map(x=>"h"+x.t),s.mobIds.join("."),sessMap(s),partyN(s),num(state.bonus),...s.entries.map(e=>`${e.t}:${e.lv}:${e.pct}:${e.died||0}`),...(s.pauses||[]).map(p=>`${p.from}-${p.to??""}`)].join("|");
 // a session's pace with its own stats, worked out once and kept on it (s.walk = {key, sec, fight, kph}); null for another job's session
 // Until a session has a snapshot (one saved before them) it follows your stats; renderAll then gives it one (snapEst)
 function sessCal(s){if((s.job||state.job)!==state.job||!stats(s))return null;const key=calKey(s);if(s.walk&&s.walk.key===key)return s.walk;
   if(!s.snap){const p=pace0(s,true);return {key,sec:p&&p.walk!=null?p.walk:null,fight:p&&isFinite(p.fight)?p.fight:null,kph:p?p.kph:null}}
-  const p=withSnap(s.snap.c,()=>pace0(s,true));
-  s.walk={key,sec:p&&p.walk!=null?p.walk:null,fight:p&&isFinite(p.fight)?p.fight:null,kph:p?p.kph:null};return s.walk}
+  const p=withSnap(s.snap.c,()=>pace0(s,true)),fight=p&&isFinite(p.fight)?histFight(s,p.fight):null;
+  s.walk={key,sec:fight!=null&&p.obs>=fight?p.obs-fight:null,fight,kph:p?p.kph:null};return s.walk}
+// the fight time across a session logged with more than one set of stats: each stretch between two entries takes the stats it was logged
+// with, weighted by the EXP it gained (kills, as the monsters are the same)
+function histFight(s,last){const H=s.snapHist||[];if(!H.length)return last;const es=[...s.entries].sort((a,b)=>a.t-b.t),base=es[0].lv,f=H.map(x=>snapFight(s,x.c));
+  let g=0,x=0;for(let k=1;k<es.length;k++){const d=Math.max(0,gained(es,k-1,k,base)),i=H.findIndex(h=>es[k].t<=h.t),v=i>=0&&f[i]!=null?f[i]:last;g+=d;x+=d*v}
+  return g>0?x/g:last}
 function sessionPace(s){const same=(s.job||state.job)===state.job,p=pace0(s,false);if(!p)return null;
   const k=same?sessCal(s):null,mix=same?sessMix(s,m=>isFinite(bestFight(m))):p.mix;
   return k?{...p,kph:k.kph,obs:3600/k.kph,fight:k.fight??NaN,walk:k.sec,zk:mix.avg(zenyKill),mix,cal:true}:{...p,zk:mix.avg(zenyKill)}}
@@ -667,7 +698,7 @@ function sessionPace(s){const same=(s.job||state.job)===state.job,p=pace0(s,fals
 const walkInfo=()=>{const c=cur();for(const s of [c,...state.sessions.filter(x=>x!==c)]){const k=sessCal(s);if(k&&k.sec!=null)return {sec:Math.max(1,k.sec),s}}return {sec:2,s:null}};
 const walkSec=()=>walkInfo().sec;
 // for tooltips: "walk calibrated from <session>" (with when its stats were taken), or why it's 2s
-const walkSrcTxt=()=>{const {s}=walkInfo();return s?`walk calibrated from ${s.name}${s.snap&&s.snap.est?" (with the stats you had when it was first worked out)":s.snap?` (stats from ${fmtD(s.snap.at)} ${fmtT(s.snap.at)})`:""}`:"walk 2s until a session of this job has a pace"};
+const walkSrcTxt=()=>{const {s}=walkInfo();return s?`walk calibrated from ${s.name}${s.snap&&s.snap.est?" (with the stats you had when it was first worked out)":s.snap?` (stats from ${fmtD(s.snap.at)} ${fmtT(s.snap.at)}${s.snapHist&&s.snapHist.length?`; the entries before keep the ${s.snapHist.length===1?"stats":s.snapHist.length+" sets of stats"} they were logged with`:""})`:""}`:"walk 2s until a session of this job has a pace"};
 // job EXP needed for your current job level (Novice / 1st / 2nd job table)
 const FIRST_JOBS=["Swordsman","Mage","Archer","Acolyte","Merchant","Thief"];
 const jobTier=(job=state.job)=>job==="Novice"?"novice":FIRST_JOBS.includes(job)?"first":"second";

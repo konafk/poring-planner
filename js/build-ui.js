@@ -1,7 +1,7 @@
 // ---- build simulator: in "build" mode the stat fields are computed from base stats + gear (build.js) and shown read-only ----
 // "Check against the game": [key, label, computed total]
 // compared with what the build computes (BUILD_LAST), not with c, since typed Max HP / SP replace the computed ones
-const CHECKS=[["atk","ATK",F=>sumStat(F.atkTxt)],["matk","MATK",F=>sumStat(F.matkTxt)],["hit","HIT",F=>sumStat(F.hitTxt)],["flee","FLEE",F=>sumStat(F.fleeTxt)],
+const CHECKS=[["atk","ATK",F=>sumStat(F.atkTxt)],["matk","MATK",F=>sumStat(F.matkTxt)],["hit","HIT",F=>sumStat(F.hitTxt)],["flee","FLEE",F=>parseFloat(String(F.fleeTxt).split("+")[0])||0],
   ["aspd","ASPD",F=>F.aspd],["def","DEF",F=>sumStat(F.defTxt)],["hp","Max HP",F=>F.maxHp],["sp","Max SP",F=>F.maxSp]];
 const BUILT_IDS=["atkPct","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lw","lwAtk","lwElem","crit","critDmg","rangePct","skillPct","vctPct","fctPct","acdPct","ignDef","ignMdef","st_str","st_agi","st_vit","st_dex","st_luk","weapon","wElem"];
 let BUILD_LAST=null;
@@ -192,17 +192,17 @@ OWN_LISTS.forEach(L=>{
 // ---- equipment stats (status-window mode): the % lines from the game's Equipment Stats window, as rows {by, t, ch, v} ----
 // [kind, label, has a Phys / Magic choice, flat (no %)]
 const EQ_KINDS=[["race","Damage to race",true],["size","Damage to size",true],["ele","Damage to element",true],["kind","Damage to boss / normal",true],["group","Damage to monster group",true],
-  ["all","Damage to all monsters",true],["myEle","Magic damage of an element (your spells)"],["critRace","CRIT when attacking race",false,true],["takenRace","Damage taken from race"],["takenEle","Damage taken from element"],["takenKind","Damage taken from boss / normal"],
+  ["all","Damage to all monsters",true],["myEle","Magic damage of an element (your spells)"],["critRace","CRIT when attacking race",false,true],["takenRace","Damage taken from race"],["takenSize","Damage taken from size"],["takenEle","Damage taken from element"],["takenKind","Damage taken from boss / normal"],
   ["ignRace","Ignore DEF / MDEF of race",true],["ignSize","Ignore DEF / MDEF of size",true],["ignEle","Ignore DEF / MDEF of element",true],["ignKind","Ignore DEF / MDEF of boss / normal",true],
   ["exp","EXP gained from monsters"],["expRace","EXP gained from race"],["spCost","Skill SP consumption"],["spRec","SP recovery (natural regen)"],["hpRec","HP recovery (natural regen)"]];
 const EQ_TARGETS={race:()=>RACES,size:()=>[["S","Small"],["M","Medium"],["L","Large"]],ele:()=>AE,kind:()=>[["boss","Boss"],["normal","Normal"]],group:()=>[["Boulder Dwarf","Boulder Dwarves"]],
-  ignRace:()=>RACES,ignSize:()=>EQ_TARGETS.size(),ignEle:()=>AE,ignKind:()=>EQ_TARGETS.kind(),myEle:()=>AE,critRace:()=>RACES,takenRace:()=>RACES,takenEle:()=>AE,takenKind:()=>[["boss","Boss"],["normal","Normal"]],expRace:()=>RACES};
+  ignRace:()=>RACES,ignSize:()=>EQ_TARGETS.size(),ignEle:()=>AE,ignKind:()=>EQ_TARGETS.kind(),myEle:()=>AE,critRace:()=>RACES,takenRace:()=>RACES,takenSize:()=>EQ_TARGETS.size(),takenEle:()=>AE,takenKind:()=>[["boss","Boss"],["normal","Normal"]],expRace:()=>RACES};
 // older saves had one race / size / element box each; turn them into rows once
 const eqOf=c=>{if(!Array.isArray(c.eq))c.eq=[];
   [["raceSel","racePct","raceType","race"],["sizeSel","sizePct","sizeType","size"],["elSel","elPct","elType","ele"]].forEach(([s,p,t,by])=>{
     if(c[s]&&num(c[p]))c.eq.push({by,t:c[s],ch:c[t]||"both",v:num(c[p])});delete c[s];delete c[p];delete c[t]});return c.eq};
 const IGN_BY={ignRace:"race",ignSize:"size",ignEle:"ele",ignKind:"kind"};
-function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},critRace:{},taken:{race:{},ele:{},kind:{}},exp:{all:0,race:{}},spCost:0,spRec:0,hpRec:0,
+function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},critRace:{},taken:{race:{},size:{},ele:{},kind:{}},exp:{all:0,race:{}},spCost:0,spRec:0,hpRec:0,
     ign:{def:{race:{},size:{},ele:{},kind:{}},mdef:{race:{},size:{},ele:{},kind:{}}}};
   const add=(m,k,v)=>{m[k]=(m[k]||0)+v};
   eqOf(c).forEach(r=>{const v=num(r.v);if(!v)return;
@@ -210,7 +210,7 @@ function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}}
     else if(r.by==="all"){if(r.ch!=="magic")o.phys.all+=v;if(r.ch!=="phys")o.magic.all+=v}
     // ignore rows: Physical is DEF, Magic is MDEF
     else if(IGN_BY[r.by]){if(r.ch!=="magic")add(o.ign.def[IGN_BY[r.by]],r.t,v);if(r.ch!=="phys")add(o.ign.mdef[IGN_BY[r.by]],r.t,v)}
-    else if(r.by==="myEle")add(o.myEle,r.t,v);else if(r.by==="critRace")add(o.critRace,r.t,v);else if(r.by.startsWith("taken"))add(o.taken[{takenRace:"race",takenEle:"ele",takenKind:"kind"}[r.by]],r.t,v);
+    else if(r.by==="myEle")add(o.myEle,r.t,v);else if(r.by==="critRace")add(o.critRace,r.t,v);else if(r.by.startsWith("taken"))add(o.taken[{takenRace:"race",takenSize:"size",takenEle:"ele",takenKind:"kind"}[r.by]],r.t,v);
     else if(r.by==="exp")o.exp.all+=v;else if(r.by==="expRace")add(o.exp.race,r.t,v);else if(r.by==="spCost")o.spCost+=v;else if(r.by==="spRec")o.spRec+=v;else if(r.by==="hpRec")o.hpRec+=v});return o}
 // "Fill from gear": the lines the gear saved in Build from gear gives (gear, cards, affixes, stones, Taming Ring, other special
 // equipment; not consumables or buffs), one row per bonus. A bonus with different physical and magic values gets a row for each
@@ -223,7 +223,7 @@ function gearEqRows(c){const A=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobL
   both("all","",A.phys.all,A.magic.all);
   Object.entries(IGN_BY).forEach(([by,k])=>new Set([...Object.keys(A.ign.def[k]),...Object.keys(A.ign.mdef[k])]).forEach(t=>both(by,t,A.ign.def[k][t]||0,A.ign.mdef[k][t]||0)));
   Object.entries(A.myEle).forEach(([t,v])=>add("myEle",t,v));Object.entries(A.critRace).forEach(([t,v])=>add("critRace",t,v));
-  [["race","takenRace"],["ele","takenEle"],["kind","takenKind"]].forEach(([k,by])=>Object.entries(A.taken[k]).forEach(([t,v])=>add(by,t,v)));
+  [["race","takenRace"],["size","takenSize"],["ele","takenEle"],["kind","takenKind"]].forEach(([k,by])=>Object.entries(A.taken[k]||{}).forEach(([t,v])=>add(by,t,v)));
   add("exp","",A.exp.all);Object.entries(A.exp.race).forEach(([t,v])=>add("expRace",t,v));
   add("spCost","",A.spCost);add("spRec","",A.spRec);add("hpRec","",A.hpRec);return rows}
 function renderEq(){const c=C();$("eqPanel").hidden=c.mode==="build";const fill=$("eqFill");fill.disabled=!gearSaved(c);
@@ -264,12 +264,18 @@ const readGear=(slot,text,items)=>BUILD.readGearName(text,items||gearChoices(slo
 // the affixes the row's gear rolls (BUILD.optChoices: a weapon by its type, also in the Shield row; every option for parts rozerodb has
 // no pool for), with its min–max on the value box. An option saved before that this gear can't roll stays, listed under "Saved"
 const OPT_HTML={};
+// rows replacing typed option text keep the typed lines that match no option (g.optsText), so none are lost
+const optSet=(g,rows)=>{const bad=BUILD.optBad(g.opts);g.opts=rows;if(bad.length)g.optsText=[g.optsText,...bad].filter(Boolean).join(", ")};
+// under the lists: the typed lines kept (not counted, with a remove link), and the limit once it's reached
+const optKept=g=>[g.optsText,...BUILD.optBad(g.opts)].filter(Boolean).join(", ");
+const optDrop=g=>{g.opts=BUILD.optRows(g.opts);delete g.optsText};
+const optFoot=(g,n)=>(optKept(g)?`<div class="note">Kept as typed, not counted: ${esc(optKept(g))} · <a href="#" data-optsdrop>remove</a></div>`:"")+(n>=BUILD.OPT_MAX?`<div class="note">max ${BUILD.OPT_MAX} options (the most an item rolls)</div>`:"");
 const optList=ch=>{const gs=[...new Set(ch.map(o=>o.g))];
   return gs.map(g=>`<optgroup label="${esc(g)}">${ch.filter(o=>o.g===g).map(o=>`<option value="${o.k}">${esc(o.label)}${o.range?` (${o.range[0]}${o.range[1]!==o.range[0]?"–"+o.range[1]:""})`:""}</option>`).join("")}</optgroup>`).join("")};
 function optBoxes(slot,g,it){const ch=BUILD.optChoices(slot,it),gk=BUILD.optGear(slot,it)||"all",list=OPT_HTML[gk]||(OPT_HTML[gk]=optList(ch)),rows=BUILD.optRows(g.opts);
   const one=(x,i)=>{const o=x&&ch.find(c=>c.k===x.k),saved=x&&!o?BUILD.OPTIONS.find(c=>c.k===x.k):null,r=o&&o.range;
     return `<div class="opt"><select data-opt="${i}"><option value="">${x?"remove":"+ affix"}</option>${saved?`<optgroup label="Saved"><option value="${saved.k}">${esc(saved.label)}</option></optgroup>`:""}${list}</select>${x?`<input data-optv="${i}" type="number" step="any"${r?` min="${r[0]}" max="${r[1]}" placeholder="${r[0]}–${r[1]}" title="${esc(o.label)}: ${r[0]}–${r[1]}"`:""} value="${esc(x.v??"")}">`:""}</div>`};
-  return `<div class="opts">${rows.map(one).join("")}${rows.length<BUILD.OPT_MAX?one(null,rows.length):""}</div>`}
+  return `<div class="opts">${rows.map(one).join("")}${rows.length<BUILD.OPT_MAX?one(null,rows.length):""}${optFoot(g,rows.length)}</div>`}
 // costume enchant stones: a list per costume slot, each stone with what it gives
 const STONE_FX={str:"STR",agi:"AGI",vit:"VIT",int:"INT",dex:"DEX",luk:"LUK",crit:"CRIT",hit:"HIT",flee:"FLEE",def:"DEF",mdef:"MDEF",hp:"MaxHP",sp:"MaxSP",aspd:"ASPD",
   atk:"ATK",matk:"MATK",damage_percent:"Physical damage %",hp_recovery_percent:"HP recovery %",attack_delay_percent:"After-attack delay %",atk_percent:"ATK %",matk_percent:"MATK %",hp_percent:"MaxHP %",sp_percent:"MaxSP %",crit_damage_percent:"Critical damage %",cast_time_variable_percent:"Variable cast %"};
@@ -289,13 +295,14 @@ function renderSpecialOwn(){$("specialOwn").innerHTML=specialOwn().map((x,i)=>`<
   specialOwn().forEach((x,i)=>BUILD.optRows(x.opts).forEach((o,j)=>{const el=$("specialOwn").querySelector(`[data-i="${i}"] [data-opt="${j}"]`);if(el)el.value=o.k}))}
 $("specialAdd").addEventListener("click",()=>{specialOwn().push({on:true,name:"",opts:[]});save();renderSpecialOwn();renderAll();
   $("specialOwn").querySelector(".eqrow:last-child [data-f=name]")?.focus()});
-$("specialOwn").addEventListener("click",e=>{if(!e.target.closest("[data-del]"))return;specialOwn().splice(+e.target.closest(".eqrow").dataset.i,1);save();renderSpecialOwn();renderAll()});
+$("specialOwn").addEventListener("click",e=>{if(e.target.closest("[data-optsdrop]")){e.preventDefault();optDrop(specialOwn()[+e.target.closest(".eqrow").dataset.i]);save();renderSpecialOwn();renderAll();return}
+  if(!e.target.closest("[data-del]"))return;specialOwn().splice(+e.target.closest(".eqrow").dataset.i,1);save();renderSpecialOwn();renderAll()});
 $("specialOwn").addEventListener("change",e=>{if(e.target.dataset.opt==null)return;const row=e.target.closest(".eqrow"),x=specialOwn()[+row.dataset.i],rows=BUILD.optRows(x.opts),i=+e.target.dataset.opt,v=e.target.value;
-  if(!v)rows.splice(i,1);else rows[i]={k:v,v:rows[i]?rows[i].v:""};x.opts=rows;save();renderSpecialOwn();renderAll();
+  if(!v)rows.splice(i,1);else rows[i]={k:v,v:rows[i]?rows[i].v:""};optSet(x,rows);save();renderSpecialOwn();renderAll();
   if(v)$("specialOwn").querySelector(`[data-i="${row.dataset.i}"] [data-optv="${i}"]`)?.focus()});
 $("specialOwn").addEventListener("input",e=>{const row=e.target.closest(".eqrow");if(!row)return;const x=specialOwn()[+row.dataset.i],f=e.target.dataset.f;
   if(f)x[f]=f==="on"?e.target.checked:e.target.value;
-  else if(e.target.dataset.optv!=null){const rows=BUILD.optRows(x.opts),o=rows[+e.target.dataset.optv];if(!o)return;o.v=e.target.value===""?"":num(e.target.value);x.opts=rows}else return;
+  else if(e.target.dataset.optv!=null){const rows=BUILD.optRows(x.opts),o=rows[+e.target.dataset.optv];if(!o)return;o.v=e.target.value===""?"":num(e.target.value);optSet(x,rows)}else return;
   save();renderAll()});
 $("stoneRow").addEventListener("change",e=>{const b=gearSet();
   if(e.target.dataset.ring){b.special=b.special||{};if(e.target.value)b.special.ring=+e.target.value;else delete b.special.ring;save();renderAll();return}
@@ -307,12 +314,12 @@ const MEM_N=100;
 const memOf=c=>{const b=buildOf(c);if(!b.mem||typeof b.mem!=="object"||Array.isArray(b.mem))b.mem={};return b.mem};
 // keep row g's refine, cards and affixes under its item; a +0 item with no cards or affixes has nothing to keep
 function memKeep(c,g){if(!g||!g.id)return;const m=memOf(c),opts=BUILD.optRows(g.opts);delete m[g.id];
-  if(num(g.refine)||(g.cards||[]).some(Boolean)||opts.length)m[g.id]=JSON.parse(JSON.stringify({refine:num(g.refine),cards:g.cards||[],opts,t:Date.now()}));
+  if(num(g.refine)||(g.cards||[]).some(Boolean)||opts.length||g.optsText)m[g.id]=JSON.parse(JSON.stringify({refine:num(g.refine),cards:g.cards||[],opts,...(g.optsText||BUILD.optBad(g.opts).length?{optsText:[g.optsText,...BUILD.optBad(g.opts)].filter(Boolean).join(", ")}:{}),t:Date.now()}));
   Object.entries(m).sort((x,y)=>num(y[1].t)-num(x[1].t)).slice(MEM_N).forEach(([id])=>delete m[id])}
 const memAll=(c,gear)=>Object.values(gear||{}).forEach(g=>memKeep(c,g));
 // put item id in row g, the one there now remembered first: as it last was if remembered, else +0 with no cards or affixes
 function gearPut(c,g,id){if(g.id===id)return;memKeep(c,g);const m=memOf(c)[id]||{};g.id=id;
-  g.refine=num(m.refine);g.cards=[...(m.cards||[])];g.opts=JSON.parse(JSON.stringify(m.opts||[]))}
+  g.refine=num(m.refine);g.cards=[...(m.cards||[])];g.opts=JSON.parse(JSON.stringify(m.opts||[]));if(m.optsText)g.optsText=m.optsText;else delete g.optsText}
 // "+7 · Vitata Card · 2 affixes"
 const memTxt=m=>[num(m.refine)?`+${num(m.refine)}`:"",...(m.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean),
   ...(m.opts&&m.opts.length?[`${m.opts.length} affix${m.opts.length>1?"es":""}`]:[])].filter(Boolean).join(" · ");
@@ -373,7 +380,7 @@ $("gearTable").addEventListener("change",e=>{const tr=e.target.closest("tr[data-
     save();renderGearTable();renderAll();return}
   // picking an option keeps its value; "remove" drops it. The rows replace any text typed before the lists
   if(e.target.dataset.opt!=null){const rows=BUILD.optRows(g.opts),i=+e.target.dataset.opt,v=e.target.value;
-    if(!v)rows.splice(i,1);else rows[i]={k:v,v:rows[i]?rows[i].v:""};g.opts=rows;save();renderGearTable();renderAll();
+    if(!v)rows.splice(i,1);else rows[i]={k:v,v:rows[i]?rows[i].v:""};optSet(g,rows);save();renderGearTable();renderAll();
     if(v)$("gearTable").querySelector(`tr[data-slot="${k}"] [data-optv="${i}"]`)?.focus();return}
   if(e.target.dataset.card!=null){const v=e.target.value.trim(),id=GEAR_LISTS["c_"+k].get(v),i=+e.target.dataset.card;g.cards=g.cards||[];
     if(!v)g.cards[i]=null;else if(id!=null)g.cards[i]=id;
@@ -388,8 +395,11 @@ $("checkGrid").addEventListener("input",e=>{const k=e.target.dataset.ck;if(!k)re
   // refresh just the difference marks while typing, so the box keeps focus
   CHECKS.forEach(([kk,,get])=>{const inp=$("checkGrid").querySelector(`[data-ck="${kk}"]`),mark=inp.nextElementSibling,g=b.check[kk],mine=BUILD_LAST?get(BUILD_LAST.fields):null;
     const d=g!=null&&mine!=null?g-mine:null;if(mark)mark.remove();if(d!=null)inp.insertAdjacentHTML("afterend",`<span class="${Math.abs(d)<0.5?"good":"bad"}">${d===0?"✓":(d>0?"+":"")+fmtP(+d.toFixed(1))}</span>`)})});
+// "remove" on the typed option lines kept from before the lists
+$("gearTable").addEventListener("click",e=>{if(!e.target.closest("[data-optsdrop]"))return;e.preventDefault();const g=gearSet().gear[e.target.closest("tr").dataset.slot];if(!g)return;
+  optDrop(g);save();renderGearTable();renderAll()});
 $("gearTable").addEventListener("input",e=>{if(e.target.dataset.optv!=null){const g=gearSet().gear[e.target.closest("tr").dataset.slot];if(!g)return;
-    const rows=BUILD.optRows(g.opts),x=rows[+e.target.dataset.optv];if(x){x.v=e.target.value===""?"":num(e.target.value);g.opts=rows;save();renderAll()}return}
+    const rows=BUILD.optRows(g.opts),x=rows[+e.target.dataset.optv];if(x){x.v=e.target.value===""?"":num(e.target.value);optSet(g,rows);save();renderAll()}return}
   if(!e.target.classList.contains("ref"))return;const k=e.target.closest("tr").dataset.slot;const g=gearSet().gear[k];if(!g)return;
   g.refine=Math.max(0,Math.min(20,num(e.target.value)));save();renderAll()});
 // ---- other gear sets: + Add set adds one and Remove set takes it away; the gear table edits set i after "Set i" is picked. Your gear

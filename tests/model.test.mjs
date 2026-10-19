@@ -1276,6 +1276,147 @@ t("clan: a buff that stays on, two stats +1, Max HP +30, Max SP +10, counted in 
   assert.equal(run(`cf("maxHp")`), 1000);
 });
 
+t("Thief Double Attack: daggers hit twice 7% × Lv of the time with HIT +1% × Lv; other weapons don't", () => {
+  const AUTO = { name: "Basic attack", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
+  const ORC = MOB.replace("size:'L'", "size:'M'").replace("hit100:200", "hit100:250");   // a Medium monster you hit 80% of the time
+  const base = { atkTxt: "60+150", wAtk: 150, wElem: "Neutral", hitTxt: "230", crit: 0, aspd: 170, st: {}, skills: {}, a: AUTO };
+  setup("Thief", { ...base, weapon: "Dagger" });
+  const hit = run(`dmgPerHit(${ORC})`);
+  near(run(`perUse(${ORC})`), hit);                                          // not learned, no a.da: one hit
+  assert.equal(run(`hitChance(${ORC})`), 80);
+  run("C().skills={'double-attack':5}");                                     // learned Lv5: 35% twice, HIT +5%
+  near(run(`perUse(${ORC})`), hit * 1.35);
+  assert.equal(run(`hitChance(${ORC})`), 85);
+  run("C().skills={'double-attack':10}");
+  near(run(`perUse(${ORC})`), hit * 1.7);
+  assert.equal(run(`hitChance(${ORC})`), 90);
+  const dagger = run(`dpsOf(${ORC})`);
+  run("C().a={...C().a,type:'phys'}");                                       // skills don't double attack
+  near(run(`perUse(${ORC})`), hit); assert.equal(run(`hitChance(${ORC})`), 80);
+  // the same character with a Saber (one-handed sword): 100% vs Medium, but no Double Attack
+  setup("Thief", { ...base, weapon: "One-handed sword", skills: { "double-attack": 10 } });
+  near(run(`perUse(${ORC})`), run(`dmgPerHit(${ORC})`)); assert.equal(run(`hitChance(${ORC})`), 80);
+  assert.ok(dagger > run(`dpsOf(${ORC})`) * 1.2, "dagger 75% × 1.7 beats a sword's 100% on orcs");
+  // no skill tree: the preset that names it counts Lv10, a dagger still needed
+  setup("Thief", { ...base, weapon: "Dagger", preset: 0, a: JSON.parse(run("JSON.stringify(JOBS.Thief.p[0])")) });
+  near(run(`perUse(${ORC})`), hit * 1.7);
+  // a save from before: a Thief on the preset with 1.5 hits averaged in takes the new preset, its session snapshot too
+  const old = { ...JSON.parse(run("JSON.stringify(JOBS.Thief.p[0])")), hits: 1.5 }; delete old.da;
+  const app = load({ job: "Thief", current: "s", chars: { Thief: { ...base, weapon: "Dagger", preset: 0, a: old } },
+    sessions: [{ id: "s", name: "s", job: "Thief", mobIds: [], entries: [], snap: { at: 1, c: { ...base, preset: 0, a: old } } }] });
+  assert.deepEqual(JSON.parse(app("JSON.stringify([C().a.hits,C().a.da,cur().snap.c.a.hits,cur().snap.c.a.da])")), [1, true, 1, true]);
+});
+
+t("damage taken from race / size / element cuts HP lost, heal cost and raises net zeny", () => {
+  // a Thief like Chainsmoker: Poo Poo Hat's own −10% from Demi-Human, Muffler and Boots each rolled "Resistance to Demi-Human 7%"
+  run(`state.job="Thief";state.chars={};state.recovery={discount:false};Object.assign(C(),{baseLv:45,jobLv:40,mode:"build",st:{},eq:[],skills:{}})`);
+  const orc = "MOBS.find(m=>m.id===1023)", mp = "gef_fild03";
+  const set = g => { run(`C().build={base:{str:60,agi:70,vit:20,int:1,dex:30,luk:1},gear:${g}};SKFX=skillEffects(C());applyBuild();applyConsumables()`);
+    return JSON.parse(run(`JSON.stringify({mul:takenMul(${orc}),hit:mobHitDmg(${orc}),hpm:hpLossPerMin(${orc}),map:(r=>({hpm:r.hpm,heal:r.heal,net:r.net}))(mapStats(${JSON.stringify(mp)},2)),un:BUILD_LAST.unmodelled})`)); };
+  const none = set(`{weapon:{id:1222},garment:{id:480378},shoes:{id:470233}}`);      // the same DEF, no resist
+  assert.equal(run(`${orc}.race`), "Demi-Human");
+  const res = `{k:"res_race_demi_human",v:7}`;
+  const all = set(`{weapon:{id:1222},headTop:{id:2289},garment:{id:480378,opts:[${res}]},shoes:{id:470233,opts:[${res}]}}`);
+  near(all.mul, 0.76);
+  near(none.mul, 1); near(all.hit, none.hit * 0.76, "a monster's hit");
+  assert.ok(all.hpm < none.hpm && all.map.hpm < none.map.hpm && all.map.heal < none.map.heal && all.map.net > none.map.net);
+  // typed the way the game names it
+  const typed = set(`{weapon:{id:1222},headTop:{id:2289},garment:{id:480378,opts:"Resistance to Demi-Human 7%"},shoes:{id:470233,opts:"Resistance to Demi-Human 7%"}}`);
+  near(typed.mul, 0.76); assert.deepEqual(typed.un, []);
+  // status window mode: Equipment stats lines, by race, size and element
+  run(`C().mode="status";C().eq=[{by:"takenRace",t:"Demi-Human",v:-24}];applyBuild()`); near(run(`takenMul(${orc})`), 0.76);
+  run(`C().eq=[{by:"takenSize",t:"M",v:-10},{by:"takenEle",t:"Earth",v:-20}];applyBuild()`); near(run(`takenMul(${orc})`), 0.9 * 0.8);
+  run(`C().eq=[{by:"takenSize",t:"L",v:-10}];applyBuild()`); near(run(`takenMul(${orc})`), 1);   // orcs are Medium
+});
+
+t("maps too slow to farm rank last with a badge; nrd_dun02 needs base Lv 50", () => {
+  run(`state.job="Thief";state.chars={};state.recovery={discount:false};state.maxSec=60;Object.assign(C(),{baseLv:45,jobLv:40,atkTxt:"60+150",hitTxt:"150",fleeTxt:"150",aspd:165,
+    defTxt:"20+10",maxHp:3000,maxSp:200,st:{},eq:[],weapon:"Dagger",skills:{}});SKFX=skillEffects(C());applyBuild();applyConsumables()`);
+  const rank = () => JSON.parse(run(`JSON.stringify(rankRows(Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)&&!lvLocked(mp)).map(mp=>mapStats(mp,2)).filter(r=>r&&r.N>=20),r=>r.epm).map(r=>({mp:r.mp,rank:r.rank,slow:r.slow,secT:r.secT,epm:r.epm})))`));
+  // Lv 45: nrd_dun02 is locked, so it isn't ranked and isn't its Boulder Dwarves' open map
+  assert.equal(run("lvLocked('nrd_dun02')"), true);
+  assert.ok(!rank().some(r => r.mp === "nrd_dun02"));
+  assert.ok(!run("openMaps(MOBS.find(m=>m.id===25327)).some(x=>x[0]==='nrd_dun02')"));
+  assert.match(run("lockPill('nrd_dun02')"), /Lv 50\+/);
+  // Lv 50: it can be entered, has the best EXP / min, but takes far over 60 s a kill: ranked after every map that isn't too slow
+  run("C().baseLv=50");
+  let rows = rank(), nrd = rows.find(r => r.mp === "nrd_dun02");
+  assert.ok(nrd.secT > 60 && nrd.slow && rows.every(r => r.epm <= nrd.epm));
+  const first = rows.findIndex(r => r.slow);
+  assert.ok(first > 0 && rows.slice(first).every(r => r.slow) && rows.slice(0, first).every(r => r.secT <= 60));
+  assert.match(run("slowPill({slow:true,secT:175})"), /too slow/);
+  // the table's default sort (EXP / min) keeps them last too; another column sorts them in place
+  run("state.tsort={}");
+  const shown = JSON.parse(run(`JSON.stringify(sortRows("bestTable",[{mp:"a",epm:9,slow:true},{mp:"b",epm:5,slow:false},{mp:"c",epm:7,slow:false}]).map(r=>r.mp))`));
+  assert.deepEqual(shown, ["c", "b", "a"]);
+  run(`state.tsort={bestTable:["secT",1]}`);
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(sortRows("bestTable",[{mp:"a",secT:9,slow:true},{mp:"b",secT:5}]).map(r=>r.mp))`)), ["b", "a"]);
+  run(`state.tsort={bestTable:["epm",-1]}`);                                  // epm picked by hand is the default column: still last
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(sortRows("bestTable",[{mp:"a",epm:9,slow:true},{mp:"b",epm:5}]).map(r=>r.mp))`)), ["b", "a"]);
+  run("state.tsort={}");
+  // 0 is no limit: back to plain EXP / min
+  run("state.maxSec=0"); rows = rank(); assert.equal(rows[0].mp, "nrd_dun02"); assert.ok(!rows.some(r => r.slow));
+  run("state.maxSec=200"); assert.equal(rank()[0].mp, "nrd_dun02");                    // an editable limit
+  run("delete state.maxSec"); assert.equal(run("maxSecKill()"), 60);                     // saves from before: 60
+});
+
+t("a table's saved column filters are listed for the Filters on chip", () => {
+  run(`state.tfilt={bestTable:{sus:">80",mp:"",nope:"x"}}`);                // the saved filter that hid every orc map
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(activeFilters("bestTable").map(([k,,v])=>[k,v]))`)), [["sus", ">80"]]);
+  run("filterRows('bestTable',[])");                                         // draws the chip without failing
+  run(`state.tfilt={}`); assert.equal(run(`activeFilters("bestTable").length`), 0);
+});
+
+t("FLEE reads like the status window: every FLEE (Improve Dodge included) + Perfect Dodge", () => {
+  const b = (job, skills, luk = 25) => { run(`state.job=${JSON.stringify(job)};state.chars={};Object.assign(C(),{baseLv:45,jobLv:40,mode:"build",st:{},eq:[],skills:${JSON.stringify(skills)}});
+    C().build={base:{str:40,agi:60,vit:10,int:1,dex:30,luk:${luk}},gear:{}};SKFX=skillEffects(C());applyBuild()`); return run("BUILD_LAST"); };
+  const r0 = b("Thief", {}), st = r0.status.flee, pd = 1 + Math.floor(r0.total.luk / 10);
+  assert.ok(pd > 1); assert.equal(r0.fields.fleeTxt, `${st}+${pd}`);         // Perfect Dodge 1 + LUK / 10
+  // Improve Dodge Lv10: FLEE +30 for a Thief, +40 after the 2nd job, in the first number (not its per-level data lines on top)
+  assert.equal(b("Thief", { "improve-dodge": 10 }).fields.fleeTxt, `${st + 30}+${pd}`);
+  assert.equal(b("Assassin", { "improve-dodge": 10 }).fields.fleeTxt, `${b("Assassin", {}).status.flee + 40}+${1 + Math.floor(b("Assassin", {}).total.luk / 10)}`);
+  // Perfect Dodge from gear goes in the second number
+  b("Thief", {});
+  run(`C().build.gear={garment:{id:480378,cards:[4285]}};applyBuild()`);     // Muffler with a Choco Card: FLEE +10, Perfect Dodge +5
+  assert.equal(run("BUILD_LAST.fields.fleeTxt"), `${st + run("BUILD_LAST.acc.flee")}+${pd + 5}`);
+  assert.ok(run("BUILD_LAST.acc.flee") > 0 && !run("BUILD_LAST.unmodelled").some(x => /perfect/i.test(x)));
+  // the check against the game compares the FLEE number only
+  run(`state.job="Thief"`); assert.equal(run(`CHECKS.find(x=>x[0]==="flee")[2]({fleeTxt:"273+1"})`), 273);
+  // other skills with data lines: Owl's Eye Lv10 is DEX +10, Faith Lv10 MHP +2000
+  assert.equal(b("Hunter", { "owls-eye": 10 }).total.dex - b("Hunter", {}).total.dex, 10);
+  run(`state.job="Crusader";C().skills={faith:10}`); assert.deepEqual(JSON.parse(run("JSON.stringify(skillEffects(C()).stat.filter(x=>x[0]==='hp').map(x=>x[3]))")), [2000]);
+});
+
+t("option lines typed before the lists aren't lost when the rows replace them", () => {
+  run(`state.job="Knight";state.chars={};Object.assign(C(),{mode:"build",build:{base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{headTop:{id:18730,opts:"MaxHP +100, MaxSP +50, EXP +5%, Healing +3%, Movement Speed +5%"}}}})`);
+  assert.match(run("optFoot(buildOf(C()).gear.headTop,2)"), /Kept as typed, not counted: EXP \+5%, Healing \+3%, Movement Speed \+5%/);   // shown before any pick
+  run("(()=>{const g=buildOf(C()).gear.headTop,rows=BUILD.optRows(g.opts);rows.push({k:'flee',v:3});optSet(g,rows)})()");   // picking a 3rd option in the lists
+  assert.deepEqual(JSON.parse(run("JSON.stringify(buildOf(C()).gear.headTop)")), { id: 18730,
+    opts: [{ k: "hp", v: 100 }, { k: "sp", v: 50 }, { k: "flee", v: 3 }], optsText: "EXP +5%, Healing +3%, Movement Speed +5%" });
+  assert.match(run("optFoot(buildOf(C()).gear.headTop,3)"), /Kept as typed, not counted: EXP \+5%/);
+  assert.match(run("optFoot({},5)"), /max 5 options/); assert.equal(run("optFoot({},4)"), "");
+  // taken off and put back on, it comes back with them
+  run("(()=>{const g=buildOf(C()).gear.headTop;gearPut(C(),g,2289);gearPut(C(),g,18730)})()");
+  assert.equal(run("buildOf(C()).gear.headTop.optsText"), "EXP +5%, Healing +3%, Movement Speed +5%");
+  assert.equal(run("buildOf(C()).gear.headTop.opts.length"), 3);
+  run("optDrop(buildOf(C()).gear.headTop)"); assert.equal(run("optFoot(buildOf(C()).gear.headTop,3)"), "");   // remove
+});
+
+t("in-game gear names fill the item and its cards: card prefixes and suffixes, Double / Triple, cut-off names", () => {
+  run(`state.job="Thief";state.chars={};Object.assign(C(),{mode:"build",baseLv:60})`);
+  const rd = (slot, txt) => JSON.parse(run(`JSON.stringify(readGear(${JSON.stringify(slot)},${JSON.stringify(txt)}))`));
+  assert.deepEqual(rd("headTop", "Novice Criatura Academy Hat"), { id: 18730, refine: null, cards: [4545] });   // Novice Poring Card
+  // two Hydra Cards ("Bloody"): the 2-slot Damascus, not the 1-slot copy that would drop one; Triple keeps as many as fit
+  assert.deepEqual(rd("weapon", "Double Bloody Damascus"), { id: 510132, refine: null, cards: [4035, 4035] });
+  assert.deepEqual(rd("weapon", "+7 Triple Bloody Damascus"), { id: 510132, refine: 7, cards: [4035, 4035] });
+  assert.equal(rd("weapon", "Bloody Damascus").cards.length, 1);
+  // the equipment window cuts long names: "Hard Nordfeld Soldier" is Nordfeld Soldier's Armor with a Pupa Card
+  assert.deepEqual(rd("armor", "Hard Nordfeld Soldier"), { id: 450588, refine: null, cards: [4003] });
+  // Poo Poo Hat: damage from Demi-Human −10% of its own
+  run(`C().build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{headTop:{id:2289}}};SKFX=skillEffects(C());applyBuild()`);
+  assert.deepEqual(JSON.parse(run("JSON.stringify(C().bx.taken.race)")), { "Demi-Human": -10 });
+});
+
 t("cards any job can slot: Side Winder, Hunter Fly, Vitata", () => {
   const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
   setup("Knight", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", hitTxt: "300", crit: 0, aspd: 170, defTxt: "10+10", hitScale: 1, mobInterval: 1.5,
@@ -1284,8 +1425,8 @@ t("cards any job can slot: Side Winder, Hunter Fly, Vitata", () => {
   const per = run(`perUse(${MOB})`), hp = run(`hpLossPerMin(${MOB})`), fight = run(`fightSec(${MOB})`), sp = run("spNeedPerSec()");
   run("CRD().daSF=true;CRD().daPct=7");                                     // Side Winder: basic attacks hit twice 7% of the time
   near(run(`perUse(${MOB})`), per * 1.07);
-  run("C().skills={'double-attack':10}");                                   // a learned Double Attack: the card follows it, nothing added
-  near(run(`perUse(${MOB})`), per);
+  run("C().skills={'double-attack':10}");                                   // Double Attack needs a dagger: without one the card still counts
+  near(run(`perUse(${MOB})`), per * 1.07);
   run("C().skills={};C().a={...AUTO_,type:'phys',pct:300,sp:10}".replace("AUTO_", JSON.stringify(AUTO)));
   const skillPer = run(`perUse(${MOB})`);
   run("CRD().daSF=false");
@@ -1752,6 +1893,13 @@ t("walking comes from the stats a session was logged with: lowering ATK or MATK 
     before = after;
   }
   assert.equal(app("C().matkTxt"), "114+100");                               // working a session out puts your character back
+  // the reported case: Lv 70, MATK 126+227 then 126+172, with Hindsight on and off: gef_fild06 and mjolnir_05 never get faster
+  const two = () => JSON.parse(app(`JSON.stringify(["gef_fild06","mjolnir_05"].map(mp=>{const r=mapStats(mapKey(mp),walkSec());return [r.sec,r.walk,r.secT]}))`));
+  for (const hs of [true, false]) {
+    app(`C().baseLv=70;C().a={...C().a,hs:${hs}};C().matkTxt="126+227";renderAll()`); const hi = two();
+    app(`C().matkTxt="126+172";renderAll()`); const lo = two();
+    hi.forEach(([sec, walk, secT], i) => { near(lo[i][1], walk); assert.ok(lo[i][0] > sec && lo[i][2] > secT, `hs ${hs}: ${hi[i]} → ${lo[i]}`) });
+  }
 });
 
 t("a session keeps the stats it was logged with", () => {
@@ -1766,8 +1914,21 @@ t("a session keeps the stats it was logged with", () => {
   near(run("sessionPace(cur()).fight") + w, run("sessionPace(cur()).obs"));  // its fight time is the logged one too
   assert.equal(run("C().atkTxt"), "100+100");
   assert.match(run("walkSrcTxt()"), /^walk calibrated from b \(stats from /);
-  run(`cur().entries.push({t:${t0 + 72e5},lv:30,pct:20});snapSession(cur())`);   // logging again takes the stats you have then
-  assert.ok(run("walkSec()") < w);
+  // logging again takes the stats you have then for the new stretch; the hour logged before keeps its own fight time
+  const fOld = run("snapFight(cur(),cur().snap.c)");
+  run(`cur().entries.push({t:${t0 + 72e5},lv:30,pct:20});snapSession(cur(),[${t0},${t0 + 36e5}])`);
+  assert.equal(run("cur().snapHist.length"), 1);
+  const fNew = run("snapFight(cur(),cur().snap.c)"), obs = run("sessionPace(cur()).obs");
+  assert.ok(fNew > fOld);
+  near(run("walkSec()"), obs - (fOld + fNew) / 2);                          // two equal stretches: half the kills at each fight time
+  assert.ok(run("walkSec()") < w && run("walkSec()") > obs - fNew);         // not all of the session at the new stats
+  assert.match(run("walkSrcTxt()"), /the entries before keep the stats they were logged with/);
+  // logging with stats that don't change the fight time keeps no history
+  run(`C().curW=123;cur().entries.push({t:${t0 + 108e5},lv:30,pct:25});snapSession(cur(),[${t0},${t0 + 36e5},${t0 + 72e5}])`);
+  assert.equal(run("cur().snapHist.length"), 1);
+  // the history survives a share link
+  const back = JSON.parse(run("JSON.stringify(unpackState(packState(JSON.parse(JSON.stringify(state)))))"));
+  assert.deepEqual(back.sessions[0].snapHist.map(x => [x.t, x.c.atkTxt, "$d" in x]), [[t0 + 36e5, "100+300", false]]);
 });
 
 t("deaths: the EXP a death costs isn't negative EXP / hr", () => {

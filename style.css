@@ -272,6 +272,7 @@ tr.sel td,tr.sel:hover td{background:var(--accent-soft)}
 tr.filters:hover td{background:var(--raised)}
 .pill{display:inline-block;font-size:11px;font-weight:500;padding:1px 8px;border-radius:99px;border:1px solid var(--line-strong);color:var(--muted);font-family:var(--body)}
 .pill.up{color:var(--good);border-color:color-mix(in srgb,var(--good) 50%,transparent);background:color-mix(in srgb,var(--good) 8%,transparent)}
+.fchip{margin:4px 0}.fchip b{font-weight:600}
 .pill.down{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,transparent);background:color-mix(in srgb,var(--warn) 8%,transparent)}
 .el{display:inline-block;font-family:var(--body);font-size:11.5px;font-weight:500;padding:1px 8px;border-radius:99px;background:var(--grid);color:var(--fg)}
 .el.Fire{background:rgba(226,92,58,.18)}.el.Water{background:rgba(56,132,226,.18)}.el.Wind{background:rgba(70,180,120,.2)}.el.Earth{background:rgba(160,120,60,.22)}.el.Undead,.el.Shadow{background:rgba(120,90,160,.2)}.el.Ghost{background:rgba(150,150,170,.22)}.el.Poison{background:rgba(150,80,170,.2)}.el.Holy{background:rgba(220,190,60,.24)}
