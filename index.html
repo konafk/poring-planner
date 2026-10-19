@@ -606,17 +606,18 @@
     <div class="bar"><h2 class="grow">Item info</h2></div>
     <div class="bar">
       <label class="grow">Item<input id="itemSearch" placeholder="name or #id"></label>
+      <label title="Monsters that drop it (MVPs from rozerodb's drop lists, for gear and cards), or a quest">Where to get<select id="itemFrom"></select></label>
     </div>
     <div class="calc" id="itemTiles"></div>
     <div id="itemDroppers" hidden><div class="scroll"><table id="itemDropTable"><thead><tr><th data-sk="name">Dropped by</th><th data-sk="lv">Lv</th><th data-sk="ch">Chance</th><th data-sk="your">Your chance</th><th data-sk="nz" title="what an NPC pays for it × your chance">NPC z / kill</th><th data-sk="z">Zeny / kill from it</th><th data-sk="sp" title="how many of it spawn on its best open map">Spawns</th><th data-sk="map">Best open map</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><input type="search" data-tf="lv" placeholder="30-60"></td><td><input type="search" data-tf="ch" placeholder=">1"></td><td><input type="search" data-tf="your" placeholder=">1"></td><td><input type="search" data-tf="nz" placeholder=">1"></td><td><input type="search" data-tf="z" placeholder=">1"></td><td><input type="search" data-tf="sp" placeholder=">20"></td><td><input type="search" data-tf="map" placeholder="map"></td></tr></thead><tbody></tbody></table></div></div>
     <div class="scroll tall"><table id="itemTable"><thead><tr><th data-sk="name">Item</th><th data-sk="group">Group</th><th data-sk="npc">NPC pays</th><th data-sk="pl">Players pay</th><th data-sk="best" title="the monster with the best drop chance; sorts and filters by that chance, or by its name">Best drop</th><th data-sk="nz" title="what an NPC pays for it × your drop chance, at the monster where that comes to most">NPC z / kill</th><th data-sk="sp" title="the most of one monster that drops it on one open map, bosses left out; filters by count, map or monster">Spawns</th><th data-sk="cnt" title="how many monsters drop it">Dropped by</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><select data-tf="group" aria-label="Auto-loot group"></select></td><td><input type="search" data-tf="npc" placeholder=">1000"></td><td><input type="search" data-tf="pl" placeholder="-"></td><td><input type="search" data-tf="best" placeholder=">1"></td><td><input type="search" data-tf="nz" placeholder=">1"></td><td><input type="search" data-tf="sp" placeholder=">20"></td><td><input type="search" data-tf="cnt" placeholder=">5"></td></tr></thead><tbody></tbody></table></div>
-    <div class="note hint">Every monster drop. Click a row to see who drops it. Players pay = your Market price. NPC z / kill = NPC price × your drop chance (after drop bonus and level penalty), at the best monster for it. Spawns = the most of one monster that drops it on one open map.</div>
+    <div class="note hint">Every monster drop. Click a row to see who drops it. Players pay = your Market price. NPC z / kill = NPC price × your drop chance (after drop bonus and level penalty), at the best monster for it. Spawns = the most of one monster that drops it on one open map. Where to get: the monsters the farm tables know, plus for gear and cards every monster that drops them (MVPs included); an item's Other sources lists the ones not in the table and quests.</div>
   </section>
 
   <section class="card" id="eqDbCard" data-tab="equip">
     <div class="bar"><h2 class="grow">Equipment</h2><span class="note" id="eqDbCount"></span></div>
     <div class="bar dbF">
-      <label class="grow">Search<input id="eqDbQ" data-eqf="q" type="search" placeholder="name, #id or effect (STR, Demon…)"></label>
+      <label class="grow">Search<input id="eqDbQ" data-eqf="q" type="search" placeholder="name, #id, effect (STR, Demon…) or monster"></label>
       <label>Type<select id="eqDbType" data-eqf="type"></select></label>
       <label title="Weapons only">Element<select id="eqDbEl" data-eqf="el"></select></label>
       <label>Job<select id="eqDbJob" data-eqf="job"></select></label>
@@ -625,22 +626,24 @@
       <label>ATK at least<input class="w-sm" data-eqf="atk" type="number" min="0" placeholder="any"></label>
       <label>MATK at least<input class="w-sm" data-eqf="matk" type="number" min="0" placeholder="any"></label>
       <label>DEF at least<input class="w-sm" data-eqf="def" type="number" min="0" placeholder="any"></label>
+      <label title="Monsters that drop it, or a quest">Where to get<select data-eqf="from" class="fromSel"></select></label>
       <label>Sort<select id="eqDbSort"></select></label>
       <label><span>&nbsp;</span><button type="button" id="eqDbReset">Reset</button></label>
     </div>
-    <div class="scroll tall"><table id="equipTable" class="dbTable"><thead><tr><th data-sk="name">Item</th><th data-sk="type" class="l">Type</th><th data-sk="lv">Lv</th><th data-sk="slots">Slots</th><th data-sk="atk">ATK</th><th data-sk="matk">MATK</th><th data-sk="def">DEF</th><th data-sk="w">Weight</th><th data-sk="jobs" class="l">Jobs</th><th data-sk="fx" class="l">Effects</th></tr></thead><tbody></tbody></table></div>
-    <div class="note hint">Every piece of gear the build simulator knows. Click a row (or Equip) to put it in your gear or one of your other gear sets; it keeps the refine, cards and affixes it had when it last came off. Click a header to sort. Search also looks through the effects, so “Demon” finds gear that does more damage to Demons.</div>
+    <div class="scroll tall"><table id="equipTable" class="dbTable"><thead><tr><th data-sk="name">Item</th><th data-sk="type" class="l">Type</th><th data-sk="lv">Lv</th><th data-sk="slots">Slots</th><th data-sk="atk">ATK</th><th data-sk="matk">MATK</th><th data-sk="def">DEF</th><th data-sk="w">Weight</th><th data-sk="jobs" class="l">Jobs</th><th data-sk="from" class="l">Where to get</th><th data-sk="fx" class="l">Effects</th></tr></thead><tbody></tbody></table></div>
+    <div class="note hint">Every piece of gear the build simulator knows. Click a row (or Equip) to put it in your gear or one of your other gear sets; it keeps the refine, cards and affixes it had when it last came off. Click a header to sort. Search also looks through the effects and the in-game text, so “Demon” finds gear that does more damage to Demons. Effects are the lines the calculator counts; In-game text is the item's own description, with anything the lines leave out. Where to get lists the monsters that drop it (best drop rate first; click one the farm tables know to open it in Monster info) and quests that give it.</div>
   </section>
 
   <section class="card" id="cardDbCard" data-tab="cards">
     <div class="bar"><h2 class="grow">Cards</h2><span class="note" id="cardDbCount"></span></div>
     <div class="bar dbF">
-      <label class="grow">Search<input data-cdf="q" type="search" placeholder="name, #id, in-game name (Healing) or effect"></label>
+      <label class="grow">Search<input data-cdf="q" type="search" placeholder="name, #id, in-game name (Healing), monster or effect"></label>
       <label>Equipment slot<select id="cardDbSlot" data-cdf="slot"></select></label>
+      <label title="Monsters that drop it, or a quest">Where to get<select data-cdf="from" class="fromSel"></select></label>
       <label><span>&nbsp;</span><button type="button" id="cardDbReset">Reset</button></label>
     </div>
-    <div class="scroll tall"><table id="cardTable" class="dbTable"><thead><tr><th data-sk="name">Card</th><th data-sk="part" class="l">Goes in</th><th data-sk="nm" class="l" title="the name it gives the gear it's in, as the equipment window shows it">In-game name</th><th data-sk="fx" class="l">Effects</th></tr></thead><tbody></tbody></table></div>
-    <div class="note hint">Click a row (or Equip) to put a card in a card slot of your gear or one of your other gear sets. The item has to be on and have a free (or replaceable) slot: equip one from the Equipment tab first.</div>
+    <div class="scroll tall"><table id="cardTable" class="dbTable"><thead><tr><th data-sk="name">Card</th><th data-sk="part" class="l">Goes in</th><th data-sk="nm" class="l" title="the name it gives the gear it's in, as the equipment window shows it">In-game name</th><th data-sk="from" class="l">Where to get</th><th data-sk="fx" class="l">Effects</th></tr></thead><tbody></tbody></table></div>
+    <div class="note hint">Click a row (or Equip) to put a card in a card slot of your gear or one of your other gear sets. The item has to be on and have a free (or replaceable) slot: equip one from the Equipment tab first. Effects are the card's in-game text. Where to get lists the monsters that drop it, MVPs and mini bosses marked; click one the farm tables know to open it in Monster info.</div>
   </section>
 
   <section class="card" data-tab="ref">
@@ -714,6 +717,7 @@
 <script src="data/stones.js"></script>
 <script src="data/special.js"></script>
 <script src="data/icons.js"></script>
+<script src="data/iteminfo.js"></script>
 <script src="build.js"></script>
 <button type="button" class="fab" id="qlFab" aria-label="Log EXP" aria-expanded="false" aria-controls="quickLog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
 <dialog class="jump" id="jump" aria-label="Search">

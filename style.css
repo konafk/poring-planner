@@ -598,9 +598,10 @@ details.more>.form{display:grid}
 
 /* ---- Equipment and Cards tabs: effects wrap in a wide left-aligned column; the Equip dialog lists each gear set's places ---- */
 .dbTable :is(th,td).l{text-align:left}
-.dbTable td.fx{white-space:normal;text-align:left;min-width:240px;max-width:400px;line-height:1.45}
-.dbTable td.jobs{white-space:normal;min-width:110px;max-width:200px;font-size:12px;color:var(--muted)}
-.dbTable td:first-child{white-space:normal;min-width:250px;max-width:300px}
+.dbTable td.fx{white-space:normal;text-align:left;min-width:220px;max-width:360px;line-height:1.45}
+.dbTable td.kind{white-space:normal;min-width:110px;max-width:160px}
+.dbTable td.jobs{white-space:normal;min-width:100px;max-width:150px;font-size:12px;color:var(--muted)}
+.dbTable td:first-child{white-space:normal;min-width:230px;max-width:280px}
 .dbTable td:first-child .pill{margin-left:2px}
 .dbF label{min-width:0}
 .eqDlg[open]{display:flex;flex-direction:column}
@@ -624,3 +625,11 @@ details.more>.form{display:grid}
 /* the Character tab's gear table: the item's icon beside its box, a small picture beside each card box */
 #gearTable .itemBox,#gearTable .cardBox{display:flex;align-items:center;gap:6px}
 #gearTable .cardBox{flex:1;min-width:0}
+/* Equipment and Cards tabs: where to get it, MVPs marked */
+.dbTable td.from{white-space:normal;min-width:150px;max-width:210px;font-size:12.5px;line-height:1.5}
+.pill.mvp{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,transparent);background:color-mix(in srgb,var(--warn) 8%,transparent)}
+.dbTable details.desc{margin-top:4px;color:var(--muted);font-size:12px}
+.dbTable details.desc summary{cursor:pointer;color:var(--accent);font-size:11.5px;width:max-content}
+/* Item info: an item's other sources (monsters the farm tables don't have, quests) across the tile row */
+.calc .tile.wide{grid-column:1/-1}
+.tile .s.from{line-height:1.7}

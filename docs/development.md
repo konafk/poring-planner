@@ -63,6 +63,7 @@ Each table lives in its own file, so a re-export after a patch only touches that
 | `affixes.js` | Random options per pool (monster drop, MVP, forging, activation, Glast Heim), gear type and option slot, with min–max and whether it's a %. Written by `tools/export_affixes.py`. |
 | `stones.js` | Costume enchant stones (one per costume slot) as bonus lines, and the stone sets. Made by hand from rozerodb's item descriptions. |
 | `special.js` | Pet egg enchants for the Taming Ring (Special Equipment, Accessory Right), Lv.1 and Lv.2 per pet, as bonus lines. Made from rozerodb's item descriptions. |
+| `iteminfo.js` | Each card's and piece of gear's in-game description, the monsters that drop it (MVP, mini boss or normal, with the drop %) and the quests that give it. Written by `tools/export_iteminfo.py`. |
 | `icons.js` | Where each item's gear icon or card picture sits in the `img/` sprite sheets, with a checksum of each sheet. Written by `tools/export_icons.py`. |
 
 ## Tools
@@ -77,6 +78,7 @@ All scripts use only the Python standard library.
 | `python tools/export_prontera.py [--refresh]` | Writes the gear, refine and skill data. |
 | `python tools/export_jobs.py [--refresh]` | Writes `data/jobs.js` from rAthena's pre-renewal job tables with Zero's changes (see the top of the script). |
 | `python tools/export_cardnames.py [--refresh]` | Writes `data/cardnames.js`: each card's name in the equipment window, from divine-pride.net's item pages, for the cards in `data/cards.js`. Run it after `export_prontera.py` picks up new cards. |
+| `python tools/export_iteminfo.py [--refresh]` | Writes `data/iteminfo.js`: descriptions and quests from the roz.prontera.info pages `export_prontera.py` cached, drops from rozerodb's item API and MVP / mini boss from its monster list. Run it after `export_prontera.py`. |
 | `python tools/export_icons.py [--refresh]` | Writes `img/gear-icons.png`, `img/card-art.png` and `data/icons.js`: each item's inventory icon (24 × 24) and a 36 × 48 thumbnail of each card's picture (every card has the same inventory icon), from divine-pride.net's copies of the client images. Images are cached in `tools/cache/icons/`. Run it after `export_prontera.py` picks up new items. |
 | `python tools/export_affixes.py` | Writes `data/affixes.js` from rozerodb's Affixes Simulator page (its data is in the page itself; there is no API). |
 | `python tools/export_mobskills.py [--refresh]` | Writes `data/mobskills.js` from rAthena's pre-renewal monster skill and monster tables, for the monsters in `data/mobs.js`. |
