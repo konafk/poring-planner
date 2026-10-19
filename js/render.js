@@ -14,7 +14,7 @@ const syncChar=()=>{
   {const cd=CRD();ROOTQ("[data-cd]").forEach(i=>{const k=i.dataset.cd;if(i.type==="checkbox")i.checked=!!cd[k];else i.value=cd[k]??""})}
   syncCardOpts();
   $("dpWrap").hidden=state.job!=="Sage";
-  {const ks=CRD().killSp;$("killSpBoxes").innerHTML=Object.entries(KILL_SP).map(([r,n])=>`<label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-cdkill="${esc(r)}" style="width:auto"${ks.includes(r)?" checked":""}> <b>${esc(n)}</b> (${esc(r)})</label>`).join("")}
+  {const ks=CRD().killSp;$("killSpBoxes").innerHTML=Object.entries(KILL_SP).map(([r,n])=>`<label class="bar"><input type="checkbox" data-cdkill="${esc(r)}"${ks.includes(r)?" checked":""}> <b>${esc(n)}</b> (${esc(r)})</label>`).join("")}
   $("ecRow").hidden=!EC_JOBS.includes(state.job);{const e=ECO();ROOTQ("[data-ec]").forEach(i=>{const k=i.dataset.ec;if(i.type==="checkbox")i.checked=!!e[k];else i.value=e[k]??""})}
   $("sagePanel").hidden=state.job!=="Sage";if(state.job==="Sage"){const g=G();ROOTQ("[data-sg]").forEach(i=>{const k=i.dataset.sg;if(i.type==="checkbox")i.checked=!!g[k];else i.value=g[k]??""});ROOTQ("[data-sgbolt]").forEach(i=>i.checked=!!g.bolts[i.dataset.sgbolt])}STATS.forEach(k=>$("st_"+k).value=(c.st&&c.st[k])||"");renderStatNote();
 };
@@ -87,11 +87,11 @@ function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
 const qtyTxt=n=>n%1?n.toFixed(1):String(n);
 function renderUseItems(){const c=C(),a=c.a,ui=useItems(),sup=supShown(),fb=Object.keys(FIELD_ITEM).filter(k=>skLv(c,k)>0);
   const ids=[...new Set([...ui.map(x=>x.id),...sup.flatMap(s=>s.items.map(([n])=>CONS_ID[n])),...fb.map(k=>CONS_ID[FIELD_ITEM[k]])])].filter(Boolean);
-  const box=$("useItems"),key=ids.join()+"|"+sup.map(s=>s.key).join(),lab='class="bar" style="flex-direction:row;gap:4px"';
+  const box=$("useItems"),key=ids.join()+"|"+sup.map(s=>s.key).join(),lab='class="bar"';
   if(box.dataset.key!==key){box.dataset.key=key;
-    const row=(h,x)=>`<div class="bar" style="flex-basis:100%"><span>${h}</span>${x}</div>`;
-    box.innerHTML=(sup.length?row("Support skills, casts per kill:",sup.map(s=>`<label ${lab} title="How many times you cast it per kill (e.g. 0.5 = every other kill); each cast uses ${esc(s.items.map(([n,q])=>`${n} ×${q}`).join(" + "))}. Its cast time isn't counted">${esc(s.name)} <input type="number" min="0" step="0.5" data-supk="${s.key}" style="width:56px" placeholder="0"></label>`).join("")):"")
-      +(ids.length?row("Skill item prices:",ids.map(id=>`<label ${lab} title="Blank: the NPC price, ${fmtN(consNpc(id))} z (rAthena; check it in game). Type what you pay, e.g. a market price">${esc(consName(id))} <input type="number" min="0" step="1" data-iprice="${id}" style="width:72px" placeholder="${consNpc(id)}"> z</label>`).join("")):"")}
+    const row=(h,x)=>`<div class="bar full"><span>${h}</span>${x}</div>`;
+    box.innerHTML=(sup.length?row("Support skills, casts per kill:",sup.map(s=>`<label ${lab} title="How many times you cast it per kill (e.g. 0.5 = every other kill); each cast uses ${esc(s.items.map(([n,q])=>`${n} ×${q}`).join(" + "))}. Its cast time isn't counted">${esc(s.name)} <input type="number" min="0" step="0.5" data-supk="${s.key}" class="w-xs" placeholder="0"></label>`).join("")):"")
+      +(ids.length?row("Skill item prices:",ids.map(id=>`<label ${lab} title="Blank: the NPC price, ${fmtN(consNpc(id))} z (rAthena; check it in game). Type what you pay, e.g. a market price">${esc(consName(id))} <input type="number" min="0" step="1" data-iprice="${id}" class="w-md" placeholder="${consNpc(id)}"> z</label>`).join("")):"")}
   box.querySelectorAll("[data-supk]").forEach(i=>{if(document.activeElement!==i)i.value=supCasts(i.dataset.supk)||""});
   box.querySelectorAll("[data-iprice]").forEach(i=>{if(document.activeElement!==i){const v=(c.itemPrices||{})[i.dataset.iprice];i.value=v!=null&&v!==""?v:""}});
   box.hidden=!ids.length&&!sup.length;
@@ -132,8 +132,26 @@ function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp
       <td>${fmtQty(x.uph)}</td><td>${x.per==null?"n/a":x.zph==null?"–":fmtN(x.zph)}</td><td>${fmtQty(x.wph)}</td></tr>`}).join("")}
 // ---- render: tracker ----
 function renderSessions(){$("sessionSel").innerHTML=state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===state.current?"selected":""}>${esc(s.name)}</option>`).join("")}
-function renderTracker(){$("dieItem").checked=!!state.dieItem;$("dieBtn").textContent=`Died −${diePct()}%`;
-  const s=cur(),st=stats(s);
+// ---- get started: three steps shown over every tab until they're done (or hidden), each ticked off as you do it ----
+const KEY_START="rozero-farm-planner-start-hidden";
+function renderStart(){const box=$("startCard"),c=C(),s=cur(),n=s.entries.length;
+  // any session counts, so a new, empty session doesn't bring the card back; once all three are done it stays away
+  const done={char:c.mode==="build"||STATS.every(k=>statVal(c,k)!=null),mob:state.sessions.some(x=>(x.mobIds||[]).length),log:state.sessions.some(x=>(x.entries||[]).length>=2)};
+  let off=false;try{off=localStorage.getItem(KEY_START)==="1";if(!off&&Object.values(done).every(Boolean)){localStorage.setItem(KEY_START,"1");off=true}}catch(e){}
+  box.hidden=off||Object.values(done).every(Boolean);
+  box.querySelectorAll("[data-step]").forEach(li=>li.classList.toggle("done",!!done[li.dataset.step]));
+  $("startLogTxt").textContent=n===1?"One entry in: log again in a few minutes for your EXP/hr.":"Type your EXP % now, and again in a few minutes: two entries give your EXP/hr.";
+  // the Session tab's tiles wait for the first entry instead of showing nine dashes
+  $("tCurLv").closest(".tiles").classList.toggle("noData",!n)}
+// ---- top bar trend: EXP %/hr between this session's entries (paused time left out), and its average ----
+function renderSpark(s,st){const box=$("ctxRate"),es=[...s.entries].sort((a,b)=>a.t-b.t);box.hidden=!st||es.length<2;if(box.hidden)return;
+  const y=es.map(e=>e.lv*100+e.pct),rates=[];for(let i=1;i<es.length;i++){const dh=activeH(s,es[i-1].t,es[i].t);if(dh>0)rates.push((y[i]-y[i-1])/dh)}
+  const r=rates.slice(-12),lo=Math.min(0,...r),hi=Math.max(...r,lo+1e-9),X=i=>r.length<2?36:2+i*(68/(r.length-1)),Y=v=>20-(v-lo)/(hi-lo)*17;
+  const line=r.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+  $("spark").innerHTML=`<polyline points="${line}" fill="none" stroke="url(#sparkG)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><defs><linearGradient id="sparkG"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-2)"/></linearGradient></defs>`+(r.length?`<circle cx="${X(r.length-1)}" cy="${Y(r[r.length-1])}" r="2.2" style="fill:var(--accent-2)"/>`:"");
+  $("ctxRateV").textContent=`${pct(st.avgPct)}/hr`}
+function renderTracker(){renderStart();$("dieItem").checked=!!state.dieItem;$("dieBtn").textContent=`Died −${diePct()}%`;
+  const s=cur(),st=stats(s);renderSpark(s,st);
   if(document.activeElement!==$("partyN"))$("partyN").value=partyN(s);$("partyBonus").value=partyBonus(s);
   $("partyNote").textContent=partyN(s)>1?`Each kill gives you ${partyPct(s)}% of its EXP (party of ${partyN(s)}). Even Share only works within 15 base levels.`:"";
   $("title").textContent=`${s.name} · ${state.job}`;
@@ -217,11 +235,14 @@ function tickTrip(){const now=Date.now(),s=cur();
   $("tripK").textContent=ph==="due"?"Time to sell":"Next sell";
   $("tripS").textContent=`sell point at ${fmtT(due)}${early?` · rings at ${fmtT(due-early)}`:""} · left town ${fmtT(s.trip.from)}${ph==="paused"?" · session paused: the clock waits until you Resume (Session tab) or press Restart":""}`;
   document.title=(ph==="due"?"⏰ Sell now · ":ph==="run"?`${fmtClock(left)} · `:"")+BASE_TITLE}
+// charts draw at the width they're shown at (340–800 units), so their 11px labels stay 11px on a phone instead of shrinking
+const chartW=el=>{const w=+el.clientWidth;return w?Math.max(340,Math.min(800,Math.round(w))):800};
+let EXP_PTS=[];
 function renderChart(s){
-  const svg=$("chart"),es=[...s.entries].sort((a,b)=>a.t-b.t);const W=800,H=340,pl=52,pr=18,pt=16,pb=34;
+  const svg=$("chart"),es=[...s.entries].sort((a,b)=>a.t-b.t);const W=chartW(svg),H=W<600?260:340,pl=52,pr=18,pt=16,pb=34;EXP_PTS=[];
   // no entries: a short strip with the hint instead of an empty 340-high chart
   svg.setAttribute("viewBox",`0 0 ${W} ${es.length?H:70}`);svg.classList.toggle("empty",!es.length);
-  if(!es.length){svg.innerHTML=`<text x="${W/2}" y="40" text-anchor="middle">No entries yet: log your EXP % to draw your progress</text>`;return}
+  if(!es.length){svg.innerHTML=`<text x="${W/2}" y="40" text-anchor="middle">No entries yet: log your EXP % to ${W<600?"see":"draw"} your progress</text>`;return}
   const base=es[0].lv;const y=es.map(e=>(e.lv-base)*100+e.pct);let lo=Math.min(...y),hi=Math.max(...y);
   const span=Math.max(hi-lo,2),step=niceStep(span/4);lo=Math.floor(lo/step)*step;hi=Math.ceil(hi/step)*step;if(hi===lo)hi=lo+step;
   const n=es.length,t0=es[0].t,t1=es[n-1].t,act=t=>activeH(s,t0,t),actSpan=act(t1);const XT=t=>n===1||actSpan<=0?(pl+W-pr)/2:pl+act(t)/actSpan*(W-pl-pr),X=i=>XT(es[i].t);const Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb);
@@ -240,9 +261,16 @@ function renderChart(s){
     const w=txt.length*6.7,end=x+4+w>W-pr,a=end?x-4-w:x+4,r=rowEnd.findIndex(e=>a>=e+6);if(r<0)return;rowEnd[r]=a+w;
     g+=`<text class="pauseMark" data-pedit="${i}" x="${end?x-4:x+4}" y="${pt+10+r*13}" text-anchor="${end?"end":"start"}" style="fill:var(--warn)">${tip}${txt}</text>`});
   const pts=y.map((v,i)=>`${X(i)},${Y(v)}`).join(" ");
-  g+=`<polygon points="${X(0)},${H-pb} ${pts} ${X(n-1)},${H-pb}" fill="var(--accent-soft)" stroke="none"/><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="2.25" stroke-linejoin="round"/>`;
+  // the brand gradient along the line, fading out under it
+  g=`<defs><linearGradient id="expFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--accent);stop-opacity:.26"/><stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/></linearGradient>
+    <linearGradient id="expLine" gradientUnits="userSpaceOnUse" x1="${pl}" x2="${W-pr}" y1="0" y2="0"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-2)"/></linearGradient></defs>`+g;
+  g+=`<polygon points="${X(0)},${H-pb} ${pts} ${X(n-1)},${H-pb}" fill="url(#expFill)" stroke="none"/><polyline points="${pts}" fill="none" stroke="url(#expLine)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  g+=`<line id="expHair" y1="${pt}" y2="${H-pb}" stroke="var(--muted)" stroke-dasharray="3 3" visibility="hidden"/>`;
+  // hover readout: the entry, and the %/hr from the one before it (paused time left out)
+  EXP_PTS=y.map((v,i)=>{const e=es[i],dh=i?act(e.t)-act(es[i-1].t):0,rate=i&&dh>0?(v-y[i-1])/dh:null;
+    return {x:X(i),y:Y(v),tip:`<b>Lv ${esc(e.lv)} · ${esc(e.pct)}%</b>${e.jpct!=null?` · job ${esc(e.jpct)}%`:""}<br>${md?fmtD(e.t)+" ":""}${fmtT(e.t)}${rate!=null?` · ${rate>=0?"+":""}${rate.toFixed(2)}%/hr since the last entry`:" · first entry"}${e.died?`<br>💀 died −${esc(e.died)}%`:""}`}});
   y.forEach((v,i)=>{const tip=`<title>${md?fmtD(es[i].t)+" ":""}${fmtT(es[i].t)} · Lv ${esc(es[i].lv)} ${esc(es[i].pct)}%${es[i].died?` · died −${esc(es[i].died)}%`:""}</title>`;
-    g+=`<circle cx="${X(i)}" cy="${Y(v)}" r="${i===n-1?5.5:4}" fill="${es[i].died?"var(--bad)":"var(--accent)"}" stroke="var(--surface)" stroke-width="2">${tip}</circle>`;
+    g+=`<circle cx="${X(i)}" cy="${Y(v)}" r="${i===n-1?5.5:3.5}" fill="${es[i].died?"var(--bad)":i===n-1?"var(--accent-2)":"var(--accent)"}" stroke="var(--surface)" stroke-width="2">${tip}</circle>`;
     // a death: a skull beside the point
     if(es[i].died){const r=X(i)+22<=W-pr;g+=`<text class="deathMark" x="${r?X(i)+9:X(i)-9}" y="${Y(v)+4}" text-anchor="${r?"start":"end"}">💀${tip}</text>`}});
   svg.innerHTML=g;
@@ -265,9 +293,9 @@ function renderLog(s){
   const rows=es.map((e,i)=>{
     if(ed&&ed.t===e.t)return {t:e.t,k:0,h:`<tr class="editRow"><td><input type="datetime-local" data-f="t" value="${dtLocal(e.t)}" aria-label="Time"></td>
       <td class="nowrap">B ${inN("lv",e.lv,'min="1" max="99" step="1" aria-label="Base level"')} J ${inN("jlv",jl.get(e),'min="1" max="70" step="1" placeholder="?" aria-label="Job level"')}</td>
-      <td class="nowrap">${inN("pct",e.pct,'min="0" max="100" step="0.01" aria-label="EXP %"')} <label class="note" title="Ticked: this is your EXP after a death, so the drop to it isn't counted as EXP lost per hour"><input type="checkbox" data-f="died"${e.died?" checked":""} style="width:auto"> 💀 died</label></td><td>${inN("jpct",e.jpct,'min="0" max="100" step="0.01" placeholder="–" aria-label="Job EXP %"')}</td>${saveBtns}</tr>`};
+      <td class="nowrap">${inN("pct",e.pct,'min="0" max="100" step="0.01" aria-label="EXP %"')} <label class="note" title="Ticked: this is your EXP after a death, so the drop to it isn't counted as EXP lost per hour"><input type="checkbox" data-f="died"${e.died?" checked":""}> 💀 died</label></td><td>${inN("jpct",e.jpct,'min="0" max="100" step="0.01" placeholder="–" aria-label="Job EXP %"')}</td>${saveBtns}</tr>`};
     let rate="";if(e.died)rate=`<span class="pill down" title="A death: the EXP it cost isn't counted against your EXP/hr">💀 died −${esc(e.died)}%</span>`;else if(i>0){const q=es[i-1],h=activeH(s,q.t,e.t);rate=h>=1/60?pct((cumulative(e,base)-cumulative(q,base))/h/(lvExp(e.lv)||100)*100):`<span title="under a minute of unpaused time since the last entry">–</span>`}
-    return {t:e.t,k:0,h:`<tr data-t="${esc(e.t)}" style="cursor:default"><td>${e.died?'<span title="died">💀</span> ':""}${when(e.t)}</td><td>B${esc(e.lv)}${jl.get(e)?`/J${esc(jl.get(e))}`:""}</td><td>${e.pct.toFixed(1)}%</td><td>${e.jpct!=null?e.jpct.toFixed(1)+"%":"–"}</td><td>${rate}</td>${btns(`data-edit="${esc(e.t)}"`,`data-del="${esc(e.t)}"`,"entry")}</tr>`}});
+    return {t:e.t,k:0,h:`<tr data-t="${esc(e.t)}"><td>${e.died?'<span title="died">💀</span> ':""}${when(e.t)}</td><td>B${esc(e.lv)}${jl.get(e)?`/J${esc(jl.get(e))}`:""}</td><td>${e.pct.toFixed(1)}%</td><td>${e.jpct!=null?e.jpct.toFixed(1)+"%":"–"}</td><td>${rate}</td>${btns(`data-edit="${esc(e.t)}"`,`data-del="${esc(e.t)}"`,"entry")}</tr>`}});
   ps.forEach((p,i)=>rows.push({t:p.from,k:1,h:ed&&ed.p===i?`<tr class="pauseRow editRow"><td colspan="4">Paused from <input type="datetime-local" data-f="from" value="${dtLocal(p.from)}" aria-label="Paused from">
       to <input type="datetime-local" data-f="to" value="${p.to!=null?dtLocal(p.to):""}" aria-label="Paused until"> <span class="note">empty: still paused</span></td>${saveBtns}</tr>`
     :`<tr class="pauseRow"><td colspan="5">Paused ${when(p.from)} → ${p.to!=null?when(p.to):"now"} · ${fmtAway(p)}${p.to!=null?"":" so far"}</td>${btns(`data-pedit="${i}"`,`data-pdel="${i}"`,"pause")}</tr>`}));
@@ -319,14 +347,14 @@ function renderJobGoal(s){
   const tb=$("goalJobTable");wrap.hidden=false;
   tb.tHead.innerHTML=`<tr><th>Job level</th><th>Time for this level</th><th>Total farming</th><th>Reached, farming non-stop</th></tr>`;
   tb.tBodies[0].innerHTML=rows.map(q=>`<tr><td class="name">Job Lv ${q.lv}</td><td>${dur(q.each)}</td><td>${dur(q.h)}</td><td>${at(q.h)}</td></tr>`).join("");
-  return {pts:[{h:0,v:jl+j.last/100,now:`Job Lv ${jl} ${j.last.toFixed(1)}%`},...rows.map(q=>({h:q.h,v:q.lv,lv:q.lv,each:q.each}))],lo:jl,hi:goal,name:"Job Lv",color:"var(--good)"};
+  return {pts:[{h:0,v:jl+j.last/100,now:`Job Lv ${jl} ${j.last.toFixed(1)}%`},...rows.map(q=>({h:q.h,v:q.lv,lv:q.lv,each:q.each}))],lo:jl,hi:goal,name:"Job Lv",color:"var(--accent-2)"};
 }
 // projected base level (left axis) and job level (right axis) over farming hours at the average rates.
 // Each level-up gets the date you would reach it farming non-stop from now.
 let GOAL_PTS=[];
 function renderGoalChart(base,job){
   const sers=[base,job].filter(Boolean);$("goalViz").hidden=!sers.length;$("goalWrap").hidden=!base;GOAL_PTS=[];if(!sers.length)return;
-  const svg=$("goalChart");const W=800,H=260,pl=base?52:18,pr=job?62:18,pt=24,pb=34;
+  const svg=$("goalChart");const W=chartW(svg),H=W<600?220:260,pl=base?52:18,pr=job?62:18,pt=24,pb=34;svg.setAttribute("viewBox",`0 0 ${W} ${H}`);
   const now=Date.now();
   const dur=x=>fmtDur(x).split("\n")[0];
   const at=x=>new Date(now+x*36e5).toLocaleString("en-GB",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
@@ -341,8 +369,8 @@ function renderGoalChart(base,job){
     pts.forEach((q,i)=>{q.x=X(q.h);q.y=Y(q.v);q.eta=at(q.h);
       q.tip=i?`<b>${S.name} ${q.lv}</b><br>${dur(q.each)} for this level · ${dur(q.h)} total<br>${q.eta} farming non-stop`:`<b>Now</b><br>${q.now}`});
     const line=pts.map(q=>`${q.x},${q.y}`).join(" ");
-    if(S===base)g+=`<polygon points="${X(0)},${H-pb} ${line} ${end.x},${H-pb}" fill="var(--accent-soft)" stroke="none"/>`;
-    g+=`<polyline points="${line}" fill="none" stroke="${S.color}" stroke-width="2" stroke-linejoin="round"/>`;
+    if(S===base)g+=`<defs><linearGradient id="goalFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--accent);stop-opacity:.22"/><stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/></linearGradient></defs><polygon points="${X(0)},${H-pb} ${line} ${end.x},${H-pb}" fill="url(#goalFill)" stroke="none"/>`;
+    g+=`<polyline points="${line}" fill="none" stroke="${S.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
     if(pts.length<=30)pts.forEach((q,i)=>{g+=`<circle cx="${q.x}" cy="${q.y}" r="${i&&i<pts.length-1?4:5.5}" fill="${S.color}" stroke="var(--surface)" stroke-width="2"/>`});
     // end label: right of the point when there's room, else above it (first line) or below it (second) so they don't collide
     const lab=`${S.name} ${S.hi} · ${dur(end.h)}`;
@@ -357,12 +385,25 @@ function renderGoalChart(base,job){
 (function goalHover(){
   const svg=$("goalChart"),tip=$("goalTip");
   const hide=()=>{tip.hidden=true;const hr=$("goalHair");if(hr)hr.setAttribute("visibility","hidden")};
-  svg.addEventListener("pointermove",e=>{if(!GOAL_PTS.length)return;const r=svg.getBoundingClientRect(),k=r.width/800,px=(e.clientX-r.left)/k,py=(e.clientY-r.top)/k;
+  svg.addEventListener("pointermove",e=>{if(!GOAL_PTS.length)return;const r=svg.getBoundingClientRect(),k=r.width/svg.viewBox.baseVal.width,px=(e.clientX-r.left)/k,py=(e.clientY-r.top)/k;
     const d=q=>Math.hypot(q.x-px,(q.y-py)/2),q=GOAL_PTS.reduce((a,b)=>d(b)<d(a)?b:a);
     const hr=$("goalHair");hr.setAttribute("x1",q.x);hr.setAttribute("x2",q.x);hr.setAttribute("visibility","visible");
     tip.innerHTML=q.tip;tip.hidden=false;const w=tip.offsetWidth/2;tip.style.left=Math.min(Math.max(q.x*k,w),r.width-w)+"px";tip.style.top=q.y*k+"px"});
   svg.addEventListener("pointerleave",hide);
 })();
+// hover the EXP chart: snap to the nearest entry in time
+(function expHover(){
+  const svg=$("chart"),tip=$("chartTip");
+  const hide=()=>{tip.hidden=true;const hr=$("expHair");if(hr)hr.setAttribute("visibility","hidden")};
+  svg.addEventListener("pointermove",e=>{if(!EXP_PTS.length)return;const r=svg.getBoundingClientRect(),k=r.width/svg.viewBox.baseVal.width,px=(e.clientX-r.left)/k;
+    const q=EXP_PTS.reduce((a,b)=>Math.abs(b.x-px)<Math.abs(a.x-px)?b:a),hr=$("expHair");
+    hr.setAttribute("x1",q.x);hr.setAttribute("x2",q.x);hr.setAttribute("visibility","visible");
+    tip.innerHTML=q.tip;tip.hidden=false;const w=tip.offsetWidth/2;tip.style.left=Math.min(Math.max(q.x*k,w),r.width-w)+"px";tip.style.top=q.y*k+"px"});
+  svg.addEventListener("pointerleave",hide);
+})();
+// a window that changes width redraws the Session tab's charts at their new size
+(function chartResize(){let w=typeof innerWidth==="number"?innerWidth:0,t=0;addEventListener("resize",()=>{clearTimeout(t);t=setTimeout(()=>{if(Math.abs(innerWidth-w)<40)return;w=innerWidth;
+  if(!$("chart").closest("[data-tab]").hidden)renderTracker()},150)})})();
 
 // ---- render: monsters ----
 const calcMob=()=>MOBS.find(m=>m.id===(state.calcMobId||cur().mobIds[0]));
@@ -422,7 +463,7 @@ function renderMobTiles(){
 ${withEl(r.el2,()=>susTile(susMob(m,walkSec()),"vs "+esc(m.name)))}
 ${weightTile(m)}
    <div class="tile"><div class="k">Maps</div><div class="v mono">${om.length?mapCode(om[0][0]):"–"}</div><div class="s">${om.length?om.slice(0,4).map(x=>`${esc(mapLabel(x[0]))} ≈${x[1]}`).join(" · "):"none open"} · <a href="${dbUrl(m)}" target="_blank" rel="noopener">rozerodb ↗</a></div></div>
-   <div class="bar" style="grid-column:1/-1">${s.mobIds.includes(m.id)?'<span class="pill up">In this session</span> <button type="button" class="small" id="dropMobBtn">Remove from session</button>':`<button type="button" class="primary" id="useMobBtn">${s.mobIds.length?`Also killing ${esc(m.name)}`:`Farming ${esc(m.name)} now`}</button>`}</div>`;
+   <div class="bar span-all">${s.mobIds.includes(m.id)?'<span class="pill up">In this session</span> <button type="button" class="small" id="dropMobBtn">Remove from session</button>':`<button type="button" class="primary" id="useMobBtn">${s.mobIds.length?`Also killing ${esc(m.name)}`:`Farming ${esc(m.name)} now`}</button>`}</div>`;
   const b=$("useMobBtn");if(b)b.addEventListener("click",()=>{toggleSessMob(m.id);state.calcMobId=null;save();renderAll()});
   const d=$("dropMobBtn");if(d)d.addEventListener("click",()=>{toggleSessMob(m.id);save();renderAll()});
 }
@@ -494,7 +535,7 @@ function renderPrices(){
   const f=document.activeElement;if(f&&f.tagName==="INPUT"&&$("priceTable").tBodies[0].contains(f))return;// don't rebuild the box you're typing in (a focused Remove button is fine)
   const ids=Object.keys(state.prices).sort((a,b)=>itemName(a).localeCompare(itemName(b)));
   const rows=tableRows("priceTable",ids.map(id=>({id,pl:state.prices[id]||null,npc:state.npcPrices[id]??NPCSELL[id]??null,d:DROPPERS[id]})));
-  $("priceTable").querySelector("tbody").innerHTML=rows.map(({id,d})=>`<tr><td class="name">${esc(itemName(id))} <span class="note">#${esc(id)}</span></td><td><input type="number" min="0" step="100" data-price="${esc(id)}" value="${state.prices[id]||""}" placeholder="zeny" style="width:120px"></td><td><input type="number" min="0" step="1" data-npc="${esc(id)}" value="${state.npcPrices[id]??""}" placeholder="${NPCSELL[id]!=null?fmtN(NPCSELL[id])+" (NPC)":"0"}" title="${NPCSELL[id]!=null?`NPC price ${fmtN(NPCSELL[id])} z; type to override`:"no NPC price known; counts as 0"}" style="width:130px"></td><td class="name">${d?`${esc(d.m.name)} <span class="note">${d.ch}%</span>`:"–"}</td><td><button type="button" class="small" data-unprice="${esc(id)}">Remove</button></td></tr>`).join("")
+  $("priceTable").querySelector("tbody").innerHTML=rows.map(({id,d})=>`<tr><td class="name">${esc(itemName(id))} <span class="note">#${esc(id)}</span></td><td><input type="number" min="0" step="100" data-price="${esc(id)}" value="${state.prices[id]||""}" placeholder="zeny" class="w-xl"></td><td><input type="number" min="0" step="1" data-npc="${esc(id)}" value="${state.npcPrices[id]??""}" placeholder="${NPCSELL[id]!=null?fmtN(NPCSELL[id])+" (NPC)":"0"}" title="${NPCSELL[id]!=null?`NPC price ${fmtN(NPCSELL[id])} z; type to override`:"no NPC price known; counts as 0"}" class="w-xl"></td><td class="name">${d?`${esc(d.m.name)} <span class="note">${d.ch}%</span>`:"–"}</td><td><button type="button" class="small" data-unprice="${esc(id)}">Remove</button></td></tr>`).join("")
     ||`<tr><td colspan="5" class="name muted">${ids.length?"No prices match these filters.":"No market prices yet. Add an item above, or click a drop in the Monsters list."}</td></tr>`;
 }
 // ---- render: Monster info and Item info ----
@@ -615,7 +656,7 @@ function convCheck(mp,w,r){const sf=C().a.type==="spellfist",opts=sf?elOptions()
     ${mobs.map(x=>{const v=elemMult(x.m,el);return `<td class="${elRateCls(v)}">${elRateTxt(v)}</td>`}).join("")}<td>${s?fmtN(s.epm):"–"}${s&&s.skip?` <span class="warnc">skips ${esc(s.skipNames.join(", "))}</span>`:""}</td></tr>`}).join("");
   const el=r&&r.el2,bad=el?mobs.filter(x=>elemMult(x.m,el)<100):[];
   const warn=bad.length?`<div class="warnc">With ${el}: ${bad.map(x=>{const v=elemMult(x.m,el);return `${esc(x.m.name)} (${x.m.el} ${x.m.elv}) ${v}%`}).join(" · ")}</div>`:"";
-  return `<div class="note" style="margin-top:8px"><b>${sf?"Spell Fist bolts":"Converters"} vs these monsters</b> · element table rate (Reference tab): <span class="good">above 100%</span>, <span class="warnc">below</span>, <span class="bad">0% ✕ none</span>${sf||isMagicAtk()?"":"; it applies to your weapon ATK, status ATK always hits as Neutral"}</div>
+  return `<div class="note mt"><b>${sf?"Spell Fist bolts":"Converters"} vs these monsters</b> · element table rate (Reference tab): <span class="good">above 100%</span>, <span class="warnc">below</span>, <span class="bad">0% ✕ none</span>${sf||isMagicAtk()?"":"; it applies to your weapon ATK, status ATK always hits as Neutral"}</div>
   <div class="scroll"><table class="convtab"><thead><tr><th>${sf?"Bolt":"Converter"}</th>${mobs.map(x=>`<th>${esc(x.m.name)}<br><span class="el ${x.m.el||"Neutral"}">${x.m.el||"Neutral"} ${x.m.elv||1}</span></th>`).join("")}<th>EXP / min</th></tr></thead><tbody>${rows}</tbody></table></div>${warn}`}
 function renderMap(){
   let mp=mapKey(state.map);const mob=calcMob();

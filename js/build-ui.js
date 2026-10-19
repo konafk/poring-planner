@@ -156,9 +156,9 @@ function renderCons(){const c=C(),cs=consStatOf(c);
     <td><input data-f="n" type="number" step="1" value="${esc(o.n??"")}" placeholder="0" aria-label="${k.toUpperCase()} +"></td>
     <td><input data-f="p" type="number" step="1" value="${esc(o.p??"")}" placeholder="0" aria-label="${k.toUpperCase()} +%"></td></tr>`}).join("");
   OWN_LISTS.forEach(L=>$(L.list).innerHTML=rowsOf(c,L.key).map((r,i)=>`<div class="eqrow" data-i="${i}">
-    <input type="checkbox" data-f="on" ${r.on?"checked":""} aria-label="Use it" style="width:auto">
-    <input data-f="name" value="${esc(r.name||"")}" placeholder="name" style="width:150px">
-    <input data-f="eff" value="${esc(r.eff||"")}" placeholder="e.g. ATK +20, HIT +10, ASPD +10%" style="flex:1;min-width:200px">
+    <input type="checkbox" data-f="on" ${r.on?"checked":""} aria-label="Use it">
+    <input data-f="name" value="${esc(r.name||"")}" placeholder="name" class="w-2xl">
+    <input data-f="eff" value="${esc(r.eff||"")}" placeholder="e.g. ATK +20, HIT +10, ASPD +10%" class="grow200">
     <button type="button" class="small danger" data-del aria-label="Remove">✕</button></div>`).join("")||(L.key==="cons"?'<div class="note">None yet.</div>':""));consNote()}
 // redrawn on every render (job and weapon change what's allowed), except while you're typing in it
 function renderAspdBuffs(){const c=C(),k=potKey(c),act=document.activeElement;$("consOff").hidden=c.mode==="build"||addOnTop(c);
@@ -166,8 +166,8 @@ function renderAspdBuffs(){const c=C(),k=potKey(c),act=document.activeElement;$(
   if(act!==$("potType"))$("potType").innerHTML=Object.entries(ASPD_POT).filter(([key])=>potJobOk(key)).map(([key,p])=>{const lvOk=potLvOk(key);
     return `<option value="${key}"${key===k?" selected":""}${lvOk?"":" disabled"}>${p.name} (${p.mod})${lvOk?"":` · Base Lv ${p.lv}+`}</option>`}).join("");
   if(!$("pbuffList").contains(act))$("pbuffList").innerHTML=PBUFF.map(b=>{const o=pbuffOf(c)[b.k]||{},off=b.w&&!b.w.includes(c.weapon),own=PB_SELF[b.k]&&(c.buffs||{})[PB_SELF[b.k]]&&skLv(c,PB_SELF[b.k]);
-    return `<div class="eqrow" data-pb="${b.k}"><label class="bar" style="flex-direction:row;gap:6px;min-width:250px"><input type="checkbox" data-f="on" ${o.on?"checked":""} style="width:auto">${esc(b.name)}</label>
-    ${b.lv?`<label class="bar" style="flex-direction:row;gap:4px">${b.lv[3]||"Lv"} <input data-f="lv" type="number" min="${b.lv[0]}" max="${b.lv[1]}" value="${pbLv(b,o)}" style="width:60px"></label>`:""}
+    return `<div class="eqrow" data-pb="${b.k}"><label class="bar pbName"><input type="checkbox" data-f="on" ${o.on?"checked":""}>${esc(b.name)}</label>
+    ${b.lv?`<label class="bar">${b.lv[3]||"Lv"} <input data-f="lv" type="number" min="${b.lv[0]}" max="${b.lv[1]}" value="${pbLv(b,o)}" class="w-xs"></label>`:""}
     <span class="note"><span data-pbeff>${esc(pbEff(b,pbLv(b,o)))}</span>${off?' · <span class="warnc">not with this weapon</span>':own?" · on in your Skills card, counted there":""}</span></div>`}).join("")}
 $("pbuffList").addEventListener("input",e=>{const f=e.target.dataset.f,row=e.target.closest("[data-pb]");if(!f||!row)return;const o=pbuffOf(C())[row.dataset.pb]||(pbuffOf(C())[row.dataset.pb]={});
   o[f]=f==="on"?e.target.checked:num(e.target.value);
@@ -283,8 +283,8 @@ function renderStones(){const b=gearSet(),sel=b.stones||{},ring=(b.special||{}).
 // other special equipment: rows {on, name, opts} in b.special.own, each with up to OPT_MAX effects from the full affix list
 const specialOwn=()=>{const b=gearSet();b.special=b.special||{};if(!Array.isArray(b.special.own))b.special.own=[];return b.special.own};
 function renderSpecialOwn(){$("specialOwn").innerHTML=specialOwn().map((x,i)=>`<div class="eqrow" data-i="${i}">
-    <input type="checkbox" data-f="on" ${x.on!==false?"checked":""} aria-label="Wearing it" style="width:auto">
-    <input data-f="name" value="${esc(x.name||"")}" placeholder="name" style="width:180px">${optBoxes("special",x,null)}
+    <input type="checkbox" data-f="on" ${x.on!==false?"checked":""} aria-label="Wearing it">
+    <input data-f="name" value="${esc(x.name||"")}" placeholder="name" class="w-3xl">${optBoxes("special",x,null)}
     <button type="button" class="small danger" data-del aria-label="Remove">✕</button></div>`).join("");
   specialOwn().forEach((x,i)=>BUILD.optRows(x.opts).forEach((o,j)=>{const el=$("specialOwn").querySelector(`[data-i="${i}"] [data-opt="${j}"]`);if(el)el.value=o.k}))}
 $("specialAdd").addEventListener("click",()=>{specialOwn().push({on:true,name:"",opts:[]});save();renderSpecialOwn();renderAll();
@@ -337,7 +337,7 @@ function renderBuild(){const c=C(),on=c.mode==="build";
   $("jobBonusNote").textContent=`Job Lv ${r.fields.jobLv} bonus: `+BUILD.STAT6.map(k=>`${k.toUpperCase()} +${jb[k]}`).join(" · ")+(BUILD.curve(state.job,"hp",num(c.baseLv))==null?" · no HP/SP table for this job, type Max HP/SP after switching back":"");
   // check against the game: type the in-game totals, see the difference per stat
   const ck=b.check||{},rows=CHECKS.map(([k,label,get])=>{const mine=get(r.fields),g=ck[k];const d=g!=null&&g!==""&&mine!=null?num(g)-mine:null;
-    return `<label>${label}<span class="bar"><input data-ck="${k}" type="number" value="${esc(g??"")}" placeholder="${mine??"–"}" style="flex:1;min-width:0">${d==null?"":`<span class="${Math.abs(d)<0.5?"good":"bad"}">${d===0?"✓":(d>0?"+":"")+fmtP(+d.toFixed(1))}</span>`}</span></label>`}).join("");
+    return `<label>${label}<span class="bar"><input data-ck="${k}" type="number" value="${esc(g??"")}" placeholder="${mine??"–"}" class="fill">${d==null?"":`<span class="${Math.abs(d)<0.5?"good":"bad"}">${d===0?"✓":(d>0?"+":"")+fmtP(+d.toFixed(1))}</span>`}</span></label>`}).join("");
   if(!$("checkGrid").contains(document.activeElement))$("checkGrid").innerHTML=rows;
   // cards the Character tab's Cards rows model: they count once ticked there
   // the other gear set's own notes while the table shows it

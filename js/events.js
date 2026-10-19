@@ -147,6 +147,29 @@ $("pasteAdd").addEventListener("click",()=>{const s=cur();let lv=num($("fLevel")
   parsed.forEach(x=>{const g=guessLevel(s,x.t,lv,x.pct);if(g!==lv){ups++;lv=g}const ent={t:x.t,lv,pct:x.pct};if(x.jpct!=null)ent.jpct=x.jpct;if(x.died)ent.died=diePct();s.entries=s.entries.filter(e=>e.t!==x.t);s.entries.push(ent);n++});
   $("pasteMsg").textContent=n?`Added ${n} entr${n===1?"y":"ies"}${ups?` with ${ups} level-up${ups>1?"s":""} (now Lv ${lv})`:` at Lv ${lv}`}.`:"No lines matched. Use the format 15:05 17.9% 63% or 15:05 17.9 63 (time and job % optional; no time means now)";
   if(n){autoResume(s,parsed[parsed.length-1].t);if(!s.job)s.job=state.job;snapSession(s);$("pasteBox").value="";save();renderAll()}});
+// ---- quick log: one line from the top bar on any tab ("17.9 63", "15:05 17.9 63", "died 12.1"), read like a pasted line and sent through the
+// Log EXP form, so level-ups, deaths and job levels work the same. L opens it; on phones it's a sheet from the + button ----
+let openQuickLog=()=>{};
+(function setupQuickLog(){const f=$("quickLog"),inp=$("qlInput"),fab=$("qlFab"),app=document.querySelector(".app"),p2=x=>String(x).padStart(2,"0");
+  // focus once the phone sheet has started sliding in (it can't take focus while still hidden)
+  const open=v=>{app.classList.toggle("qlOpen",v);fab.setAttribute("aria-expanded",String(v));if(v){inp.focus();setTimeout(()=>inp.focus(),60)}};
+  f.addEventListener("submit",e=>{e.preventDefault();const line=inp.value.trim(),p=line?pasteLine(line):null;
+    const bad=!p||p[2]>100||(p[3]!=null&&p[3]>100);f.classList.toggle("bad",bad);
+    if(bad){showToast("Type your EXP %, e.g. 17.9, or 17.9 63 with job %, or 15:05 17.9 63 with the time");inp.focus();return}
+    const [h,m,pct,jpct]=p,auto=h==null;$("fTime").value=auto?nowTime():`${p2(h)}:${p2(m)}`;$("fTime").dataset.auto=auto?"1":"";
+    $("fPct").value=pct;$("fJob").value=jpct??"";$("fDied").checked=/died|dead|💀/i.test(line);
+    // the form's own handler, without the browser's checks on the (possibly hidden) form's boxes
+    $("addForm").dispatchEvent(new Event("submit",{cancelable:true}));
+    const ent=cur().entries.find(x=>x.t===entryTime(...(auto?nowTime().split(":").map(Number):[h,m]),pickedDay()));
+    showToast(`Logged Lv ${ent?ent.lv:"?"} ${pct}%${jpct!=null?` · job ${jpct}%`:""}${auto?"":` at ${p2(h)}:${p2(m)}`}${$("pasteMsg").textContent?` · ${$("pasteMsg").textContent}`:""}`);
+    inp.value="";inp.blur();open(false)});
+  openQuickLog=open;inp.addEventListener("input",()=>f.classList.remove("bad"));
+  fab.addEventListener("click",e=>{e.stopPropagation();open(!app.classList.contains("qlOpen"))});
+  addEventListener("keydown",e=>{const a=document.activeElement;
+    if(e.key==="Escape"&&app.classList.contains("qlOpen")){open(false);return}
+    if(e.key.toLowerCase()==="l"&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!(a&&(/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)||a.isContentEditable))){e.preventDefault();open(true)}});
+  document.addEventListener("click",e=>{if(app.classList.contains("qlOpen")&&!f.contains(e.target))open(false)});
+})();
 $("pauseBtn").addEventListener("click",()=>{const s=cur(),p=openPause(s);if(!s.pauses)s.pauses=[];
   if(p){p.to=Date.now();save();renderAll();showTab("track");$("fPct").focus()}else{s.pauses.push({from:Date.now()});save();renderAll()}});
 // sell timer: its weight boxes are the Character tab's, so typing in one updates the other
@@ -262,7 +285,7 @@ $("sessMapSel").addEventListener("change",e=>{const s=cur(),auto=s.name==="New s
 const pickMob=m=>{if(!m)return;state.calcMobId=m.id;state.infoMobId=m.id;const s=cur();if(!s.mobIds.length)toggleSessMob(m.id);save();renderAll()};
 $("mobList").innerHTML=MOBS.map(mobOpt).join("");
 // Element / Race / Size / Boss dropdowns: the Monsters card's narrow its table and its search, Monster info's its search; saved per account
-const mobFSel=(k,label,opts)=>`<label>${label}<select data-mf="${k}" style="width:auto">${opts.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("")}</select></label>`;
+const mobFSel=(k,label,opts)=>`<label>${label}<select data-mf="${k}">${opts.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("")}</select></label>`;
 const MOBF_HTML=mobFSel("el","Element",[["","Any"],...AE.map(x=>[x,x])])+mobFSel("race","Race",[["","Any"],...RACES.map(x=>[x,x])])
   +mobFSel("size","Size",[["","Any"],["S","Small"],["M","Medium"],["L","Large"]])+mobFSel("boss","Boss",MOBF_BOSS);
 [["mobF","mobF","mobPickList",()=>renderMobs()],["mobInfoF","infoF","mobInfoList",()=>{}]].forEach(([box,k,list,render])=>{$(box).insertAdjacentHTML("beforeend",MOBF_HTML);
@@ -296,7 +319,7 @@ $("huntNoPen").checked=state.huntNoPen;$("huntNoPen").addEventListener("change",
 $("teleSec").value=state.teleSec??1;
 $("teleSec").addEventListener("input",e=>{if(e.target.value==="")delete state.teleSec;else state.teleSec=Math.max(0,num(e.target.value));save();renderHunt()});
 // auto loot: one tick box per group; it changes zeny everywhere
-$("autoLoot").insertAdjacentHTML("beforeend",LOOT_GROUPS.map(([g,n])=>`<label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-loot="${g}" style="width:auto"> ${n}</label>`).join(""));
+$("autoLoot").insertAdjacentHTML("beforeend",LOOT_GROUPS.map(([g,n])=>`<label class="bar"><input type="checkbox" data-loot="${g}"> ${n}</label>`).join(""));
 $("autoLoot").addEventListener("change",e=>{const i=e.target.closest("[data-loot]");if(!i)return;state.autoLoot[i.dataset.loot]=i.checked;save();renderAll()});
 // pick the monsters to hunt on a map: the first click copies the current picks (all, or the best-paying ones) and toggles that monster;
 // you always hunt at least one the level filter allows. "reset" goes back to all / best-paying
@@ -413,6 +436,28 @@ $("bkRestore").addEventListener("click",()=>{let data;try{data=JSON.parse($("bkT
     accts.list=data.accounts.map((a,i)=>({id:a.id,name:String(a.name||"Account "+(i+1))}));accts.active=accts.list.some(a=>a.id===data.active)?data.active:accts.list[0].id;saveAccts()}
   else{state=data;save()}
   $("bkMsg").textContent="Restored. Reloading…";try{location.reload()}catch(err){$("bkMsg").textContent="Restored. Reload the page to see it."}});
+// ---- column views: one click sets which columns the big tables show; the view that matches the columns shown is marked ----
+const COL_VIEWS={
+  mobTable:{Compact:["Monster","Lv","Element","Sec / kill","EXP / min","Zeny / hr","Best map"],
+    EXP:["Monster","Lv","Element","Size","Race","HP","Base EXP","EXP / HP","Your hit %","Hit chance","Sec / kill","EXP / min","HP lost / min","Best map"],
+    Zeny:["Monster","Lv","Element","HP","Sec / kill","HP lost / min","Zeny / kill","Zeny / hr","Best map"]},
+  bestTable:{Compact:["#","Map","Main monsters","EXP / min","Net zeny / hr","No items"],
+    EXP:["#","Map","Main monsters","EXP / min","Sec / kill (fight + walk)","EXP / kill","HP lost / min","No items","Monsters","Projected","Logged vs projected"],
+    Zeny:["#","Map","Main monsters","EXP / min","Zeny / hr","Heal cost / hr","Net zeny / hr","Weight / hr","Town trip every"]},
+  huntTable:{Compact:["#","Map / monster","Earns from","Net zeny / hr","Kills / hr","EXP / min"],
+    Weight:["#","Map / monster","Earns from","Net zeny / hr","Kills / hr","Weight / kill","Weight / hr"]},
+};
+function colViews(id,box,apply){const views={All:null,...COL_VIEWS[id]},seg=document.createElement("div"),row=document.createElement("div");
+  const names=()=>[...document.getElementById(id).tHead.rows[0].cells].map(c=>(c.textContent||"").trim()).filter(Boolean);
+  const hideFor=v=>v?names().filter(n=>!v.includes(n)):[];
+  seg.className="seg";seg.setAttribute("role","radiogroup");seg.setAttribute("aria-label","Column view");
+  seg.innerHTML=Object.keys(views).map(k=>`<button type="button" role="radio" data-view="${k}">${k}</button>`).join("");
+  const mark=()=>{const hid=new Set(state.hideCols[id]||[]);seg.querySelectorAll("[data-view]").forEach(b=>{const w=hideFor(views[b.dataset.view]);
+    b.setAttribute("aria-checked",String(w.length===hid.size&&w.every(n=>hid.has(n))))})};
+  seg.addEventListener("click",e=>{const b=e.target.closest("[data-view]");if(!b)return;state.hideCols[id]=hideFor(views[b.dataset.view]);
+    box.querySelectorAll("[data-col]").forEach(x=>x.checked=!state.hideCols[id].includes(x.dataset.col));save();apply();mark()});
+  box.addEventListener("change",mark);box.addEventListener("click",()=>setTimeout(mark));
+  row.className="bar colBar";row.innerHTML='<span class="note">Columns</span>';row.append(seg);box.before(row);row.append(box);mark()}
 // ---- show / hide table columns (saved per table) ----
 (function setupColPicks(){
   const IDS=["cmpTable","mobTable","bestTable","huntTable","recTable","mapTable","priceTable","mobInfoDrops","mobInfoMaps","itemTable","itemDropTable"];
@@ -430,10 +475,11 @@ $("bkRestore").addEventListener("click",()=>{let data;try{data=JSON.parse($("bkT
     const ths=[...t.tHead.rows[0].cells];
     // older saves kept column numbers: turn them into the names of the columns they pointed at
     state.hideCols[id]=(state.hideCols[id]||[]).map(k=>typeof k==="number"?ths[k-1]&&(ths[k-1].textContent||"").trim():k).filter(Boolean);const box=document.createElement("details");box.className="note";box.style.cssText="margin:2px 0";
-    box.innerHTML=`<summary style="cursor:pointer">Show / hide columns</summary><div class="bar" style="flex-wrap:wrap;gap:4px 14px;margin-top:6px">${ths.map((th,i)=>{const name=(th.textContent||"").trim();if(!name)return "";
-      return `<label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-col="${esc(name)}" style="width:auto" ${(state.hideCols[id]||[]).includes(name)?"":"checked"}> ${esc(name)}</label>`}).join("")}
+    box.innerHTML=`<summary>Show / hide columns</summary><div class="bar colList">${ths.map((th,i)=>{const name=(th.textContent||"").trim();if(!name)return "";
+      return `<label class="bar"><input type="checkbox" data-col="${esc(name)}" ${(state.hideCols[id]||[]).includes(name)?"":"checked"}> ${esc(name)}</label>`}).join("")}
       <button type="button" class="small" data-allcols>Show all</button></div>`;
     const anchor=t.closest(".scroll")||t;anchor.parentNode.insertBefore(box,anchor);
+    if(COL_VIEWS[id])colViews(id,box,apply);
     box.addEventListener("change",e=>{const c=e.target.closest("[data-col]");if(!c)return;const n=c.dataset.col;const set=new Set(state.hideCols[id]||[]);
       c.checked?set.delete(n):set.add(n);state.hideCols[id]=[...set];save();apply()});
     box.addEventListener("click",e=>{if(!e.target.closest("[data-allcols]"))return;state.hideCols[id]=[];box.querySelectorAll("[data-col]").forEach(x=>x.checked=true);save();apply()});
