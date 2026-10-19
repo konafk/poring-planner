@@ -1,4 +1,4 @@
-# Runs every tests/*.test.mjs file with plain node (no dependencies) and checks the data exporters compile.
+# Runs every tests/*.test.mjs file with plain node (no dependencies) and checks every tools/*.py script compiles.
 name: Tests
 
 on:
@@ -25,4 +25,4 @@ jobs:
             echo "::endgroup::"
           done
       - name: Check the data exporters compile
-        run: python3 -m py_compile tools/export_prontera.py tools/export_jobs.py tools/export_mobskills.py
+        run: python3 -m py_compile tools/*.py
