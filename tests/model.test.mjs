@@ -1387,6 +1387,19 @@ t("FLEE reads like the status window: every FLEE (Improve Dodge included) + Perf
   run(`state.job="Crusader";C().skills={faith:10}`); assert.deepEqual(JSON.parse(run("JSON.stringify(skillEffects(C()).stat.filter(x=>x[0]==='hp').map(x=>x[3]))")), [2000]);
 });
 
+t("option lines typed before the lists aren't lost when the rows replace them", () => {
+  run(`state.job="Knight";state.chars={};Object.assign(C(),{mode:"build",build:{base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{headTop:{id:18730,opts:"MaxHP +100, MaxSP +50, EXP +5%, Healing +3%, Movement Speed +5%"}}}})`);
+  run("(()=>{const g=buildOf(C()).gear.headTop,rows=BUILD.optRows(g.opts);rows.push({k:'flee',v:3});optSet(g,rows)})()");   // picking a 3rd option in the lists
+  assert.deepEqual(JSON.parse(run("JSON.stringify(buildOf(C()).gear.headTop)")), { id: 18730,
+    opts: [{ k: "hp", v: 100 }, { k: "sp", v: 50 }, { k: "flee", v: 3 }], optsText: "EXP +5%, Healing +3%, Movement Speed +5%" });
+  assert.match(run("optFoot(buildOf(C()).gear.headTop,3)"), /Kept as typed, not counted: EXP \+5%/);
+  assert.match(run("optFoot({},5)"), /max 5 options/); assert.equal(run("optFoot({},4)"), "");
+  // taken off and put back on, it comes back with them
+  run("(()=>{const g=buildOf(C()).gear.headTop;gearPut(C(),g,2289);gearPut(C(),g,18730)})()");
+  assert.equal(run("buildOf(C()).gear.headTop.optsText"), "EXP +5%, Healing +3%, Movement Speed +5%");
+  assert.equal(run("buildOf(C()).gear.headTop.opts.length"), 3);
+});
+
 t("cards any job can slot: Side Winder, Hunter Fly, Vitata", () => {
   const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
   setup("Knight", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", hitTxt: "300", crit: 0, aspd: 170, defTxt: "10+10", hitScale: 1, mobInterval: 1.5,

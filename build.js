@@ -119,12 +119,13 @@ const BUILD=(()=>{
   function named(p){const m=p.match(/^(.+?)\s*:?\s*([+-]?)\s*(\d+(?:\.\d+)?)\s*(%?)$/);if(!m)return null;
     const n=m[1].trim().toLowerCase(),o=OPTIONS.find(x=>x.line&&!!x.pct===!!m[4]&&x.label.replace(/ %$/,"").toLowerCase()===n);if(!o)return null;
     const v=(m[2]==="-"?-1:1)*+m[3];return [...o.line,o.neg?-v:v]}
-  // random options picked from lists in build mode: gear.opts = [{k, v}], up to OPT_MAX per item whatever the item
+  // random options picked from lists in build mode: gear.opts = [{k, v}], up to OPT_MAX per item whatever the item. Typed lines a save
+  // had from before the lists that don't match one are kept as text in gear.optsText when the rows replace them (still not understood)
   // (one item can roll 2 on one drop and 4 on the next). The list is rozerodb's affixes (data/affixes.js), one entry per
   // distinct affix with the bonus line apply() counts it as; line null = an affix the model has no use for (shown, but listed
   // under "Not counted"). neg lines store the value negated: "Resistance to Demon 5%" is damage taken −5%, "Variable Casting
   // reduction 5%" is the data's −5. gear: the min–max it rolls on each gear kind (all pools together)
-  const OPT_MAX=4;
+  const OPT_MAX=5; // the most random options the game rolls on one item
   const RACE_BY=Object.fromEntries(Object.entries(RACE).map(([k,v])=>[v.toLowerCase(),k]));
   const ELES=["neutral","water","earth","fire","wind","poison","holy","shadow","ghost","undead"];
   // rozerodb gear type -> gear kinds (see optGear). Blacksmiths forge melee weapons; the Activation System's Physical Series
@@ -215,6 +216,10 @@ const BUILD=(()=>{
   function optLines(opts){if(!Array.isArray(opts))return {...parseOptions(opts),off:[]};const lines=[],off=[];
     optRows(opts).filter(x=>+x.v).forEach(x=>{const o=OPT_BY[x.k];if(o.line)lines.push([...o.line,o.neg?-x.v:+x.v]);else off.push(`${o.label.replace(/ %$/,"")} ${x.v}${o.pct?"%":""}`)});
     return {lines,bad:[],off}}
+  // a row's options: the picked ones and any typed lines kept from before the lists
+  function optLinesOf(o){const a=optLines(o.opts);if(!o.optsText)return a;const t=parseOptions(o.optsText);return {lines:[...a.lines,...t.lines],bad:[...a.bad,...t.bad],off:a.off}}
+  // typed option lines that match no option (none for picked rows)
+  const optBad=opts=>Array.isArray(opts)?[]:parseOptions(opts).bad;
   // costume enchant stones: one per costume slot, each only in its own slot
   const STONE_SLOTS=[{k:"upper",label:"Upper"},{k:"middle",label:"Middle"},{k:"lower",label:"Lower"},{k:"garment",label:"Garment"}];
   const stone=id=>(typeof STONES!=="undefined"?STONES:[]).find(x=>x.id===+id)||null;
@@ -242,14 +247,14 @@ const BUILD=(()=>{
       // a weapon in the Shield row is the left hand (Assassin); its ATK shows on the gear side of the status window like the right one's
       if(s.k==="shield"){if((it.slot||[]).includes("weapon"))wpnL=it;else shield=true}gearMatk+=it.matk||0;gearDef+=it.def||0;gearMdef+=it.mdef||0;refDef+=rd});
     worn.forEach(w=>{const ctx={...ctxBase,refine:w.r};applyGroups(A,w.it.g,ctx,w.it.name);w.cards.forEach(c=>applyGroups(A,c.g,ctx,c.name));
-      const o=optLines((gear[w.slot]||{}).opts);o.lines.forEach(b=>apply(A,b,w.it.name+" option"));o.bad.forEach(x=>A.unmodelled.push(`${w.it.name} option not understood: ${x}`));o.off.forEach(x=>A.unmodelled.push(`${w.it.name} option not counted: ${x}`))});
+      const o=optLinesOf(gear[w.slot]||{});o.lines.forEach(b=>apply(A,b,w.it.name+" option"));o.bad.forEach(x=>A.unmodelled.push(`${w.it.name} option not understood: ${x}`));o.off.forEach(x=>A.unmodelled.push(`${w.it.name} option not counted: ${x}`))});
     // costume enchant stones (data/stones.js): b.stones = {upper, middle, lower, garment} -> stone id, plus the sets they complete
     const st=stonesWorn(b.stones);st.forEach(x=>{(x.b||[]).forEach(l=>apply(A,l,x.name));if(x.off)A.unmodelled.push(`${x.name}: ${x.off}`)});
     const ids=st.map(x=>x.id);(typeof STONE_SETS!=="undefined"?STONE_SETS:[]).forEach(z=>{if(z.need.every(i=>ids.includes(i)))z.b.forEach(l=>apply(A,l,z.name))});
     // Taming Ring (Special Equipment, Accessory Right): b.special.ring = the pet egg enchant sealed in it (data/special.js)
     const egg=tamingEgg((b.special||{}).ring);if(egg){egg.b.forEach(l=>apply(A,l,`Taming Ring (${egg.name})`));if(egg.off)A.unmodelled.push(`Taming Ring (${egg.name}): ${egg.off}`)}
     // other special equipment the lists don't have: b.special.own = [{on, name, opts:[{k, v}]}], effects picked from the affix list
-    ((b.special||{}).own||[]).forEach(x=>{if(!x||x.on===false)return;const nm=String(x.name||"").trim()||"Special equipment",o=optLines(x.opts);
+    ((b.special||{}).own||[]).forEach(x=>{if(!x||x.on===false)return;const nm=String(x.name||"").trim()||"Special equipment",o=optLinesOf(x);
       o.lines.forEach(l=>apply(A,l,nm));o.bad.forEach(y=>A.unmodelled.push(`${nm} not understood: ${y}`));o.off.forEach(y=>A.unmodelled.push(`${nm} not counted: ${y}`))});
     // consumables and buffs picked on the Character tab: plain bonus lines on top of the gear
     (b.extra||[]).forEach(x=>apply(A,x,"consumable"));
@@ -311,5 +316,5 @@ const BUILD=(()=>{
       if(!best||score>best.score)best={score,id:it.id,refine,cards:[...a,...b].slice(0,it.slots||0)}}
     return best&&{id:best.id,refine:best.refine,cards:best.cards}}
 
-  return {SLOTS,CARD_FOR,WTYPE,STAT6,FIRST_OF,SHIELD_ASPD,DUAL_W,LEFT_ASPD,dualOk,item,jobBonus,refineAt,status,compute,curve,parseOptions,OPTIONS,OPT_MAX,optRows,optLines,optGear,optChoices,STONE_SLOTS,stone,stonesWorn,tamingEgg,readCardNames,readGearName}})();
+  return {SLOTS,CARD_FOR,WTYPE,STAT6,FIRST_OF,SHIELD_ASPD,DUAL_W,LEFT_ASPD,dualOk,item,jobBonus,refineAt,status,compute,curve,parseOptions,OPTIONS,OPT_MAX,optRows,optLines,optBad,optGear,optChoices,STONE_SLOTS,stone,stonesWorn,tamingEgg,readCardNames,readGearName}})();
 if(typeof module!=="undefined")module.exports=BUILD;
