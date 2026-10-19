@@ -106,6 +106,7 @@ state.tsort=Object.fromEntries(Object.entries(objOr(state.tsort)).filter(([,v])=
 [["bestTable","bestSort","bestDir"],["huntTable","huntSort","huntDir"]].forEach(([id,k,d])=>{if(typeof state[k]==="string"&&!state.tsort[id])state.tsort[id]=[state[k],state[d]===1?1:-1];delete state[k];delete state[d]});
 state.tfilt=Object.fromEntries(Object.entries(objOr(state.tfilt)).map(([k,v])=>[k,Object.fromEntries(Object.entries(objOr(v)).filter(([,x])=>typeof x==="string"))]));
 // the Equipment and Cards tabs' filters: {key: text as typed}
+if(state.itemFrom!=null&&typeof state.itemFrom!=="string")delete state.itemFrom; // Item info's Where to get filter
 ["eqDb","cardDb"].forEach(k=>{if(state[k]!=null)state[k]=Object.fromEntries(Object.entries(objOr(state[k])).filter(([,x])=>typeof x==="string"))});
 state.noTele=(Array.isArray(state.noTele)?state.noTele:[]).map(String);
 // possible rampage per map (monsters attacking you together) (Map planner): whole numbers 1–12

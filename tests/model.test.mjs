@@ -2091,4 +2091,17 @@ t("Equipment and Cards tabs: in-game text, where to get it and the Where to get 
   assert.equal(run(`JSON.stringify(ITEM_INFO)`).includes("C5_"), false);
 });
 
+t("Item info: the Where to get filter, and other sources the farm tables don't have", () => {
+  // War Axe: the farm tables have Chimera (a mini boss) drop it; two MVPs do too, which only rozerodb's drop list has
+  assert.equal(run(`itemFromOk("1306","mvp")`), true);
+  assert.equal(run(`itemFromOk("1306","mini")`), true);
+  assert.equal(run(`itemFromOk("1306","normal")`), false);
+  assert.equal(run(`itemFromOk("507","mini")`), true);                                               // Red Herb: mini bosses drop it
+  assert.equal(run(`itemFromOk("507","mvp")`), false);
+  assert.equal(run(`itemFromOk("507","")`), true);
+  const o = run(`otherSourcesHtml("1306")`);
+  assert.match(o, /Turtle General/); assert.match(o, /MVP/); assert.doesNotMatch(o, /Chimera/);    // Chimera is in the table
+  assert.equal(run(`otherSourcesHtml("507")`), "");                                                   // nothing beyond the table
+});
+
 console.log(`${n} tests passed`);

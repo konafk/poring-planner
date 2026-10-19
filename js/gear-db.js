@@ -67,8 +67,15 @@ const fromTxt=id=>[...(itemInfo(id).d||[]).map(([,n,lv,k,ch])=>`${n} Lv ${lv}${F
 const fromOk=(id,v)=>{const x=itemInfo(id),d=x.d||[];return !v||(v==="none"?!d.length&&!(x.q||[]).length:v==="quest"?!!(x.q||[]).length:d.some(r=>r[3]===v))};
 // the column: each monster (a link to Monster info when the farm tables know it), its level, MVP / mini boss and drop %, then quests
 const MOB_BY_ID=new Map(MOBS.map(m=>[m.id,m]));
-const fromHtml=id=>[...(itemInfo(id).d||[]).map(([mid,n,lv,k,ch])=>`${MOB_BY_ID.has(mid)?`<a href="#" data-mob="${mid}">${esc(n)}</a>`:esc(n)} <span class="note">Lv ${lv}${ch!=null?` · ${ch}%`:""}</span>${FROM_TAG[k]?` <span class="pill${k==="mvp"?" mvp":""}">${FROM_TAG[k]}</span>`:""}`),
+const fromHtml=(id,drops=itemInfo(id).d||[])=>[...drops.map(([mid,n,lv,k,ch])=>`${MOB_BY_ID.has(mid)?`<a href="#" data-mob="${mid}">${esc(n)}</a>`:esc(n)} <span class="note">Lv ${lv}${ch!=null?` · ${ch}%`:""}</span>${FROM_TAG[k]?` <span class="pill${k==="mvp"?" mvp":""}">${FROM_TAG[k]}</span>`:""}`),
   ...(itemInfo(id).q||[]).map(q=>`<span class="pill">quest</span> ${esc(q)}`)].join("<br>")||'<span class="muted">no known source</span>';
+// Item info (every drop of the monsters the farm tables know): the kinds of monster that drop an item, from those monsters (a mini
+// boss or Boss-class one counts as a mini boss: none of them is an MVP) and, for gear and cards, rozerodb's full list (MVPs too)
+const dropKinds=id=>new Set([...(ITEM_DROPS[id]||[]).map(d=>d.m.mini||d.m.boss?"mini":"normal"),...(itemInfo(id).d||[]).map(r=>r[3])]);
+const itemFromOk=(id,v)=>!v||(v==="quest"?!!(itemInfo(id).q||[]).length:dropKinds(id).has(v));
+// its other sources: monsters the farm tables don't have (MVPs, champions) and quests, as in the Where to get column; "" when none
+function otherSourcesHtml(id){const known=new Set((ITEM_DROPS[id]||[]).map(d=>d.m.id)),x=itemInfo(id),d=(x.d||[]).filter(r=>!known.has(r[0]));
+  return d.length||(x.q||[]).length?fromHtml(id,d):""}
 const FROM_OPTS=`<option value="">Any</option><option value="mvp">MVP drop</option><option value="mini">Mini boss drop</option><option value="normal">Normal monster drop</option><option value="quest">Quest</option><option value="none">No known source</option>`;
 function cardDbOk(c,f){const q=String(f.q||"").trim().toLowerCase();if(f.slot&&cardPart(c)!==f.slot)return false;if(!fromOk(c.id,f.from))return false;
   return !q||c.name.toLowerCase().includes(q)||("#"+c.id).includes(q)||cardName(c).toLowerCase().includes(q)||fromTxt(c.id).toLowerCase().includes(q)||itemText(c.id).toLowerCase().includes(q)||fxOf(c).join(" ").toLowerCase().includes(q)}
@@ -189,6 +196,10 @@ $("eqDlg").addEventListener("click",e=>{if(e.target===$("eqDlg"))$("eqDlg").clos
   $("eqDbJob").innerHTML=`<option value="">Any job</option><option value="mine">Your job</option>${DB_JOBS.map(j=>`<option>${j}</option>`).join("")}`;
   $("eqDbSort").innerHTML=`<option value="" hidden>By column</option>${EQ_SORTS.map(([v,n])=>`<option value="${v}">${n}</option>`).join("")}`;
   ROOTQ(".fromSel").forEach(x=>x.innerHTML=FROM_OPTS);
+  // Item info's: every item there is a monster drop, so no "No known source"
+  $("itemFrom").innerHTML=FROM_OPTS.replace(/<option value="none">.*?<\/option>/,"");$("itemFrom").value=state.itemFrom||"";
+  $("itemFrom").addEventListener("change",e=>{state.itemFrom=e.target.value;save();renderItems()});
+  $("itemTiles").addEventListener("click",e=>{const m=e.target.closest("[data-mob]");if(!m)return;e.preventDefault();state.infoMobId=+m.dataset.mob;save();showTab("mobinfo");scrollTo({top:0})});
   $("cardDbSlot").innerHTML=`<option value="">Any</option>${Object.entries(CARD_PART).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}`;
   ROOTQ("[data-eqf]").forEach(x=>x.addEventListener("input",()=>{state.eqDb={...eqDbF(),[x.dataset.eqf]:x.value};save();renderEquipDb()}));
   ROOTQ("[data-cdf]").forEach(x=>x.addEventListener("input",()=>{state.cardDb={...cardDbF(),[x.dataset.cdf]:x.value};save();renderCardDb()}));

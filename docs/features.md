@@ -122,7 +122,7 @@ One monster's stats, how you do against it, and every map it spawns on. The Elem
 
 ## Item info
 
-Every item monsters drop, searchable and filterable by auto-loot group (the Group dropdown in the filter row), with NPC and player prices and NPC zeny per kill: the NPC price times your drop chance (after drop bonus and level penalty), at the monster where that comes to most, and spawns: the most of one monster that drops it on one open map. Click an item to see every monster that drops it, the drop chance, the NPC zeny per kill from each, and its best open map with how many spawn there.
+Every item monsters drop, searchable and filterable by auto-loot group (the Group dropdown in the filter row), with NPC and player prices and NPC zeny per kill: the NPC price times your drop chance (after drop bonus and level penalty), at the monster where that comes to most, and spawns: the most of one monster that drops it on one open map. Click an item to see every monster that drops it, the drop chance, the NPC zeny per kill from each, and its best open map with how many spawn there. The **Where to get** filter shows only items an MVP, a mini boss or a normal monster drops, or a quest gives. The farm tables have no MVPs, so for gear and cards it also uses rozerodb's full drop lists, and an item's **Other sources** lists the monsters that aren't in its table (MVPs, champion monsters) and its quests.
 
 ## Equipment and Cards
 
