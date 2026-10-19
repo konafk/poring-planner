@@ -192,17 +192,17 @@ OWN_LISTS.forEach(L=>{
 // ---- equipment stats (status-window mode): the % lines from the game's Equipment Stats window, as rows {by, t, ch, v} ----
 // [kind, label, has a Phys / Magic choice, flat (no %)]
 const EQ_KINDS=[["race","Damage to race",true],["size","Damage to size",true],["ele","Damage to element",true],["kind","Damage to boss / normal",true],["group","Damage to monster group",true],
-  ["all","Damage to all monsters",true],["myEle","Magic damage of an element (your spells)"],["critRace","CRIT when attacking race",false,true],["takenRace","Damage taken from race"],["takenEle","Damage taken from element"],["takenKind","Damage taken from boss / normal"],
+  ["all","Damage to all monsters",true],["myEle","Magic damage of an element (your spells)"],["critRace","CRIT when attacking race",false,true],["takenRace","Damage taken from race"],["takenSize","Damage taken from size"],["takenEle","Damage taken from element"],["takenKind","Damage taken from boss / normal"],
   ["ignRace","Ignore DEF / MDEF of race",true],["ignSize","Ignore DEF / MDEF of size",true],["ignEle","Ignore DEF / MDEF of element",true],["ignKind","Ignore DEF / MDEF of boss / normal",true],
   ["exp","EXP gained from monsters"],["expRace","EXP gained from race"],["spCost","Skill SP consumption"],["spRec","SP recovery (natural regen)"],["hpRec","HP recovery (natural regen)"]];
 const EQ_TARGETS={race:()=>RACES,size:()=>[["S","Small"],["M","Medium"],["L","Large"]],ele:()=>AE,kind:()=>[["boss","Boss"],["normal","Normal"]],group:()=>[["Boulder Dwarf","Boulder Dwarves"]],
-  ignRace:()=>RACES,ignSize:()=>EQ_TARGETS.size(),ignEle:()=>AE,ignKind:()=>EQ_TARGETS.kind(),myEle:()=>AE,critRace:()=>RACES,takenRace:()=>RACES,takenEle:()=>AE,takenKind:()=>[["boss","Boss"],["normal","Normal"]],expRace:()=>RACES};
+  ignRace:()=>RACES,ignSize:()=>EQ_TARGETS.size(),ignEle:()=>AE,ignKind:()=>EQ_TARGETS.kind(),myEle:()=>AE,critRace:()=>RACES,takenRace:()=>RACES,takenSize:()=>EQ_TARGETS.size(),takenEle:()=>AE,takenKind:()=>[["boss","Boss"],["normal","Normal"]],expRace:()=>RACES};
 // older saves had one race / size / element box each; turn them into rows once
 const eqOf=c=>{if(!Array.isArray(c.eq))c.eq=[];
   [["raceSel","racePct","raceType","race"],["sizeSel","sizePct","sizeType","size"],["elSel","elPct","elType","ele"]].forEach(([s,p,t,by])=>{
     if(c[s]&&num(c[p]))c.eq.push({by,t:c[s],ch:c[t]||"both",v:num(c[p])});delete c[s];delete c[p];delete c[t]});return c.eq};
 const IGN_BY={ignRace:"race",ignSize:"size",ignEle:"ele",ignKind:"kind"};
-function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},critRace:{},taken:{race:{},ele:{},kind:{}},exp:{all:0,race:{}},spCost:0,spRec:0,hpRec:0,
+function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},critRace:{},taken:{race:{},size:{},ele:{},kind:{}},exp:{all:0,race:{}},spCost:0,spRec:0,hpRec:0,
     ign:{def:{race:{},size:{},ele:{},kind:{}},mdef:{race:{},size:{},ele:{},kind:{}}}};
   const add=(m,k,v)=>{m[k]=(m[k]||0)+v};
   eqOf(c).forEach(r=>{const v=num(r.v);if(!v)return;
@@ -210,7 +210,7 @@ function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}}
     else if(r.by==="all"){if(r.ch!=="magic")o.phys.all+=v;if(r.ch!=="phys")o.magic.all+=v}
     // ignore rows: Physical is DEF, Magic is MDEF
     else if(IGN_BY[r.by]){if(r.ch!=="magic")add(o.ign.def[IGN_BY[r.by]],r.t,v);if(r.ch!=="phys")add(o.ign.mdef[IGN_BY[r.by]],r.t,v)}
-    else if(r.by==="myEle")add(o.myEle,r.t,v);else if(r.by==="critRace")add(o.critRace,r.t,v);else if(r.by.startsWith("taken"))add(o.taken[{takenRace:"race",takenEle:"ele",takenKind:"kind"}[r.by]],r.t,v);
+    else if(r.by==="myEle")add(o.myEle,r.t,v);else if(r.by==="critRace")add(o.critRace,r.t,v);else if(r.by.startsWith("taken"))add(o.taken[{takenRace:"race",takenSize:"size",takenEle:"ele",takenKind:"kind"}[r.by]],r.t,v);
     else if(r.by==="exp")o.exp.all+=v;else if(r.by==="expRace")add(o.exp.race,r.t,v);else if(r.by==="spCost")o.spCost+=v;else if(r.by==="spRec")o.spRec+=v;else if(r.by==="hpRec")o.hpRec+=v});return o}
 // "Fill from gear": the lines the gear saved in Build from gear gives (gear, cards, affixes, stones, Taming Ring, other special
 // equipment; not consumables or buffs), one row per bonus. A bonus with different physical and magic values gets a row for each
@@ -223,7 +223,7 @@ function gearEqRows(c){const A=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobL
   both("all","",A.phys.all,A.magic.all);
   Object.entries(IGN_BY).forEach(([by,k])=>new Set([...Object.keys(A.ign.def[k]),...Object.keys(A.ign.mdef[k])]).forEach(t=>both(by,t,A.ign.def[k][t]||0,A.ign.mdef[k][t]||0)));
   Object.entries(A.myEle).forEach(([t,v])=>add("myEle",t,v));Object.entries(A.critRace).forEach(([t,v])=>add("critRace",t,v));
-  [["race","takenRace"],["ele","takenEle"],["kind","takenKind"]].forEach(([k,by])=>Object.entries(A.taken[k]).forEach(([t,v])=>add(by,t,v)));
+  [["race","takenRace"],["size","takenSize"],["ele","takenEle"],["kind","takenKind"]].forEach(([k,by])=>Object.entries(A.taken[k]||{}).forEach(([t,v])=>add(by,t,v)));
   add("exp","",A.exp.all);Object.entries(A.exp.race).forEach(([t,v])=>add("expRace",t,v));
   add("spCost","",A.spCost);add("spRec","",A.spRec);add("hpRec","",A.hpRec);return rows}
 function renderEq(){const c=C();$("eqPanel").hidden=c.mode==="build";const fill=$("eqFill");fill.disabled=!gearSaved(c);

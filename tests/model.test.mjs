@@ -1307,6 +1307,28 @@ t("Thief Double Attack: daggers hit twice 7% × Lv of the time with HIT +1% × L
   assert.deepEqual(JSON.parse(app("JSON.stringify([C().a.hits,C().a.da,cur().snap.c.a.hits,cur().snap.c.a.da])")), [1, true, 1, true]);
 });
 
+t("damage taken from race / size / element cuts HP lost, heal cost and raises net zeny", () => {
+  // a Thief like Chainsmoker: Poo Poo Hat's own −10% from Demi-Human, Muffler and Boots each rolled "Resistance to Demi-Human 7%"
+  run(`state.job="Thief";state.chars={};state.recovery={discount:false};Object.assign(C(),{baseLv:45,jobLv:40,mode:"build",st:{},eq:[],skills:{}})`);
+  const orc = "MOBS.find(m=>m.id===1023)", mp = "gef_fild03";
+  const set = g => { run(`C().build={base:{str:60,agi:70,vit:20,int:1,dex:30,luk:1},gear:${g}};SKFX=skillEffects(C());applyBuild();applyConsumables()`);
+    return JSON.parse(run(`JSON.stringify({mul:takenMul(${orc}),hit:mobHitDmg(${orc}),hpm:hpLossPerMin(${orc}),map:(r=>({hpm:r.hpm,heal:r.heal,net:r.net}))(mapStats(${JSON.stringify(mp)},2)),un:BUILD_LAST.unmodelled})`)); };
+  const none = set(`{weapon:{id:1222},garment:{id:480378},shoes:{id:470233}}`);      // the same DEF, no resist
+  assert.equal(run(`${orc}.race`), "Demi-Human");
+  const res = `{k:"res_race_demi_human",v:7}`;
+  const all = set(`{weapon:{id:1222},headTop:{id:2289},garment:{id:480378,opts:[${res}]},shoes:{id:470233,opts:[${res}]}}`);
+  near(all.mul, 0.76);
+  near(none.mul, 1); near(all.hit, none.hit * 0.76, "a monster's hit");
+  assert.ok(all.hpm < none.hpm && all.map.hpm < none.map.hpm && all.map.heal < none.map.heal && all.map.net > none.map.net);
+  // typed the way the game names it
+  const typed = set(`{weapon:{id:1222},headTop:{id:2289},garment:{id:480378,opts:"Resistance to Demi-Human 7%"},shoes:{id:470233,opts:"Resistance to Demi-Human 7%"}}`);
+  near(typed.mul, 0.76); assert.deepEqual(typed.un, []);
+  // status window mode: Equipment stats lines, by race, size and element
+  run(`C().mode="status";C().eq=[{by:"takenRace",t:"Demi-Human",v:-24}];applyBuild()`); near(run(`takenMul(${orc})`), 0.76);
+  run(`C().eq=[{by:"takenSize",t:"M",v:-10},{by:"takenEle",t:"Earth",v:-20}];applyBuild()`); near(run(`takenMul(${orc})`), 0.9 * 0.8);
+  run(`C().eq=[{by:"takenSize",t:"L",v:-10}];applyBuild()`); near(run(`takenMul(${orc})`), 1);   // orcs are Medium
+});
+
 t("cards any job can slot: Side Winder, Hunter Fly, Vitata", () => {
   const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
   setup("Knight", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", hitTxt: "300", crit: 0, aspd: 170, defTxt: "10+10", hitScale: 1, mobInterval: 1.5,

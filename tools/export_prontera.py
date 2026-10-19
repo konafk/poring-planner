@@ -39,7 +39,8 @@ GVG_ONLY = {450012, 450013, 450014, 470011, 470012, 470013, 480007, 520001, 5500
             1859, 2052, 15216, 15217, 15218, 26146, 26147, 28133}
 # bonuses roz.prontera.info has wrong or missing, as the client describes them; each applies only while prontera still lacks it
 RACE_CRIT = {4297: ("brute", 7), 4310: ("brute", 7), 4192: ("fish", 7)}  # "When attacking Brute/Fish monsters, CRIT +7"
-TAKEN = {2254: ("demon", -3), 2255: ("angel", -3), 2327: ("demon", -15)}  # "Damage Taken from Demon/Angel Monsters -x%"
+# Poo Poo Hat (2289): "Damage from Demi-Human / Human players -10%" (the Demi-Human monsters you farm count)
+TAKEN = {2254: ("demon", -3), 2255: ("angel", -3), 2327: ("demon", -15), 2289: ("demi_human", -10)}  # "Damage Taken from Demon/Angel Monsters -x%"
 # Baby Shark / Shark Family Card (event over, the level bonus stays): garment cards; prontera has no slot and only the text
 # "For every 10 BaseLv, ATK (MATK) +7, DEF +3, and MDEF +1. (Up to BaseLv 50.)"
 LV_STEP = {300834: "atk", 300835: "matk"}

@@ -107,7 +107,7 @@ const bonusParts=(m,magic=false)=>{const c=C();let post=1,full=1+num(c.dmgBonus)
   // and, for an element's plain "Damage" bonus (Volcano, Deluge, Whirlwind), for physical attacks of that element too
   if(SKFX){if(!magic){full*=1+SKFX.pct/100;post*=1+(SKFX.physEle[atkEl()]||0)/100}else post*=1+(SKFX.myEle[atkEl()]||0)/100}return {post,full}};
 const bonusMul=(m,magic=false)=>{const b=bonusParts(m,magic);return b.post*b.full};
-// build mode: gear EXP bonus % (plus vs a monster's race), and damage taken from its race / element / boss-normal kind
+// build mode: gear EXP bonus % (plus vs a monster's race), and damage taken from its race / size / element / boss-normal kind
 const expGear=m=>{const c=C();return c.bx?(c.bx.exp.all||0)+((c.bx.exp.race||{})[m.race]||0):0};
 // your EXP per kill: your Even Share cut (rounded down), then every EXP bonus added together, not multiplied (10% + 10% is ×1.20,
 // matching the in-game kills noted at partyN). Gear EXP counts for base and job EXP; an item's "EXP +X%" is base EXP only and
@@ -115,7 +115,7 @@ const expGear=m=>{const c=C();return c.bx?(c.bx.exp.all||0)+((c.bx.exp.race||{})
 const partyCut=(v,s=cur())=>Math.floor(v*(100+partyBonus(s))/100/partyN(s));
 const killExp=(m,s=cur())=>Math.floor(partyCut(m.exp,s)*(1+(expGear(m)+num(state.bonus)+consSum("exp_base"))/100));
 const killJobExp=(m,s=cur())=>Math.floor(partyCut(m.job,s)*(1+(expGear(m)+num(state.jobBonus)+consSum("exp_job"))/100));
-const takenMul=m=>{const c=C();if(!c.bx)return 1;const t=c.bx.taken;return (1+(t.race[m.race]||0)/100)*(1+(t.ele[m.el||"Neutral"]||0)/100)*(1+(t.kind[m.boss?"boss":"normal"]||0)/100)};
+const takenMul=m=>{const c=C();if(!c.bx)return 1;const t=c.bx.taken;return Math.max(0,(1+(t.race[m.race]||0)/100)*(1+((t.size||{})[m.size]||0)/100)*(1+(t.ele[m.el||"Neutral"]||0)/100)*(1+(t.kind[m.boss?"boss":"normal"]||0)/100))};
 // ignore DEF / MDEF %: lowers the monster's hard defence before the (4000+DEF)/(4000+10·DEF) or (1000+MDEF)/(1000+10·MDEF) factor
 // ignOf: the plain ignore % plus gear that ignores it only against the monster's race, size, element or boss / normal (bx.ign)
 const ignOf=(k,m)=>{const c=C(),I=c.bx&&c.bx.ign&&c.bx.ign[k];let v=num(c[k==="def"?"ignDef":"ignMdef"]);

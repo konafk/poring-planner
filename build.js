@@ -60,7 +60,7 @@ const BUILD=(()=>{
   const blank=()=>({st:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},stPct:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},atk:0,matk:0,atkPct:0,matkPct:0,hit:0,flee:0,crit:0,critDmg:0,aspd:0,aspdPct:0,aspdMod:0,
     hp:0,hpPct:0,sp:0,spPct:0,def:0,mdef:0,ranged:0,melee:0,skill:0,skillOf:{},vct:0,fct:0,acd:0,vctOf:{},fctOf:{},ignDef:0,ignMdef:0,
     ign:{def:{race:{},size:{},ele:{},kind:{}},mdef:{race:{},size:{},ele:{},kind:{}}},
-    phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},taken:{race:{},ele:{},kind:{}},exp:{all:0,race:{}},critRace:{},spCost:0,spRec:0,hpRec:0,wEle:null,unmodelled:[]});
+    phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},taken:{race:{},size:{},ele:{},kind:{}},exp:{all:0,race:{}},critRace:{},spCost:0,spRec:0,hpRec:0,wEle:null,unmodelled:[]});
   // lines that only matter for PvP survival, healing or status resistance: not part of the farming maths, so not reported either
   const QUIET=["resistance_percent","heal_amount_percent","item_heal_percent","sp_recovery_percent","hp_recovery_percent","perfect_dodge","perfect_hit","magic_damage_taken_percent","sp_per_hit","hp_per_hit"];
   const addTo=(o,k,v)=>{o[k]=(o[k]||0)+v};
@@ -99,7 +99,7 @@ const BUILD=(()=>{
     // ignore DEF / MDEF: for every monster, or only against a race, size, element or boss / normal monsters (A.ign)
     if((type==="ignore_def_percent"||type==="ignore_mdef_percent")&&!kind){if(type==="ignore_def_percent")A.ignDef+=v;else A.ignMdef+=v;return true}
     if((type==="ignore_def_percent"||type==="ignore_mdef_percent")&&bucket(kind)&&bucket(kind)!=="group"){addTo(A.ign[type==="ignore_def_percent"?"def":"mdef"][bucket(kind)],tgt(kind,target),v);return true}
-    if(type==="damage_taken_percent"&&bucket(kind)&&bucket(kind)!=="size"){addTo(A.taken[bucket(kind)],tgt(kind,target),v);return true}
+    if(type==="damage_taken_percent"&&bucket(kind)&&bucket(kind)!=="group"){addTo(A.taken[bucket(kind)],tgt(kind,target),v);return true}
     if(type==="exp_percent"&&kind==="race"){addTo(A.exp.race,tgt(kind,target),v);return true}
         if(type==="weapon_element"&&target){A.wEle=cap(target);return true}
     A.unmodelled.push(`${src}: ${type}${target?" "+target:""} ${v>0?"+":""}${v}`);return false}
@@ -109,10 +109,15 @@ const BUILD=(()=>{
     def:"def",mdef:"mdef",aspd:"aspd",maxhp:"hp",mhp:"hp",hp:"hp",maxsp:"sp",msp:"sp",sp:"sp"};
   const PCT={atk:"atk_percent",matk:"matk_percent",aspd:"aspd_percent",hp:"hp_percent",sp:"sp_percent",
     str:"str_percent",agi:"agi_percent",vit:"vit_percent",int:"int_percent",dex:"dex_percent",luk:"luk_percent"};
+  // also the way the game and rozerodb name them: "Resistance to Demi-Human 7%", "Fire resistance increase 5%", "Phys Damage to Large targets +3%"
   function parseOptions(txt){const out=[],bad=[];String(txt||"").split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean).forEach(p=>{
     const m=p.match(/^([a-z ]+?)\s*([+-]\s*\d+(?:\.\d+)?)\s*(%?)$/i);const k=m&&OPT[m[1].toLowerCase().replace(/\s+/g,"")];
-    if(!k){bad.push(p);return}const v=parseFloat(m[2].replace(/\s/g,""));
+    if(!k){const a=named(p);if(a)out.push(a);else bad.push(p);return}const v=parseFloat(m[2].replace(/\s/g,""));
     if(m[3]){if(PCT[k])out.push([PCT[k],null,null,v]);else bad.push(p)}else out.push([k,null,null,v])});return {lines:out,bad}}
+  // an option by its affix name and a number: the bonus line it counts as (the value negated for a reduction), null when unknown
+  function named(p){const m=p.match(/^(.+?)\s*:?\s*([+-]?)\s*(\d+(?:\.\d+)?)\s*(%?)$/);if(!m)return null;
+    const n=m[1].trim().toLowerCase(),o=OPTIONS.find(x=>x.line&&!!x.pct===!!m[4]&&x.label.replace(/ %$/,"").toLowerCase()===n);if(!o)return null;
+    const v=(m[2]==="-"?-1:1)*+m[3];return [...o.line,o.neg?-v:v]}
   // random options picked from lists in build mode: gear.opts = [{k, v}], up to OPT_MAX per item whatever the item
   // (one item can roll 2 on one drop and 4 on the next). The list is rozerodb's affixes (data/affixes.js), one entry per
   // distinct affix with the bonus line apply() counts it as; line null = an affix the model has no use for (shown, but listed
@@ -169,7 +174,8 @@ const BUILD=(()=>{
     [["hp_percent","Max HP"],["sp_percent","Max SP"],["hp_recovery_percent","HP recovery"],["sp_recovery_percent","SP recovery"]].forEach(([k,l])=>add("Defense",k,l+" %",k,null,null,true));
     for(const r in RACE){add("Race","dmg_race_"+r,`Damage vs ${RACE[r]} %`,"damage_percent","race",r,true);add("Race","mdmg_race_"+r,`Magic damage vs ${RACE[r]} %`,"magic_damage_percent","race",r,true);
       add("Race","res_race_"+r,`Resist ${RACE[r]} %`,"damage_taken_percent","race",r,true,true)}
-    for(const z in SIZE){add("Size","dmg_size_"+z,`Damage vs ${cap(z)} %`,"damage_percent","size",z,true);add("Size","mdmg_size_"+z,`Magic damage vs ${cap(z)} %`,"magic_damage_percent","size",z,true)}
+    for(const z in SIZE){add("Size","dmg_size_"+z,`Damage vs ${cap(z)} %`,"damage_percent","size",z,true);add("Size","mdmg_size_"+z,`Magic damage vs ${cap(z)} %`,"magic_damage_percent","size",z,true);
+      add("Size","res_size_"+z,`Resist ${cap(z)} size %`,"damage_taken_percent","size",z,true,true)}
     ELES.forEach(e=>{add("Element","dmg_ele_"+e,`Damage vs ${cap(e)} monsters %`,"damage_percent","element",e,true);
       add("Element","mele_"+e,`${cap(e)} magic damage %`,"magic_damage_percent","element",e,true);add("Element","res_ele_"+e,`Resist ${cap(e)} %`,"damage_taken_percent","element",e,true,true)});
     [["normal","Normal"],["boss","Boss"]].forEach(([t,l])=>{add("Monster type","dmg_kind_"+t,`Damage vs ${l} monsters %`,"damage_percent","monster_kind",t,true);
@@ -203,7 +209,7 @@ const BUILD=(()=>{
   const optKey=k=>OPT_ALIAS[k]||k;
   // the picked rows; a build saved before the lists keeps its typed text and is read as rows where it matches one
   function optRows(opts){if(Array.isArray(opts))return opts.filter(x=>x&&OPT_BY[optKey(x.k)]).map(x=>({...x,k:optKey(x.k)}));
-    return parseOptions(opts).lines.map(([t,,,v])=>{const o=OPTIONS.find(x=>x.line&&x.line[0]===t&&!x.line[1]);return o&&{k:o.k,v:o.neg?-v:v}}).filter(Boolean)}
+    return parseOptions(opts).lines.map(([t,kd,tg,v])=>{const o=OPTIONS.find(x=>x.line&&x.line[0]===t&&x.line[1]===kd&&x.line[2]===tg);return o&&{k:o.k,v:o.neg?-v:v}}).filter(Boolean)}
   // bonus lines of the picked rows; off: the ones the model can't count (shown under "Not counted")
   function optLines(opts){if(!Array.isArray(opts))return {...parseOptions(opts),off:[]};const lines=[],off=[];
     optRows(opts).filter(x=>+x.v).forEach(x=>{const o=OPT_BY[x.k];if(o.line)lines.push([...o.line,o.neg?-x.v:+x.v]);else off.push(`${o.label.replace(/ %$/,"")} ${x.v}${o.pct?"%":""}`)});
