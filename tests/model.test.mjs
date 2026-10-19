@@ -1276,6 +1276,37 @@ t("clan: a buff that stays on, two stats +1, Max HP +30, Max SP +10, counted in 
   assert.equal(run(`cf("maxHp")`), 1000);
 });
 
+t("Thief Double Attack: daggers hit twice 7% × Lv of the time with HIT +1% × Lv; other weapons don't", () => {
+  const AUTO = { name: "Basic attack", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
+  const ORC = MOB.replace("size:'L'", "size:'M'").replace("hit100:200", "hit100:250");   // a Medium monster you hit 80% of the time
+  const base = { atkTxt: "60+150", wAtk: 150, wElem: "Neutral", hitTxt: "230", crit: 0, aspd: 170, st: {}, skills: {}, a: AUTO };
+  setup("Thief", { ...base, weapon: "Dagger" });
+  const hit = run(`dmgPerHit(${ORC})`);
+  near(run(`perUse(${ORC})`), hit);                                          // not learned, no a.da: one hit
+  assert.equal(run(`hitChance(${ORC})`), 80);
+  run("C().skills={'double-attack':5}");                                     // learned Lv5: 35% twice, HIT +5%
+  near(run(`perUse(${ORC})`), hit * 1.35);
+  assert.equal(run(`hitChance(${ORC})`), 85);
+  run("C().skills={'double-attack':10}");
+  near(run(`perUse(${ORC})`), hit * 1.7);
+  assert.equal(run(`hitChance(${ORC})`), 90);
+  const dagger = run(`dpsOf(${ORC})`);
+  run("C().a={...C().a,type:'phys'}");                                       // skills don't double attack
+  near(run(`perUse(${ORC})`), hit); assert.equal(run(`hitChance(${ORC})`), 80);
+  // the same character with a Saber (one-handed sword): 100% vs Medium, but no Double Attack
+  setup("Thief", { ...base, weapon: "One-handed sword", skills: { "double-attack": 10 } });
+  near(run(`perUse(${ORC})`), run(`dmgPerHit(${ORC})`)); assert.equal(run(`hitChance(${ORC})`), 80);
+  assert.ok(dagger > run(`dpsOf(${ORC})`) * 1.2, "dagger 75% × 1.7 beats a sword's 100% on orcs");
+  // no skill tree: the preset that names it counts Lv10, a dagger still needed
+  setup("Thief", { ...base, weapon: "Dagger", preset: 0, a: JSON.parse(run("JSON.stringify(JOBS.Thief.p[0])")) });
+  near(run(`perUse(${ORC})`), hit * 1.7);
+  // a save from before: a Thief on the preset with 1.5 hits averaged in takes the new preset, its session snapshot too
+  const old = { ...JSON.parse(run("JSON.stringify(JOBS.Thief.p[0])")), hits: 1.5 }; delete old.da;
+  const app = load({ job: "Thief", current: "s", chars: { Thief: { ...base, weapon: "Dagger", preset: 0, a: old } },
+    sessions: [{ id: "s", name: "s", job: "Thief", mobIds: [], entries: [], snap: { at: 1, c: { ...base, preset: 0, a: old } } }] });
+  assert.deepEqual(JSON.parse(app("JSON.stringify([C().a.hits,C().a.da,cur().snap.c.a.hits,cur().snap.c.a.da])")), [1, true, 1, true]);
+});
+
 t("cards any job can slot: Side Winder, Hunter Fly, Vitata", () => {
   const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
   setup("Knight", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", hitTxt: "300", crit: 0, aspd: 170, defTxt: "10+10", hitScale: 1, mobInterval: 1.5,
@@ -1284,8 +1315,8 @@ t("cards any job can slot: Side Winder, Hunter Fly, Vitata", () => {
   const per = run(`perUse(${MOB})`), hp = run(`hpLossPerMin(${MOB})`), fight = run(`fightSec(${MOB})`), sp = run("spNeedPerSec()");
   run("CRD().daSF=true;CRD().daPct=7");                                     // Side Winder: basic attacks hit twice 7% of the time
   near(run(`perUse(${MOB})`), per * 1.07);
-  run("C().skills={'double-attack':10}");                                   // a learned Double Attack: the card follows it, nothing added
-  near(run(`perUse(${MOB})`), per);
+  run("C().skills={'double-attack':10}");                                   // Double Attack needs a dagger: without one the card still counts
+  near(run(`perUse(${MOB})`), per * 1.07);
   run("C().skills={};C().a={...AUTO_,type:'phys',pct:300,sp:10}".replace("AUTO_", JSON.stringify(AUTO)));
   const skillPer = run(`perUse(${MOB})`);
   run("CRD().daSF=false");

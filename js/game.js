@@ -52,7 +52,7 @@ const MAGE=[...BOLT3,A2("Earth Spike Lv5","magic",200,5,"Earth",30,1,"",Z(0.28,1
 const ARCH=[A2("Double Strafe Lv10","phys",190,2,"W",12,1,"1 arrow per use",Z(0,0,0,0.1,{arrows:1})),A2("Arrow Shower Lv10","phys",250,1,"W",15,3,"3x3 area, 1 arrow per use",Z(0,0,0,0.1,{arrows:1}))];
 const ACO=[A2("Holy Light","magic",125,1,"Holy",15,1,"",Z(0.1,0.4,0,0))];
 const MERC=[A2("Mammonite Lv10","phys",600,1,"W",5,1,"Costs 1,000 z per use (taken off zeny/hr)",Z(0,0,0,0,{zeny:1000})),A2("Cart Revolution","phys",150,1,"W",12,3,"Quest skill; +100% per 8,000 cart weight (set Cart weight)",Z(0,0,0,0,{cart:100}))];
-const THIEF=[A("Basic attack (Double Attack Lv10)","auto",100,1.5,"W",0,0,0,1,"Dagger: about half your hits strike twice"),A2("Envenom Lv10","phys",100,1,"Poison",12,1,"Plus a flat +150 damage, not included",Z(0,0,0,0)),A2("Sand Attack","phys",130,1,"Earth",9,1,"",Z(0,0,0,0))];
+const THIEF=[A("Basic attack (Double Attack Lv10)","auto",100,1,"W",0,0,0,1,"Dagger only: 7% × Double Attack Lv of your hits strike twice, HIT +1% × Lv (Lv10 without a skill tree)",{da:true}),A2("Envenom Lv10","phys",100,1,"Poison",12,1,"Plus a flat +150 damage, not included",Z(0,0,0,0)),A2("Sand Attack","phys",130,1,"Earth",9,1,"",Z(0,0,0,0))];
 const JOBS={
  "Novice":{w:"Dagger",p:[BASIC]},
  "Swordsman":{w:"One-handed sword",p:[...SWORD,BASIC]},"Mage":{w:"One-handed staff",p:[...MAGE.filter(p=>!p.name.startsWith("Earth Spike")),BASIC]},"Archer":{w:"Bow",p:[...ARCH,BASIC]},
@@ -124,8 +124,8 @@ const FIELD_ITEM={volcano:"Blue Gemstone",deluge:"Blue Gemstone",whirlwind:"Blue
     if(s)JOBS.Rogue.p.push({...s,name:"Copied: "+s.name,note:"Plagiarism copy"+((fix[n]??s.note)?". "+(fix[n]??s.note):"")})});
   // Auto Shadow Spell Lv10 (needs Plagiarism 10): basic attacks have a 30% chance to auto-cast the copied magic skill at up to Lv7, MATK +50.
   // Lv7 ratios from the Zero skill data; single-target skills only. Auto-casts are modelled as free (no SP)
-  const ss=(n,el,pct,hits,sadd,note)=>JOBS.Rogue.p.push(A("Shadow Spell: "+n,"auto",100,1.5,"W",0,0,0,1,
-    `Basic attacks (Double Attack averaged in), 30% per attack to auto-cast ${n}: ${pct}%${sadd?" + "+sadd.map(([k,f])=>(f===1?"":f===0.5?"½":f+"×")+k.toUpperCase()).join(" + ")+"%":""} × ${hits} ${el}, MATK +50${note?". "+note:""}`,{ss:{el,pct,hits,sadd:sadd||[]}}));
+  const ss=(n,el,pct,hits,sadd,note)=>JOBS.Rogue.p.push(A("Shadow Spell: "+n,"auto",100,1,"W",0,0,0,1,
+    `Basic attacks (with a dagger, Double Attack: 7% × Lv of them hit twice), 30% per attack to auto-cast ${n}: ${pct}%${sadd?" + "+sadd.map(([k,f])=>(f===1?"":f===0.5?"½":f+"×")+k.toUpperCase()).join(" + ")+"%":""} × ${hits} ${el}, MATK +50${note?". "+note:""}`,{da:true,ss:{el,pct,hits,sadd:sadd||[]}}));
   const INT2=[["int",0.5]];
   ss("Fire Bolt Lv7","Fire",100,7,INT2);ss("Cold Bolt Lv7","Water",100,7,INT2);ss("Lightning Bolt Lv7","Wind",100,7,INT2);
   ss("Jupitel Thunder Lv7","Wind",100,9);ss("Fire Ball Lv7","Fire",280,1,null,"Splash on nearby monsters not counted");ss("Frost Driver Lv7","Water",170,1);

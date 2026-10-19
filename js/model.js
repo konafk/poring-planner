@@ -151,7 +151,8 @@ const hitPctOf=m=>{const a=C().a;if(a.falcon)return elemMult(m,"Neutral");if(a.t
   const P=atkParts(),tot=P.weapon+P.eq+frontAtk();if(tot<=0)return 0;
   return pctEff(m)*handAtk(m,P.weapon,C().weapon,atkEl(),frontAtk())/tot*bonusParts(m).full};
 // hit chance = 100 + your HIT − the monster's "100% hit" value, 5–100%; magic always lands
-const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist"||C().a.falcon||C().a.mr)return 100;if(m.hit100==null)return 95;return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100))};
+// (Double Attack's HIT bonus adds its % to the hit chance of basic attacks with a dagger)
+const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist"||C().a.falcon||C().a.mr)return 100;if(m.hit100==null)return Math.min(100,95+daSkill().hit);return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100+daSkill().hit))};
 function dmgPerHit(m){
   const a=C().a;if(a.type==="spellfist")return sfOn()?sfHit(m,atkEl()):hsHit(m,atkEl());if(a.mr)return mrHit(m);if(a.falcon==="assault")return faHit(m);if(a.falcon)return blitzHit(m,Math.round(num(a.hits,5)));
   if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor((sumStat(cf("matkTxt"))*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
@@ -166,8 +167,14 @@ function physDmg(m,pool){if(pool<=0)return 0;
 function leftDmg(m){if(!dualHit())return 0;const P=atkParts(),d=physDmg(m,handAtk(m,P.left,C().lw,leftEl(),P.st));
   return d>0?Math.max(1,Math.floor(d*handPct().left/100)):0}
 // damage of one use before hit and crit: every hit of the attack, plus the left hand once
-// Side Winder adds its double attack to basic attacks, right hand only, unless you learned Double Attack (the card then follows the skill)
-const swMul=()=>C().a.type==="auto"&&!skLv(C(),"double-attack")?daFactor():1;
+// Double Attack (Thief, so Assassin and Rogue too): with a dagger in the right hand, basic attacks hit twice and get HIT, both from the
+// level's description ("Activation Chance: 7%, HIT Bonus: 1%" a level). With a skill tree it's the learned level; without one, attacks that
+// name it (a.da) take Lv10. No effect with any other weapon
+const daLv=(c=C())=>c.a.type!=="auto"||c.weapon!=="Dagger"?0:hasTree(c)?skLv(c,"double-attack"):c.a.da?10:0;
+const daSkill=()=>{const lv=daLv();if(!lv)return {lv:0,ch:0,hit:0};const d=String((skRowOf("double-attack",lv)||[])[7]||""),m=d.match(/Chance:\s*(\d+)%/i),h=d.match(/HIT Bonus:\s*(\d+)%/i);
+  return {lv,ch:(m?+m[1]:7*lv)/100,hit:h?+h[1]:lv}};
+// basic attacks hit twice (right hand only) at the higher of Double Attack's chance and Side Winder's (any weapon)
+const swMul=()=>C().a.type!=="auto"?1:1+Math.max(daSkill().ch,CRD().daSF?num(CRD().daPct)/100:0);
 const perUse=m=>{const a=C().a,h=a.sizeHits?a.sizeHits[{S:0,M:1,L:2}[m.size]??1]:num(a.hits,1);return dmgPerHit(m)*Math.max(0.01,h)*swMul()+leftDmg(m)};
 // crits (basic attacks only): chance = CRIT (doubled with a katar) − monster LUK × 0.2, always hit, × 1.4 × (1 + crit damage %)
 // m: the monster, for gear CRIT that only counts against its race (Cruiser Card: CRIT +7 vs Brute)

@@ -61,7 +61,7 @@ function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
     if(cd.vitata)parts.push((vitInGear(c)?"Vitata SP cost from your gear":`SP cost +${num(cd.spBonus)}%`)+(hs>0?` · vs ${esc(m.name)}: Heal ${(hs*60).toFixed(1)} casts/min${sh>=1?` <span class="bad">(can't keep up: more than all of your time)</span>`:` (${Math.round(sh*100)}% of your time not attacking)`}`:""));
     if(cd.creamy)parts.push("Creamy: the Zeny Hunter teleports past monsters you skip");
     if(noBreak())parts.push(cd.phen||cd.bbfly?`casts aren't interrupted${vctCards()?` · cast +${vctCards()}%`:" · cast time from your gear"}`:"Phen / Bloody Butterfly in your gear: casts aren't interrupted");
-    if(cd.daSF)parts.push(a.type!=="auto"&&a.type!=="spellfist"?"Side Winder: only basic attacks":swMul()===1&&a.type==="auto"?"Side Winder: follows your learned Double Attack":`Side Winder: +${num(cd.daPct)}% hits`);
+    if(cd.daSF)parts.push(a.type!=="auto"&&a.type!=="spellfist"?"Side Winder: only basic attacks":daSkill().ch>=num(cd.daPct)/100?"Side Winder: Double Attack's chance is higher, nothing added":`Side Winder: +${num(cd.daPct)}% hits`);
     $("cardInfo").innerHTML=parts.join(" · ");
     const sp=[],dr=dracSPPerSec(),dp=dpSPPerSec(),ks=killSPPerSec();
     {const k=dracCards();if(k)sp.push(`Dracula${k>1?` ×${k}`:""}${cardsInGear(c,[DRACULA])>0?" (from your gear)":""} ~${fmtN(dr*60)} SP/min`)}
