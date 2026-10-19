@@ -286,6 +286,14 @@
     <div class="calc" id="charTiles"></div>
   </section>
 
+  <section class="card" data-tab="char" id="skillCard">
+    <div class="bar"><h2 class="grow">Skills</h2><button type="button" class="small" id="skMax">Max all</button><button type="button" class="small danger" id="skReset">Reset</button></div>
+    <div class="note">Set learned levels like the in-game Skill Tree; leave empty for max-level presets. Stat passives only count in Build from gear.</div>
+    <div id="skillTrees" class="trees"></div>
+    <div class="note bad" id="skillNote"></div>
+    <div id="buffList" class="bar"></div>
+  </section>
+
   <section class="card" data-tab="char" id="recCard">
     <div class="bar"><h2 class="grow">Consumables</h2><span class="note" id="recNote"></span></div>
     <div class="bar note"><label class="bar" style="flex-direction:row;gap:4px" title="Saved for the whole account: a Merchant on the account with Discount Lv 10 (−24%) buys for the others. Covers recovery items, the ASPD potion, skill items and Custom HP / SP items. Off: the NPC price"><input type="checkbox" id="recDisc" style="width:auto"> Buy with Discount <span class="muted">(Lv 10 on another character, this account)</span></label>
@@ -347,12 +355,10 @@
     </details>
   </section>
 
-  <section class="card" data-tab="char" id="skillCard">
-    <div class="bar"><h2 class="grow">Skills</h2><button type="button" class="small" id="skMax">Max all</button><button type="button" class="small danger" id="skReset">Reset</button></div>
-    <div class="note">Set learned levels like the in-game Skill Tree; leave empty for max-level presets. Stat passives only count in Build from gear.</div>
-    <div id="skillTrees" class="trees"></div>
-    <div class="note bad" id="skillNote"></div>
-    <div id="buffList" class="bar"></div>
+  <section class="card" data-tab="char" id="gearCmpCard">
+    <div class="bar"><h2 class="grow">Your gear vs other gear sets</h2></div>
+    <div class="note" id="gearCmpNote"></div>
+    <div class="scroll"><table id="gearCmpTable" class="cmptab"><thead></thead><tbody></tbody></table></div>
   </section>
 
   <section class="tiles" aria-label="Summary" data-tab="track">
@@ -365,11 +371,6 @@
     <div class="tile"><div class="k">Kill pace</div><div class="v" id="tPace">–</div><div class="s" id="tPaceS"></div></div>
     <div class="tile"><div class="k">Zeny / hr</div><div class="v" id="tZeny">–</div><div class="s" id="tZenyS"></div></div>
     <div class="tile"><div class="k">Job EXP / hr</div><div class="v" id="tJob">–</div><div class="s" id="tJobS"></div></div>
-  </section>
-
-  <section class="card" data-tab="track">
-    <h2>EXP progress</h2>
-    <svg class="chart" id="chart" viewBox="0 0 800 340" role="img" aria-label="EXP percentage over time"></svg>
   </section>
 
   <section class="row2" data-tab="track">
@@ -399,6 +400,28 @@
       <div class="note" id="logMsg" role="status"></div>
       <div class="note" id="setupNote"></div>
     </div>
+  </section>
+
+  <section class="card" data-tab="track">
+    <h2>EXP progress</h2>
+    <svg class="chart" id="chart" viewBox="0 0 800 340" role="img" aria-label="EXP percentage over time"></svg>
+  </section>
+
+  <section class="card" data-tab="track">
+    <div class="bar"><h2 class="grow">Goal</h2><span class="note" id="goalNote"></span></div>
+    <div class="bar">
+      <label>Reach base level<input id="goalLv" type="number" min="2" max="70" value="70" style="width:90px"></label>
+      <label>Reach job level<input id="goalJobLv" type="number" min="2" max="70" value="70" style="width:90px"></label>
+    </div>
+    <div class="calc" id="goalTiles"></div>
+    <h3 style="margin:16px 0 8px">Job level</h3>
+    <div class="calc" id="goalJobTiles"></div>
+    <div class="chartWrap" id="goalViz" hidden>
+      <svg class="chart" id="goalChart" viewBox="0 0 800 260" role="img" aria-label="Projected base and job level over farming time"></svg>
+      <div class="tip" id="goalTip" hidden></div>
+    </div>
+    <div class="scroll" id="goalWrap" hidden><table id="goalTable"><thead></thead><tbody></tbody></table></div>
+    <div class="scroll" id="goalJobWrap" hidden><table id="goalJobTable"><thead></thead><tbody></tbody></table></div>
   </section>
 
   <section class="card" data-tab="track">
@@ -437,6 +460,20 @@
     <label>Other closed maps (comma separated)<input id="closedMaps" placeholder="e.g. gon_dun03, yuno_fild02"></label>
   </section>
 
+  <section class="card" id="mapCard" data-tab="maps">
+    <div class="bar"><h2 class="grow">Map planner</h2></div>
+    <div class="form" style="grid-template-columns:2fr 1fr 1fr">
+      <label>Map<input id="mapInput" list="mapList" placeholder="e.g. gef_dun01 or Sphinx B5F"></label>
+      <label title="How many monsters attack you together on this map, every monster on it, in place of the Character tab's count for aggressive ones. Their hits add up, and from the 3rd one your FLEE drops 10% and DEF 5% for each past the 2nd. Room dungeons (one map cut into small rooms: Labyrinth Forest 1F / 3F, Sunken Ship, Kunlun Chess Terrace, Sphinx B5F) start at 3; blank goes back to the default (the Character tab's count)">Monsters on you at once<input id="mobbedIn" type="number" min="1" max="12" step="1"></label>
+      <label><span>&nbsp;</span><button type="button" id="mapFromMob">Use session monster's map</button></label>
+    </div>
+    <datalist id="mapList"></datalist>
+    <div class="note" id="mapName"></div>
+    <div class="calc" id="mapTiles"></div>
+    <div id="mapConv"></div>
+    <div class="scroll"><table id="mapTable"><thead><tr><th>Monster</th><th>Count</th><th>Share</th><th>Lv</th><th>Element</th><th title="Element table rate of your attack element (with the map's converter or bolt) against the monster">Element %</th><th>Size</th><th>Your hit %</th><th>Sec / kill</th><th>Base EXP</th><th title="Farm without items against this monster alone: the share of the HP and SP you use that comes back with no HP or SP items. Hover for the breakdown">No items</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
   <section class="card" id="huntCard" data-tab="maps">
     <div class="bar"><h2 class="grow">Zeny Hunter</h2><span class="note" id="huntBasis"></span></div>
     <div class="bar">
@@ -455,37 +492,6 @@
     <div class="calc" id="huntTiles"></div>
     <div class="scroll"><table id="huntTable"><thead><tr><th data-sk="rank">#</th><th data-sk="name">Map / monster</th><th data-sk="from" title="maps: the monsters you hunt there; monsters: its map and every drop">Earns from</th><th data-sk="net" title="Loot / hr less Costs / hr">Net zeny / hr</th><th data-sk="loot">Loot / hr</th><th data-sk="cost" title="HP items for the HP lost / min and SP items (priced in Recovery items), the ASPD potion and ground buffs. Hover a row for each">Costs / hr</th><th data-sk="kph">Kills / hr</th><th data-sk="zk">Zeny / kill</th><th data-sk="wk" title="weight of the drops you loot, a kill (with your drop bonus and the level penalty)">Weight / kill</th><th data-sk="wph" title="weight you pick up an hour. Hover a row for how soon you fill up">Weight / hr</th><th data-sk="epm">EXP / min</th><th data-sk="hpm">HP lost / min</th></tr><tr class="filters"><td><input type="search" data-tf="rank" placeholder="<=5"></td><td><input type="search" data-tf="name" placeholder="map or monster"></td><td><input type="search" data-tf="from" placeholder="card"></td><td><input type="search" data-tf="net" placeholder=">50000"></td><td><input type="search" data-tf="loot" placeholder=">50000"></td><td><input type="search" data-tf="cost" placeholder="<5000"></td><td><input type="search" data-tf="kph" placeholder=">300"></td><td><input type="search" data-tf="zk" placeholder=">100"></td><td><input type="search" data-tf="wk" placeholder="<5"></td><td><input type="search" data-tf="wph" placeholder="<2000"></td><td><input type="search" data-tf="epm" placeholder=">2000"></td><td><input type="search" data-tf="hpm" placeholder="<500"></td></tr></thead><tbody></tbody></table></div>
     <div class="note">Open maps ranked by net zeny / hr: loot after drop bonus and level penalty, minus skill items, HP and SP items (Consumables on the Character tab) and consumables. Bosses and skipped monsters are left out; unticked auto-loot groups count as 0 everywhere. Click a monster on a map to stop or start hunting it; skipping monsters costs extra walking, or teleports if you have a Creamy Card or the Teleport skill (never Fly Wings: they cost too much). Click "teleport ok" if a map blocks teleport.</div>
-  </section>
-
-  <section class="card" id="mapCard" data-tab="maps">
-    <div class="bar"><h2 class="grow">Map planner</h2></div>
-    <div class="form" style="grid-template-columns:2fr 1fr 1fr">
-      <label>Map<input id="mapInput" list="mapList" placeholder="e.g. gef_dun01 or Sphinx B5F"></label>
-      <label title="How many monsters attack you together on this map, every monster on it, in place of the Character tab's count for aggressive ones. Their hits add up, and from the 3rd one your FLEE drops 10% and DEF 5% for each past the 2nd. Room dungeons (one map cut into small rooms: Labyrinth Forest 1F / 3F, Sunken Ship, Kunlun Chess Terrace, Sphinx B5F) start at 3; blank goes back to the default (the Character tab's count)">Monsters on you at once<input id="mobbedIn" type="number" min="1" max="12" step="1"></label>
-      <label><span>&nbsp;</span><button type="button" id="mapFromMob">Use session monster's map</button></label>
-    </div>
-    <datalist id="mapList"></datalist>
-    <div class="note" id="mapName"></div>
-    <div class="calc" id="mapTiles"></div>
-    <div id="mapConv"></div>
-    <div class="scroll"><table id="mapTable"><thead><tr><th>Monster</th><th>Count</th><th>Share</th><th>Lv</th><th>Element</th><th title="Element table rate of your attack element (with the map's converter or bolt) against the monster">Element %</th><th>Size</th><th>Your hit %</th><th>Sec / kill</th><th>Base EXP</th><th title="Farm without items against this monster alone: the share of the HP and SP you use that comes back with no HP or SP items. Hover for the breakdown">No items</th></tr></thead><tbody></tbody></table></div>
-  </section>
-
-  <section class="card" data-tab="track">
-    <div class="bar"><h2 class="grow">Goal</h2><span class="note" id="goalNote"></span></div>
-    <div class="bar">
-      <label>Reach base level<input id="goalLv" type="number" min="2" max="70" value="70" style="width:90px"></label>
-      <label>Reach job level<input id="goalJobLv" type="number" min="2" max="70" value="70" style="width:90px"></label>
-    </div>
-    <div class="calc" id="goalTiles"></div>
-    <h3 style="margin:16px 0 8px">Job level</h3>
-    <div class="calc" id="goalJobTiles"></div>
-    <div class="chartWrap" id="goalViz" hidden>
-      <svg class="chart" id="goalChart" viewBox="0 0 800 260" role="img" aria-label="Projected base and job level over farming time"></svg>
-      <div class="tip" id="goalTip" hidden></div>
-    </div>
-    <div class="scroll" id="goalWrap" hidden><table id="goalTable"><thead></thead><tbody></tbody></table></div>
-    <div class="scroll" id="goalJobWrap" hidden><table id="goalJobTable"><thead></thead><tbody></tbody></table></div>
   </section>
 
   <section class="card" data-tab="market" id="tripCard">
@@ -568,11 +574,6 @@
     <div class="bar"><h2 class="grow">Party EXP (Even Share)</h2><span class="note" id="refPartyNote"></span></div>
     <div class="scroll"><table id="refPartyTable"><thead></thead><tbody></tbody></table></div>
     <div class="note">How it's worked out: Game formulas below.</div>
-  </section>
-  <section class="card" data-tab="ref">
-    <div class="bar"><h2 class="grow">Your gear vs other gear sets</h2></div>
-    <div class="note" id="gearCmpNote"></div>
-    <div class="scroll"><table id="gearCmpTable" class="cmptab"><thead></thead><tbody></tbody></table></div>
   </section>
   <section class="card" data-tab="ref">
     <div class="bar"><h2 class="grow">Game formulas</h2><span class="note">"Yours" uses your Character tab; "Set 1–3" your other gear sets from Build from gear</span></div>

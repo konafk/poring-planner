@@ -87,10 +87,12 @@ const GEAR_CMP=[["atk","ATK",1],["matk","MATK",1],["hit","HIT",1],["flee","FLEE"
   ["dmg","Damage per hit",1,0,"m"],["dps","Damage per second",1,0,"m"],["hitc","Hits that land %",1,0,"m"],["uses","Uses per kill",0,1,"m"],["sec","Kill time (s)",0,1,"m"],
   ["epm","EXP / min",1,0,"m"],["zph","Net zeny / hr",1,0,"m"],["hpm","HP lost / min",0,0,"m"],["mapEpm","EXP / min",1,0,"map"],["mapNet","Net zeny / hr (after healing)",1,0,"map"]];
 const cmpFmt=(v,d)=>v==null||!isFinite(v)?"–":d?(+v).toFixed(d):fmtN(v);
-// sets: [{i, x: the character with set i on}]. Each set's column shows its value and the change from your gear; the best of a row is bold
-function renderGearCmp(sets){const c=C(),T=$("gearCmpTable");T.hidden=!sets.length;
-  if(!sets.length){$("gearCmpNote").textContent=!refShown()?"":c.mode!=="build"?"Switch to Build from gear (Character tab) and set up another gear set to compare it with your gear here."
-    :"Pick Set 1, 2 or 3 above the gear table (Character tab) and set up the gear you want to compare with yours.";T.tHead.innerHTML=T.tBodies[0].innerHTML="";return}
+// the other gear sets (Build from gear) next to your gear, on the Character tab: worked out only while that tab shows, since each set runs
+// the model again. Each set's column shows its value and the change from your gear; the best of a row is bold
+const gearCmpShown=()=>!$("gearCmpCard").hidden;
+function renderGearCmp(){const c=C(),T=$("gearCmpTable"),sets=gearCmpShown()?altList(c).map(i=>({i,x:altChar(c,i)})):[];T.hidden=!sets.length;
+  if(!sets.length){$("gearCmpNote").textContent=!gearCmpShown()?"":c.mode!=="build"?"Switch to Build from gear above and set up another gear set to compare it with your gear here."
+    :"Press + Add set next to My gear above the gear table and set up the gear you want to compare with yours.";T.tHead.innerHTML=T.tBodies[0].innerHTML="";return}
   const mine=gearStats(),oth=sets.map(s=>withSnap(s.x,gearStats)),m=calcMob(),mp=cmpMap(),n=sets.length+2;
   $("gearCmpNote").innerHTML=sets.map(s=>`<b>Set ${s.i+1}</b>: ${altDiffTxt(c,s.i)}`).join("<br>")+(m?"":"<br>Pick a monster to compare damage, kill time and EXP / min");
   T.tHead.innerHTML=`<tr><th></th><th>Your gear</th>${sets.map(s=>`<th>Set ${s.i+1}</th>`).join("")}</tr>`;
@@ -119,7 +121,7 @@ function renderRef(){const c=C(),m=calcMob(),blv=num(c.baseLv),jl=num(c.jobLv),p
   // other gear sets (Build from gear): worked out only while this tab shows, since each runs the model again
   const sets=refShown()?altList(c).map(i=>({i,x:altChar(c,i)})):[],av=sets.map(s=>withSnap(s.x,()=>refFormulas().vals));
   $("refFormulas").tHead.innerHTML=`<tr><th>Value</th><th>Formula</th><th>Yours</th>${sets.map(s=>`<th>Set ${s.i+1}</th>`).join("")}</tr>`;
-  $("refFormulas").classList.toggle("withalt",sets.length>0);$("refFormulas").tBodies[0].innerHTML=refFormulas(av).html;renderGearCmp(sets);
+  $("refFormulas").classList.toggle("withalt",sets.length>0);$("refFormulas").tBodies[0].innerHTML=refFormulas(av).html;renderGearCmp();
   const elv=Math.min(4,Math.max(1,num(state.refElv,1)));$("refElv").value=String(elv);const defs=Object.keys(ET),my=atkEl();
   $("refElemTable").tHead.innerHTML=`<tr><th>Attack ↓ / monster →</th>${defs.map(d=>`<th>${d} ${elv}</th>`).join("")}</tr>`;
   $("refElemTable").tBodies[0].innerHTML=AE.map((a,i)=>`<tr${a===my?' class="sel"':""}><td class="name"><span class="el ${a}">${a}</span></td>${defs.map(d=>{const v=ET[d][elv-1][i];return `<td class="${v>100?"good":v<100?"bad":"muted"}">${v}</td>`}).join("")}</tr>`).join("");
