@@ -87,6 +87,8 @@ All scripts use only the Python standard library.
 | `python tools/check_maps.py` | Compares `data/spawn.js` with the cross-check source and lists missing monsters and spawn counts that differ. Monsters marked as upcoming are expected to show up as missing. |
 | `python tools/check_drops.py` | Compares drops, drop rates and item names with the cross-check source. Loot value per kill isn't compared, because the two sources price items differently. |
 
+Every Monday, `.github/workflows/refresh-data.yml` runs the scripts that only need the internet (`export_prontera.py`, `export_cardnames.py`, `export_iteminfo.py`, `export_prices.py`, `export_affixes.py`, `export_icons.py`) from an empty cache, runs the tests, and opens a PR on the `data-refresh` branch with what changed (Actions → Refresh data → Run workflow runs it now). It needs Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests". Spawns and map names need the game client, so run those by hand.
+
 Notes on `export_prontera.py`:
 
 - It caches pages in `tools/cache/`. After a patch, run it with `--refresh` to pick up new items and skill, job and refine changes. Delete the cache to also pick up changed stats on existing items.
