@@ -126,7 +126,7 @@ Every item monsters drop, searchable and filterable by auto-loot group (the Grou
 
 ## Equipment and Cards
 
-Every piece of gear and every card the build simulator knows, like rozerodb's equipment list.
+Every piece of gear and every card the build simulator knows, like rozerodb's equipment list. Gear shows its inventory icon from the game client. Every card has the same inventory icon, so cards show a small picture of the card instead.
 
 - **Equipment:** search by name, item number or effect (`demon` finds gear that does more to Demons), and filter by **Type** (one weapon type, all weapons, one armor part such as upper headgear, shield or accessory, or all armor), weapon **Element**, **Job** (your job by default; a 2nd job wears its 1st job's gear), **Required Lv** (from–to), **Card slots** (none, 1–4 or 1 or more), and the least **ATK**, **MATK** and **DEF**. **Sort** by name, level, ATK, MATK, DEF, card slots, weight or ID, or click a column header. Each row shows the item's type and weapon level, required level, slots, ATK, MATK, DEF, weight, the jobs that wear it and its effects (refine and level conditions included).
 - **Cards:** search by name, item number, the name it gives its gear in game (`healing` finds Vitata Card) or effect, and filter by the **Equipment slot** it goes in.

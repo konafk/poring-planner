@@ -3,7 +3,8 @@
 // Run: node tests/stamp.test.mjs
 import { readFileSync } from "fs";
 import assert from "assert/strict";
-import { stamp, hashOf, localFiles } from "../tools/stamp.mjs";
+import { existsSync } from "fs";
+import { stamp, hashOf, localFiles, assetFiles } from "../tools/stamp.mjs";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const local = localFiles(html);
@@ -15,5 +16,9 @@ const out = stamp(html);
 for (const u of local) assert.ok(out.includes(`"${u}?v=${hashOf(u)}"`), `${u} not stamped`);
 assert.equal(stamp(out), out, "stamping is stable");
 assert.notEqual(hashOf("js/events.js"), hashOf("js/state.js"));
+// the sprite sheets data/icons.js names are deployed (img/ is copied as it is)
+const sheets = [...readFileSync(new URL("../data/icons.js", import.meta.url), "utf8").matchAll(/"file":"([^"]+)"/g)].map(m => m[1]);
+assert.equal(sheets.length, 2);
+for (const f of sheets) { assert.ok(assetFiles().includes(f), `${f} isn't deployed`); assert.ok(existsSync(new URL(`../${f}`, import.meta.url)), `${f} missing`) }
 console.log(`ok ${local.length} files unstamped in index.html and stamped with their hash on deploy`);
 console.log("1 tests passed");

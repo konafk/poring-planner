@@ -99,6 +99,13 @@ TABLES.equipTable={def:["name",1],cols:{name:{t:r=>r.it.name},id:{n:r=>r.it.id,a
 TABLES.cardTable={def:["name",1],cols:{name:{t:r=>r.c.name},id:{n:r=>r.c.id,asc:1},part:{t:r=>CARD_PART[cardPart(r.c)]||"–"},nm:{t:r=>cardName(r.c)},fx:{t:r=>r.fx.join(" ")}}};
 const EQ_SORTS=[["name:1","Name A–Z"],["name:-1","Name Z–A"],["lv:-1","Highest Lv"],["lv:1","Lowest Lv"],["atk:-1","Highest ATK"],["matk:-1","Highest MATK"],
   ["def:-1","Highest DEF"],["slots:-1","Most card slots"],["w:1","Lightest"],["id:1","ID"]];
+// icons: gear from the game client, cards a thumbnail of their picture (data/icons.js, tools/export_icons.py); a cell of a sprite sheet
+// each, the sheet set once as a CSS variable. An item with no image gets an empty cell, so the names still line up
+const ICON_AT={};
+(typeof ICON_SHEETS!=="undefined"?Object.entries(ICON_SHEETS):[]).forEach(([k,s])=>{ICON_AT[k]={};s.ids.forEach((id,i)=>ICON_AT[k][id]=i);
+  document.documentElement.style.setProperty(`--ico-${k}`,`url("${s.file}?v=${s.v}")`)});
+function iconHtml(kind,id){const s=typeof ICON_SHEETS!=="undefined"&&ICON_SHEETS[kind],i=ICON_AT[kind]&&ICON_AT[kind][id];
+  return s&&i!=null?`<span class="ico ${kind}" aria-hidden="true" style="background-position:-${i%s.cols*s.w}px -${Math.floor(i/s.cols)*s.h}px"></span>`:`<span class="ico ${kind} none" aria-hidden="true"></span>`}
 const wornPills=(c,id,card)=>wornIn(c,id,card).map(x=>` <span class="pill up">${x}</span>`).join("");
 const eqBtn=(k,id,ok,why)=>`<button type="button" class="small" data-eq${k}="${id}"${ok?"":` disabled title="${esc(why)}"`}>Equip</button>`;
 function renderEquipDb(){const c=C(),f=eqDbF(),all=typeof EQUIP!=="undefined"?EQUIP:[];
@@ -108,7 +115,7 @@ function renderEquipDb(){const c=C(),f=eqDbF(),all=typeof EQUIP!=="undefined"?EQ
   const rows=tableRows("equipTable",all.filter(it=>eqDbOk(it,f,state.job)).map(it=>({it,fx:fxOf(it)})));
   $("eqDbCount").textContent=`${rows.length} of ${all.length} items`;
   $("equipTable").tBodies[0].innerHTML=rows.slice(0,400).map(({it,fx})=>{const pl=eqPlaces(it,state.job),ok=pl.length&&wearsJob(it,state.job);
-    return `<tr data-eqrow="${it.id}"><td class="name">${eqBtn("item",it.id,ok,!pl.length?"Not something you wear":`A ${state.job} can't wear it`)} ${esc(it.name)} <span class="note">#${it.id}</span>${wornPills(c,it.id)}</td><td class="name l">${esc(gearKind(it))}${it.wlv?` <span class="note">Lv ${it.wlv}</span>`:""}${it.el&&it.el!=="neutral"?` <span class="el ${fxCap(it.el)}">${fxCap(it.el)}</span>`:""}</td>
+    return `<tr data-eqrow="${it.id}"><td class="name"><div class="dbName">${iconHtml("gear",it.id)}<div>${eqBtn("item",it.id,ok,!pl.length?"Not something you wear":`A ${state.job} can't wear it`)} ${esc(it.name)} <span class="note">#${it.id}</span>${wornPills(c,it.id)}</div></div></td><td class="name l">${esc(gearKind(it))}${it.wlv?` <span class="note">Lv ${it.wlv}</span>`:""}${it.el&&it.el!=="neutral"?` <span class="el ${fxCap(it.el)}">${fxCap(it.el)}</span>`:""}</td>
       <td>${it.lv||"–"}</td><td>${it.slots?`[${it.slots}]`:"–"}</td><td>${it.atk||"–"}</td><td>${it.matk||"–"}</td><td>${it.def||"–"}</td><td>${it.w!=null?it.w:"–"}</td>
       <td class="name l jobs">${esc(jobsTxt(it))}</td><td class="name fx">${fx.map(esc).join("<br>")||'<span class="muted">–</span>'}</td></tr>`}).join("")
     +(rows.length>400?`<tr><td colspan="10" class="name muted">${rows.length-400} more: narrow the filters</td></tr>`:"")
@@ -120,7 +127,7 @@ function renderCardDb(){const c=C(),f=cardDbF(),all=typeof CARDS!=="undefined"?C
   ROOTQ("[data-cdf]").forEach(x=>{if(document.activeElement!==x)x.value=f[x.dataset.cdf]??""});
   const rows=tableRows("cardTable",all.filter(x=>cardDbOk(x,f)).map(x=>({c:x,fx:fxOf(x)})));
   $("cardDbCount").textContent=`${rows.length} of ${all.length} cards`;
-  $("cardTable").tBodies[0].innerHTML=rows.map(({c:x,fx})=>`<tr data-cdrow="${x.id}"><td class="name">${eqBtn("card",x.id,!!cardPart(x),"Not a card that goes in gear")} ${esc(x.name)} <span class="note">#${x.id}</span>${wornPills(c,x.id,true)}</td>
+  $("cardTable").tBodies[0].innerHTML=rows.map(({c:x,fx})=>`<tr data-cdrow="${x.id}"><td class="name"><div class="dbName">${iconHtml("card",x.id)}<div>${eqBtn("card",x.id,!!cardPart(x),"Not a card that goes in gear")} ${esc(x.name)} <span class="note">#${x.id}</span>${wornPills(c,x.id,true)}</div></div></td>
       <td class="name l">${CARD_PART[cardPart(x)]||"–"}</td><td class="name l">${esc(cardName(x))||"–"}</td><td class="name fx">${fx.map(esc).join("<br>")||'<span class="muted">–</span>'}</td></tr>`).join("")
     ||'<tr><td colspan="4" class="name muted">No cards match these filters.</td></tr>'}
 
@@ -129,7 +136,7 @@ let EQ_DLG=null;
 const gearNow=g=>g&&g.id?esc(gearTxt(g)):'<span class="muted">empty</span>';
 function openEquip(kind,id){const it=BUILD.item(id);if(!it)return;EQ_DLG={kind,id};drawEquip();if(!$("eqDlg").open)$("eqDlg").showModal()}
 function drawEquip(){const c=C(),{kind,id}=EQ_DLG,it=BUILD.item(id),sets=[-1,...Array.from({length:altN(c)},(_,i)=>i)];
-  $("eqDlgTitle").textContent=`Equip ${it.name}`;
+  $("eqDlgTitle").textContent=`Equip ${it.name}`;$("eqDlgIco").innerHTML=iconHtml(kind==="item"?"gear":"card",id);
   const lv=kind==="item"&&it.lv>num(c.baseLv)?` · needs base Lv ${it.lv} (you're Lv ${num(c.baseLv)})`:"";
   $("eqDlgSub").textContent=(kind==="item"?`${gearKind(it)}${it.slots?` [${it.slots}]`:""}`:`${CARD_PART[cardPart(it)]||""} card`)+lv;
   const mode=c.mode==="build"?"":`<div class="note">This switches the Character tab to <b>Build from gear</b>, so your stats are worked out from your gear. The status window values you typed come back if you switch back.</div>`;
@@ -143,7 +150,7 @@ function drawEquip(){const c=C(),{kind,id}=EQ_DLG,it=BUILD.item(id),sets=[-1,...
   else{const ts=cardTargets(c,it),part=CARD_PART[cardPart(it)]||"gear";
     if(!cardPart(it))body=`<div class="note">This card doesn't go in gear.</div>`;
     else body=`<div class="note">Which gear set and card slot?</div><div class="eqPicks">${sets.map(i=>{const t=ts.filter(x=>x.set===i);
-        return `<div class="eqSet"><b>${setLabel(i)}</b>${t.length?t.map(x=>`<button type="button" class="eqPick" data-set="${i}" data-row="${x.row}" data-box="${x.box}"><span>${esc(slotLabel(x.row))}: ${num(x.g.refine)?`+${num(x.g.refine)} `:""}${esc(x.it.name)} · slot ${x.box+1}: ${x.cur?esc((BUILD.item(x.cur)||{}).name||"?"):'<span class="muted">empty</span>'}</span><span class="to">→ ${esc(it.name)}</span></button>`).join("")
+        return `<div class="eqSet"><b>${setLabel(i)}</b>${t.length?t.map(x=>`<button type="button" class="eqPick" data-set="${i}" data-row="${x.row}" data-box="${x.box}"><span>${iconHtml("gear",x.it.id)}${esc(slotLabel(x.row))}: ${num(x.g.refine)?`+${num(x.g.refine)} `:""}${esc(x.it.name)} · slot ${x.box+1}: ${x.cur?esc((BUILD.item(x.cur)||{}).name||"?"):'<span class="muted">empty</span>'}</span><span class="to">→ ${esc(it.name)}</span></button>`).join("")
           :`<span class="note">No ${esc(part.toLowerCase())} with a card slot. <a href="#" data-eqfind="${cardPart(it)}">Find one</a></span>`}</div>`}).join("")}</div>`}
   $("eqDlgBody").innerHTML=mode+body}
 // the Equipment tab's Type filter for a card's part: the gear it goes in, with a slot
