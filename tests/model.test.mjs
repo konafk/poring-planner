@@ -1367,6 +1367,26 @@ t("a table's saved column filters are listed for the Filters on chip", () => {
   run(`state.tfilt={}`); assert.equal(run(`activeFilters("bestTable").length`), 0);
 });
 
+t("FLEE reads like the status window: every FLEE (Improve Dodge included) + Perfect Dodge", () => {
+  const b = (job, skills, luk = 25) => { run(`state.job=${JSON.stringify(job)};state.chars={};Object.assign(C(),{baseLv:45,jobLv:40,mode:"build",st:{},eq:[],skills:${JSON.stringify(skills)}});
+    C().build={base:{str:40,agi:60,vit:10,int:1,dex:30,luk:${luk}},gear:{}};SKFX=skillEffects(C());applyBuild()`); return run("BUILD_LAST"); };
+  const r0 = b("Thief", {}), st = r0.status.flee, pd = 1 + Math.floor(r0.total.luk / 10);
+  assert.ok(pd > 1); assert.equal(r0.fields.fleeTxt, `${st}+${pd}`);         // Perfect Dodge 1 + LUK / 10
+  // Improve Dodge Lv10: FLEE +30 for a Thief, +40 after the 2nd job, in the first number (not its per-level data lines on top)
+  assert.equal(b("Thief", { "improve-dodge": 10 }).fields.fleeTxt, `${st + 30}+${pd}`);
+  assert.equal(b("Assassin", { "improve-dodge": 10 }).fields.fleeTxt, `${b("Assassin", {}).status.flee + 40}+${1 + Math.floor(b("Assassin", {}).total.luk / 10)}`);
+  // Perfect Dodge from gear goes in the second number
+  b("Thief", {});
+  run(`C().build.gear={garment:{id:480378,cards:[4285]}};applyBuild()`);     // Muffler with a Choco Card: FLEE +10, Perfect Dodge +5
+  assert.equal(run("BUILD_LAST.fields.fleeTxt"), `${st + run("BUILD_LAST.acc.flee")}+${pd + 5}`);
+  assert.ok(run("BUILD_LAST.acc.flee") > 0 && !run("BUILD_LAST.unmodelled").some(x => /perfect/i.test(x)));
+  // the check against the game compares the FLEE number only
+  run(`state.job="Thief"`); assert.equal(run(`CHECKS.find(x=>x[0]==="flee")[2]({fleeTxt:"273+1"})`), 273);
+  // other skills with data lines: Owl's Eye Lv10 is DEX +10, Faith Lv10 MHP +2000
+  assert.equal(b("Hunter", { "owls-eye": 10 }).total.dex - b("Hunter", {}).total.dex, 10);
+  run(`state.job="Crusader";C().skills={faith:10}`); assert.deepEqual(JSON.parse(run("JSON.stringify(skillEffects(C()).stat.filter(x=>x[0]==='hp').map(x=>x[3]))")), [2000]);
+});
+
 t("cards any job can slot: Side Winder, Hunter Fly, Vitata", () => {
   const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
   setup("Knight", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", hitTxt: "300", crit: 0, aspd: 170, defTxt: "10+10", hitScale: 1, mobInterval: 1.5,

@@ -95,7 +95,9 @@ function skillEffects(c){const out={mastery:[],pct:0,spCost:0,myEle:{},physEle:{
     if(off){(isBuff?out.buffStat:out.stat).push(...fx.stat.filter(b=>cond.any.includes(b[0])));return}
     if(SK_ASPD[slug]){if(slug==="study")fx.stat=fx.stat.filter(b=>b[0]!=="aspd_percent");fx.stat.push(...SK_ASPD[slug](lv))}
     if(fx.mastery)out.mastery.push({v:fx.mastery,races:cond.races||null});out.pct+=fx.pct;out.spCost+=fx.spCost;for(const k in fx.myEle)out.myEle[k]=(out.myEle[k]||0)+fx.myEle[k];for(const k in fx.physEle)out.physEle[k]=(out.physEle[k]||0)+fx.physEle[k];
-    (isBuff?out.buffStat:out.stat).push(...fx.stat);(s.g||[]).forEach(g=>(g.b||[]).forEach(b=>(isBuff?out.buffStat:out.stat).push(b)))};
+    // the data's bonus lines (s.g) only for what the level's description doesn't give: Improve Dodge Lv10 is FLEE +30 (+40 after
+    // the 2nd job), not that plus its per-level lines; Hilt Binding's STR +1 is only a line
+    const got=new Set(fx.stat.map(b=>b[0]));(isBuff?out.buffStat:out.stat).push(...fx.stat);(s.g||[]).forEach(g=>(g.b||[]).forEach(b=>{if(!got.has(b[0]))(isBuff?out.buffStat:out.stat).push(b)}))};
   for(const k in SK_PASSIVE)take(k,SK_PASSIVE[k],false);for(const k in SK_BUFF)if((c.buffs||{})[k])take(k,SK_BUFF[k],true);return out}
 // Sage options follow the skill tree when one is set: Spell Fist, Hindsight, Double Bolt and bolt levels are the learned ones
 const SG_BOLT={Fire:"fire-bolt",Water:"cold-bolt",Wind:"lightning-bolt"};

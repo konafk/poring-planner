@@ -50,19 +50,20 @@ const BUILD=(()=>{
     const key=REFINE[it.refine]?it.refine:(it.slot||[]).includes("weapon")?`weapon_lv${it.wlv||1}`:"armor";
     const t=REFINE[key]||REFINE.armor;return t&&t[r-1]?t[r-1]:[0,0,0]}
 
-  // status values from total stats (verified in-game per the planner)
+  // status values from total stats (verified in-game per the planner). FLEE reads as the status window shows it: every FLEE (stats,
+  // gear, skills such as Improve Dodge) + Perfect Dodge (1 + LUK / 10 + gear), "147+1"
   function status(lv,s,ranged){const f=Math.floor;
     return {atk:f(lv/4+(ranged?s.dex+s.str/5:s.str+s.dex/5)+s.luk/3),matk:s.int+f(s.int/2)+f(s.dex/5)+f(s.luk/3)+f(lv/4),
       hit:175+lv+s.dex+f(s.luk/3),flee:100+lv+s.agi+f(s.luk/5),softDef:f(lv/2)+f(s.vit/2)+f(s.agi/5), // each part rounds down: Lv 63 VIT 5 AGI 100 shows 53 in game, not 54
       softMdef:Math.max(0,f(s.int+lv/4+(s.dex+s.vit)/5)),crit:1+s.luk*0.3+lv/100,aspdTerm:Math.sqrt(s.agi*s.agi/2+s.dex*s.dex/(ranged?7:5))/4}}
 
   // ---- bonus accumulation ----
-  const blank=()=>({st:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},stPct:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},atk:0,matk:0,atkPct:0,matkPct:0,hit:0,flee:0,crit:0,critDmg:0,aspd:0,aspdPct:0,aspdMod:0,
+  const blank=()=>({st:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},stPct:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},atk:0,matk:0,atkPct:0,matkPct:0,hit:0,flee:0,pd:0,crit:0,critDmg:0,aspd:0,aspdPct:0,aspdMod:0,
     hp:0,hpPct:0,sp:0,spPct:0,def:0,mdef:0,ranged:0,melee:0,skill:0,skillOf:{},vct:0,fct:0,acd:0,vctOf:{},fctOf:{},ignDef:0,ignMdef:0,
     ign:{def:{race:{},size:{},ele:{},kind:{}},mdef:{race:{},size:{},ele:{},kind:{}}},
     phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},taken:{race:{},size:{},ele:{},kind:{}},exp:{all:0,race:{}},critRace:{},spCost:0,spRec:0,hpRec:0,wEle:null,unmodelled:[]});
   // lines that only matter for PvP survival, healing or status resistance: not part of the farming maths, so not reported either
-  const QUIET=["resistance_percent","heal_amount_percent","item_heal_percent","sp_recovery_percent","hp_recovery_percent","perfect_dodge","perfect_hit","magic_damage_taken_percent","sp_per_hit","hp_per_hit"];
+  const QUIET=["resistance_percent","heal_amount_percent","item_heal_percent","sp_recovery_percent","hp_recovery_percent","perfect_hit","magic_damage_taken_percent","sp_per_hit","hp_per_hit"];
   const addTo=(o,k,v)=>{o[k]=(o[k]||0)+v};
   // monster groups ("against Boulder Dwarves") are kept by the text a member's name contains
   const GROUP={boulder_dwarf:"Boulder Dwarf"};
@@ -84,7 +85,7 @@ const BUILD=(()=>{
     if(type==="all_stats"){STAT6.forEach(k=>A.st[k]+=v);return true}
     // "When attacking Brute monsters, CRIT +7": counted only against that race
     if(type==="crit"&&kind==="race"){addTo(A.critRace,tgt(kind,target),v);return true}
-    const flat={atk:"atk",matk:"matk",atk_percent:"atkPct",matk_percent:"matkPct",hit:"hit",flee:"flee",crit:"crit",crit_damage_percent:"critDmg",
+    const flat={atk:"atk",matk:"matk",atk_percent:"atkPct",matk_percent:"matkPct",hit:"hit",flee:"flee",perfect_dodge:"pd",crit:"crit",crit_damage_percent:"critDmg",
       aspd:"aspd",aspd_percent:"aspdPct",aspd_mod:"aspdMod",hp:"hp",hp_percent:"hpPct",sp:"sp",sp_percent:"spPct",def:"def",mdef:"mdef",
       ranged_damage_percent:"ranged",melee_damage_percent:"melee"}[type];
     if(flat&&!kind){A[flat]+=v;return true}
@@ -273,7 +274,7 @@ const BUILD=(()=>{
     const fields={baseLv:lv,jobLv,weapon,wElem:arrowEl||A.wEle||(wpn&&wpn.el?cap(wpn.el):null)||"Neutral",
       st:{str:`${base.str}+${tot.str-base.str}`,agi:`${base.agi}+${tot.agi-base.agi}`,vit:`${base.vit}+${tot.vit-base.vit}`,dex:`${base.dex}+${tot.dex-base.dex}`,luk:`${base.luk}+${tot.luk-base.luk}`},
       intTxt:`${base.int}+${tot.int-base.int}`,atkTxt:`${S.atk}+${gearSide}`,wAtk:f(weaponAtk+(wpn?refineAt(wpn,(gear.weapon||{}).refine)[0]:0)),atkPct:A.atkPct,
-      matkTxt:`${S.matk}+${matkTot-S.matk}`,hitTxt:`${S.hit}+${A.hit}`,fleeTxt:`${S.flee}+${A.flee}`,defTxt:`${S.softDef}+${gearDef+refDef+A.def}`,
+      matkTxt:`${S.matk}+${matkTot-S.matk}`,hitTxt:`${S.hit}+${A.hit}`,fleeTxt:`${S.flee+A.flee}+${1+f(tot.luk/10)+A.pd}`,defTxt:`${S.softDef}+${gearDef+refDef+A.def}`,
       maxHp,maxSp,aspd,crit:Math.round((S.crit+A.crit)*10)/10,critDmg:A.critDmg,rangePct:ranged?A.ranged:A.melee,
       vctPct:A.vct,fctPct:A.fct,acdPct:A.acd,ignDef:A.ignDef,ignMdef:A.ignMdef,
       lw:dual?lw:"",lwAtk:dual?f((wpnL.atk||0)+refineAt(wpnL,(gear.shield||{}).refine)[0]):0,lwElem:dual&&wpnL.el?cap(wpnL.el):"Neutral"};
