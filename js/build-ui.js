@@ -267,7 +267,9 @@ const OPT_HTML={};
 // rows replacing typed option text keep the typed lines that match no option (g.optsText), so none are lost
 const optSet=(g,rows)=>{const bad=BUILD.optBad(g.opts);g.opts=rows;if(bad.length)g.optsText=[g.optsText,...bad].filter(Boolean).join(", ")};
 // under the lists: the typed lines kept (not counted, with a remove link), and the limit once it's reached
-const optFoot=(g,n)=>(g.optsText?`<div class="note">Kept as typed, not counted: ${esc(g.optsText)} · <a href="#" data-optsdrop>remove</a></div>`:"")+(n>=BUILD.OPT_MAX?`<div class="note">max ${BUILD.OPT_MAX} options (the most an item rolls)</div>`:"");
+const optKept=g=>[g.optsText,...BUILD.optBad(g.opts)].filter(Boolean).join(", ");
+const optDrop=g=>{g.opts=BUILD.optRows(g.opts);delete g.optsText};
+const optFoot=(g,n)=>(optKept(g)?`<div class="note">Kept as typed, not counted: ${esc(optKept(g))} · <a href="#" data-optsdrop>remove</a></div>`:"")+(n>=BUILD.OPT_MAX?`<div class="note">max ${BUILD.OPT_MAX} options (the most an item rolls)</div>`:"");
 const optList=ch=>{const gs=[...new Set(ch.map(o=>o.g))];
   return gs.map(g=>`<optgroup label="${esc(g)}">${ch.filter(o=>o.g===g).map(o=>`<option value="${o.k}">${esc(o.label)}${o.range?` (${o.range[0]}${o.range[1]!==o.range[0]?"–"+o.range[1]:""})`:""}</option>`).join("")}</optgroup>`).join("")};
 function optBoxes(slot,g,it){const ch=BUILD.optChoices(slot,it),gk=BUILD.optGear(slot,it)||"all",list=OPT_HTML[gk]||(OPT_HTML[gk]=optList(ch)),rows=BUILD.optRows(g.opts);
@@ -293,7 +295,7 @@ function renderSpecialOwn(){$("specialOwn").innerHTML=specialOwn().map((x,i)=>`<
   specialOwn().forEach((x,i)=>BUILD.optRows(x.opts).forEach((o,j)=>{const el=$("specialOwn").querySelector(`[data-i="${i}"] [data-opt="${j}"]`);if(el)el.value=o.k}))}
 $("specialAdd").addEventListener("click",()=>{specialOwn().push({on:true,name:"",opts:[]});save();renderSpecialOwn();renderAll();
   $("specialOwn").querySelector(".eqrow:last-child [data-f=name]")?.focus()});
-$("specialOwn").addEventListener("click",e=>{if(e.target.closest("[data-optsdrop]")){e.preventDefault();delete specialOwn()[+e.target.closest(".eqrow").dataset.i].optsText;save();renderSpecialOwn();renderAll();return}
+$("specialOwn").addEventListener("click",e=>{if(e.target.closest("[data-optsdrop]")){e.preventDefault();optDrop(specialOwn()[+e.target.closest(".eqrow").dataset.i]);save();renderSpecialOwn();renderAll();return}
   if(!e.target.closest("[data-del]"))return;specialOwn().splice(+e.target.closest(".eqrow").dataset.i,1);save();renderSpecialOwn();renderAll()});
 $("specialOwn").addEventListener("change",e=>{if(e.target.dataset.opt==null)return;const row=e.target.closest(".eqrow"),x=specialOwn()[+row.dataset.i],rows=BUILD.optRows(x.opts),i=+e.target.dataset.opt,v=e.target.value;
   if(!v)rows.splice(i,1);else rows[i]={k:v,v:rows[i]?rows[i].v:""};optSet(x,rows);save();renderSpecialOwn();renderAll();
@@ -395,7 +397,7 @@ $("checkGrid").addEventListener("input",e=>{const k=e.target.dataset.ck;if(!k)re
     const d=g!=null&&mine!=null?g-mine:null;if(mark)mark.remove();if(d!=null)inp.insertAdjacentHTML("afterend",`<span class="${Math.abs(d)<0.5?"good":"bad"}">${d===0?"✓":(d>0?"+":"")+fmtP(+d.toFixed(1))}</span>`)})});
 // "remove" on the typed option lines kept from before the lists
 $("gearTable").addEventListener("click",e=>{if(!e.target.closest("[data-optsdrop]"))return;e.preventDefault();const g=gearSet().gear[e.target.closest("tr").dataset.slot];if(!g)return;
-  delete g.optsText;save();renderGearTable();renderAll()});
+  optDrop(g);save();renderGearTable();renderAll()});
 $("gearTable").addEventListener("input",e=>{if(e.target.dataset.optv!=null){const g=gearSet().gear[e.target.closest("tr").dataset.slot];if(!g)return;
     const rows=BUILD.optRows(g.opts),x=rows[+e.target.dataset.optv];if(x){x.v=e.target.value===""?"":num(e.target.value);optSet(g,rows);save();renderAll()}return}
   if(!e.target.classList.contains("ref"))return;const k=e.target.closest("tr").dataset.slot;const g=gearSet().gear[k];if(!g)return;

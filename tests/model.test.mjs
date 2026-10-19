@@ -1389,6 +1389,7 @@ t("FLEE reads like the status window: every FLEE (Improve Dodge included) + Perf
 
 t("option lines typed before the lists aren't lost when the rows replace them", () => {
   run(`state.job="Knight";state.chars={};Object.assign(C(),{mode:"build",build:{base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{headTop:{id:18730,opts:"MaxHP +100, MaxSP +50, EXP +5%, Healing +3%, Movement Speed +5%"}}}})`);
+  assert.match(run("optFoot(buildOf(C()).gear.headTop,2)"), /Kept as typed, not counted: EXP \+5%, Healing \+3%, Movement Speed \+5%/);   // shown before any pick
   run("(()=>{const g=buildOf(C()).gear.headTop,rows=BUILD.optRows(g.opts);rows.push({k:'flee',v:3});optSet(g,rows)})()");   // picking a 3rd option in the lists
   assert.deepEqual(JSON.parse(run("JSON.stringify(buildOf(C()).gear.headTop)")), { id: 18730,
     opts: [{ k: "hp", v: 100 }, { k: "sp", v: 50 }, { k: "flee", v: 3 }], optsText: "EXP +5%, Healing +3%, Movement Speed +5%" });
@@ -1398,6 +1399,7 @@ t("option lines typed before the lists aren't lost when the rows replace them", 
   run("(()=>{const g=buildOf(C()).gear.headTop;gearPut(C(),g,2289);gearPut(C(),g,18730)})()");
   assert.equal(run("buildOf(C()).gear.headTop.optsText"), "EXP +5%, Healing +3%, Movement Speed +5%");
   assert.equal(run("buildOf(C()).gear.headTop.opts.length"), 3);
+  run("optDrop(buildOf(C()).gear.headTop)"); assert.equal(run("optFoot(buildOf(C()).gear.headTop,3)"), "");   // remove
 });
 
 t("in-game gear names fill the item and its cards: card prefixes and suffixes, Double / Triple, cut-off names", () => {
