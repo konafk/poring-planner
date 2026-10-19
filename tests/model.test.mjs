@@ -1752,6 +1752,13 @@ t("walking comes from the stats a session was logged with: lowering ATK or MATK 
     before = after;
   }
   assert.equal(app("C().matkTxt"), "114+100");                               // working a session out puts your character back
+  // the reported case: Lv 70, MATK 126+227 then 126+172, with Hindsight on and off: gef_fild06 and mjolnir_05 never get faster
+  const two = () => JSON.parse(app(`JSON.stringify(["gef_fild06","mjolnir_05"].map(mp=>{const r=mapStats(mapKey(mp),walkSec());return [r.sec,r.walk,r.secT]}))`));
+  for (const hs of [true, false]) {
+    app(`C().baseLv=70;C().a={...C().a,hs:${hs}};C().matkTxt="126+227";renderAll()`); const hi = two();
+    app(`C().matkTxt="126+172";renderAll()`); const lo = two();
+    hi.forEach(([sec, walk, secT], i) => { near(lo[i][1], walk); assert.ok(lo[i][0] > sec && lo[i][2] > secT, `hs ${hs}: ${hi[i]} → ${lo[i]}`) });
+  }
 });
 
 t("a session keeps the stats it was logged with", () => {
@@ -1766,8 +1773,21 @@ t("a session keeps the stats it was logged with", () => {
   near(run("sessionPace(cur()).fight") + w, run("sessionPace(cur()).obs"));  // its fight time is the logged one too
   assert.equal(run("C().atkTxt"), "100+100");
   assert.match(run("walkSrcTxt()"), /^walk calibrated from b \(stats from /);
-  run(`cur().entries.push({t:${t0 + 72e5},lv:30,pct:20});snapSession(cur())`);   // logging again takes the stats you have then
-  assert.ok(run("walkSec()") < w);
+  // logging again takes the stats you have then for the new stretch; the hour logged before keeps its own fight time
+  const fOld = run("snapFight(cur(),cur().snap.c)");
+  run(`cur().entries.push({t:${t0 + 72e5},lv:30,pct:20});snapSession(cur(),[${t0},${t0 + 36e5}])`);
+  assert.equal(run("cur().snapHist.length"), 1);
+  const fNew = run("snapFight(cur(),cur().snap.c)"), obs = run("sessionPace(cur()).obs");
+  assert.ok(fNew > fOld);
+  near(run("walkSec()"), obs - (fOld + fNew) / 2);                          // two equal stretches: half the kills at each fight time
+  assert.ok(run("walkSec()") < w && run("walkSec()") > obs - fNew);         // not all of the session at the new stats
+  assert.match(run("walkSrcTxt()"), /the entries before keep the stats they were logged with/);
+  // logging with stats that don't change the fight time keeps no history
+  run(`C().curW=123;cur().entries.push({t:${t0 + 108e5},lv:30,pct:25});snapSession(cur(),[${t0},${t0 + 36e5},${t0 + 72e5}])`);
+  assert.equal(run("cur().snapHist.length"), 1);
+  // the history survives a share link
+  const back = JSON.parse(run("JSON.stringify(unpackState(packState(JSON.parse(JSON.stringify(state)))))"));
+  assert.deepEqual(back.sessions[0].snapHist.map(x => [x.t, x.c.atkTxt, "$d" in x]), [[t0 + 36e5, "100+300", false]]);
 });
 
 t("deaths: the EXP a death costs isn't negative EXP / hr", () => {

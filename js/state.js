@@ -53,6 +53,8 @@ state.sessions.forEach(s=>{s.id=String(s.id);s.name=String(s.name??"Session");s.
   if(s.pauses!=null)s.pauses=(Array.isArray(s.pauses)?s.pauses:[]).filter(p=>p&&Number.isFinite(+p.from)&&(p.to==null||Number.isFinite(+p.to))).map(p=>p.to==null?{from:+p.from}:{from:+p.from,to:+p.to});
   // the character as it was when entries were logged (model.js charSnap), and the walking worked out from it: a character object and numbers
   if(s.snap!=null)s.snap=s.snap&&typeof s.snap==="object"&&s.snap.c&&typeof s.snap.c==="object"&&!Array.isArray(s.snap.c)&&Number.isFinite(+s.snap.at)?{at:+s.snap.at,c:s.snap.c,...(s.snap.est===true?{est:true}:{})}:undefined;
+  // stats the session was logged with before a change (oldest first; t: the newest entry each covers)
+  if(s.snapHist!=null)s.snapHist=(Array.isArray(s.snapHist)?s.snapHist:[]).filter(x=>x&&Number.isFinite(+x.t)&&x.c&&typeof x.c==="object"&&!Array.isArray(x.c)).map(x=>({t:+x.t,c:x.c}));
   if(s.walk!=null){const w=s.walk,n=x=>x==null||!Number.isFinite(+x)?null:+x;s.walk=w&&typeof w==="object"&&typeof w.key==="string"?{key:w.key,sec:n(w.sec),fight:n(w.fight),kph:n(w.kph)}:undefined}});
 // what storage already holds (see mergeNewer)
 KNOWN=knownOf(state);

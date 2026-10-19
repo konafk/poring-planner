@@ -185,7 +185,7 @@ function renderTracker(){renderStart();
     $("tNextK").textContent=`To Lv ${st.last.lv+1}`;$("tNext").textContent=fmtDur(st.nextH);$("tNextS").textContent=`${(100-st.last.pct).toFixed(1)}% left`}
   const p=sessionPace(s);
   if(p){$("tPace").textContent=`${fmtN(p.kph)}/hr`;$("tPaceS").textContent=`${p.obs.toFixed(1)}s per kill`+(isFinite(p.fight)?(p.obs<p.fight?` · faster than the model's ${p.fight.toFixed(1)}s fight, so check your ATK/MATK`:` · ~${p.fight.toFixed(1)}s fighting + ~${p.walk.toFixed(1)}s walking`):"");
-    $("tPaceS").title=s.snap?`Fight time with the stats ${s.snap.est?"you had when this session was first worked out":`you had when you last logged (${fmtD(s.snap.at)} ${fmtT(s.snap.at)})`}; changing them later doesn't move this session's walking`:""}
+    $("tPaceS").title=s.snap?`Fight time with the stats ${s.snap.est?"you had when this session was first worked out":`you had when you last logged (${fmtD(s.snap.at)} ${fmtT(s.snap.at)})`}${s.snapHist&&s.snapHist.length?", and for the entries before a change, the stats they were logged with":""}; changing them later doesn't move this session's walking`:""}
   else{$("tPace").textContent="–";$("tPaceS").textContent="Needs a monster and 2+ entries"}
   if(p){const zk=p.zk,gross=p.kph*zk,cost=itemsPerSec()*3600*spItemPrice()+hourCostHr()+p.kph*p.mix.avg(skillZeny);$("tZeny").textContent=fmtN(gross-cost);$("tZenyS").textContent=`${fmtN(gross)} z loot`+(cost>0?` − ${fmtN(cost)} z SP items, potions & skill items`:"")+` · ${fmtN(zk)} z/kill`}
   else{$("tZeny").textContent="–";$("tZenyS").textContent="Needs a monster and 2+ entries"}
