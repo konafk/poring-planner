@@ -396,7 +396,9 @@ const gearTxt=g=>{const it=g&&g.id&&BUILD.item(g.id);if(!it)return "none";const 
 // what set i changes: "Weapon: Pike → +7 Zweihander" per gear row (affixes count as a change too), then the special equipment
 function altDiff(c,i){const b=buildOf(c),a=altOf(c,i),g0=b.gear||{},g1=a.gear||{},same=(x,y)=>JSON.stringify(x||null)===JSON.stringify(y||null);
   const rows=BUILD.SLOTS.filter(s=>!same(g0[s.k],g1[s.k])).map(s=>`${esc(s.label)}: ${esc(gearTxt(g0[s.k]))} → <b>${esc(gearTxt(g1[s.k]))}</b>${gearTxt(g0[s.k])===gearTxt(g1[s.k])?" (affixes)":""}`);
-  if(!same(b.stones||{},a.stones||{})||!same(b.special||{},a.special||{}))rows.push("Special equipment");return rows}
+  // an empty list of other special equipment is the same as none (a set the table never showed has none)
+  const sp=x=>{const o={...(x||{})};if(Array.isArray(o.own)&&!o.own.length)delete o.own;return o};
+  if(!same(b.stones||{},a.stones||{})||!same(sp(b.special),sp(a.special)))rows.push("Special equipment");return rows}
 const altDiffTxt=(c,i)=>{const d=altDiff(c,i);return d.length?d.join(" · "):"same as your gear"};
 function renderAltBar(c=C()){const i=altIdx(c),has=i>=0&&altSaved(c,i),list=altList(c),n=altN(c);
   $("gsetSeg").innerHTML=`<button type="button" role="radio" data-gset="mine" aria-checked="${i<0}">My gear</button>`+Array.from({length:n},(_,k)=>

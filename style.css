@@ -595,3 +595,21 @@ details.more>.form{display:grid}
 #pasteMore{display:flex;flex-direction:column;gap:8px}
 #pasteMore[open]>label{margin-top:10px}
 #pasteMore>button{align-self:flex-start}
+
+/* ---- Equipment and Cards tabs: effects wrap in a wide left-aligned column; the Equip dialog lists each gear set's places ---- */
+.dbTable :is(th,td).l{text-align:left}
+.dbTable td.fx{white-space:normal;text-align:left;min-width:240px;max-width:400px;line-height:1.45}
+.dbTable td.jobs{white-space:normal;min-width:110px;max-width:200px;font-size:12px;color:var(--muted)}
+.dbTable td:first-child{white-space:normal;min-width:200px;max-width:260px}
+.dbTable td:first-child .pill{margin-left:2px}
+.dbF label{min-width:0}
+.eqDlg[open]{display:flex;flex-direction:column}
+.eqDlgHead{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.eqDlgHead>div{flex:1}
+.eqDlgHead b{font-family:var(--display);font-size:16px}
+.eqDlgBody{overflow:auto;padding:12px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.eqPicks{display:flex;flex-direction:column;gap:10px}
+.eqSet{display:flex;flex-direction:column;gap:4px}
+.eqSet>b{font-size:11px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.eqPick{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px;text-align:left;font-weight:500;padding:8px 12px}
+.eqPick .to{color:var(--accent);font-weight:600}

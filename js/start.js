@@ -7,6 +7,8 @@ const TAB_DESC={
   maps:"Find where to farm: every monster against your attack, the EXP and Zeny Hunter rankings, and the map planner.",
   mobinfo:"Drops, spawn maps and your numbers against any monster.",
   items:"Every drop: who drops it, where they spawn and what it's worth to you.",
+  equip:"Every weapon and piece of armor: filter by type, job, level, card slots and stats, and put it in any of your gear sets.",
+  cards:"Every card and what it does: filter by the gear it goes in, and slot it into your gear or another gear set.",
   market:"The prices players pay, and a timer that tells you when to go sell.",
   ref:"EXP tables, party share, the element and size tables, and every formula with your numbers in it.",
   acct:"Accounts, sessions and backups. Everything is saved in this browser only.",
@@ -28,7 +30,7 @@ function showTab(t,local){
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
   // renderAll only draws these while their tab is showing
-  if(t==="maps")renderHunt();if(t==="market")renderPrices();if(t==="mobinfo")renderMobInfo();if(t==="items")renderItems();
+  if(t==="maps")renderHunt();if(t==="market")renderPrices();if(t==="mobinfo")renderMobInfo();if(t==="items")renderItems();if(t==="equip")renderEquipDb();if(t==="cards")renderCardDb();
 }
 document.querySelectorAll("[data-tabbtn]").forEach(b=>b.addEventListener("click",()=>{showTab(b.dataset.tabbtn);scrollTo({top:0})}));
 showTab(VIEW&&VIEW.tab||state.tab||"char",!!VIEW);
@@ -85,6 +87,10 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
       run:go("mobinfo",()=>{state.infoMobId=m.id;save();renderMobInfo()})})),
     ...Object.keys(ITEM_DROPS).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · dropped by ${ITEM_DROPS[id].length}`,
       run:go("items",()=>{state.infoItem=id;save();renderItems();$("itemTiles").scrollIntoView({behavior:"smooth",block:"nearest"})})})),
+    ...(typeof EQUIP!=="undefined"?EQUIP:[]).filter(it=>(it.slot||[]).length).map(it=>({k:"Gear",name:it.name,meta:`#${it.id} · ${gearKind(it)}${it.slots?` [${it.slots}]`:""}`,
+      run:go("equip",()=>{state.eqDb={...EQDB_D,job:"",q:"#"+it.id};save();renderEquipDb()})})),
+    ...(typeof CARDS!=="undefined"?CARDS:[]).map(x=>({k:"Card",name:x.name,meta:`#${x.id} · ${CARD_PART[cardPart(x)]||"–"}${cardName(x)?` · ${cardName(x)}`:""}`,
+      run:go("cards",()=>{state.cardDb={...CARDDB_D,q:"#"+x.id};save();renderCardDb()})})),
     ...Object.keys(MAPNAMES).map(mp=>({k:"Map",name:mapName(mp)||mapCode(mp),meta:mapCode(mp),alt:mp,
       run:go("maps",()=>{state.map=mp;save();renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})})}))];
   // best first: the name starts with it, then a word in it does, then it's anywhere (name, map code, item #id)
