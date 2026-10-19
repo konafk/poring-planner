@@ -1360,6 +1360,13 @@ t("maps too slow to farm rank last with a badge; nrd_dun02 needs base Lv 50", ()
   run("delete state.maxSec"); assert.equal(run("maxSecKill()"), 60);                     // saves from before: 60
 });
 
+t("a table's saved column filters are listed for the Filters on chip", () => {
+  run(`state.tfilt={bestTable:{sus:">80",mp:"",nope:"x"}}`);                // the saved filter that hid every orc map
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(activeFilters("bestTable").map(([k,,v])=>[k,v]))`)), [["sus", ">80"]]);
+  run("filterRows('bestTable',[])");                                         // draws the chip without failing
+  run(`state.tfilt={}`); assert.equal(run(`activeFilters("bestTable").length`), 0);
+});
+
 t("cards any job can slot: Side Winder, Hunter Fly, Vitata", () => {
   const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
   setup("Knight", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", hitTxt: "300", crit: 0, aspd: 170, defTxt: "10+10", hitScale: 1, mobInterval: 1.5,

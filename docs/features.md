@@ -164,6 +164,7 @@ Every big table works the same way:
 
 - Click a column header to sort.
 - Type in the filter row under the header. Filters accept `<350`, `100-200`, `fire`, `-` for blank and `or`. In the EXP Hunter, `poring` under Main monsters finds every map with Porings; in the Zeny Hunter, `elunium` under Earns from finds every monster that drops it.
+- While any of a table's filters is on (saved ones too, even under a hidden column), a **Filters on: … clear** line above the table names them; **clear** empties them all.
 - The auto-loot group filters in Monster info's drops and in Item info are dropdowns: pick a group, or Not looted for the groups you don't auto loot.
 - Show or hide columns with the column picker. The Monsters table, the EXP Hunter and the Zeny Hunter also have one-click **column views** next to it (All, Compact, EXP, Zeny, or Weight in the Zeny Hunter); the view that matches the columns showing is marked.
 - The first column (in the hunters, the rank and the map) stays in place when you scroll a table sideways.

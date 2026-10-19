@@ -579,7 +579,15 @@ const TABLES={
 const sortKey=id=>id==="bestTable"&&atMaxLv()?"bestTable@max":id;
 const sortDef=id=>id==="bestTable"&&atMaxLv()?["net",-1]:TABLES[id].def;
 const tblSort=id=>{const s=state.tsort[sortKey(id)];return s&&Object.hasOwn(TABLES[id].cols,s[0])?s:sortDef(id)};
-const filterRows=(id,rows)=>{const T=TABLES[id],F=state.tfilt[id]||{};
+// the column filters typed under a table's headers that are on (a hidden column's included), as [key, column name, filter]
+const activeFilters=id=>Object.entries(state.tfilt[id]||{}).filter(([k,v])=>v&&Object.hasOwn(TABLES[id].cols,k)).map(([k,v])=>{const th=document.querySelector(`#${id} th[data-sk="${k}"]`);
+  return [k,(th&&th.textContent||k).trim(),v]});
+// "Filters on: … [clear]" above a table while any of its filters is on, so rows a filter hides never go missing without a word
+function filterChip(id){const t=$(id);if(!t||!t.parentNode)return;const host=t.closest(".scroll")||t;let el=$(id+"Chip");
+  if(!el){el=document.createElement("div");el.id=id+"Chip";el.className="note fchip";host.parentNode.insertBefore(el,host)}
+  const F=activeFilters(id);el.hidden=!F.length;
+  el.innerHTML=F.length?`<span class="pill down">Filters on</span> ${F.map(([,n,v])=>`<b>${esc(n)}</b> ${esc(v)}`).join(" · ")} <a href="#" data-tfclear="${id}">clear</a>`:""}
+const filterRows=(id,rows)=>{const T=TABLES[id],F=state.tfilt[id]||{};filterChip(id);
   return rows.filter(r=>Object.entries(F).every(([k,v])=>{const c=Object.hasOwn(T.cols,k)&&T.cols[k];return !v||!c||matchF(v,c.n?c.n(r):null,c.t?c.t(r):null)}))};
 const tableRows=(id,rows)=>sortRows(id,filterRows(id,rows));
 function sortRows(id,rows){

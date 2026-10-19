@@ -360,12 +360,16 @@ $("itemSearch").addEventListener("input",renderItems);
 // the auto-loot group filters (Monster info drops, Item info) are dropdowns
 ROOTQ('select[data-tf="group"]').forEach(sel=>sel.innerHTML=`<option value="">Any</option>${LOOT_GROUPS.map(([,n])=>`<option>${n}</option>`).join("")}<option value="not looted">Not looted</option>`);
 // Compare sessions, Monster info, Item info, Market and the Hunter tables: click a header to sort (again to flip it), type under it to filter; saved per table
-[["cmpTable",renderCompare],["bestTable",renderBest],["huntTable",renderHunt],["recTable",renderRecovery],["mobInfoDrops",renderMobInfo],["mobInfoMaps",renderMobInfo],["itemTable",renderItems],["itemDropTable",renderItems],["priceTable",renderPrices]].forEach(([id,render])=>{const t=$(id);
+const TF_RENDER={};
+[["cmpTable",renderCompare],["bestTable",renderBest],["huntTable",renderHunt],["recTable",renderRecovery],["mobInfoDrops",renderMobInfo],["mobInfoMaps",renderMobInfo],["itemTable",renderItems],["itemDropTable",renderItems],["priceTable",renderPrices]].forEach(([id,render])=>{const t=$(id);TF_RENDER[id]=render;
   t.tHead.addEventListener("click",e=>{const th=e.target.closest("th[data-sk]");if(!th)return;const k=th.dataset.sk,[k0,d0]=tblSort(id);
     const c=TABLES[id].cols[k];state.tsort[sortKey(id)]=[k,k===k0?-d0:c.n&&!c.asc?-1:1];save();render()});
   t.querySelectorAll("[data-tf]").forEach(inp=>{inp.value=(state.tfilt[id]||{})[inp.dataset.tf]||"";
     if(inp.value!==((state.tfilt[id]||{})[inp.dataset.tf]||""))delete state.tfilt[id][inp.dataset.tf]; // a typed filter a dropdown has no option for
     inp.addEventListener("input",()=>{(state.tfilt[id]=state.tfilt[id]||{})[inp.dataset.tf]=inp.value;save();render()})})});
+// the "Filters on" chip's clear: empties that table's filters and their boxes
+document.addEventListener("click",e=>{const a=e.target.closest("[data-tfclear]");if(!a)return;e.preventDefault();const id=a.dataset.tfclear;delete state.tfilt[id];
+  $(id).querySelectorAll("[data-tf]").forEach(i=>i.value="");save();TF_RENDER[id]()});
 $("itemCard").addEventListener("click",e=>{const a=e.target.closest("[data-pitem]");if(a){e.preventDefault();addPrice(a.dataset.pitem,true);return}
   const it=e.target.closest("tr[data-item]");if(it){state.infoItem=it.dataset.item;save();renderItems();$("itemTiles").scrollIntoView({behavior:"smooth",block:"nearest"});return}
   const mo=e.target.closest("#itemDroppers tr[data-id]");if(mo){state.infoMobId=+mo.dataset.id;save();showTab("mobinfo");scrollTo({top:0})}});
