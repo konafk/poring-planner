@@ -4,7 +4,8 @@
 const TAB_DESC={
   char:"Your job, stats, gear and attack: everything the damage, EXP and zeny numbers work from.",
   track:"Log your EXP as you farm to see your real EXP/hr, when you'll level and how far your goals are.",
-  maps:"Find where to farm: every monster against your attack, the EXP and Zeny Hunter rankings, the map planner and the release roadmap.",
+  maps:"Find where to farm: every monster against your attack, the EXP and Zeny Hunter rankings, and the map planner.",
+  roadmap:"Ragnarok Zero Global's release roadmap: when each update comes, its level cap, and which maps and monsters are open now.",
   mobinfo:"Drops, spawn maps and your numbers against any monster.",
   items:"Every drop: who drops it, where they spawn and what it's worth to you.",
   equip:"Every weapon and piece of armor: filter by type, job, level, card slots and stats, and put it in any of your gear sets.",
@@ -33,6 +34,8 @@ function showTab(t,local){
   if(t==="maps")renderHunt();if(t==="market")renderPrices();if(t==="mobinfo")renderMobInfo();if(t==="items")renderItems();if(t==="equip")renderEquipDb();if(t==="cards")renderCardDb();
 }
 document.querySelectorAll("[data-tabbtn]").forEach(b=>b.addEventListener("click",()=>{showTab(b.dataset.tabbtn);scrollTo({top:0})}));
+// a link to another tab (data-gotab="roadmap")
+document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("[data-gotab]");if(!a)return;e.preventDefault();showTab(a.dataset.gotab);scrollTo({top:0})});
 showTab(VIEW&&VIEW.tab||state.tab||"char",!!VIEW);
 // ---- collapsible cards: click a heading (or Enter/Space on it) to fold the card; saved by heading text ----
 (function setupCollapse(){

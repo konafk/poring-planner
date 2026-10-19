@@ -6,6 +6,7 @@
 - [Account](#account)
 - [Session (EXP tracker)](#session-exp-tracker)
 - [Monsters & maps](#monsters--maps)
+- [Roadmap](#roadmap)
 - [Monster info](#monster-info)
 - [Item info](#item-info)
 - [Equipment and Cards](#equipment-and-cards)
@@ -88,7 +89,7 @@ Open maps ranked by EXP/min, weighted by spawn counts. At the max base level (70
 - HP lost / min is the damage that gets through less HP regen and Hunter Fly. Casters and archers take the same hits as melee: aggressive monsters, and monsters that reach you while you cast, are in "swings reach you". With Vitata your Heals cover it, so it costs SP and time instead of HP items. Hover it to see the damage taken, poison and regen. "Damage taken from" a race, size or element (Thara Frog Card, Poo Poo Hat's −10% from Demi-Human, "Resistance to Demi-Human" options, Equipment stats lines) scales each monster hit first, so it lowers HP lost, the HP items and heal cost, and raises net zeny.
 - **Crowds:** aggressive monsters, and ones that join a fight their kind is in (Wolves, Goblins, Thief Bugs…), gang up on you: "Possible rampage" (monsters attacking you together) on the Character tab (2 unless you change it; other monsters count as 1); a map can set its own count for all its monsters in the Map planner, which the room dungeons, such as Labyrinth Forest 1F and 3F and Sunken Ship, do). Each one swings at you, and from 3 at once your FLEE drops 10% and your DEF 5% per monster past 2 (rAthena's pre-renewal settings).
 - **Poison:** monsters with Poison Attack (Argiope, Side Winder, Ghoul, Argos, Zenorc…) try it on 5% of their swings, then wait 5 s. It lands at 120% of their hit chance and poisons on 20% × its level, less your VIT % and LUK / 10. Poison lasts 60 s (less with VIT and LUK) and isn't refreshed while it runs. While poisoned you lose 2 + 1.5% of Max HP a second (down to 25%), get no natural HP or SP regen, and your VIT DEF drops 25%. The share of the time you're poisoned shows on the Character tab and in the HP tooltips.
-- Skip monsters you don't want to fight. Regions that aren't open yet (see Roadmap) are left out, and listed under the table.
+- Skip monsters you don't want to fight. Regions that aren't open yet (see the Roadmap tab) are left out, and listed under the table, with a link to the tab.
 
 ### Zeny Hunter
 
@@ -106,15 +107,6 @@ Open maps, or single monsters, ranked by net zeny/hr. That's the loot value per 
 ### Map planner
 
 Per-map averages, kills/hr, EXP/hr and net zeny/hr. The EXP Hunter's Zeny / hr column is net the same way.
-
-### Roadmap
-
-Ragnarok Zero Global's release roadmap, from August 2026 to July 2027: each update's month, the level cap it raises to, what it adds, and the map regions it opens. The heading shows the level cap now and the next update.
-
-- A region opens by itself on its update's day, or once its month is over when the day isn't announced (so the Clock Tower update, October 2026, counts as open from 1 November). Maps on no region, such as Comodo's and Umbala's fields, Sphinx, Prontera Labyrinth and Mjolnir Dead Pit, are always open. Until then its maps are left out of the EXP Hunter, Zeny Hunter and Map planner rankings, and its monsters are hidden by "Hide monsters with no open map".
-- A closed monster shows when it comes: "none open · Dec 2026" in the monster table and Item info, "comes with the Glast Heim update, Dec 2026" in its details, a `closed · Dec 2026` tag on its maps in Monster info, and the same line in the Map planner.
-- Click a region to mark it open (or closed) yourself, for example the day an update goes live; it shows `yours` while it differs from the roadmap, and clicking it back follows the roadmap again. Other closed maps takes any single map.
-- The roadmap is `data/roadmap.js`. When an update's day is announced, set its `when` to `YYYY-MM-DD`.
 
 ### Farm without items
 
@@ -135,6 +127,15 @@ The % is the share of what you use that comes back on its own, the lower of HP a
 **Possible rampage, per map:** the Map planner's box next to the map sets how many monsters attack you together there, for every monster on it, aggressive or not, in place of the Character tab's crowd (see Crowds above). RO Zero's maps are towns, fields and dungeons, and dungeons come in two kinds: normal ones, and room dungeons, one big map cut into small rooms where the monsters crowd into the room you're in. The room dungeons, Labyrinth Forest 1F and 3F (`prt_maze01`, `prt_maze03`, 25 rooms in a 5×5 grid) and Sunken Ship 1F and 2F (`treasure01`, `treasure02`, its cabins), Kunlun's Immortal's Chess Terrace (`gon_dun02`) and Sphinx B5F (`in_sphinx5`), start at 3: they're the maps with 8 or more warps from room to room inside the same map in rAthena's warp scripts (Labyrinth Forest 2F has none; Izlude Shipwreck isn't in them, so it isn't known), and the Map planner says "room dungeon" under their name; other maps have none, so the Character tab's count applies to their aggressive and assisting monsters and the rest count as 1. Type your own for any map, or clear the box to go back to the default. Hits add up and the same FLEE / DEF crowd penalty applies. It counts in everything worked out for that map (HP lost / min, heal cost, interrupted casts, this check), and the EXP and Zeny Hunters tag those maps `×3 rampage`. Dodge never goes above 95%, so even with very high FLEE 1 swing in 20 lands.
 
 With an elemental converter (or Spell Fist bolts), a table shows each element's rate against every monster on the map and the map's EXP/min with it, and warns about the monsters the one in use is weak against (for example Fire against Jakk, Fire 2, on Geffen Dungeon B2F). An Element % column shows the rate per monster. For physical attacks the rate applies to weapon and equipment ATK; status ATK always hits as Neutral.
+
+## Roadmap
+
+Its own tab: Ragnarok Zero Global's release roadmap, from August 2026 to July 2027: each update's month, the level cap it raises to, what it adds, and the map regions it opens. The heading shows the level cap now and the next update.
+
+- A region opens by itself on its update's day, or once its month is over when the day isn't announced (so the Clock Tower update, October 2026, counts as open from 1 November). Maps on no region, such as Comodo's and Umbala's fields, Sphinx, Prontera Labyrinth and Mjolnir Dead Pit, are always open. Until then its maps are left out of the EXP Hunter, Zeny Hunter and Map planner rankings, and its monsters are hidden by "Hide monsters with no open map".
+- A closed monster shows when it comes: "none open · Dec 2026" in the monster table and Item info, "comes with the Glast Heim update, Dec 2026" in its details, a `closed · Dec 2026` tag on its maps in Monster info, and the same line in the Map planner.
+- Click a region to mark it open (or closed) yourself, for example the day an update goes live; it shows `yours` while it differs from the roadmap, and clicking it back follows the roadmap again. Other closed maps takes any single map.
+- The roadmap is `data/roadmap.js`. When an update's day is announced, set its `when` to `YYYY-MM-DD`.
 
 ## Monster info
 
