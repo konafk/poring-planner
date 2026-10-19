@@ -14,7 +14,7 @@
 
 ## Page layout
 
-The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Monsters & maps), Look up (Monster info, Item info, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll.
+The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Monsters & maps), Look up (Monster info, Item info, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused.
 
 The buttons at the bottom of the sidebar change how the page looks:
 

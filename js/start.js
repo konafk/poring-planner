@@ -1,10 +1,27 @@
 // ---- tabs: show one group of sections at a time; the last one opened is remembered in state.tab (Character first for new players) ----
 // local: show it in this browser tab only, without saving it (a reload that keeps this tab's view)
+// the heading over each tab: its sidebar group, its name and what it's for
+const TAB_DESC={
+  char:"Your job, stats, gear and attack: everything the damage, EXP and zeny numbers work from.",
+  track:"Log your EXP as you farm to see your real EXP/hr, when you'll level and how far your goals are.",
+  maps:"Find where to farm: every monster against your attack, the EXP and Zeny Hunter rankings, and the map planner.",
+  mobinfo:"Drops, spawn maps and your numbers against any monster.",
+  items:"Every drop: who drops it, where they spawn and what it's worth to you.",
+  market:"The prices players pay, and a timer that tells you when to go sell.",
+  ref:"EXP tables, party share, the element and size tables, and every formula with your numbers in it.",
+  acct:"Accounts, sessions and backups. Everything is saved in this browser only.",
+};
+function showHero(t){
+  const b=document.querySelector(`[data-tabbtn="${t}"]`);if(!b)return;
+  let g=b.previousElementSibling;while(g&&!g.classList.contains("navGrp"))g=g.previousElementSibling;
+  $("heroGrp").textContent=g?g.textContent:"";$("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
+}
 function showTab(t,local){
   if(t==="data")t="acct";// Backup now lives on the Account tab
   if(![...document.querySelectorAll("[data-tabbtn]")].some(b=>b.dataset.tabbtn===t))t="char";
   document.querySelectorAll("[data-tab]").forEach(el=>el.hidden=el.dataset.tab!==t);
   document.querySelectorAll("[data-tabbtn]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tabbtn===t)));
+  showHero(t);
   if(!local&&state.tab!==t){state.tab=t;save()}
   if(t==="ref"){renderRef();refScroll()}
   if(t==="char")renderGearCmp();

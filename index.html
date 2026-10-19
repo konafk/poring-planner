@@ -6,7 +6,7 @@
 <title>Rozero Farm Planner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="style.css">
 <!-- full width, the compact sidebar and the colour theme are per-device display choices: set them before the page draws so it doesn't jump -->
 <script>try{if(localStorage.getItem("rozero-farm-planner-wide")==="1")document.documentElement.classList.add("wide");if(localStorage.getItem("rozero-farm-planner-compact")==="1")document.documentElement.classList.add("compact");var th=localStorage.getItem("rozero-farm-planner-theme");if(th==="light"||th==="dark")document.documentElement.dataset.theme=th}catch(e){}</script>
@@ -14,7 +14,7 @@
 <body>
 <div class="app">
   <aside class="side">
-    <div class="brand"><span class="logo" aria-hidden="true">RO</span><span class="brandTxt"><b>Farm Planner</b><span>Ragnarok Zero</span></span></div>
+    <div class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff8fbf"/><stop offset="1" stop-color="#e2457f"/></linearGradient></defs><path d="M20 7c9 0 15 8.5 15 17.5C35 31 29 34 20 34S5 31 5 24.5C5 15.5 11 7 20 7z" fill="url(#lg)"/><ellipse cx="14.5" cy="13.5" rx="3.2" ry="2" fill="#fff" opacity=".55" transform="rotate(-30 14.5 13.5)"/><circle cx="15" cy="22" r="2.1" fill="#2a1020"/><circle cx="25" cy="22" r="2.1" fill="#2a1020"/><path d="M17.5 27.2q2.5 2 5 0" fill="none" stroke="#2a1020" stroke-width="1.4" stroke-linecap="round"/></svg><span class="brandTxt"><b>Farm Planner</b><span>Ragnarok Zero</span></span></div>
     <nav class="tabs" role="tablist" aria-label="Sections">
       <span class="navGrp" role="presentation">Plan</span>
       <button type="button" role="tab" data-tabbtn="char" title="Character"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg><span>Character</span></button>
@@ -34,9 +34,13 @@
       <button type="button" class="iconBtn" id="wideBtn" aria-pressed="false" title="Let the page use the whole window width"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg><span>Full width</span></button>
     </div>
   </aside>
-<main class="wrap">
+<main class="main">
+  <div class="ctxBar" aria-label="Current session"><div class="ctxIn">
+    <span class="live" aria-hidden="true"></span><b id="title">Rozero farm planner</b><span class="ctxSub" id="subtitle"></span><span id="pauseNote" hidden></span>
+  </div></div>
+<div class="wrap">
   <header class="pageHead">
-    <h1 id="title">Rozero farm planner</h1><div class="sub" id="subtitle"></div><div class="note" id="pauseNote" hidden></div>
+    <div class="eyebrow" id="heroGrp"></div><h1 id="heroTitle"></h1><p id="heroDesc"></p>
   </header>
   <section class="card" id="acctCard" data-tab="acct">
     <h2 class="cardHead">Account &amp; session</h2>
@@ -604,6 +608,7 @@
     <div class="note">Damage % for basic attacks and physical skills by monster size; magic ignores size. Your weapon is highlighted.</div>
   </section>
 
+</div>
 </main>
 </div>
 
