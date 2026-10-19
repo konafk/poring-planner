@@ -421,16 +421,16 @@
     <div class="card">
       <h2>Log EXP</h2>
       <form class="form" id="addForm">
+        <label class="span-all" title="The map you farm the session's monsters on: their spawn counts there weight the session's EXP, pace and loot. Auto: the open map where most of them spawn">Map<select id="sessMapSel"></select></label>
         <label>Level<input id="fLevel" type="number" min="1" max="99" required></label>
         <label>EXP %<input id="fPct" type="number" step="0.1" min="0" max="100" required></label>
         <label>Job EXP %<input id="fJob" type="number" step="0.1" min="0" max="100" placeholder="optional"></label>
         <div class="bar span-all"><button class="primary grow" type="submit">Add entry</button><button type="button" id="dieBtn" title="You died: type your EXP % from just before, then press this. It logs that EXP and, a second later, the EXP left after the death penalty">Died −10%</button><button class="w-btn" type="button" id="pauseBtn" title="Stop the clock while you sell, change maps or do something else">Pause</button></div>
         <details class="more span-all" id="logMore">
-          <summary>Time, map, party and deaths <span class="note" id="logMoreMeta"></span></summary>
+          <summary>Time, party and deaths <span class="note" id="logMoreMeta"></span></summary>
           <div class="form">
             <label>Time<input id="fTime" type="time" required></label>
             <label>Date<input id="fDate" type="date"></label>
-            <label class="span-all" title="The map you farm the session's monsters on: their spawn counts there weight the session's EXP, pace and loot. Auto: the open map where most of them spawn">Map<select id="sessMapSel"></select></label>
             <label>Party members<input id="partyN" type="number" min="1" max="12" value="1"></label>
             <label>Party EXP bonus %<input id="partyBonus" type="number" value="0" readonly tabindex="-1" title="Worked out from the party size"></label>
             <div class="note span-rest" id="partyNote"></div>
