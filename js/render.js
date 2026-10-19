@@ -23,7 +23,7 @@ const eqMaxNote=()=>{const t=!atMaxLv()?"":num(C().jobLv)>=jobMax()?"Max level: 
 // the picked monster: how many are on you, what that does to FLEE and DEF, and how much of the time it keeps you poisoned
 function crowdInfo(){const c=C(),m=calcMob();if(document.activeElement!==$("crowd"))$("crowd").value=c.crowd??"";
   if(!m){$("crowdInfo").textContent="";return}const n=crowdN(m),pz=poisonUp(m);
-  $("crowdInfo").textContent=`vs ${m.name}: ${m.agg||m.assist?`${m.agg?"aggressive":"assists its kind"}, ${fmtP(n)} on you`:"1 on you"}${n>2?` (FLEE −${Math.round((1-crowdFlee(n))*100)}%, DEF −${Math.round((1-crowdDef(n))*100)}%)`:""}${m.poison?` · poisons you ${Math.round(pz*100)}% of the time: −${fmtN(poisonHpPerSec())} HP/s, no HP or SP regen then`:""}`}
+  $("crowdInfo").textContent=`vs ${m.name}: ${m.agg||m.assist?`${m.agg?"aggressive":"assists its kind"}, possible rampage of ${fmtP(n)}`:"fights you alone"}${n>2?` (FLEE −${Math.round((1-crowdFlee(n))*100)}%, DEF −${Math.round((1-crowdDef(n))*100)}%)`:""}${m.poison?` · poisons you ${Math.round(pz*100)}% of the time: −${fmtN(poisonHpPerSec())} HP/s, no HP or SP regen then`:""}`}
 function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   // converters vs the monster you picked: the element-table rate of each one, and the one the EXP/min picks
   {const m=convOn()&&calcMob();$("convInfo").innerHTML=m?`vs ${esc(m.name)} (${m.el||"Neutral"} ${m.elv||1}): ${convAll().map(el=>elRateHtml(el,elemMult(m,el))).join(" · ")} → ${convFixed()?`using ${convFixed()}`:`best ${esc(mobRow(m,walkSec()).el2)}`}`:""}
@@ -136,7 +136,7 @@ function renderSessions(){$("sessionSel").innerHTML=state.sessions.map(s=>`<opti
 const KEY_START="rozero-farm-planner-start-hidden";
 function renderStart(){const box=$("startCard"),c=C(),s=cur(),n=s.entries.length;
   // any session counts, so a new, empty session doesn't bring the card back; once all three are done it stays away
-  const done={char:c.mode==="build"||STATS.every(k=>statVal(c,k)!=null),mob:state.sessions.some(x=>(x.mobIds||[]).length),log:state.sessions.some(x=>(x.entries||[]).length>=2)};
+  const done={char:c.mode==="build"||STATS.every(k=>statVal(c,k)!=null),mob:state.sessions.some(x=>(x.mobIds||[]).length),log:atMaxLv()||state.sessions.some(x=>(x.entries||[]).length>=2)};
   let off=false;try{off=localStorage.getItem(KEY_START)==="1";if(!off&&Object.values(done).every(Boolean)){localStorage.setItem(KEY_START,"1");off=true}}catch(e){}
   box.hidden=off||Object.values(done).every(Boolean);
   box.querySelectorAll("[data-step]").forEach(li=>li.classList.toggle("done",!!done[li.dataset.step]));
@@ -150,7 +150,9 @@ function renderSpark(s,st){const box=$("ctxRate"),es=[...s.entries].sort((a,b)=>
   const line=r.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
   $("spark").innerHTML=`<polyline points="${line}" fill="none" stroke="url(#sparkG)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><defs><linearGradient id="sparkG"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-2)"/></linearGradient></defs>`+(r.length?`<circle cx="${X(r.length-1)}" cy="${Y(r[r.length-1])}" r="2.2" style="fill:var(--accent-2)"/>`:"");
   $("ctxRateV").textContent=`${pct(st.avgPct)}/hr`}
-function renderTracker(){renderStart();$("dieItem").checked=!!state.dieItem;$("dieBtn").textContent=`Died −${diePct()}%`;
+function renderTracker(){renderStart();
+  // at the max base level base EXP stops counting, so the quick Log EXP box (top bar, phone + button, L) goes away
+  document.documentElement.classList.toggle("maxLv",atMaxLv());$("dieItem").checked=!!state.dieItem;$("dieBtn").textContent=`Died −${diePct()}%`;
   const s=cur(),st=stats(s);renderSpark(s,st);
   if(document.activeElement!==$("partyN"))$("partyN").value=partyN(s);$("partyBonus").value=partyBonus(s);
   $("partyNote").textContent=partyN(s)>1?`Each kill gives you ${partyPct(s)}% of its EXP (party of ${partyN(s)}). Even Share only works within 15 base levels.`:"";
@@ -162,6 +164,10 @@ function renderTracker(){renderStart();$("dieItem").checked=!!state.dieItem;$("d
     sel.innerHTML=!maps.length?`<option value="">${ms.length?"No open map for these monsters":"Pick a monster first"}</option>`
       :`<option value="">Auto: ${esc(mapLabel(auto))}</option>`+maps.map(x=>`<option value="${esc(x[0])}">${esc(mapLabel(x[0]))}${of(x)} · ≈${x[2]} spawns</option>`).join("");
     sel.value=s.map&&smp===s.map?s.map:""}
+  // the folded part of the Log EXP card says what it's set to, so you know without opening it
+  {const sel=$("sessMapSel"),o=sel.options[sel.selectedIndex],n=partyN(s),bits=[];if(maps.length&&o)bits.push(o.textContent.replace(/ · ≈\d+ spawns$/,""));
+    if(n>1)bits.push(`party of ${n}`);if($("fTime").dataset.auto!=="1"||$("fDate").dataset.auto!=="1")bits.push("time set by hand");if(state.dieItem)bits.push("death item");
+    $("logMoreMeta").textContent=bits.join(" · ")}
   $("subtitle").innerHTML=ms.length>1?`Farming ${ms.map(m=>esc(m.name)).join(", ")}${smp?` on ${esc(mapLabel(smp))}`:""} · weighted by spawn counts`:mob?`Farming ${esc(mob.name)} · Lv ${mob.lv} · ${mob.el?`<span class="el ${mob.el}">${mob.el} ${mob.elv}</span> · `:""}${mob.size||""} ${mob.race||""} · ${fmtExp(mob)} base EXP${smp?` · on ${esc(mapLabel(smp))}`:""} · <a href="${dbUrl(mob)}" target="_blank" rel="noopener">rozerodb ↗</a>`:"Pick a monster in the Monsters &amp; maps tab and press \"Farming this now\"";
   const lastE=[...s.entries].sort((a,b)=>a.t-b.t).pop();
   if(lastE){$("tCurLv").textContent=`Lv ${lastE.lv}`;$("tCurLvS").textContent=lvExp(lastE.lv)?`${fmtN(lvExp(lastE.lv))} EXP to level`:"Lv outside EXP table";
@@ -454,12 +460,17 @@ function weightTile(m){const t=tripInfo(m,walkSec());if(!t)return "";const c=C()
   const pctNow=maxWt(c)?Math.round(num(c.curW)/maxWt(c)*100):0;
   const v=!(t.wk>0)?"–":isFinite(t.kills)?`${fmtN(Math.floor(t.kills))} kills`:'<span class="bad">sell first</span>';
   return `<div class="tile"><div class="k">Weight · sell at ${t.fell?70:fmtP(at)}%</div><div class="v mono">${v}</div><div class="s">${t.wk>0?`${t.wk.toFixed(1)} weight per kill`:"its drops weigh nothing"}${isFinite(t.kills)&&t.wk>0?` · ${fmtDur(t.min/60)} a trip + ${fmtN(num(c.townMin,3))} min to town`:""} · start at ${pctNow}%${t.fell?' · <span class="bad">no regen past 70% and you need SP, so you sell at 70%</span>':""}</div></div>`}
+// the monster details panel: beside the table on wide screens; a drawer (bottom sheet on phones) on narrower ones, where it
+// waits for a click on a row instead of opening by itself
+let MOB_PANEL_SHUT=typeof matchMedia==="function"&&matchMedia("(max-width:1359px)").matches;
+function openMobPanel(){MOB_PANEL_SHUT=false;renderMobTiles();$("mobPanelX").focus({preventScroll:true})}
 function renderMobTiles(){
-  const m=calcMob();if(!m){$("mobTiles").innerHTML='<div class="note">Click a monster to see it here.</div>';return}
+  const m=calcMob();$("mobPanel").hidden=!m||MOB_PANEL_SHUT;if(!m){$("mobTiles").innerHTML="";return}
+  $("mobPanelName").innerHTML=`${esc(m.name)} <span class="muted">Lv ${m.lv}</span>${m.el?` <span class="el ${m.el}">${m.el} ${m.elv}</span>`:""}`;
   const r=mobRow(m,walkSec());const s=cur();const L=lvExp(num(C().baseLv))||null;const om=openMaps(m);
   $("mobTiles").innerHTML=`<div class="tile now"><div class="k">${esc(m.name)} · Lv ${m.lv}</div><div class="v mono">${r.epm?fmtN(r.epm):"–"}</div><div class="s">${m.expUnknown?"EXP unknown (no data yet) · ":""}EXP/min${r.el2&&convOn()?` with ${r.el2} converter`:""} · ${isFinite(r.sec)?r.sec.toFixed(1)+"s fight + "+walkSec().toFixed(1)+"s walk"+sellTxt(r.tot-r.sec-walkSec()," + "," selling"):"can't hurt it"}${L&&r.epm?` · ~${pct(r.epm*60/L*100)}/hr at Lv ${C().baseLv}`:""}</div></div>
    <div class="tile"><div class="k">Per kill</div><div class="v mono">${isFinite(r.uses)?r.uses.toFixed(1):"–"} uses</div><div class="s">${fmtN(withEl(r.el2,()=>dmgPerHit(m)))}${dualHit()?` + ${fmtN(withEl(r.el2,()=>leftDmg(m)))} left hand`:""} per hit · ${Math.round(r.hitc)}% land · ${fmtN(num(C().a.sp)*spCostMul()*r.uses/targets())} SP</div></div>
-   <div class="tile" title="${esc(hpTip(r))}"><div class="k">Defence</div><div class="v mono">${r.hpm==null?"–":fmtN(r.hpm)}</div><div class="s">HP lost/min${r.hpm>0&&vitHeals()?" (your Heals cover it)":""}${r.pz>0.005?` · poisoned ${Math.round(r.pz*100)}%`:""}${crowdN(m)>1?` · ${fmtP(crowdN(m))} on you`:""} · you dodge ${r.dodge??"–"}% · DEF ${m.def??"–"} · MDEF ${m.mdef??"–"}</div></div>
+   <div class="tile" title="${esc(hpTip(r))}"><div class="k">Defence</div><div class="v mono">${r.hpm==null?"–":fmtN(r.hpm)}</div><div class="s">HP lost/min${r.hpm>0&&vitHeals()?" (your Heals cover it)":""}${r.pz>0.005?` · poisoned ${Math.round(r.pz*100)}%`:""}${crowdN(m)>1?` · rampage of ${fmtP(crowdN(m))}`:""} · you dodge ${r.dodge??"–"}% · DEF ${m.def??"–"} · MDEF ${m.mdef??"–"}</div></div>
 ${withEl(r.el2,()=>susTile(susMob(m,walkSec()),"vs "+esc(m.name)))}
 ${weightTile(m)}
    <div class="tile"><div class="k">Maps</div><div class="v mono">${om.length?mapCode(om[0][0]):"–"}</div><div class="s">${om.length?om.slice(0,4).map(x=>`${esc(mapLabel(x[0]))} ≈${x[1]}`).join(" · "):"none open"} · <a href="${dbUrl(m)}" target="_blank" rel="noopener">rozerodb ↗</a></div></div>
@@ -475,12 +486,12 @@ const susTip=s=>{if(!s)return "";const f=v=>fmtN(v),h=s.heal,i=s.ind;
     `HP: lose ${f(s.hpOutM)}/min, back ${f(s.hpInM)}/min${s.hfM>=0.5?` (Hunter Fly ${f(s.hfM)})`:""}${s.healsM>0?` + ${h.name} ×${fmtQty(s.healsM)}/min = ${f(s.healM)}`:h?` · ${h.name} ready`:" · no Heal"} → ${Math.floor(s.hpCov)}% covered`,
     `SP: use ${f(s.spOutM)}/min, back ${f(s.spInM)}/min${s.cardM>=0.5?` (cards ${f(s.cardM)})`:""}${s.indsM>0?` + ${i.name} ×${fmtQty(s.indsM)}/min = ${f(s.indM)}`:""} → ${Math.floor(s.spCov)}% covered`,
     s.rest>0?(isFinite(s.rest)?`Sit ~${s.rest.toFixed(1)}s a kill to catch up (standing regen)`:"No regen to catch up with"):"",
-    s.mob>1?`${s.mob} monsters on you at once: their hits add up, FLEE −${Math.round((1-crowdFlee(s.mob))*100)}%, DEF −${Math.round((1-crowdDef(s.mob))*100)}%`:"",
+    s.mob>1?`Rampage of ${s.mob} monsters: their hits add up, FLEE −${Math.round((1-crowdFlee(s.mob))*100)}%, DEF −${Math.round((1-crowdDef(s.mob))*100)}%`:"",
     s.burst>=0.5?`One kill can take ${Math.round(s.burst*100)}% of your Max HP before regen catches up`:""].filter(Boolean).join("\n")};
 const susCell=s=>s?`<span class="${s.cls}" title="${esc(susTip(s))}"><b>${susPct(s)}</b></span>`:"–";
-const susTile=(s,where)=>s?`<div class="tile" title="${esc(susTip(s))}"><div class="k">Farm without items</div><div class="v mono ${s.cls}">${susPct(s)}</div><div class="s"><span class="${s.cls}">${s.label}</span>${where?" "+where:""} · HP ${Math.floor(s.hpCov)}% · SP ${Math.floor(s.spCov)}% covered${s.healsM>0?` · ${s.heal.name} ×${fmtQty(s.healsM)}/min`:""}${s.indsM>0?` · ${s.ind.name} ×${fmtQty(s.indsM)}/min`:""}${s.rest>0&&isFinite(s.rest)?` · sit ~${s.rest.toFixed(1)}s/kill`:""}${s.mob>1?` · ${s.mob} on you at once`:""}${s.burst>=0.5?` · <span class="${s.burst>=1?"bad":"warnc"}">a kill takes ${Math.round(s.burst*100)}% HP</span>`:""}</div></div>`:"";
-// a map where several monsters are on you at once (Map planner setting)
-const mobbedPill=mp=>mobbedOf(mp)>1?` <span class="pill down" title="${mobbedOf(mp)} monsters on you at once (set in the Map planner): more hits, FLEE −${Math.round((1-crowdFlee(mobbedOf(mp)))*100)}%, DEF −${Math.round((1-crowdDef(mobbedOf(mp)))*100)}%">×${mobbedOf(mp)} on you</span>`:"";
+const susTile=(s,where)=>s?`<div class="tile" title="${esc(susTip(s))}"><div class="k">Farm without items</div><div class="v mono ${s.cls}">${susPct(s)}</div><div class="s"><span class="${s.cls}">${s.label}</span>${where?" "+where:""} · HP ${Math.floor(s.hpCov)}% · SP ${Math.floor(s.spCov)}% covered${s.healsM>0?` · ${s.heal.name} ×${fmtQty(s.healsM)}/min`:""}${s.indsM>0?` · ${s.ind.name} ×${fmtQty(s.indsM)}/min`:""}${s.rest>0&&isFinite(s.rest)?` · sit ~${s.rest.toFixed(1)}s/kill`:""}${s.mob>1?` · rampage of ${s.mob}`:""}${s.burst>=0.5?` · <span class="${s.burst>=1?"bad":"warnc"}">a kill takes ${Math.round(s.burst*100)}% HP</span>`:""}</div></div>`:"";
+// a map with a possible rampage: several monsters attacking you together (Map planner setting)
+const mobbedPill=mp=>mobbedOf(mp)>1?` <span class="pill down" title="Possible rampage: ${mobbedOf(mp)} monsters attacking you together (set in the Map planner): more hits, FLEE −${Math.round((1-crowdFlee(mobbedOf(mp)))*100)}%, DEF −${Math.round((1-crowdDef(mobbedOf(mp)))*100)}%">×${mobbedOf(mp)} rampage</span>`:"";
 // the EXP Hunter's Heal cost / hr: which items and how many an hour
 const healTip=r=>{const h=recPick("hp"),s=recPick("sp");return [r.hpm==null?"HP: no damage data":r.hpm>0&&vitHeals()?`HP: your Vitata Heals cover ${fmtN(r.hpm)}/min (SP and time, no HP items)`:r.hpZ>0&&h?`HP: ${h.name} ×${fmtQty(r.hpHr)}/hr = ${fmtN(r.hpZ)} z`:r.hpm>0&&!h?"HP: no HP item":"HP: none lost",
   r.spHr>0&&s?`SP: ${s.name} ×${fmtQty(r.spHr)}/hr = ${fmtN(r.spZ)} z`:!s?"SP: no SP item (you rest)":itemsOnNow()?"SP: regen covers it":"SP: no SP items (auto-use off, you rest)"].join("\n")};
@@ -661,8 +672,8 @@ function convCheck(mp,w,r){const sf=C().a.type==="spellfist",opts=sf?elOptions()
 function renderMap(){
   let mp=mapKey(state.map);const mob=calcMob();
   if(!mp)mp=mobMap(mob);
-  $("mapInput").value=mp?mapCode(mp):"";$("mapName").textContent=mapName(mp)+(isRoomMap(mp)?` · room dungeon: one map cut into small rooms, so monsters crowd into yours (${ROOM_CROWD} on you at once unless you change it)`:"");
-  {const b=$("mobbedIn");b.disabled=!MAPMOBS[mp];b.placeholder=MAPMOBS[mp]?(mobbedDef(mp)?String(mobbedDef(mp)):"auto"):"";if(document.activeElement!==b)b.value=MAPMOBS[mp]&&(state.mobbed||{})[mp]!=null?state.mobbed[mp]:""}
+  $("mapInput").value=mp?mapCode(mp):"";$("mapName").textContent=mapName(mp)+(isRoomMap(mp)?` · room dungeon: one map cut into small rooms, so monsters crowd into yours (a possible rampage of ${ROOM_CROWD} unless you change it)`:"");
+  {const b=$("mobbedIn");b.disabled=!MAPMOBS[mp];b.placeholder=MAPMOBS[mp]?(mobbedDef(mp)?`${mobbedDef(mp)} (room dungeon)`:"Character tab's number"):"";if(document.activeElement!==b)b.value=MAPMOBS[mp]&&(state.mobbed||{})[mp]!=null?state.mobbed[mp]:""}
   if(!MAPMOBS[mp]){$("mapTiles").innerHTML='<div class="note">Pick a map to see how this job does there.</div>';$("mapTable").querySelector("tbody").innerHTML="";return}
   const w=walkSec(),r=mapStats(mp,w);const L=lvExp(num(C().baseLv));const st=stats(cur());const L2=st?st.L:L;
   $("mapTiles").innerHTML=r?`<div class="tile now"><div class="k">Average EXP / min</div><div class="v mono">${fmtN(r.epm)}</div><div class="s">weighted by spawn counts${r.el2&&convOn()?` · bring ${r.el2} converters`:""}${r.skip?` · skips ${r.skip} you can't hurt`:""}${r.unk?` · leaves out ${esc(r.unkNames.join(", "))} (EXP unknown)`:""}</div></div>

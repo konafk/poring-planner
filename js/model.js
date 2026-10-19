@@ -260,7 +260,7 @@ const fightSec=(m,raw)=>{const f=healShare(m);return f>=1?Infinity:(raw??rawFigh
 // damage taken: monster ATK through your DEF, its hit chance on you, a swing every interval times "swings reach you"
 const defParts=()=>{const p=String(cf("defTxt")||"0").split("+").map(x=>parseFloat(x)||0);return {soft:p[0]||0,hard:p.slice(1).reduce((a,b)=>a+b,0)}};
 // ---- crowds and poison (rAthena pre-renewal: conf/battle/battle.conf, status.cpp, skills/npc/poisonattack.cpp) ----
-// monsters on you at once: aggressive monsters, and ones that join a fight their kind is in (assist, data/mobskills.js), gang up:
+// possible rampage (monsters attacking you together): aggressive monsters, and ones that join a fight their kind is in (assist, data/mobskills.js), gang up:
 // c.crowd of them (2 unless you change it; others 1). Each one swings at you, and from 3 at once FLEE drops 10% and DEF (gear and
 // VIT) 5% per monster past 2
 // A map can set its own count for every monster on it (Map planner: state.mobbed). RO Zero's maps are towns, fields and dungeons, and
@@ -735,7 +735,7 @@ function mobRow00(m,w){
   const zc=skillZeny(m),zk=zenyKill(m)-zc,sph=itemsPerSec()*3600,hc=sph*spItemPrice()+hourCostHr();
   return {sec,tot,epm:ok?epk/tot*60:0,epk,jpm:ok?jpk/tot*60:0,jpk,hitc:hitChance(m),mult:hitPctOf(m),uses:usesPerKill(m),dodge:dodge(m),hpm:hpLossPerMin(m,def),hpi:hpItemsPerMin(m,def),hpt:hpTakenPerMin(m,def),...poisonOf(m,def),zk,zc,hc,sph,zph:ok?zk/tot*3600-hc:0,raw,def};
 }
-// map averages, weighted by spawn counts; monsters you can't hurt are skipped (you walk past them). With the map's monsters on you at once
+// map averages, weighted by spawn counts; monsters you can't hurt are skipped (you walk past them). With a possible rampage on the map
 const mapStats0=(mp,w)=>withMobbed(mp,()=>mapStats00(mp,w));
 function mapStats00(mp,w){
   const list=(MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m));let N=0,n=0,exp=0,time=0,fight=0,z=0,zc=0,hc=0,spi=0,hp=0,hpi=0,hpt=0,pz=0,psn=0,hpN=0,wt=0;const skip=[],unk=[],sus=[];

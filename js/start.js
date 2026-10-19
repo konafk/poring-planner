@@ -67,6 +67,48 @@ document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",e=>
   if(g==="log"){e.stopPropagation();openQuickLog(true);return}
   showTab(g);scrollTo({top:0});if(g==="maps")setTimeout(()=>$("mobInput").focus({preventScroll:true}),50)}));
 $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,"1")}catch(e){}renderStart()});
+// ---- search (Ctrl+K or /): tabs, a few actions, every monster, dropped item and map; Enter opens it where it lives ----
+(function setupJump(){
+  const dlg=$("jump"),inp=$("jumpInput"),list=$("jumpList");let hits=[],at=0;
+  const tabName=t=>document.querySelector(`[data-tabbtn="${t}"] span`).textContent;
+  const go=(tab,fn)=>()=>{showTab(tab);scrollTo({top:0});if(fn)setTimeout(fn,30)};
+  const ACTIONS=[
+    {k:"Action",name:"Log EXP",meta:"top bar · L",run:()=>openQuickLog(true),ok:()=>!atMaxLv()},
+    {k:"Action",name:"Switch theme",meta:"auto → light → dark",run:()=>$("themeBtn").click()},
+    {k:"Action",name:"Show or hide hints",meta:"help text under the cards",run:()=>$("hintBtn").click()},
+    {k:"Action",name:"New session",meta:"Account tab",run:()=>$("newSession").click()}];
+  let ALL=null;
+  const build=()=>ALL=[
+    ...[...document.querySelectorAll("[data-tabbtn]")].map(b=>({k:"Tab",name:tabName(b.dataset.tabbtn),meta:TAB_DESC[b.dataset.tabbtn]||"",run:go(b.dataset.tabbtn)})),
+    ...ACTIONS,
+    ...MOBS.map(m=>({k:"Monster",name:m.name,meta:`Lv ${m.lv}${m.el?` · ${m.el} ${m.elv}`:""}${m.race?` · ${m.race}`:""}${m.boss||m.mini?" · boss":""}`,
+      run:go("mobinfo",()=>{state.infoMobId=m.id;save();renderMobInfo()})})),
+    ...Object.keys(ITEM_DROPS).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · dropped by ${ITEM_DROPS[id].length}`,
+      run:go("items",()=>{state.infoItem=id;save();renderItems();$("itemTiles").scrollIntoView({behavior:"smooth",block:"nearest"})})})),
+    ...Object.keys(MAPNAMES).map(mp=>({k:"Map",name:mapName(mp)||mapCode(mp),meta:mapCode(mp),alt:mp,
+      run:go("maps",()=>{state.map=mp;save();renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})})}))];
+  // best first: the name starts with it, then a word in it does, then it's anywhere (name, map code, item #id)
+  const score=(x,q)=>{const n=x.name.toLowerCase(),o=(x.meta+" "+(x.alt||"")).toLowerCase();
+    return n===q?0:n.startsWith(q)?1:(" "+n).includes(" "+q)?2:n.includes(q)?3:o.includes(q)?4:9};
+  const draw=()=>{const q=inp.value.trim().toLowerCase();if(!ALL)build();
+    hits=q?ALL.filter(x=>!x.ok||x.ok()).map(x=>[score(x,q),x]).filter(([v])=>v<9).sort((a,b)=>a[0]-b[0]||a[1].name.length-b[1].name.length).slice(0,40).map(([,x])=>x)
+      :ALL.filter(x=>(x.k==="Tab"||x.k==="Action")&&(!x.ok||x.ok()));
+    at=0;list.innerHTML=hits.length?hits.map((x,i)=>`<button type="button" role="option" class="jr" data-i="${i}" aria-selected="${i===at}"><span class="jk k${x.k}">${x.k}</span><span class="jn">${esc(x.name)}</span><span class="jm">${esc(x.meta)}</span></button>`).join("")
+      :`<div class="jEmpty">Nothing matches “${esc(inp.value.trim())}”.</div>`};
+  const mark=()=>list.querySelectorAll(".jr").forEach((b,i)=>{b.setAttribute("aria-selected",String(i===at));if(i===at)b.scrollIntoView({block:"nearest"})});
+  const pick=i=>{const x=hits[i];if(!x)return;dlg.close();x.run()};
+  const open=()=>{if(dlg.open)return;inp.value="";draw();dlg.showModal();inp.focus()};
+  $("searchBtn").addEventListener("click",open);
+  inp.addEventListener("input",draw);
+  inp.addEventListener("keydown",e=>{if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();if(hits.length){at=(at+(e.key==="ArrowDown"?1:hits.length-1))%hits.length;mark()}}
+    else if(e.key==="Enter"){e.preventDefault();pick(at)}});
+  list.addEventListener("click",e=>{const b=e.target.closest(".jr");if(b)pick(+b.dataset.i)});
+  list.addEventListener("pointermove",e=>{const b=e.target.closest(".jr");if(b&&+b.dataset.i!==at){at=+b.dataset.i;mark()}});
+  dlg.addEventListener("click",e=>{if(e.target===dlg)dlg.close()});
+  addEventListener("keydown",e=>{const a=document.activeElement,typing=a&&(/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)||a.isContentEditable);
+    if((e.key==="k"||e.key==="K")&&(e.ctrlKey||e.metaKey)){e.preventDefault();dlg.open?dlg.close():open()}
+    else if(e.key==="/"&&!typing&&!e.ctrlKey&&!e.metaKey){e.preventDefault();open()}});
+})();
 // ---- full width: a per-device display choice kept outside the account saves (index.html applies it before the page draws) ----
 (function setupWide(){
   const KEY_WIDE="rozero-farm-planner-wide",btn=$("wideBtn");
@@ -100,6 +142,7 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
 // ---- start ----
 syncClosed();syncChar();renderAll();resetForm();
 if(VIEW){if(VIEW.drafts)for(const id in VIEW.drafts)if(["fPct","fJob","pasteBox"].includes(id)&&typeof VIEW.drafts[id]==="string")$(id).value=VIEW.drafts[id];
+  if($("pasteBox").value)$("pasteMore").open=true;
   if(VIEW.y>0)scrollTo({top:VIEW.y})}
 // ---- other browser tabs: when another tab saves this account it reloads with that save (at once if it's showing, else when you come
 // back to it; a save of its own before then merges, see state.js). A change to the account list makes it stop saving and reload ----

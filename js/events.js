@@ -167,7 +167,7 @@ let openQuickLog=()=>{};
   fab.addEventListener("click",e=>{e.stopPropagation();open(!app.classList.contains("qlOpen"))});
   addEventListener("keydown",e=>{const a=document.activeElement;
     if(e.key==="Escape"&&app.classList.contains("qlOpen")){open(false);return}
-    if(e.key.toLowerCase()==="l"&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!(a&&(/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)||a.isContentEditable))){e.preventDefault();open(true)}});
+    if(e.key.toLowerCase()==="l"&&!atMaxLv()&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!(a&&(/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)||a.isContentEditable))){e.preventDefault();open(true)}});
   document.addEventListener("click",e=>{if(app.classList.contains("qlOpen")&&!f.contains(e.target))open(false)});
 })();
 $("pauseBtn").addEventListener("click",()=>{const s=cur(),p=openPause(s);if(!s.pauses)s.pauses=[];
@@ -293,7 +293,10 @@ const MOBF_HTML=mobFSel("el","Element",[["","Any"],...AE.map(x=>[x,x])])+mobFSel
     sel.addEventListener("change",()=>{state[k][f]=sel.value;save();fillMobList(list,state[k]);render()})});
   fillMobList(list,state[k])});
 $("mobInput").addEventListener("change",e=>{pickMob(MOBS.find(x=>x.name.toLowerCase()===e.target.value.trim().toLowerCase()))});
-$("mobTable").querySelector("tbody").addEventListener("click",e=>{if(e.target.closest("a"))return;const tr=e.target.closest("tr[data-id]");if(tr)pickMob(MOBS.find(m=>m.id===+tr.dataset.id))});
+$("mobTable").querySelector("tbody").addEventListener("click",e=>{if(e.target.closest("a"))return;const tr=e.target.closest("tr[data-id]");if(!tr)return;
+  MOB_PANEL_SHUT=false;pickMob(MOBS.find(m=>m.id===+tr.dataset.id))});
+$("mobPanelX").addEventListener("click",()=>{MOB_PANEL_SHUT=true;renderMobTiles()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("mobPanel").hidden&&matchMedia("(max-width:1359px)").matches){MOB_PANEL_SHUT=true;renderMobTiles()}});
 $("mobTable").querySelector("thead").addEventListener("click",e=>{if(e.target.closest(".filters"))return;const th=e.target.closest("th");if(!th||!th.dataset.k)return;
   if(state.sort===th.dataset.k)state.dir*=-1;else{state.sort=th.dataset.k;state.dir=["name","el","size","race","sec","uses","hpm"].includes(th.dataset.k)?1:-1}save();renderMobs()});
 document.querySelectorAll("#mobTable .filters [data-f]").forEach(inp=>{inp.value=state.filters[inp.dataset.f]||"";inp.addEventListener("input",()=>{state.filters[inp.dataset.f]=inp.value;save();renderMobs()})});
@@ -303,7 +306,7 @@ $("minLv").value=state.minLv;$("maxLv").value=state.maxLv;
 $("hideClosed").checked=state.hideClosed;$("hideClosed").addEventListener("change",e=>{state.hideClosed=e.target.checked;save();renderMobs()});
 // EXP Hunter + closed regions
 $("bestMin").addEventListener("input",renderBest);$("bestN").addEventListener("change",renderBest);
-// aggressive or assisting monsters on you at once: blank goes back to the default (model.js CROWD_D)
+// possible rampage, aggressive or assisting monsters attacking you together: blank goes back to the default (model.js CROWD_D)
 $("crowd").addEventListener("input",e=>{const v=e.target.value;C().crowd=v===""?null:Math.max(1,num(v,1));save();renderAll()});
 $("calOn").addEventListener("change",e=>{state.calOn=e.target.checked;save();renderBest()});
 $("bestTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.target.closest("tr[data-map]");if(!tr)return;state.map=tr.dataset.map;save();renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})});
@@ -343,7 +346,7 @@ $("huntTable").querySelector("tbody").addEventListener("click",e=>{const a=e.tar
   const t=e.target.closest("[data-notele]");if(t){e.preventDefault();e.stopPropagation();const mp=t.dataset.notele;state.noTele=noTele(mp)?state.noTele.filter(x=>x!==mp):[...state.noTele,mp];save();renderHunt()}},true);
 $("huntTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.target.closest("tr[data-map],tr[data-id]");if(!tr)return;
   if(tr.dataset.map){state.map=tr.dataset.map;save();renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})}
-  else{state.calcMobId=state.infoMobId=+tr.dataset.id;save();renderAll();$("mobTiles").scrollIntoView({behavior:"smooth",block:"center"})}});
+  else{state.calcMobId=state.infoMobId=+tr.dataset.id;MOB_PANEL_SHUT=false;save();renderAll();$("mobPanel").scrollIntoView({behavior:"smooth",block:"nearest"})}});
 // Monster info: pick a monster; click a drop to price it, a map to open it in the map planner
 $("mobInfoInput").addEventListener("change",e=>{const m=MOBS.find(x=>x.name.toLowerCase()===e.target.value.trim().toLowerCase());if(!m)return;state.infoMobId=m.id;save();renderMobInfo()});
 $("mobInfoDrops").addEventListener("click",e=>{const a=e.target.closest("[data-pitem]");if(a){e.preventDefault();addPrice(a.dataset.pitem,true)}});
@@ -366,7 +369,7 @@ $("itemCard").addEventListener("click",e=>{const a=e.target.closest("[data-pitem
 $("mapList").innerHTML=Object.keys(MAPMOBS).sort((a,b)=>mapCode(a).localeCompare(mapCode(b))).map(m=>`<option value="${mapCode(m)}">${esc(mapName(m))} · ${MAPMOBS[m].length} monsters</option>`).join("");
 $("mapInput").addEventListener("change",e=>{state.map=mapKey(e.target.value);save();renderMap()});
 $("mapFromMob").addEventListener("click",()=>{state.map="";save();renderMap()});
-// monsters on you at once on the Map planner's map; blank goes back to the default (3 in Labyrinth Forest, else 1)
+// possible rampage (monsters attacking you together) on the Map planner's map; blank goes back to the default (3 in Labyrinth Forest, else 1)
 $("mobbedIn").addEventListener("input",e=>{let mp=mapKey(state.map);if(!MAPMOBS[mp])mp=mobMap(calcMob());if(!MAPMOBS[mp])return;
   if(!state.mobbed)state.mobbed={};const v=e.target.value;if(v===""||!(+v>0))delete state.mobbed[mp];else state.mobbed[mp]=Math.min(12,Math.max(1,Math.round(+v)));save();renderAll()});
 $("mapTable").querySelector("tbody").addEventListener("click",e=>{const sm=e.target.closest("[data-sessmob]");if(sm){toggleSessMob(+sm.dataset.sessmob);save();renderAll();return}const sk=e.target.closest("[data-skip]");if(sk){const id=+sk.dataset.skip;if(!state.skipMobs)state.skipMobs=[];state.skipMobs=state.skipMobs.includes(id)?state.skipMobs.filter(x=>x!==id):[...state.skipMobs,id];save();renderAll();return}const tr=e.target.closest("tr[data-id]");if(tr)pickMob(MOBS.find(m=>m.id===+tr.dataset.id))});

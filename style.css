@@ -381,9 +381,9 @@ table.formulas td.chg{background:var(--accent-soft)}
 
 /* switching tabs: the new tab's cards rise in */
 @keyframes rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.wrap>[data-tab]:not([hidden]){animation:rise .32s cubic-bezier(.2,.7,.2,1) both}
+.wrap>[data-tab]:not([hidden]){animation:rise .32s cubic-bezier(.2,.7,.2,1) backwards}
 .wrap>[data-tab]:not([hidden])~[data-tab]:not([hidden]){animation-delay:.04s}
-.pageHead>*{animation:rise .3s cubic-bezier(.2,.7,.2,1) both}
+.pageHead>*{animation:rise .3s cubic-bezier(.2,.7,.2,1) backwards}
 @media (prefers-reduced-motion:reduce){.wrap>[data-tab],.pageHead>*{animation:none!important}}
 ::selection{background:color-mix(in srgb,var(--accent) 28%,transparent)}
 
@@ -522,3 +522,76 @@ table.formulas td.chg{background:var(--accent-soft)}
 .ctxRate b{font-family:var(--mono);font-size:12px;font-weight:600}
 #chartTip b,#goalTip b{font-family:var(--body);font-weight:650}
 @media (max-width:1023px){.ctxRate{order:3}}
+
+/* ---- monster details: a panel beside the Monsters table; a drawer on narrower screens, a bottom sheet on phones ---- */
+.mobSplit{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
+.mobSplit:has(> .mobPanel[hidden]){grid-template-columns:minmax(0,1fr)}
+.mobList{min-width:0;display:flex;flex-direction:column;gap:10px}
+.mobPanel{position:sticky;top:64px;max-height:calc(100vh - 80px);overflow:auto;display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--raised)}
+.mobPanelHead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 2px 0 4px}
+.mobPanelHead b{font-family:var(--display);font-size:1.1rem;font-weight:700;letter-spacing:-.02em}
+.mobPanelHead .muted{font-family:var(--body);font-size:12.5px;font-weight:500}
+.mobPanel .calc{grid-template-columns:1fr;gap:8px}
+.mobPanel .tile{background:var(--surface)}
+@keyframes drawerIn{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+@keyframes sheetIn{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+@media (max-width:1359px){
+  .mobSplit{grid-template-columns:minmax(0,1fr)}
+  .mobPanel{position:fixed;top:0;right:0;bottom:0;z-index:45;width:min(380px,92vw);max-height:none;padding:16px;border-radius:18px 0 0 18px;background:var(--bg);box-shadow:var(--shadow-pop);animation:drawerIn .22s cubic-bezier(.2,.7,.2,1)}
+}
+@media (max-width:600px){
+  .mobPanel{top:auto;left:0;width:auto;max-height:80vh;padding:14px 14px calc(14px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;animation-name:sheetIn}
+  .mobPanel .calc{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .mobPanel .tile .v{font-size:1.05rem}
+}
+@media (prefers-reduced-motion:reduce){.mobPanel{animation:none}}
+@media (max-width:600px){body:has(.mobPanel:not([hidden])) .fab{opacity:0;pointer-events:none}}
+/* max base level: no quick Log EXP */
+.maxLv :is(#quickLog,#qlFab){display:none!important}
+
+/* ---- search: a button at the top of the sidebar and a dialog over the page ---- */
+.searchBtn{display:flex;align-items:center;gap:10px;margin:0 0 6px;padding:8px 10px 8px 12px;border-radius:10px;border:1px solid var(--side-line);background:rgba(255,255,255,.04);color:var(--side-muted);font-weight:500;text-align:left}
+.searchBtn span{flex:1}
+.searchBtn:hover{background:var(--side-hover);border-color:rgba(255,255,255,.14);color:var(--side-fg)}
+.searchBtn kbd,.jump kbd{font-family:var(--mono);font-size:11px;padding:0 6px;border-radius:5px;border:1px solid currentColor;opacity:.7}
+.compact .searchBtn{justify-content:center;padding:10px 0;width:100%}
+.compact .searchBtn span,.compact .searchBtn kbd{display:none}
+.jump{width:min(620px,calc(100vw - 32px));max-height:min(560px,calc(100vh - 80px));margin:12vh auto auto;padding:0;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:var(--fg);box-shadow:var(--shadow-pop);overflow:hidden}
+.jump[open]{display:flex;flex-direction:column}
+.jump::backdrop{background:rgba(10,8,20,.45);backdrop-filter:blur(3px)}
+.jumpBox{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);color:var(--muted)}
+.jumpBox input{flex:1;border:0;background:none;padding:2px 0;font-size:16px;box-shadow:none}
+.jumpBox input:focus{box-shadow:none}
+.jumpList{overflow:auto;padding:6px;display:flex;flex-direction:column;gap:1px}
+.jr{display:grid;grid-template-columns:72px minmax(0,auto) minmax(0,1fr);align-items:center;gap:10px;border:0;border-radius:9px;padding:8px 10px;background:none;text-align:left;font-weight:500}
+.jr:hover{background:none;border:0}
+.jr[aria-selected="true"]{background:var(--accent-soft)}
+.jk{font-size:10px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.jr[aria-selected="true"] .jk{color:var(--accent)}
+.jn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jm{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jEmpty{padding:24px;text-align:center;color:var(--muted)}
+.jumpFoot{display:flex;gap:16px;padding:9px 16px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);background:var(--raised)}
+.jumpFoot kbd{margin-right:3px}
+@media (max-width:1023px){
+  .app{grid-template-columns:minmax(0,1fr) auto auto}
+  .searchBtn{grid-column:2;grid-row:1;align-self:center;margin:8px 0 4px;padding:7px 10px;border-color:var(--line);background:var(--surface);color:var(--muted)}
+  .searchBtn span,.searchBtn kbd{display:none}
+  .sideFoot{grid-column:3}
+  .jumpFoot span:last-child{display:none}
+  .jump{margin-top:8vh}
+  .jr{grid-template-columns:60px minmax(0,1fr);row-gap:1px}.jm{grid-column:2}
+}
+
+/* ---- Log EXP card: the everyday fields up top, the rest folded ---- */
+details.more{border-top:1px dashed var(--line);padding-top:10px}
+details.more>summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;font-size:13px;font-weight:600;color:var(--fg);list-style:none}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary::before{content:"";align-self:center;width:6px;height:6px;margin-right:2px;border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);transform:rotate(-45deg);transition:transform .15s}
+details.more[open]>summary::before{transform:rotate(45deg)}
+details.more>summary .note{font-weight:400}
+details.more[open]>:not(summary){margin-top:10px}
+details.more>.form{display:grid}
+#pasteMore{display:flex;flex-direction:column;gap:8px}
+#pasteMore[open]>label{margin-top:10px}
+#pasteMore>button{align-self:flex-start}
