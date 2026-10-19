@@ -8,8 +8,9 @@
   --brand-btn:linear-gradient(135deg,#6a55f5,#d63b76);
   --glow-a:rgba(106,85,245,.10); --glow-b:rgba(226,69,127,.07);
   --shadow:0 1px 2px rgba(20,18,40,.04),0 6px 18px -10px rgba(20,18,40,.12); --shadow-pop:0 14px 40px -6px rgba(20,18,40,.22);
-  /* the sidebar is ink in both themes */
-  --side-bg:#12101a; --side-fg:#d9d7e4; --side-muted:#7d7a8f; --side-line:rgba(255,255,255,.07); --side-hover:rgba(255,255,255,.06); --side-on:rgba(143,128,255,.16);
+  /* the sidebar follows the theme: white in light, ink in dark */
+  --side-bg:#ffffff; --side-fg:#3b3949; --side-muted:#8a8898; --side-strong:#14121c; --side-line:rgba(20,18,40,.08); --side-line-strong:rgba(20,18,40,.16);
+  --side-hover:rgba(20,18,40,.045); --side-on:rgba(106,85,245,.10); --side-on-ic:#6a55f5; --side-field:rgba(20,18,40,.03);
   --display:"Bricolage Grotesque","Inter",system-ui,sans-serif; --body:"Inter",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
   --r:10px; --side:220px;
   color-scheme:light;
@@ -18,13 +19,15 @@
   --bg:#0d0c12; --surface:#15141c; --raised:#1a1922; --field:#111017; --fg:#ecebf3; --muted:#8e8ba0; --line:#25232f; --line-strong:#34313f; --grid:#1d1c26;
   --accent:#9f90ff; --accent-2:#ff6fa5; --accent-fg:#0d0c12; --accent-soft:rgba(159,144,255,.14); --good:#4ade80; --warn:#fbbf24; --bad:#f87171;
   --glow-a:rgba(159,144,255,.10); --glow-b:rgba(255,111,165,.06);
-  --side-bg:#09080d; --side-line:rgba(255,255,255,.06);
+  --side-bg:#09080d; --side-fg:#d9d7e4; --side-muted:#7d7a8f; --side-strong:#ffffff; --side-line:rgba(255,255,255,.06); --side-line-strong:rgba(255,255,255,.14);
+  --side-hover:rgba(255,255,255,.06); --side-on:rgba(143,128,255,.16); --side-on-ic:#b9adff; --side-field:rgba(255,255,255,.04);
   --shadow:0 1px 0 rgba(255,255,255,.03) inset; --shadow-pop:0 14px 40px rgba(0,0,0,.55); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0d0c12; --surface:#15141c; --raised:#1a1922; --field:#111017; --fg:#ecebf3; --muted:#8e8ba0; --line:#25232f; --line-strong:#34313f; --grid:#1d1c26;
   --accent:#9f90ff; --accent-2:#ff6fa5; --accent-fg:#0d0c12; --accent-soft:rgba(159,144,255,.14); --good:#4ade80; --warn:#fbbf24; --bad:#f87171;
   --glow-a:rgba(159,144,255,.10); --glow-b:rgba(255,111,165,.06);
-  --side-bg:#09080d; --side-line:rgba(255,255,255,.06);
+  --side-bg:#09080d; --side-fg:#d9d7e4; --side-muted:#7d7a8f; --side-strong:#ffffff; --side-line:rgba(255,255,255,.06); --side-line-strong:rgba(255,255,255,.14);
+  --side-hover:rgba(255,255,255,.06); --side-on:rgba(143,128,255,.16); --side-on-ic:#b9adff; --side-field:rgba(255,255,255,.04);
   --shadow:0 1px 0 rgba(255,255,255,.03) inset; --shadow-pop:0 14px 40px rgba(0,0,0,.55); color-scheme:dark}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -39,20 +42,20 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
 .brand{display:flex;align-items:center;gap:11px;padding:0 8px 12px}
 .logo{flex:none;width:40px;height:38px;margin:-2px -1px -2px -3px;filter:drop-shadow(0 4px 10px rgba(226,69,127,.3))}
 .brandTxt{display:flex;flex-direction:column;line-height:1.15;min-width:0}
-.brandTxt b{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:-.02em;color:#fff}
+.brandTxt b{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:-.02em;color:var(--side-strong)}
 .brandTxt span{font-size:11px;color:var(--side-muted);letter-spacing:.02em}
 .tabs{display:flex;flex-direction:column;gap:2px}
 .navGrp{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--side-muted);padding:16px 12px 6px}
 .tabs button{position:relative;display:flex;align-items:center;gap:11px;width:100%;border:0;background:none;border-radius:9px;padding:8px 12px;color:var(--side-fg);opacity:.78;font-weight:500;text-align:left;white-space:nowrap;transition:background .15s,opacity .15s,color .15s}
 .tabs button:hover{opacity:1;background:var(--side-hover)}
-.tabs button[aria-selected="true"]{opacity:1;color:#fff;background:var(--side-on);font-weight:600}
+.tabs button[aria-selected="true"]{opacity:1;color:var(--side-strong);background:var(--side-on);font-weight:600}
 .tabs button[aria-selected="true"]::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--brand)}
-.tabs button[aria-selected="true"] .ic{color:#b9adff}
+.tabs button[aria-selected="true"] .ic{color:var(--side-on-ic)}
 .ic{flex:none;width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .sideFoot{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:12px;border-top:1px solid var(--side-line)}
 .iconBtn{display:flex;align-items:center;gap:11px;border:0;background:none;padding:7px 12px;border-radius:9px;color:var(--side-muted);font-weight:500;font-size:13px;text-align:left}
 .iconBtn:hover{color:var(--side-fg);background:var(--side-hover);border:0}
-#wideBtn[aria-pressed="true"]{color:#fff;background:var(--side-on)}
+#wideBtn[aria-pressed="true"]{color:var(--side-strong);background:var(--side-on)}
 .wrap{width:100%;max-width:1180px;margin:0 auto;padding:0 36px 72px;display:flex;flex-direction:column;gap:20px;min-width:0}
 /* the session you're on, pinned over every tab */
 .main{min-width:0}
@@ -81,7 +84,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
   .compact .brand{padding:2px 0 10px}
   .compact .brandTxt,.compact .tabs button span,.compact .iconBtn span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .compact .tabs{width:100%}
-  .compact .navGrp{font-size:0;padding:0;margin:8px 10px;height:1px;background:var(--line)}
+  .compact .navGrp{font-size:0;padding:0;margin:8px 10px;height:1px;background:var(--side-line)}
   .compact .tabs button,.compact .iconBtn{justify-content:center;padding:10px 0;width:100%}
   .compact .sideFoot{width:100%}
 }
@@ -556,9 +559,9 @@ table.formulas td.chg{background:var(--accent-soft)}
 .maxLv :is(#quickLog,#qlFab){display:none!important}
 
 /* ---- search: a button at the top of the sidebar and a dialog over the page ---- */
-.searchBtn{display:flex;align-items:center;gap:10px;margin:0 0 6px;padding:8px 10px 8px 12px;border-radius:10px;border:1px solid var(--side-line);background:rgba(255,255,255,.04);color:var(--side-muted);font-weight:500;text-align:left}
+.searchBtn{display:flex;align-items:center;gap:10px;margin:0 0 6px;padding:8px 10px 8px 12px;border-radius:10px;border:1px solid var(--side-line);background:var(--side-field);color:var(--side-muted);font-weight:500;text-align:left}
 .searchBtn span{flex:1}
-.searchBtn:hover{background:var(--side-hover);border-color:rgba(255,255,255,.14);color:var(--side-fg)}
+.searchBtn:hover{background:var(--side-hover);border-color:var(--side-line-strong);color:var(--side-fg)}
 .searchBtn kbd,.jump kbd{font-family:var(--mono);font-size:11px;padding:0 6px;border-radius:5px;border:1px solid currentColor;opacity:.7}
 .compact .searchBtn{justify-content:center;padding:10px 0;width:100%}
 .compact .searchBtn span,.compact .searchBtn kbd{display:none}
