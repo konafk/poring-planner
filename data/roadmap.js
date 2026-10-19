@@ -2,7 +2,7 @@
 // jpgames.de's copy of it list it. ROADMAP: one update each, in order: when (YYYY-MM, or YYYY-MM-DD once the day is announced), name,
 // cap (the base / job level cap it raises to), add (what it brings), and regions: the maps it opens, as {id, name, pre: map code prefixes in
 // data/spawn.js}. A region opens by itself once its update's day has come, or the month after its update's month when the day isn't known;
-// mark it open or closed yourself on the Monsters & maps tab's Roadmap.
+// mark it open or closed yourself on the Monsters & maps tab's Roadmap. Maps in no region (Umbala's fields among them) are open.
 const ROADMAP=[
 {when:"2026-08",name:"Global launch",cap:{base:50},add:["1st classes","Episode 1-1: the royal investigation with Sigrun"]},
 {when:"2026-09",name:"2nd classes & Episode 1-2",cap:{base:60,job:60},add:["2nd job change","Episode 1-2: the missing mage, the abductions and the Comodo plague","Memorial dungeons: Prontera Culvert, Orc's Memory","War of Emperium"]},
@@ -24,5 +24,4 @@ const ROADMAP=[
  regions:[{id:"am",name:"Amatsu",pre:["ama_"]}]},
 {when:"2027-06",name:"Juno",add:["Juno","Dungeon: Nogg Road"],
  regions:[{id:"ju",name:"Juno",pre:["yun_","mag_d"]}]},
-{when:"2027-07",name:"Episode 1-3 Part 1",cap:{base:110},add:["Episode 1-3 Part 1: the story goes on in Comodo and Umbala","Memorial dungeon: Old Glast Heim"],
- regions:[{id:"um",name:"Umbala",pre:["um_"]}]}];
+{when:"2027-07",name:"Episode 1-3 Part 1",cap:{base:110},add:["Episode 1-3 Part 1: the story goes on in Comodo","Memorial dungeon: Old Glast Heim"]}];

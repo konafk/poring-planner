@@ -446,7 +446,7 @@ t("roadmap: regions open on their update's day, or after its month when the day 
   run(`var ROADMAP_TODAY="2026-10-19";state.regions={};state.closed=[]`);
   assert.equal(run(`regionOf("sp_d05").id`), "sp");
   assert.ok(run(`isClosed("sp_d05")&&isClosed("tow_d01")&&isClosed("gl_chu")`));       // Clock Tower update: October, no day yet
-  assert.ok(!run(`isClosed("pay_d00")`));                                           // not on the roadmap: open
+  assert.ok(!run(`isClosed("pay_d00")||isClosed("um_fild01")`));                  // not on the roadmap (Umbala is already out): open
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Clock Tower"))`), "due this month");
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Glast Heim"))`), "in 2 months");
   assert.equal(run(`capTxt(capNow())`), "Base 60 / Job 60");
