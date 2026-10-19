@@ -89,7 +89,7 @@ const GEAR_CMP=[["atk","ATK",1],["matk","MATK",1],["hit","HIT",1],["flee","FLEE"
 const cmpFmt=(v,d)=>v==null||!isFinite(v)?"–":d?(+v).toFixed(d):fmtN(v);
 // the other gear sets (Build from gear) next to your gear, on the Character tab: worked out only while that tab shows, since each set runs
 // the model again. Each set's column shows its value and the change from your gear; the best of a row is bold
-const gearCmpShown=()=>!$("gearCmpCard").hidden;
+const gearCmpShown=()=>!$("gearCmpCard").closest("[data-tab]").hidden;
 function renderGearCmp(){const c=C(),T=$("gearCmpTable"),sets=gearCmpShown()?altList(c).map(i=>({i,x:altChar(c,i)})):[];T.hidden=!sets.length;
   if(!sets.length){$("gearCmpNote").textContent=!gearCmpShown()?"":c.mode!=="build"?"Switch to Build from gear above and set up another gear set to compare it with your gear here."
     :"Press + Add set next to My gear above the gear table and set up the gear you want to compare with yours.";T.tHead.innerHTML=T.tBodies[0].innerHTML="";return}

@@ -61,7 +61,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
 .ctxBar{position:sticky;top:0;z-index:6;font-size:13px;
   background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
 .ctxBar b{font-weight:600}
-.ctxSub{color:var(--muted)}
+.ctxSub{flex:1 1 0;min-width:0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ctxSub:not(:empty)::before{content:"—";margin-right:8px;color:var(--line-strong)}
 .live{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 22%,transparent)}
 #pauseNote{flex-basis:100%;color:var(--warn);font-weight:600;font-size:12.5px}
@@ -104,7 +104,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
   .app{background:radial-gradient(700px 300px at 80% -100px,var(--glow-a),transparent 70%)}
   .ctxBar{position:static;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;border:0}
   .ctxIn{padding:10px 16px 0}
-  .ctxSub{flex-basis:100%;padding-left:18px}.ctxSub::before{display:none}
+  .ctxSub{flex-basis:100%;padding-left:18px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.ctxSub::before{display:none}
   .pageHead{padding-top:14px}.pageHead h1{font-size:1.85rem}
   .navGrp{display:none}
   .main{grid-column:1/-1}
@@ -132,7 +132,8 @@ a{color:var(--accent);text-underline-offset:2px}
 .fill{flex:1;min-width:0}
 .full{flex-basis:100%}
 .mt{margin-top:6px}
-.w-2xs{width:50px}.w-xs{width:60px}.w-sm{width:70px}.w-md{width:82px}.w-lg{width:96px}.w-xl{width:132px}.w-btn{min-width:6.5em}
+.w-2xs{width:50px}.w-xs{width:60px}.w-sm{width:70px}.w-md{width:82px}.w-lg{width:96px}.w-xl{width:132px}.w-btn{min-width:6.5em}.w-2xl{width:150px}.w-3xl{width:180px}
+.grow200{flex:1;min-width:200px}.pbName{min-width:250px}.colList{flex-wrap:wrap;gap:4px 14px;margin-top:6px}
 .pickLbl{flex:none;width:4.5em}
 /* account and session pickers stay on one line with their buttons, down to phone width */
 .bar .pickLbl~.grow{flex-basis:0}
@@ -298,6 +299,7 @@ td .map{cursor:default}
 #goalTable tbody tr{cursor:default}
 /* entries table: pauses are rows of their own; ✎ edits a row in place */
 #logTable tr.pauseRow td{color:var(--warn);font-size:12.5px;white-space:normal}
+#logTable tbody tr[data-t]{cursor:default}
 #logTable td.acts{white-space:nowrap;text-align:right}
 #logTable tr.editRow td{vertical-align:middle}
 #logTable tr.editRow input{padding:3px 6px;font-size:13px}
@@ -384,3 +386,139 @@ table.formulas td.chg{background:var(--accent-soft)}
 .pageHead>*{animation:rise .3s cubic-bezier(.2,.7,.2,1) both}
 @media (prefers-reduced-motion:reduce){.wrap>[data-tab],.pageHead>*{animation:none!important}}
 ::selection{background:color-mix(in srgb,var(--accent) 28%,transparent)}
+
+/* ---- Character tab: section links and your numbers beside the cards (pinned bar and bottom dock on narrower screens) ---- */
+.charLayout{display:grid;grid-template-columns:minmax(0,1fr) 224px;gap:20px;align-items:start}
+.charMain{display:flex;flex-direction:column;gap:20px;min-width:0}
+.charAside{position:sticky;top:64px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.secNav,.sumCard{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:10px}
+.secNav{display:flex;flex-direction:column;gap:1px}
+.secHead{font-size:10.5px;font-weight:650;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);padding:4px 10px 6px}
+.secNav a{position:relative;display:block;padding:6px 10px;border-radius:8px;color:var(--muted);text-decoration:none;font-weight:500;font-size:13px;transition:background .12s,color .12s}
+.secNav a:hover{color:var(--fg);background:var(--grid)}
+.secNav a[aria-current]{color:var(--accent);background:var(--accent-soft);font-weight:600}
+.sumCard .calc{grid-template-columns:1fr;gap:8px}
+.sumCard .tile{padding:10px 12px;border-radius:11px}
+.sumCard .tile .v{font-size:1.2rem;margin-top:3px}
+.sumCard .tile .s{font-size:11.5px}
+.charMain :is(#charCard,#buildPanel,#eqPanel,#atkPanel,#cardRow,#sagePanel,#weightPanel,#skillCard,#recCard,#gearCmpCard){scroll-margin-top:72px}
+@media (max-width:1359px){
+  .charLayout{display:flex;flex-direction:column;align-items:stretch;gap:16px}
+  .charAside{display:contents}
+  .secNav{order:-1;position:sticky;top:52px;z-index:4;flex-direction:row;gap:2px;overflow-x:auto;scrollbar-width:none;padding:5px;border-radius:12px;
+    background:color-mix(in srgb,var(--surface) 86%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .secNav::-webkit-scrollbar{display:none}
+  .secNav .secHead{display:none}
+  .secNav a{flex:none;white-space:nowrap;padding:5px 11px}
+  .sumCard{order:2;position:sticky;bottom:12px;z-index:4;padding:6px;border-radius:14px;box-shadow:var(--shadow-pop);
+    background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+  .sumCard .secHead,.sumCard .tile .s{display:none}
+  .sumCard .calc{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .sumCard .tile{padding:7px 10px}
+  .sumCard .tile .v{font-size:1rem}
+  .charMain :is(#charCard,#buildPanel,#eqPanel,#atkPanel,#cardRow,#sagePanel,#weightPanel,#skillCard,#recCard,#gearCmpCard){scroll-margin-top:108px}
+}
+@media (max-width:1023px){.secNav{top:56px}}
+@media (max-width:680px){.sumCard .tile .k{font-size:9.5px;letter-spacing:.05em}.sumCard .tile .v{font-size:.92rem}}
+
+/* ---- quick log: a box on the right of the top bar; on phones a sheet that the + button slides up ---- */
+.quickLog{display:flex;align-items:center;gap:6px;margin-left:auto;flex:none}
+.qlLbl{font-size:12px;font-weight:600;color:var(--muted)}
+.quickLog input{width:150px;padding:4px 10px;font-family:var(--mono);font-size:12.5px;border-radius:7px}
+.quickLog.bad input{border-color:var(--bad);box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 15%,transparent)}
+.qlKey{font-family:var(--mono);font-size:11px;padding:1px 6px;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;color:var(--muted);background:var(--surface)}
+.qlHelp{display:none}
+.quickLog:focus-within .qlKey{display:none}
+.fab{display:none}
+@media (max-width:1023px){
+  .quickLog{position:fixed;left:0;right:0;bottom:0;z-index:40;margin:0;flex-wrap:wrap;gap:10px;padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+    background:var(--surface);border-radius:20px 20px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.18);transform:translateY(110%);visibility:hidden;transition:transform .25s cubic-bezier(.2,.7,.2,1),visibility .25s}
+  .qlOpen .quickLog{transform:none;visibility:visible}
+  .app::after{content:"";position:fixed;inset:0;z-index:35;background:rgba(10,8,20,.45);opacity:0;pointer-events:none;transition:opacity .25s}
+  .app.qlOpen::after{opacity:1}
+  .qlLbl{flex-basis:100%;font-family:var(--display);font-size:1.1rem;font-weight:700;color:var(--fg)}
+  .quickLog input{flex:1;width:auto;padding:10px 12px;font-size:16px}
+  .quickLog button{padding:10px 18px;font-size:15px}
+  .qlKey{display:none}
+  .qlHelp{display:block;flex-basis:100%;font-size:12.5px;color:var(--muted)}
+  .fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:30;display:grid;place-items:center;width:54px;height:54px;padding:0;border:0;border-radius:50%;
+    background:var(--brand-btn);color:#fff;box-shadow:0 10px 24px -6px color-mix(in srgb,var(--accent) 60%,transparent)}
+  .fab .ic{width:24px;height:24px;stroke-width:2.2}
+  .fab:hover{background:var(--brand-btn);filter:brightness(1.07)}
+  body:has(.app.qlOpen) .fab{opacity:0;pointer-events:none}
+  /* clear of the Character tab's bottom dock */
+  body:has(.charLayout:not([hidden])) .fab{bottom:calc(92px + env(safe-area-inset-bottom))}
+}
+
+/* ---- get started ---- */
+.startCard{position:relative;overflow:hidden;border-radius:18px;padding:18px 20px;border:1px solid transparent;
+  background:radial-gradient(500px 160px at 100% 0,var(--glow-b),transparent 70%) padding-box,linear-gradient(var(--surface),var(--surface)) padding-box,var(--brand) border-box;box-shadow:var(--shadow)}
+.startHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.startHead h2{font-size:1.25rem;margin-top:4px}
+.iconX{border:0;background:none;font-size:20px;line-height:1;padding:4px 8px;color:var(--muted)}
+.iconX:hover{background:var(--grid);color:var(--fg);border:0}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.steps li{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;background:var(--raised);border:1px solid var(--line)}
+.stepN{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;font-family:var(--display);font-weight:700;font-size:14px;color:var(--accent);background:var(--accent-soft)}
+.stepTxt{display:flex;flex-direction:column;gap:3px;flex:1}
+.stepTxt b{font-weight:650}
+.stepTxt span{font-size:12.5px;color:var(--muted)}
+.steps li button{align-self:flex-start}
+.steps li.done{opacity:.7}
+.steps li.done .stepN{background:var(--brand-btn);color:transparent;position:relative}
+.steps li.done .stepN::after{content:"";position:absolute;width:10px;height:5px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:translateY(-1px) rotate(-45deg)}
+.steps li.done .stepTxt b{text-decoration:line-through;text-decoration-color:var(--muted)}
+.steps li.done button{display:none}
+.tiles.noData{display:none!important}
+.startCard.offTab{display:none}
+@media (max-width:760px){.startCard{padding:14px}.startHead{margin-bottom:10px}.startHead h2{font-size:1.05rem}
+  .steps{grid-template-columns:1fr;gap:8px}.steps li{flex-direction:row;align-items:center;padding:10px 12px}
+  .steps li.done .stepTxt span{display:none}.stepN{flex:none}}
+
+/* hints off (sidebar button): the help text under the cards goes */
+.nohints .hint{display:none!important}
+#hintBtn[aria-pressed="false"]{opacity:.7}
+
+/* ---- wide tables: the first column (rank and map in the hunters) stays put when you scroll sideways; column views beside the picker ---- */
+.scroll :is(th,td):first-child{position:sticky;left:0;z-index:1;background:var(--surface);box-shadow:inset -1px 0 0 var(--line)}
+.scroll thead :is(th,td):first-child,.scroll .filters td:first-child{background:var(--raised)}
+.scroll.tall thead :is(th,td):first-child{z-index:2}
+.scroll tbody tr:hover td:first-child{background:var(--grid)}
+.scroll tr.sel td:first-child{background:linear-gradient(var(--accent-soft),var(--accent-soft)),var(--surface)}
+:is(#bestTable,#huntTable) :is(th,td):first-child{width:46px;min-width:46px;max-width:46px;box-shadow:none}
+:is(#bestTable,#huntTable) :is(th,td):nth-child(2){position:sticky;left:46px;z-index:1;background:var(--surface);box-shadow:inset -1px 0 0 var(--line)}
+:is(#bestTable,#huntTable) thead :is(th,td):nth-child(2){background:var(--raised)}
+:is(#bestTable,#huntTable) tbody tr:hover td:nth-child(2){background:var(--grid)}
+:is(#bestTable,#huntTable) tr.sel td:nth-child(2){background:linear-gradient(var(--accent-soft),var(--accent-soft)),var(--surface)}
+#gearTable :is(th,td):first-child{position:static;box-shadow:none}
+.colBar{gap:8px 10px}
+.colBar .seg button{padding:3px 11px;font-size:12.5px}
+.colBar details[open]{flex-basis:100%}
+:is(#bestTable,#huntTable) :is(th,td):nth-child(2){text-align:left}
+
+/* ---- phones: Compare sessions as stacked cards (name, then job / monster / when, then the numbers with their labels) ---- */
+@media (max-width:600px){
+  #cmpTable,#cmpTable thead,#cmpTable tbody{display:block}
+  #cmpTable thead tr:first-child{display:none}
+  #cmpTable .filters{display:flex;gap:6px;padding:8px}
+  #cmpTable .filters td{display:none;padding:0;border:0;background:none;position:static;box-shadow:none}
+  #cmpTable .filters td:nth-child(1),#cmpTable .filters td:nth-child(3){display:block;flex:1}
+  #cmpTable tbody tr{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  #cmpTable tbody tr:last-child{border-bottom:0}
+  #cmpTable tbody td{display:block;padding:0;border:0;text-align:left;white-space:normal;min-width:0;max-width:none;position:static;box-shadow:none;background:none!important}
+  #cmpTable tbody td[colspan]{grid-column:1/-1;font-family:var(--body)!important;font-weight:400!important;font-size:13px!important}
+  #cmpTable tbody td:nth-child(1){grid-column:1/-1;font-family:var(--display);font-weight:700;font-size:15px}
+  #cmpTable tbody td:nth-child(3){grid-column:span 2}
+  #cmpTable tbody td:nth-child(n+2)::before{display:block;font-family:var(--body);font-size:10px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+  #cmpTable tbody td:nth-child(2)::before{content:"Job"}#cmpTable tbody td:nth-child(3)::before{content:"Monster"}#cmpTable tbody td:nth-child(4)::before{content:"When"}
+  #cmpTable tbody td:nth-child(5)::before{content:"Length"}#cmpTable tbody td:nth-child(6)::before{content:"%/hr"}#cmpTable tbody td:nth-child(7)::before{content:"EXP/min"}
+  #cmpTable tbody td:nth-child(8)::before{content:"Kills/hr"}#cmpTable tbody td:nth-child(9)::before{content:"Sec/kill"}#cmpTable tbody td:nth-child(10)::before{content:"Deaths"}
+  #cmpTable tbody tr.sel{background:var(--accent-soft)}
+}
+
+/* ---- top bar trend ---- */
+.ctxRate{display:inline-flex;align-items:center;gap:6px;flex:none;padding:2px 10px 2px 6px;border-radius:99px;background:var(--surface);border:1px solid var(--line)}
+.spark{width:72px;height:22px;display:block}
+.ctxRate b{font-family:var(--mono);font-size:12px;font-weight:600}
+#chartTip b,#goalTip b{font-family:var(--body);font-weight:650}
+@media (max-width:1023px){.ctxRate{order:3}}

@@ -14,15 +14,20 @@
 
 ## Page layout
 
-The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Monsters & maps), Look up (Monster info, Item info, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused.
+The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Monsters & maps), Look up (Monster info, Item info, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
+
+**Log EXP from any tab:** type in the Log EXP box on the right of the top bar, or press **L** on any tab to jump to it. It takes a line like the paste box does: `17.9` (EXP %), `17.9 63` (with job %), `15:05 17.9 63` (at that time), and `died` on the line for EXP after a death. The entry goes in at the level of your last one, and a level-up is picked up the same way as in the Log EXP card. On a phone the box opens as a sheet from the round **+** button.
+
+**Get started:** a new player sees three steps over the Character, Session and Monsters & maps tabs: set up your character (type all six stats, or use build mode), pick the monster you farm, and log your EXP twice. Each one ticks off as you do it, and the card goes away for good once all three are done, or when you close it.
 
 The buttons at the bottom of the sidebar change how the page looks:
 
 - **Compact sidebar:** shrinks the sidebar to its icons. Hover an icon to see its tab's name.
 - **Theme:** switches between auto (follows your device), light and dark.
+- **Hints:** hides the help paragraphs under the cards once you know your way around.
 - **Full width:** lets the page use the whole window instead of stopping at 1180px. It only shows on very wide screens.
 
-All three are remembered in this browser, apart from your account data, so backups and share links don't carry them.
+All four are remembered in this browser, apart from your account data, so backups and share links don't carry them.
 
 ## Account
 
@@ -145,5 +150,7 @@ Every big table works the same way:
 - Click a column header to sort.
 - Type in the filter row under the header. Filters accept `<350`, `100-200`, `fire`, `-` for blank and `or`. In the EXP Hunter, `poring` under Main monsters finds every map with Porings; in the Zeny Hunter, `elunium` under Earns from finds every monster that drops it.
 - The auto-loot group filters in Monster info's drops and in Item info are dropdowns: pick a group, or Not looted for the groups you don't auto loot.
-- Show or hide columns with the column picker.
+- Show or hide columns with the column picker. The Monsters table, the EXP Hunter and the Zeny Hunter also have one-click **column views** next to it (All, Compact, EXP, Zeny, or Weight in the Zeny Hunter); the view that matches the columns showing is marked.
+- The first column (in the hunters, the rank and the map) stays in place when you scroll a table sideways.
+- On a phone, Compare sessions shows each session as a card.
 - In the hunters, filters apply before the Show limit, and # stays the map's rank among all open maps.

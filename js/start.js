@@ -21,10 +21,12 @@ function showTab(t,local){
   if(![...document.querySelectorAll("[data-tabbtn]")].some(b=>b.dataset.tabbtn===t))t="char";
   document.querySelectorAll("[data-tab]").forEach(el=>el.hidden=el.dataset.tab!==t);
   document.querySelectorAll("[data-tabbtn]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tabbtn===t)));
-  showHero(t);
+  showHero(t);$("startCard").classList.toggle("offTab",!["char","track","maps"].includes(t));
   if(!local&&state.tab!==t){state.tab=t;save()}
   if(t==="ref"){renderRef();refScroll()}
   if(t==="char")renderGearCmp();
+  // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
+  if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
   // renderAll only draws these while their tab is showing
   if(t==="maps")renderHunt();if(t==="market")renderPrices();if(t==="mobinfo")renderMobInfo();if(t==="items")renderItems();
 }
@@ -40,6 +42,31 @@ showTab(VIEW&&VIEW.tab||state.tab||"char",!!VIEW);
     const flip=()=>{const v=!card.classList.contains("collapsed");state.collapsed[key]=v;if(!v)delete state.collapsed[key];save();set(v)};
     h.addEventListener("click",flip);h.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();flip()}})});
 })();
+// ---- Character tab's section links: jump to a section (opening it if folded), mark the one you're reading, and hide the links of
+// sections that are hidden (Gear outside build mode, Equipment stats in it, Sage options for other jobs) ----
+(function setupSecNav(){
+  const links=[...document.querySelectorAll("[data-sec]")],tgt=a=>$(a.dataset.sec);if(!links.length)return;
+  const sync=()=>links.forEach(a=>{const t=tgt(a);a.hidden=!t||t.hidden||!!t.closest("[hidden]:not([data-tab])")});
+  links.forEach(a=>a.addEventListener("click",e=>{e.preventDefault();const t=tgt(a);if(!t)return;
+    if(t.tagName==="DETAILS")t.open=true;
+    const card=t.closest(".card.collapsed");if(card)card.querySelector("h2[aria-expanded]")?.click();
+    t.scrollIntoView({behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth",block:"start"})}));
+  // the section you're reading: the last one whose top has passed a third of the way down the window
+  let raf=0;const spy=()=>{raf=0;if($("charCard").closest("[data-tab]").hidden)return;let on=null;
+    for(const a of links)if(!a.hidden&&(!on||tgt(a).getBoundingClientRect().top<=innerHeight*.3))on=a;
+    links.forEach(a=>a.toggleAttribute("aria-current",a===on));
+    // as a row of links (narrower screens) keep the marked one in view
+    const nav=on&&on.parentElement;if(nav&&nav.scrollWidth>nav.clientWidth)nav.scrollTo({left:on.offsetLeft-nav.clientWidth/2+on.offsetWidth/2})};
+  addEventListener("scroll",()=>{if(!raf)raf=requestAnimationFrame(spy)},{passive:true});
+  const mo=new MutationObserver(()=>{sync();spy()});
+  links.forEach(a=>{const t=tgt(a);if(t)for(let e=t;e&&!e.dataset?.tab;e=e.parentElement)mo.observe(e,{attributes:true,attributeFilter:["hidden"]})});
+  sync();spy();
+})();
+// ---- get started card: its buttons take you to each step; × hides it in this browser ----
+document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",e=>{const g=b.dataset.go;
+  if(g==="log"){e.stopPropagation();openQuickLog(true);return}
+  showTab(g);scrollTo({top:0});if(g==="maps")setTimeout(()=>$("mobInput").focus({preventScroll:true}),50)}));
+$("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,"1")}catch(e){}renderStart()});
 // ---- full width: a per-device display choice kept outside the account saves (index.html applies it before the page draws) ----
 (function setupWide(){
   const KEY_WIDE="rozero-farm-planner-wide",btn=$("wideBtn");
@@ -54,6 +81,13 @@ showTab(VIEW&&VIEW.tab||state.tab||"char",!!VIEW);
     btn.querySelector("span").textContent=v?"Expand sidebar":"Compact sidebar";btn.title=v?"Show the sidebar's labels":"Shrink the sidebar to icons"};
   set(document.documentElement.classList.contains("compact"));
   btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.setItem(KEY_COMPACT,"1"):localStorage.removeItem(KEY_COMPACT)}catch(e){}});
+})();
+// ---- hints: the help text under the cards, on by default, per device like full width ----
+(function setupHints(){
+  const KEY_HINTS="rozero-farm-planner-hints",btn=$("hintBtn");
+  const set=v=>{document.documentElement.classList.toggle("nohints",!v);btn.setAttribute("aria-pressed",String(v));btn.querySelector("span").textContent=`Hints: ${v?"on":"off"}`};
+  set(!document.documentElement.classList.contains("nohints"));
+  btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.removeItem(KEY_HINTS):localStorage.setItem(KEY_HINTS,"0")}catch(e){}});
 })();
 // ---- colour theme: auto (follows the device) → light → dark, per device like full width ----
 (function setupTheme(){
