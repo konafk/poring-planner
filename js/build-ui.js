@@ -316,13 +316,24 @@ function gearPut(c,g,id){if(g.id===id)return;memKeep(c,g);const m=memOf(c)[id]||
 // "+7 · Vitata Card · 2 affixes"
 const memTxt=m=>[num(m.refine)?`+${num(m.refine)}`:"",...(m.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean),
   ...(m.opts&&m.opts.length?[`${m.opts.length} affix${m.opts.length>1?"es":""}`]:[])].filter(Boolean).join(" · ");
+// icons: gear from the game client, cards a thumbnail of their picture (data/icons.js, tools/export_icons.py); a cell of a sprite sheet
+// each, the sheet set once as a CSS variable. scale draws it smaller (the gear table's card boxes). An item with no image gets an
+// empty cell, so the names still line up
+const ICON_AT={};
+(typeof ICON_SHEETS!=="undefined"?Object.entries(ICON_SHEETS):[]).forEach(([k,s])=>{ICON_AT[k]={};s.ids.forEach((id,i)=>ICON_AT[k][id]=i);
+  document.documentElement.style.setProperty(`--ico-${k}`,`url("${s.file}?v=${s.v}")`)});
+function iconHtml(kind,id,scale=1){const s=typeof ICON_SHEETS!=="undefined"&&ICON_SHEETS[kind],i=ICON_AT[kind]&&ICON_AT[kind][id];
+  const size=s&&scale!==1?`width:${s.w*scale}px;height:${s.h*scale}px;`:"";
+  if(!s||i==null)return `<span class="ico ico-${kind} none" aria-hidden="true"${size?` style="${size}"`:""}></span>`;
+  const rows=Math.ceil(s.ids.length/s.cols),fit=scale!==1?`background-size:${s.cols*s.w*scale}px ${rows*s.h*scale}px;`:"";
+  return `<span class="ico ico-${kind}" aria-hidden="true" style="${size}${fit}background-position:-${i%s.cols*s.w*scale}px -${Math.floor(i/s.cols)*s.h*scale}px"></span>`}
 function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};let lists="";
   const rows=BUILD.SLOTS.map(s=>{const g0=b.gear[s.k]||{},items=gearChoices(s.k),cards=cardChoices(s.k,g0.id&&BUILD.item(g0.id));GEAR_LISTS["g_"+s.k]=pickList(items);GEAR_LISTS["c_"+s.k]=pickList(cards);
     lists+=`<datalist id="gl_${s.k}">${[...GEAR_LISTS["g_"+s.k]].map(([n,id])=>`<option value="${esc(n)}"${mem[id]?` label="remembered: ${esc(memTxt(mem[id]))}"`:""}>`).join("")}</datalist><datalist id="cl_${s.k}">${[...GEAR_LISTS["c_"+s.k]].map(([n,id])=>{const p=cardName({id});return `<option value="${esc(n)}"${p?` label="${esc(p)}"`:""}>`}).join("")}</datalist>`;
     const g=b.gear[s.k]||{},it=g.id&&BUILD.item(g.id),label=n=>{const x=BUILD.item(n);return x?labelOf(x,cards):""};
-    const cardBoxes=it&&it.slots?Array.from({length:it.slots},(_,i)=>`<input data-card="${i}" list="cl_${s.k}" placeholder="card" title="The card (Vitata), or the name it gives the item in game (Healing)" value="${esc(g.cards&&g.cards[i]?label(g.cards[i]):"")}">`).join(""):"";
+    const cardBoxes=it&&it.slots?Array.from({length:it.slots},(_,i)=>`<span class="cardBox">${iconHtml("card",g.cards&&g.cards[i],.5)}<input data-card="${i}" list="cl_${s.k}" placeholder="card" title="The card (Vitata), or the name it gives the item in game (Healing)" value="${esc(g.cards&&g.cards[i]?label(g.cards[i]):"")}"></span>`).join(""):"";
     const refinable=it&&s.k!=="ammo"; // every part: some accessories and headgear refine though the data has no schedule for them
-    return `<tr data-slot="${s.k}"><td>${s.k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label}</td><td><input class="item" list="gl_${s.k}" placeholder="${items.length?"none":"no items for this job"}" title="The item, or its name from the equipment window (+7 Healing Shining Clip) or with its cards (+7 Shining Clip Vitata): sets the refine and cards too" value="${esc(it?labelOf(it,items):"")}"></td>
+    return `<tr data-slot="${s.k}"><td>${s.k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label}</td><td><div class="itemBox">${iconHtml("gear",it&&it.id)}<input class="item" list="gl_${s.k}" placeholder="${items.length?"none":"no items for this job"}" title="The item, or its name from the equipment window (+7 Healing Shining Clip) or with its cards (+7 Shining Clip Vitata): sets the refine and cards too" value="${esc(it?labelOf(it,items):"")}"></div></td>
       <td>${refinable?`<input class="ref" type="number" min="0" max="20" value="${num(g.refine)}">`:""}</td><td><div class="cards">${cardBoxes}</div></td>
       <td>${it?optBoxes(s.k,g,it):""}</td></tr>`}).join("");
   $("gearTable").tBodies[0].innerHTML=rows;$("gearLists").innerHTML=lists;renderStones();
@@ -366,6 +377,8 @@ $("gearTable").addEventListener("change",e=>{const tr=e.target.closest("tr[data-
     if(v)$("gearTable").querySelector(`tr[data-slot="${k}"] [data-optv="${i}"]`)?.focus();return}
   if(e.target.dataset.card!=null){const v=e.target.value.trim(),id=GEAR_LISTS["c_"+k].get(v),i=+e.target.dataset.card;g.cards=g.cards||[];
     if(!v)g.cards[i]=null;else if(id!=null)g.cards[i]=id;
+    // the box's picture follows the card without redrawing the table, so the box you tab to keeps focus
+    const ico=e.target.parentElement.querySelector(".ico");if(ico&&(!v||id!=null))ico.outerHTML=iconHtml("card",g.cards[i],.5);
     else{// card names as the game shows them ("Double Healing", or the whole item name): fill this box and the ones after it
       const it=BUILD.item(g.id),ids=BUILD.readCardNames(v,cardChoices(k,it),cardName)||(readGear(k,v,[it])||{}).cards;
       if(!ids||!ids.length){e.target.value="";return}ids.slice(0,Math.max(0,(it.slots||0)-i)).forEach((c,j)=>g.cards[i+j]=c);save();renderGearTable();renderAll();return}

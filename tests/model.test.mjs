@@ -2062,6 +2062,12 @@ t("Equipment and Cards tabs: each item's cell in the icon and card picture sheet
   assert.ok(run(`iconHtml("gear",1168)`).includes(`background-position:${pos("gear", at("gear", 1168))}`));
   assert.ok(run(`iconHtml("card",4035)`).includes(`background-position:${pos("card", at("card", 4035))}`));
   assert.ok(run(`iconHtml("gear",-5)`).includes("none"));                                            // no image: an empty cell
+  // half size (the gear table's card boxes): the whole sheet scaled with it
+  const h = run(`iconHtml("card",4035,.5)`), rows = Math.ceil(S.card.ids.length / S.card.cols), i = at("card", 4035);
+  assert.ok(h.includes(`width:${S.card.w / 2}px;height:${S.card.h / 2}px;background-size:${S.card.cols * S.card.w / 2}px ${rows * S.card.h / 2}px;`));
+  assert.ok(h.includes(`background-position:-${i % S.card.cols * S.card.w / 2}px -${Math.floor(i / S.card.cols) * S.card.h / 2}px`));
+  // its own class: "card" is the page's panel style (padding and a border)
+  assert.ok(h.includes('class="ico ico-card"')); assert.ok(!/class="([^"]*)"/.exec(run(`iconHtml("card",4035)`))[1].split(" ").includes("card"));
 });
 
 console.log(`${n} tests passed`);

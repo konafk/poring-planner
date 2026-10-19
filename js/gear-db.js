@@ -99,13 +99,6 @@ TABLES.equipTable={def:["name",1],cols:{name:{t:r=>r.it.name},id:{n:r=>r.it.id,a
 TABLES.cardTable={def:["name",1],cols:{name:{t:r=>r.c.name},id:{n:r=>r.c.id,asc:1},part:{t:r=>CARD_PART[cardPart(r.c)]||"–"},nm:{t:r=>cardName(r.c)},fx:{t:r=>r.fx.join(" ")}}};
 const EQ_SORTS=[["name:1","Name A–Z"],["name:-1","Name Z–A"],["lv:-1","Highest Lv"],["lv:1","Lowest Lv"],["atk:-1","Highest ATK"],["matk:-1","Highest MATK"],
   ["def:-1","Highest DEF"],["slots:-1","Most card slots"],["w:1","Lightest"],["id:1","ID"]];
-// icons: gear from the game client, cards a thumbnail of their picture (data/icons.js, tools/export_icons.py); a cell of a sprite sheet
-// each, the sheet set once as a CSS variable. An item with no image gets an empty cell, so the names still line up
-const ICON_AT={};
-(typeof ICON_SHEETS!=="undefined"?Object.entries(ICON_SHEETS):[]).forEach(([k,s])=>{ICON_AT[k]={};s.ids.forEach((id,i)=>ICON_AT[k][id]=i);
-  document.documentElement.style.setProperty(`--ico-${k}`,`url("${s.file}?v=${s.v}")`)});
-function iconHtml(kind,id){const s=typeof ICON_SHEETS!=="undefined"&&ICON_SHEETS[kind],i=ICON_AT[kind]&&ICON_AT[kind][id];
-  return s&&i!=null?`<span class="ico ${kind}" aria-hidden="true" style="background-position:-${i%s.cols*s.w}px -${Math.floor(i/s.cols)*s.h}px"></span>`:`<span class="ico ${kind} none" aria-hidden="true"></span>`}
 const wornPills=(c,id,card)=>wornIn(c,id,card).map(x=>` <span class="pill up">${x}</span>`).join("");
 const eqBtn=(k,id,ok,why)=>`<button type="button" class="small" data-eq${k}="${id}"${ok?"":` disabled title="${esc(why)}"`}>Equip</button>`;
 function renderEquipDb(){const c=C(),f=eqDbF(),all=typeof EQUIP!=="undefined"?EQUIP:[];
