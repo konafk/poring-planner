@@ -558,19 +558,29 @@ const zenyKill=m=>lootVal(m)*ocMul()*dropMul()*penMul(m)+marketVal(m);
 const dropZ=(m,id,ch)=>looted(id)?num(NPCSELL[id])*ocMul()*ch/100*dropMul()*penMul(m)+marketGain(id)*Math.min(100,ch*dropMul()*penMul(m))/100:0;
 
 // ---- maps ----
-const REGIONS=[
- {id:"ct",name:"Clock Tower",when:"Oct 2026",pre:["c_tower","tow_d","alde_dun"]},
- {id:"gh",name:"Glast Heim",when:"Dec 2026",pre:["gl_","glast_"]},
- {id:"lu",name:"Lutie",when:"Jan 2027",pre:["xma_"]},
- {id:"go",name:"Gonryun",when:"Mar 2027",pre:["gon_"]},
- {id:"lo",name:"Louyang",when:"Apr 2027",pre:["lou_"]},
- {id:"ay",name:"Ayothaya",when:"Apr 2027",pre:["ayo_"]},
- {id:"am",name:"Amatsu",when:"May 2027",pre:["ama_"]},
- {id:"ju",name:"Juno",when:"Jun 2027",pre:["yun_"]},
- {id:"tu",name:"Turtle Island",when:"TBA",pre:["tur_"]},
- {id:"nf",name:"Niflheim",when:"not on roadmap",pre:["nif_","niflheim"]},
- {id:"um",name:"Umbala",when:"not on roadmap",pre:["um_"]}];
+// regions come from the roadmap (data/roadmap.js): one is out once its update's day has come, or after its update's month when the day
+// isn't known. state.regions[id] holds your own call where it differs from that (true: closed, false: open)
+const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+// today as YYYY-MM-DD, local time; ROADMAP_TODAY (tests) stands in for it
+const todayISO=()=>{if(typeof ROADMAP_TODAY==="string")return ROADMAP_TODAY;const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`};
+const upOut=u=>u.when.length>7?todayISO()>=u.when:todayISO().slice(0,7)>u.when;
+const upWhen=u=>`${u.when.length>7?+u.when.slice(8)+" ":""}${MONTHS[+u.when.slice(5,7)-1]} ${u.when.slice(0,4)}`;
+// "out", "due this month" (no day yet), "in 2 months" or "Dec 2026"
+const upStatus=u=>{if(upOut(u))return "out";const t=todayISO(),m=(+u.when.slice(0,4)-+t.slice(0,4))*12+(+u.when.slice(5,7)-+t.slice(5,7));
+  return m===0?(u.when.length>7?`due ${upWhen(u)}`:"due this month"):m===1?"next month":`in ${m} months`};
+const REGIONS=ROADMAP.flatMap(u=>(u.regions||[]).map(r=>({...r,up:u,when:upWhen(u)})));
 const regionOf=map=>REGIONS.find(r=>r.pre.some(p=>map.toLowerCase().startsWith(p)));
+const regionClosed=r=>{const v=state.regions[r.id];return v==null?!upOut(r.up):!!v};
+// clicking a region flips it; a call that matches the roadmap is dropped, so the region follows the roadmap again
+const toggleRegion=id=>{const r=REGIONS.find(x=>x.id===id);if(!r)return;const c=!regionClosed(r);if(c===!upOut(r.up))delete state.regions[id];else state.regions[id]=c};
+// the level cap now: the last update that's out with one
+const capNow=()=>{let c=null;ROADMAP.forEach(u=>{if(u.cap&&upOut(u))c={...c,...u.cap}});return c};
+const capTxt=c=>c?`Base ${c.base}${c.job?` / Job ${c.job}`:""}`:"";
+// the update a closed map is waiting for ("Glast Heim update, Dec 2026"), or "" when it's closed by you or not on the roadmap
+const mapArrives=mp=>{const r=regionOf(mp);return r&&!upOut(r.up)&&regionClosed(r)?`${r.up.name} update, ${r.when}`:""};
+// a monster with no open map: the soonest update that opens one of its maps
+const mobArrives=m=>{const rs=(SPAWN[m.id]||[]).map(([mp])=>regionOf(mp)).filter(r=>r&&!upOut(r.up)&&regionClosed(r));
+  if(!rs.length)return "";const u=rs.reduce((a,r)=>r.up.when<a.when?r.up:a,rs[0].up);return `${u.name} update, ${upWhen(u)}`};
 // map names: SPAWN and saves use rozerodb codes (sp_d05); data/maps.js has the in-game code and name (in_sphinx5 · Sphinx B5F) and other codes
 const mapCode=mp=>(MAPNAMES[mp]||[])[0]||mp;
 const mapName=mp=>(MAPNAMES[mp]||[])[1]||"";
@@ -579,7 +589,7 @@ const mapLabel=mp=>mapName(mp)?`${mapCode(mp)} (${mapName(mp)})`:mapCode(mp);
 const MAPALIAS={};{const byName={};Object.entries(MAPNAMES).forEach(([k,[g,n,...rest]])=>{[k,g,...rest].forEach(a=>MAPALIAS[a.toLowerCase()]=k);const l=n.toLowerCase();byName[l]=l in byName?null:k});
   Object.entries(byName).forEach(([n,k])=>{if(k&&!(n in MAPALIAS))MAPALIAS[n]=k})}
 const mapKey=s=>{const t=String(s??"").trim().toLowerCase();return MAPALIAS[t]||t};
-const isClosed=map=>{const r=regionOf(map);return (r&&state.regions[r.id]!==false)||state.closed.some(c=>mapKey(c)===mapKey(map))};
+const isClosed=map=>{const r=regionOf(map);return (r&&regionClosed(r))||state.closed.some(c=>mapKey(c)===mapKey(map))};
 const openMaps=m=>(SPAWN[m.id]||[]).filter(x=>!isClosed(x[0])).sort((a,b)=>b[1]-a[1]);
 // monsters you skip (e.g. ones that stun you): left out of map averages, you walk past them
 const isSkipped=m=>!!(state.skipMobs&&state.skipMobs.includes(m.id));

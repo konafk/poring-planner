@@ -26,3 +26,4 @@ The numbers are estimates. Skill values and formulas follow the sources below an
 - Size table and EXP tables: [official game guide](https://roz.mygnjoy.com/en/intro/guide/12)
 - Clan buffs: [Midgard Hub new player guide](https://midgardhub.com/guides/new-player), the same as iRO Wiki's Clan System
 - Drop rate level penalty: [official game guide](https://roz.mygnjoy.com/en/intro/guide/11)
+- Release roadmap (`data/roadmap.js`): the [official roadmap](https://www.mygnjoy.com/en/event/roadmap), as [rozerodb](https://rozerodb.com/guides/roadmap-update) and [JPGAMES](https://jpgames.de/wp-content/uploads/2026/07/ragnarok-zero-roadmap.jpg) list it

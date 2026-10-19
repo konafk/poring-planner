@@ -310,6 +310,11 @@ td .map{cursor:default}
 #chart .pauseMark{cursor:pointer}
 #chart text.deathMark{font-size:13px;fill:var(--bad)}
 /* build simulator gear grid */
+#roadmapTable th,#roadmapTable td{text-align:left;vertical-align:top}
+#roadmapTable th{cursor:default}
+#roadmapTable td:nth-child(4){white-space:normal;min-width:240px}
+#roadmapTable .maps{min-width:180px;max-width:320px}
+#roadmapTable tbody tr.muted td{color:var(--muted)}
 #gearTable td{vertical-align:middle;font-family:var(--body)}
 #gearTable th{text-align:left}
 #gearTable td:first-child{color:var(--muted);font-size:12px}

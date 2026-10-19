@@ -437,9 +437,35 @@ t("map names: in-game codes, rozerodb codes and unique names all find the same m
   assert.equal(run(`mapKey("mjo_dun03")`), "mjo_d03");
   assert.equal(run(`mapKey("Prontera Field")`), "prontera field");      // a name many maps share stays as typed
   assert.equal(run(`mapCode("nowhere")`), "nowhere");
-  run(`state.regions={};state.closed=["in_sphinx5"]`);                  // a map closed by its in-game code
+  run(`state.regions={sp:false};state.closed=["in_sphinx5"]`);          // a map closed by its in-game code (Sphinx itself marked open)
   assert.ok(run(`isClosed("sp_d05")`) && !run(`isClosed("sp_d04")`));
   run(`state.closed=[]`);
+});
+
+t("roadmap: regions open on their update's day, or after its month when the day isn't known, unless you say otherwise", () => {
+  run(`var ROADMAP_TODAY="2026-10-19";state.regions={};state.closed=[]`);
+  assert.equal(run(`regionOf("sp_d05").id`), "sp");
+  assert.ok(run(`isClosed("sp_d05")&&isClosed("tow_d01")&&isClosed("gl_chu")`));       // Clock Tower update: October, no day yet
+  assert.ok(!run(`isClosed("pay_d00")`));                                           // not on the roadmap: open
+  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Clock Tower"))`), "due this month");
+  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Glast Heim"))`), "in 2 months");
+  assert.equal(run(`capTxt(capNow())`), "Base 60 / Job 60");
+  assert.equal(run(`mapArrives("gl_chu")`), "Glast Heim update, Dec 2026");
+  const myst = run(`MOBS.find(m=>m.name==="Myst").id`);                              // only in Mjolnir Dead Pit
+  assert.ok(run(`!openMaps(MOBS.find(m=>m.id===${myst})).length`));
+  assert.equal(run(`mobArrives(MOBS.find(m=>m.id===${myst}))`), "Clock Tower update, Oct 2026");
+  run(`ROADMAP_TODAY="2026-11-01"`);                                                 // the month is over: open
+  assert.ok(!run(`isClosed("sp_d05")`) && run(`isClosed("gl_chu")`));
+  assert.equal(run(`capTxt(capNow())`), "Base 70 / Job 70");
+  assert.equal(run(`mapArrives("sp_d05")`), "");
+  run(`ROADMAP_TODAY="2026-10-19"`);
+  run(`toggleRegion("sp")`);                                                          // your call: open before the roadmap says so
+  assert.ok(!run(`isClosed("sp_d05")`) && run(`state.regions.sp`) === false && run(`mapArrives("sp_d05")`) === "");
+  run(`toggleRegion("sp")`);                                                          // back to the roadmap
+  assert.ok(run(`isClosed("sp_d05")`) && !run(`"sp" in state.regions`));
+  run(`ROADMAP_TODAY="2026-11-01";toggleRegion("ct")`);                              // closed after it's out
+  assert.ok(run(`isClosed("tow_d01")&&state.regions.ct===true`));
+  run(`state.regions={};ROADMAP_TODAY=undefined`);
 });
 
 t("monsters with no EXP in rozerodb are listed but left out of EXP averages", () => {

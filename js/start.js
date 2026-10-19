@@ -4,7 +4,7 @@
 const TAB_DESC={
   char:"Your job, stats, gear and attack: everything the damage, EXP and zeny numbers work from.",
   track:"Log your EXP as you farm to see your real EXP/hr, when you'll level and how far your goals are.",
-  maps:"Find where to farm: every monster against your attack, the EXP and Zeny Hunter rankings, and the map planner.",
+  maps:"Find where to farm: every monster against your attack, the EXP and Zeny Hunter rankings, the map planner and the release roadmap.",
   mobinfo:"Drops, spawn maps and your numbers against any monster.",
   items:"Every drop: who drops it, where they spawn and what it's worth to you.",
   equip:"Every weapon and piece of armor: filter by type, job, level, card slots and stats, and put it in any of your gear sets.",

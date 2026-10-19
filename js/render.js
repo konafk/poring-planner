@@ -453,7 +453,7 @@ function renderMobs(){
     <td class="${m.mult>100?"good":m.mult<=0?"bad":""}">${m.mult<=0?"can't hurt":Math.round(m.mult)+"%"}${elTag(m.el2)}</td><td class="${m.hitc>=95?"good":m.hitc>=70?"warnc":"bad"}">${Math.round(m.hitc)}%</td><td>${isFinite(m.uses)?m.uses.toFixed(1):"–"}</td>
     <td class="${m.sec<=3?"good":m.sec<=8?"warnc":"bad"}">${isFinite(m.sec)?m.sec.toFixed(1)+"s":"–"}</td><td><b>${m.epm?fmtN(m.epm):"–"}</b></td>
     <td class="${m.dodge==null?"":m.dodge>=70?"good":m.dodge>=40?"warnc":"bad"}">${m.dodge==null?"–":m.dodge+"%"}</td><td>${m.hpm==null?"–":fmtN(m.hpm)}</td><td>${hasLoot(m)?fmtN(m.zk):"–"}</td><td>${hasLoot(m)&&isFinite(m.sec)?fmtN(m.zph):"–"}</td>
-    <td class="name">${m.om.length?`<span class="map" title="${esc(m.om.map(x=>mapLabel(x[0])+" ≈"+x[1]).join(", "))}"><b>${mapCode(m.om[0][0])}</b><span>≈${m.om[0][1]}</span></span>`:'<span class="note">none open</span>'}</td><td><a href="${dbUrl(m)}" target="_blank" rel="noopener" title="rozerodb">↗</a></td></tr>`).join("")
+    <td class="name">${m.om.length?`<span class="map" title="${esc(m.om.map(x=>mapLabel(x[0])+" ≈"+x[1]).join(", "))}"><b>${mapCode(m.om[0][0])}</b><span>≈${m.om[0][1]}</span></span>`:noneOpen(m)}</td><td><a href="${dbUrl(m)}" target="_blank" rel="noopener" title="rozerodb">↗</a></td></tr>`).join("")
     ||'<tr><td colspan="19" class="name muted">No monsters match these filters.</td></tr>';
   renderMobTiles();
 }
@@ -476,7 +476,7 @@ function renderMobTiles(){
    <div class="tile" title="${esc(hpTip(r))}"><div class="k">Defence</div><div class="v mono">${r.hpm==null?"–":fmtN(r.hpm)}</div><div class="s">HP lost/min${r.hpm>0&&vitHeals()?" (your Heals cover it)":""}${r.pz>0.005?` · poisoned ${Math.round(r.pz*100)}%`:""}${crowdN(m)>1?` · rampage of ${fmtP(crowdN(m))}`:""} · you dodge ${r.dodge??"–"}% · DEF ${m.def??"–"} · MDEF ${m.mdef??"–"}</div></div>
 ${withEl(r.el2,()=>susTile(susMob(m,walkSec()),"vs "+esc(m.name)))}
 ${weightTile(m)}
-   <div class="tile"><div class="k">Maps</div><div class="v mono">${om.length?mapCode(om[0][0]):"–"}</div><div class="s">${om.length?om.slice(0,4).map(x=>`${esc(mapLabel(x[0]))} ≈${x[1]}`).join(" · "):"none open"} · <a href="${dbUrl(m)}" target="_blank" rel="noopener">rozerodb ↗</a></div></div>
+   <div class="tile"><div class="k">Maps</div><div class="v mono">${om.length?mapCode(om[0][0]):"–"}</div><div class="s">${om.length?om.slice(0,4).map(x=>`${esc(mapLabel(x[0]))} ≈${x[1]}`).join(" · "):`none open${mobArrives(m)?`, comes with the ${esc(mobArrives(m))}`:""}`} · <a href="${dbUrl(m)}" target="_blank" rel="noopener">rozerodb ↗</a></div></div>
    <div class="bar span-all">${s.mobIds.includes(m.id)?'<span class="pill up">In this session</span> <button type="button" class="small" id="dropMobBtn">Remove from session</button>':`<button type="button" class="primary" id="useMobBtn">${s.mobIds.length?`Also killing ${esc(m.name)}`:`Farming ${esc(m.name)} now`}</button>`}</div>`;
   const b=$("useMobBtn");if(b)b.addEventListener("click",()=>{toggleSessMob(m.id);state.calcMobId=null;save();renderAll()});
   const d=$("dropMobBtn");if(d)d.addEventListener("click",()=>{toggleSessMob(m.id);save();renderAll()});
@@ -602,7 +602,7 @@ function renderMobInfo(){
   $("mobInfoDrops").tBodies[0].innerHTML=tableRows("mobInfoDrops",drops).map(d=>`<tr class="${looted(d.id)?"":"muted"}"><td class="name"><a href="#" data-pitem="${esc(d.id)}" title="click to set a market price">${esc(itemName(d.id))}</a> <span class="note">#${esc(d.id)}</span></td><td class="name">${GROUP_NAME[groupOf(d.id)]}${looted(d.id)?"":" (not looted)"}</td><td>${chTxt(d.ch)}</td><td>${chTxt(d.your)}</td><td>${d.npc==null?"–":fmtN(d.npc)}</td><td>${d.pl==null?"–":fmtN(d.pl)}</td><td>${looted(d.id)?dropZTxt(d.z):"0"}</td></tr>`).join("")
     ||`<tr><td colspan="7" class="name muted">${drops.length?"No drops match these filters.":"No known drops."}</td></tr>`;
   const maps=(SPAWN[m.id]||[]).map(([mp,n])=>({mp,n,others:(MAPMOBS[mp]||[]).filter(x=>x.m.id!==m.id).sort((a,b)=>b.n-a.n)}));
-  $("mobInfoMaps").tBodies[0].innerHTML=tableRows("mobInfoMaps",maps).map(({mp,n,others})=>`<tr data-map="${esc(mp)}"><td class="name"><b class="mono">${mapCode(mp)}</b> <span class="note">${esc(mapName(mp))}</span>${isClosed(mp)?' <span class="pill down">closed</span>':""}</td><td>≈${n}</td><td class="name">${others.slice(0,5).map(x=>`${esc(x.m.name)} <span class="note">×${x.n}</span>`).join(", ")||"–"}</td></tr>`).join("")
+  $("mobInfoMaps").tBodies[0].innerHTML=tableRows("mobInfoMaps",maps).map(({mp,n,others})=>`<tr data-map="${esc(mp)}"><td class="name"><b class="mono">${mapCode(mp)}</b> <span class="note">${esc(mapName(mp))}</span>${isClosed(mp)?` <span class="pill down"${mapArrives(mp)?` title="comes with the ${esc(mapArrives(mp))}"`:""}>closed${mapArrives(mp)?` · ${esc(mapArrives(mp).split(", ")[1])}`:""}</span>`:""}</td><td>≈${n}</td><td class="name">${others.slice(0,5).map(x=>`${esc(x.m.name)} <span class="note">×${x.n}</span>`).join(", ")||"–"}</td></tr>`).join("")
     ||`<tr><td colspan="3" class="name muted">${maps.length?"No maps match these filters.":"No spawns known."}</td></tr>`;
 }
 // every monster that drops each item, best chance first
@@ -632,7 +632,7 @@ function renderItems(){
    <div class="tile"><div class="k">Best open source</div><div class="v mono">${open.length?esc(open[0].m.name):"–"}</div><div class="s">${open.length?`${chTxt(open[0].ch)} · Lv ${open[0].m.lv} · ${esc(mapLabel(openMaps(open[0].m)[0][0]))}`:"no monster on an open map drops it"}</div></div>`
    +(o=>o?`<div class="tile wide"><div class="k">Other sources</div><div class="s from">${o}</div></div>`:"")(typeof otherSourcesHtml==="function"?otherSourcesHtml(sel):"");
   const drs=tableRows("itemDropTable",ds.map(({m,ch})=>({m,ch,your:yourCh(m,ch),nz:npcZ(m,sel,ch),z:dropZ(m,sel,ch),om:openMaps(m)})));
-  $("itemDropTable").tBodies[0].innerHTML=drs.map(({m,ch,your,nz,z,om})=>`<tr data-id="${m.id}"><td class="name">${esc(m.name)}${BOSS_PILL(m)}</td><td>${m.lv}</td><td>${chTxt(ch)}</td><td>${chTxt(your)}</td><td>${nz==null?"–":dropZTxt(nz)}</td><td>${dropZTxt(z)}</td><td>${om.length?"≈"+om[0][1]:"–"}</td><td class="name">${om.length?`<span class="mono">${mapCode(om[0][0])}</span> <span class="note">${esc(mapName(om[0][0]))}</span>`:'<span class="note">none open</span>'}</td></tr>`).join("")
+  $("itemDropTable").tBodies[0].innerHTML=drs.map(({m,ch,your,nz,z,om})=>`<tr data-id="${m.id}"><td class="name">${esc(m.name)}${BOSS_PILL(m)}</td><td>${m.lv}</td><td>${chTxt(ch)}</td><td>${chTxt(your)}</td><td>${nz==null?"–":dropZTxt(nz)}</td><td>${dropZTxt(z)}</td><td>${om.length?"≈"+om[0][1]:"–"}</td><td class="name">${om.length?`<span class="mono">${mapCode(om[0][0])}</span> <span class="note">${esc(mapName(om[0][0]))}</span>`:noneOpen(m)}</td></tr>`).join("")
     ||'<tr><td colspan="8" class="name muted">No monsters match these filters.</td></tr>';
 }
 // Weight / hr's tooltip: how long until you reach your sell point, and the loot zeny each weight point brings
@@ -663,8 +663,18 @@ function renderHunt(){
     return `<tr ${r.mp?`data-map="${r.mp}"`:`data-id="${r.m.id}"`} class="${(r.mp&&r.mp===sel)||(r.m&&r.m.id===selMob)?"sel":""}"><td>${r.rank}</td><td class="name">${name}${elTag(r.el2)}</td><td class="name mainmobs">${from}</td><td class="${r.net>0?"good":"bad"}"><b>${fmtN(r.net)}</b></td><td>${fmtN(r.loot)}</td><td title="${esc(costTip(r))}">${r.cost>0?fmtN(r.cost):"–"}</td><td>${fmtN(r.kph)}</td><td>${fmtN(r.zk)}</td><td>${fmtQty(r.wk)}</td><td title="${esc(huntWTip(r))}">${fmtQty(r.wph)}</td><td>${r.epm==null?"?":fmtN(r.epm)}</td><td>${r.hpm==null?"–":fmtN(r.hpm)}</td></tr>`}).join("")
     ||`<tr><td colspan="12" class="name muted">${mode==="maps"?"No open maps match.":"No open monsters you can hurt."}${huntLvTxt()?" Try widening the level filter.":""}</td></tr>`;
 }
+// the Roadmap card: each update with its level cap, what it adds and its regions (click one to mark it open or closed)
+const regionBtn=r=>{const c=regionClosed(r),own=state.regions[r.id]!=null;return `<button type="button" class="map ${c?"off":""}" data-region="${r.id}" title="${c?"Closed":"Open"}${own?` (your call: the roadmap says ${upOut(r.up)?"open":"closed"})`:" (follows the roadmap)"}. Click to mark ${c?"open":"closed"}"><b>${c?"✕":"✓"} ${r.name}</b>${own?"<span>yours</span>":""}</button>`};
 const syncClosed=()=>{$("closedMaps").value=state.closed.join(", ");
-  $("regions").innerHTML=REGIONS.map(r=>{const c=state.regions[r.id]!==false;return `<button type="button" class="map ${c?"off":""}" data-region="${r.id}" title="${c?"Closed. Click to mark open":"Open. Click to mark closed"}"><b>${c?"✕":"✓"} ${r.name}</b><span>${r.when}</span></button>`}).join("")};
+  const nx=ROADMAP.find(u=>!upOut(u)),cap=capNow();
+  $("roadmapNote").textContent=[cap&&`level cap now ${capTxt(cap)}`,nx&&`next: ${nx.name} (${upWhen(nx)})`].filter(Boolean).join(" · ");
+  $("regions").innerHTML=ROADMAP.map(u=>{const nm=Object.keys(MAPMOBS).filter(mp=>{const r=regionOf(mp);return r&&r.up===u}).length;
+    return `<tr class="${upOut(u)?"muted":u===nx?"sel":""}"><td class="name"><b>${upWhen(u)}</b><div class="note">${upStatus(u)}</div></td><td class="name"><b>${esc(u.name)}</b></td><td>${u.cap?capTxt(u.cap):"–"}</td>
+    <td class="name">${u.add.map(esc).join("<br>")}</td><td class="name"><div class="maps">${REGIONS.filter(r=>r.up===u).map(regionBtn).join("")}</div>${nm?`<div class="note">${nm} map${nm>1?"s":""}</div>`:""}</td></tr>`}).join("");
+  const shut=REGIONS.filter(regionClosed);
+  $("closedNote").innerHTML=shut.length?`Not open yet: ${shut.map(r=>esc(r.name)).join(", ")} (<a href="#roadmapCard">Roadmap</a>).`:""};
+// "none open", with the update that opens one of the monster's maps
+const noneOpen=m=>{const a=mobArrives(m);return `<span class="note"${a?` title="comes with the ${esc(a)}"`:""}>none open${a?` · ${esc(a.split(", ")[1])}`:""}</span>`};
 // converters / Spell Fist bolts against every monster on the map: the element-table rate of each option, the map's EXP/min with it,
 // and what the picked one can't hurt or is resisted by
 function convCheck(mp,w,r){const sf=C().a.type==="spellfist",opts=sf?elOptions().filter(Boolean):convOn()?convAll():[];if(opts.length<2)return "";const tag=!sf&&convFixed()?"in use":"best";
@@ -689,7 +699,7 @@ function renderMap(){
    <div class="tile" title="${esc(walkSrcTxt())}"><div class="k">Kills / hr</div><div class="v mono">${fmtN(3600/r.secT)}</div><div class="s">${r.sec.toFixed(1)}s fight + ${r.walk.toFixed(1)}s walk${sellTxt(r.sell," + "," selling")}</div></div>
    <div class="tile"><div class="k">EXP / hr</div><div class="v mono">${L2?pct(r.epm*60/L2*100):fmtN(r.epm*60)}</div><div class="s">${L2?`1 level in ${fmtDur(L2/(r.epm*60))}`:`set Base level 1–${MAX_BASE_LV} for %`}</div></div>
    <div class="tile"><div class="k">Zeny / hr</div><div class="v mono">${fmtN(r.zph)}</div><div class="s">net${r.zcost>=0.5?` of ~${fmtN(r.zcost)} z SP items, potions &amp; skill items`:""}${r.hpm==null?"":` · HP lost ~${fmtN(r.hpm)}/min`}</div></div>
-   ${susTile(r.sus,"on "+mapCode(mp))}${isClosed(mp)?'<div class="note bad">This map is marked as not open yet.</div>':""}`
+   ${susTile(r.sus,"on "+mapCode(mp))}${isClosed(mp)?`<div class="note bad">This map is marked as not open yet${mapArrives(mp)?`: it comes with the ${esc(mapArrives(mp))}`:""}.</div>`:""}`
    :MAPMOBS[mp].every(x=>x.m.boss||x.m.expUnknown||isSkipped(x.m))?'<div class="note bad">No EXP data yet for the monsters here.</div>':'<div class="note bad">Your attack can\'t hurt anything here.</div>';
   $("mapConv").innerHTML=convCheck(mp,w,r);
   const tot=MAPMOBS[mp].filter(x=>!x.m.boss&&!isSkipped(x.m)).reduce((a,x)=>a+x.n,0)||1;
