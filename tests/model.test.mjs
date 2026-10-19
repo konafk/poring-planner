@@ -442,6 +442,33 @@ t("map names: in-game codes, rozerodb codes and unique names all find the same m
   run(`state.closed=[]`);
 });
 
+t("roadmap: regions open on their update's day, or after its month when the day isn't known, unless you say otherwise", () => {
+  run(`var ROADMAP_TODAY="2026-10-19";state.regions={};state.closed=[]`);
+  assert.equal(run(`regionOf("tow_d01").id`), "ct");
+  assert.ok(run(`isClosed("tow_d01")&&isClosed("alde_dun04")&&isClosed("gl_chu")`));  // Clock Tower update: October, no day yet
+  assert.ok(!run(`isClosed("pay_d00")||isClosed("um_fild01")||isClosed("cmd_fild01")`)); // not on the roadmap (Umbala, Comodo are out): open
+  assert.ok(!run(`isClosed("sp_d05")||isClosed("maz_d01")||isClosed("mjo_d03")`)); // opened before Clock Tower
+  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Clock Tower"))`), "due this month");
+  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Glast Heim"))`), "in 2 months");
+  assert.equal(run(`capTxt(capNow())`), "Base 60 / Job 60");
+  assert.equal(run(`mapArrives("gl_chu")`), "Glast Heim update, Dec 2026");
+  const alarm = `MOBS.find(m=>m.name==="Alarm")`;                                      // only in the Clock Tower
+  assert.ok(run(`!openMaps(${alarm}).length`));
+  assert.equal(run(`mobArrives(${alarm})`), "Clock Tower update, Oct 2026");
+  run(`ROADMAP_TODAY="2026-11-01"`);                                                 // the month is over: open
+  assert.ok(!run(`isClosed("tow_d01")`) && run(`isClosed("gl_chu")`));
+  assert.equal(run(`capTxt(capNow())`), "Base 70 / Job 70");
+  assert.equal(run(`mapArrives("tow_d01")`), "");
+  run(`ROADMAP_TODAY="2026-10-19"`);
+  run(`toggleRegion("ct")`);                                                          // your call: open before the roadmap says so
+  assert.ok(!run(`isClosed("tow_d01")`) && run(`state.regions.ct`) === false && run(`mapArrives("tow_d01")`) === "");
+  run(`toggleRegion("ct")`);                                                          // back to the roadmap
+  assert.ok(run(`isClosed("tow_d01")`) && !run(`"ct" in state.regions`));
+  run(`ROADMAP_TODAY="2026-11-01";toggleRegion("ct")`);                              // closed after it's out
+  assert.ok(run(`isClosed("tow_d01")&&state.regions.ct===true`));
+  run(`state.regions={};ROADMAP_TODAY=undefined`);
+});
+
 t("monsters with no EXP in rozerodb are listed but left out of EXP averages", () => {
   const myst = run(`MOBS.find(m=>m.name==="Myst")`);
   assert.ok(myst.expUnknown && myst.exp === 0);
@@ -2263,6 +2290,28 @@ t("Item info: the Where to get filter, and other sources the farm tables don't h
   const o = run(`otherSourcesHtml("1306")`);
   assert.match(o, /Turtle General/); assert.match(o, /MVP/); assert.doesNotMatch(o, /Chimera/);    // Chimera is in the table
   assert.equal(run(`otherSourcesHtml("507")`), "");                                                   // nothing beyond the table
+});
+
+t("details popup: a monster, an item, gear and a card, linked to each other", () => {
+  assert.equal(run(`infoKind(909)`), "item");                                                        // Jellopy
+  assert.equal(run(`infoKind(1168)`), "gear");                                                       // Zweihander
+  assert.equal(run(`infoKind(4123)`), "card");                                                       // Eddga Card
+  const m = run(`popMob(MOBS.find(m=>m.id===1002))`);                                                // Poring
+  assert.equal(m.title, "Poring");
+  assert.match(m.body, /data-info="item:909"/);                                                      // its drops open theirs
+  assert.match(m.body, /data-infomap="/);                                                            // and its maps the planner
+  assert.match(m.acts, /data-infoact="mobinfo"/);
+  const i = run(`popItem("909")`);
+  assert.match(i.body, /data-infoprice="909"/);                                                      // a box for the player price
+  assert.match(i.body, /data-info="mob:1002"/);                                                      // Poring drops it
+  const g = run(`popGear(1168)`);
+  assert.equal(g.title, "Zweihander");
+  assert.doesNotMatch(g.body, /data-info="mob:/);                                                   // Doppelganger: an MVP the farm tables don't have
+  assert.match(g.acts, /data-infoact="equip"/);
+  assert.match(run(`popGear(1306).body`), /data-info="mob:\d+">Chimera/);                             // War Axe: Chimera links to its own
+  const c = run(`popCard(4123)`);
+  assert.match(c.title, /Eddga/); assert.match(c.acts, /data-infoact="cardtab"/);
+  assert.match(run(`fromHtml(1306)`), /data-info="mob:\d+"/);                                         // Where to get links open the popup
 });
 
 console.log(`${n} tests passed`);

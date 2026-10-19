@@ -19,7 +19,15 @@ The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Mo
 
 **Log EXP from any tab:** type in the Log EXP box on the right of the top bar, or press **L** on any tab to jump to it. It takes a line like the paste box does: `17.9` (EXP %), `17.9 63` (with job %), `15:05 17.9 63` (at that time), and `died` on the line for EXP after a death. The entry goes in at the level of your last one, and a level-up is picked up the same way as in the Log EXP card. On a phone the box opens as a sheet from the round **+** button. At the max base level (70) base EXP no longer counts, so the box, the + button and **L** go away.
 
-**Search:** press **Ctrl+K** (⌘K on a Mac) or **/** on any tab, or the Search button at the top of the sidebar, and type part of a name. It finds tabs, a few actions (Log EXP, theme, hints, new session), every monster, every item a monster drops, every piece of gear and card, and every map, by name, map code or item number. **Enter** opens it where it lives: a monster in Monster info, an item in Item info, gear on the Equipment tab, a card on the Cards tab, a map in the Map planner.
+**Search:** press **Ctrl+K** (⌘K on a Mac) or **/** on any tab, or the Search button at the top of the sidebar, and type part of a name. It finds tabs, a few actions (Log EXP, theme, hints, new session), every monster, every item a monster drops, every piece of gear and card, and every map, by name, map code or item number. **Enter** opens a monster, item, piece of gear or card in its details popup (below), and a map in the Map planner.
+
+**Details popup:** click a monster, item, gear or card name (underlined) and its details open over the page, without leaving the tab you're on. The names are in drop lists, Where to get, the Map planner, the Zeny Hunter, Item info's droppers, the Market prices, the Equipment and Cards tabs and search.
+
+- **Monster:** HP, DEF, MDEF and ATK, EXP (and what you get), your kill time, hit and dodge, EXP / min, zeny per kill, its best open map, every drop (with your chance and the price), and every spawn map, with when closed ones come (Roadmap). Buttons: Farming it now (or Also killing it), Monster info, rozerodb.
+- **Item:** a box for what players pay (it's saved like the Market tab's), the NPC price and weight, and the monsters that drop it with their best open map.
+- **Gear:** level, card slots, ATK / MATK / DEF, weapon level, element, weight, the jobs that wear it, its effects, the in-game text and where to get it. Buttons: Equip (the Equip dialog) and Equipment tab.
+- **Card:** its picture, the gear it goes in, the name it gives that gear, its effects, the in-game text and where to get it. Buttons: Equip and Cards tab.
+- Names inside the popup open theirs (a drop from a monster, a monster from an item); **←** goes back. A map opens in the Map planner.
 
 **Get started:** a new player sees three steps over the Character, Session and Monsters & maps tabs: set up your character (type all six stats, or use build mode), pick the monster you farm, and log your EXP twice. Each one ticks off as you do it, and the card goes away for good once all three are done, or when you close it.
 
@@ -31,6 +39,7 @@ The buttons at the bottom of the sidebar change how the page looks:
 - **Full width:** lets the page use the whole window instead of stopping at 1180px. It only shows on very wide screens.
 
 All four are remembered in this browser, apart from your account data, so backups and share links don't carry them.
+
 
 ## Account
 
@@ -79,7 +88,7 @@ Open maps ranked by EXP/min, weighted by spawn counts. At the max base level (70
 - HP lost / min is the damage that gets through less HP regen and Hunter Fly. Casters and archers take the same hits as melee: aggressive monsters, and monsters that reach you while you cast, are in "swings reach you". With Vitata your Heals cover it, so it costs SP and time instead of HP items. Hover it to see the damage taken, poison and regen. "Damage taken from" a race, size or element (Thara Frog Card, Poo Poo Hat's −10% from Demi-Human, "Resistance to Demi-Human" options, Equipment stats lines) scales each monster hit first, so it lowers HP lost, the HP items and heal cost, and raises net zeny.
 - **Crowds:** aggressive monsters, and ones that join a fight their kind is in (Wolves, Goblins, Thief Bugs…), gang up on you: "Possible rampage" (monsters attacking you together) on the Character tab (2 unless you change it; other monsters count as 1); a map can set its own count for all its monsters in the Map planner, which the room dungeons, such as Labyrinth Forest 1F and 3F and Sunken Ship, do). Each one swings at you, and from 3 at once your FLEE drops 10% and your DEF 5% per monster past 2 (rAthena's pre-renewal settings).
 - **Poison:** monsters with Poison Attack (Argiope, Side Winder, Ghoul, Argos, Zenorc…) try it on 5% of their swings, then wait 5 s. It lands at 120% of their hit chance and poisons on 20% × its level, less your VIT % and LUK / 10. Poison lasts 60 s (less with VIT and LUK) and isn't refreshed while it runs. While poisoned you lose 2 + 1.5% of Max HP a second (down to 25%), get no natural HP or SP regen, and your VIT DEF drops 25%. The share of the time you're poisoned shows on the Character tab and in the HP tooltips.
-- Skip monsters you don't want to fight, and mark regions that aren't open yet as closed.
+- Skip monsters you don't want to fight. Regions that aren't open yet (see Roadmap) are left out, and listed under the table.
 
 ### Zeny Hunter
 
@@ -97,6 +106,15 @@ Open maps, or single monsters, ranked by net zeny/hr. That's the loot value per 
 ### Map planner
 
 Per-map averages, kills/hr, EXP/hr and net zeny/hr. The EXP Hunter's Zeny / hr column is net the same way.
+
+### Roadmap
+
+Ragnarok Zero Global's release roadmap, from August 2026 to July 2027: each update's month, the level cap it raises to, what it adds, and the map regions it opens. The heading shows the level cap now and the next update.
+
+- A region opens by itself on its update's day, or once its month is over when the day isn't announced (so the Clock Tower update, October 2026, counts as open from 1 November). Maps on no region, such as Comodo's and Umbala's fields, Sphinx, Prontera Labyrinth and Mjolnir Dead Pit, are always open. Until then its maps are left out of the EXP Hunter, Zeny Hunter and Map planner rankings, and its monsters are hidden by "Hide monsters with no open map".
+- A closed monster shows when it comes: "none open · Dec 2026" in the monster table and Item info, "comes with the Glast Heim update, Dec 2026" in its details, a `closed · Dec 2026` tag on its maps in Monster info, and the same line in the Map planner.
+- Click a region to mark it open (or closed) yourself, for example the day an update goes live; it shows `yours` while it differs from the roadmap, and clicking it back follows the roadmap again. Other closed maps takes any single map.
+- The roadmap is `data/roadmap.js`. When an update's day is announced, set its `when` to `YYYY-MM-DD`.
 
 ### Farm without items
 

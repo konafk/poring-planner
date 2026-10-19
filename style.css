@@ -311,6 +311,11 @@ td .map{cursor:default}
 #chart .pauseMark{cursor:pointer}
 #chart text.deathMark{font-size:13px;fill:var(--bad)}
 /* build simulator gear grid */
+#roadmapTable th,#roadmapTable td{text-align:left;vertical-align:top}
+#roadmapTable th{cursor:default}
+#roadmapTable td:nth-child(4){white-space:normal;min-width:240px}
+#roadmapTable .maps{min-width:180px;max-width:320px}
+#roadmapTable tbody tr.muted td{color:var(--muted)}
 #gearTable td{vertical-align:middle;font-family:var(--body)}
 #gearTable th{text-align:left}
 #gearTable td:first-child{color:var(--muted);font-size:12px}
@@ -634,3 +639,15 @@ details.more>.form{display:grid}
 /* Item info: an item's other sources (monsters the farm tables don't have, quests) across the tile row */
 .calc .tile.wide{grid-column:1/-1}
 .tile .s.from{line-height:1.7}
+/* the details popup (js/info.js): a monster, item, gear or card */
+.infoDlg{width:min(720px,calc(100vw - 32px));max-height:min(760px,calc(100vh - 48px));margin-top:6vh}
+.infoDlg .calc{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.infoDlg .tile{padding:10px 12px;border-radius:11px}
+.infoDlg .tile .v{font-size:1.15rem}
+.infoSec h3{margin:4px 0 6px;font-size:11px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.infoList{display:flex;flex-direction:column;gap:3px;font-size:13px;line-height:1.5}
+.infoFrom{font-size:13px;line-height:1.75}
+.infoText{font-size:13px;line-height:1.5;color:var(--muted);white-space:pre-line}
+.infoActs{padding:10px 16px;border-top:1px solid var(--line);background:var(--raised);flex-wrap:wrap}
+#infoBack{margin-top:-1px}
+@media (max-width:680px){.infoDlg .calc{grid-template-columns:repeat(2,minmax(0,1fr))}}

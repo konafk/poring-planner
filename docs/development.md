@@ -27,13 +27,14 @@ Plain scripts that `index.html` loads in this order. They share one global scope
 | --- | --- |
 | `game.js` | Merges the monster tables; holds the element and size tables, the jobs and the attack presets. |
 | `state.js` | Storage and accounts, saved state and its migrations, small helpers. |
-| `model.js` | Damage, SP, defence and Sage models, maps and the tracker maths. |
+| `model.js` | Damage, SP, defence and Sage models, maps (and which are open, from the roadmap) and the tracker maths. |
 | `render.js` | Draws the Character, Session and Monsters & maps tabs. |
 | `events.js` | Input handlers, stats, the log form, accounts, sessions, backups, the share link and the column picker. |
 | `skills.js` | Skill trees, passives and buffs. |
 | `build-ui.js` | Build mode, consumables and the equipment stats rows. |
 | `ref.js` | The EXP & formulas tab, and the Character tab's Your gear vs other gear sets. |
 | `gear-db.js` | The Equipment and Cards tabs (filters, effects text) and the Equip dialog that puts gear or a card in a gear set. |
+| `info.js` | The details popup for a monster, item, piece of gear or card, opened from any name with `data-info="mob:<id>"` or `"item:<id>"`. |
 | `start.js` | Tabs and their headings, collapsible cards, the Character tab's section links, the get started card's buttons, the search (Ctrl+K), the sidebar's Compact / Hints / Theme / Full width buttons and the first render. |
 
 ### `data/`
@@ -45,6 +46,7 @@ Each table lives in its own file, so a re-export after a patch only touches that
 | `mobs.js` | Monsters (EXP is `null` where there's no data yet) |
 | `spawn.js` | Spawn maps and counts, normal and PvP channels. Written by `tools/export_spawns.py`. |
 | `maps.js` | In-game map code and name for each spawn map. Names written by `tools/export_mapnames.py`. |
+| `roadmap.js` | Release roadmap: each update's month (or day), level cap, what it adds and the map regions it opens (by map code prefix). Made by hand from the official roadmap. |
 | `mobskills.js` | Monsters that poison you (Poison Attack level, rate, delay) and ones that assist their kind. Written by `tools/export_mobskills.py`. |
 | `loot.js` | Drops (chance `null` where no rate is published yet) |
 | `items.js` | Item names |
@@ -100,4 +102,4 @@ node tests/model.test.mjs    # damage and tracker maths, loaded with a stand-in 
 node tests/stamp.test.mjs    # index.html carries no ?v= stamps, and the deploy stamps every file
 ```
 
-`model.test.mjs` covers damage per hit, hit chance, cast time, party share, EXP and job EXP rates, walking time, the monster table filters recovery item costs, and the Equipment and Cards tabs' filters and equipping. GitHub Actions runs every test, and checks that the data exporters compile, on each pull request and push to `main` (`.github/workflows/tests.yml`). Each push to `main` also deploys the page (`.github/workflows/pages.yml`).
+`model.test.mjs` covers the roadmap's open and closed regions, the details popup, damage per hit, hit chance, cast time, party share, EXP and job EXP rates, walking time, the monster table filters recovery item costs, and the Equipment and Cards tabs' filters and equipping. GitHub Actions runs every test, and checks that the data exporters compile, on each pull request and push to `main` (`.github/workflows/tests.yml`). Each push to `main` also deploys the page (`.github/workflows/pages.yml`).

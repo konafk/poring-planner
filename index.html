@@ -517,8 +517,7 @@
     <div class="note" id="bestWeight"></div>
     <div class="scroll"><table id="bestTable"><thead><tr><th data-sk="rank">#</th><th data-sk="mp">Map</th><th data-sk="main" title="filters on every monster you hunt there, not only the top 3">Main monsters</th><th data-sk="epm">EXP / min</th><th data-sk="secT">Sec / kill (fight + walk)</th><th data-sk="epk">EXP / kill</th><th data-sk="zph" title="Loot less skill items, the ASPD potion and ground buffs; healing comes off in Net zeny / hr">Zeny / hr</th><th data-sk="heal" title="HP items for the HP lost / min and SP items, priced in Recovery items (Character tab)">Heal cost / hr</th><th data-sk="net" title="Zeny / hr less Heal cost / hr">Net zeny / hr</th><th data-sk="hpm">HP lost / min</th><th data-sk="sus" title="Farm without items: the share of the HP and SP you use that your own recovery gives back (regen, HP / SP cards, consumables over time, Heal, Indulge) with no HP or SP items. Green: keeps up; yellow: you sit now and then; red: you need items. Hover a row for the breakdown">No items</th><th data-sk="skip">Can't hurt</th><th data-sk="N">Monsters</th><th data-sk="proj">Projected</th><th data-sk="log" title="Your logged kills / hr on this map ÷ what this table projects for them (each session's own stats). Hover for each session">Logged vs projected</th><th data-sk="wk" title="weight of the drops you loot, a kill (item weight × drop chance with your drop bonus and the level penalty)">Weight / kill</th><th data-sk="wph" title="weight you pick up an hour">Weight / hr</th><th data-sk="trip" title="hours from leaving town to leaving it again: farming up to your sell point, then the trip to town and back">Town trip every</th></tr><tr class="filters"><td><input type="search" data-tf="rank" placeholder="<=5"></td><td><input type="search" data-tf="mp" placeholder="map"></td><td><input type="search" data-tf="main" placeholder="monster"></td><td><input type="search" data-tf="epm" placeholder=">2000"></td><td><input type="search" data-tf="secT" placeholder="<5"></td><td><input type="search" data-tf="epk" placeholder=">500"></td><td><input type="search" data-tf="zph" placeholder=">10000"></td><td><input type="search" data-tf="heal" placeholder="<5000"></td><td><input type="search" data-tf="net" placeholder=">10000"></td><td><input type="search" data-tf="hpm" placeholder="<500"></td><td><input type="search" data-tf="sus" placeholder=">=100"></td><td><input type="search" data-tf="skip" placeholder="-"></td><td><input type="search" data-tf="N" placeholder=">30"></td><td><input type="search" data-tf="proj" placeholder=">2"></td><td><input type="search" data-tf="log" placeholder="<1"></td><td><input type="search" data-tf="wk" placeholder="<5"></td><td><input type="search" data-tf="wph" placeholder="<2000"></td><td><input type="search" data-tf="trip" placeholder=">1"></td></tr></thead><tbody></tbody></table></div>
     <div class="note hint">Open maps ranked by EXP / min with your attack, weighted by spawns. "Can't hurt": your element does 0%. Projected = your session's %/hr scaled by each map's EXP / min. Logged vs projected = your sessions on that map against this table's kills / hr for them. Weight columns (Show / hide columns) use your Max Weight and sell point. "EXP ?": no EXP data yet, left out. Click a row to open it in the map planner.</div>
-    <div class="maps" id="regions"></div>
-    <label>Other closed maps (comma separated)<input id="closedMaps" placeholder="e.g. gon_dun03, yuno_fild02"></label>
+    <div class="note" id="closedNote"></div>
   </section>
 
   <section class="card" id="mapCard" data-tab="maps">
@@ -556,6 +555,13 @@
     <div class="calc" id="huntTiles"></div>
     <div class="scroll"><table id="huntTable"><thead><tr><th data-sk="rank">#</th><th data-sk="name">Map / monster</th><th data-sk="from" title="maps: the monsters you hunt there; monsters: its map and every drop">Earns from</th><th data-sk="net" title="Loot / hr less Costs / hr">Net zeny / hr</th><th data-sk="loot">Loot / hr</th><th data-sk="cost" title="HP items for the HP lost / min and SP items (priced in Recovery items), the ASPD potion and ground buffs. Hover a row for each">Costs / hr</th><th data-sk="kph">Kills / hr</th><th data-sk="zk">Zeny / kill</th><th data-sk="wk" title="weight of the drops you loot, a kill (with your drop bonus and the level penalty)">Weight / kill</th><th data-sk="wph" title="weight you pick up an hour. Hover a row for how soon you fill up">Weight / hr</th><th data-sk="epm">EXP / min</th><th data-sk="hpm">HP lost / min</th></tr><tr class="filters"><td><input type="search" data-tf="rank" placeholder="<=5"></td><td><input type="search" data-tf="name" placeholder="map or monster"></td><td><input type="search" data-tf="from" placeholder="card"></td><td><input type="search" data-tf="net" placeholder=">50000"></td><td><input type="search" data-tf="loot" placeholder=">50000"></td><td><input type="search" data-tf="cost" placeholder="<5000"></td><td><input type="search" data-tf="kph" placeholder=">300"></td><td><input type="search" data-tf="zk" placeholder=">100"></td><td><input type="search" data-tf="wk" placeholder="<5"></td><td><input type="search" data-tf="wph" placeholder="<2000"></td><td><input type="search" data-tf="epm" placeholder=">2000"></td><td><input type="search" data-tf="hpm" placeholder="<500"></td></tr></thead><tbody></tbody></table></div>
     <div class="note hint">Open maps ranked by net zeny / hr: loot after drop bonus and level penalty, minus skill items, HP and SP items (Consumables on the Character tab) and consumables. Bosses and skipped monsters are left out; unticked auto-loot groups count as 0 everywhere. Click a monster on a map to stop or start hunting it; skipping monsters costs extra walking, or teleports if you have a Creamy Card or the Teleport skill (never Fly Wings: they cost too much). Click "teleport ok" if a map blocks teleport.</div>
+  </section>
+
+  <section class="card" id="roadmapCard" data-tab="maps">
+    <div class="bar"><h2 class="grow">Roadmap</h2><span class="note" id="roadmapNote"></span></div>
+    <div class="scroll"><table id="roadmapTable"><thead><tr><th>When</th><th>Update</th><th>Level cap</th><th>What's new</th><th>Maps</th></tr></thead><tbody id="regions"></tbody></table></div>
+    <label>Other closed maps (comma separated)<input id="closedMaps" placeholder="e.g. gon_dun03, yuno_fild02"></label>
+    <div class="note hint">Ragnarok Zero Global's release roadmap (<a href="https://www.mygnjoy.com/en/event/roadmap" target="_blank" rel="noopener">official ↗</a>). A region's maps and monsters open by themselves on its update's day, or once its month is over when the day isn't announced; until then the EXP Hunter, Zeny Hunter and monster table leave them out, and show when they come. Click a region to mark it open or closed yourself; click it back to follow the roadmap again.</div>
   </section>
 
   <section class="card" data-tab="market" id="tripCard">
@@ -698,6 +704,7 @@
 <script src="data/mobs.js"></script>
 <script src="data/spawn.js"></script>
 <script src="data/maps.js"></script>
+<script src="data/roadmap.js"></script>
 <script src="data/loot.js"></script>
 <script src="data/items.js"></script>
 <script src="data/weights.js"></script>
@@ -731,6 +738,11 @@
   <div class="eqDlgHead"><span id="eqDlgIco"></span><div class="grow"><b id="eqDlgTitle"></b><div class="note" id="eqDlgSub"></div></div><button type="button" class="small" id="eqDlgClose" aria-label="Close">✕</button></div>
   <div class="eqDlgBody" id="eqDlgBody"></div>
 </dialog>
+<dialog class="jump eqDlg infoDlg" id="infoDlg" aria-labelledby="infoDlgTitle">
+  <div class="eqDlgHead"><button type="button" class="small" id="infoBack" aria-label="Back" hidden>←</button><span id="infoDlgIco"></span><div class="grow"><b id="infoDlgTitle"></b><div class="note" id="infoDlgSub"></div></div><button type="button" class="small" id="infoDlgClose" aria-label="Close">✕</button></div>
+  <div class="eqDlgBody" id="infoDlgBody"></div>
+  <div class="bar infoActs" id="infoDlgActs"></div>
+</dialog>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <!-- app code, split by section; these run in order and share one global scope (plain scripts, so the page still opens from file://) -->
 <script src="js/game.js"></script>
@@ -742,6 +754,7 @@
 <script src="js/build-ui.js"></script>
 <script src="js/ref.js"></script>
 <script src="js/gear-db.js"></script>
+<script src="js/info.js"></script>
 <script src="js/start.js"></script>
 </body>
 </html>

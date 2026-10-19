@@ -314,7 +314,7 @@ $("bestMin").addEventListener("input",renderBest);$("bestN").addEventListener("c
 $("crowd").addEventListener("input",e=>{const v=e.target.value;C().crowd=v===""?null:Math.max(1,num(v,1));save();renderAll()});
 $("calOn").addEventListener("change",e=>{state.calOn=e.target.checked;save();renderBest()});
 $("bestTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.target.closest("tr[data-map]");if(!tr)return;state.map=tr.dataset.map;save();renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})});
-$("regions").addEventListener("click",e=>{const b=e.target.closest("[data-region]");if(!b)return;const id=b.dataset.region;state.regions[id]=state.regions[id]===false;syncClosed();save();renderAll()});
+$("regions").addEventListener("click",e=>{const b=e.target.closest("[data-region]");if(!b)return;toggleRegion(b.dataset.region);syncClosed();save();renderAll()});
 $("closedMaps").addEventListener("change",e=>{state.closed=[...new Set(e.target.value.split(/[\s,]+/).map(x=>x.trim().toLowerCase()).filter(Boolean))];syncClosed();save();renderAll()});
 // Zeny Hunter
 ROOTQ("[data-hunt]").forEach(b=>b.addEventListener("click",()=>{state.huntMode=b.dataset.hunt;save();renderHunt()}));
@@ -344,16 +344,14 @@ $("priceAdd").addEventListener("click",()=>{const id=findItem($("priceItem").val
 $("priceTable").addEventListener("input",e=>{const i=e.target.closest("[data-price],[data-npc]");if(!i)return;
   if(i.dataset.price)state.prices[i.dataset.price]=Math.max(0,num(i.value));else if(i.value==="")delete state.npcPrices[i.dataset.npc];else state.npcPrices[i.dataset.npc]=Math.max(0,num(i.value));save();renderAll()});
 $("priceTable").addEventListener("click",e=>{const b=e.target.closest("[data-unprice]");if(!b)return;delete state.prices[b.dataset.unprice];delete state.npcPrices[b.dataset.unprice];save();renderAll()});
-$("huntTable").querySelector("tbody").addEventListener("click",e=>{const a=e.target.closest("[data-pitem]");if(a){e.preventDefault();e.stopPropagation();addPrice(a.dataset.pitem,true);return}
-  const h=e.target.closest("[data-hpick]");if(h){e.preventDefault();e.stopPropagation();huntPick(h.dataset.hpick,+h.dataset.hmob);return}
+$("huntTable").querySelector("tbody").addEventListener("click",e=>{const h=e.target.closest("[data-hpick]");if(h){e.preventDefault();e.stopPropagation();huntPick(h.dataset.hpick,+h.dataset.hmob);return}
   const x=e.target.closest("[data-hreset]");if(x){e.preventDefault();e.stopPropagation();delete state.huntOff[x.dataset.hreset];save();renderAll();return}
   const t=e.target.closest("[data-notele]");if(t){e.preventDefault();e.stopPropagation();const mp=t.dataset.notele;state.noTele=noTele(mp)?state.noTele.filter(x=>x!==mp):[...state.noTele,mp];save();renderHunt()}},true);
 $("huntTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.target.closest("tr[data-map],tr[data-id]");if(!tr)return;
   if(tr.dataset.map){state.map=tr.dataset.map;save();renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})}
   else{state.calcMobId=state.infoMobId=+tr.dataset.id;MOB_PANEL_SHUT=false;save();renderAll();$("mobPanel").scrollIntoView({behavior:"smooth",block:"nearest"})}});
-// Monster info: pick a monster; click a drop to price it, a map to open it in the map planner
+// Monster info: pick a monster; click a map to open it in the map planner (a drop opens its details: js/info.js)
 $("mobInfoInput").addEventListener("change",e=>{const m=MOBS.find(x=>x.name.toLowerCase()===e.target.value.trim().toLowerCase());if(!m)return;state.infoMobId=m.id;save();renderMobInfo()});
-$("mobInfoDrops").addEventListener("click",e=>{const a=e.target.closest("[data-pitem]");if(a){e.preventDefault();addPrice(a.dataset.pitem,true)}});
 $("mobInfoMaps").addEventListener("click",e=>{const tr=e.target.closest("tr[data-map]");if(!tr)return;state.map=tr.dataset.map;save();showTab("maps");renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})});
 // Item info: search and filter; click an item for its droppers, a dropper for its Monster info
 $("itemSearch").addEventListener("input",renderItems);
