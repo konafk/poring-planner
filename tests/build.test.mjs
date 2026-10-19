@@ -154,8 +154,8 @@ t("Assassin left-hand weapon in the Shield row: dual wield ATK, element and ASPD
   assert.ok(k.unmodelled.some(x => x.includes("left-hand weapon")));
 });
 
-t("random options picked from lists: any item takes up to 4, resists and cast time store negated", () => {
-  assert.equal(BUILD.OPT_MAX, 4);
+t("random options picked from lists: any item takes up to 5, resists and cast time store negated", () => {
+  assert.equal(BUILD.OPT_MAX, 5);                                          // the most the game rolls on one item
   assert.equal(new Set(BUILD.OPTIONS.map(o => o.k)).size, BUILD.OPTIONS.length);
   const opts = [{ k: "atk", v: 25 }, { k: "dmg_race_demi_human", v: 5 }, { k: "res_ele_fire", v: 10 }, { k: "cast_time_variable_percent", v: 5 }, { k: "gone", v: 3 }, { k: "flee", v: "" }];
   const r = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { armor: { id: 2, opts } } }, "Knight", aspdBase);
@@ -170,6 +170,14 @@ t("random options picked from lists: any item takes up to 4, resists and cast ti
   const old = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { armor: { id: 2, opts: "ATK +25, FLEE +20" } } }, "Knight", aspdBase);
   assert.equal(old.acc.atk, 25);
   assert.deepEqual(BUILD.optRows("ATK +25, MATK +3%"), [{ k: "atk", v: 25 }, { k: "matk_percent", v: 3 }]);
+  // five typed lines on a Criatura Academy Hat: the two that match an option become rows, the three that don't are kept as text
+  const typed = "MaxHP +100, MaxSP +50, EXP +5%, Healing +3%, Movement Speed +5%";
+  assert.deepEqual(BUILD.optRows(typed).map(x => x.k), ["hp", "sp"]);
+  assert.deepEqual(BUILD.optBad(typed), ["EXP +5%", "Healing +3%", "Movement Speed +5%"]);
+  assert.deepEqual(BUILD.optBad(BUILD.optRows(typed)), []);
+  const kept = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { armor: { id: 2, opts: BUILD.optRows(typed), optsText: "EXP +5%, Healing +3%, FLEE +4" } } }, "Knight", aspdBase);
+  assert.equal(kept.acc.flee, 4);                                           // a kept line that's understood counts
+  assert.ok(kept.unmodelled.some(x => /option not understood: EXP \+5%$/.test(x)));
 });
 
 t("random options come from rozerodb's affixes, filtered to what the row's gear rolls", () => {

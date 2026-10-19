@@ -50,19 +50,20 @@ const BUILD=(()=>{
     const key=REFINE[it.refine]?it.refine:(it.slot||[]).includes("weapon")?`weapon_lv${it.wlv||1}`:"armor";
     const t=REFINE[key]||REFINE.armor;return t&&t[r-1]?t[r-1]:[0,0,0]}
 
-  // status values from total stats (verified in-game per the planner)
+  // status values from total stats (verified in-game per the planner). FLEE reads as the status window shows it: every FLEE (stats,
+  // gear, skills such as Improve Dodge) + Perfect Dodge (1 + LUK / 10 + gear), "147+1"
   function status(lv,s,ranged){const f=Math.floor;
     return {atk:f(lv/4+(ranged?s.dex+s.str/5:s.str+s.dex/5)+s.luk/3),matk:s.int+f(s.int/2)+f(s.dex/5)+f(s.luk/3)+f(lv/4),
       hit:175+lv+s.dex+f(s.luk/3),flee:100+lv+s.agi+f(s.luk/5),softDef:f(lv/2)+f(s.vit/2)+f(s.agi/5), // each part rounds down: Lv 63 VIT 5 AGI 100 shows 53 in game, not 54
       softMdef:Math.max(0,f(s.int+lv/4+(s.dex+s.vit)/5)),crit:1+s.luk*0.3+lv/100,aspdTerm:Math.sqrt(s.agi*s.agi/2+s.dex*s.dex/(ranged?7:5))/4}}
 
   // ---- bonus accumulation ----
-  const blank=()=>({st:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},stPct:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},atk:0,matk:0,atkPct:0,matkPct:0,hit:0,flee:0,crit:0,critDmg:0,aspd:0,aspdPct:0,aspdMod:0,
+  const blank=()=>({st:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},stPct:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},atk:0,matk:0,atkPct:0,matkPct:0,hit:0,flee:0,pd:0,crit:0,critDmg:0,aspd:0,aspdPct:0,aspdMod:0,
     hp:0,hpPct:0,sp:0,spPct:0,def:0,mdef:0,ranged:0,melee:0,skill:0,skillOf:{},vct:0,fct:0,acd:0,vctOf:{},fctOf:{},ignDef:0,ignMdef:0,
     ign:{def:{race:{},size:{},ele:{},kind:{}},mdef:{race:{},size:{},ele:{},kind:{}}},
-    phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},taken:{race:{},ele:{},kind:{}},exp:{all:0,race:{}},critRace:{},spCost:0,spRec:0,hpRec:0,wEle:null,unmodelled:[]});
+    phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},taken:{race:{},size:{},ele:{},kind:{}},exp:{all:0,race:{}},critRace:{},spCost:0,spRec:0,hpRec:0,wEle:null,unmodelled:[]});
   // lines that only matter for PvP survival, healing or status resistance: not part of the farming maths, so not reported either
-  const QUIET=["resistance_percent","heal_amount_percent","item_heal_percent","sp_recovery_percent","hp_recovery_percent","perfect_dodge","perfect_hit","magic_damage_taken_percent","sp_per_hit","hp_per_hit"];
+  const QUIET=["resistance_percent","heal_amount_percent","item_heal_percent","sp_recovery_percent","hp_recovery_percent","perfect_hit","magic_damage_taken_percent","sp_per_hit","hp_per_hit"];
   const addTo=(o,k,v)=>{o[k]=(o[k]||0)+v};
   // monster groups ("against Boulder Dwarves") are kept by the text a member's name contains
   const GROUP={boulder_dwarf:"Boulder Dwarf"};
@@ -84,7 +85,7 @@ const BUILD=(()=>{
     if(type==="all_stats"){STAT6.forEach(k=>A.st[k]+=v);return true}
     // "When attacking Brute monsters, CRIT +7": counted only against that race
     if(type==="crit"&&kind==="race"){addTo(A.critRace,tgt(kind,target),v);return true}
-    const flat={atk:"atk",matk:"matk",atk_percent:"atkPct",matk_percent:"matkPct",hit:"hit",flee:"flee",crit:"crit",crit_damage_percent:"critDmg",
+    const flat={atk:"atk",matk:"matk",atk_percent:"atkPct",matk_percent:"matkPct",hit:"hit",flee:"flee",perfect_dodge:"pd",crit:"crit",crit_damage_percent:"critDmg",
       aspd:"aspd",aspd_percent:"aspdPct",aspd_mod:"aspdMod",hp:"hp",hp_percent:"hpPct",sp:"sp",sp_percent:"spPct",def:"def",mdef:"mdef",
       ranged_damage_percent:"ranged",melee_damage_percent:"melee"}[type];
     if(flat&&!kind){A[flat]+=v;return true}
@@ -99,7 +100,7 @@ const BUILD=(()=>{
     // ignore DEF / MDEF: for every monster, or only against a race, size, element or boss / normal monsters (A.ign)
     if((type==="ignore_def_percent"||type==="ignore_mdef_percent")&&!kind){if(type==="ignore_def_percent")A.ignDef+=v;else A.ignMdef+=v;return true}
     if((type==="ignore_def_percent"||type==="ignore_mdef_percent")&&bucket(kind)&&bucket(kind)!=="group"){addTo(A.ign[type==="ignore_def_percent"?"def":"mdef"][bucket(kind)],tgt(kind,target),v);return true}
-    if(type==="damage_taken_percent"&&bucket(kind)&&bucket(kind)!=="size"){addTo(A.taken[bucket(kind)],tgt(kind,target),v);return true}
+    if(type==="damage_taken_percent"&&bucket(kind)&&bucket(kind)!=="group"){addTo(A.taken[bucket(kind)],tgt(kind,target),v);return true}
     if(type==="exp_percent"&&kind==="race"){addTo(A.exp.race,tgt(kind,target),v);return true}
         if(type==="weapon_element"&&target){A.wEle=cap(target);return true}
     A.unmodelled.push(`${src}: ${type}${target?" "+target:""} ${v>0?"+":""}${v}`);return false}
@@ -109,16 +110,22 @@ const BUILD=(()=>{
     def:"def",mdef:"mdef",aspd:"aspd",maxhp:"hp",mhp:"hp",hp:"hp",maxsp:"sp",msp:"sp",sp:"sp"};
   const PCT={atk:"atk_percent",matk:"matk_percent",aspd:"aspd_percent",hp:"hp_percent",sp:"sp_percent",
     str:"str_percent",agi:"agi_percent",vit:"vit_percent",int:"int_percent",dex:"dex_percent",luk:"luk_percent"};
+  // also the way the game and rozerodb name them: "Resistance to Demi-Human 7%", "Fire resistance increase 5%", "Phys Damage to Large targets +3%"
   function parseOptions(txt){const out=[],bad=[];String(txt||"").split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean).forEach(p=>{
     const m=p.match(/^([a-z ]+?)\s*([+-]\s*\d+(?:\.\d+)?)\s*(%?)$/i);const k=m&&OPT[m[1].toLowerCase().replace(/\s+/g,"")];
-    if(!k){bad.push(p);return}const v=parseFloat(m[2].replace(/\s/g,""));
+    if(!k){const a=named(p);if(a)out.push(a);else bad.push(p);return}const v=parseFloat(m[2].replace(/\s/g,""));
     if(m[3]){if(PCT[k])out.push([PCT[k],null,null,v]);else bad.push(p)}else out.push([k,null,null,v])});return {lines:out,bad}}
-  // random options picked from lists in build mode: gear.opts = [{k, v}], up to OPT_MAX per item whatever the item
+  // an option by its affix name and a number: the bonus line it counts as (the value negated for a reduction), null when unknown
+  function named(p){const m=p.match(/^(.+?)\s*:?\s*([+-]?)\s*(\d+(?:\.\d+)?)\s*(%?)$/);if(!m)return null;
+    const n=m[1].trim().toLowerCase(),o=OPTIONS.find(x=>x.line&&!!x.pct===!!m[4]&&x.label.replace(/ %$/,"").toLowerCase()===n);if(!o)return null;
+    const v=(m[2]==="-"?-1:1)*+m[3];return [...o.line,o.neg?-v:v]}
+  // random options picked from lists in build mode: gear.opts = [{k, v}], up to OPT_MAX per item whatever the item. Typed lines a save
+  // had from before the lists that don't match one are kept as text in gear.optsText when the rows replace them (still not understood)
   // (one item can roll 2 on one drop and 4 on the next). The list is rozerodb's affixes (data/affixes.js), one entry per
   // distinct affix with the bonus line apply() counts it as; line null = an affix the model has no use for (shown, but listed
   // under "Not counted"). neg lines store the value negated: "Resistance to Demon 5%" is damage taken −5%, "Variable Casting
   // reduction 5%" is the data's −5. gear: the min–max it rolls on each gear kind (all pools together)
-  const OPT_MAX=4;
+  const OPT_MAX=5; // the most random options the game rolls on one item
   const RACE_BY=Object.fromEntries(Object.entries(RACE).map(([k,v])=>[v.toLowerCase(),k]));
   const ELES=["neutral","water","earth","fire","wind","poison","holy","shadow","ghost","undead"];
   // rozerodb gear type -> gear kinds (see optGear). Blacksmiths forge melee weapons; the Activation System's Physical Series
@@ -169,7 +176,8 @@ const BUILD=(()=>{
     [["hp_percent","Max HP"],["sp_percent","Max SP"],["hp_recovery_percent","HP recovery"],["sp_recovery_percent","SP recovery"]].forEach(([k,l])=>add("Defense",k,l+" %",k,null,null,true));
     for(const r in RACE){add("Race","dmg_race_"+r,`Damage vs ${RACE[r]} %`,"damage_percent","race",r,true);add("Race","mdmg_race_"+r,`Magic damage vs ${RACE[r]} %`,"magic_damage_percent","race",r,true);
       add("Race","res_race_"+r,`Resist ${RACE[r]} %`,"damage_taken_percent","race",r,true,true)}
-    for(const z in SIZE){add("Size","dmg_size_"+z,`Damage vs ${cap(z)} %`,"damage_percent","size",z,true);add("Size","mdmg_size_"+z,`Magic damage vs ${cap(z)} %`,"magic_damage_percent","size",z,true)}
+    for(const z in SIZE){add("Size","dmg_size_"+z,`Damage vs ${cap(z)} %`,"damage_percent","size",z,true);add("Size","mdmg_size_"+z,`Magic damage vs ${cap(z)} %`,"magic_damage_percent","size",z,true);
+      add("Size","res_size_"+z,`Resist ${cap(z)} size %`,"damage_taken_percent","size",z,true,true)}
     ELES.forEach(e=>{add("Element","dmg_ele_"+e,`Damage vs ${cap(e)} monsters %`,"damage_percent","element",e,true);
       add("Element","mele_"+e,`${cap(e)} magic damage %`,"magic_damage_percent","element",e,true);add("Element","res_ele_"+e,`Resist ${cap(e)} %`,"damage_taken_percent","element",e,true,true)});
     [["normal","Normal"],["boss","Boss"]].forEach(([t,l])=>{add("Monster type","dmg_kind_"+t,`Damage vs ${l} monsters %`,"damage_percent","monster_kind",t,true);
@@ -203,11 +211,15 @@ const BUILD=(()=>{
   const optKey=k=>OPT_ALIAS[k]||k;
   // the picked rows; a build saved before the lists keeps its typed text and is read as rows where it matches one
   function optRows(opts){if(Array.isArray(opts))return opts.filter(x=>x&&OPT_BY[optKey(x.k)]).map(x=>({...x,k:optKey(x.k)}));
-    return parseOptions(opts).lines.map(([t,,,v])=>{const o=OPTIONS.find(x=>x.line&&x.line[0]===t&&!x.line[1]);return o&&{k:o.k,v:o.neg?-v:v}}).filter(Boolean)}
+    return parseOptions(opts).lines.map(([t,kd,tg,v])=>{const o=OPTIONS.find(x=>x.line&&x.line[0]===t&&x.line[1]===kd&&x.line[2]===tg);return o&&{k:o.k,v:o.neg?-v:v}}).filter(Boolean)}
   // bonus lines of the picked rows; off: the ones the model can't count (shown under "Not counted")
   function optLines(opts){if(!Array.isArray(opts))return {...parseOptions(opts),off:[]};const lines=[],off=[];
     optRows(opts).filter(x=>+x.v).forEach(x=>{const o=OPT_BY[x.k];if(o.line)lines.push([...o.line,o.neg?-x.v:+x.v]);else off.push(`${o.label.replace(/ %$/,"")} ${x.v}${o.pct?"%":""}`)});
     return {lines,bad:[],off}}
+  // a row's options: the picked ones and any typed lines kept from before the lists
+  function optLinesOf(o){const a=optLines(o.opts);if(!o.optsText)return a;const t=parseOptions(o.optsText);return {lines:[...a.lines,...t.lines],bad:[...a.bad,...t.bad],off:a.off}}
+  // typed option lines that match no option (none for picked rows)
+  const optBad=opts=>Array.isArray(opts)?[]:parseOptions(opts).bad;
   // costume enchant stones: one per costume slot, each only in its own slot
   const STONE_SLOTS=[{k:"upper",label:"Upper"},{k:"middle",label:"Middle"},{k:"lower",label:"Lower"},{k:"garment",label:"Garment"}];
   const stone=id=>(typeof STONES!=="undefined"?STONES:[]).find(x=>x.id===+id)||null;
@@ -235,14 +247,14 @@ const BUILD=(()=>{
       // a weapon in the Shield row is the left hand (Assassin); its ATK shows on the gear side of the status window like the right one's
       if(s.k==="shield"){if((it.slot||[]).includes("weapon"))wpnL=it;else shield=true}gearMatk+=it.matk||0;gearDef+=it.def||0;gearMdef+=it.mdef||0;refDef+=rd});
     worn.forEach(w=>{const ctx={...ctxBase,refine:w.r};applyGroups(A,w.it.g,ctx,w.it.name);w.cards.forEach(c=>applyGroups(A,c.g,ctx,c.name));
-      const o=optLines((gear[w.slot]||{}).opts);o.lines.forEach(b=>apply(A,b,w.it.name+" option"));o.bad.forEach(x=>A.unmodelled.push(`${w.it.name} option not understood: ${x}`));o.off.forEach(x=>A.unmodelled.push(`${w.it.name} option not counted: ${x}`))});
+      const o=optLinesOf(gear[w.slot]||{});o.lines.forEach(b=>apply(A,b,w.it.name+" option"));o.bad.forEach(x=>A.unmodelled.push(`${w.it.name} option not understood: ${x}`));o.off.forEach(x=>A.unmodelled.push(`${w.it.name} option not counted: ${x}`))});
     // costume enchant stones (data/stones.js): b.stones = {upper, middle, lower, garment} -> stone id, plus the sets they complete
     const st=stonesWorn(b.stones);st.forEach(x=>{(x.b||[]).forEach(l=>apply(A,l,x.name));if(x.off)A.unmodelled.push(`${x.name}: ${x.off}`)});
     const ids=st.map(x=>x.id);(typeof STONE_SETS!=="undefined"?STONE_SETS:[]).forEach(z=>{if(z.need.every(i=>ids.includes(i)))z.b.forEach(l=>apply(A,l,z.name))});
     // Taming Ring (Special Equipment, Accessory Right): b.special.ring = the pet egg enchant sealed in it (data/special.js)
     const egg=tamingEgg((b.special||{}).ring);if(egg){egg.b.forEach(l=>apply(A,l,`Taming Ring (${egg.name})`));if(egg.off)A.unmodelled.push(`Taming Ring (${egg.name}): ${egg.off}`)}
     // other special equipment the lists don't have: b.special.own = [{on, name, opts:[{k, v}]}], effects picked from the affix list
-    ((b.special||{}).own||[]).forEach(x=>{if(!x||x.on===false)return;const nm=String(x.name||"").trim()||"Special equipment",o=optLines(x.opts);
+    ((b.special||{}).own||[]).forEach(x=>{if(!x||x.on===false)return;const nm=String(x.name||"").trim()||"Special equipment",o=optLinesOf(x);
       o.lines.forEach(l=>apply(A,l,nm));o.bad.forEach(y=>A.unmodelled.push(`${nm} not understood: ${y}`));o.off.forEach(y=>A.unmodelled.push(`${nm} not counted: ${y}`))});
     // consumables and buffs picked on the Character tab: plain bonus lines on top of the gear
     (b.extra||[]).forEach(x=>apply(A,x,"consumable"));
@@ -267,7 +279,7 @@ const BUILD=(()=>{
     const fields={baseLv:lv,jobLv,weapon,wElem:arrowEl||A.wEle||(wpn&&wpn.el?cap(wpn.el):null)||"Neutral",
       st:{str:`${base.str}+${tot.str-base.str}`,agi:`${base.agi}+${tot.agi-base.agi}`,vit:`${base.vit}+${tot.vit-base.vit}`,dex:`${base.dex}+${tot.dex-base.dex}`,luk:`${base.luk}+${tot.luk-base.luk}`},
       intTxt:`${base.int}+${tot.int-base.int}`,atkTxt:`${S.atk}+${gearSide}`,wAtk:f(weaponAtk+(wpn?refineAt(wpn,(gear.weapon||{}).refine)[0]:0)),atkPct:A.atkPct,
-      matkTxt:`${S.matk}+${matkTot-S.matk}`,hitTxt:`${S.hit}+${A.hit}`,fleeTxt:`${S.flee}+${A.flee}`,defTxt:`${S.softDef}+${gearDef+refDef+A.def}`,
+      matkTxt:`${S.matk}+${matkTot-S.matk}`,hitTxt:`${S.hit}+${A.hit}`,fleeTxt:`${S.flee+A.flee}+${1+f(tot.luk/10)+A.pd}`,defTxt:`${S.softDef}+${gearDef+refDef+A.def}`,
       maxHp,maxSp,aspd,crit:Math.round((S.crit+A.crit)*10)/10,critDmg:A.critDmg,rangePct:ranged?A.ranged:A.melee,
       vctPct:A.vct,fctPct:A.fct,acdPct:A.acd,ignDef:A.ignDef,ignMdef:A.ignMdef,
       lw:dual?lw:"",lwAtk:dual?f((wpnL.atk||0)+refineAt(wpnL,(gear.shield||{}).refine)[0]):0,lwElem:dual&&wpnL.el?cap(wpnL.el):"Neutral"};
@@ -300,9 +312,10 @@ const BUILD=(()=>{
         if(k===w.length)continue;pre=w.slice(0,k).join(" ");post="";len=s.length-pre.length}
       const cs=cardsOf(it),a=pre.trim()?readCardNames(pre,cs,nameOf):[],b=post.trim()?readCardNames(post,cs,nameOf):[];if(!a||!b)continue;
       if(a.length+b.length&&!it.slots)continue; // cards named: not the slotless copy of an item
-      const score=(full?1e4:0)+len;
+      // the copy with room for the most of the cards named wins ("Double Bloody Damascus": the 2-slot Damascus, not the 1-slot one)
+      const score=(full?1e4:0)+Math.min(a.length+b.length,it.slots||0)*1e3+len;
       if(!best||score>best.score)best={score,id:it.id,refine,cards:[...a,...b].slice(0,it.slots||0)}}
     return best&&{id:best.id,refine:best.refine,cards:best.cards}}
 
-  return {SLOTS,CARD_FOR,WTYPE,STAT6,FIRST_OF,SHIELD_ASPD,DUAL_W,LEFT_ASPD,dualOk,item,jobBonus,refineAt,status,compute,curve,parseOptions,OPTIONS,OPT_MAX,optRows,optLines,optGear,optChoices,STONE_SLOTS,stone,stonesWorn,tamingEgg,readCardNames,readGearName}})();
+  return {SLOTS,CARD_FOR,WTYPE,STAT6,FIRST_OF,SHIELD_ASPD,DUAL_W,LEFT_ASPD,dualOk,item,jobBonus,refineAt,status,compute,curve,parseOptions,OPTIONS,OPT_MAX,optRows,optLines,optBad,optGear,optChoices,STONE_SLOTS,stone,stonesWorn,tamingEgg,readCardNames,readGearName}})();
 if(typeof module!=="undefined")module.exports=BUILD;

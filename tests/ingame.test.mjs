@@ -21,7 +21,7 @@ const sum = t => String(t).split("+").reduce((a, b) => a + +b, 0);
   const F = r.fields;
   assert.equal(F.atkTxt, "52+186");
   assert.equal(sum(F.hitTxt), 223);
-  assert.equal(sum(F.fleeTxt), 147);
+  assert.equal(F.fleeTxt, "147+1");                // FLEE + Perfect Dodge, as the window shows it
   assert.equal(F.defTxt, "14+17");
   assert.equal(Math.floor(F.aspd), 143);
   assert.equal(Math.floor(F.crit), 1);

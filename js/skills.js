@@ -41,6 +41,10 @@ const refreshPreset=c=>{if(c.preset>=0){const p=JOBS[state.job].p[c.preset];if(p
 // and Napalm Vulcan their cooldown and after-cast delay apart, as the table has them
 (function presetsV8(){if(state.presetsV8)return;state.presetsV8=true;const job=state.job;
   for(const j in state.chars){const c=state.chars[j],p=JOBS[j]&&c&&c.preset>=0&&JOBS[j].p[c.preset];if(p){state.job=j;c.a=levelPreset(p,c).a}}state.job=job;save()})();
+// Double Attack is worked out from the skill (a.da: dagger only, the learned level) instead of 1.5 hits averaged into the Thief basic attack
+// and Rogue's Shadow Spell presets: characters on one, and session snapshots taken on one, take the new preset
+(function daV1(){if(state.daV1)return;state.daV1=true;const job=state.job,fix=(j,c)=>{const p=JOBS[j]&&c&&c.a&&c.preset>=0&&JOBS[j].p[c.preset];if(p&&p.da){state.job=j;c.a=levelPreset(p,c).a}};
+  for(const j in state.chars)fix(j,state.chars[j]);state.sessions.forEach(s=>[s.snap,...(s.snapHist||[])].forEach(x=>{if(x)fix(s.job||job,x.c)}));state.job=job;save()})();
 // Sage: Hindsight moved from the on / auto boxes in Sage options to its own attacks. A Spell Fist character with Hindsight on takes
 // "Spell Fist + Hindsight"; every Sage preset takes its new name with its levels
 (function sageHsV1(){if(state.sageHsV1)return;state.sageHsV1=true;const c=state.chars&&state.chars.Sage;if(!c)return;const s=c.sage||{};
@@ -91,7 +95,9 @@ function skillEffects(c){const out={mastery:[],pct:0,spCost:0,myEle:{},physEle:{
     if(off){(isBuff?out.buffStat:out.stat).push(...fx.stat.filter(b=>cond.any.includes(b[0])));return}
     if(SK_ASPD[slug]){if(slug==="study")fx.stat=fx.stat.filter(b=>b[0]!=="aspd_percent");fx.stat.push(...SK_ASPD[slug](lv))}
     if(fx.mastery)out.mastery.push({v:fx.mastery,races:cond.races||null});out.pct+=fx.pct;out.spCost+=fx.spCost;for(const k in fx.myEle)out.myEle[k]=(out.myEle[k]||0)+fx.myEle[k];for(const k in fx.physEle)out.physEle[k]=(out.physEle[k]||0)+fx.physEle[k];
-    (isBuff?out.buffStat:out.stat).push(...fx.stat);(s.g||[]).forEach(g=>(g.b||[]).forEach(b=>(isBuff?out.buffStat:out.stat).push(b)))};
+    // the data's bonus lines (s.g) only for what the level's description doesn't give: Improve Dodge Lv10 is FLEE +30 (+40 after
+    // the 2nd job), not that plus its per-level lines; Hilt Binding's STR +1 is only a line
+    const got=new Set(fx.stat.map(b=>b[0]));(isBuff?out.buffStat:out.stat).push(...fx.stat);(s.g||[]).forEach(g=>(g.b||[]).forEach(b=>{if(!got.has(b[0]))(isBuff?out.buffStat:out.stat).push(b)}))};
   for(const k in SK_PASSIVE)take(k,SK_PASSIVE[k],false);for(const k in SK_BUFF)if((c.buffs||{})[k])take(k,SK_BUFF[k],true);return out}
 // Sage options follow the skill tree when one is set: Spell Fist, Hindsight, Double Bolt and bolt levels are the learned ones
 const SG_BOLT={Fire:"fire-bolt",Water:"cold-bolt",Wind:"lightning-bolt"};

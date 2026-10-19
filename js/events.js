@@ -125,10 +125,10 @@ function guessLevel(s,t,lv,p){const prev=[...s.entries].filter(e=>e.t<t).sort((a
 // the time the form logs at: the clock, or the date and time you typed
 function formTime(){const [h,m]=($("fTime").dataset.auto==="1"?nowTime():$("fTime").value||nowTime()).split(":").map(Number);return entryTime(h,m,pickedDay())}
 $("addForm").addEventListener("submit",e=>{e.preventDefault();const s=cur();const t=formTime();
-  s.entries=s.entries.filter(x=>x.t!==t);const lvIn=num($("fLevel").value,60),pIn=num($("fPct").value),lvG=guessLevel(s,t,lvIn,pIn);
+  s.entries=s.entries.filter(x=>x.t!==t);const was=s.entries.map(x=>x.t);const lvIn=num($("fLevel").value,60),pIn=num($("fPct").value),lvG=guessLevel(s,t,lvIn,pIn);
   $("pasteMsg").textContent=lvG!==lvIn?`EXP % went down a lot, so this entry is saved as Lv ${lvG}.`:"";
   const ent={t,lv:lvG,pct:pIn};if($("fDied").checked){ent.died=diePct();$("fDied").checked=false}if($("fJob").value!==""){ent.jpct=num($("fJob").value);const pv=[...s.entries].filter(e=>e.t<t&&e.jpct!=null).sort((a,b)=>b.t-a.t)[0];if(pv&&pv.jpct-ent.jpct>=50&&num(C().jobLv))C().jobLv=Math.min(jobMax(),num(C().jobLv)+1)}s.entries.push(ent);autoResume(s,t);if(!s.job)s.job=state.job;
-  if(s.job===state.job&&num(C().jobLv)>0&&s.entries.every(x=>x.t<=t))ent.jlv=num(C().jobLv);snapSession(s);
+  if(s.job===state.job&&num(C().jobLv)>0&&s.entries.every(x=>x.t<=t))ent.jlv=num(C().jobLv);snapSession(s,was);
   if(C().baseLv!==lvG&&s.entries.every(x=>x.t<=t)){const c0=C(),b0=derived(c0);c0.baseLv=lvG;shiftByStats(c0,b0)}save();renderAll();syncChar();resetForm(true);$("fPct").focus()});
 // a death costs 10% base EXP, 5% with the shop item. The EXP % box is your EXP just before dying: it goes in through the form like any entry,
 // then a second entry a second later has it less the penalty, so the EXP gained up to the death still counts
@@ -144,9 +144,10 @@ $("pasteAdd").addEventListener("click",()=>{const s=cur();let lv=num($("fLevel")
   // a line with "died", "dead" or 💀 is the EXP after a death
   const [h0,m0]=nowTime().split(":").map(Number),lines=$("pasteBox").value.split(/\n/).map(l=>{const p=pasteLine(l);return p&&[...p,/died|dead|💀/i.test(l)]}).filter(Boolean).map(([h,m,...r])=>h==null?[h0,m0,...r]:[h,m,...r]);
   const ts=pasteTimes(lines,pickedDay()),parsed=[...new Map(lines.map(([,,pct,jpct,died],i)=>[ts[i],{t:ts[i],pct,jpct,died}])).values()].sort((a,b)=>a.t-b.t);
+  const was=s.entries.filter(e=>!parsed.some(x=>x.t===e.t)).map(e=>e.t);
   parsed.forEach(x=>{const g=guessLevel(s,x.t,lv,x.pct);if(g!==lv){ups++;lv=g}const ent={t:x.t,lv,pct:x.pct};if(x.jpct!=null)ent.jpct=x.jpct;if(x.died)ent.died=diePct();s.entries=s.entries.filter(e=>e.t!==x.t);s.entries.push(ent);n++});
   $("pasteMsg").textContent=n?`Added ${n} entr${n===1?"y":"ies"}${ups?` with ${ups} level-up${ups>1?"s":""} (now Lv ${lv})`:` at Lv ${lv}`}.`:"No lines matched. Use the format 15:05 17.9% 63% or 15:05 17.9 63 (time and job % optional; no time means now)";
-  if(n){autoResume(s,parsed[parsed.length-1].t);if(!s.job)s.job=state.job;snapSession(s);$("pasteBox").value="";save();renderAll()}});
+  if(n){autoResume(s,parsed[parsed.length-1].t);if(!s.job)s.job=state.job;snapSession(s,was);$("pasteBox").value="";save();renderAll()}});
 // ---- quick log: one line from the top bar on any tab ("17.9 63", "15:05 17.9 63", "died 12.1"), read like a pasted line and sent through the
 // Log EXP form, so level-ups, deaths and job levels work the same. L opens it; on phones it's a sheet from the + button ----
 let openQuickLog=()=>{};
@@ -306,6 +307,9 @@ $("minLv").value=state.minLv;$("maxLv").value=state.maxLv;
 $("hideClosed").checked=state.hideClosed;$("hideClosed").addEventListener("change",e=>{state.hideClosed=e.target.checked;save();renderMobs()});
 // EXP Hunter + closed regions
 $("bestMin").addEventListener("input",renderBest);$("bestN").addEventListener("change",renderBest);
+// max sec / kill: one setting shown on both hunters; blank goes back to 60
+["bestMaxSec","huntMaxSec"].forEach(id=>{$(id).value=maxSecKill();$(id).addEventListener("input",e=>{state.maxSec=e.target.value===""?60:Math.max(0,num(e.target.value));
+  ["bestMaxSec","huntMaxSec"].forEach(o=>{if(o!==id)$(o).value=state.maxSec});save();renderBest();if(state.tab==="maps")renderHunt()})});
 // possible rampage, aggressive or assisting monsters attacking you together: blank goes back to the default (model.js CROWD_D)
 $("crowd").addEventListener("input",e=>{const v=e.target.value;C().crowd=v===""?null:Math.max(1,num(v,1));save();renderAll()});
 $("calOn").addEventListener("change",e=>{state.calOn=e.target.checked;save();renderBest()});
@@ -354,12 +358,16 @@ $("itemSearch").addEventListener("input",renderItems);
 // the auto-loot group filters (Monster info drops, Item info) are dropdowns
 ROOTQ('select[data-tf="group"]').forEach(sel=>sel.innerHTML=`<option value="">Any</option>${LOOT_GROUPS.map(([,n])=>`<option>${n}</option>`).join("")}<option value="not looted">Not looted</option>`);
 // Compare sessions, Monster info, Item info, Market and the Hunter tables: click a header to sort (again to flip it), type under it to filter; saved per table
-[["cmpTable",renderCompare],["bestTable",renderBest],["huntTable",renderHunt],["recTable",renderRecovery],["mobInfoDrops",renderMobInfo],["mobInfoMaps",renderMobInfo],["itemTable",renderItems],["itemDropTable",renderItems],["priceTable",renderPrices]].forEach(([id,render])=>{const t=$(id);
+const TF_RENDER={};
+[["cmpTable",renderCompare],["bestTable",renderBest],["huntTable",renderHunt],["recTable",renderRecovery],["mobInfoDrops",renderMobInfo],["mobInfoMaps",renderMobInfo],["itemTable",renderItems],["itemDropTable",renderItems],["priceTable",renderPrices]].forEach(([id,render])=>{const t=$(id);TF_RENDER[id]=render;
   t.tHead.addEventListener("click",e=>{const th=e.target.closest("th[data-sk]");if(!th)return;const k=th.dataset.sk,[k0,d0]=tblSort(id);
     const c=TABLES[id].cols[k];state.tsort[sortKey(id)]=[k,k===k0?-d0:c.n&&!c.asc?-1:1];save();render()});
   t.querySelectorAll("[data-tf]").forEach(inp=>{inp.value=(state.tfilt[id]||{})[inp.dataset.tf]||"";
     if(inp.value!==((state.tfilt[id]||{})[inp.dataset.tf]||""))delete state.tfilt[id][inp.dataset.tf]; // a typed filter a dropdown has no option for
     inp.addEventListener("input",()=>{(state.tfilt[id]=state.tfilt[id]||{})[inp.dataset.tf]=inp.value;save();render()})})});
+// the "Filters on" chip's clear: empties that table's filters and their boxes
+document.addEventListener("click",e=>{const a=e.target.closest("[data-tfclear]");if(!a)return;e.preventDefault();const id=a.dataset.tfclear;delete state.tfilt[id];
+  $(id).querySelectorAll("[data-tf]").forEach(i=>i.value="");save();TF_RENDER[id]()});
 $("itemCard").addEventListener("click",e=>{const a=e.target.closest("[data-pitem]");if(a){e.preventDefault();addPrice(a.dataset.pitem,true);return}
   const it=e.target.closest("tr[data-item]");if(it){state.infoItem=it.dataset.item;save();renderItems();$("itemTiles").scrollIntoView({behavior:"smooth",block:"nearest"});return}
   const mo=e.target.closest("#itemDroppers tr[data-id]");if(mo){state.infoMobId=+mo.dataset.id;save();showTab("mobinfo");scrollTo({top:0})}});
@@ -407,7 +415,9 @@ function packState(s){const o=JSON.parse(JSON.stringify(s));o.$p=1;
   (Array.isArray(o.sessions)?o.sessions:[]).forEach(x=>{if(!x||!Array.isArray(x.entries))return;const E=x.entries,ks=[...new Set(E.flatMap(e=>Object.keys(objOr(e))))];
     x.entries=Object.fromEntries(ks.map(k=>{let p=0;return [k,E.map(e=>{const v=objOr(e)[k]??null;if(v==null||!SHARE_DELTA.includes(k))return v;const d=v-p;p=v;return d})]}));
     // a session's stats snapshot keeps only what differs from that job's character; its walking is worked out again on load
-    delete x.walk;const ch=objOr(s.chars)[x.job||s.job];if(isObj(x.snap)&&isObj(x.snap.c)&&isObj(ch)){const d={};for(const k in x.snap.c)if(!jsEq(x.snap.c[k],ch[k]))d[k]=x.snap.c[k];x.snap.c=d;x.snap.$d=1}});
+    // (so do the earlier ones in snapHist)
+    delete x.walk;const ch=objOr(s.chars)[x.job||s.job],diff=o=>{const d={};for(const k in o.c)if(!jsEq(o.c[k],ch[k]))d[k]=o.c[k];o.c=d;o.$d=1};
+    if(isObj(ch))[x.snap,...(Array.isArray(x.snapHist)?x.snapHist:[])].forEach(o=>{if(isObj(o)&&isObj(o.c))diff(o)})});
   return o}
 function unpackState(o){if(!isObj(o)||o.$p!==1)return o;delete o.$p;
   for(const k in D)if(!(k in o))o[k]=JSON.parse(JSON.stringify(D[k]));
@@ -415,7 +425,8 @@ function unpackState(o){if(!isObj(o)||o.$p!==1)return o;delete o.$p;
   (Array.isArray(o.sessions)?o.sessions:[]).forEach(x=>{const E=x&&x.entries;if(!isObj(E))return;const cols=Object.entries(E).filter(([,a])=>Array.isArray(a));
     x.entries=Array.from({length:Math.max(0,...cols.map(([,a])=>a.length))},()=>({}));
     cols.forEach(([k,a])=>{let p=0;a.forEach((v,i)=>{if(v==null)return;if(SHARE_DELTA.includes(k))v=p+=v;x.entries[i][k]=v})})});
-  (Array.isArray(o.sessions)?o.sessions:[]).forEach(x=>{if(!x||!isObj(x.snap)||x.snap.$d!==1)return;delete x.snap.$d;x.snap.c={...JSON.parse(JSON.stringify(objOr(objOr(o.chars)[x.job||o.job]))),...objOr(x.snap.c)}});
+  (Array.isArray(o.sessions)?o.sessions:[]).forEach(x=>{if(!x)return;[x.snap,...(Array.isArray(x.snapHist)?x.snapHist:[])].forEach(y=>{if(!isObj(y)||y.$d!==1)return;
+    delete y.$d;y.c={...JSON.parse(JSON.stringify(objOr(objOr(o.chars)[x.job||o.job]))),...objOr(y.c)}})});
   return o}
 $("bkLink").addEventListener("click",async()=>{let url;try{save();url=location.origin+location.pathname+"#s="+await packShare(JSON.stringify(packState(state)))}catch(err){$("bkMsg").textContent="This browser can't make share links. Use Copy backup instead.";return}
   bkCopyText(url,`Share link (${url.length.toLocaleString()} characters)`)});
