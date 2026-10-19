@@ -166,7 +166,7 @@ function renderTracker(){renderStart();
       +(s.map&&smp===s.map&&!maps.some(x=>x[0]===s.map)?`<option value="${esc(s.map)}">${esc(mapLabel(s.map))} · not open</option>`:"");
     sel.value=s.map&&smp===s.map?s.map:""}
   // the folded part of the Log EXP card says what it's set to, so you know without opening it
-  {const sel=$("sessMapSel"),o=sel.options[sel.selectedIndex],n=partyN(s),bits=[];if(maps.length&&o)bits.push(o.textContent.replace(/ · ≈\d+ spawns$/,""));
+  {const n=partyN(s),bits=[];
     if(n>1)bits.push(`party of ${n}`);if($("fTime").dataset.auto!=="1"||$("fDate").dataset.auto!=="1")bits.push("time set by hand");if(state.dieItem)bits.push("death item");
     $("logMoreMeta").textContent=bits.join(" · ")}
   // several monsters: just the map (the monsters are in the tooltip), so the line stays short
