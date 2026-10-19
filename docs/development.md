@@ -104,4 +104,10 @@ node tests/model.test.mjs    # damage and tracker maths, loaded with a stand-in 
 node tests/stamp.test.mjs    # index.html carries no ?v= stamps, and the deploy stamps every file
 ```
 
-`model.test.mjs` covers the roadmap's open and closed regions, the details popup, damage per hit, hit chance, cast time, party share, EXP and job EXP rates, walking time, the monster table filters recovery item costs, and the Equipment and Cards tabs' filters and equipping. GitHub Actions runs every test, and checks that every script in `tools/` compiles, on each pull request and push to `main` (`.github/workflows/tests.yml`). Each push to `main` also deploys the page (`.github/workflows/pages.yml`).
+`tests/browser/smoke.mjs` opens the real page in Chromium: every tab shows only its own panels, Ctrl+K search opens a monster's details, the theme button cycles and the sidebar follows it, and no tab scrolls sideways at phone width. It fails on any script error. It needs Playwright, so it isn't a `*.test.mjs` file:
+
+```sh
+npm i --no-save playwright && npx playwright install chromium && node tests/browser/smoke.mjs
+```
+
+`model.test.mjs` covers the roadmap's open and closed regions, the details popup, damage per hit, hit chance, cast time, party share, EXP and job EXP rates, walking time, the monster table filters recovery item costs, and the Equipment and Cards tabs' filters and equipping. GitHub Actions runs every test (the browser one too), and checks that every script in `tools/` compiles, on each pull request and push to `main` (`.github/workflows/tests.yml`). Each push to `main` also deploys the page (`.github/workflows/pages.yml`).
