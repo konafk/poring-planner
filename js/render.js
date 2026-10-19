@@ -505,17 +505,20 @@ const UNK_PILL=' <span class="pill down" title="No EXP data for it yet, so it\'s
 const secTip=r=>`${r.sec.toFixed(1)}s fighting + ${r.walk.toFixed(1)}s walking${r.sell>=0.05?` + ${r.sell.toFixed(1)}s of selling trips`:""} per kill${r.cal?`\ncalibrated to your logs (×${r.cal.toFixed(2)}): ~${r.secT.toFixed(1)}s a kill`:""}\n${walkSrcTxt()}`;
 const hpTip=r=>r.hpm==null?"no damage data":`${fmtN(r.hpt)} HP/min taken from hits${r.psn>0.5?` and poison (${fmtN(r.psn)} of it)`:""}, ${fmtN(Math.max(0,r.hpt-r.hpm))} back from HP regen${hfCards()?" and Hunter Fly":""}${r.hpm>0?vitHeals()?"; your Vitata Heals cover the rest (no HP items)":"; HP items cover the rest":""}${r.pz>0.005?`\npoisoned ${Math.round(r.pz*100)}% of the time: no natural HP or SP regen then`:""}`;
 const tripTxt=h=>h==null?"–":fmtDur(h).split("\n").pop();
+// under the EXP and Zeny Hunters: how many rows are over the max sec / kill, and the maps your level can't enter yet
+const huntLimTxt=rows=>{const n=rows.filter(r=>r.slow).length,lk=Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)&&lvLocked(mp));
+  return esc((n?` · ${n} over ${maxSecKill()}s / kill ranked last`:"")+(lk.length?` · ${lk.map(mp=>`${mapCode(mp)} needs Lv ${mapMinLv(mp)}`).join(", ")}`:""))};
 function renderBest(){
   const min=num($("bestMin").value),lim=num($("bestN").value,10);const w=walkSec();const s=cur(),st=stats(s);const curMap=currentMap(),max=atMaxLv();
   const curEpm=curMap?sessEpm(s,w):null,cal=calInfo(w),k=state.calOn&&cal.k?cal.k:null;
-  const rows=Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)).map(mp=>mapStats(mp,w)).filter(r=>r&&r.N>=min);
+  const rows=Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)&&!lvLocked(mp)).map(mp=>mapStats(mp,w)).filter(r=>r&&r.N>=min);
   const sameJob=(s.job||state.job)===state.job;
   // rank every open map by EXP / min (Net zeny / hr at the max level), then filter, keep the top N and sort by the picked column.
   // Projected is worked out before the calibration, as it's already scaled to your session
   rows.forEach(r=>{r.proj=st&&sameJob&&curEpm?st.avgPct*r.epm/curEpm:null;r.logged=cal.maps[r.mp]||null;if(k)calApply(r,k)});
-  rows.sort((a,b)=>max?b.net-a.net:b.epm-a.epm);rows.forEach((r,i)=>r.rank=i+1);
+  rankRows(rows,max?r=>r.net:r=>r.epm);
   const shown=sortRows("bestTable",filterRows("bestTable",rows).slice(0,lim));
-  $("bestBasis").innerHTML=(max?`<b>Max level: EXP doesn't matter</b> · ranked by Net zeny / hr · `:"")+esc(`${state.job} · ${C().a.name||"attack"} · ${convOn()?convLabel("per map"):atkEl()} · walking ~${w.toFixed(1)}s/kill`+(curEpm&&st?` · compared with your session on ${mapCode(curMap)} at ${pct(st.avgPct)}/hr`:""))+(k?` · <b>calibrated ×${k.toFixed(2)}</b>`:"");
+  $("bestBasis").innerHTML=(max?`<b>Max level: EXP doesn't matter</b> · ranked by Net zeny / hr · `:"")+esc(`${state.job} · ${C().a.name||"attack"} · ${convOn()?convLabel("per map"):atkEl()} · walking ~${w.toFixed(1)}s/kill`+(curEpm&&st?` · compared with your session on ${mapCode(curMap)} at ${pct(st.avgPct)}/hr`:""))+(k?` · <b>calibrated ×${k.toFixed(2)}</b>`:"")+huntLimTxt(rows);
   $("calOn").checked=!!state.calOn;$("calOn").disabled=!cal.k&&!state.calOn;
   $("calNote").textContent=cal.k?`×${cal.k.toFixed(2)}: median of real ÷ projected kills over ${cal.n} session${cal.n>1?"s":""} longer than 60 min`:`needs a ${state.job} session longer than 60 min`;
   {const c=C(),mw=maxWt(c);$("bestWeight").textContent=mw>0?`Weight columns assume ${fmtN(num(c.curW))} / ${fmtN(mw)} weight now, selling at ${fmtP(sellPct())}% (${fmtN(mw*sellLim())}) with ${fmtN(num(c.townMin,3))} min to town and back · drops × your drop rate${num(state.dropBonus)?` +${num(state.dropBonus)}%`:""} and the level penalty, auto-looted groups only`
@@ -523,7 +526,7 @@ function renderBest(){
   $("bestTable").querySelector("tbody").innerHTML=shown.map(r=>{
     const main=MAPMOBS[r.mp].filter(x=>!x.m.boss&&!isSkipped(x.m)).sort((a,b)=>b.n-a.n).slice(0,3).map(x=>`<div>${esc(x.m.name)} <span class="note">×${x.n}</span>${BOSS_PILL(x.m)}${x.m.expUnknown?UNK_PILL:""}</div>`).join("");
     const proj=r.proj,L=r.logged;
-    return `<tr data-map="${r.mp}" class="${r.mp===curMap?"sel":""}"><td>${r.rank}</td><td class="name"><b class="mono">${mapCode(r.mp)}</b> <span class="note">${esc(mapName(r.mp))}</span>${r.mp===curMap?' <span class="pill">current</span>':""}${mobbedPill(r.mp)}${elTag(r.el2)}</td><td class="name mainmobs">${main}</td><td${max?' class="muted" title="Max level: base EXP no longer counts"':""}><b>${fmtN(r.epm)}</b></td><td title="${esc(secTip(r))}">${r.sec.toFixed(1)}s + ${r.walk.toFixed(1)}s${sellTxt(r.sell," + ")}${r.cal?` <span class="note">≈${r.secT.toFixed(1)}s</span>`:""}</td><td>${fmtN(r.epk)}</td><td>${fmtN(r.zb)}</td><td title="${esc(healTip(r))}">${r.heal>=0.5?fmtN(r.heal):"–"}</td><td class="${r.net>0?"good":"bad"}"><b>${fmtN(r.net)}</b></td><td title="${esc(hpTip(r))}">${r.hpm==null?"–":fmtN(r.hpm)}</td><td>${susCell(r.sus)}</td><td>${r.skip?`<span class="pill down" title="${esc(r.skipNames.join(", "))}">${r.skip}</span>`:"–"}</td><td>≈${r.N}</td><td>${proj==null?"–":"~"+proj.toFixed(1)+"%/hr"}</td>
+    return `<tr data-map="${r.mp}" class="${r.mp===curMap?"sel":""}"><td>${r.rank}</td><td class="name"><b class="mono">${mapCode(r.mp)}</b> <span class="note">${esc(mapName(r.mp))}</span>${r.mp===curMap?' <span class="pill">current</span>':""}${mobbedPill(r.mp)}${slowPill(r)}${elTag(r.el2)}</td><td class="name mainmobs">${main}</td><td${max?' class="muted" title="Max level: base EXP no longer counts"':""}><b>${fmtN(r.epm)}</b></td><td title="${esc(secTip(r))}">${r.sec.toFixed(1)}s + ${r.walk.toFixed(1)}s${sellTxt(r.sell," + ")}${r.cal?` <span class="note">≈${r.secT.toFixed(1)}s</span>`:""}</td><td>${fmtN(r.epk)}</td><td>${fmtN(r.zb)}</td><td title="${esc(healTip(r))}">${r.heal>=0.5?fmtN(r.heal):"–"}</td><td class="${r.net>0?"good":"bad"}"><b>${fmtN(r.net)}</b></td><td title="${esc(hpTip(r))}">${r.hpm==null?"–":fmtN(r.hpm)}</td><td>${susCell(r.sus)}</td><td>${r.skip?`<span class="pill down" title="${esc(r.skipNames.join(", "))}">${r.skip}</span>`:"–"}</td><td>≈${r.N}</td><td>${proj==null?"–":"~"+proj.toFixed(1)+"%/hr"}</td>
       <td title="${L?esc(L.tip):"no session of this job logged here"}">${L?`<span class="${L.ratio<0.9?"warnc":L.ratio>1.1?"good":""}">${L.ratio.toFixed(2)}×</span> <span class="note">${L.list.length} log${L.list.length>1?"s":""}</span>`:"–"}</td>
       <td>${fmtQty(r.wk)}</td><td>${fmtQty(r.wph)}</td><td title="${r.trip==null?"":esc(`about ${fmtN(wRoom(sellLim())/r.wk)} kills to your sell point, then ${fmtN(num(C().townMin,3))} min to town and back`)}">${wOn()?tripTxt(r.trip):"–"}</td></tr>`}).join("")
     ||'<tr><td colspan="18" class="name muted">No open maps match.</td></tr>';
@@ -602,7 +605,7 @@ function renderMobInfo(){
   $("mobInfoDrops").tBodies[0].innerHTML=tableRows("mobInfoDrops",drops).map(d=>`<tr class="${looted(d.id)?"":"muted"}"><td class="name"><a href="#" data-pitem="${esc(d.id)}" title="click to set a market price">${esc(itemName(d.id))}</a> <span class="note">#${esc(d.id)}</span></td><td class="name">${GROUP_NAME[groupOf(d.id)]}${looted(d.id)?"":" (not looted)"}</td><td>${chTxt(d.ch)}</td><td>${chTxt(d.your)}</td><td>${d.npc==null?"–":fmtN(d.npc)}</td><td>${d.pl==null?"–":fmtN(d.pl)}</td><td>${looted(d.id)?dropZTxt(d.z):"0"}</td></tr>`).join("")
     ||`<tr><td colspan="7" class="name muted">${drops.length?"No drops match these filters.":"No known drops."}</td></tr>`;
   const maps=(SPAWN[m.id]||[]).map(([mp,n])=>({mp,n,others:(MAPMOBS[mp]||[]).filter(x=>x.m.id!==m.id).sort((a,b)=>b.n-a.n)}));
-  $("mobInfoMaps").tBodies[0].innerHTML=tableRows("mobInfoMaps",maps).map(({mp,n,others})=>`<tr data-map="${esc(mp)}"><td class="name"><b class="mono">${mapCode(mp)}</b> <span class="note">${esc(mapName(mp))}</span>${isClosed(mp)?' <span class="pill down">closed</span>':""}</td><td>≈${n}</td><td class="name">${others.slice(0,5).map(x=>`${esc(x.m.name)} <span class="note">×${x.n}</span>`).join(", ")||"–"}</td></tr>`).join("")
+  $("mobInfoMaps").tBodies[0].innerHTML=tableRows("mobInfoMaps",maps).map(({mp,n,others})=>`<tr data-map="${esc(mp)}"><td class="name"><b class="mono">${mapCode(mp)}</b> <span class="note">${esc(mapName(mp))}</span>${lockPill(mp)}${isClosed(mp)?' <span class="pill down">closed</span>':""}</td><td>≈${n}</td><td class="name">${others.slice(0,5).map(x=>`${esc(x.m.name)} <span class="note">×${x.n}</span>`).join(", ")||"–"}</td></tr>`).join("")
     ||`<tr><td colspan="3" class="name muted">${maps.length?"No maps match these filters.":"No spawns known."}</td></tr>`;
 }
 // every monster that drops each item, best chance first
@@ -642,19 +645,19 @@ function renderHunt(){
   const mode=state.huntMode==="mobs"?"mobs":"maps",lim=num($("huntN").value,10),min=num($("huntMin").value),w=walkSec();
   ROOTQ("[data-hunt]").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.hunt===mode)));$("huntAutoWrap").hidden=mode!=="maps";$("huntAuto").checked=state.huntAuto;
   ROOTQ("[data-loot]").forEach(i=>i.checked=looted0(i.dataset.loot));$("huntMinWrap").firstChild.textContent=mode==="maps"?"Min monsters on map":"Min spawns on its map";
-  const rows=mode==="maps"?Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)).map(mp=>huntMap(mp,w,min)).filter(r=>r&&r.N>=min)
+  const rows=mode==="maps"?Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)&&!lvLocked(mp)).map(mp=>huntMap(mp,w,min)).filter(r=>r&&r.N>=min)
     :MOBS.filter(m=>!m.boss&&!isSkipped(m)&&huntLvOk(m)&&hasLoot(m)&&openMaps(m).length&&openMaps(m)[0][1]>=min).map(m=>huntMob(m,w)).filter(Boolean);
   // rank everything by net zeny / hr, then filter, keep the top N and sort by the picked column
-  rows.sort((a,b)=>b.net-a.net);rows.forEach((r,i)=>r.rank=i+1);
+  rankRows(rows,r=>r.net);
   const shown=sortRows("huntTable",filterRows("huntTable",rows).slice(0,lim));
-  $("huntBasis").textContent=`${state.job} · ${C().a.name||"attack"} · ${convOn()?convLabel("by zeny"):atkEl()} · walking ~${w.toFixed(1)}s/kill`+(num(state.dropBonus)?` · drop rate +${num(state.dropBonus)}%`:"")+(num(C().baseLv)>39?` · drops −50% from monsters Lv ${num(C().baseLv)-40} and below`:"")+huntLvTxt();
+  $("huntBasis").textContent=`${state.job} · ${C().a.name||"attack"} · ${convOn()?convLabel("by zeny"):atkEl()} · walking ~${w.toFixed(1)}s/kill`+(num(state.dropBonus)?` · drop rate +${num(state.dropBonus)}%`:"")+(num(C().baseLv)>39?` · drops −50% from monsters Lv ${num(C().baseLv)-40} and below`:"")+huntLvTxt();$("huntBasis").innerHTML+=huntLimTxt(rows);
   const top=[...shown].sort((a,b)=>b.net-a.net)[0];
   $("huntTiles").innerHTML=top?`<div class="tile now"><div class="k">Best ${mode==="maps"?"map":"monster"} for zeny</div><div class="v mono">${mode==="maps"?mapCode(top.mp):esc(top.m.name)}</div><div class="s">${fmtN(top.net)} z/hr net${top.el2&&convOn()?` · bring ${top.el2} converters`:""}${mode==="maps"?` · ${esc(mapName(top.mp))}`:` · on ${esc(mapLabel(openMaps(top.m)[0][0]))}`}</div></div>
    <div class="tile"><div class="k">Per hour</div><div class="v mono">${fmtN(top.kph)} kills</div><div class="s">${fmtN(top.loot)} z loot · ${fmtN(top.zk)} z/kill · ${fmtQty(top.wph)} weight${(()=>{const p=(top.m?[top.m]:top.earn.map(x=>x.m)).filter(m=>penNote(m));return p.length?` · ${esc(p.length===1?`${p[0].name}: ${penNote(p[0])}`:`level penalty on ${p.map(m=>m.name).join(", ")}`)}`:""})()}</div></div>
    <div class="tile"><div class="k">Costs / hr</div><div class="v mono">${fmtN(top.cost)}</div><div class="s">HP items ${fmtN(top.hpZ)} z, SP items ${fmtN(top.spZ)} z${top.other>=0.5?`, ASPD potion${fieldBuffs().length?", ground buffs":""} ${fmtN(top.other)} z`:""}${useZeny()||supItemsKill().length?" (skill items and zeny are taken off each kill)":""}</div></div>`:"";
   const sel=currentMap(),selMob=(calcMob()||{}).id;
   $("huntTable").querySelector("tbody").innerHTML=shown.map(r=>{
-    const name=r.mp?`<b class="mono">${mapCode(r.mp)}</b> <span class="note">${esc(mapName(r.mp))}</span>${r.mp===sel?' <span class="pill">current</span>':""}${mobbedPill(r.mp)}`:`<b title="${esc(dropNames(r.m))}">${esc(r.m.name)}</b>${BOSS_PILL(r.m)} <span class="note">Lv ${r.m.lv}</span>`;
+    const name=r.mp?`<b class="mono">${mapCode(r.mp)}</b> <span class="note">${esc(mapName(r.mp))}</span>${r.mp===sel?' <span class="pill">current</span>':""}${mobbedPill(r.mp)}${slowPill(r)}`:`<b title="${esc(dropNames(r.m))}">${esc(r.m.name)}</b>${BOSS_PILL(r.m)} <span class="note">Lv ${r.m.lv}</span>${slowPill(r)}`;
     const from=r.mp?huntPicker(r,w)+(r.skip?`<div class="note" title="${esc(r.skipNames.join(", "))}">can't hurt ${r.skip}</div>`:"")
       :(()=>{const om=openMaps(r.m);return `<div><span class="mono">${mapCode(om[0][0])}</span> <span class="note">≈${om[0][1]}${penNote(r.m)?` · ${esc(penNote(r.m))}`:""}</span></div>${dropList(r.m)}`})();
     return `<tr ${r.mp?`data-map="${r.mp}"`:`data-id="${r.m.id}"`} class="${(r.mp&&r.mp===sel)||(r.m&&r.m.id===selMob)?"sel":""}"><td>${r.rank}</td><td class="name">${name}${elTag(r.el2)}</td><td class="name mainmobs">${from}</td><td class="${r.net>0?"good":"bad"}"><b>${fmtN(r.net)}</b></td><td>${fmtN(r.loot)}</td><td title="${esc(costTip(r))}">${r.cost>0?fmtN(r.cost):"–"}</td><td>${fmtN(r.kph)}</td><td>${fmtN(r.zk)}</td><td>${fmtQty(r.wk)}</td><td title="${esc(huntWTip(r))}">${fmtQty(r.wph)}</td><td>${r.epm==null?"?":fmtN(r.epm)}</td><td>${r.hpm==null?"–":fmtN(r.hpm)}</td></tr>`}).join("")
@@ -686,7 +689,7 @@ function renderMap(){
    <div class="tile" title="${esc(walkSrcTxt())}"><div class="k">Kills / hr</div><div class="v mono">${fmtN(3600/r.secT)}</div><div class="s">${r.sec.toFixed(1)}s fight + ${r.walk.toFixed(1)}s walk${sellTxt(r.sell," + "," selling")}</div></div>
    <div class="tile"><div class="k">EXP / hr</div><div class="v mono">${L2?pct(r.epm*60/L2*100):fmtN(r.epm*60)}</div><div class="s">${L2?`1 level in ${fmtDur(L2/(r.epm*60))}`:`set Base level 1–${MAX_BASE_LV} for %`}</div></div>
    <div class="tile"><div class="k">Zeny / hr</div><div class="v mono">${fmtN(r.zph)}</div><div class="s">net${r.zcost>=0.5?` of ~${fmtN(r.zcost)} z SP items, potions &amp; skill items`:""}${r.hpm==null?"":` · HP lost ~${fmtN(r.hpm)}/min`}</div></div>
-   ${susTile(r.sus,"on "+mapCode(mp))}${isClosed(mp)?'<div class="note bad">This map is marked as not open yet.</div>':""}`
+   ${susTile(r.sus,"on "+mapCode(mp))}${isClosed(mp)?'<div class="note bad">This map is marked as not open yet.</div>':""}${lvLocked(mp)?`<div class="note bad">You need base Lv ${mapMinLv(mp)} to enter this map.</div>`:""}`
    :MAPMOBS[mp].every(x=>x.m.boss||x.m.expUnknown||isSkipped(x.m))?'<div class="note bad">No EXP data yet for the monsters here.</div>':'<div class="note bad">Your attack can\'t hurt anything here.</div>';
   $("mapConv").innerHTML=convCheck(mp,w,r);
   const tot=MAPMOBS[mp].filter(x=>!x.m.boss&&!isSkipped(x.m)).reduce((a,x)=>a+x.n,0)||1;

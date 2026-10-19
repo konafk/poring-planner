@@ -587,7 +587,18 @@ const MAPALIAS={};{const byName={};Object.entries(MAPNAMES).forEach(([k,[g,n,...
   Object.entries(byName).forEach(([n,k])=>{if(k&&!(n in MAPALIAS))MAPALIAS[n]=k})}
 const mapKey=s=>{const t=String(s??"").trim().toLowerCase();return MAPALIAS[t]||t};
 const isClosed=map=>{const r=regionOf(map);return (r&&state.regions[r.id]!==false)||state.closed.some(c=>mapKey(c)===mapKey(map))};
-const openMaps=m=>(SPAWN[m.id]||[]).filter(x=>!isClosed(x[0])).sort((a,b)=>b[1]-a[1]);
+// maps that need a base level to enter: below it they're left out of the EXP and Zeny Hunters and aren't a monster's open map
+const MAP_MINLV={nrd_dun02:50};
+const mapMinLv=mp=>MAP_MINLV[mapKey(mp)]||0;
+const lvLocked=mp=>num(C().baseLv)<mapMinLv(mp);
+const openMaps=m=>(SPAWN[m.id]||[]).filter(x=>!isClosed(x[0])&&!lvLocked(x[0])).sort((a,b)=>b[1]-a[1]);
+// the EXP and Zeny Hunters' max sec / kill (state.maxSec, 60 by default, 0 for none): slower maps and monsters get a "too slow" badge and
+// rank after all the others. rankRows ranks rows best first by score (sec / kill: r.secT, or 3600 / kills an hour)
+const maxSecKill=()=>state.maxSec===""||state.maxSec==null?60:Math.max(0,num(state.maxSec));
+const rankRows=(rows,score)=>{const lim=maxSecKill();rows.forEach(r=>{const t=r.secT!=null?r.secT:3600/r.kph;r.slow=lim>0&&!(t<=lim)});
+  rows.sort((a,b)=>a.slow-b.slow||score(b)-score(a));rows.forEach((r,i)=>r.rank=i+1);return rows};
+const slowPill=r=>r.slow?` <span class="pill down" title="Over your max ${maxSecKill()}s a kill (~${fmtN(r.secT!=null?r.secT:3600/r.kph)}s): ranked after the rest">too slow</span>`:"";
+const lockPill=mp=>lvLocked(mp)?` <span class="pill down" title="Needs base Lv ${mapMinLv(mp)} to enter">Lv ${mapMinLv(mp)}+</span>`:"";
 // monsters you skip (e.g. ones that stun you): left out of map averages, you walk past them
 const isSkipped=m=>!!(state.skipMobs&&state.skipMobs.includes(m.id));
 // rozerodb has no EXP for some monsters yet (Myst, Isis, Anubis...): shown as "?" and left out of EXP averages

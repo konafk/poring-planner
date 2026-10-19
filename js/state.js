@@ -119,7 +119,7 @@ delete state.flyPrice;
 if(!state.current||!state.sessions.some(s=>s.id===state.current))state.current=state.sessions[0].id;
 // Element / Race / Size / Boss dropdowns: the Monsters card's (mobF) and Monster info's (infoF), {key: value}
 ["mobF","infoF"].forEach(k=>{if(state[k]!=null)state[k]=Object.fromEntries(Object.entries(objOr(state[k])).filter(([,x])=>typeof x==="string"))});
-const D={bonus:0,jobBonus:0,minLv:1,maxLv:99,hideClosed:true,filters:{},mobF:{boss:"noboss"},infoF:{},sort:"epm",dir:-1,regions:{um:false},closed:[]};
+const D={bonus:0,jobBonus:0,minLv:1,maxLv:99,hideClosed:true,filters:{},mobF:{boss:"noboss"},infoF:{},sort:"epm",dir:-1,regions:{um:false},closed:[],maxSec:60};
 for(const k in D)if(state[k]==null)state[k]=JSON.parse(JSON.stringify(D[k]));
 const save=()=>store.set(state);
 const C=()=>{if(!state.chars[state.job])state.chars[state.job]=charDefault(state.job);const c=state.chars[state.job];

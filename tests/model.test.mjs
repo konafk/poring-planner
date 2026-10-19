@@ -1329,6 +1329,28 @@ t("damage taken from race / size / element cuts HP lost, heal cost and raises ne
   run(`C().eq=[{by:"takenSize",t:"L",v:-10}];applyBuild()`); near(run(`takenMul(${orc})`), 1);   // orcs are Medium
 });
 
+t("maps too slow to farm rank last with a badge; nrd_dun02 needs base Lv 50", () => {
+  run(`state.job="Thief";state.chars={};state.recovery={discount:false};state.maxSec=60;Object.assign(C(),{baseLv:45,jobLv:40,atkTxt:"60+150",hitTxt:"150",fleeTxt:"150",aspd:165,
+    defTxt:"20+10",maxHp:3000,maxSp:200,st:{},eq:[],weapon:"Dagger",skills:{}});SKFX=skillEffects(C());applyBuild();applyConsumables()`);
+  const rank = () => JSON.parse(run(`JSON.stringify(rankRows(Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)&&!lvLocked(mp)).map(mp=>mapStats(mp,2)).filter(r=>r&&r.N>=20),r=>r.epm).map(r=>({mp:r.mp,rank:r.rank,slow:r.slow,secT:r.secT,epm:r.epm})))`));
+  // Lv 45: nrd_dun02 is locked, so it isn't ranked and isn't its Boulder Dwarves' open map
+  assert.equal(run("lvLocked('nrd_dun02')"), true);
+  assert.ok(!rank().some(r => r.mp === "nrd_dun02"));
+  assert.ok(!run("openMaps(MOBS.find(m=>m.id===25327)).some(x=>x[0]==='nrd_dun02')"));
+  assert.match(run("lockPill('nrd_dun02')"), /Lv 50\+/);
+  // Lv 50: it can be entered, has the best EXP / min, but takes far over 60 s a kill: ranked after every map that isn't too slow
+  run("C().baseLv=50");
+  let rows = rank(), nrd = rows.find(r => r.mp === "nrd_dun02");
+  assert.ok(nrd.secT > 60 && nrd.slow && rows.every(r => r.epm <= nrd.epm));
+  const first = rows.findIndex(r => r.slow);
+  assert.ok(first > 0 && rows.slice(first).every(r => r.slow) && rows.slice(0, first).every(r => r.secT <= 60));
+  assert.match(run("slowPill({slow:true,secT:175})"), /too slow/);
+  // 0 is no limit: back to plain EXP / min
+  run("state.maxSec=0"); rows = rank(); assert.equal(rows[0].mp, "nrd_dun02"); assert.ok(!rows.some(r => r.slow));
+  run("state.maxSec=200"); assert.equal(rank()[0].mp, "nrd_dun02");                    // an editable limit
+  run("delete state.maxSec"); assert.equal(run("maxSecKill()"), 60);                     // saves from before: 60
+});
+
 t("cards any job can slot: Side Winder, Hunter Fly, Vitata", () => {
   const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
   setup("Knight", { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", hitTxt: "300", crit: 0, aspd: 170, defTxt: "10+10", hitScale: 1, mobInterval: 1.5,

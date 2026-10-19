@@ -511,6 +511,7 @@
     <div class="bar">
       <label>Min monsters on map<input class="w-lg" id="bestMin" type="number" value="40"></label>
       <label>Show<select id="bestN"><option>10</option><option>20</option><option>50</option></select></label>
+      <label title="Maps and monsters slower than this a kill get a &quot;too slow&quot; badge and rank after the rest (0 for no limit)">Max sec / kill<input class="w-sm" id="bestMaxSec" type="number" min="0" step="5" value="60"></label>
       <label title="Scale kills / hr (and so EXP / min, loot and weight per hour) by how your logged sessions compare with what this table projects for them"><span>&nbsp;</span><span class="bar"><input type="checkbox" id="calOn"> Calibrate to my logs <span class="note" id="calNote"></span></span></label>
     </div>
     <div class="note" id="bestWeight"></div>
@@ -545,6 +546,7 @@
       </div>
       <label id="huntMinWrap">Min monsters on map<input class="w-lg" id="huntMin" type="number" value="20"></label>
       <label>Show<select id="huntN"><option>10</option><option>20</option><option>50</option></select></label>
+      <label title="Maps and monsters slower than this a kill get a &quot;too slow&quot; badge and rank after the rest (0 for no limit)">Max sec / kill<input class="w-sm" id="huntMaxSec" type="number" min="0" step="5" value="60"></label>
       <label title="Only hunt monsters of these levels: on a map you pass the rest by. Blank: any level">Monster Lv<span class="bar"><input class="w-sm" id="huntMinLv" type="number" min="1" max="99" placeholder="any"> to <input class="w-sm" id="huntMaxLv" type="number" min="1" max="99" placeholder="any"></span></label>
       <label title="Pass by monsters 40 or more levels below you: their drops fall 50%. Follows your base level as you level up"><span>&nbsp;</span><span class="bar"><input type="checkbox" id="huntNoPen"> Skip drop-penalty monsters</span></label>
       <label id="huntAutoWrap"><span>&nbsp;</span><span class="bar"><input type="checkbox" id="huntAuto"> Hunt only the best-paying monsters</span></label>

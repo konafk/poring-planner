@@ -307,6 +307,9 @@ $("minLv").value=state.minLv;$("maxLv").value=state.maxLv;
 $("hideClosed").checked=state.hideClosed;$("hideClosed").addEventListener("change",e=>{state.hideClosed=e.target.checked;save();renderMobs()});
 // EXP Hunter + closed regions
 $("bestMin").addEventListener("input",renderBest);$("bestN").addEventListener("change",renderBest);
+// max sec / kill: one setting shown on both hunters; blank goes back to 60
+["bestMaxSec","huntMaxSec"].forEach(id=>{$(id).value=maxSecKill();$(id).addEventListener("input",e=>{state.maxSec=e.target.value===""?60:Math.max(0,num(e.target.value));
+  ["bestMaxSec","huntMaxSec"].forEach(o=>{if(o!==id)$(o).value=state.maxSec});save();renderBest();if(state.tab==="maps")renderHunt()})});
 // possible rampage, aggressive or assisting monsters attacking you together: blank goes back to the default (model.js CROWD_D)
 $("crowd").addEventListener("input",e=>{const v=e.target.value;C().crowd=v===""?null:Math.max(1,num(v,1));save();renderAll()});
 $("calOn").addEventListener("change",e=>{state.calOn=e.target.checked;save();renderBest()});
