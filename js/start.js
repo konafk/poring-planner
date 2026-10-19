@@ -1,10 +1,27 @@
 // ---- tabs: show one group of sections at a time; the last one opened is remembered in state.tab (Character first for new players) ----
 // local: show it in this browser tab only, without saving it (a reload that keeps this tab's view)
+// the heading over each tab: its sidebar group, its name and what it's for
+const TAB_DESC={
+  char:"Your job, stats, gear and attack: everything the damage, EXP and zeny numbers work from.",
+  track:"Log your EXP as you farm to see your real EXP/hr, when you'll level and how far your goals are.",
+  maps:"Find where to farm: every monster against your attack, the EXP and Zeny Hunter rankings, and the map planner.",
+  mobinfo:"Drops, spawn maps and your numbers against any monster.",
+  items:"Every drop: who drops it, where they spawn and what it's worth to you.",
+  market:"The prices players pay, and a timer that tells you when to go sell.",
+  ref:"EXP tables, party share, the element and size tables, and every formula with your numbers in it.",
+  acct:"Accounts, sessions and backups. Everything is saved in this browser only.",
+};
+function showHero(t){
+  const b=document.querySelector(`[data-tabbtn="${t}"]`);if(!b)return;
+  let g=b.previousElementSibling;while(g&&!g.classList.contains("navGrp"))g=g.previousElementSibling;
+  $("heroGrp").textContent=g?g.textContent:"";$("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
+}
 function showTab(t,local){
   if(t==="data")t="acct";// Backup now lives on the Account tab
   if(![...document.querySelectorAll("[data-tabbtn]")].some(b=>b.dataset.tabbtn===t))t="char";
   document.querySelectorAll("[data-tab]").forEach(el=>el.hidden=el.dataset.tab!==t);
   document.querySelectorAll("[data-tabbtn]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tabbtn===t)));
+  showHero(t);
   if(!local&&state.tab!==t){state.tab=t;save()}
   if(t==="ref"){renderRef();refScroll()}
   if(t==="char")renderGearCmp();
@@ -29,6 +46,22 @@ showTab(VIEW&&VIEW.tab||state.tab||"char",!!VIEW);
   const set=v=>{document.documentElement.classList.toggle("wide",v);btn.setAttribute("aria-pressed",String(v))};
   set(document.documentElement.classList.contains("wide"));
   btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.setItem(KEY_WIDE,"1"):localStorage.removeItem(KEY_WIDE)}catch(e){}});
+})();
+// ---- compact sidebar: icons only, per device like full width ----
+(function setupCompact(){
+  const KEY_COMPACT="rozero-farm-planner-compact",btn=$("sideBtn");
+  const set=v=>{document.documentElement.classList.toggle("compact",v);btn.setAttribute("aria-pressed",String(v));
+    btn.querySelector("span").textContent=v?"Expand sidebar":"Compact sidebar";btn.title=v?"Show the sidebar's labels":"Shrink the sidebar to icons"};
+  set(document.documentElement.classList.contains("compact"));
+  btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.setItem(KEY_COMPACT,"1"):localStorage.removeItem(KEY_COMPACT)}catch(e){}});
+})();
+// ---- colour theme: auto (follows the device) → light → dark, per device like full width ----
+(function setupTheme(){
+  const KEY_THEME="rozero-farm-planner-theme",btn=$("themeBtn"),root=document.documentElement,NEXT={auto:"light",light:"dark",dark:"auto"};
+  const set=t=>{t==="auto"?delete root.dataset.theme:root.dataset.theme=t;btn.querySelector("span").textContent=`Theme: ${t}`;
+    btn.title=t==="auto"?"Colour theme: follows your device":`Colour theme: always ${t}`};
+  set(root.dataset.theme||"auto");
+  btn.addEventListener("click",()=>{const t=NEXT[root.dataset.theme||"auto"];set(t);try{t==="auto"?localStorage.removeItem(KEY_THEME):localStorage.setItem(KEY_THEME,t)}catch(e){}});
 })();
 // ---- start ----
 syncClosed();syncChar();renderAll();resetForm();

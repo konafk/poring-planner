@@ -219,7 +219,9 @@ function tickTrip(){const now=Date.now(),s=cur();
   document.title=(ph==="due"?"⏰ Sell now · ":ph==="run"?`${fmtClock(left)} · `:"")+BASE_TITLE}
 function renderChart(s){
   const svg=$("chart"),es=[...s.entries].sort((a,b)=>a.t-b.t);const W=800,H=340,pl=52,pr=18,pt=16,pb=34;
-  if(!es.length){svg.innerHTML=`<text x="${W/2}" y="${H/2}" text-anchor="middle">No entries yet</text>`;return}
+  // no entries: a short strip with the hint instead of an empty 340-high chart
+  svg.setAttribute("viewBox",`0 0 ${W} ${es.length?H:70}`);svg.classList.toggle("empty",!es.length);
+  if(!es.length){svg.innerHTML=`<text x="${W/2}" y="40" text-anchor="middle">No entries yet: log your EXP % to draw your progress</text>`;return}
   const base=es[0].lv;const y=es.map(e=>(e.lv-base)*100+e.pct);let lo=Math.min(...y),hi=Math.max(...y);
   const span=Math.max(hi-lo,2),step=niceStep(span/4);lo=Math.floor(lo/step)*step;hi=Math.ceil(hi/step)*step;if(hi===lo)hi=lo+step;
   const n=es.length,t0=es[0].t,t1=es[n-1].t,act=t=>activeH(s,t0,t),actSpan=act(t1);const XT=t=>n===1||actSpan<=0?(pl+W-pr)/2:pl+act(t)/actSpan*(W-pl-pr),X=i=>XT(es[i].t);const Y=v=>pt+(hi-v)/(hi-lo)*(H-pt-pb);

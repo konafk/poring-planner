@@ -4,30 +4,47 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rozero Farm Planner</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 3 58 54'%3E%3Cdefs%3E%3ClinearGradient id='pb' x1='.3' y1='0' x2='.6' y2='1'%3E%3Cstop offset='0' stop-color='#ffc4d3'/%3E%3Cstop offset='.55' stop-color='#ff98b3'/%3E%3Cstop offset='1' stop-color='#ee6f93'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cpath d='M8 50C2.2 47 2 37.5 6.8 31 11.6 24.4 18.6 20.4 24.6 18c1.7-.7 2.3-2.2 1.8-4.1 2.3.2 4.4 1.5 5.4 3 8.8.9 17.6 6.3 21.4 14.1 3.8 7.9 2.2 15.7-2.9 18.3C45.7 51.9 38.7 52.6 30.3 52.6 20.3 52.6 12.3 52 8 50z' fill='url(#pb)' stroke='#b9476b' stroke-width='1.3' stroke-linejoin='round'/%3E%3Cellipse cx='13.5' cy='31.5' rx='4.4' ry='2.4' fill='#fff' opacity='.75' transform='rotate(-35 13.5 31.5)'/%3E%3Ccircle cx='19.6' cy='26.4' r='1.1' fill='#fff' opacity='.7'/%3E%3Cellipse cx='22.5' cy='40' rx='2.5' ry='3' fill='#2b1420'/%3E%3Cellipse cx='38.5' cy='40' rx='2.5' ry='3' fill='#2b1420'/%3E%3Ccircle cx='23.3' cy='38.9' r='.95' fill='#fff'/%3E%3Ccircle cx='39.3' cy='38.9' r='.95' fill='#fff'/%3E%3Cellipse cx='17.6' cy='44.6' rx='2.2' ry='1.1' fill='#fff' opacity='.6'/%3E%3Cellipse cx='43.6' cy='44.6' rx='2.2' ry='1.1' fill='#fff' opacity='.6'/%3E%3Cpath d='M27.6 44.4q1.5 1.9 2.9 0q1.4 1.9 2.9 0' fill='none' stroke='#2b1420' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='45.5' cy='13' r='3.4' fill='#ff9db8' stroke='#b9476b' stroke-width='1'/%3E%3Ccircle cx='44.4' cy='11.9' r='1' fill='#fff' opacity='.85'/%3E%3Ccircle cx='52' cy='9' r='2.5' fill='#ff9db8' stroke='#b9476b' stroke-width='1'/%3E%3Ccircle cx='51.2' cy='8.2' r='.7' fill='#fff' opacity='.85'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="style.css">
-<!-- full width is a per-device display choice: set it before the page draws so it doesn't jump -->
-<script>try{if(localStorage.getItem("rozero-farm-planner-wide")==="1")document.documentElement.classList.add("wide")}catch(e){}</script>
+<!-- full width, the compact sidebar and the colour theme are per-device display choices: set them before the page draws so it doesn't jump -->
+<script>try{if(localStorage.getItem("rozero-farm-planner-wide")==="1")document.documentElement.classList.add("wide");if(localStorage.getItem("rozero-farm-planner-compact")==="1")document.documentElement.classList.add("compact");var th=localStorage.getItem("rozero-farm-planner-theme");if(th==="light"||th==="dark")document.documentElement.dataset.theme=th}catch(e){}</script>
 </head>
 <body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><svg class="logo" viewBox="0 3 58 54" aria-hidden="true"><defs><linearGradient id="logoBody" x1=".3" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#ffc4d3"/><stop offset=".55" stop-color="#ff98b3"/><stop offset="1" stop-color="#ee6f93"/></linearGradient></defs><path d="M8 50C2.2 47 2 37.5 6.8 31 11.6 24.4 18.6 20.4 24.6 18c1.7-.7 2.3-2.2 1.8-4.1 2.3.2 4.4 1.5 5.4 3 8.8.9 17.6 6.3 21.4 14.1 3.8 7.9 2.2 15.7-2.9 18.3C45.7 51.9 38.7 52.6 30.3 52.6 20.3 52.6 12.3 52 8 50z" fill="url(#logoBody)" stroke="#b9476b" stroke-width="1.3" stroke-linejoin="round"/><ellipse cx="13.5" cy="31.5" rx="4.4" ry="2.4" fill="#fff" opacity=".75" transform="rotate(-35 13.5 31.5)"/><circle cx="19.6" cy="26.4" r="1.1" fill="#fff" opacity=".7"/><ellipse cx="22.5" cy="40" rx="2.5" ry="3" fill="#2b1420"/><ellipse cx="38.5" cy="40" rx="2.5" ry="3" fill="#2b1420"/><circle cx="23.3" cy="38.9" r=".95" fill="#fff"/><circle cx="39.3" cy="38.9" r=".95" fill="#fff"/><ellipse cx="17.6" cy="44.6" rx="2.2" ry="1.1" fill="#fff" opacity=".6"/><ellipse cx="43.6" cy="44.6" rx="2.2" ry="1.1" fill="#fff" opacity=".6"/><path d="M27.6 44.4q1.5 1.9 2.9 0q1.4 1.9 2.9 0" fill="none" stroke="#2b1420" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="45.5" cy="13" r="3.4" fill="#ff9db8" stroke="#b9476b" stroke-width="1"/><circle cx="44.4" cy="11.9" r="1" fill="#fff" opacity=".85"/><circle cx="52" cy="9" r="2.5" fill="#ff9db8" stroke="#b9476b" stroke-width="1"/><circle cx="51.2" cy="8.2" r=".7" fill="#fff" opacity=".85"/></svg><span class="brandTxt"><b>Farm Planner</b><span>Ragnarok Zero</span></span></div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <span class="navGrp" role="presentation">Plan</span>
+      <button type="button" role="tab" data-tabbtn="char" title="Character"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg><span>Character</span></button>
+      <button type="button" role="tab" data-tabbtn="track" title="Session"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Session</span></button>
+      <button type="button" role="tab" data-tabbtn="maps" title="Monsters &amp; maps"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Monsters &amp; maps</span></button>
+      <span class="navGrp" role="presentation">Look up</span>
+      <button type="button" role="tab" data-tabbtn="mobinfo" title="Monster info"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a7 7 0 0 0-7 7v10l2.5-2 2.5 2 2-2 2 2 2.5-2 2.5 2V10a7 7 0 0 0-7-7z"/><circle cx="9.5" cy="10.5" r=".8"/><circle cx="14.5" cy="10.5" r=".8"/></svg><span>Monster info</span></button>
+      <button type="button" role="tab" data-tabbtn="items" title="Item info"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><span>Item info</span></button>
+      <button type="button" role="tab" data-tabbtn="market" title="Market"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="M15.5 9.5A6 6 0 1 1 9.5 15.5"/></svg><span>Market</span></button>
+      <button type="button" role="tab" data-tabbtn="ref" title="EXP &amp; formulas"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg><span>EXP &amp; formulas</span></button>
+      <span class="navGrp" role="presentation">Data</span>
+      <button type="button" role="tab" data-tabbtn="acct" title="Account"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Account</span></button>
+    </nav>
+    <div class="sideFoot">
+      <button type="button" class="iconBtn" id="sideBtn" aria-pressed="false" title="Shrink the sidebar to icons"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 10l-2 2 2 2"/></svg><span>Compact sidebar</span></button>
+      <button type="button" class="iconBtn" id="themeBtn" title="Colour theme: follows your device"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg><span>Theme: auto</span></button>
+      <button type="button" class="iconBtn" id="wideBtn" aria-pressed="false" title="Let the page use the whole window width"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg><span>Full width</span></button>
+    </div>
+  </aside>
+<main class="main">
+  <div class="ctxBar" aria-label="Current session"><div class="ctxIn">
+    <span class="live" aria-hidden="true"></span><b id="title">Rozero farm planner</b><span class="ctxSub" id="subtitle"></span><span id="pauseNote" hidden></span>
+  </div></div>
 <div class="wrap">
-  <header>
-    <div class="titleRow"><h1 id="title">Rozero farm planner</h1><button type="button" class="small" id="wideBtn" aria-pressed="false" title="Let the page use the whole window width">Full width</button></div><div class="note" id="subtitle"></div><div class="note" id="pauseNote" hidden></div>
+  <header class="pageHead">
+    <div class="eyebrow" id="heroGrp"></div><h1 id="heroTitle"></h1><p id="heroDesc"></p>
   </header>
-  <nav class="tabs" role="tablist" aria-label="Sections">
-    <button type="button" role="tab" data-tabbtn="acct">Account</button>
-    <button type="button" role="tab" data-tabbtn="char">Character</button>
-    <button type="button" role="tab" data-tabbtn="track">Session</button>
-    <button type="button" role="tab" data-tabbtn="maps">Monsters &amp; maps</button>
-    <button type="button" role="tab" data-tabbtn="mobinfo">Monster info</button>
-    <button type="button" role="tab" data-tabbtn="items">Item info</button>
-    <button type="button" role="tab" data-tabbtn="market">Market</button>
-    <button type="button" role="tab" data-tabbtn="ref">EXP &amp; formulas</button>
-  </nav>
   <section class="card" id="acctCard" data-tab="acct">
-    <h2>Account &amp; session</h2>
+    <h2 class="cardHead">Account &amp; session</h2>
     <div class="bar acct">
       <span class="note pickLbl">Account</span>
       <select id="acctSel" class="grow" aria-label="Account"></select>
@@ -60,12 +77,12 @@
   <section class="card" data-tab="acct">
     <div class="bar"><h2 class="grow">Backup</h2><span class="note">Saved only in this browser. Copy backup copies every account. Copy share link makes a link to this account that anyone can open.</span></div>
     <div class="bar"><button type="button" id="bkCopy">Copy backup</button><button type="button" id="bkLink">Copy share link</button><button type="button" id="bkRestore" class="danger">Restore from text</button><span class="note" id="bkMsg"></span></div>
-    <textarea id="bkText" rows="3" placeholder="Paste a backup here, then click Restore from text" style="font:inherit;font-family:var(--mono);font-size:12px;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;resize:vertical;width:100%"></textarea>
+    <textarea class="mono-area" id="bkText" rows="3" placeholder="Paste a backup here, then click Restore from text"></textarea>
   </section>
 
   <section class="card" data-tab="char">
     <div class="bar"><h2 class="grow">Your character</h2><span class="note" id="jobNote"></span></div>
-    <div class="form" style="grid-template-columns:repeat(7,minmax(0,1fr))">
+    <div class="form c7">
       <label>Job<select id="job"></select></label>
       <label>Attack<select id="preset"></select></label>
       <label>Base level<input id="baseLv" type="number" min="1" max="99"></label>
@@ -82,7 +99,7 @@
       <span class="note" id="modeNote"></span>
     </div>
     <div id="buildPanel" class="build" hidden>
-      <div class="form" style="grid-template-columns:repeat(6,minmax(0,1fr))">
+      <div class="form c6">
         <label>Base STR<input data-bs="str" type="number" min="1" max="99"></label>
         <label>Base AGI<input data-bs="agi" type="number" min="1" max="99"></label>
         <label>Base VIT<input data-bs="vit" type="number" min="1" max="99"></label>
@@ -100,7 +117,7 @@
       </div>
       <div class="note" id="altNote"></div>
       <div class="bar">
-        <select id="loadoutPick" aria-label="Saved loadouts" style="width:auto;max-width:100%"></select>
+        <select id="loadoutPick" aria-label="Saved loadouts"></select>
         <button type="button" class="small" id="loadoutLoad" title="Put this loadout in the table shown: its gear comes off and stays remembered">Wear it</button>
         <button type="button" class="small" id="loadoutSave" title="Save the gear in the table under a name, to swap back to it later">Save as loadout…</button>
         <button type="button" class="small danger" id="loadoutDel">Delete</button>
@@ -109,18 +126,18 @@
       <div class="note" id="loadoutNote"></div>
       <div class="scroll"><table id="gearTable"><thead><tr><th>Slot</th><th>Item</th><th>Refine</th><th>Cards</th><th>Affixes</th></tr></thead><tbody></tbody></table></div>
       <div id="gearLists"></div>
-      <div class="note" style="margin-top:6px" title="The Special Equipment tab: one enchant stone per costume slot (Costume Enchanter, Prontera Cash Room; stones that complete a set add its bonus too) and the Taming Ring with the pet egg sealed in it">Special equipment: costume enchant stones and the Taming Ring</div>
-      <div class="form" id="stoneRow" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))"></div>
+      <div class="note mt" title="The Special Equipment tab: one enchant stone per costume slot (Costume Enchanter, Prontera Cash Room; stones that complete a set add its bonus too) and the Taming Ring with the pet egg sealed in it">Special equipment: costume enchant stones and the Taming Ring</div>
+      <div class="form cfill" id="stoneRow"></div>
       <div id="specialOwn" class="eqlist"></div>
       <div class="bar"><button type="button" class="small" id="specialAdd">+ Add other special equipment</button><span class="note">Special equipment the lists above don't have: name it and pick its effects from the affix list</span></div>
       <details class="note">
         <summary>Check against the game</summary>
-        <div style="margin:6px 0">Type totals from your status window (ATK/DEF: both parts added; FLEE without "+N"). ✓ = match; a number = how far off. Max HP/SP here replace the computed ones.</div>
-        <div class="form" id="checkGrid" style="grid-template-columns:repeat(4,minmax(0,1fr))"></div>
+        <div class="mt">Type totals from your status window (ATK/DEF: both parts added; FLEE without "+N"). ✓ = match; a number = how far off. Max HP/SP here replace the computed ones.</div>
+        <div class="form c4" id="checkGrid"></div>
       </details>
       <div class="note" id="buildNote"></div>
     </div>
-    <div class="form" style="grid-template-columns:repeat(6,minmax(0,1fr))">
+    <div class="form c6">
       <label>ATK<input id="atkTxt" inputmode="numeric" placeholder="120+300"></label>
       <label>MATK<input id="matkTxt" inputmode="numeric" placeholder="100+227"></label>
       <label>HIT<input id="hitTxt" inputmode="numeric" placeholder="267"></label>
@@ -128,7 +145,7 @@
       <label>ASPD<input id="aspd" type="number" min="100" max="199"></label>
       <label>DEF (soft+hard)<input id="defTxt" inputmode="numeric" placeholder="52+237"></label>
     </div>
-    <div class="form" style="grid-template-columns:repeat(6,minmax(0,1fr))">
+    <div class="form c6">
       <label>Max HP<input id="maxHp" type="number"></label>
       <label>Max SP<input id="maxSp" type="number"></label>
             <label title="Blank (auto): 1 + Max SP/100 + INT/6 (+ more from INT 120), with SP Recovery +% gear. Increase SP Recovery (Skills card) and consumables that restore SP over time are added on their own, so type only the natural regen tick">SP regen per 8s<input id="spRegen" type="number" placeholder="auto"></label>
@@ -136,14 +153,14 @@
       <label>Weapon<select id="weapon"></select></label>
       <label>Weapon / arrow element<select id="wElem"></select></label>
     </div>
-    <div class="bar note" id="shieldRow"><label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" id="shield" style="width:auto"> Wearing a shield</label> <span id="shieldNote"></span></div>
-    <div class="form" id="dualRow" hidden style="grid-template-columns:repeat(6,minmax(0,1fr))">
+    <div class="bar note" id="shieldRow"><label class="bar"><input type="checkbox" id="shield"> Wearing a shield</label> <span id="shieldNote"></span></div>
+    <div class="form c6" id="dualRow" hidden>
       <label title="Assassin dual wield: a dagger, one-handed sword or one-handed axe in each hand">Left hand<select id="lw"></select></label>
       <label title="The left weapon's ATK with refine. Type the right one's in Weapon ATK too">Left weapon ATK<input id="lwAtk" type="number" min="0"></label>
       <label>Left weapon element<select id="lwElem"></select></label>
-      <div class="note" style="grid-column:span 3;align-self:end">Dual wield: basic attacks hit with both hands (right × Righthand Mastery, left × Lefthand Mastery); skills use the right hand. Type Weapon ATK for the right hand.</div>
+      <div class="note span3">Dual wield: basic attacks hit with both hands (right × Righthand Mastery, left × Lefthand Mastery); skills use the right hand. Type Weapon ATK for the right hand.</div>
     </div>
-    <div class="form" style="grid-template-columns:repeat(6,minmax(0,1fr))">
+    <div class="form c6">
       <label>STR<input id="st_str" inputmode="numeric" placeholder="60+8"></label>
       <label>AGI<input id="st_agi" inputmode="numeric"></label>
       <label>VIT<input id="st_vit" inputmode="numeric"></label>
@@ -152,16 +169,16 @@
       <label>LUK<input id="st_luk" inputmode="numeric"></label>
     </div>
     <div class="note" id="statNote"></div>
-    <div class="bar note" id="onTopWrap"><label style="display:flex;flex-direction:row;gap:6px;align-items:flex-start"><input type="checkbox" id="addOnTop" style="width:auto;margin-top:2px"> <span>Status window typed <b>without</b> active skill buffs and items: add the Consumables card and Skills card buffs on top (untick if your numbers already include them)</span></label></div>
+    <div class="bar note" id="onTopWrap"><label class="check-top"><input type="checkbox" id="addOnTop"> <span>Status window typed <b>without</b> active skill buffs and items: add the Consumables card and Skills card buffs on top (untick if your numbers already include them)</span></label></div>
     <details class="card sub" id="eqPanel" open>
       <summary><b>Equipment stats</b> <span class="note">% lines from Equipment Stats that the status window doesn't show</span></summary>
       <div id="eqList" class="eqlist"></div>
       <div class="bar"><button type="button" class="small" id="eqAdd">+ Add a line</button><button type="button" class="small" id="eqFill">Fill from gear</button><span class="note">Skip flat lines like STR +2; your status window has them. Fill from gear copies the lines of the gear you set up in Build from gear.</span></div>
       <div class="note" id="eqFillNote"></div>
     </details>
-    <details class="card" style="padding:12px 14px;gap:8px;background:var(--bg)" open>
+    <details class="card sub" open>
       <summary><b>Attack details</b> <span class="note" id="atkSummary"></span></summary>
-      <div class="form" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+      <div class="form c4">
         <label>Type<select id="aType"><option value="phys">Physical</option><option value="magic">Magic</option><option value="auto">Basic attacks</option><option value="spellfist">Spell Fist (Sage)</option></select></label>
         <label>Damage % per hit<input id="aPct" type="number" step="1"></label>
         <label>Hits per use<input id="aHits" type="number" step="1" min="1"></label>
@@ -173,15 +190,15 @@
         <label>Zeny per use<input id="aZeny" type="number" step="100" min="0" placeholder="0"></label>
         <label id="cartWrap" hidden>Cart weight<input id="cartW" type="number" step="100" min="0" max="8000" placeholder="0 – 8000"></label>
         <label id="weaponWWrap" hidden title="Axe Boomerang adds the axe's weight to its damage %. Build mode reads it from the Weapon row">Weapon weight<input id="weaponW" type="number" step="1" min="0" placeholder="weight"></label>
-        <label id="shieldWrap" hidden title="Shield Boomerang and Rapid Smiting add the shield's weight + 4 × its refine to their damage %. Build mode reads them from the Shield row">Shield weight / refine<span class="bar"><input id="shieldW" type="number" step="1" min="0" placeholder="weight" aria-label="Shield weight" style="flex:1;min-width:0"><input id="shieldRef" type="number" step="1" min="0" max="20" placeholder="+0" aria-label="Shield refine" style="width:56px"></span></label>
+        <label id="shieldWrap" hidden title="Shield Boomerang and Rapid Smiting add the shield's weight + 4 × its refine to their damage %. Build mode reads them from the Shield row">Shield weight / refine<span class="bar"><input class="fill" id="shieldW" type="number" step="1" min="0" placeholder="weight" aria-label="Shield weight"><input class="w-xs" id="shieldRef" type="number" step="1" min="0" max="20" placeholder="+0" aria-label="Shield refine"></span></label>
       </div>
       <div class="note" id="useInfo"></div>
-      <div class="form" id="bonusRow" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr))">
+      <div class="form cfill" id="bonusRow">
         <label>Extra damage %<input id="dmgBonus" type="number" step="1"></label>
         <label title="ATK % from gear. The status window's ATK leaves it out. It scales weapon and equipment ATK next to race / size / element cards, not multiplied with them">ATK %<input id="atkPct" type="number" step="1" placeholder="0"></label>
-        <label title="+% damage to monsters whose name contains this text. Boulder Dwarf Captain / Squad Leader Cards are already counted by build mode and the Equipment stats 'monster group' line">+% vs monster name<span class="bar"><input id="nameSel" list="mobList" placeholder="e.g. Orc" style="flex:1;min-width:0"><select id="nameType" aria-label="Damage type" style="width:auto"><option value="phys">Phys</option><option value="magic">Magic</option><option value="both">Both</option></select><input id="namePct" type="number" step="1" style="width:60px"></span></label>
+        <label title="+% damage to monsters whose name contains this text. Boulder Dwarf Captain / Squad Leader Cards are already counted by build mode and the Equipment stats 'monster group' line">+% vs monster name<span class="bar"><input class="fill" id="nameSel" list="mobList" placeholder="e.g. Orc"><select id="nameType" aria-label="Damage type"><option value="phys">Phys</option><option value="magic">Magic</option><option value="both">Both</option></select><input class="w-sm" id="namePct" type="number" step="1"></span></label>
       </div>
-      <div class="form" style="grid-template-columns:repeat(5,minmax(0,1fr))">
+      <div class="form c5">
         <label>Mastery ATK<input id="mastery" type="number" step="1" placeholder="0"></label>
         <label>Melee / ranged dmg %<input id="rangePct" type="number" step="1" placeholder="0"></label>
         <label>Skill dmg %<input id="skillPct" type="number" step="1" placeholder="0"></label>
@@ -189,53 +206,53 @@
         <label>Crit dmg %<input id="critDmg" type="number" step="1" placeholder="0"></label>
       </div>
       <div class="bar note" id="acRow"><span title="Cards, weapons and scrolls that cast a spell on attack: every job can use them, Mages too">Auto-cast spell (card / weapon / scroll):</span>
-        <label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" id="acOn" style="width:auto"> on</label>
-        <select id="acSpell" aria-label="Auto-cast spell" style="width:auto"></select>
-        <label class="bar" style="flex-direction:row;gap:4px">Lv <input id="acLv" type="number" min="1" max="10" style="width:56px"></label>
-        <label class="bar" style="flex-direction:row;gap:4px"><input id="acPct" type="number" step="0.5" min="0" max="100" style="width:64px">% per basic attack</label>
+        <label class="bar"><input type="checkbox" id="acOn"> on</label>
+        <select id="acSpell" aria-label="Auto-cast spell"></select>
+        <label class="bar">Lv <input class="w-xs" id="acLv" type="number" min="1" max="10"></label>
+        <label class="bar"><input class="w-sm" id="acPct" type="number" step="0.5" min="0" max="100">% per basic attack</label>
         <span id="acInfo"></span>
       </div>
       <div class="cdList note" id="cardRow">
         <div class="cdHead"><b>Cards any job can slot</b> <span class="muted">tick the ones you wear; build mode already reads Vitata, Phen and Bloody Butterfly from your gear</span></div>
-        <div class="cdItem" title="Vitata Card gives Heal Lv1, which you cast yourself: each cast costs SP (plus the card's SP cost) and time you aren't attacking. In build mode a Vitata Card in your gear already counts its SP cost"><label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-cd="vitata" style="width:auto"> <b>Vitata</b></label><span class="muted">you cast Heal Lv1 between kills; every skill costs more SP</span><span class="cdOpts">SP cost +<input data-cd="spBonus" type="number" style="width:50px">% · Heal: <input data-cd="healSp" type="number" style="width:50px"> SP → <input data-cd="healHp" type="number" style="width:64px"> HP</span></div>
-        <div class="cdItem" title="Side Winder Card: basic attacks hit twice this often (right hand only). With Double Attack learned on the Skills card the card follows the skill, so nothing is added; Thief presets already count Double Attack"><label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-cd="daSF" style="width:auto"> <b>Side Winder</b></label><span class="muted">basic attacks sometimes hit twice (right hand only; with Spell Fist the 2nd hit procs it too)</span><span class="cdOpts"><input data-cd="daPct" type="number" style="width:50px">% chance</span></div>
-        <div class="cdItem" title="Creamy Card gives Teleport Lv1, so the Zeny Hunter can teleport past monsters you skip (without it, or the Teleport skill, it walks: Fly Wings cost too much). Its 10 SP a cast isn't counted"><label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-cd="creamy" style="width:auto"> <b>Creamy</b></label><span class="muted">Teleport Lv1: the Zeny Hunter teleports past monsters you skip</span></div>
-        <div class="cdItem" title="Phen Card: casts can't be interrupted, variable cast +25%. Without it (or Bloody Butterfly) a hit that lands while you cast interrupts it and you start again. Build mode reads it from your gear"><label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-cd="phen" style="width:auto"> <b>Phen</b></label><span class="muted">casts can't be interrupted; variable cast +25%</span></div>
-        <div class="cdItem" title="Bloody Butterfly Card: casts can't be interrupted, variable cast +30%. Build mode reads it from your gear"><label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-cd="bbfly" style="width:auto"> <b>Bloody Butterfly</b></label><span class="muted">casts can't be interrupted; variable cast +30%</span></div>
+        <div class="cdItem" title="Vitata Card gives Heal Lv1, which you cast yourself: each cast costs SP (plus the card's SP cost) and time you aren't attacking. In build mode a Vitata Card in your gear already counts its SP cost"><label class="bar"><input type="checkbox" data-cd="vitata"> <b>Vitata</b></label><span class="muted">you cast Heal Lv1 between kills; every skill costs more SP</span><span class="cdOpts">SP cost +<input class="w-xs" data-cd="spBonus" type="number">% · Heal: <input class="w-xs" data-cd="healSp" type="number"> SP → <input class="w-sm" data-cd="healHp" type="number"> HP</span></div>
+        <div class="cdItem" title="Side Winder Card: basic attacks hit twice this often (right hand only). With Double Attack learned on the Skills card the card follows the skill, so nothing is added; Thief presets already count Double Attack"><label class="bar"><input type="checkbox" data-cd="daSF"> <b>Side Winder</b></label><span class="muted">basic attacks sometimes hit twice (right hand only; with Spell Fist the 2nd hit procs it too)</span><span class="cdOpts"><input class="w-xs" data-cd="daPct" type="number">% chance</span></div>
+        <div class="cdItem" title="Creamy Card gives Teleport Lv1, so the Zeny Hunter can teleport past monsters you skip (without it, or the Teleport skill, it walks: Fly Wings cost too much). Its 10 SP a cast isn't counted"><label class="bar"><input type="checkbox" data-cd="creamy"> <b>Creamy</b></label><span class="muted">Teleport Lv1: the Zeny Hunter teleports past monsters you skip</span></div>
+        <div class="cdItem" title="Phen Card: casts can't be interrupted, variable cast +25%. Without it (or Bloody Butterfly) a hit that lands while you cast interrupts it and you start again. Build mode reads it from your gear"><label class="bar"><input type="checkbox" data-cd="phen"> <b>Phen</b></label><span class="muted">casts can't be interrupted; variable cast +25%</span></div>
+        <div class="cdItem" title="Bloody Butterfly Card: casts can't be interrupted, variable cast +30%. Build mode reads it from your gear"><label class="bar"><input type="checkbox" data-cd="bbfly"> <b>Bloody Butterfly</b></label><span class="muted">casts can't be interrupted; variable cast +30%</span></div>
         <div id="cardInfo"></div>
       </div>
       <div class="cdList note" id="hpCardRow">
         <div class="cdHead"><b>Cards that give HP back</b> <span class="muted">build mode reads Hunter Fly and HP Recovery +% cards (Muka, Zombie, Wooden Golem, Merman) from your gear; in status window mode add an &quot;HP recovery&quot; line under Equipment stats</span></div>
-        <div class="cdItem" title="Hunter Fly Card: physical attacks (basic attacks, Spell Fist, physical skills) have a chance to restore HP every second for 5 s"><label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-cd="hfOn" style="width:auto"> <b>Hunter Fly</b></label><span class="muted">physical attacks can restore HP for 5 s, so less HP lost</span><span class="cdOpts"><input data-cd="hfPct" type="number" style="width:50px">% chance · <input data-cd="hfHp" type="number" style="width:60px"> HP/s · <input data-cd="hfN" type="number" min="1" max="4" step="1" style="width:44px" title="Copies in your weapons (1–4). Each copy rolls on every physical attack; the restore doesn't add up"> cards</span></div>
+        <div class="cdItem" title="Hunter Fly Card: physical attacks (basic attacks, Spell Fist, physical skills) have a chance to restore HP every second for 5 s"><label class="bar"><input type="checkbox" data-cd="hfOn"> <b>Hunter Fly</b></label><span class="muted">physical attacks can restore HP for 5 s, so less HP lost</span><span class="cdOpts"><input class="w-xs" data-cd="hfPct" type="number">% chance · <input class="w-sm" data-cd="hfHp" type="number"> HP/s · <input class="w-2xs" data-cd="hfN" type="number" min="1" max="4" step="1" title="Copies in your weapons (1–4). Each copy rolls on every physical attack; the restore doesn't add up"> cards</span></div>
         <div id="hpCardInfo"></div>
       </div>
       <div class="cdList note" id="spCardRow">
         <div class="cdHead"><b>Cards that give SP back</b> <span class="muted">build mode reads Dracula and SP Recovery +% cards (Eggyra, Sohee, Merman) from your gear; in status window mode add an &quot;SP recovery&quot; line under Equipment stats</span></div>
-        <div class="cdItem" title="Dracula Card: physical and magic attacks have a chance to restore SP every second for 7 s"><label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-cd="dracOn" style="width:auto"> <b>Dracula</b></label><span class="muted">physical and magic attacks can restore SP for 7 s</span><span class="cdOpts"><input data-cd="dracPct" type="number" style="width:56px">% chance · <input data-cd="dracSp" type="number" style="width:56px"> SP/s · <input data-cd="dracN" type="number" min="1" max="4" step="1" style="width:44px" title="Copies in your weapons (1–4). Each copy rolls on every attack; the restore doesn't add up"> cards</span></div>
-        <div class="cdItem" id="dpWrap" title="Dark Priest Card, when a Sage wears it: 1 SP each time a physical attack hits (Spell Fist's physical hit too)"><label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-cd="dpOn" style="width:auto"> <b>Dark Priest</b></label><span class="muted">a Sage gets 1 SP each time a physical attack hits (Spell Fist too)</span></div>
-        <div class="cdItem" title="Weapon cards: 5 SP when a melee physical attack kills a monster of that race. Not counted with Spell Fist or a bow, instrument or whip"><b>+5 SP per melee kill</b><span class="muted">weapon cards, per race killed:</span><span id="killSpBoxes" class="bar" style="gap:8px"></span></div>
+        <div class="cdItem" title="Dracula Card: physical and magic attacks have a chance to restore SP every second for 7 s"><label class="bar"><input type="checkbox" data-cd="dracOn"> <b>Dracula</b></label><span class="muted">physical and magic attacks can restore SP for 7 s</span><span class="cdOpts"><input class="w-xs" data-cd="dracPct" type="number">% chance · <input class="w-xs" data-cd="dracSp" type="number"> SP/s · <input class="w-2xs" data-cd="dracN" type="number" min="1" max="4" step="1" title="Copies in your weapons (1–4). Each copy rolls on every attack; the restore doesn't add up"> cards</span></div>
+        <div class="cdItem" id="dpWrap" title="Dark Priest Card, when a Sage wears it: 1 SP each time a physical attack hits (Spell Fist's physical hit too)"><label class="bar"><input type="checkbox" data-cd="dpOn"> <b>Dark Priest</b></label><span class="muted">a Sage gets 1 SP each time a physical attack hits (Spell Fist too)</span></div>
+        <div class="cdItem" title="Weapon cards: 5 SP when a melee physical attack kills a monster of that race. Not counted with Spell Fist or a bow, instrument or whip"><b>+5 SP per melee kill</b><span class="muted">weapon cards, per race killed:</span><span id="killSpBoxes" class="bar"></span></div>
         <div id="spCardInfo"></div>
       </div>
       <div class="bar note" id="ecRow"><span title="The Mage quest skill: Wizards and Sages have it too">Energy Coat (Mage, Wizard, Sage):</span>
-        <label class="bar" style="flex-direction:row;gap:4px" title="Cuts damage taken by 6–30% and costs 1–3% of Max SP per hit taken; the fuller your SP, the bigger both"><input type="checkbox" data-ec="on" style="width:auto"> on</label>
-        <label class="bar" style="flex-direction:row;gap:4px" title="When regen can't keep your SP up, SP items hold it around this level (sets the damage cut); without items your SP runs low">with SP items, SP kept at <input data-ec="spPct" type="number" min="1" max="100" style="width:56px">%</label>
+        <label class="bar" title="Cuts damage taken by 6–30% and costs 1–3% of Max SP per hit taken; the fuller your SP, the bigger both"><input type="checkbox" data-ec="on"> on</label>
+        <label class="bar" title="When regen can't keep your SP up, SP items hold it around this level (sets the damage cut); without items your SP runs low">with SP items, SP kept at <input class="w-xs" data-ec="spPct" type="number" min="1" max="100">%</label>
         <span id="ecInfo"></span>
       </div>
       <div class="bar note"><span>Taking damage:</span>
-        <label class="bar" style="flex-direction:row;gap:4px" title="Blank (auto): VIT/5 + Max HP/200, with HP Recovery +% gear. Increase HP Recovery (Skills card), Hunter Fly and consumables that restore HP over time are added on their own, so type only the natural regen tick">HP regen per 6s <input id="hpRegen6" type="number" placeholder="auto" style="width:72px"></label>
+        <label class="bar" title="Blank (auto): VIT/5 + Max HP/200, with HP Recovery +% gear. Increase HP Recovery (Skills card), Hunter Fly and consumables that restore HP over time are added on their own, so type only the natural regen tick">HP regen per 6s <input class="w-md" id="hpRegen6" type="number" placeholder="auto"></label>
         <span class="muted" id="hpInfo"></span>
-        <label class="bar" style="flex-direction:row;gap:4px" title="Aggressive monsters, and ones that join a fight their kind is in, gang up on you: each one swings at you, and from 3 at once your FLEE drops 10% and your DEF 5% per monster past 2. Other monsters count as 1">aggressive or assisting monsters on you at once <input id="crowd" type="number" min="1" step="0.5" placeholder="2" style="width:60px"></label>
+        <label class="bar" title="Aggressive monsters, and ones that join a fight their kind is in, gang up on you: each one swings at you, and from 3 at once your FLEE drops 10% and your DEF 5% per monster past 2. Other monsters count as 1">aggressive or assisting monsters on you at once <input class="w-sm" id="crowd" type="number" min="1" step="0.5" placeholder="2"></label>
         <span class="muted" id="crowdInfo"></span>
       </div>
       <details class="note">
         <summary>Advanced: monster attack timing</summary>
-        <div class="bar" style="margin-top:6px">
-          <label class="bar" style="flex-direction:row;gap:4px">monster swing every <input id="mobInterval" type="number" step="0.1" placeholder="1.5" style="width:64px">s</label>
-          <label class="bar" style="flex-direction:row;gap:4px">× <input id="hitScale" type="number" step="0.01" min="0" placeholder="0.3" style="width:70px"> of swings reach you</label>
+        <div class="bar mt">
+          <label class="bar">monster swing every <input class="w-sm" id="mobInterval" type="number" step="0.1" placeholder="1.5">s</label>
+          <label class="bar">× <input class="w-sm" id="hitScale" type="number" step="0.01" min="0" placeholder="0.3"> of swings reach you</label>
         </div>
-        <div style="margin-top:4px">Not in the database: default is a swing every 1.5 s, 0.3 of them reaching you. Change only if your HP loss doesn't match; clear to reset.</div>
+        <div class="mt">Not in the database: default is a swing every 1.5 s, 0.3 of them reaching you. Change only if your HP loss doesn't match; clear to reset.</div>
       </details>
-      <div class="form" style="grid-template-columns:repeat(4,minmax(0,1fr))">
+      <div class="form c4">
         <label>Fixed share of cast %<input id="fixedShare" type="number" step="1" min="0" max="100" placeholder="0"></label>
         <label>Variable cast −%<input id="vctPct" type="number" step="1" placeholder="0"></label>
         <label>Fixed cast −%<input id="fctPct" type="number" step="1" placeholder="0"></label>
@@ -243,44 +260,44 @@
         <label>Fixed cast −seconds<input id="fctSec" type="number" step="0.1" placeholder="0"></label>
         <label>vs normal monsters %<input id="normalPct" type="number" step="1" placeholder="0"></label>
         <label>My attack element %<input id="myElPct" type="number" step="1" placeholder="0" title="Gear like +20% Fire magic damage, when your attack is that element"></label>
-        <label>Ignore DEF / MDEF %<span class="bar"><input id="ignDef" type="number" step="1" placeholder="DEF" style="flex:1"><input id="ignMdef" type="number" step="1" placeholder="MDEF" style="flex:1"></span></label>
+        <label>Ignore DEF / MDEF %<span class="bar"><input class="fill" id="ignDef" type="number" step="1" placeholder="DEF"><input class="fill" id="ignMdef" type="number" step="1" placeholder="MDEF"></span></label>
       </div>
       <div class="note">Presets are max-level skills; edit to match yours. Mastery ATK = flat ATK from weapon passives. Gear ATK % is already in your status window. Fixed share of cast = the part DEX/INT can't cut (usually 20%).</div>
       <details class="note">
         <summary>How damage is worked out</summary>
-        <div style="margin-top:4px">Area skills split time across targets. Full formulas: EXP &amp; formulas tab.</div>
+        <div class="mt">Area skills split time across targets. Full formulas: EXP &amp; formulas tab.</div>
       </details>
     </details>
-    <details class="card" id="sagePanel" style="padding:12px 14px;gap:8px;background:var(--bg)" open>
+    <details class="card sub" id="sagePanel" open>
       <summary><b>Sage options</b> <span class="note">used by the Spell Fist and Hindsight attacks; Foresight by attacks with a cast time</span></summary>
       <div class="bar note"><span>Spell Fist:</span>
-        <label class="bar" style="flex-direction:row;gap:4px">Lv <input data-sg="sfLv" type="number" min="1" max="10" style="width:56px"></label>
-        <label class="bar" style="flex-direction:row;gap:4px">bolt Lv <input data-sg="boltLv" type="number" min="1" max="10" style="width:56px"></label>
+        <label class="bar">Lv <input class="w-xs" data-sg="sfLv" type="number" min="1" max="10"></label>
+        <label class="bar">bolt Lv <input class="w-xs" data-sg="boltLv" type="number" min="1" max="10"></label>
         <span>bolts you'll use:</span>
-        <label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-sgbolt="Fire" style="width:auto"> Fire</label>
-        <label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-sgbolt="Water" style="width:auto"> Cold</label>
-        <label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-sgbolt="Wind" style="width:auto"> Lightning</label>
+        <label class="bar"><input type="checkbox" data-sgbolt="Fire"> Fire</label>
+        <label class="bar"><input type="checkbox" data-sgbolt="Water"> Cold</label>
+        <label class="bar"><input type="checkbox" data-sgbolt="Wind"> Lightning</label>
       </div>
       <div class="bar note"><span>Hindsight:</span>
-        <label class="bar" style="flex-direction:row;gap:4px">learned Lv <input data-sg="hsLv" type="number" min="0" max="10" style="width:56px"></label>
+        <label class="bar">learned Lv <input class="w-xs" data-sg="hsLv" type="number" min="0" max="10"></label>
         <span>Double Bolt:</span>
-        <label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" data-sg="dbOn" style="width:auto"> on</label>
-        <label class="bar" style="flex-direction:row;gap:4px">Lv <input data-sg="dbLv" type="number" min="1" max="5" style="width:56px"></label>
+        <label class="bar"><input type="checkbox" data-sg="dbOn"> on</label>
+        <label class="bar">Lv <input class="w-xs" data-sg="dbLv" type="number" min="1" max="5"></label>
       </div>
       <div class="bar note"><span>Foresight:</span>
-        <label class="bar" style="flex-direction:row;gap:4px" title="The next 5 casts take half their variable cast time; Foresight itself is a 1 s fixed cast and 1 SP. Counted only when it saves time"><input type="checkbox" data-sg="fsOn" style="width:auto"> use it when it saves time</label>
+        <label class="bar" title="The next 5 casts take half their variable cast time; Foresight itself is a 1 s fixed cast and 1 SP. Counted only when it saves time"><input type="checkbox" data-sg="fsOn"> use it when it saves time</label>
         <span id="fsInfo"></span>
       </div>
       <div class="note" id="sageInfo"></div>
       <div class="note">Pick a Hindsight attack to switch Hindsight on. SP items (Consumables card) only count with Hindsight on: regen pays SP first, items cover the rest.</div>
     </details>
-    <details class="card" id="weightPanel" style="padding:12px 14px;gap:8px;background:var(--bg)" open>
+    <details class="card sub" id="weightPanel" open>
       <summary><b>Weight</b> <span class="note">at 70% weight HP and SP don't regenerate; at 90% you can't attack or use skills</span></summary>
       <div class="bar note">
-        <label class="bar" style="flex-direction:row;gap:4px">carrying <input id="curW" type="number" min="0" style="width:72px" title="What you carry when you leave town: gear, potions, scrolls… Only the room above it fills with loot"> of max <input id="maxW" type="number" min="0" placeholder="off" style="width:72px" title="Worked out from STR, job and skills; type a number to override"></label>
-        <label class="bar" style="flex-direction:row;gap:4px" title="Gym Membership (KP shop) teaches it: +200 Max Weight per level, kept forever">Increase Capacity Lv <input id="gymLv" type="number" min="0" max="10" placeholder="0" style="width:56px"></label>
-        <label class="bar" style="flex-direction:row;gap:4px">go sell at <input id="sellAt" type="number" min="1" max="90" step="1" placeholder="70" style="width:56px" title="Where you stop to sell, e.g. 65 to stay clear of 70% (no HP/SP regen). Past 70% you fight with no regen; 90% is the most">%</label>
-        <label class="bar" style="flex-direction:row;gap:4px">town and back <input id="townMin" type="number" step="0.5" min="0" placeholder="3" style="width:64px"> min</label>
+        <label class="bar">carrying <input class="w-md" id="curW" type="number" min="0" title="What you carry when you leave town: gear, potions, scrolls… Only the room above it fills with loot"> of max <input class="w-md" id="maxW" type="number" min="0" placeholder="off" title="Worked out from STR, job and skills; type a number to override"></label>
+        <label class="bar" title="Gym Membership (KP shop) teaches it: +200 Max Weight per level, kept forever">Increase Capacity Lv <input class="w-xs" id="gymLv" type="number" min="0" max="10" placeholder="0"></label>
+        <label class="bar">go sell at <input class="w-xs" id="sellAt" type="number" min="1" max="90" step="1" placeholder="70" title="Where you stop to sell, e.g. 65 to stay clear of 70% (no HP/SP regen). Past 70% you fight with no regen; 90% is the most">%</label>
+        <label class="bar">town and back <input class="w-sm" id="townMin" type="number" step="0.5" min="0" placeholder="3"> min</label>
       </div>
     </details>
     <div class="calc" id="charTiles"></div>
@@ -296,25 +313,25 @@
 
   <section class="card" data-tab="char" id="recCard">
     <div class="bar"><h2 class="grow">Consumables</h2><span class="note" id="recNote"></span></div>
-    <div class="bar note"><label class="bar" style="flex-direction:row;gap:4px" title="Saved for the whole account: a Merchant on the account with Discount Lv 10 (−24%) buys for the others. Covers recovery items, the ASPD potion, skill items and Custom HP / SP items. Off: the NPC price"><input type="checkbox" id="recDisc" style="width:auto"> Buy with Discount <span class="muted">(Lv 10 on another character, this account)</span></label>
+    <div class="bar note"><label class="bar" title="Saved for the whole account: a Merchant on the account with Discount Lv 10 (−24%) buys for the others. Covers recovery items, the ASPD potion, skill items and Custom HP / SP items. Off: the NPC price"><input type="checkbox" id="recDisc"> Buy with Discount <span class="muted">(Lv 10 on another character, this account)</span></label>
       <span id="mercNote"></span>
     </div>
     <details class="card sub" id="recPanel" open>
       <summary><b>HP &amp; SP recovery items</b> <span class="note">potions, herbs and food bought to cover HP lost and SP short</span></summary>
       <div class="bar note" id="recSet">
-        <label class="bar" style="flex-direction:row;gap:4px">HP item <select id="recHp" style="width:auto"></select></label>
+        <label class="bar">HP item <select id="recHp"></select></label>
         <span id="recCustomHp" class="bar" hidden>
-          <label class="bar" style="flex-direction:row;gap:4px">restores <input id="itemHp" type="number" style="width:64px"> HP</label>
-          <label class="bar" style="flex-direction:row;gap:4px">costs <input id="itemHpPrice" type="number" style="width:80px"> z</label>
+          <label class="bar">restores <input class="w-sm" id="itemHp" type="number"> HP</label>
+          <label class="bar">costs <input class="w-md" id="itemHpPrice" type="number"> z</label>
         </span>
-        <label class="bar" style="flex-direction:row;gap:4px">SP item <select id="recSp" style="width:auto"></select></label>
+        <label class="bar">SP item <select id="recSp"></select></label>
         <span id="recCustom" class="bar" hidden>
-          <label class="bar" style="flex-direction:row;gap:4px">restores <input id="itemSp" type="number" style="width:64px"> SP</label>
-          <label class="bar" style="flex-direction:row;gap:4px">costs <input id="itemPrice" type="number" style="width:80px"> z</label>
+          <label class="bar">restores <input class="w-sm" id="itemSp" type="number"> SP</label>
+          <label class="bar">costs <input class="w-md" id="itemPrice" type="number"> z</label>
         </span>
       </div>
       <div class="bar note"><span>SP items:</span>
-        <label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" id="autoSp" style="width:auto"> auto-use when needed</label>
+        <label class="bar"><input type="checkbox" id="autoSp"> auto-use when needed</label>
         <span id="spItemUse"></span>
         <span id="itemInfo"></span>
       </div>
@@ -326,28 +343,28 @@
       <summary><b>ASPD potion, converters, food &amp; buffs</b> <span class="note">read your status window with these off; they add on top</span></summary>
       <div class="warnc" id="consOff" hidden>Not added: the status window box above says your numbers already include buffs and items.</div>
       <div class="bar note"><span>ASPD potion:</span>
-        <label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" id="potOn" style="width:auto"> using one</label>
-        <select id="potType" aria-label="Which potion" style="width:auto"></select>
-        <label class="bar" style="flex-direction:row;gap:4px"><input id="potPrice" type="number" step="100" style="width:80px"> z each</label>
-        <label class="bar" style="flex-direction:row;gap:4px">lasts <input id="potMin" type="number" step="1" style="width:56px"> min</label>
+        <label class="bar"><input type="checkbox" id="potOn"> using one</label>
+        <select id="potType" aria-label="Which potion"></select>
+        <label class="bar"><input class="w-md" id="potPrice" type="number" step="100"> z each</label>
+        <label class="bar">lasts <input class="w-xs" id="potMin" type="number" step="1"> min</label>
         <span id="potInfo"></span>
       </div>
       <div class="bar note"><span>Elemental converter:</span>
-        <select id="convSel" aria-label="Elemental converter" style="width:auto"><option value="">none</option><option value="auto">best per monster / map</option><option>Fire</option><option>Water</option><option>Earth</option><option>Wind</option></select>
+        <select id="convSel" aria-label="Elemental converter"><option value="">none</option><option value="auto">best per monster / map</option><option>Fire</option><option>Water</option><option>Earth</option><option>Wind</option></select>
         <span class="muted">one element at a time, on basic attacks and weapon-element skills</span> <span id="convNote" class="warnc"></span>
-        <div id="convInfo" style="flex-basis:100%"></div>
+        <div class="full" id="convInfo"></div>
       </div>
-      <div class="bar note"><label class="bar" style="flex-direction:row;gap:4px" title="Consumes 1 World Tree Dew or Zelstar for a 1-hour buff"><input type="checkbox" id="yggOn" style="width:auto"> Blessing of Yggdrasil</label>
+      <div class="bar note"><label class="bar" title="Consumes 1 World Tree Dew or Zelstar for a 1-hour buff"><input type="checkbox" id="yggOn"> Blessing of Yggdrasil</label>
         <span class="muted">World Tree Dew or Zelstar (KP shop), lasts 1 hour: all stats +7, ATK +30, MATK +30, HIT +5, FLEE +5</span>
       </div>
-      <div class="bar note"><label class="bar" style="flex-direction:row;gap:6px" title="The clan you joined at its Clan Master: a buff that stays on, so your status window always includes it. Counted in build mode">Clan <select id="clanSel" style="width:auto"></select></label>
+      <div class="bar note"><label class="bar" title="The clan you joined at its Clan Master: a buff that stays on, so your status window always includes it. Counted in build mode">Clan <select id="clanSel"></select></label>
         <span class="muted" id="clanInfo"></span>
       </div>
       <div class="note">Stats from food: + adds to the stat (it doesn't stack with Blessing of Yggdrasil: the higher one counts), +% is a share of your total stat, rounded down. Course meals and event drinks go in Other effects and stack on top</div>
       <table id="consStats" class="cstats"><thead><tr><th>Stat</th><th>+</th><th>+%</th></tr></thead><tbody></tbody></table>
       <div class="note"><b>Other effects</b> (ATK, HIT, ASPD…)</div>
       <div id="consList" class="eqlist"></div>
-      <div class="bar"><button type="button" class="small" id="consAdd">+ Add</button><select id="consPreset" aria-label="Add an event item" style="width:auto"></select><span class="note" id="consNote"></span></div>
+      <div class="bar"><button type="button" class="small" id="consAdd">+ Add</button><select id="consPreset" aria-label="Add an event item"></select><span class="note" id="consNote"></span></div>
       <div class="note"><b>Buffs from others</b></div>
       <div id="pbuffList" class="eqlist"></div>
       <div id="pbuffOwn" class="eqlist"></div>
@@ -382,15 +399,15 @@
         <label>Job EXP % (optional)<input id="fJob" type="number" step="0.1" min="0" max="100"></label>
         <label>Time<input id="fTime" type="time" required></label>
         <label>Date<input id="fDate" type="date"></label>
-        <label style="grid-column:1/-1" title="The map you farm the session's monsters on: their spawn counts there weight the session's EXP, pace and loot. Auto: the open map where most of them spawn">Map<select id="sessMapSel"></select></label>
+        <label class="span-all" title="The map you farm the session's monsters on: their spawn counts there weight the session's EXP, pace and loot. Auto: the open map where most of them spawn">Map<select id="sessMapSel"></select></label>
         <label>Party members<input id="partyN" type="number" min="1" max="12" value="1"></label>
         <label>Party EXP bonus %<input id="partyBonus" type="number" value="0" readonly tabindex="-1" title="Worked out from the party size"></label>
-        <div class="note" id="partyNote" style="grid-column:2/-1;align-self:center"></div>
-        <div class="bar" style="grid-column:1/-1"><button class="primary grow" type="submit">Add entry</button><button type="button" id="dieBtn" title="You died: type your EXP % from just before, then press this. It logs that EXP and, a second later, the EXP left after the death penalty">Died −10%</button><button type="button" id="pauseBtn" style="min-width:6.5em" title="Stop the clock while you sell, change maps or do something else">Pause</button></div>
-        <label class="bar note" style="grid-column:1/-1;flex-direction:row;gap:4px" title="For an EXP % you note after a death: the drop since the last entry is the death, not EXP lost per hour. Or type your EXP from just before dying and press Died"><input type="checkbox" id="fDied" style="width:auto"> 💀 Died since the last entry: this EXP % is after the death</label>
-        <label class="bar note" style="grid-column:1/-1;flex-direction:row;gap:4px"><input type="checkbox" id="dieItem" style="width:auto"> Death penalty item from the shop: a death costs 5% EXP instead of 10%</label>
+        <div class="note span-rest" id="partyNote"></div>
+        <div class="bar span-all"><button class="primary grow" type="submit">Add entry</button><button type="button" id="dieBtn" title="You died: type your EXP % from just before, then press this. It logs that EXP and, a second later, the EXP left after the death penalty">Died −10%</button><button class="w-btn" type="button" id="pauseBtn" title="Stop the clock while you sell, change maps or do something else">Pause</button></div>
+        <label class="bar note span-all" title="For an EXP % you note after a death: the drop since the last entry is the death, not EXP lost per hour. Or type your EXP from just before dying and press Died"><input type="checkbox" id="fDied"> 💀 Died since the last entry: this EXP % is after the death</label>
+        <label class="bar note span-all"><input type="checkbox" id="dieItem"> Death penalty item from the shop: a death costs 5% EXP instead of 10%</label>
       </form>
-      <label>Paste several entries (one per line: [time] EXP% [job%], the % signs optional, on the date above; no time means now; "died" on a line marks a death)<textarea id="pasteBox" rows="3" placeholder="15:05 17.9% 63%&#10;15:20 19.2% 64%&#10;20.4% 65% (now)" style="font:inherit;font-family:var(--mono);background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:7px 10px;resize:vertical"></textarea></label>
+      <label>Paste several entries (one per line: [time] EXP% [job%], the % signs optional, on the date above; no time means now; "died" on a line marks a death)<textarea class="mono-area" id="pasteBox" rows="3" placeholder="15:05 17.9% 63%&#10;15:20 19.2% 64%&#10;20.4% 65% (now)"></textarea></label>
       <button type="button" id="pasteAdd">Add pasted entries</button>
       <div class="note" id="pasteMsg"></div>
     </div>
@@ -410,11 +427,11 @@
   <section class="card" data-tab="track">
     <div class="bar"><h2 class="grow">Goal</h2><span class="note" id="goalNote"></span></div>
     <div class="bar">
-      <label>Reach base level<input id="goalLv" type="number" min="2" max="70" value="70" style="width:90px"></label>
-      <label>Reach job level<input id="goalJobLv" type="number" min="2" max="70" value="70" style="width:90px"></label>
+      <label>Reach base level<input class="w-lg" id="goalLv" type="number" min="2" max="70" value="70"></label>
+      <label>Reach job level<input class="w-lg" id="goalJobLv" type="number" min="2" max="70" value="70"></label>
     </div>
     <div class="calc" id="goalTiles"></div>
-    <h3 style="margin:16px 0 8px">Job level</h3>
+    <h3>Job level</h3>
     <div class="calc" id="goalJobTiles"></div>
     <div class="chartWrap" id="goalViz" hidden>
       <svg class="chart" id="goalChart" viewBox="0 0 800 260" role="img" aria-label="Projected base and job level over farming time"></svg>
@@ -433,8 +450,8 @@
     <div class="bar"><h2 class="grow">Monsters</h2><span class="note" id="mobNote"></span></div>
     <div class="bar">
       <label class="grow">Monster for this session<input id="mobInput" list="mobPickList" placeholder="Search monster"></label>
-      <label>Level range<span class="bar"><input id="minLv" type="number" style="width:70px"> to <input id="maxLv" type="number" style="width:70px"></span></label>
-      <label><span>&nbsp;</span><span class="bar"><input type="checkbox" id="hideClosed" style="width:auto"> Hide monsters with no open map</span></label>
+      <label>Level range<span class="bar"><input class="w-sm" id="minLv" type="number"> to <input class="w-sm" id="maxLv" type="number"></span></label>
+      <label><span>&nbsp;</span><span class="bar"><input type="checkbox" id="hideClosed"> Hide monsters with no open map</span></label>
     </div>
     <div class="bar" id="mobF" title="Narrows this table and the monster search above it"></div>
     <datalist id="mobPickList"></datalist>
@@ -449,9 +466,9 @@
   <section class="card" id="bestCard" data-tab="maps">
     <div class="bar"><h2 class="grow">EXP Hunter</h2><span class="note" id="bestBasis"></span></div>
     <div class="bar">
-      <label>Min monsters on map<input id="bestMin" type="number" value="40" style="width:90px"></label>
+      <label>Min monsters on map<input class="w-lg" id="bestMin" type="number" value="40"></label>
       <label>Show<select id="bestN"><option>10</option><option>20</option><option>50</option></select></label>
-      <label title="Scale kills / hr (and so EXP / min, loot and weight per hour) by how your logged sessions compare with what this table projects for them"><span>&nbsp;</span><span class="bar"><input type="checkbox" id="calOn" style="width:auto"> Calibrate to my logs <span class="note" id="calNote"></span></span></label>
+      <label title="Scale kills / hr (and so EXP / min, loot and weight per hour) by how your logged sessions compare with what this table projects for them"><span>&nbsp;</span><span class="bar"><input type="checkbox" id="calOn"> Calibrate to my logs <span class="note" id="calNote"></span></span></label>
     </div>
     <div class="note" id="bestWeight"></div>
     <div class="scroll"><table id="bestTable"><thead><tr><th data-sk="rank">#</th><th data-sk="mp">Map</th><th data-sk="main" title="filters on every monster you hunt there, not only the top 3">Main monsters</th><th data-sk="epm">EXP / min</th><th data-sk="secT">Sec / kill (fight + walk)</th><th data-sk="epk">EXP / kill</th><th data-sk="zph" title="Loot less skill items, the ASPD potion and ground buffs; healing comes off in Net zeny / hr">Zeny / hr</th><th data-sk="heal" title="HP items for the HP lost / min and SP items, priced in Recovery items (Character tab)">Heal cost / hr</th><th data-sk="net" title="Zeny / hr less Heal cost / hr">Net zeny / hr</th><th data-sk="hpm">HP lost / min</th><th data-sk="sus" title="Farm without items: the share of the HP and SP you use that your own recovery gives back (regen, HP / SP cards, consumables over time, Heal, Indulge) with no HP or SP items. Green: keeps up; yellow: you sit now and then; red: you need items. Hover a row for the breakdown">No items</th><th data-sk="skip">Can't hurt</th><th data-sk="N">Monsters</th><th data-sk="proj">Projected</th><th data-sk="log" title="Your logged kills / hr on this map ÷ what this table projects for them (each session's own stats). Hover for each session">Logged vs projected</th><th data-sk="wk" title="weight of the drops you loot, a kill (item weight × drop chance with your drop bonus and the level penalty)">Weight / kill</th><th data-sk="wph" title="weight you pick up an hour">Weight / hr</th><th data-sk="trip" title="hours from leaving town to leaving it again: farming up to your sell point, then the trip to town and back">Town trip every</th></tr><tr class="filters"><td><input type="search" data-tf="rank" placeholder="<=5"></td><td><input type="search" data-tf="mp" placeholder="map"></td><td><input type="search" data-tf="main" placeholder="monster"></td><td><input type="search" data-tf="epm" placeholder=">2000"></td><td><input type="search" data-tf="secT" placeholder="<5"></td><td><input type="search" data-tf="epk" placeholder=">500"></td><td><input type="search" data-tf="zph" placeholder=">10000"></td><td><input type="search" data-tf="heal" placeholder="<5000"></td><td><input type="search" data-tf="net" placeholder=">10000"></td><td><input type="search" data-tf="hpm" placeholder="<500"></td><td><input type="search" data-tf="sus" placeholder=">=100"></td><td><input type="search" data-tf="skip" placeholder="-"></td><td><input type="search" data-tf="N" placeholder=">30"></td><td><input type="search" data-tf="proj" placeholder=">2"></td><td><input type="search" data-tf="log" placeholder="<1"></td><td><input type="search" data-tf="wk" placeholder="<5"></td><td><input type="search" data-tf="wph" placeholder="<2000"></td><td><input type="search" data-tf="trip" placeholder=">1"></td></tr></thead><tbody></tbody></table></div>
@@ -462,7 +479,7 @@
 
   <section class="card" id="mapCard" data-tab="maps">
     <div class="bar"><h2 class="grow">Map planner</h2></div>
-    <div class="form" style="grid-template-columns:2fr 1fr 1fr">
+    <div class="form c211">
       <label>Map<input id="mapInput" list="mapList" placeholder="e.g. gef_dun01 or Sphinx B5F"></label>
       <label title="How many monsters attack you together on this map, every monster on it, in place of the Character tab's count for aggressive ones. Their hits add up, and from the 3rd one your FLEE drops 10% and DEF 5% for each past the 2nd. Room dungeons (one map cut into small rooms: Labyrinth Forest 1F / 3F, Sunken Ship, Kunlun Chess Terrace, Sphinx B5F) start at 3; blank goes back to the default (the Character tab's count)">Monsters on you at once<input id="mobbedIn" type="number" min="1" max="12" step="1"></label>
       <label><span>&nbsp;</span><button type="button" id="mapFromMob">Use session monster's map</button></label>
@@ -481,14 +498,14 @@
         <button type="button" role="radio" data-hunt="maps">Maps</button>
         <button type="button" role="radio" data-hunt="mobs">Monsters</button>
       </div>
-      <label id="huntMinWrap">Min monsters on map<input id="huntMin" type="number" value="20" style="width:90px"></label>
+      <label id="huntMinWrap">Min monsters on map<input class="w-lg" id="huntMin" type="number" value="20"></label>
       <label>Show<select id="huntN"><option>10</option><option>20</option><option>50</option></select></label>
-      <label title="Only hunt monsters of these levels: on a map you pass the rest by. Blank: any level">Monster Lv<span class="bar"><input id="huntMinLv" type="number" min="1" max="99" placeholder="any" style="width:70px"> to <input id="huntMaxLv" type="number" min="1" max="99" placeholder="any" style="width:70px"></span></label>
-      <label title="Pass by monsters 40 or more levels below you: their drops fall 50%. Follows your base level as you level up"><span>&nbsp;</span><span class="bar"><input type="checkbox" id="huntNoPen" style="width:auto"> Skip drop-penalty monsters</span></label>
-      <label id="huntAutoWrap"><span>&nbsp;</span><span class="bar"><input type="checkbox" id="huntAuto" style="width:auto"> Hunt only the best-paying monsters</span></label>
-      <label title="seconds lost per teleport (casting, loading the screen). Teleports only count with a Creamy Card or the Teleport skill">Sec / teleport<input id="teleSec" type="number" min="0" step="0.5" style="width:90px"></label>
+      <label title="Only hunt monsters of these levels: on a map you pass the rest by. Blank: any level">Monster Lv<span class="bar"><input class="w-sm" id="huntMinLv" type="number" min="1" max="99" placeholder="any"> to <input class="w-sm" id="huntMaxLv" type="number" min="1" max="99" placeholder="any"></span></label>
+      <label title="Pass by monsters 40 or more levels below you: their drops fall 50%. Follows your base level as you level up"><span>&nbsp;</span><span class="bar"><input type="checkbox" id="huntNoPen"> Skip drop-penalty monsters</span></label>
+      <label id="huntAutoWrap"><span>&nbsp;</span><span class="bar"><input type="checkbox" id="huntAuto"> Hunt only the best-paying monsters</span></label>
+      <label title="seconds lost per teleport (casting, loading the screen). Teleports only count with a Creamy Card or the Teleport skill">Sec / teleport<input class="w-lg" id="teleSec" type="number" min="0" step="0.5"></label>
     </div>
-    <div class="bar" id="autoLoot" style="align-items:center"><b>Auto loot</b></div>
+    <div class="bar" id="autoLoot"><b>Auto loot</b></div>
     <div class="calc" id="huntTiles"></div>
     <div class="scroll"><table id="huntTable"><thead><tr><th data-sk="rank">#</th><th data-sk="name">Map / monster</th><th data-sk="from" title="maps: the monsters you hunt there; monsters: its map and every drop">Earns from</th><th data-sk="net" title="Loot / hr less Costs / hr">Net zeny / hr</th><th data-sk="loot">Loot / hr</th><th data-sk="cost" title="HP items for the HP lost / min and SP items (priced in Recovery items), the ASPD potion and ground buffs. Hover a row for each">Costs / hr</th><th data-sk="kph">Kills / hr</th><th data-sk="zk">Zeny / kill</th><th data-sk="wk" title="weight of the drops you loot, a kill (with your drop bonus and the level penalty)">Weight / kill</th><th data-sk="wph" title="weight you pick up an hour. Hover a row for how soon you fill up">Weight / hr</th><th data-sk="epm">EXP / min</th><th data-sk="hpm">HP lost / min</th></tr><tr class="filters"><td><input type="search" data-tf="rank" placeholder="<=5"></td><td><input type="search" data-tf="name" placeholder="map or monster"></td><td><input type="search" data-tf="from" placeholder="card"></td><td><input type="search" data-tf="net" placeholder=">50000"></td><td><input type="search" data-tf="loot" placeholder=">50000"></td><td><input type="search" data-tf="cost" placeholder="<5000"></td><td><input type="search" data-tf="kph" placeholder=">300"></td><td><input type="search" data-tf="zk" placeholder=">100"></td><td><input type="search" data-tf="wk" placeholder="<5"></td><td><input type="search" data-tf="wph" placeholder="<2000"></td><td><input type="search" data-tf="epm" placeholder=">2000"></td><td><input type="search" data-tf="hpm" placeholder="<500"></td></tr></thead><tbody></tbody></table></div>
     <div class="note">Open maps ranked by net zeny / hr: loot after drop bonus and level penalty, minus skill items, HP and SP items (Consumables on the Character tab) and consumables. Bosses and skipped monsters are left out; unticked auto-loot groups count as 0 everywhere. Click a monster on a map to stop or start hunting it; skipping monsters costs extra walking, or teleports if you have a Creamy Card or the Teleport skill (never Fly Wings: they cost too much). Click "teleport ok" if a map blocks teleport.</div>
@@ -497,17 +514,17 @@
   <section class="card" data-tab="market" id="tripCard">
     <div class="bar"><h2 class="grow">Sell timer</h2><span id="tripBtns" class="bar"></span></div>
     <div class="note">Start it when you leave town; it rings when loot should reach your sell point. Timing <b id="tripFor"></b> (the current session). Starting weight = what you leave town with. Time the session spends paused is added on; Start and Back from town end a pause.</div>
-    <div class="bar note" style="margin-top:6px">
-      <label class="bar" style="flex-direction:row;gap:4px">starting weight <input id="tripW" type="number" min="0" style="width:72px" title="What you carry when you leave town: gear, potions, scrolls, Fly Wings… Read it from the weight in your inventory window. Only the room left above it fills with loot"></label>
-      <label class="bar" style="flex-direction:row;gap:4px">of max <input id="tripMax" type="number" min="0" placeholder="off" style="width:72px" title="Worked out from STR, job and skills; type a number to override"></label>
-      <label class="bar" style="flex-direction:row;gap:4px">sell at <input id="tripAt" type="number" min="1" max="90" step="1" placeholder="70" style="width:56px">%</label>
-      <label class="bar" style="flex-direction:row;gap:4px">town and back <input id="tripTownMin" type="number" step="0.5" min="0" placeholder="3" style="width:56px"> min</label>
-      <label class="bar" style="flex-direction:row;gap:4px">one trip <input id="tripMin" type="number" min="0" step="1" placeholder="auto" style="width:64px" title="Minutes from leaving town to your sell point. Blank: worked out from the session's monsters, your weight and your kill speed"> min</label>
-      <label class="bar" style="flex-direction:row;gap:4px">ring <input id="tripEarly" type="number" min="0" step="0.5" placeholder="0" style="width:56px"> min early</label>
-      <label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" id="tripSound" style="width:auto"> sound</label>
-      <label class="bar" style="flex-direction:row;gap:4px"><input type="checkbox" id="tripNotify" style="width:auto"> notification</label>
+    <div class="bar note mt">
+      <label class="bar">starting weight <input class="w-md" id="tripW" type="number" min="0" title="What you carry when you leave town: gear, potions, scrolls, Fly Wings… Read it from the weight in your inventory window. Only the room left above it fills with loot"></label>
+      <label class="bar">of max <input class="w-md" id="tripMax" type="number" min="0" placeholder="off" title="Worked out from STR, job and skills; type a number to override"></label>
+      <label class="bar">sell at <input class="w-xs" id="tripAt" type="number" min="1" max="90" step="1" placeholder="70">%</label>
+      <label class="bar">town and back <input class="w-xs" id="tripTownMin" type="number" step="0.5" min="0" placeholder="3"> min</label>
+      <label class="bar">one trip <input class="w-sm" id="tripMin" type="number" min="0" step="1" placeholder="auto" title="Minutes from leaving town to your sell point. Blank: worked out from the session's monsters, your weight and your kill speed"> min</label>
+      <label class="bar">ring <input class="w-xs" id="tripEarly" type="number" min="0" step="0.5" placeholder="0"> min early</label>
+      <label class="bar"><input type="checkbox" id="tripSound"> sound</label>
+      <label class="bar"><input type="checkbox" id="tripNotify"> notification</label>
     </div>
-    <div class="tiles" style="margin-top:10px">
+    <div class="tiles mt">
       <div class="tile now"><div class="k" id="tripK">Next sell</div><div class="v mono" id="tripClock">–</div><div class="s" id="tripS"></div></div>
       <div class="tile"><div class="k">One trip</div><div class="v mono" id="tripLen">–</div><div class="s" id="tripLenS"></div></div>
       <div class="tile"><div class="k">Town runs</div><div class="v mono" id="tripRuns">–</div><div class="s" id="tripRunsS"></div></div>
@@ -518,8 +535,8 @@
     <div class="bar"><h2 class="grow">Market prices</h2></div>
     <div class="bar">
       <label class="grow">Item<input id="priceItem" list="priceList" placeholder="e.g. Snake Scale"></label>
-      <label>Players pay (z)<input id="priceVal" type="number" min="0" step="100" style="width:120px"></label>
-      <label>NPC pays (z)<input id="priceNpc" type="number" min="0" step="1" placeholder="0" style="width:140px"></label>
+      <label>Players pay (z)<input class="w-xl" id="priceVal" type="number" min="0" step="100"></label>
+      <label>NPC pays (z)<input class="w-xl" id="priceNpc" type="number" min="0" step="1" placeholder="0"></label>
       <label><span>&nbsp;</span><button type="button" id="priceAdd">Add price</button></label>
     </div>
     <datalist id="priceList"></datalist>
@@ -533,9 +550,9 @@
     <div class="bar" id="mobInfoF" title="Element, Race, Size and Boss narrow the monster search"><label class="grow">Monster<input id="mobInfoInput" list="mobInfoList" placeholder="Search monster"></label></div>
     <datalist id="mobInfoList"></datalist>
     <div class="calc" id="mobInfoTiles"></div>
-    <h3 style="margin:16px 0 8px">Drops</h3>
+    <h3>Drops</h3>
     <div class="scroll"><table id="mobInfoDrops"><thead><tr><th data-sk="name">Item</th><th data-sk="group">Auto-loot group</th><th data-sk="ch">Chance</th><th data-sk="your">Your chance</th><th data-sk="npc">NPC pays</th><th data-sk="pl">Players pay</th><th data-sk="z">Zeny / kill</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><select data-tf="group" aria-label="Auto-loot group"></select></td><td><input type="search" data-tf="ch" placeholder=">1"></td><td><input type="search" data-tf="your" placeholder=">1"></td><td><input type="search" data-tf="npc" placeholder=">100"></td><td><input type="search" data-tf="pl" placeholder="-"></td><td><input type="search" data-tf="z" placeholder=">1"></td></tr></thead><tbody></tbody></table></div>
-    <h3 style="margin:16px 0 8px">Where it spawns</h3>
+    <h3>Where it spawns</h3>
     <div class="scroll"><table id="mobInfoMaps"><thead><tr><th data-sk="map">Map</th><th data-sk="n">Spawns</th><th data-sk="others">Other monsters</th></tr><tr class="filters"><td><input type="search" data-tf="map" placeholder="map"></td><td><input type="search" data-tf="n" placeholder=">20"></td><td><input type="search" data-tf="others" placeholder="monster"></td></tr></thead><tbody></tbody></table></div>
     <div class="note">Your chance = drop chance after drop bonus and level penalty. Zeny / kill uses your Market price if set, else NPC; 0 if not auto looted. Click an item to price it, or a map to plan it.</div>
   </section>
@@ -555,11 +572,11 @@
     <div class="bar"><h2 class="grow">EXP tables</h2><span class="note" id="refExpNote"></span></div>
     <div class="row2">
       <div class="build">
-        <h3 style="margin:0">Base level</h3>
+        <h3>Base level</h3>
         <div class="scroll tall"><table id="refBaseTable"><thead></thead><tbody></tbody></table></div>
       </div>
       <div class="build">
-        <div class="bar"><h3 class="grow" style="margin:0">Job level</h3>
+        <div class="bar"><h3 class="grow">Job level</h3>
           <div class="seg" role="radiogroup" aria-label="Job EXP table">
             <button type="button" role="radio" data-reftier="novice">Novice</button>
             <button type="button" role="radio" data-reftier="first">1st job</button>
@@ -582,7 +599,7 @@
   </section>
   <section class="card" data-tab="ref">
     <div class="bar"><h2 class="grow">Element table</h2>
-      <label style="flex-direction:row;align-items:center;gap:6px">Monster element level<select id="refElv"><option>1</option><option>2</option><option>3</option><option>4</option></select></label></div>
+      <label>Monster element level<select id="refElv"><option>1</option><option>2</option><option>3</option><option>4</option></select></label></div>
     <div class="scroll"><table id="refElemTable"><thead></thead><tbody></tbody></table></div>
     <div class="note">Damage % by your attack element (rows) vs monster element (columns).</div>
   </section>
@@ -592,6 +609,8 @@
     <div class="note">Damage % for basic attacks and physical skills by monster size; magic ignores size. Your weapon is highlighted.</div>
   </section>
 
+</div>
+</main>
 </div>
 
 <!-- no ?v= stamps here: the Pages deploy adds each file's content hash (tools/stamp.mjs), so PRs never conflict over them -->

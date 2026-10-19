@@ -14,7 +14,15 @@
 
 ## Page layout
 
-**Full width:** the button next to the title lets the page use the whole window on wide screens instead of stopping at 1180px. It's remembered in this browser, apart from your account data, so backups and share links don't carry it.
+The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Monsters & maps), Look up (Monster info, Item info, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused.
+
+The buttons at the bottom of the sidebar change how the page looks:
+
+- **Compact sidebar:** shrinks the sidebar to its icons. Hover an icon to see its tab's name.
+- **Theme:** switches between auto (follows your device), light and dark.
+- **Full width:** lets the page use the whole window instead of stopping at 1180px. It only shows on very wide screens.
+
+All three are remembered in this browser, apart from your account data, so backups and share links don't carry them.
 
 ## Account
 
