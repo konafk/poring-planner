@@ -16,6 +16,7 @@
 <div class="app">
   <aside class="side">
     <div class="brand"><svg class="logo" viewBox="0 3 58 54" aria-hidden="true"><defs><linearGradient id="logoBody" x1=".3" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#ffc4d3"/><stop offset=".55" stop-color="#ff98b3"/><stop offset="1" stop-color="#ee6f93"/></linearGradient></defs><path d="M8 50C2.2 47 2 37.5 6.8 31 11.6 24.4 18.6 20.4 24.6 18c1.7-.7 2.3-2.2 1.8-4.1 2.3.2 4.4 1.5 5.4 3 8.8.9 17.6 6.3 21.4 14.1 3.8 7.9 2.2 15.7-2.9 18.3C45.7 51.9 38.7 52.6 30.3 52.6 20.3 52.6 12.3 52 8 50z" fill="url(#logoBody)" stroke="#b9476b" stroke-width="1.3" stroke-linejoin="round"/><ellipse cx="13.5" cy="31.5" rx="4.4" ry="2.4" fill="#fff" opacity=".75" transform="rotate(-35 13.5 31.5)"/><circle cx="19.6" cy="26.4" r="1.1" fill="#fff" opacity=".7"/><ellipse cx="22.5" cy="40" rx="2.5" ry="3" fill="#2b1420"/><ellipse cx="38.5" cy="40" rx="2.5" ry="3" fill="#2b1420"/><circle cx="23.3" cy="38.9" r=".95" fill="#fff"/><circle cx="39.3" cy="38.9" r=".95" fill="#fff"/><ellipse cx="17.6" cy="44.6" rx="2.2" ry="1.1" fill="#fff" opacity=".6"/><ellipse cx="43.6" cy="44.6" rx="2.2" ry="1.1" fill="#fff" opacity=".6"/><path d="M27.6 44.4q1.5 1.9 2.9 0q1.4 1.9 2.9 0" fill="none" stroke="#2b1420" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="45.5" cy="13" r="3.4" fill="#ff9db8" stroke="#b9476b" stroke-width="1"/><circle cx="44.4" cy="11.9" r="1" fill="#fff" opacity=".85"/><circle cx="52" cy="9" r="2.5" fill="#ff9db8" stroke="#b9476b" stroke-width="1"/><circle cx="51.2" cy="8.2" r=".7" fill="#fff" opacity=".85"/></svg><span class="brandTxt"><b>Farm Planner</b><span>Ragnarok Zero</span></span></div>
+    <button type="button" class="searchBtn" id="searchBtn" title="Search monsters, items, maps and tabs (Ctrl+K or /)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
     <nav class="tabs" role="tablist" aria-label="Sections">
       <span class="navGrp" role="presentation">Plan</span>
       <button type="button" role="tab" data-tabbtn="char" title="Character"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg><span>Character</span></button>
@@ -261,8 +262,9 @@
       <div class="bar note"><span>Taking damage:</span>
         <label class="bar" title="Blank (auto): VIT/5 + Max HP/200, with HP Recovery +% gear. Increase HP Recovery (Skills card), Hunter Fly and consumables that restore HP over time are added on their own, so type only the natural regen tick">HP regen per 6s <input class="w-md" id="hpRegen6" type="number" placeholder="auto"></label>
         <span class="muted" id="hpInfo"></span>
-        <label class="bar" title="Aggressive monsters, and ones that join a fight their kind is in, gang up on you: each one swings at you, and from 3 at once your FLEE drops 10% and your DEF 5% per monster past 2. Other monsters count as 1">aggressive or assisting monsters on you at once <input class="w-sm" id="crowd" type="number" min="1" step="0.5" placeholder="2"></label>
+        <label class="bar" title="Aggressive monsters, and ones that join in when their kind is attacked, gang up on you. Each one swings at you, and from 3 at once your FLEE drops 10% and your DEF 5% for each one past 2. Other monsters always count as 1">Possible rampage <input class="w-sm" id="crowd" type="number" min="1" step="0.5" placeholder="2"> monsters</label>
         <span class="muted" id="crowdInfo"></span>
+        <span class="muted hint full">Possible rampage: how many aggressive or assisting monsters can attack you at the same time (1 = one at a time). More means more hits taken, and from 3 your FLEE and DEF drop. A map can set its own number in the Map planner.</span>
       </div>
       <details class="note">
         <summary>Advanced: monster attack timing</summary>
@@ -421,19 +423,27 @@
       <form class="form" id="addForm">
         <label>Level<input id="fLevel" type="number" min="1" max="99" required></label>
         <label>EXP %<input id="fPct" type="number" step="0.1" min="0" max="100" required></label>
-        <label>Job EXP % (optional)<input id="fJob" type="number" step="0.1" min="0" max="100"></label>
-        <label>Time<input id="fTime" type="time" required></label>
-        <label>Date<input id="fDate" type="date"></label>
-        <label class="span-all" title="The map you farm the session's monsters on: their spawn counts there weight the session's EXP, pace and loot. Auto: the open map where most of them spawn">Map<select id="sessMapSel"></select></label>
-        <label>Party members<input id="partyN" type="number" min="1" max="12" value="1"></label>
-        <label>Party EXP bonus %<input id="partyBonus" type="number" value="0" readonly tabindex="-1" title="Worked out from the party size"></label>
-        <div class="note span-rest" id="partyNote"></div>
+        <label>Job EXP %<input id="fJob" type="number" step="0.1" min="0" max="100" placeholder="optional"></label>
         <div class="bar span-all"><button class="primary grow" type="submit">Add entry</button><button type="button" id="dieBtn" title="You died: type your EXP % from just before, then press this. It logs that EXP and, a second later, the EXP left after the death penalty">Died −10%</button><button class="w-btn" type="button" id="pauseBtn" title="Stop the clock while you sell, change maps or do something else">Pause</button></div>
-        <label class="bar note span-all" title="For an EXP % you note after a death: the drop since the last entry is the death, not EXP lost per hour. Or type your EXP from just before dying and press Died"><input type="checkbox" id="fDied"> 💀 Died since the last entry: this EXP % is after the death</label>
-        <label class="bar note span-all"><input type="checkbox" id="dieItem"> Death penalty item from the shop: a death costs 5% EXP instead of 10%</label>
+        <details class="more span-all" id="logMore">
+          <summary>Time, map, party and deaths <span class="note" id="logMoreMeta"></span></summary>
+          <div class="form">
+            <label>Time<input id="fTime" type="time" required></label>
+            <label>Date<input id="fDate" type="date"></label>
+            <label class="span-all" title="The map you farm the session's monsters on: their spawn counts there weight the session's EXP, pace and loot. Auto: the open map where most of them spawn">Map<select id="sessMapSel"></select></label>
+            <label>Party members<input id="partyN" type="number" min="1" max="12" value="1"></label>
+            <label>Party EXP bonus %<input id="partyBonus" type="number" value="0" readonly tabindex="-1" title="Worked out from the party size"></label>
+            <div class="note span-rest" id="partyNote"></div>
+            <label class="bar note span-all" title="For an EXP % you note after a death: the drop since the last entry is the death, not EXP lost per hour. Or type your EXP from just before dying and press Died"><input type="checkbox" id="fDied"> 💀 Died since the last entry: this EXP % is after the death</label>
+            <label class="bar note span-all"><input type="checkbox" id="dieItem"> Death penalty item from the shop: a death costs 5% EXP instead of 10%</label>
+          </div>
+        </details>
       </form>
-      <label>Paste several entries (one per line: [time] EXP% [job%], the % signs optional, on the date above; no time means now; "died" on a line marks a death)<textarea class="mono-area" id="pasteBox" rows="3" placeholder="15:05 17.9% 63%&#10;15:20 19.2% 64%&#10;20.4% 65% (now)"></textarea></label>
-      <button type="button" id="pasteAdd">Add pasted entries</button>
+      <details class="more" id="pasteMore">
+        <summary>Paste several entries</summary>
+        <label>One per line: [time] EXP% [job%], the % signs optional, on the date above; no time means now; "died" on a line marks a death<textarea class="mono-area" id="pasteBox" rows="3" placeholder="15:05 17.9% 63%&#10;15:20 19.2% 64%&#10;20.4% 65% (now)"></textarea></label>
+        <button type="button" id="pasteAdd">Add pasted entries</button>
+      </details>
       <div class="note" id="pasteMsg"></div>
     </div>
     <div class="card">
@@ -481,11 +491,17 @@
     <div class="bar" id="mobF" title="Narrows this table and the monster search above it"></div>
     <datalist id="mobPickList"></datalist>
     <datalist id="mobList"></datalist>
-    <div class="calc" id="mobTiles"></div>
+    <div class="mobSplit">
+    <div class="mobList">
     <div class="scroll tall"><table id="mobTable"><thead><tr>
       <th data-k="name">Monster</th><th data-k="lv">Lv</th><th data-k="el">Element</th><th data-k="size">Size</th><th data-k="race">Race</th><th data-k="hp">HP</th><th data-k="exp">Base EXP</th><th data-k="ratio" title="Base EXP per HP: how much EXP each point of damage earns">EXP / HP</th><th data-k="mult">Your hit %</th><th data-k="hitc">Hit chance</th><th data-k="uses">Uses / kill</th><th data-k="sec">Sec / kill</th><th data-k="epm">EXP / min</th><th data-k="dodge">Dodge %</th><th data-k="hpm">HP lost / min</th><th data-k="zk" title="Loot per kill less what your skills use up (catalysts, arrows, Mammonite zeny)">Zeny / kill</th><th data-k="zph" title="Net: loot less skill items, SP items, the ASPD potion and ground buffs">Zeny / hr</th><th data-k="topN">Best map</th><th></th>
-    </tr><tr class="filters"><td><input data-f="name" placeholder="name"></td><td><input data-f="lv" placeholder="50-90"></td><td><input data-f="el" placeholder="fire"></td><td><input data-f="size" placeholder="L"></td><td><input data-f="race" placeholder="undead"></td><td><input data-f="hp" placeholder="<20000"></td><td><input data-f="exp" placeholder=">5000"></td><td><input data-f="ratio" placeholder=">1"></td><td><input data-f="mult" placeholder=">100"></td><td><input data-f="hitc" placeholder=">90"></td><td><input data-f="uses" placeholder="<=3"></td><td><input data-f="sec" placeholder="<5"></td><td><input data-f="epm" placeholder=""></td><td><input data-f="dodge" placeholder=">50"></td><td><input data-f="hpm" placeholder="<500"></td><td><input data-f="zk" placeholder=">20"></td><td><input data-f="zph" placeholder=">10000"></td><td><input data-f="topN" placeholder="map"></td><td><button type="button" class="small" id="clearF">Clear</button></td></tr></thead><tbody></tbody></table></div>
-    <div class="note hint">Click a row to see it; "Farming this now" or "Also killing" adds it to the session. Filters: &lt;350, &gt;=2, 100-200, =86, text, "-" for blank, "or". Your hit % = skill % after element, size and bonuses.</div>
+    </tr><tr class="filters"><td><input data-f="name" placeholder="name"></td><td><input data-f="lv" placeholder="50-90"></td><td><input data-f="el" placeholder="fire"></td><td><input data-f="size" placeholder="L"></td><td><input data-f="race" placeholder="undead"></td><td><input data-f="hp" placeholder="<20000"></td><td><input data-f="exp" placeholder=">5000"></td><td><input data-f="ratio" placeholder=">1"></td><td><input data-f="mult" placeholder=">100"></td><td><input data-f="hitc" placeholder=">90"></td><td><input data-f="uses" placeholder="<=3"></td><td><input data-f="sec" placeholder="<5"></td><td><input data-f="epm" placeholder=""></td><td><input data-f="dodge" placeholder=">50"></td><td><input data-f="hpm" placeholder="<500"></td><td><input data-f="zk" placeholder=">20"></td><td><input data-f="zph" placeholder=">10000"></td><td><input data-f="topN" placeholder="map"></td><td><button type="button" class="small" id="clearF">Clear</button></td></tr></thead><tbody></tbody></table></div></div>
+    <aside class="mobPanel" id="mobPanel" hidden aria-label="Monster details">
+      <div class="mobPanelHead"><b id="mobPanelName"></b><button type="button" class="iconX" id="mobPanelX" aria-label="Close monster details" title="Close (Esc)">×</button></div>
+      <div class="calc" id="mobTiles"></div>
+    </aside>
+    </div>
+    <div class="note hint">Click a row to see its details beside the table; "Farming this now" or "Also killing" adds it to the session. Filters: &lt;350, &gt;=2, 100-200, =86, text, "-" for blank, "or". Your hit % = skill % after element, size and bonuses.</div>
   </section>
 
   <section class="card" id="bestCard" data-tab="maps">
@@ -506,9 +522,10 @@
     <div class="bar"><h2 class="grow">Map planner</h2></div>
     <div class="form c211">
       <label>Map<input id="mapInput" list="mapList" placeholder="e.g. gef_dun01 or Sphinx B5F"></label>
-      <label title="How many monsters attack you together on this map, every monster on it, in place of the Character tab's count for aggressive ones. Their hits add up, and from the 3rd one your FLEE drops 10% and DEF 5% for each past the 2nd. Room dungeons (one map cut into small rooms: Labyrinth Forest 1F / 3F, Sunken Ship, Kunlun Chess Terrace, Sphinx B5F) start at 3; blank goes back to the default (the Character tab's count)">Monsters on you at once<input id="mobbedIn" type="number" min="1" max="12" step="1"></label>
+      <label title="How many monsters attack you together on this map. It counts for every monster on the map, aggressive or not, in place of the Character tab's number. Their hits add up, and from the 3rd one your FLEE drops 10% and DEF 5% for each past the 2nd. Room dungeons (one map cut into small rooms: Labyrinth Forest 1F / 3F, Sunken Ship, Kunlun Chess Terrace, Sphinx B5F) start at 3. Clear it to go back to the default">Possible rampage here (monsters)<input id="mobbedIn" type="number" min="1" max="12" step="1"></label>
       <label><span>&nbsp;</span><button type="button" id="mapFromMob">Use session monster's map</button></label>
     </div>
+    <div class="note hint">Possible rampage here: how many monsters can attack you at once on this map. Blank uses the Character tab's number for aggressive monsters (others fight you one at a time); type a number to say how many of this map's monsters fight you at once, aggressive or not.</div>
     <datalist id="mapList"></datalist>
     <div class="note" id="mapName"></div>
     <div class="calc" id="mapTiles"></div>
@@ -665,6 +682,11 @@
 <script src="data/special.js"></script>
 <script src="build.js"></script>
 <button type="button" class="fab" id="qlFab" aria-label="Log EXP" aria-expanded="false" aria-controls="quickLog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+<dialog class="jump" id="jump" aria-label="Search">
+  <div class="jumpBox"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="jumpInput" placeholder="Search monsters, items, maps, tabs…" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="jumpList" aria-autocomplete="list"><kbd>Esc</kbd></div>
+  <div class="jumpList" id="jumpList" role="listbox"></div>
+  <div class="jumpFoot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>Enter</kbd> open</span><span><kbd>Ctrl</kbd><kbd>K</kbd> or <kbd>/</kbd> from anywhere</span></div>
+</dialog>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <!-- app code, split by section; these run in order and share one global scope (plain scripts, so the page still opens from file://) -->
 <script src="js/game.js"></script>
