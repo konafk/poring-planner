@@ -685,7 +685,7 @@ const syncClosed=()=>{$("closedMaps").value=state.closed.join(", ");
     return `<tr class="${upOut(u)?"muted":u===nx?"sel":""}"><td class="name"><b>${upWhen(u)}</b><div class="note">${upStatus(u)}</div></td><td class="name"><b>${esc(u.name)}</b></td><td>${u.cap?capTxt(u.cap):"–"}</td>
     <td class="name">${u.add.map(esc).join("<br>")}</td><td class="name"><div class="maps">${REGIONS.filter(r=>r.up===u).map(regionBtn).join("")}</div>${nm?`<div class="note">${nm} map${nm>1?"s":""}</div>`:""}</td></tr>`}).join("");
   const shut=REGIONS.filter(regionClosed);
-  $("closedNote").innerHTML=shut.length?`Not open yet: ${shut.map(r=>esc(r.name)).join(", ")} (<a href="#roadmapCard">Roadmap</a>).`:""};
+  $("closedNote").innerHTML=shut.length?`Not open yet: ${shut.map(r=>esc(r.name)).join(", ")} (<a href="#" data-gotab="roadmap">Roadmap tab</a>).`:""};
 // "none open", with the update that opens one of the monster's maps
 const noneOpen=m=>{const a=mobArrives(m);return `<span class="note"${a?` title="comes with the ${esc(a)}"`:""}>none open${a?` · ${esc(a.split(", ")[1])}`:""}</span>`};
 // converters / Spell Fist bolts against every monster on the map: the element-table rate of each option, the map's EXP/min with it,
