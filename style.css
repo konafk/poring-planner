@@ -615,9 +615,12 @@ details.more>.form{display:grid}
 .eqPick .to{color:var(--accent);font-weight:600}
 /* gear icons and card pictures: one cell of a sprite sheet (data/icons.js) */
 .ico{display:inline-block;flex:none;background-repeat:no-repeat;vertical-align:middle}
-.ico.gear{width:24px;height:24px;background-image:var(--ico-gear)}
-.ico.card{width:36px;height:48px;background-image:var(--ico-card);border-radius:3px}
+.ico-gear{width:24px;height:24px;background-image:var(--ico-gear)}
+.ico-card{width:36px;height:48px;background-image:var(--ico-card);border-radius:3px}
 .ico.none{background:none}
 .dbName{display:flex;align-items:center;gap:8px}
-.eqDlgHead .ico.card{margin-top:-2px}
-.eqPick .ico.gear{margin:-4px 6px -4px 0}
+.eqDlgHead .ico-card{margin-top:-2px}
+.eqPick .ico-gear{margin:-4px 6px -4px 0}
+/* the Character tab's gear table: the item's icon beside its box, a small picture beside each card box */
+#gearTable .itemBox,#gearTable .cardBox{display:flex;align-items:center;gap:6px}
+#gearTable .cardBox{flex:1;min-width:0}
