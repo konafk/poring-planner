@@ -37,7 +37,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
     radial-gradient(900px 420px at 85% -120px,var(--glow-a),transparent 70%),radial-gradient(700px 360px at 30% -160px,var(--glow-b),transparent 70%)}
 .side{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px;padding:20px 12px 14px;background:var(--side-bg);color:var(--side-fg);box-shadow:inset -1px 0 0 var(--side-line);overflow-y:auto;scrollbar-width:none}
 .brand{display:flex;align-items:center;gap:11px;padding:0 8px 12px}
-.logo{flex:none;width:36px;height:36px;filter:drop-shadow(0 4px 10px rgba(226,69,127,.35))}
+.logo{flex:none;width:40px;height:38px;margin:-2px -1px -2px -3px;filter:drop-shadow(0 4px 10px rgba(226,69,127,.3))}
 .brandTxt{display:flex;flex-direction:column;line-height:1.15;min-width:0}
 .brandTxt b{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:-.02em;color:#fff}
 .brandTxt span{font-size:11px;color:var(--side-muted);letter-spacing:.02em}
