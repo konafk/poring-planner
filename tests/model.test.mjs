@@ -2054,4 +2054,14 @@ t("Equip from the Equipment and Cards tabs: into your gear or another set, headg
   assert.equal(run("altDiff(C(),0).includes('Special equipment')"), false);
 });
 
+t("Equipment and Cards tabs: each item's cell in the icon and card picture sheets", () => {
+  const S = JSON.parse(run("JSON.stringify(ICON_SHEETS)"));
+  for (const k of ["gear", "card"]) assert.equal(new Set(S[k].ids).size, S[k].ids.length, `${k} ids repeat`);
+  const at = (k, id) => S[k].ids.indexOf(id), pos = (k, i) => `-${i % S[k].cols * S[k].w}px -${Math.floor(i / S[k].cols) * S[k].h}px`;
+  assert.ok(at("gear", 1168) >= 0); assert.ok(at("card", 4035) >= 0);                               // Zweihander, Hydra Card
+  assert.ok(run(`iconHtml("gear",1168)`).includes(`background-position:${pos("gear", at("gear", 1168))}`));
+  assert.ok(run(`iconHtml("card",4035)`).includes(`background-position:${pos("card", at("card", 4035))}`));
+  assert.ok(run(`iconHtml("gear",-5)`).includes("none"));                                            // no image: an empty cell
+});
+
 console.log(`${n} tests passed`);
