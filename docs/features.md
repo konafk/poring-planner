@@ -19,7 +19,15 @@ The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Mo
 
 **Log EXP from any tab:** type in the Log EXP box on the right of the top bar, or press **L** on any tab to jump to it. It takes a line like the paste box does: `17.9` (EXP %), `17.9 63` (with job %), `15:05 17.9 63` (at that time), and `died` on the line for EXP after a death. The entry goes in at the level of your last one, and a level-up is picked up the same way as in the Log EXP card. On a phone the box opens as a sheet from the round **+** button. At the max base level (70) base EXP no longer counts, so the box, the + button and **L** go away.
 
-**Search:** press **Ctrl+K** (⌘K on a Mac) or **/** on any tab, or the Search button at the top of the sidebar, and type part of a name. It finds tabs, a few actions (Log EXP, theme, hints, new session), every monster, every item a monster drops, every piece of gear and card, and every map, by name, map code or item number. **Enter** opens it where it lives: a monster in Monster info, an item in Item info, gear on the Equipment tab, a card on the Cards tab, a map in the Map planner.
+**Search:** press **Ctrl+K** (⌘K on a Mac) or **/** on any tab, or the Search button at the top of the sidebar, and type part of a name. It finds tabs, a few actions (Log EXP, theme, hints, new session), every monster, every item a monster drops, every piece of gear and card, and every map, by name, map code or item number. **Enter** opens a monster, item, piece of gear or card in its details popup (below), and a map in the Map planner.
+
+**Details popup:** click a monster, item, gear or card name (underlined) and its details open over the page, without leaving the tab you're on. The names are in drop lists, Where to get, the Map planner, the Zeny Hunter, Item info's droppers, the Market prices, the Equipment and Cards tabs and search.
+
+- **Monster:** HP, DEF, MDEF and ATK, EXP (and what you get), your kill time, hit and dodge, EXP / min, zeny per kill, its best open map, every drop (with your chance and the price), and every spawn map, with when closed ones come (Roadmap). Buttons: Farming it now (or Also killing it), Monster info, rozerodb.
+- **Item:** a box for what players pay (it's saved like the Market tab's), the NPC price and weight, and the monsters that drop it with their best open map.
+- **Gear:** level, card slots, ATK / MATK / DEF, weapon level, element, weight, the jobs that wear it, its effects, the in-game text and where to get it. Buttons: Equip (the Equip dialog) and Equipment tab.
+- **Card:** its picture, the gear it goes in, the name it gives that gear, its effects, the in-game text and where to get it. Buttons: Equip and Cards tab.
+- Names inside the popup open theirs (a drop from a monster, a monster from an item); **←** goes back. A map opens in the Map planner.
 
 **Get started:** a new player sees three steps over the Character, Session and Monsters & maps tabs: set up your character (type all six stats, or use build mode), pick the monster you farm, and log your EXP twice. Each one ticks off as you do it, and the card goes away for good once all three are done, or when you close it.
 
@@ -31,6 +39,7 @@ The buttons at the bottom of the sidebar change how the page looks:
 - **Full width:** lets the page use the whole window instead of stopping at 1180px. It only shows on very wide screens.
 
 All four are remembered in this browser, apart from your account data, so backups and share links don't carry them.
+
 
 ## Account
 

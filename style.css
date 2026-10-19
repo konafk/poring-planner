@@ -638,3 +638,15 @@ details.more>.form{display:grid}
 /* Item info: an item's other sources (monsters the farm tables don't have, quests) across the tile row */
 .calc .tile.wide{grid-column:1/-1}
 .tile .s.from{line-height:1.7}
+/* the details popup (js/info.js): a monster, item, gear or card */
+.infoDlg{width:min(720px,calc(100vw - 32px));max-height:min(760px,calc(100vh - 48px));margin-top:6vh}
+.infoDlg .calc{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.infoDlg .tile{padding:10px 12px;border-radius:11px}
+.infoDlg .tile .v{font-size:1.15rem}
+.infoSec h3{margin:4px 0 6px;font-size:11px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.infoList{display:flex;flex-direction:column;gap:3px;font-size:13px;line-height:1.5}
+.infoFrom{font-size:13px;line-height:1.75}
+.infoText{font-size:13px;line-height:1.5;color:var(--muted);white-space:pre-line}
+.infoActs{padding:10px 16px;border-top:1px solid var(--line);background:var(--raised);flex-wrap:wrap}
+#infoBack{margin-top:-1px}
+@media (max-width:680px){.infoDlg .calc{grid-template-columns:repeat(2,minmax(0,1fr))}}

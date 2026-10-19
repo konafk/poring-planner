@@ -2131,4 +2131,26 @@ t("Item info: the Where to get filter, and other sources the farm tables don't h
   assert.equal(run(`otherSourcesHtml("507")`), "");                                                   // nothing beyond the table
 });
 
+t("details popup: a monster, an item, gear and a card, linked to each other", () => {
+  assert.equal(run(`infoKind(909)`), "item");                                                        // Jellopy
+  assert.equal(run(`infoKind(1168)`), "gear");                                                       // Zweihander
+  assert.equal(run(`infoKind(4123)`), "card");                                                       // Eddga Card
+  const m = run(`popMob(MOBS.find(m=>m.id===1002))`);                                                // Poring
+  assert.equal(m.title, "Poring");
+  assert.match(m.body, /data-info="item:909"/);                                                      // its drops open theirs
+  assert.match(m.body, /data-infomap="/);                                                            // and its maps the planner
+  assert.match(m.acts, /data-infoact="mobinfo"/);
+  const i = run(`popItem("909")`);
+  assert.match(i.body, /data-infoprice="909"/);                                                      // a box for the player price
+  assert.match(i.body, /data-info="mob:1002"/);                                                      // Poring drops it
+  const g = run(`popGear(1168)`);
+  assert.equal(g.title, "Zweihander");
+  assert.doesNotMatch(g.body, /data-info="mob:/);                                                   // Doppelganger: an MVP the farm tables don't have
+  assert.match(g.acts, /data-infoact="equip"/);
+  assert.match(run(`popGear(1306).body`), /data-info="mob:\d+">Chimera/);                             // War Axe: Chimera links to its own
+  const c = run(`popCard(4123)`);
+  assert.match(c.title, /Eddga/); assert.match(c.acts, /data-infoact="cardtab"/);
+  assert.match(run(`fromHtml(1306)`), /data-info="mob:\d+"/);                                         // Where to get links open the popup
+});
+
 console.log(`${n} tests passed`);

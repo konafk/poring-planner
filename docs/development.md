@@ -34,6 +34,7 @@ Plain scripts that `index.html` loads in this order. They share one global scope
 | `build-ui.js` | Build mode, consumables and the equipment stats rows. |
 | `ref.js` | The EXP & formulas tab, and the Character tab's Your gear vs other gear sets. |
 | `gear-db.js` | The Equipment and Cards tabs (filters, effects text) and the Equip dialog that puts gear or a card in a gear set. |
+| `info.js` | The details popup for a monster, item, piece of gear or card, opened from any name with `data-info="mob:<id>"` or `"item:<id>"`. |
 | `start.js` | Tabs and their headings, collapsible cards, the Character tab's section links, the get started card's buttons, the search (Ctrl+K), the sidebar's Compact / Hints / Theme / Full width buttons and the first render. |
 
 ### `data/`
@@ -101,4 +102,4 @@ node tests/model.test.mjs    # damage and tracker maths, loaded with a stand-in 
 node tests/stamp.test.mjs    # index.html carries no ?v= stamps, and the deploy stamps every file
 ```
 
-`model.test.mjs` covers the roadmap's open and closed regions, damage per hit, hit chance, cast time, party share, EXP and job EXP rates, walking time, the monster table filters recovery item costs, and the Equipment and Cards tabs' filters and equipping. GitHub Actions runs every test, and checks that the data exporters compile, on each pull request and push to `main` (`.github/workflows/tests.yml`). Each push to `main` also deploys the page (`.github/workflows/pages.yml`).
+`model.test.mjs` covers the roadmap's open and closed regions, the details popup, damage per hit, hit chance, cast time, party share, EXP and job EXP rates, walking time, the monster table filters recovery item costs, and the Equipment and Cards tabs' filters and equipping. GitHub Actions runs every test, and checks that the data exporters compile, on each pull request and push to `main` (`.github/workflows/tests.yml`). Each push to `main` also deploys the page (`.github/workflows/pages.yml`).

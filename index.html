@@ -736,6 +736,11 @@
   <div class="eqDlgHead"><span id="eqDlgIco"></span><div class="grow"><b id="eqDlgTitle"></b><div class="note" id="eqDlgSub"></div></div><button type="button" class="small" id="eqDlgClose" aria-label="Close">✕</button></div>
   <div class="eqDlgBody" id="eqDlgBody"></div>
 </dialog>
+<dialog class="jump eqDlg infoDlg" id="infoDlg" aria-labelledby="infoDlgTitle">
+  <div class="eqDlgHead"><button type="button" class="small" id="infoBack" aria-label="Back" hidden>←</button><span id="infoDlgIco"></span><div class="grow"><b id="infoDlgTitle"></b><div class="note" id="infoDlgSub"></div></div><button type="button" class="small" id="infoDlgClose" aria-label="Close">✕</button></div>
+  <div class="eqDlgBody" id="infoDlgBody"></div>
+  <div class="bar infoActs" id="infoDlgActs"></div>
+</dialog>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 <!-- app code, split by section; these run in order and share one global scope (plain scripts, so the page still opens from file://) -->
 <script src="js/game.js"></script>
@@ -747,6 +752,7 @@
 <script src="js/build-ui.js"></script>
 <script src="js/ref.js"></script>
 <script src="js/gear-db.js"></script>
+<script src="js/info.js"></script>
 <script src="js/start.js"></script>
 </body>
 </html>
