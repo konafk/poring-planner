@@ -266,7 +266,7 @@ $("renameSession").addEventListener("click",toggleRename);
 $("editSession").addEventListener("click",toggleRename);
 $("sessName").addEventListener("keydown",e=>{if(e.key==="Enter")endRename(true);else if(e.key==="Escape")endRename(false)});
 $("sessName").addEventListener("blur",()=>setTimeout(()=>endRename(true),150));
-$("newSession").addEventListener("click",()=>{const id="s"+Date.now();state.sessions.push({id,name:"New session",mobIds:[],entries:[]});openSession(id);showTab("maps");$("mobInput").focus()});
+$("newSession").addEventListener("click",()=>{const id="s"+Date.now();state.sessions.push({id,name:"New session",mobIds:[],entries:[]});openSession(id);showTab("maps");scrollTo({top:0})});
 let delArmed=false;
 $("delSession").addEventListener("click",()=>{if(!delArmed){delArmed=true;$("delSession").textContent="Confirm delete";setTimeout(()=>{delArmed=false;$("delSession").textContent="Delete"},3000);return}
   delArmed=false;$("delSession").textContent="Delete";state.sessions=state.sessions.filter(s=>s.id!==state.current);
@@ -306,20 +306,27 @@ $("clearF").addEventListener("click",()=>{state.filters={};document.querySelecto
 $("minLv").value=state.minLv;$("maxLv").value=state.maxLv;
 ["minLv","maxLv"].forEach(id=>$(id).addEventListener("input",e=>{state[id]=e.target.value===""?(id==="maxLv"?99:1):num(e.target.value);save();renderMobs()}));
 $("hideClosed").checked=state.hideClosed;$("hideClosed").addEventListener("change",e=>{state.hideClosed=e.target.checked;save();renderMobs()});
-// EXP Hunter + closed regions
-$("bestMin").addEventListener("input",renderBest);$("bestN").addEventListener("change",renderBest);
-// max sec / kill: one setting shown on both hunters; blank goes back to 60
-["bestMaxSec","huntMaxSec"].forEach(id=>{$(id).value=maxSecKill();$(id).addEventListener("input",e=>{state.maxSec=e.target.value===""?60:Math.max(0,num(e.target.value));
-  ["bestMaxSec","huntMaxSec"].forEach(o=>{if(o!==id)$(o).value=state.maxSec});save();renderBest();if(state.tab==="maps")renderHunt()})});
+// Where to farm: rank by EXP (the EXP table) or by zeny (the zeny table), one Show and one Max sec / kill for both; closed regions
+const renderFarm=()=>{renderBest();if(state.tab==="maps")renderHunt()};
+ROOTQ("[data-farmby]").forEach(b=>b.addEventListener("click",()=>{state.farmBy=b.dataset.farmby;save();renderFarm()}));
+$("bestMin").addEventListener("input",renderBest);$("farmN").addEventListener("change",renderFarm);
+// max sec / kill: blank goes back to 60
+$("farmMaxSec").value=maxSecKill();$("farmMaxSec").addEventListener("input",e=>{state.maxSec=e.target.value===""?60:Math.max(0,num(e.target.value));save();renderFarm()});
+// Farm here (the best spots and every map row): the map becomes the session's, with the monsters you hunt there; the name follows
+// it while it's still the default. A capture listener, so the row under the button doesn't also open the map planner
+function farmMap(mp,ids){if(!MAPMOBS[mp])return;const s=cur(),auto=s.name==="New session"||s.name===sessAutoName(s);
+  if(!s.mobIds.length)s.job=state.job;s.mobIds=ids&&ids.length?ids:mapHuntIds(mp);s.map=mp;state.map=mp;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;state.calcMobId=null;save();renderAll()}
+document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-farm]");if(!b)return;e.preventDefault();e.stopPropagation();
+  farmMap(b.dataset.farm,(b.dataset.ids||"").split(",").filter(Boolean).map(Number));showToast(`Farming ${mapCode(b.dataset.farm)} in "${cur().name}": log your EXP as you go`)},true);
 // possible rampage, aggressive or assisting monsters attacking you together: blank goes back to the default (model.js CROWD_D)
 $("crowd").addEventListener("input",e=>{const v=e.target.value;C().crowd=v===""?null:Math.max(1,num(v,1));save();renderAll()});
 $("calOn").addEventListener("change",e=>{state.calOn=e.target.checked;save();renderBest()});
 $("bestTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.target.closest("tr[data-map]");if(!tr)return;state.map=tr.dataset.map;save();renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})});
 $("regions").addEventListener("click",e=>{const b=e.target.closest("[data-region]");if(!b)return;toggleRegion(b.dataset.region);syncClosed();save();renderAll()});
 $("closedMaps").addEventListener("change",e=>{state.closed=[...new Set(e.target.value.split(/[\s,]+/).map(x=>x.trim().toLowerCase()).filter(Boolean))];syncClosed();save();renderAll()});
-// Zeny Hunter
+// ranking by zeny: maps or single monsters
 ROOTQ("[data-hunt]").forEach(b=>b.addEventListener("click",()=>{state.huntMode=b.dataset.hunt;save();renderHunt()}));
-$("huntMin").addEventListener("input",renderHunt);$("huntN").addEventListener("change",renderHunt);
+$("huntMin").addEventListener("input",renderHunt);
 $("huntAuto").addEventListener("change",e=>{state.huntAuto=e.target.checked;save();renderHunt()});
 // level filter: a Lv range (blank = any) and skipping monsters with a drop level penalty
 ["huntMinLv","huntMaxLv"].forEach(id=>{$(id).value=state[id]??"";$(id).addEventListener("input",e=>{state[id]=e.target.value===""?null:Math.round(num(e.target.value));save();renderHunt()})});
@@ -377,8 +384,7 @@ $("mapList").innerHTML=Object.keys(MAPMOBS).sort((a,b)=>mapCode(a).localeCompare
 $("mapInput").addEventListener("change",e=>{state.map=mapKey(e.target.value);save();renderMap()});
 $("mapFromMob").addEventListener("click",()=>{state.map="";save();renderMap()});
 // the Map planner's map becomes the session's, with the monsters you hunt there; the name follows it while it's still the default
-$("mapToSess").addEventListener("click",()=>{const mp=$("mapToSess").dataset.map;if(!MAPMOBS[mp])return;const s=cur(),auto=s.name==="New session"||s.name===sessAutoName(s);
-  if(!s.mobIds.length)s.job=state.job;s.mobIds=mapHuntIds(mp);s.map=mp;state.map=mp;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;state.calcMobId=null;save();renderAll()});
+$("mapToSess").addEventListener("click",()=>farmMap($("mapToSess").dataset.map));
 // possible rampage (monsters attacking you together) on the Map planner's map; blank goes back to the default (3 in Labyrinth Forest, else 1)
 $("mobbedIn").addEventListener("input",e=>{let mp=mapKey(state.map);if(!MAPMOBS[mp])mp=mobMap(calcMob());if(!MAPMOBS[mp])return;
   if(!state.mobbed)state.mobbed={};const v=e.target.value;if(v===""||!(+v>0))delete state.mobbed[mp];else state.mobbed[mp]=Math.min(12,Math.max(1,Math.round(+v)));save();renderAll()});
@@ -486,6 +492,9 @@ function colViews(id,box,apply){const views={All:null,...COL_VIEWS[id]},seg=docu
   const st=document.createElement("style");document.body.appendChild(st);
   // hidden columns are saved by header name, so adding or moving a column doesn't hide the wrong one; the position is looked up here
   const names=id=>{const t=document.getElementById(id);return t&&t.tHead?[...t.tHead.rows[0].cells].map(c=>(c.textContent||"").trim()):[]};
+  // the big tables start on their Compact view, once per account (state.colsShown["view:<id>"]), so a view you pick after that sticks
+  ["mobTable","bestTable","huntTable"].forEach(id=>{const k="view:"+id;if(state.colsShown[k])return;state.colsShown[k]=["Compact"];
+    state.hideCols[id]=names(id).filter(n=>n&&!COL_VIEWS[id].Compact.includes(n))});
   const apply=()=>{st.textContent=IDS.flatMap(id=>{const ns=names(id);return (state.hideCols[id]||[]).map(k=>ns.indexOf(k)).filter(i=>i>=0).map(i=>`#${id} tr>:nth-child(${i+1}){display:none}`)}).join("\n")};
   IDS.forEach(id=>{const t=document.getElementById(id);if(!t||!t.tHead)return;
     const ths=[...t.tHead.rows[0].cells];

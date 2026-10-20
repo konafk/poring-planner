@@ -59,7 +59,7 @@ function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
       $("hpCardInfo").innerHTML=hp.join(" · ");
       $("hpInfo").textContent=`${fmtN(hpRegen6())} per 6s${ihrPer10()?` + ${ihrPer10()} per 10s (Increase HP Recovery)`:""}${consHPPerSec()>0?` + ${fmtSig(consHPPerSec()*60)}/min from consumables`:""} = ${fmtN(hpRegenPerSec(null)*60)} HP/min${hf>0?`, + ${fmtN(hf*60)} from Hunter Fly`:""}`}
     if(cd.vitata)parts.push((vitInGear(c)?"Vitata SP cost from your gear":`SP cost +${num(cd.spBonus)}%`)+(hs>0?` · vs ${esc(m.name)}: Heal ${(hs*60).toFixed(1)} casts/min${sh>=1?` <span class="bad">(can't keep up: more than all of your time)</span>`:` (${Math.round(sh*100)}% of your time not attacking)`}`:""));
-    if(cd.creamy)parts.push("Creamy: the Zeny Hunter teleports past monsters you skip");
+    if(cd.creamy)parts.push("Creamy: Where to farm (by zeny) teleports past monsters you skip");
     if(noBreak())parts.push(cd.phen||cd.bbfly?`casts aren't interrupted${vctCards()?` · cast +${vctCards()}%`:" · cast time from your gear"}`:"Phen / Bloody Butterfly in your gear: casts aren't interrupted");
     if(cd.daSF)parts.push(a.type!=="auto"&&a.type!=="spellfist"?"Side Winder: only basic attacks":daSkill().ch>=num(cd.daPct)/100?"Side Winder: Double Attack's chance is higher, nothing added":`Side Winder: +${num(cd.daPct)}% hits`);
     $("cardInfo").innerHTML=parts.join(" · ");
@@ -171,7 +171,7 @@ function renderTracker(){renderStart();
     $("logMoreMeta").textContent=bits.join(" · ")}
   // several monsters: just the map (the monsters are in the tooltip), so the line stays short
   $("subtitle").title=ms.length>1?`Farming ${ms.map(m=>m.name).join(", ")} · weighted by spawn counts`:"";
-  $("subtitle").innerHTML=ms.length>1?(smp?`Farming on ${esc(mapLabel(smp))}`:`Farming ${ms.length} monsters`):mob?`Farming ${esc(mob.name)} · Lv ${mob.lv} · ${mob.el?`<span class="el ${mob.el}">${mob.el} ${mob.elv}</span> · `:""}${mob.size||""} ${mob.race||""} · ${fmtExp(mob)} base EXP${smp?` · on ${esc(mapLabel(smp))}`:""} · <a href="${dbUrl(mob)}" target="_blank" rel="noopener">rozerodb ↗</a>`:"Pick a monster in the Monsters &amp; maps tab and press \"Farming this now\"";
+  $("subtitle").innerHTML=ms.length>1?(smp?`Farming on ${esc(mapLabel(smp))}`:`Farming ${ms.length} monsters`):mob?`Farming ${esc(mob.name)} · Lv ${mob.lv} · ${mob.el?`<span class="el ${mob.el}">${mob.el} ${mob.elv}</span> · `:""}${mob.size||""} ${mob.race||""} · ${fmtExp(mob)} base EXP${smp?` · on ${esc(mapLabel(smp))}`:""} · <a href="${dbUrl(mob)}" target="_blank" rel="noopener">rozerodb ↗</a>`:"Pick where to farm on the Monsters &amp; maps tab and press \"Farm here\"";
   const lastE=[...s.entries].sort((a,b)=>a.t-b.t).pop();
   if(lastE){$("tCurLv").textContent=`Lv ${lastE.lv}`;$("tCurLvS").textContent=lvExp(lastE.lv)?`${fmtN(lvExp(lastE.lv))} EXP to level`:"Lv outside EXP table";
     $("tCurPct").textContent=pct(lastE.pct,1);$("tCurPctS").textContent=`logged ${fmtT(lastE.t)}`}
@@ -210,7 +210,7 @@ function renderTrip(s=cur()){const c=C(),act=document.activeElement;
   $("tripFor").textContent=`${s.name}${ms.length?` · ${ms.map(m=>m.name).join(", ")}`:" · no monster picked"}`;
   $("tripMin").placeholder=auto?String(Math.round(auto)):"auto";
   if(!wOn())lenS="Type your Max Weight to work it out, or type the minutes a trip takes";
-  else if(!t)lenS=ms.length?"You can't hurt the session's monsters with this attack; type the minutes a trip takes":"Pick what you're farming (Monsters & maps → click a monster → Farming this now), or type the minutes a trip takes";
+  else if(!t)lenS=ms.length?"You can't hurt the session's monsters with this attack; type the minutes a trip takes":"Pick where you're farming (Monsters & maps → Farm here), or type the minutes a trip takes";
   else if(!(t.wk>0))lenS="Their drops weigh nothing, so you never fill up";
   else if(!(t.kills>=1))lenS=`<span class="bad">Your starting weight is already at your sell point (${fmtP(sellPct())}%)</span>`;
   else lenS=`~${fmtN(Math.floor(t.kills))} kills · ${t.wk.toFixed(1)} weight a kill · ${fmtN(Math.max(0,maxWt(c)*t.at/100-num(c.curW)))} weight of room: ${fmtN(num(c.curW))} you start with → ${fmtN(maxWt(c)*t.at/100)} (${fmtP(t.at)}%)${t.fell?' · <span class="bad">no regen past 70% and you need SP, so you sell at 70%</span>':""}`;
@@ -508,30 +508,56 @@ const tripTxt=h=>h==null?"–":fmtDur(h).split("\n").pop();
 // under the EXP and Zeny Hunters: how many rows are over the max sec / kill, and the maps your level can't enter yet
 const huntLimTxt=rows=>{const n=rows.filter(r=>r.slow).length,lk=Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)&&lvLocked(mp));
   return esc((n?` · ${n} over ${maxSecKill()}s / kill ranked last`:"")+(lk.length?` · ${lk.map(mp=>`${mapCode(mp)} needs Lv ${mapMinLv(mp)}`).join(", ")}`:""))};
+// ---- render: Where to farm (the best spots, then one ranking by EXP or by zeny) ----
+// the top 3 maps by EXP (renderBest) and by zeny (renderHunt), with a Farm here button each
+let SPOT_EXP=[],SPOT_ZENY=[];
+const top3=rows=>rows.filter(r=>r.rank<=3).sort((a,b)=>a.rank-b.rank);
+// the monsters Farm here hunts: the zeny table's picks on that map, else every monster there but bosses and skipped ones
+const farmIds=r=>r.earn?r.earn.map(x=>x.m.id):mapHuntIds(r.mp);
+const farmBtn=r=>{const s=cur(),ids=farmIds(r),here=sessMap(s)===r.mp;
+  return here&&ids.length===s.mobIds.length&&ids.every(id=>s.mobIds.includes(id))?'<span class="pill">✓ farming</span>'
+    :`${here?'<span class="pill">current</span> ':""}<button type="button" class="small farmBtn" data-farm="${esc(r.mp)}" data-ids="${ids.join(",")}" title="Make ${esc(mapCode(r.mp))} the session's map, hunting ${ids.length} of its monsters">Farm here</button>`};
+function renderSpots(){const max=atMaxLv(),sm=sessMap(cur());
+  const mobs=r=>(r.earn?r.earn.map(x=>x.m):MAPMOBS[r.mp].filter(x=>!x.m.boss&&!isSkipped(x.m)).sort((a,b)=>b.n-a.n).map(x=>x.m)).slice(0,3).map(m=>esc(m.name)).join(", ");
+  const col=(head,rows,val)=>`<div class="spotCol"><div class="secHead">${head}</div>${rows.length?rows.map(r=>`<div class="spot${r.mp===sm?" on":""}"><span class="spotN">${r.rank}</span>
+    <div class="spotTxt"><div><b class="mono">${mapCode(r.mp)}</b> <span class="note">${esc(mapName(r.mp))}</span></div><div class="spotV">${val(r)}</div><div class="note">${mobs(r)}</div></div>${farmBtn(r)}</div>`).join("")
+    :'<div class="note">No open maps match.</div>'}</div>`;
+  // at the max base level EXP no longer counts: only the zeny column
+  $("spots").innerHTML=(max?"":col("Best for EXP",SPOT_EXP,r=>`<b>${fmtN(r.epm)}</b> EXP / min · ${fmtN(r.net)} z/hr net`))+col("Best for zeny",SPOT_ZENY,r=>`<b>${fmtN(r.net)}</b> z/hr net${r.epm!=null?` · ${fmtN(r.epm)} EXP / min`:""}`);
+  $("spots").classList.toggle("one",max)}
+// show the ranking picked (by EXP or by zeny) and only its options; More options' line says what they're set to
+function syncFarm(){const by=state.farmBy==="zeny"?"zeny":"exp",z=by==="zeny",maps=state.huntMode!=="mobs";
+  ROOTQ("[data-farmby]").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.farmby===by)));
+  $("bestWrap").hidden=z;$("huntWrap").hidden=!z;$("bestBasis").hidden=z;$("huntBasis").hidden=!z;$("huntModeSeg").hidden=!z;
+  $("bestMinWrap").hidden=z;$("calWrap").hidden=z;["huntMinWrap","huntLvWrap","huntPenWrap","teleWrap"].forEach(id=>$(id).hidden=!z);$("huntAutoWrap").hidden=!z||!maps;
+  const off=LOOT_GROUPS.filter(([g])=>!looted0(g)).map(([,n])=>n.toLowerCase());
+  $("farmMoreSum").textContent=[`min ${num($(z?"huntMin":"bestMin").value)} monsters`,`max ${maxSecKill()||"∞ "}s / kill`,!z&&state.calOn&&"calibrated",
+    z&&huntLvTxt().replace(/^ · hunting /,""),z&&maps&&state.huntAuto&&"best-paying only",off.length&&`not looting ${off.join(", ")}`].filter(Boolean).join(" · ")}
 function renderBest(){
-  const min=num($("bestMin").value),lim=num($("bestN").value,10);const w=walkSec();const s=cur(),st=stats(s);const curMap=currentMap(),max=atMaxLv();
+  const min=num($("bestMin").value),lim=num($("farmN").value,10);const w=walkSec();const s=cur(),st=stats(s);const curMap=currentMap(),max=atMaxLv();
   const curEpm=curMap?sessEpm(s,w):null,cal=calInfo(w),k=state.calOn&&cal.k?cal.k:null;
   const rows=Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)&&!lvLocked(mp)).map(mp=>mapStats(mp,w)).filter(r=>r&&r.N>=min);
   const sameJob=(s.job||state.job)===state.job;
   // rank every open map by EXP / min (Net zeny / hr at the max level), then filter, keep the top N and sort by the picked column.
   // Projected is worked out before the calibration, as it's already scaled to your session
   rows.forEach(r=>{r.proj=st&&sameJob&&curEpm?st.avgPct*r.epm/curEpm:null;r.logged=cal.maps[r.mp]||null;if(k)calApply(r,k)});
-  rankRows(rows,max?r=>r.net:r=>r.epm);
+  rankRows(rows,max?r=>r.net:r=>r.epm);SPOT_EXP=top3(rows);
   const shown=sortRows("bestTable",filterRows("bestTable",rows).slice(0,lim));
   $("bestBasis").innerHTML=(max?`<b>Max level: EXP doesn't matter</b> · ranked by Net zeny / hr · `:"")+esc(`${state.job} · ${C().a.name||"attack"} · ${convOn()?convLabel("per map"):atkEl()} · walking ~${w.toFixed(1)}s/kill`+(curEpm&&st?` · compared with your session on ${mapCode(curMap)} at ${pct(st.avgPct)}/hr`:""))+(k?` · <b>calibrated ×${k.toFixed(2)}</b>`:"")+huntLimTxt(rows);
   $("calOn").checked=!!state.calOn;$("calOn").disabled=!cal.k&&!state.calOn;
   $("calNote").textContent=cal.k?`×${cal.k.toFixed(2)}: median of real ÷ projected kills over ${cal.n} session${cal.n>1?"s":""} longer than 60 min`:`needs a ${state.job} session longer than 60 min`;
-  {const c=C(),mw=maxWt(c);$("bestWeight").textContent=mw>0?`Weight columns assume ${fmtN(num(c.curW))} / ${fmtN(mw)} weight now, selling at ${fmtP(sellPct())}% (${fmtN(mw*sellLim())}) with ${fmtN(num(c.townMin,3))} min to town and back · drops × your drop rate${num(state.dropBonus)?` +${num(state.dropBonus)}%`:""} and the level penalty, auto-looted groups only`
+  {const c=C(),mw=maxWt(c),hid=(state.hideCols||{}).bestTable||[];$("bestWeight").hidden=["Weight / kill","Weight / hr","Town trip every"].every(n=>hid.includes(n));$("bestWeight").textContent=mw>0?`Weight columns assume ${fmtN(num(c.curW))} / ${fmtN(mw)} weight now, selling at ${fmtP(sellPct())}% (${fmtN(mw*sellLim())}) with ${fmtN(num(c.townMin,3))} min to town and back · drops × your drop rate${num(state.dropBonus)?` +${num(state.dropBonus)}%`:""} and the level penalty, auto-looted groups only`
     :"Weight columns: type your Max Weight on the Character tab (or the sell timer) to see town trips"}
   $("bestTable").querySelector("tbody").innerHTML=shown.map(r=>{
     const main=MAPMOBS[r.mp].filter(x=>!x.m.boss&&!isSkipped(x.m)).sort((a,b)=>b.n-a.n).slice(0,3).map(x=>`<div>${esc(x.m.name)} <span class="note">×${x.n}</span>${BOSS_PILL(x.m)}${x.m.expUnknown?UNK_PILL:""}</div>`).join("");
     const proj=r.proj,L=r.logged;
-    return `<tr data-map="${r.mp}" class="${r.mp===curMap?"sel":""}"><td>${r.rank}</td><td class="name"><b class="mono">${mapCode(r.mp)}</b> <span class="note">${esc(mapName(r.mp))}</span>${r.mp===curMap?' <span class="pill">current</span>':""}${mobbedPill(r.mp)}${slowPill(r)}${elTag(r.el2)}</td><td class="name mainmobs">${main}</td><td${max?' class="muted" title="Max level: base EXP no longer counts"':""}><b>${fmtN(r.epm)}</b></td><td title="${esc(secTip(r))}">${r.sec.toFixed(1)}s + ${r.walk.toFixed(1)}s${sellTxt(r.sell," + ")}${r.cal?` <span class="note">≈${r.secT.toFixed(1)}s</span>`:""}</td><td>${fmtN(r.epk)}</td><td>${fmtN(r.zb)}</td><td title="${esc(healTip(r))}">${r.heal>=0.5?fmtN(r.heal):"–"}</td><td class="${r.net>0?"good":"bad"}"><b>${fmtN(r.net)}</b></td><td title="${esc(hpTip(r))}">${r.hpm==null?"–":fmtN(r.hpm)}</td><td>${susCell(r.sus)}</td><td>${r.skip?`<span class="pill down" title="${esc(r.skipNames.join(", "))}">${r.skip}</span>`:"–"}</td><td>≈${r.N}</td><td>${proj==null?"–":"~"+proj.toFixed(1)+"%/hr"}</td>
+    return `<tr data-map="${r.mp}" class="${r.mp===curMap?"sel":""}"><td>${r.rank}</td><td class="name"><b class="mono">${mapCode(r.mp)}</b> <span class="note">${esc(mapName(r.mp))}</span>${mobbedPill(r.mp)}${slowPill(r)}${elTag(r.el2)} ${farmBtn(r)}</td><td class="name mainmobs">${main}</td><td${max?' class="muted" title="Max level: base EXP no longer counts"':""}><b>${fmtN(r.epm)}</b></td><td title="${esc(secTip(r))}">${r.sec.toFixed(1)}s + ${r.walk.toFixed(1)}s${sellTxt(r.sell," + ")}${r.cal?` <span class="note">≈${r.secT.toFixed(1)}s</span>`:""}</td><td>${fmtN(r.epk)}</td><td>${fmtN(r.zb)}</td><td title="${esc(healTip(r))}">${r.heal>=0.5?fmtN(r.heal):"–"}</td><td class="${r.net>0?"good":"bad"}"><b>${fmtN(r.net)}</b></td><td title="${esc(hpTip(r))}">${r.hpm==null?"–":fmtN(r.hpm)}</td><td>${susCell(r.sus)}</td><td>${r.skip?`<span class="pill down" title="${esc(r.skipNames.join(", "))}">${r.skip}</span>`:"–"}</td><td>≈${r.N}</td><td>${proj==null?"–":"~"+proj.toFixed(1)+"%/hr"}</td>
       <td title="${L?esc(L.tip):"no session of this job logged here"}">${L?`<span class="${L.ratio<0.9?"warnc":L.ratio>1.1?"good":""}">${L.ratio.toFixed(2)}×</span> <span class="note">${L.list.length} log${L.list.length>1?"s":""}</span>`:"–"}</td>
       <td>${fmtQty(r.wk)}</td><td>${fmtQty(r.wph)}</td><td title="${r.trip==null?"":esc(`about ${fmtN(wRoom(sellLim())/r.wk)} kills to your sell point, then ${fmtN(num(C().townMin,3))} min to town and back`)}">${wOn()?tripTxt(r.trip):"–"}</td></tr>`}).join("")
     ||'<tr><td colspan="18" class="name muted">No open maps match.</td></tr>';
+  renderSpots();syncFarm();
 }
-// ---- render: Zeny Hunter ----
+// ---- render: Where to farm, by zeny ----
 const itemName=id=>ITEMN[id]||"#"+id;
 // a drop chance for display: "?" when there's no published rate (data/loot.js null)
 const chTxt=ch=>ch==null?"?":ch+"%";
@@ -655,26 +681,26 @@ const huntWTip=r=>{const room=wOn()?wRoom(sellLim()):0,z=r.wk>0?`${fmtN(r.zk/r.w
 const huntLvTxt=()=>{const a=state.huntMinLv,b=state.huntMaxLv,p=[a!=null&&b!=null?`Lv ${a}–${b}`:a!=null?`Lv ${a}+`:b!=null?`Lv ${b} and below`:"",state.huntNoPen?"skipping drop-penalty monsters":""].filter(Boolean);
   return p.length?` · hunting ${p.join(", ")}`:""};
 function renderHunt(){
-  const mode=state.huntMode==="mobs"?"mobs":"maps",lim=num($("huntN").value,10),min=num($("huntMin").value),w=walkSec();
+  const mode=state.huntMode==="mobs"?"mobs":"maps",lim=num($("farmN").value,10),min=num($("huntMin").value),w=walkSec();
   ROOTQ("[data-hunt]").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.hunt===mode)));$("huntAutoWrap").hidden=mode!=="maps";$("huntAuto").checked=state.huntAuto;
   ROOTQ("[data-loot]").forEach(i=>i.checked=looted0(i.dataset.loot));$("huntMinWrap").firstChild.textContent=mode==="maps"?"Min monsters on map":"Min spawns on its map";
   const rows=mode==="maps"?Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)&&!lvLocked(mp)).map(mp=>huntMap(mp,w,min)).filter(r=>r&&r.N>=min)
     :MOBS.filter(m=>!m.boss&&!isSkipped(m)&&huntLvOk(m)&&hasLoot(m)&&openMaps(m).length&&openMaps(m)[0][1]>=min).map(m=>huntMob(m,w)).filter(Boolean);
   // rank everything by net zeny / hr, then filter, keep the top N and sort by the picked column
   rankRows(rows,r=>r.net);
+  // the best spots are maps: in single-monster mode they're worked out on their own
+  if(mode==="maps")SPOT_ZENY=top3(rows);
+  else{const mr=Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)&&!lvLocked(mp)).map(mp=>huntMap(mp,w,min)).filter(r=>r&&r.N>=min);rankRows(mr,r=>r.net);SPOT_ZENY=top3(mr)}
   const shown=sortRows("huntTable",filterRows("huntTable",rows).slice(0,lim));
   $("huntBasis").textContent=`${state.job} · ${C().a.name||"attack"} · ${convOn()?convLabel("by zeny"):atkEl()} · walking ~${w.toFixed(1)}s/kill`+(num(state.dropBonus)?` · drop rate +${num(state.dropBonus)}%`:"")+(num(C().baseLv)>39?` · drops −50% from monsters Lv ${num(C().baseLv)-40} and below`:"")+huntLvTxt();$("huntBasis").innerHTML+=huntLimTxt(rows);
-  const top=[...shown].sort((a,b)=>b.net-a.net)[0];
-  $("huntTiles").innerHTML=top?`<div class="tile now"><div class="k">Best ${mode==="maps"?"map":"monster"} for zeny</div><div class="v mono">${mode==="maps"?mapCode(top.mp):esc(top.m.name)}</div><div class="s">${fmtN(top.net)} z/hr net${top.el2&&convOn()?` · bring ${top.el2} converters`:""}${mode==="maps"?` · ${esc(mapName(top.mp))}`:` · on ${esc(mapLabel(openMaps(top.m)[0][0]))}`}</div></div>
-   <div class="tile"><div class="k">Per hour</div><div class="v mono">${fmtN(top.kph)} kills</div><div class="s">${fmtN(top.loot)} z loot · ${fmtN(top.zk)} z/kill · ${fmtQty(top.wph)} weight${(()=>{const p=(top.m?[top.m]:top.earn.map(x=>x.m)).filter(m=>penNote(m));return p.length?` · ${esc(p.length===1?`${p[0].name}: ${penNote(p[0])}`:`level penalty on ${p.map(m=>m.name).join(", ")}`)}`:""})()}</div></div>
-   <div class="tile"><div class="k">Costs / hr</div><div class="v mono">${fmtN(top.cost)}</div><div class="s">HP items ${fmtN(top.hpZ)} z, SP items ${fmtN(top.spZ)} z${top.other>=0.5?`, ASPD potion${fieldBuffs().length?", ground buffs":""} ${fmtN(top.other)} z`:""}${useZeny()||supItemsKill().length?" (skill items and zeny are taken off each kill)":""}</div></div>`:"";
   const sel=currentMap(),selMob=(calcMob()||{}).id;
   $("huntTable").querySelector("tbody").innerHTML=shown.map(r=>{
-    const name=r.mp?`<b class="mono">${mapCode(r.mp)}</b> <span class="note">${esc(mapName(r.mp))}</span>${r.mp===sel?' <span class="pill">current</span>':""}${mobbedPill(r.mp)}${slowPill(r)}`:`<b title="${esc(dropNames(r.m))}"><a href="#" data-info="mob:${r.m.id}">${esc(r.m.name)}</a></b>${BOSS_PILL(r.m)} <span class="note">Lv ${r.m.lv}</span>${slowPill(r)}`;
+    const name=r.mp?`<b class="mono">${mapCode(r.mp)}</b> <span class="note">${esc(mapName(r.mp))}</span>${mobbedPill(r.mp)}${slowPill(r)} ${farmBtn(r)}`:`<b title="${esc(dropNames(r.m))}"><a href="#" data-info="mob:${r.m.id}">${esc(r.m.name)}</a></b>${BOSS_PILL(r.m)} <span class="note">Lv ${r.m.lv}</span>${slowPill(r)}`;
     const from=r.mp?huntPicker(r,w)+(r.skip?`<div class="note" title="${esc(r.skipNames.join(", "))}">can't hurt ${r.skip}</div>`:"")
       :(()=>{const om=openMaps(r.m);return `<div><span class="mono">${mapCode(om[0][0])}</span> <span class="note">≈${om[0][1]}${penNote(r.m)?` · ${esc(penNote(r.m))}`:""}</span></div>${dropList(r.m)}`})();
     return `<tr ${r.mp?`data-map="${r.mp}"`:`data-id="${r.m.id}"`} class="${(r.mp&&r.mp===sel)||(r.m&&r.m.id===selMob)?"sel":""}"><td>${r.rank}</td><td class="name">${name}${elTag(r.el2)}</td><td class="name mainmobs">${from}</td><td class="${r.net>0?"good":"bad"}"><b>${fmtN(r.net)}</b></td><td>${fmtN(r.loot)}</td><td title="${esc(costTip(r))}">${r.cost>0?fmtN(r.cost):"–"}</td><td>${fmtN(r.kph)}</td><td>${fmtN(r.zk)}</td><td>${fmtQty(r.wk)}</td><td title="${esc(huntWTip(r))}">${fmtQty(r.wph)}</td><td>${r.epm==null?"?":fmtN(r.epm)}</td><td>${r.hpm==null?"–":fmtN(r.hpm)}</td></tr>`}).join("")
     ||`<tr><td colspan="12" class="name muted">${mode==="maps"?"No open maps match.":"No open monsters you can hurt."}${huntLvTxt()?" Try widening the level filter.":""}</td></tr>`;
+  renderSpots();syncFarm();
 }
 // the Roadmap card: each update with its level cap, what it adds and its regions (click one to mark it open or closed)
 const regionBtn=r=>{const c=regionClosed(r),own=state.regions[r.id]!=null;return `<button type="button" class="map ${c?"off":""}" data-region="${r.id}" title="${c?"Closed":"Open"}${own?` (your call: the roadmap says ${upOut(r.up)?"open":"closed"})`:" (follows the roadmap)"}. Click to mark ${c?"open":"closed"}"><b>${c?"✕":"✓"} ${r.name}</b>${own?"<span>yours</span>":""}</button>`};

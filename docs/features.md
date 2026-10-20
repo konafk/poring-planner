@@ -5,7 +5,7 @@
 - [Page layout](#page-layout)
 - [Accounts, sessions and Backup](#accounts-sessions-and-backup)
 - [Session (EXP tracker)](#session-exp-tracker)
-- [Monsters & maps](#monsters--maps)
+- [Monsters & maps](#monsters--maps): Where to farm, Map planner, Monster table
 - [Roadmap](#roadmap)
 - [Monster info](#monster-info)
 - [Item info](#item-info)
@@ -22,7 +22,7 @@ The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Mo
 
 **Search:** press **Ctrl+K** (⌘K on a Mac) or **/** on any tab, or the Search button at the top of the sidebar, and type part of a name. It finds tabs, a few actions (Log EXP, theme, hints, new session), every monster, every item a monster drops, every piece of gear and card, and every map, by name, map code or item number. **Enter** opens a monster, item, piece of gear or card in its details popup (below), and a map in the Map planner.
 
-**Details popup:** click a monster, item, gear or card name (underlined) and its details open over the page, without leaving the tab you're on. The names are in drop lists, Where to get, the Map planner, the Zeny Hunter, Item info's droppers, the Market prices, the Equipment and Cards tabs and search.
+**Details popup:** click a monster, item, gear or card name (underlined) and its details open over the page, without leaving the tab you're on. The names are in drop lists, Where to get, the Map planner, Where to farm, Item info's droppers, the Market prices, the Equipment and Cards tabs and search.
 
 - **Monster:** HP, DEF, MDEF and ATK, EXP (and what you get), your kill time, hit and dodge, EXP / min, zeny per kill, its best open map, every drop (with your chance and the price), and every spawn map, with when closed ones come (Roadmap). Buttons: Farming it now (or Also killing it), Monster info, rozerodb.
 - **Item:** a box for what players pay (it's saved like the Market tab's), the NPC price and weight, and the monsters that drop it with their best open map.
@@ -30,7 +30,7 @@ The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Mo
 - **Card:** its picture, the gear it goes in, the name it gives that gear, its effects, the in-game text and where to get it. Buttons: Equip and Cards tab.
 - Names inside the popup open theirs (a drop from a monster, a monster from an item); **←** goes back. A map opens in the Map planner.
 
-**Get started:** a new player sees three steps over the Character, Session and Monsters & maps tabs: set up your character (type all six stats, or use build mode), pick the monster you farm, and log your EXP twice. Each one ticks off as you do it, and the card goes away for good once all three are done, or when you close it.
+**Get started:** a new player sees three steps over the Character, Session and Monsters & maps tabs: set up your character (type all six stats, or use build mode), pick where to farm (Farm here on one of the best spots), and log your EXP twice. Each one ticks off as you do it, and the card goes away for good once all three are done, or when you close it.
 
 At the bottom of the sidebar, **Compact sidebar** shrinks it to its icons (hover an icon to see its tab's name), and **Settings** opens a menu that changes how the page looks. It stays open while you switch things, and Esc or a click elsewhere closes it:
 
@@ -54,33 +54,28 @@ All four are remembered in this browser, apart from your account data, so backup
 - Log Base and Job EXP % as you farm. The Log EXP card shows the session's map, then level, EXP % and job % with Add entry, Died and Pause; the time and date, party and death settings fold under **Time, party and deaths** (its line says what they're set to), and **Paste several entries** folds under its own heading. Entries go on today's date unless you pick another. If a session runs past midnight or over several days, the date shows next to each time.
 - **Died −10%** logs a death: type your EXP % from just before you died and press it. It logs that EXP, then the EXP left after losing 10%, so what you gained up to the death still counts. If you only noted your EXP after dying, tick **Died since the last entry** before adding it (or put "died" on a pasted line); ✎ on an entry can mark or unmark it too. Tick **Death penalty item** if you use the shop item, and it takes 5% instead. The EXP a death costs isn't counted as negative EXP/hr: deaths show a 💀 in the entries and on the chart, and Compare sessions counts them.
 - See EXP/hr, time to the next level and a progress chart. Kill pace is split into fighting and walking time.
-- **Walking is calibrated from your logs:** each time you log, the session keeps a copy of your character's stats (ATK, MATK, ASPD, skills, gear). Its fight time comes from those stats, and its walking per kill is its logged seconds per kill less that fight time. That walking is used everywhere, so changing your gear or stats later changes only fight time, never the walking. If you change stats that change the fight time and then log again, the entries logged before keep the stats they were logged with, so lowering ATK or MATK and logging once more doesn't shrink the walking of the hour before. Sessions saved before this take the stats you have the first time they're worked out. Hover sec / kill in the EXP Hunter to see which session the walking comes from.
+- **Walking is calibrated from your logs:** each time you log, the session keeps a copy of your character's stats (ATK, MATK, ASPD, skills, gear). Its fight time comes from those stats, and its walking per kill is its logged seconds per kill less that fight time. That walking is used everywhere, so changing your gear or stats later changes only fight time, never the walking. If you change stats that change the fight time and then log again, the entries logged before keep the stats they were logged with, so lowering ATK or MATK and logging once more doesn't shrink the walking of the hour before. Sessions saved before this take the stats you have the first time they're worked out. Hover sec / kill in Where to farm (by EXP) to see which session the walking comes from.
 - **Map:** the box at the top of the Log EXP card picks the map you farm the session's monsters on. Auto takes the open map where most of them spawn (ties: more spawns); pick another to weight EXP/hr, kill pace, walking and loot by its spawn counts instead. The Map planner's **Use session monster's map** opens it too. On the Map planner, **Farming this map now** makes the planner's map the session's map, with the monsters you hunt there (not bosses or ones you skip) as its monsters, the same mix the planner works out. A map you pick stays even if you mark it as not open.
 - A new session is named after its map (e.g. nrd_dun02) once you add a monster, and the name follows the map while you add or remove monsters. Rename a session with ✎ next to the session picker (Enter or ✓ saves, Esc cancels), and compare sessions side by side.
 - **Goal:** the EXP needed and the farming time to a target base and job level, charted together, with a date for each level-up if you farm non-stop.
 
 ## Monsters & maps
 
-### Monster table
+### Where to farm
 
-Every non-MVP monster with HP, EXP, EXP/HP, your damage, kill time, EXP/min, dodge, HP lost, zeny per kill (after skill items) and net zeny/hr (after skill items, SP items, the ASPD potion and ground buffs).
+The first card on the tab answers "where should I farm?" for your character.
 
-Click a row to see the monster's details (EXP/min, per kill, defence, farm without items, weight, maps, and the button to farm it) in a panel beside the table that stays in view while you scroll the list. On narrower screens the panel slides in from the right, and on a phone up from the bottom; × or Esc closes it.
+- **Best spots:** the top 3 open maps by EXP / min and the top 3 by net zeny / hr, side by side, with their main monsters. **Farm here** makes a map the session's map and its monsters the ones you hunt (for a zeny spot, the monsters the zeny ranking hunts there), and names a new session after it. The spot you're farming shows ✓ farming. At the max base level only the zeny spots show.
+- **One ranking:** **By EXP** or **By zeny** switches the table under the spots; **Show** sets how many rows. Every map row has its own **Farm here** too, and clicking anywhere else on a row opens the map in the Map planner.
+- **More options** (folded, its line says what they're set to): min monsters on map, max sec / kill, and auto loot for both; Calibrate to my logs by EXP; the monster level filter, skipping drop-penalty monsters, hunting only the best-paying monsters and seconds per teleport by zeny.
+- The tables start on their **Compact** columns; **All** or Show / hide columns brings the rest back.
 
-The Element, Race, Size and Boss dropdowns above the table narrow both the table and the monster search's suggestions. Boss: No bosses (the default) leaves out Boss-class monsters, Normal only also leaves out mini bosses, Mini bosses and Bosses list only those, and Any lists every monster. The dropdowns are saved per account.
-
-### Mini bosses
-
-Vocal, Eclipse, Toad, Mastering, Dragon Fly and the other monsters that spawn one per map on a long respawn carry a `mini boss` tag wherever monsters are listed, including the monster search on the Session and Monster info tabs, and Monster info says so. Type `mini` in a Monster filter to find them.
-
-Mini boss is how they spawn, not the game's Boss class, which is what boss / normal bonuses go by: Vocal and Garm Baby count as normal monsters, Eclipse as a boss (hover the tag to see which). Boss-class monsters that aren't mini bosses (Owl Duke) are tagged `boss`. Boss-class monsters stay out of the farming tables; Vocal and Garm Baby stay in, weighted by their one spawn on a map.
-
-### EXP Hunter
+### By EXP
 
 Open maps ranked by EXP/min, weighted by spawn counts. At the max base level (70, `MAX_BASE_LV` in `js/state.js`) EXP no longer counts: the table says so, ranks and sorts by Net zeny / hr (until you click another column) and greys out EXP / min.
 
 - Zeny / hr is loot less skill items, the ASPD potion and ground buffs. Heal cost / hr is the HP items for the map's HP lost / min plus the SP items, from Consumables (hover it to see which items and how many an hour), and Net zeny / hr is what's left. Sort by any of them.
-- **Max sec / kill** (60 by default, 0 for no limit; the same box is on the Zeny Hunter): maps that take longer a kill, like a Lv 45 Thief on nrd_dun02's Boulder Dwarves, get a **too slow** badge and rank after every other map, so a huge EXP per kill can't put a map you can't really farm at #1. They stay last in the default sort too; sort by another column to see them in place.
+- **Max sec / kill** (60 by default, 0 for no limit; one box for both rankings, under More options): maps that take longer a kill, like a Lv 45 Thief on nrd_dun02's Boulder Dwarves, get a **too slow** badge and rank after every other map, so a huge EXP per kill can't put a map you can't really farm at #1. They stay last in the default sort too; sort by another column to see them in place.
 - Maps with an entry level (nrd_dun02 needs base Lv 50) are left out of both hunters below it, with a note in the line above the table, and show a "Lv 50+" badge on Monster info.
 - Maps show their in-game code and name (`in_sphinx5` · Sphinx B5F). You can also type the database code (`sp_d05`).
 - Monsters with no EXP data yet (Myst, Isis, Anubis…) show EXP `?` and are left out of EXP/min.
@@ -91,7 +86,7 @@ Open maps ranked by EXP/min, weighted by spawn counts. At the max base level (70
 - **Poison:** monsters with Poison Attack (Argiope, Side Winder, Ghoul, Argos, Zenorc…) try it on 5% of their swings, then wait 5 s. It lands at 120% of their hit chance and poisons on 20% × its level, less your VIT % and LUK / 10. Poison lasts 60 s (less with VIT and LUK) and isn't refreshed while it runs. While poisoned you lose 2 + 1.5% of Max HP a second (down to 25%), get no natural HP or SP regen, and your VIT DEF drops 25%. The share of the time you're poisoned shows on the Character tab and in the HP tooltips.
 - Skip monsters you don't want to fight. Regions that aren't open yet (see the Roadmap tab) are left out, and listed under the table, with a link to the tab.
 
-### Zeny Hunter
+### By zeny
 
 Open maps, or single monsters, ranked by net zeny/hr. That's the loot value per kill with your drop rate bonus and the level penalty, less skill costs (Mammonite zeny, catalysts, arrows, support casts), HP items for the HP you lose and SP items (both from Consumables), the ASPD potion and Sage ground buffs. Hover Costs / hr to see each.
 
@@ -106,11 +101,11 @@ Open maps, or single monsters, ranked by net zeny/hr. That's the loot value per 
 
 ### Map planner
 
-Per-map averages, kills/hr, EXP/hr and net zeny/hr. The EXP Hunter's Zeny / hr column is net the same way.
+Per-map averages, kills/hr, EXP/hr and net zeny/hr. Its **Farming this map now** button does what Farm here does. The EXP ranking's Zeny / hr column is net the same way.
 
 ### Farm without items
 
-Whether your character can farm a map with no HP or SP items, as a % in green, yellow or red. It's a tile in the Map planner, a No items column in the EXP Hunter (sortable, filter `>=100`), a column per monster in the Map planner and a tile for the monster you click. Hover any of them to see the breakdown.
+Whether your character can farm a map with no HP or SP items, as a % in green, yellow or red. It's a tile in the Map planner, a No items column in the EXP ranking (sortable, filter `>=100`), a column per monster in the Map planner and a tile for the monster you click. Hover any of them to see the breakdown.
 
 - **HP out:** what each monster takes off you while you fight it: its ATK through your DEF, the hits that get past your FLEE (its hit against your FLEE, the same dodge % as the Monsters table), "swings reach you" and Energy Coat.
 - **HP back:** natural HP regen and Increase HP Recovery over fight and walking time, HP-over-time consumables, and Hunter Fly while you attack.
@@ -124,22 +119,38 @@ The % is the share of what you use that comes back on its own, the lower of HP a
 - **Yellow (with rests):** 50% or more. You sit now and then; the tooltip says about how long a kill (at standing regen, so sitting is quicker).
 - **Red (needs items):** below 50%, or one kill can take all your HP before regen catches up and you have no Heal.
 
-**Possible rampage, per map:** the Map planner's box next to the map sets how many monsters attack you together there, for every monster on it, aggressive or not, in place of the Character tab's crowd (see Crowds above). RO Zero's maps are towns, fields and dungeons, and dungeons come in two kinds: normal ones, and room dungeons, one big map cut into small rooms where the monsters crowd into the room you're in. The room dungeons, Labyrinth Forest 1F and 3F (`prt_maze01`, `prt_maze03`, 25 rooms in a 5×5 grid) and Sunken Ship 1F and 2F (`treasure01`, `treasure02`, its cabins), Kunlun's Immortal's Chess Terrace (`gon_dun02`) and Sphinx B5F (`in_sphinx5`), start at 3: they're the maps with 8 or more warps from room to room inside the same map in rAthena's warp scripts (Labyrinth Forest 2F has none; Izlude Shipwreck isn't in them, so it isn't known), and the Map planner says "room dungeon" under their name; other maps have none, so the Character tab's count applies to their aggressive and assisting monsters and the rest count as 1. Type your own for any map, or clear the box to go back to the default. Hits add up and the same FLEE / DEF crowd penalty applies. It counts in everything worked out for that map (HP lost / min, heal cost, interrupted casts, this check), and the EXP and Zeny Hunters tag those maps `×3 rampage`. Dodge never goes above 95%, so even with very high FLEE 1 swing in 20 lands.
+**Possible rampage, per map:** the Map planner's box next to the map sets how many monsters attack you together there, for every monster on it, aggressive or not, in place of the Character tab's crowd (see Crowds above). RO Zero's maps are towns, fields and dungeons, and dungeons come in two kinds: normal ones, and room dungeons, one big map cut into small rooms where the monsters crowd into the room you're in. The room dungeons, Labyrinth Forest 1F and 3F (`prt_maze01`, `prt_maze03`, 25 rooms in a 5×5 grid) and Sunken Ship 1F and 2F (`treasure01`, `treasure02`, its cabins), Kunlun's Immortal's Chess Terrace (`gon_dun02`) and Sphinx B5F (`in_sphinx5`), start at 3: they're the maps with 8 or more warps from room to room inside the same map in rAthena's warp scripts (Labyrinth Forest 2F has none; Izlude Shipwreck isn't in them, so it isn't known), and the Map planner says "room dungeon" under their name; other maps have none, so the Character tab's count applies to their aggressive and assisting monsters and the rest count as 1. Type your own for any map, or clear the box to go back to the default. Hits add up and the same FLEE / DEF crowd penalty applies. It counts in everything worked out for that map (HP lost / min, heal cost, interrupted casts, this check), and Where to farm tags those maps `×3 rampage`. Dodge never goes above 95%, so even with very high FLEE 1 swing in 20 lands.
 
 With an elemental converter (or Spell Fist bolts), a table shows each element's rate against every monster on the map and the map's EXP/min with it, and warns about the monsters the one in use is weak against (for example Fire against Jakk, Fire 2, on Geffen Dungeon B2F). An Element % column shows the rate per monster. For physical attacks the rate applies to weapon and equipment ATK; status ATK always hits as Neutral.
+
+### Monster table
+
+The last card on the tab: look up any one monster against your attack.
+
+Every non-MVP monster with HP, EXP, EXP/HP, your damage, kill time, EXP/min, dodge, HP lost, zeny per kill (after skill items) and net zeny/hr (after skill items, SP items, the ASPD potion and ground buffs).
+
+Click a row to see the monster's details (EXP/min, per kill, defence, farm without items, weight, maps, and the button to farm it) in a panel beside the table that stays in view while you scroll the list. On narrower screens the panel slides in from the right, and on a phone up from the bottom; × or Esc closes it.
+
+The Element, Race, Size and Boss dropdowns above the table narrow both the table and the monster search's suggestions. Boss: No bosses (the default) leaves out Boss-class monsters, Normal only also leaves out mini bosses, Mini bosses and Bosses list only those, and Any lists every monster. The dropdowns are saved per account.
+
+### Mini bosses
+
+Vocal, Eclipse, Toad, Mastering, Dragon Fly and the other monsters that spawn one per map on a long respawn carry a `mini boss` tag wherever monsters are listed, including the monster search on the Session and Monster info tabs, and Monster info says so. Type `mini` in a Monster filter to find them.
+
+Mini boss is how they spawn, not the game's Boss class, which is what boss / normal bonuses go by: Vocal and Garm Baby count as normal monsters, Eclipse as a boss (hover the tag to see which). Boss-class monsters that aren't mini bosses (Owl Duke) are tagged `boss`. Boss-class monsters stay out of the farming tables; Vocal and Garm Baby stay in, weighted by their one spawn on a map.
 
 ## Roadmap
 
 Its own tab: Ragnarok Zero Global's release roadmap, from August 2026 to July 2027: each update's month, the level cap it raises to, what it adds, and the map regions it opens. The heading shows the level cap now and the next update.
 
-- A region opens by itself on its update's day, or once its month is over when the day isn't announced (so the Clock Tower update, October 2026, counts as open from 1 November). Maps on no region, such as Comodo's and Umbala's fields, Sphinx, Prontera Labyrinth and Mjolnir Dead Pit, are always open. Until then its maps are left out of the EXP Hunter, Zeny Hunter and Map planner rankings, and its monsters are hidden by "Hide monsters with no open map".
+- A region opens by itself on its update's day, or once its month is over when the day isn't announced (so the Clock Tower update, October 2026, counts as open from 1 November). Maps on no region, such as Comodo's and Umbala's fields, Sphinx, Prontera Labyrinth and Mjolnir Dead Pit, are always open. Until then its maps are left out of Where to farm and the Map planner rankings, and its monsters are hidden by "Hide monsters with no open map".
 - A closed monster shows when it comes: "none open · Dec 2026" in the monster table and Item info, "comes with the Glast Heim update, Dec 2026" in its details, a `closed · Dec 2026` tag on its maps in Monster info, and the same line in the Map planner.
 - Click a region to mark it open (or closed) yourself, for example the day an update goes live; it shows `yours` while it differs from the roadmap, and clicking it back follows the roadmap again. Other closed maps takes any single map.
 - The roadmap is `data/roadmap.js`. When an update's day is announced, set its `when` to `YYYY-MM-DD`.
 
 ## Monster info
 
-One monster's stats, how you do against it, and every map it spawns on. The Element, Race, Size and Boss dropdowns next to the search narrow its suggestions. Its drops list shows the auto-loot group, chance, your chance, NPC and player price, and zeny per kill. Clicking a monster in the Monsters table, the Map planner or the Zeny Hunter opens it here too. Drops with no published rate yet (the Boulder Dwarves in Nordfeld Cave) show chance `?` and add nothing to zeny or weight figures.
+One monster's stats, how you do against it, and every map it spawns on. The Element, Race, Size and Boss dropdowns next to the search narrow its suggestions. Its drops list shows the auto-loot group, chance, your chance, NPC and player price, and zeny per kill. Clicking a monster in the Monsters table, the Map planner or Where to farm (by zeny) opens it here too. Drops with no published rate yet (the Boulder Dwarves in Nordfeld Cave) show chance `?` and add nothing to zeny or weight figures.
 
 ## Item info
 
@@ -157,7 +168,7 @@ Every piece of gear and every card the build simulator knows, like rozerodb's eq
 
 - Type what players pay for an item, and that drop counts at the player price in every zeny figure.
 - The NPC price is subtracted, since the loot value already includes it. It's filled in for every drop, and you can type your own to override it.
-- Click a drop in the Zeny Hunter, Monster info or Item info to price it.
+- Click a drop in Where to farm (by zeny), Monster info or Item info to price it.
 
 ### Sell timer
 
@@ -182,10 +193,10 @@ The game's auto return only takes you to town at a weight %; it doesn't sell or 
 Every big table works the same way:
 
 - Click a column header to sort.
-- Type in the filter row under the header. Filters accept `<350`, `100-200`, `fire`, `-` for blank and `or`. In the EXP Hunter, `poring` under Main monsters finds every map with Porings; in the Zeny Hunter, `elunium` under Earns from finds every monster that drops it.
+- Type in the filter row under the header. Filters accept `<350`, `100-200`, `fire`, `-` for blank and `or`. In the EXP ranking, `poring` under Main monsters finds every map with Porings; by zeny, `elunium` under Earns from finds every monster that drops it.
 - While any of a table's filters is on (saved ones too, even under a hidden column), a **Filters on: … clear** line above the table names them; **clear** empties them all.
 - The auto-loot group filters in Monster info's drops and in Item info are dropdowns: pick a group, or Not looted for the groups you don't auto loot.
-- Show or hide columns with the column picker. The Monsters table, the EXP Hunter and the Zeny Hunter also have one-click **column views** next to it (All, Compact, EXP, Zeny, or Weight in the Zeny Hunter); the view that matches the columns showing is marked.
+- Show or hide columns with the column picker. The Monsters table and both Where to farm rankings also have one-click **column views** next to it (All, Compact, EXP, Zeny, or Weight by zeny); the view that matches the columns showing is marked.
 - The first column (in the hunters, the rank and the map) stays in place when you scroll a table sideways.
 - On a phone, Compare sessions shows each session as a card.
 - In the hunters, filters apply before the Show limit, and # stays the map's rank among all open maps.

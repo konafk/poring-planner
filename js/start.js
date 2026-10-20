@@ -4,7 +4,7 @@
 const TAB_DESC={
   char:"Your job, stats, gear and attack: everything the damage, EXP and zeny numbers work from.",
   track:"Log your EXP as you farm to see your real EXP/hr, when you'll level and how far your goals are.",
-  maps:"Find where to farm: every monster against your attack, the EXP and Zeny Hunter rankings, and the map planner.",
+  maps:"The best maps for your character by EXP or zeny, and one click to farm one. Then the map planner and every monster.",
   roadmap:"Ragnarok Zero Global's release roadmap: when each update comes, its level cap, and which maps and monsters are open now.",
   mobinfo:"Drops, spawn maps and your numbers against any monster.",
   items:"Every drop: who drops it, where they spawn and what it's worth to you.",
@@ -70,7 +70,7 @@ showTab(VIEW&&VIEW.tab||state.tab||"char",!!VIEW);
 // ---- get started card: its buttons take you to each step; × hides it in this browser ----
 document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",e=>{const g=b.dataset.go;
   if(g==="log"){e.stopPropagation();openQuickLog(true);return}
-  showTab(g);scrollTo({top:0});if(g==="maps")setTimeout(()=>$("mobInput").focus({preventScroll:true}),50)}));
+  showTab(g);scrollTo({top:0})}));
 $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,"1")}catch(e){}renderStart()});
 // ---- search (Ctrl+K or /): tabs, a few actions, every monster, dropped item and map; Enter opens it where it lives ----
 (function setupJump(){
