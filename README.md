@@ -27,7 +27,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 ## Docs
 
 - [Character tab](docs/character.md): build mode, damage model, cards, buffs, consumables, skill items and weight
-- [Other tabs](docs/features.md): Account, Session, Monsters & maps, Roadmap, Monster info, Item info, Equipment and Cards, Market, EXP & formulas, and how tables work
+- [Other tabs](docs/features.md): accounts and Backup, Session, Monsters & maps, Roadmap, Monster info, Item info, Equipment and Cards, Market, EXP & formulas, and how tables work
 - [Development](docs/development.md): project layout, data export tools and tests
 - [Data sources](docs/data-sources.md): where the data and formulas come from
 

@@ -3,7 +3,7 @@
 [← Back to README](../README.md) · The Character tab has [its own page](character.md).
 
 - [Page layout](#page-layout)
-- [Account](#account)
+- [Accounts, sessions and Backup](#accounts-sessions-and-backup)
 - [Session (EXP tracker)](#session-exp-tracker)
 - [Monsters & maps](#monsters--maps)
 - [Roadmap](#roadmap)
@@ -16,7 +16,7 @@
 
 ## Page layout
 
-The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Monsters & maps), Look up (Monster info, Item info, Equipment, Cards, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
+The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Monsters & maps), Look up (Roadmap, Monster info, Item info, Equipment, Cards, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
 
 **Log EXP from any tab:** type in the Log EXP box on the right of the top bar, or press **L** on any tab to jump to it. It takes a line like the paste box does: `17.9` (EXP %), `17.9 63` (with job %), `15:05 17.9 63` (at that time), and `died` on the line for EXP after a death. The entry goes in at the level of your last one, and a level-up is picked up the same way as in the Log EXP card. On a phone the box opens as a sheet from the round **+** button. At the max base level (70) base EXP no longer counts, so the box, the + button and **L** go away.
 
@@ -32,20 +32,20 @@ The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Mo
 
 **Get started:** a new player sees three steps over the Character, Session and Monsters & maps tabs: set up your character (type all six stats, or use build mode), pick the monster you farm, and log your EXP twice. Each one ticks off as you do it, and the card goes away for good once all three are done, or when you close it.
 
-The buttons at the bottom of the sidebar change how the page looks:
+At the bottom of the sidebar, **Compact sidebar** shrinks it to its icons (hover an icon to see its tab's name), and **Settings** opens a menu that changes how the page looks. It stays open while you switch things, and Esc or a click elsewhere closes it:
 
-- **Compact sidebar:** shrinks the sidebar to its icons. Hover an icon to see its tab's name.
-- **Theme:** switches between auto (follows your device), light and dark.
 - **Hints:** hides the help paragraphs under the cards once you know your way around.
+- **Theme:** switches between auto (follows your device), light and dark. The sidebar follows it.
 - **Full width:** lets the page use the whole window instead of stopping at 1180px. It only shows on very wide screens.
 
 All four are remembered in this browser, apart from your account data, so backups and share links don't carry them.
 
 
-## Account
+## Accounts, sessions and Backup
 
-- Keep separate characters, sessions and settings for each of your accounts, and switch between them.
-- **Backup:** Copy backup copies every account as one block of text (it also shows in the box). Restore from text replaces every account with it; older single-account backups still restore into the current account.
+- **Accounts:** keep separate characters, sessions and settings for each of your accounts. The account picker is at the top of the Character tab, with **+ New account** beside it, and Rename and Delete in its ⋯ menu.
+- **Sessions:** the session picker is at the top of the Session tab, with ✎ to rename it, **+ New session** (which takes you to Monsters & maps to pick its monster), and Rename and Delete in its ⋯ menu.
+- **Backup** (the Account tab): Copy backup copies every account as one block of text (it also shows in the box). Restore from text replaces every account with it; older single-account backups still restore into the current account.
 - **Several browser tabs:** you can keep the page open in more than one tab. Every save carries a revision number. When one tab saves (an EXP entry, a setting), the others reload to pick it up, straight away if they're showing or when you switch back to them, and say "Updated from another tab". A tab that still saves on an old copy (or finds storage changed by something else) never overwrites the newer save: the EXP entries and pauses it added go into the newer save by time, its other changes give way, and it reloads. A reloaded tab keeps its own account, page tab, scroll position and any EXP % you'd typed but not logged.
 - **Copy share link** puts the current account in a link. The data sits in the part after `#`, which never reaches the server. Opening the link loads the account into the backup box, and nothing changes until you click Restore.
 

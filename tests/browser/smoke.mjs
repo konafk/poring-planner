@@ -49,7 +49,7 @@ try {
     await page.close();
   });
 
-  await t("the theme button cycles auto → light → dark, and the sidebar follows", async () => {
+  await t("Settings: the theme cycles auto → light → dark, the sidebar follows, and the menu stays open", async () => {
     const { page, errs } = await open({ colorScheme: "light" });
     // the sidebar's background brightness, 0 (black) to 255 (white)
     const sideLum = () => page.$eval(".side", el => {
@@ -57,6 +57,8 @@ try {
       return 0.2126 * r + 0.7152 * g + 0.0722 * b;
     });
     assert.ok(await sideLum() > 200, "auto on a light device: light sidebar");
+    assert.ok(!await page.isVisible("#themeBtn"), "theme is in the closed Settings menu");
+    await page.click("#setBtn");
     await page.click("#themeBtn");
     assert.equal(await page.getAttribute("html", "data-theme"), "light");
     assert.ok(await sideLum() > 200, "light: light sidebar");
@@ -65,6 +67,23 @@ try {
     assert.ok(await sideLum() < 40, "dark: dark sidebar");
     await page.click("#themeBtn");
     assert.equal(await page.getAttribute("html", "data-theme"), null);
+    assert.ok(await page.isVisible("#setMenu"), "picking a setting keeps the menu open");
+    await page.keyboard.press("Escape");
+    assert.ok(!await page.isVisible("#setMenu"), "Esc closes it");
+    assert.deepEqual(errs, []);
+    await page.close();
+  });
+
+  await t("the account picker is on the Character tab, the session picker on the Session tab, each with a + New button", async () => {
+    const { page, errs } = await open();
+    assert.ok(await page.isVisible("#acctSel") && await page.isVisible("#newAcct"));
+    assert.ok(!await page.isVisible("#sessionSel"));
+    await page.click('[data-tabbtn="track"]');
+    assert.ok(await page.isVisible("#sessionSel") && !await page.isVisible("#acctSel"));
+    const n = await page.$$eval("#sessionSel option", o => o.length);
+    await page.click("#newSession");                                   // a new session, then off to pick its monster
+    assert.equal(await page.$$eval("#sessionSel option", o => o.length), n + 1);
+    assert.equal(await page.getAttribute('[data-tabbtn="maps"]', "aria-selected"), "true");
     assert.deepEqual(errs, []);
     await page.close();
   });
