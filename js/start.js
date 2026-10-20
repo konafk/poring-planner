@@ -12,7 +12,7 @@ const TAB_DESC={
   cards:"Every card and what it does: filter by the gear it goes in, and slot it into your gear or another gear set.",
   market:"The prices players pay, and a timer that tells you when to go sell.",
   ref:"EXP tables, party share, the element and size tables, and every formula with your numbers in it.",
-  acct:"Accounts, sessions and backups. Everything is saved in this browser only.",
+  acct:"Back up every account, restore one, or share it as a link. Everything is saved in this browser only.",
 };
 function showHero(t){
   const b=document.querySelector(`[data-tabbtn="${t}"]`);if(!b)return;
@@ -20,7 +20,7 @@ function showHero(t){
   $("heroGrp").textContent=g?g.textContent:"";$("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
 }
 function showTab(t,local){
-  if(t==="data")t="acct";// Backup now lives on the Account tab
+  if(t==="data")t="acct";// the old Data tab is the Backup tab
   if(![...document.querySelectorAll("[data-tabbtn]")].some(b=>b.dataset.tabbtn===t))t="char";
   document.querySelectorAll("[data-tab]").forEach(el=>el.hidden=el.dataset.tab!==t);
   document.querySelectorAll("[data-tabbtn]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tabbtn===t)));
@@ -81,7 +81,7 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
     {k:"Action",name:"Log EXP",meta:"top bar · L",run:()=>openQuickLog(true),ok:()=>!atMaxLv()},
     {k:"Action",name:"Switch theme",meta:"auto → light → dark",run:()=>$("themeBtn").click()},
     {k:"Action",name:"Show or hide hints",meta:"help text under the cards",run:()=>$("hintBtn").click()},
-    {k:"Action",name:"New session",meta:"Account tab",run:()=>$("newSession").click()}];
+    {k:"Action",name:"New session",meta:"Session tab",run:()=>$("newSession").click()}];
   let ALL=null;
   const build=()=>ALL=[
     ...[...document.querySelectorAll("[data-tabbtn]")].map(b=>({k:"Tab",name:tabName(b.dataset.tabbtn),meta:TAB_DESC[b.dataset.tabbtn]||"",run:go(b.dataset.tabbtn)})),
@@ -118,10 +118,11 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
     if((e.key==="k"||e.key==="K")&&(e.ctrlKey||e.metaKey)){e.preventDefault();dlg.open?dlg.close():open()}
     else if(e.key==="/"&&!typing&&!e.ctrlKey&&!e.metaKey){e.preventDefault();open()}});
 })();
+// ---- Settings menu (sidebar): hints, theme and full width. The ⋯ menu code in events.js opens and closes it; its items keep it open ----
 // ---- full width: a per-device display choice kept outside the account saves (index.html applies it before the page draws) ----
 (function setupWide(){
   const KEY_WIDE="rozero-farm-planner-wide",btn=$("wideBtn");
-  const set=v=>{document.documentElement.classList.toggle("wide",v);btn.setAttribute("aria-pressed",String(v))};
+  const set=v=>{document.documentElement.classList.toggle("wide",v);btn.setAttribute("aria-pressed",String(v));btn.querySelector("span").textContent=`Full width: ${v?"on":"off"}`};
   set(document.documentElement.classList.contains("wide"));
   btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.setItem(KEY_WIDE,"1"):localStorage.removeItem(KEY_WIDE)}catch(e){}});
 })();

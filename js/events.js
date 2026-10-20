@@ -240,7 +240,8 @@ $("acctName").addEventListener("blur",()=>setTimeout(()=>endAcctRename(true),150
 let acctDelArmed=false;
 $("delAcct").addEventListener("click",()=>{if(accts.list.length<2)return;if(!acctDelArmed){acctDelArmed=true;$("delAcct").textContent="Confirm delete";setTimeout(()=>{acctDelArmed=false;$("delAcct").textContent="Delete"},3000);return}
   try{localStorage.removeItem(acctKey(accts.active))}catch(e){}accts.list=accts.list.filter(a=>a.id!==accts.active);accts.active=accts.list[0].id;saveAccts();location.reload()});
-// account and session ⋯ menus: click toggles, an outside click or Esc closes, picking an item closes (Delete stays open for its confirm click)
+// account and session ⋯ menus and the Settings menu: click toggles, an outside click or Esc closes, picking an item closes (Delete and the
+// settings stay open: data-keep)
 const menus=[...document.querySelectorAll(".menu")];
 const closeMenu=(m,refocus)=>{const b=m.querySelector(".menuBtn");if(b.getAttribute("aria-expanded")!=="true")return;b.setAttribute("aria-expanded","false");m.querySelector(".menuList").hidden=true;if(refocus)b.focus()};
 menus.forEach(m=>{const b=m.querySelector(".menuBtn"),list=m.querySelector(".menuList"),items=()=>[...list.querySelectorAll("button:not(:disabled)")];

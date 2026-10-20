@@ -38,7 +38,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
 .app{display:grid;grid-template-columns:var(--side) minmax(0,1fr);min-height:100vh;
   background:linear-gradient(90deg,var(--side-bg) var(--side),transparent var(--side)),
     radial-gradient(900px 420px at 85% -120px,var(--glow-a),transparent 70%),radial-gradient(700px 360px at 30% -160px,var(--glow-b),transparent 70%)}
-.side{position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:6px;padding:20px 12px 14px;background:var(--side-bg);color:var(--side-fg);box-shadow:inset -1px 0 0 var(--side-line);overflow-y:auto;scrollbar-width:none}
+.side{position:sticky;top:0;z-index:7;height:100vh;display:flex;flex-direction:column;gap:6px;padding:20px 12px 14px;background:var(--side-bg);color:var(--side-fg);box-shadow:inset -1px 0 0 var(--side-line);overflow-y:auto;scrollbar-width:none}
 .brand{display:flex;align-items:center;gap:11px;padding:0 8px 12px}
 .logo{flex:none;width:40px;height:38px;margin:-2px -1px -2px -3px;filter:drop-shadow(0 4px 10px rgba(226,69,127,.3))}
 .brandTxt{display:flex;flex-direction:column;line-height:1.15;min-width:0}
@@ -55,7 +55,13 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
 .sideFoot{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:12px;border-top:1px solid var(--side-line)}
 .iconBtn{display:flex;align-items:center;gap:11px;border:0;background:none;padding:7px 12px;border-radius:9px;color:var(--side-muted);font-weight:500;font-size:13px;text-align:left}
 .iconBtn:hover{color:var(--side-fg);background:var(--side-hover);border:0}
-#wideBtn[aria-pressed="true"]{color:var(--side-strong);background:var(--side-on)}
+/* Settings (sidebar foot): a menu that opens upward, with the hints, theme and full width switches */
+.setMenu{width:100%}
+.setMenu>.menuBtn{width:100%;padding:7px 12px;font-weight:500;letter-spacing:0}
+.setMenu>.menuBtn[aria-expanded="true"]{color:var(--side-fg);background:var(--side-hover)}
+.setMenu .menuList:not([hidden]){top:auto;bottom:calc(100% + 6px);left:0;right:auto;min-width:13em}
+.setMenu .menuList button{display:flex;align-items:center;gap:10px}
+.setMenu .menuList [aria-pressed="true"] .ic{color:var(--accent)}
 .wrap{width:100%;max-width:1180px;margin:0 auto;padding:0 36px 72px;display:flex;flex-direction:column;gap:20px;min-width:0}
 /* the session you're on, pinned over every tab */
 .main{min-width:0}
@@ -73,7 +79,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
 .eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:var(--brand);-webkit-background-clip:text;background-clip:text;color:transparent;width:fit-content}
 .pageHead h1{font-size:2.35rem;font-weight:800;letter-spacing:-.035em;line-height:1.05}
 .pageHead p{margin:4px 0 0;max-width:62ch;color:var(--muted);font-size:14.5px;text-wrap:pretty}
-/* Full width (sidebar button): drop the 1180px cap on wide screens */
+/* Full width (Settings menu): drop the 1180px cap on wide screens */
 :root.wide .wrap{max-width:none}
 @media (max-width:1480px){#wideBtn{display:none}}
 /* compact sidebar (sidebar button): icons only, labels kept for screen readers and shown as tooltips */
@@ -87,6 +93,8 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
   .compact .navGrp{font-size:0;padding:0;margin:8px 10px;height:1px;background:var(--side-line)}
   .compact .tabs button,.compact .iconBtn{justify-content:center;padding:10px 0;width:100%}
   .compact .sideFoot{width:100%}
+  /* fixed: the sidebar scrolls (overflow), which would clip a menu beside it. .side's z-index keeps it over the sticky cards */
+  .compact .setMenu .menuList:not([hidden]){position:fixed;top:auto;bottom:14px;left:calc(var(--side) + 8px)}
 }
 @media (max-width:1023px){
   .app{grid-template-columns:minmax(0,1fr) auto;min-height:0;background:none}
@@ -96,6 +104,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
   .sideFoot .iconBtn{color:var(--muted)}
   .sideFoot{grid-column:2;grid-row:1;flex-direction:row;align-items:center;margin:0;padding:8px 12px 4px;border:0}
   .sideFoot .iconBtn span{display:none}
+  .setMenu{width:auto}.setMenu .menuList:not([hidden]){top:calc(100% + 6px);bottom:auto;left:auto;right:0}
   #sideBtn{display:none}
   .tabs{grid-column:1/-1;position:sticky;top:0;z-index:5;flex-direction:row;gap:4px;overflow-x:auto;scrollbar-width:none;padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--line)}
   .tabs::-webkit-scrollbar{display:none}
@@ -172,6 +181,10 @@ details.note>summary::marker{color:var(--muted)}
 /* account and session ⋯ menus: the secondary account and session actions open in a small list under the button */
 .menu{position:relative;flex:none}
 .editBtn{flex:none;-webkit-tap-highlight-color:transparent;padding:6px 11px}
+/* New account / New session: a + button beside the picker */
+.addBtn{flex:none;display:inline-flex;align-items:center;gap:6px;padding:6px 12px 6px 9px;font-weight:600;white-space:nowrap}
+.addBtn .ic{width:15px;height:15px;stroke-width:2.2}
+@media (max-width:520px){.addBtn{padding:6px 9px}.addBtn span{display:none}}
 .menuBtn{-webkit-tap-highlight-color:transparent;padding:6px 12px;font-weight:700;letter-spacing:.05em}
 .menuBtn[aria-expanded="true"]{border-color:var(--accent);color:var(--accent)}
 .menuList:not([hidden]){position:absolute;right:0;top:calc(100% + 6px);z-index:20;display:flex;flex-direction:column;min-width:11em;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow-pop)}

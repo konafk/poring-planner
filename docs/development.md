@@ -35,7 +35,7 @@ Plain scripts that `index.html` loads in this order. They share one global scope
 | `ref.js` | The EXP & formulas tab, and the Character tab's Your gear vs other gear sets. |
 | `gear-db.js` | The Equipment and Cards tabs (filters, effects text) and the Equip dialog that puts gear or a card in a gear set. |
 | `info.js` | The details popup for a monster, item, piece of gear or card, opened from any name with `data-info="mob:<id>"` or `"item:<id>"`. |
-| `start.js` | Tabs and their headings, collapsible cards, the Character tab's section links, the get started card's buttons, the search (Ctrl+K), the sidebar's Compact / Hints / Theme / Full width buttons and the first render. |
+| `start.js` | Tabs and their headings, collapsible cards, the Character tab's section links, the get started card's buttons, the search (Ctrl+K), the sidebar's Compact button and its Settings menu (Hints / Theme / Full width), and the first render. |
 
 ### `data/`
 
@@ -104,7 +104,7 @@ node tests/model.test.mjs    # damage and tracker maths, loaded with a stand-in 
 node tests/stamp.test.mjs    # index.html carries no ?v= stamps, and the deploy stamps every file
 ```
 
-`tests/browser/smoke.mjs` opens the real page in Chromium: every tab shows only its own panels, Ctrl+K search opens a monster's details, the theme button cycles and the sidebar follows it, and no tab scrolls sideways at phone width. It fails on any script error. It needs Playwright, so it isn't a `*.test.mjs` file:
+`tests/browser/smoke.mjs` opens the real page in Chromium: every tab shows only its own panels, Ctrl+K search opens a monster's details, the theme in the Settings menu cycles and the sidebar follows it, the account and session pickers sit on the Character and Session tabs with their + New buttons, and no tab scrolls sideways at phone width. It fails on any script error. It needs Playwright, so it isn't a `*.test.mjs` file:
 
 ```sh
 npm i --no-save playwright && npx playwright install chromium && node tests/browser/smoke.mjs
