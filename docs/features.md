@@ -141,7 +141,7 @@ Mini boss is how they spawn, not the game's Boss class, which is what boss / nor
 
 ### MVPs
 
-Amon Ra is in the monster tables as an MVP: it carries an `MVP` tag wherever monsters are listed, Monster info says so, and the Boss dropdown's MVPs lists it. Type `mvp` in a Monster filter to find it. It's Boss class, so it stays out of the farming tables like the other bosses, and with no EXP data yet its EXP shows as unknown.
+The MVPs that spawn on the maps here (Amon Ra, Osiris, Baphomet, Moonlight, Eddga, Phreeoni, Orc Lord, Dracula and the rest) are in the monster tables: each carries an `MVP` tag wherever monsters are listed, Monster info says so, and the Boss dropdown's MVPs lists them. Type `mvp` in a Monster filter to find them. They're Boss class, so they stay out of the farming tables like the other bosses; the ones rozerodb has no EXP for yet show it as unknown.
 
 ## Roadmap
 
