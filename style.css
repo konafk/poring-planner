@@ -605,6 +605,19 @@ table.formulas td.chg{background:var(--accent-soft)}
   .jr{grid-template-columns:60px minmax(0,1fr);row-gap:1px}.jm{grid-column:2}
 }
 
+/* ---- Where to farm: the best spots (by EXP and by zeny, side by side), then one ranking ---- */
+.spots{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px}
+.spots.one{grid-template-columns:1fr}
+.spotCol{display:flex;flex-direction:column;gap:6px;min-width:0}
+.spot{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--raised)}
+.spot.on{border-color:var(--accent);background:var(--accent-soft)}
+.spotN{flex:none;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;font-size:12px;font-weight:700;background:var(--accent-soft);color:var(--accent)}
+.spotTxt{flex:1;min-width:0}
+.spotV{font-size:13px}
+.farmBtn{white-space:nowrap}
+.spot .farmBtn,.spot .pill{flex:none}
+@media (max-width:700px){.spots{grid-template-columns:1fr}}
+
 /* ---- Log EXP card: the everyday fields up top, the rest folded ---- */
 details.more{border-top:1px dashed var(--line);padding-top:10px}
 details.more>summary{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;font-size:13px;font-weight:600;color:var(--fg);list-style:none}

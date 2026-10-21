@@ -140,7 +140,7 @@ const AC_SPELLS={"Fire Bolt":["Fire",10,()=>100,lv=>lv,0.5],"Cold Bolt":["Water"
 const AC_D={on:false,spell:"Fire Bolt",lv:3,pct:5};
 const AC=()=>{const c=C();if(!c.ac||typeof c.ac!=="object")c.ac={};for(const k in AC_D)if(c.ac[k]==null)c.ac[k]=AC_D[k];if(!AC_SPELLS[c.ac.spell])c.ac.spell=AC_D.spell;return c.ac};
 // cards any job can slot (they used to sit in Sage options): Vitata (Heal Lv1, SP cost +25%), Hunter Fly (HP back on physical
-// attacks), Side Winder (Double Attack on basic attacks), Creamy (Teleport Lv1, so the Zeny Hunter may teleport), and SP back: Dracula (SP on attacks),
+// attacks), Side Winder (Double Attack on basic attacks), Creamy (Teleport Lv1, so the ranking by zeny may teleport), and SP back: Dracula (SP on attacks),
 // Dark Priest (Sage: 1 SP per physical hit) and the +5 SP per kill cards (killSp: the races, see KILL_SP); Phen and Bloody Butterfly
 // (casts can't be interrupted, variable cast +25% / +30%)
 const CARD_D={vitata:false,spBonus:25,healSp:13,healHp:357,hfOn:false,hfPct:5,hfHp:100,hfN:1,daSF:false,daPct:7,creamy:false,

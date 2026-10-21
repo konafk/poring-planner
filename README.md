@@ -11,13 +11,13 @@ It's a single page that runs entirely in your browser. There's no server, no log
 1. **Character tab:** pick your job and attack. Then copy ATK, MATK, HIT, FLEE, ASPD, DEF, Max HP/SP and your six stats from the in-game status window.
 2. **Session tab:** pick the monster you're farming and press **Farming … now**.
 3. Log your EXP % every few minutes, for example `15:05 17.9% 63%` (time, base %, job %). Leave the time off (`17.9% 63%`) to log it at the current time. You can also paste many lines at once, or press **L** on any tab to log from the top bar. **Ctrl+K** or **/** searches every monster, item and map, and clicking a monster, item, gear or card name opens its details.
-4. **Monsters & maps tab:** use the EXP Hunter, Zeny Hunter and Map planner to find a better spot.
+4. **Monsters & maps tab:** Where to farm shows the best maps for your character by EXP and by zeny; press **Farm here** on one.
 
 ## What it does
 
 - **Character:** every 2nd job with Zero skill data, a build simulator that matches the status window, and a damage model covering elements, sizes, DEF, crits, dual wield, auto-casts, cards, buffs, consumables (HP / SP items included), skill items and weight. Up to 10 **other gear sets** (add or remove them as you need) are worked out next to your gear, so you can compare weapons or cards before you switch. Gear you take off keeps its refine, cards and affixes for when you put it back on, and whole setups can be saved as named **loadouts** to swap between.
 - **Session:** an EXP tracker with EXP/hr, time to level, a progress chart and level goals.
-- **Monsters & maps:** a monster table, the EXP Hunter and Zeny Hunter map rankings, a Map planner, and a green / yellow / red check of whether you can farm a map with no HP or SP items.
+- **Monsters & maps:** Where to farm (the best spots and one map ranking by EXP or zeny, with Farm here), a Map planner, a monster table, and a green / yellow / red check of whether you can farm a map with no HP or SP items.
 - **Roadmap:** the release roadmap: when each update comes, its level cap, and which maps and monsters are out (the rest open by themselves on their date).
 - **Monster info, Item info, Market:** drops, prices, player prices and a sell timer.
 - **Equipment, Cards:** every weapon, armor and card, filtered by type, job, level, card slots and ATK / MATK / DEF, with one click to put it in your gear or another gear set.
