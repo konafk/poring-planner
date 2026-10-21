@@ -127,17 +127,21 @@ With an elemental converter (or Spell Fist bolts), a table shows each element's 
 
 The last card on the tab: look up any one monster against your attack.
 
-Every non-MVP monster with HP, EXP, EXP/HP, your damage, kill time, EXP/min, dodge, HP lost, zeny per kill (after skill items) and net zeny/hr (after skill items, SP items, the ASPD potion and ground buffs).
+Every monster with HP, EXP, EXP/HP, your damage, kill time, EXP/min, dodge, HP lost, zeny per kill (after skill items) and net zeny/hr (after skill items, SP items, the ASPD potion and ground buffs).
 
 Click a row to see the monster's details (EXP/min, per kill, defence, farm without items, weight, maps, and the button to farm it) in a panel beside the table that stays in view while you scroll the list. On narrower screens the panel slides in from the right, and on a phone up from the bottom; × or Esc closes it.
 
-The Element, Race, Size and Boss dropdowns above the table narrow both the table and the monster search's suggestions. Boss: No bosses (the default) leaves out Boss-class monsters, Normal only also leaves out mini bosses, Mini bosses and Bosses list only those, and Any lists every monster. The dropdowns are saved per account.
+The Element, Race, Size and Boss dropdowns above the table narrow both the table and the monster search's suggestions. Boss: No bosses (the default) leaves out Boss-class monsters, Normal only also leaves out mini bosses, Mini bosses, MVPs and Bosses (Boss class, neither of those) list only those, and Any lists every monster. The dropdowns are saved per account.
 
 ### Mini bosses
 
 Vocal, Eclipse, Toad, Mastering, Dragon Fly and the other monsters that spawn one per map on a long respawn carry a `mini boss` tag wherever monsters are listed, including the monster search on the Session and Monster info tabs, and Monster info says so. Type `mini` in a Monster filter to find them.
 
 Mini boss is how they spawn, not the game's Boss class, which is what boss / normal bonuses go by: Vocal and Garm Baby count as normal monsters, Eclipse as a boss (hover the tag to see which). Boss-class monsters that aren't mini bosses (Owl Duke) are tagged `boss`. Boss-class monsters stay out of the farming tables; Vocal and Garm Baby stay in, weighted by their one spawn on a map.
+
+### MVPs
+
+Amon Ra is in the monster tables as an MVP: it carries an `MVP` tag wherever monsters are listed, Monster info says so, and the Boss dropdown's MVPs lists it. Type `mvp` in a Monster filter to find it. It's Boss class, so it stays out of the farming tables like the other bosses, and with no EXP data yet its EXP shows as unknown.
 
 ## Roadmap
 

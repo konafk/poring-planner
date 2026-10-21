@@ -509,6 +509,22 @@ t("mini bosses are tagged apart from Boss class: Vocal is a mini boss, Owl Duke 
   assert.ok(run(`matchF("mini",null,colText(${mob("Vocal")},"name"))`) && !run(`matchF("mini",null,colText(${mob("Poring")},"name"))`));
 });
 
+t("Amon Ra is in the monster tables as an MVP, Boss class, on Pyramid B2F", () => {
+  const ra = `MOBS.find(m=>m.id===1511)`;
+  assert.equal(run(`JSON.stringify([${ra}.name,${ra}.lv,${ra}.mvp,${ra}.boss,${ra}.mini,${ra}.el,${ra}.size,${ra}.race,${ra}.expUnknown])`),
+    JSON.stringify(["Amon Ra", 69, true, true, false, "Earth", "L", "Demi-Human", true]));
+  assert.equal(run(`MOBS.filter(m=>m.mvp).length`), run(`MVP.size`));
+  assert.equal(run(`JSON.stringify(SPAWN[1511])`), JSON.stringify([["pry_d06", 1, 1]]));
+  assert.ok(run(`BOSS_PILL(${ra})`).includes(">MVP<"));
+  assert.ok(run(`matchF("mvp",null,colText(${ra},"name"))`));
+  // the Boss dropdown: MVPs lists it, Bosses and No bosses leave it out
+  assert.equal(run(`JSON.stringify(["mvp","boss","noboss",""].map(b=>mobFOk(${ra},{boss:b})))`), JSON.stringify([true, false, false, true]));
+  assert.equal(run(`mobFOk(MOBS.find(m=>m.name==="Owl Duke"),{boss:"mvp"})`), false);
+  // its drops count as MVP drops in Item info, and it's no longer an other source there (Safety Ring)
+  assert.equal(run(`itemFromOk("2615","mvp")`), true);
+  assert.doesNotMatch(run(`otherSourcesHtml("2615")`), /Amon Ra/);
+});
+
 t("Zeny Hunter: net zeny per hour is loot less skill and item costs, and counts monsters with no EXP", () => {
   setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed spear", st: {}, autoSp: false, potOn: false, cons: [], hpRegen6: 1, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
   const mob = MOB.replace("drops:[]", "drops:[],loot:500");
