@@ -88,6 +88,29 @@ try {
     await page.close();
   });
 
+  await t("Where to farm: best spots by EXP and zeny, Farm here sets the session's map, one ranking at a time", async () => {
+    const { page, errs } = await open();
+    await page.click('[data-tabbtn="maps"]');
+    assert.equal(await page.$$eval("#spots .spot", s => s.length), 6);              // top 3 by EXP, top 3 by zeny
+    const mp = await page.getAttribute("#spots .spot [data-farm]", "data-farm");
+    await page.click("#spots .spot [data-farm]");
+    assert.equal(await page.evaluate("sessMap(cur())"), mp);
+    assert.ok(await page.isVisible("#toast"));
+    assert.match(await page.textContent("#spots .spot"), /✓ farming/);
+    assert.ok(await page.isVisible("#bestTable") && !await page.isVisible("#huntTable"));
+    await page.click('[data-farmby="zeny"]');
+    assert.ok(!await page.isVisible("#bestTable") && await page.isVisible("#huntTable"));
+    assert.ok(!await page.isVisible("#teleSec"), "options are folded");
+    await page.click("#farmMore summary");
+    assert.ok(await page.isVisible("#teleSec") && !await page.isVisible("#calOn"), "zeny options only");
+    // Farm here on a row doesn't also open the row in the map planner
+    const row = await page.getAttribute("#huntTable tbody [data-farm]", "data-farm");
+    await page.click("#huntTable tbody [data-farm]");
+    assert.equal(await page.evaluate("sessMap(cur())"), row);
+    assert.deepEqual(errs, []);
+    await page.close();
+  });
+
   await t("phone width: no tab scrolls sideways", async () => {
     const { page, errs } = await open({ viewport: { width: 390, height: 800 } });
     for (const tab of await tabs(page)) {

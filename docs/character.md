@@ -46,7 +46,7 @@ Any job, Mages included, can add a spell from a card, weapon or scroll that proc
 
 - **Vitata:** SP cost +25%, and the Heal Lv1 you cast costs SP and time you aren't attacking. Heal covers the HP you lose (after Hunter Fly, HP regen and consumables), so no HP items are counted on top; HP lost / min still shows that HP. In build mode a Vitata Card in your gear already counts its SP cost.
 - **Side Winder:** basic attacks hit twice some of the time, right hand only, with any weapon. With Double Attack learned and a dagger the higher of the two chances counts.
-- **Creamy:** Teleport Lv1, so the Zeny Hunter can teleport past monsters you skip. Its 10 SP a cast isn't counted.
+- **Creamy:** Teleport Lv1, so Where to farm (by zeny) can teleport past monsters you skip. Its 10 SP a cast isn't counted.
 - **Phen / Bloody Butterfly:** casts can't be interrupted, variable cast +25% / +30%. Build mode reads them from your gear.
 
 ## Interrupted casts

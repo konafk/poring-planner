@@ -96,6 +96,7 @@ state.npcPrices=Object.fromEntries(Object.entries(numMap(state.npcPrices)).filte
 state.autoLoot=Object.fromEntries(Object.entries(state.autoLoot&&typeof state.autoLoot==="object"?state.autoLoot:{}).filter(([k,v])=>/^[waueco]$/.test(k)&&typeof v==="boolean"));
 state.huntOff=Object.fromEntries(Object.entries(state.huntOff&&typeof state.huntOff==="object"?state.huntOff:{}).filter(([,v])=>Array.isArray(v)).map(([k,v])=>[String(k),v.map(Number).filter(Number.isFinite)]));
 state.huntAuto=state.huntAuto===true;
+state.farmBy=state.farmBy==="zeny"?"zeny":"exp";
 // the Zeny Hunter's level filter: a monster Lv range (whole numbers, null = any) and "Skip drop-penalty monsters" (true/false)
 ["huntMinLv","huntMaxLv"].forEach(k=>{state[k]=state[k]!=null&&state[k]!==""&&Number.isFinite(+state[k])?Math.round(+state[k]):null});
 state.huntNoPen=state.huntNoPen===true;
