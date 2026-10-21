@@ -445,18 +445,29 @@ t("map names: in-game codes, rozerodb codes and unique names all find the same m
 t("roadmap: regions open on their update's day, or after its month when the day isn't known, unless you say otherwise", () => {
   run(`var ROADMAP_TODAY="2026-10-19";state.regions={};state.closed=[]`);
   assert.equal(run(`regionOf("tow_d01").id`), "ct");
-  assert.ok(run(`isClosed("tow_d01")&&isClosed("alde_dun04")&&isClosed("gl_chu")`));  // Clock Tower update: October, no day yet
+  assert.ok(run(`isClosed("tow_d01")&&isClosed("alde_dun04")&&isClosed("gl_chu")`));  // Clock Tower update: 29 October
   assert.ok(!run(`isClosed("pay_d00")||isClosed("um_fild01")||isClosed("cmd_fild01")`)); // not on the roadmap (Umbala, Comodo are out): open
   assert.ok(!run(`isClosed("sp_d05")||isClosed("maz_d01")||isClosed("mjo_d03")`)); // opened before Clock Tower
-  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Clock Tower"))`), "due this month");
+  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Clock Tower"))`), "due 29 Oct 2026");
+  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Ant Hell"))`), "next month");
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Glast Heim"))`), "in 2 months");
   assert.equal(run(`capTxt(capNow())`), "Base 60 / Job 60");
   assert.equal(run(`mapArrives("gl_chu")`), "Glast Heim update, Dec 2026");
   const alarm = `MOBS.find(m=>m.name==="Alarm")`;                                      // only in the Clock Tower
   assert.ok(run(`!openMaps(${alarm}).length`));
-  assert.equal(run(`mobArrives(${alarm})`), "Clock Tower update, Oct 2026");
-  run(`ROADMAP_TODAY="2026-11-01"`);                                                 // the month is over: open
+  assert.equal(run(`mobArrives(${alarm})`), "Clock Tower update, 29 Oct 2026");
+  run(`ROADMAP_TODAY="2026-10-28"`);
+  assert.ok(run(`isClosed("tow_d01")`));
+  run(`ROADMAP_TODAY="2026-10-29"`);                                                 // its day has come: open
+  assert.ok(!run(`isClosed("tow_d01")`));
+  run(`ROADMAP_TODAY="2026-11-01"`);
   assert.ok(!run(`isClosed("tow_d01")`) && run(`isClosed("gl_chu")`));
+  assert.ok(run(`isClosed("iz_d03")&&isClosed("iz_d04")`) && !run(`isClosed("iz_d02")`)); // Byalan 4F & 5F: 12 November
+  assert.equal(run(`regionOf("iz_dun04").id`), "by");
+  assert.equal(run(`mapArrives("iz_d04")`), "Byalan Dungeon 4F & 5F update, 12 Nov 2026");
+  run(`ROADMAP_TODAY="2026-11-12"`);
+  assert.ok(!run(`isClosed("iz_d03")||isClosed("iz_d04")`));
+  run(`ROADMAP_TODAY="2026-11-01"`);
   assert.equal(run(`capTxt(capNow())`), "Base 70 / Job 70");
   assert.equal(run(`mapArrives("tow_d01")`), "");
   run(`ROADMAP_TODAY="2026-10-19"`);
