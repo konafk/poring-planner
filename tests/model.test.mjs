@@ -509,6 +509,26 @@ t("mini bosses are tagged apart from Boss class: Vocal is a mini boss, Owl Duke 
   assert.ok(run(`matchF("mini",null,colText(${mob("Vocal")},"name"))`) && !run(`matchF("mini",null,colText(${mob("Poring")},"name"))`));
 });
 
+t("Amon Ra is in the monster tables as an MVP, Boss class, on Pyramid B2F", () => {
+  const ra = `MOBS.find(m=>m.id===1511)`;
+  assert.equal(run(`JSON.stringify([${ra}.name,${ra}.lv,${ra}.mvp,${ra}.boss,${ra}.mini,${ra}.el,${ra}.size,${ra}.race,${ra}.expUnknown])`),
+    JSON.stringify(["Amon Ra", 69, true, true, false, "Earth", "L", "Demi-Human", true]));
+  assert.equal(run(`MOBS.filter(m=>m.mvp).length`), run(`MVP.size`));
+  // every MVP is a Boss-class monster we have, one on its map, and none is a mini boss
+  assert.ok(run(`MVP.size`) > 20);
+  assert.ok(run(`MOBS.filter(m=>m.mvp).every(m=>m.boss&&!m.mini&&(SPAWN[m.id]||[]).length&&SPAWN[m.id].every(([,n])=>n===1))`));
+  assert.equal(run(`MOBS.find(m=>m.name==="Baphomet").mvp`), true);
+  assert.equal(run(`JSON.stringify(SPAWN[1511])`), JSON.stringify([["pry_d06", 1, 1]]));
+  assert.ok(run(`BOSS_PILL(${ra})`).includes(">MVP<"));
+  assert.ok(run(`matchF("mvp",null,colText(${ra},"name"))`));
+  // the Boss dropdown: MVPs lists it, Bosses and No bosses leave it out
+  assert.equal(run(`JSON.stringify(["mvp","boss","noboss",""].map(b=>mobFOk(${ra},{boss:b})))`), JSON.stringify([true, false, false, true]));
+  assert.equal(run(`mobFOk(MOBS.find(m=>m.name==="Owl Duke"),{boss:"mvp"})`), false);
+  // its drops count as MVP drops in Item info, and it's no longer an other source there (Safety Ring)
+  assert.equal(run(`itemFromOk("2615","mvp")`), true);
+  assert.doesNotMatch(run(`otherSourcesHtml("2615")`), /Amon Ra/);
+});
+
 t("Zeny Hunter: net zeny per hour is loot less skill and item costs, and counts monsters with no EXP", () => {
   setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed spear", st: {}, autoSp: false, potOn: false, cons: [], hpRegen6: 1, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
   const mob = MOB.replace("drops:[]", "drops:[],loot:500");
@@ -2297,15 +2317,17 @@ t("Equipment and Cards tabs: in-game text, where to get it and the Where to get 
 });
 
 t("Item info: the Where to get filter, and other sources the farm tables don't have", () => {
-  // War Axe: the farm tables have Chimera (a mini boss) drop it; two MVPs do too, which only rozerodb's drop list has
+  // War Axe: Chimera (a mini boss) and two MVPs (Turtle General, Lord of Death) drop it, all in the farm tables
   assert.equal(run(`itemFromOk("1306","mvp")`), true);
   assert.equal(run(`itemFromOk("1306","mini")`), true);
   assert.equal(run(`itemFromOk("1306","normal")`), false);
   assert.equal(run(`itemFromOk("507","mini")`), true);                                               // Red Herb: mini bosses drop it
   assert.equal(run(`itemFromOk("507","mvp")`), false);
   assert.equal(run(`itemFromOk("507","")`), true);
-  const o = run(`otherSourcesHtml("1306")`);
-  assert.match(o, /Turtle General/); assert.match(o, /MVP/); assert.doesNotMatch(o, /Chimera/);    // Chimera is in the table
+  assert.equal(run(`otherSourcesHtml("1306")`), "");                                                  // every one is in the table
+  // Tao Gunka's drops: an MVP the farm tables don't have (rozerodb has no HP for it), so only its drop list has it
+  const o = run(`otherSourcesHtml("2296")`);
+  assert.match(o, /Tao Gunka/); assert.match(o, /MVP/);
   assert.equal(run(`otherSourcesHtml("507")`), "");                                                   // nothing beyond the table
 });
 
@@ -2323,7 +2345,8 @@ t("details popup: a monster, an item, gear and a card, linked to each other", ()
   assert.match(i.body, /data-info="mob:1002"/);                                                      // Poring drops it
   const g = run(`popGear(1168)`);
   assert.equal(g.title, "Zweihander");
-  assert.doesNotMatch(g.body, /data-info="mob:/);                                                   // Doppelganger: an MVP the farm tables don't have
+  assert.match(g.body, /data-info="mob:1046">Doppelganger/);                                          // Doppelganger: an MVP, links to its own
+  assert.doesNotMatch(run(`popGear(2296).body`), /data-info="mob:/);                                 // Tao Gunka: an MVP the farm tables don't have
   assert.match(g.acts, /data-infoact="equip"/);
   assert.match(run(`popGear(1306).body`), /data-info="mob:\d+">Chimera/);                             // War Axe: Chimera links to its own
   const c = run(`popCard(4123)`);

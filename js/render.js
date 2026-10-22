@@ -416,8 +416,8 @@ function renderGoalChart(base,job){
 
 // ---- render: monsters ----
 const calcMob=()=>MOBS.find(m=>m.id===(state.calcMobId||cur().mobIds[0]));
-// " mini boss" / " boss" after a monster's name in filter and sort text, so "mini" in a Monster filter lists the mini bosses
-const bossTag=m=>m.mini?" mini boss":m.boss?" boss":"";
+// " MVP" / " mini boss" / " boss" after a monster's name in filter and sort text, so "mini" in a Monster filter lists the mini bosses
+const bossTag=m=>m.mvp?" MVP":m.mini?" mini boss":m.boss?" boss":"";
 const colText=(m,k)=>k==="name"?m.name+bossTag(m):k==="el"?(m.el||"")+" "+(m.elv||""):k==="size"?({S:"small S",M:"medium M",L:"large L"}[m.size]||""):k==="race"?(m.race||""):k==="topN"?m.om.map(x=>[x[0],...(MAPNAMES[x[0]]||[])].join(" ")).join(" "):null;
 const colNum=(m,k)=>{if(["name","el","size","race"].includes(k))return null;if(m.expUnknown&&["exp","ratio","epm"].includes(k))return null;if(k==="dodge")return m.dodge;if(k==="hpm")return m.hpm;if(k==="zk"||k==="zph")return hasLoot(m)?m[k]:null;const v=m[k];return typeof v==="number"&&!isFinite(v)?null:v};
 function matchF(expr,n,text){
@@ -432,11 +432,11 @@ function matchF(expr,n,text){
   return String(text??n??"").toLowerCase().includes(expr);
 }
 // the Element / Race / Size / Boss dropdowns: does monster m pass f ({el, race, size, boss})? Boss: noboss leaves out Boss class (the farming
-// tables' default), normal also mini bosses, mini lists the mini bosses, boss the Boss-class monsters that aren't mini bosses
-const MOBF_BOSS=[["","Any"],["noboss","No bosses"],["normal","Normal only"],["mini","Mini bosses"],["boss","Bosses"]];
+// tables' default), normal also mini bosses, mini lists the mini bosses, mvp the MVPs, boss the Boss-class monsters that are neither
+const MOBF_BOSS=[["","Any"],["noboss","No bosses"],["normal","Normal only"],["mini","Mini bosses"],["mvp","MVPs"],["boss","Bosses"]];
 const mobFOk=(m,f)=>(!f.el||m.el===f.el)&&(!f.race||m.race===f.race)&&(!f.size||m.size===f.size)
-  &&(f.boss==="noboss"?!m.boss:f.boss==="normal"?!m.boss&&!m.mini:f.boss==="mini"?m.mini:f.boss==="boss"?m.boss&&!m.mini:true);
-const mobOpt=m=>`<option value="${esc(m.name)}">Lv ${m.lv} · ${fmtExp(m)} EXP${m.mini?" · mini boss":m.boss?" · boss":""}</option>`;
+  &&(f.boss==="noboss"?!m.boss:f.boss==="normal"?!m.boss&&!m.mini:f.boss==="mini"?m.mini:f.boss==="mvp"?m.mvp:f.boss==="boss"?m.boss&&!m.mini&&!m.mvp:true);
+const mobOpt=m=>`<option value="${esc(m.name)}">Lv ${m.lv} · ${fmtExp(m)} EXP${m.mvp?" · MVP":m.mini?" · mini boss":m.boss?" · boss":""}</option>`;
 // a monster search's suggestions: the monsters that pass its dropdowns
 const fillMobList=(id,f)=>{$(id).innerHTML=MOBS.filter(m=>mobFOk(m,f)).map(mobOpt).join("")};
 const isMagicAtk=()=>C().a.type==="magic"||C().a.type==="spellfist";
@@ -481,7 +481,7 @@ ${weightTile(m)}
   const b=$("useMobBtn");if(b)b.addEventListener("click",()=>{toggleSessMob(m.id);state.calcMobId=null;save();renderAll()});
   const d=$("dropMobBtn");if(d)d.addEventListener("click",()=>{toggleSessMob(m.id);save();renderAll()});
 }
-const BOSS_PILL=m=>m.mini?` <span class="pill" title="One per map on a long respawn · ${m.boss?"Boss class: boss / normal bonuses count it as a boss":"not Boss class: boss / normal bonuses count it as normal"}">mini boss</span>`:m.boss?' <span class="pill">boss</span>':"";
+const BOSS_PILL=m=>m.mvp?' <span class="pill mvp" title="MVP: Boss class, boss / normal bonuses count it as a boss">MVP</span>':m.mini?` <span class="pill" title="One per map on a long respawn · ${m.boss?"Boss class: boss / normal bonuses count it as a boss":"not Boss class: boss / normal bonuses count it as normal"}">mini boss</span>`:m.boss?' <span class="pill">boss</span>':"";
 // Farm without items (susCalc): the % in its colour, with what goes in and out on hover
 const susPct=s=>`${Math.floor(Math.min(100,s.score))}%`;
 const susTip=s=>{if(!s)return "";const f=v=>fmtN(v),h=s.heal,i=s.ind;
@@ -631,7 +631,7 @@ function renderMobInfo(){
   if(document.activeElement!==$("mobInfoInput"))$("mobInfoInput").value=m.name;
   $("mobInfoDb").href=dbUrl(m);
   const r=mobRow(m,walkSec());
-  $("mobInfoTiles").innerHTML=`<div class="tile now"><div class="k">${esc(m.name)} · Lv ${m.lv}</div><div class="v mono">${fmtN(m.hp)} HP</div><div class="s">${m.el?`${m.el} ${m.elv}`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${m.mini?" · mini boss":""}${m.boss?" · Boss class":""}${m.agg?" · aggressive":""}</div></div>
+  $("mobInfoTiles").innerHTML=`<div class="tile now"><div class="k">${esc(m.name)} · Lv ${m.lv}</div><div class="v mono">${fmtN(m.hp)} HP</div><div class="s">${m.el?`${m.el} ${m.elv}`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${m.mvp?" · MVP":""}${m.mini?" · mini boss":""}${m.boss?" · Boss class":""}${m.agg?" · aggressive":""}</div></div>
    <div class="tile"><div class="k">EXP</div><div class="v mono">${fmtExp(m)}</div><div class="s">${m.expUnknown?"no EXP data for it yet":`job ${fmtN(m.job)} · you get ${fmtN(killExp(m))} / ${fmtN(killJobExp(m))} job a kill`}</div></div>
    <div class="tile"><div class="k">Stats</div><div class="v mono">DEF ${m.def??"–"} · MDEF ${m.mdef??"–"}</div><div class="s">ATK ${m.atkMin??"–"}–${m.atkMax??"–"} · VIT ${m.vit??"–"} · INT ${m.int??"–"}${m.hit100?` · 100% hit at ${m.hit100} HIT`:""}${m.flee95?` · 95% flee at ${m.flee95} FLEE`:""}</div></div>
    <div class="tile"><div class="k">You vs it (${esc(state.job)})</div><div class="v mono">${isFinite(r.sec)?r.sec.toFixed(1)+"s / kill":"can't hurt"}</div><div class="s">your hit ${Math.round(r.mult)}%${elTag(r.el2)} · ${Math.round(r.hitc)}% land · you dodge ${r.dodge??"–"}%${r.hpm==null?"":` · HP lost ~${fmtN(r.hpm)}/min`}</div></div>
