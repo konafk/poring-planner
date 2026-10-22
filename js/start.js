@@ -22,7 +22,9 @@ function showHero(t){
 function showTab(t,local){
   if(t==="data")t="acct";// the old Data tab is the Account tab
   if(![...document.querySelectorAll("[data-tabbtn]")].some(b=>b.dataset.tabbtn===t))t="char";
-  document.querySelectorAll("[data-tab]").forEach(el=>el.hidden=el.dataset.tab!==t);
+  // a card can sit on several tabs (data-tab="maps mobinfo"): the Monsters card goes under Monster info there, and back under the Map planner on Monsters & maps
+  document.querySelectorAll("[data-tab]").forEach(el=>el.hidden=!el.dataset.tab.split(" ").includes(t));
+  if(t==="mobinfo")$("mobInfoCard").after($("mobCard"));else if(t==="maps")$("mapCard").after($("mobCard"));
   document.querySelectorAll("[data-tabbtn]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tabbtn===t)));
   showHero(t);$("startCard").classList.toggle("offTab",!["char","track","maps"].includes(t));
   if(!local&&state.tab!==t){state.tab=t;save()}

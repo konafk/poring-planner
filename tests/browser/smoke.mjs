@@ -28,8 +28,8 @@ try {
     const { page, errs } = await open();
     for (const tab of await tabs(page)) {
       await page.click(`[data-tabbtn="${tab}"]`);
-      const shown = await page.$$eval("[data-tab]", els => [...new Set(els.filter(el => !el.hidden).map(el => el.dataset.tab))]);
-      assert.deepEqual(shown, [tab], `tab ${tab}`);   // a tab can have several panels: only its own show
+      const shown = await page.$$eval("[data-tab]", els => els.filter(el => !el.hidden).map(el => el.dataset.tab.split(" ")));
+      assert.ok(shown.length && shown.every(ts => ts.includes(tab)), `tab ${tab}`);   // a tab can have several panels, and a panel several tabs: only its own show
       assert.equal(await page.getAttribute(`[data-tabbtn="${tab}"]`, "aria-selected"), "true");
     }
     assert.deepEqual(errs, []);
