@@ -452,7 +452,9 @@ t("roadmap: regions open on their update's day, or after its month when the day 
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Clock Tower"))`), "due 29 Oct 2026");
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Ant Hell memorial"))`), "next month");
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Glast Heim"))`), "in 2 months");
-  assert.equal(run(`capTxt(capNow())`), "Base 60 / Job 60");
+  assert.equal(run(`capTxt(capNow())`), "Base 70 / Job 70");                       // the 1 October update raised it, not Clock Tower
+  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Level 70 & new dungeons"))`), "out");
+  assert.equal(run(`ROADMAP.find(u=>u.name==="Clock Tower").cap`), undefined);
   assert.equal(run(`mapArrives("gl_chu")`), "Glast Heim update, Dec 2026");
   const alarm = `MOBS.find(m=>m.name==="Alarm")`;                                      // only in the Clock Tower
   assert.ok(run(`!openMaps(${alarm}).length`));
@@ -516,7 +518,10 @@ t("Amon Ra is in the monster tables as an MVP, Boss class, on Pyramid B2F", () =
   assert.equal(run(`MOBS.filter(m=>m.mvp).length`), run(`MVP.size`));
   // every MVP is a Boss-class monster we have, one on its map, and none is a mini boss
   assert.ok(run(`MVP.size`) > 20);
-  assert.ok(run(`MOBS.filter(m=>m.mvp).every(m=>m.boss&&!m.mini&&(SPAWN[m.id]||[]).length&&SPAWN[m.id].every(([,n])=>n===1))`));
+  assert.ok(run(`MOBS.filter(m=>m.mvp).every(m=>m.boss&&!m.mini&&(SPAWN[m.id]||[]).every(([,n])=>n===1||n===null))`));
+  assert.ok(run(`MOBS.filter(m=>m.mvp&&SPAWN[m.id]).length`) >= 15);
+  // the client's table doesn't have Maya, Mistress, Phreeoni, Eddga, Pharaoh or Drake on their maps, and no rozerodb estimate stands in
+  assert.equal(run(`[1147,1059,1159,1115,1157,1112].filter(i=>SPAWN[i]).length`), 0);
   assert.equal(run(`MOBS.find(m=>m.name==="Baphomet").mvp`), true);
   assert.equal(run(`JSON.stringify(SPAWN[1511])`), JSON.stringify([["pry_d06", 1, 1]]));
   assert.ok(run(`BOSS_PILL(${ra})`).includes(">MVP<"));
@@ -993,7 +998,21 @@ t("spawn counts come from the client's navigation table (normal channels)", () =
   assert.equal(sp(1002, "prt_f08"), JSON.stringify(["prt_f08", 20, 30]));  // Poring: 20 on prt_fild08, 30 on the PvP channel
   assert.equal(sp(1169, "mjo_d03"), JSON.stringify(["mjo_d03", 78, 78]));  // Skel Worker on mjo_dun03
   assert.equal(sp(1013, "maz_d03"), JSON.stringify(["maz_d03", 20, 20]));  // Wolf on prt_maze03: missing before
-  assert.equal(run(`Object.values(SPAWN).flat().filter(x=>!(x[1]>0)).length`), 0);
+  assert.equal(sp(1045, "bea_d02"), JSON.stringify(["bea_d02", 30, 30]));  // Marc on North Cave (Luanda) since the patch
+  assert.equal(sp(1278, "bea_d02"), JSON.stringify(["bea_d02", 50, 50]));  // Stalactic Golem there: 65 before the patch
+  assert.equal(sp(1046, "gef_d01"), JSON.stringify(["gef_d01", 1, 1]));    // Doppelganger, from the client's b_gef_d01 boss table
+  assert.equal(sp(1002, "prt_fild06"), JSON.stringify(["prt_fild06", 20, 30]));  // old field name: PvP count from prt_f06_z
+  assert.equal(sp(1037, "mjolnir_04"), JSON.stringify(["mjolnir_04", 43, 65]));  // from mjo_f04_z
+  assert.equal(sp(1031, "prt_maze02"), JSON.stringify(["prt_maze02", 32, 32]));  // from maz_d02_z
+  assert.equal(sp(1087, "gef_fild03"), JSON.stringify(["gef_fild03", 1, 1]));    // Orc Hero, from b_gef_f03 / b_gef_f03_z
+  assert.equal(run(`Object.values(SPAWN).flat().filter(x=>!(x[1]>0)&&x[1]!==null).length`), 0);
+  // maps the client doesn't list yet: which monsters come, but no count (no rozerodb estimate), and only on the roadmap's regions
+  assert.equal(sp(1045, "iz_d03"), JSON.stringify(["iz_d03", null]));      // Marc on Undersea Cave 4F
+  // (Western Cave Karu, bea_d01, isn't in the client either but isn't on the roadmap: open, counts ?)
+  assert.ok(run(`Object.values(SPAWN).flat().filter(x=>x[1]===null&&x[0]!=="bea_d01").every(x=>regionOf(x[0]))`));
+  assert.equal(run(`Object.values(SPAWN).flat().filter(x=>x[1]===null&&x.length!==2).length`), 0);
+  assert.equal(run(`spN(null)+" "+spN(30)`), "? 30");
+  assert.ok(run(`mapStats("iz_d03",0)`) == null);                          // nothing to weight by: out of the map rankings
   assert.equal(run(`MAPMOBS.prt_f08.find(x=>x.m.id===1002).n`), 20);      // the app uses the normal-channel count
 });
 

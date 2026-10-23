@@ -44,7 +44,7 @@ Each table lives in its own file, so a re-export after a patch only touches that
 | File | Contents |
 | --- | --- |
 | `mobs.js` | Monsters (EXP is `null` where there's no data yet) |
-| `spawn.js` | Spawn maps and counts, normal and PvP channels. Written by `tools/export_spawns.py`. |
+| `spawn.js` | Spawn maps and counts, normal and PvP channels, all from the client. Maps the client doesn't list yet have `[map, null]`: the monster comes there, count not known. Written by `tools/export_spawns.py`. |
 | `maps.js` | In-game map code and name for each spawn map. Names written by `tools/export_mapnames.py`. |
 | `roadmap.js` | Release roadmap: each update's month (or day), level cap, what it adds and the map regions it opens (by map code prefix). Made by hand from the official roadmap. |
 | `mobskills.js` | Monsters that poison you (Poison Attack level, rate, delay) and ones that assist their kind. Written by `tools/export_mobskills.py`. |

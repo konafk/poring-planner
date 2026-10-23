@@ -613,6 +613,8 @@ const lockPill=mp=>lvLocked(mp)?` <span class="pill down" title="Needs base Lv $
 const isSkipped=m=>!!(state.skipMobs&&state.skipMobs.includes(m.id));
 // rozerodb has no EXP for some monsters yet (Myst, Isis, Anubis...): shown as "?" and left out of EXP averages
 const fmtExp=m=>m.expUnknown?"?":fmtN(m.exp);
+// a spawn count, or ? on a map the client doesn't list yet (SPAWN has [map, null] there: which monsters, from rozerodb, but no count)
+const spN=n=>n==null?"?":n;
 const MAPMOBS={};
 Object.entries(SPAWN).forEach(([id,arr])=>{const m=MOBS.find(x=>x.id===+id);if(!m)return;arr.forEach(([mp,n])=>{(MAPMOBS[mp]=MAPMOBS[mp]||[]).push({m,n})})});
 
@@ -645,7 +647,7 @@ function stats(s){
 // of them spawn (ties: more spawns)
 const sessMobs=s=>s.mobIds.map(id=>MOBS.find(m=>m.id===id)).filter(Boolean);
 // the open maps any of the session's monsters spawn on, best first: [map, how many of its monsters, their spawns]
-const sessMaps=s=>{const k={},tot={};sessMobs(s).forEach(m=>openMaps(m).forEach(([mp,n])=>{k[mp]=(k[mp]||0)+1;tot[mp]=(tot[mp]||0)+n}));
+const sessMaps=s=>{const k={},tot={};sessMobs(s).forEach(m=>openMaps(m).forEach(([mp,n])=>{k[mp]=(k[mp]||0)+1;tot[mp]=n==null||tot[mp]===null?null:(tot[mp]||0)+n}));
   return Object.keys(k).map(mp=>[mp,k[mp],tot[mp]]).sort((a,b)=>b[1]-a[1]||b[2]-a[2])};
 const sessMapAuto=s=>(sessMaps(s)[0]||[])[0]||null;
 // a map you picked counts while one of the session's monsters spawns there, even one marked as not open

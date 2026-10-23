@@ -141,14 +141,15 @@ Mini boss is how they spawn, not the game's Boss class, which is what boss / nor
 
 ### MVPs
 
-The MVPs that spawn on the maps here (Amon Ra, Osiris, Baphomet, Moonlight, Eddga, Phreeoni, Orc Lord, Dracula and the rest) are in the monster tables: each carries an `MVP` tag wherever monsters are listed, Monster info says so, and the Boss dropdown's MVPs lists them. Type `mvp` in a Monster filter to find them. They're Boss class, so they stay out of the farming tables like the other bosses; the ones rozerodb has no EXP for yet show it as unknown.
+The MVPs that spawn on the maps here (Amon Ra, Osiris, Baphomet, Moonlight, Orc Hero, Orc Lord, Dracula and the rest) are in the monster tables: each carries an `MVP` tag wherever monsters are listed, Monster info says so, and the Boss dropdown's MVPs lists them. Type `mvp` in a Monster filter to find them. They're Boss class, so they stay out of the farming tables like the other bosses; the ones rozerodb has no EXP for yet show it as unknown. Maya, Mistress, Phreeoni, Eddga, Pharaoh and Drake are in the tables too but have no map: the client's spawn table doesn't list them on any map it has.
 
 ## Roadmap
 
 Its own tab: Ragnarok Zero Global's release roadmap, from August 2026 to July 2027: each update's month, the level cap it raises to, what it adds, and the map regions it opens. The heading shows the level cap now and the next update.
 
-- A region opens by itself on its update's day, or once its month is over when the day isn't announced (so the Clock Tower update opens on 29 October 2026, and Glast Heim, December 2026, counts as open from 1 January). Maps on no region, such as Comodo's and Umbala's fields, Sphinx, Prontera Labyrinth, Mjolnir Dead Pit and Ant Hell 1F and 2F (only its memorial dungeon is still to come), are always open. Until then its maps are left out of Where to farm and the Map planner rankings, and its monsters are hidden by "Hide monsters with no open map".
+- A region opens by itself on its update's day, or once its month is over when the day isn't announced (so the Clock Tower update opens on 29 October 2026, and Glast Heim, December 2026, counts as open from 1 January). Maps on no region, such as Comodo's and Umbala's fields, Sphinx, Prontera Labyrinth and Mjolnir Dead Pit (out since the 1 October update, which raised the level cap to 70), and Ant Hell 1F and 2F (only its memorial dungeon is still to come), are always open. Until then its maps are left out of Where to farm and the Map planner rankings, and its monsters are hidden by "Hide monsters with no open map".
 - A closed monster shows when it comes: "none open · Dec 2026" in the monster table and Item info, "comes with the Glast Heim update, Dec 2026" in its details, a `closed · Dec 2026` tag on its maps in Monster info, and the same line in the Map planner.
+- Spawn counts come only from the game client, so maps it doesn't list yet (the regions still to come, and Western Cave Karu) show `≈?`: which monsters are there is known, how many isn't. Those maps stay out of the map rankings until a client update lists them and `tools/export_spawns.py` reads their counts.
 - Click a region to mark it open (or closed) yourself, for example the day an update goes live; it shows `yours` while it differs from the roadmap, and clicking it back follows the roadmap again. Other closed maps takes any single map.
 - The roadmap is `data/roadmap.js`. When an update's day is announced, set its `when` to `YYYY-MM-DD`.
 
