@@ -3,11 +3,12 @@
 // cap (the base / job level cap it raises to), add (what it brings), and regions: the maps it opens, as {id, name, pre: map code prefixes in
 // data/spawn.js}. A region opens by itself once its update's day has come, or the month after its update's month when the day isn't known;
 // mark it open or closed yourself on the Roadmap tab. Maps in no region are open: Comodo's and Umbala's fields, Sphinx, Prontera Labyrinth and Mjolnir Dead Pit, which the roadmap puts with Clock Tower
-// but opened before it, and Ant Hell 1F and 2F, open before their memorial dungeon.
+// but came with the 1 October update (its maintenance notice), and Ant Hell 1F and 2F, open before their memorial dungeon.
 const ROADMAP=[
 {when:"2026-08",name:"Global launch",cap:{base:50},add:["1st classes","Episode 1-1"]},
 {when:"2026-09",name:"2nd classes & Episode 1-2",cap:{base:60,job:60},add:["2nd job change","Memorial dungeons: Prontera Culvert, Orc's Memory","War of Emperium"]},
-{when:"2026-10-29",name:"Clock Tower",cap:{base:70,job:70},add:["Dungeon: Clock Tower (Al De Baran)","Star (Ashura) weapons, first wave"],
+{when:"2026-10-01",name:"Level 70 & new dungeons",cap:{base:70,job:70},add:["Dungeons: Labyrinth Forest, Sphinx, Mjolnir Abandoned Mine","Daily quest tiers for levels 60-70","Event quests: The Legend of Amon Ra, The Baphomet Cult"]},
+{when:"2026-10-29",name:"Clock Tower",add:["Dungeon: Clock Tower (Al De Baran)","Star (Ashura) weapons, first wave"],
  regions:[{id:"ct",name:"Clock Tower",pre:["c_tower","tow_d","alde_dun"]}]},
 {when:"2026-11-12",name:"Byalan Dungeon 4F & 5F",add:["Byalan Dungeon (Undersea Cave) 4F and 5F"],
  regions:[{id:"by",name:"Byalan 4F & 5F",pre:["iz_d03","iz_d04","iz_dun03","iz_dun04"]}]},

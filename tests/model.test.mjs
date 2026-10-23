@@ -452,7 +452,9 @@ t("roadmap: regions open on their update's day, or after its month when the day 
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Clock Tower"))`), "due 29 Oct 2026");
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Ant Hell memorial"))`), "next month");
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Glast Heim"))`), "in 2 months");
-  assert.equal(run(`capTxt(capNow())`), "Base 60 / Job 60");
+  assert.equal(run(`capTxt(capNow())`), "Base 70 / Job 70");                       // the 1 October update raised it, not Clock Tower
+  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Level 70 & new dungeons"))`), "out");
+  assert.equal(run(`ROADMAP.find(u=>u.name==="Clock Tower").cap`), undefined);
   assert.equal(run(`mapArrives("gl_chu")`), "Glast Heim update, Dec 2026");
   const alarm = `MOBS.find(m=>m.name==="Alarm")`;                                      // only in the Clock Tower
   assert.ok(run(`!openMaps(${alarm}).length`));
