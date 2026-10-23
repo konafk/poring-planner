@@ -125,7 +125,7 @@ With an elemental converter (or Spell Fist bolts), a table shows each element's 
 
 ### Monster table
 
-The last card on the tab: look up any one monster against your attack.
+The last card on the tab, and on the Monster info tab too (under Monster info): look up any one monster against your attack.
 
 Every monster with HP, EXP, EXP/HP, your damage, kill time, EXP/min, dodge, HP lost, zeny per kill (after skill items) and net zeny/hr (after skill items, SP items, the ASPD potion and ground buffs).
 
@@ -154,7 +154,7 @@ Its own tab: Ragnarok Zero Global's release roadmap, from August 2026 to July 20
 
 ## Monster info
 
-One monster's stats, how you do against it, and every map it spawns on. The Element, Race, Size and Boss dropdowns next to the search narrow its suggestions. Its drops list shows the auto-loot group, chance, your chance, NPC and player price, and zeny per kill. Clicking a monster in the Monsters table, the Map planner or Where to farm (by zeny) opens it here too. Drops with no published rate yet (the Boulder Dwarves in Nordfeld Cave) show chance `?` and add nothing to zeny or weight figures.
+One monster's stats, how you do against it, and every map it spawns on. The Element, Race, Size and Boss dropdowns next to the search narrow its suggestions. Its drops list shows the auto-loot group, chance, your chance, NPC and player price, and zeny per kill. The [Monster table](#monster-table) sits under it on this tab as well, so you can browse every monster and click one to open it here (its farming details open beside the table). Clicking a monster in the Monsters table, the Map planner or Where to farm (by zeny) opens it here too. Drops with no published rate yet (the Boulder Dwarves in Nordfeld Cave) show chance `?` and add nothing to zeny or weight figures.
 
 ## Item info
 
