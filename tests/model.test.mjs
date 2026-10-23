@@ -993,6 +993,9 @@ t("spawn counts come from the client's navigation table (normal channels)", () =
   assert.equal(sp(1002, "prt_f08"), JSON.stringify(["prt_f08", 20, 30]));  // Poring: 20 on prt_fild08, 30 on the PvP channel
   assert.equal(sp(1169, "mjo_d03"), JSON.stringify(["mjo_d03", 78, 78]));  // Skel Worker on mjo_dun03
   assert.equal(sp(1013, "maz_d03"), JSON.stringify(["maz_d03", 20, 20]));  // Wolf on prt_maze03: missing before
+  assert.equal(sp(1045, "bea_d02"), JSON.stringify(["bea_d02", 30, 30]));  // Marc on North Cave (Luanda) since the patch
+  assert.equal(sp(1278, "bea_d02"), JSON.stringify(["bea_d02", 50, 50]));  // Stalactic Golem there: 65 before the patch
+  assert.equal(sp(1046, "gef_d01"), JSON.stringify(["gef_d01", 1, 1]));    // Doppelganger, from the client's b_gef_d01 boss table
   assert.equal(run(`Object.values(SPAWN).flat().filter(x=>!(x[1]>0)).length`), 0);
   assert.equal(run(`MAPMOBS.prt_f08.find(x=>x.m.id===1002).n`), 20);      // the app uses the normal-channel count
 });

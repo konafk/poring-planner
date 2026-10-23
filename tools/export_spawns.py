@@ -6,6 +6,7 @@
 The client's navigation table (data.grf: data\\luafiles514\\lua files\\navigation\\navi_mob.lub, compiled Lua 5.1) lists every
 map's monsters with their counts, per channel. In game the map itself and channels _a to _d are normal and _y/_z are PvP; the
 table lists the map, _a, _b (always the same counts) and _z (PvP, about 1.5x the monsters), so those stand for the rest.
+MVPs sit in their own tables, b_<map> and b_<map>_z, which count toward the map. MVPs the table leaves out keep their old spawn.
 rozerodb takes its spawn list from this same file but fills field counts with rAthena Renewal estimates, so field counts were
 far too high; its dungeon counts already matched the client.
 Each spawn becomes [map, normal count, PvP count], or [map, normal count] when the table has no PvP channel for the map. Maps the client doesn't list (regions not out yet) keep their old counts
@@ -111,11 +112,13 @@ def main():
     names, old = js_object("maps", "MAPNAMES"), js_object("spawn", "SPAWN")
     src = open(os.path.join(DATA, "mobs.js"), encoding="utf-8").read()
     ours = {int(i) for i in old} | {int(x) for x in re.findall(r"\[(\d+),\s*\"", src[src.index("const MOBS="):])}
+    mvp = {int(x) for x in re.findall(r"\d+", re.search(r"const MVP=new Set\(\[([\d,\s]*)\]", src).group(1))}
     maps = sorted({mp for v in old.values() for mp, *_ in v})
     codes = lambda mp: [(names.get(mp) or [mp])[0], *(names.get(mp) or [])[2:], mp]
-    pick = lambda mp, sufs: next((c + s for c in codes(mp) for s in sufs if c + s in counts), None)
+    pick = lambda mp, sufs, pre="": next((pre + c + s for c in codes(mp) for s in sufs if pre + c + s in counts), None)
+    table = lambda *keys: {m: sum(counts[k].get(m, 0) for k in keys if k) for k in keys if k for m in counts[k]}
 
-    spawn, kept, dropped = {}, [], []
+    spawn, kept, mvpkept, dropped = {}, [], [], []
     for mp in maps:
         normal, pvp = pick(mp, ["", "_a", "_b", "_c", "_d"]), pick(mp, ["_z", "_y"])
         if not normal:
@@ -124,12 +127,18 @@ def main():
                 for x in v:
                     if x[0] == mp: spawn.setdefault(i, []).append([mp, x[1]])
             continue
-        for mid in sorted(set(counts[normal]) | set(counts.get(pvp) or {})):
+        n = table(normal, pick(mp, ["", "_a", "_b", "_c", "_d"], "b_"))
+        z = table(pvp, pick(mp, ["_z", "_y"], "b_")) if pvp else {}
+        for mid in sorted(set(n) | set(z)):
             if mid in ours:
-                spawn.setdefault(str(mid), []).append([mp, counts[normal].get(mid, 0)] + ([counts[pvp].get(mid, 0)] if pvp else []))
+                spawn.setdefault(str(mid), []).append([mp, n.get(mid, 0)] + ([z.get(mid, 0)] if pvp else []))
         for i, v in old.items():
-            if any(x[0] == mp for x in v) and int(i) not in counts[normal] and int(i) not in (counts.get(pvp) or {}):
-                dropped.append(f"{i} on {mp}")
+            for x in v:
+                if x[0] == mp and int(i) not in n and int(i) not in z:
+                    if int(i) in mvp:
+                        mvpkept.append(f"{i} on {mp}"); spawn.setdefault(i, []).append(x)
+                    else:
+                        dropped.append(f"{i} on {mp}")
     spawn = {i: sorted(v, key=lambda x: -x[1]) for i, v in sorted(spawn.items(), key=lambda x: int(x[0]))}
     with open(os.path.join(DATA, "spawn.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// Spawn maps per monster id: [[map, count, PvP count], ...] from the official Global client's navigation table (navi_mob.lub): count on the "
@@ -138,6 +147,8 @@ def main():
         f.write("const SPAWN=" + json.dumps(spawn, separators=(",", ":")) + ";\n")
     print(f"{len(maps) - len(kept)} of {len(maps)} maps from the client, {sum(len(v) for v in spawn.values())} spawns")
     print("kept rozerodb counts (not in the client):", " ".join(kept))
+    if mvpkept:
+        print("MVPs not in the client's table, kept:", ", ".join(mvpkept))
     if dropped:
         print("not on that map in the client, removed:", ", ".join(dropped))
 
