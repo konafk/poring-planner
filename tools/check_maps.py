@@ -4,7 +4,8 @@ Lists, per map, monsters ragnarokzero.net has that data/spawn.js doesn't, and sp
 Each map is looked up under every code in data/maps.js (rozerodb code, in-game code and other codes).
 Run: python tools/check_maps.py
 By default it leaves out plants and mushrooms (ids 1078-1085), event and elite variants (ids 2600+) and monsters
-with no spawn count; --all lists them too. Monsters rozerodb marks UPCOMING also show up as missing.
+with no spawn count; --all lists them too. Monsters rozerodb marks UPCOMING also show up as missing. On maps the client
+doesn't list yet our counts are null (not known), so only missing monsters show there.
 """
 import json
 import re
@@ -31,6 +32,7 @@ def site_maps():
 
 def main():
     show_all = "--all" in sys.argv
+    sys.stdout.reconfigure(encoding="utf-8")  # map names and ≈ on a Windows console
     spawn, names, site = js_object("spawn"), js_object("maps"), site_maps()
     ours = {}
     for mob_id, rows in spawn.items():
@@ -54,7 +56,7 @@ def main():
                 continue
             if mob_id not in ours[mp]:
                 lines.append(f"  missing {m['name']} #{mob_id} Lv {m['level']} ≈{n if n else '?'}")
-            elif n and n != ours[mp][mob_id]:
+            elif n and ours[mp][mob_id] is not None and n != ours[mp][mob_id]:
                 lines.append(f"  {m['name']} #{mob_id}: ours ≈{ours[mp][mob_id]}, theirs ≈{n}")
         if lines:
             label = names.get(mp, [mp, ""])

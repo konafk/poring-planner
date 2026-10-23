@@ -16,7 +16,7 @@ function infoPrice(id){const npc=NPCSELL[id]!=null||state.npcPrices[id]!=null?np
 // the monsters the farm tables know that drop it: chance, your chance, and where they spawn (or when they come)
 function infoDroppers(id){const ds=ITEM_DROPS[id]||[];if(!ds.length)return "";
   return `<div class="infoList">${ds.slice(0,12).map(({m,ch})=>{const om=openMaps(m),a=mobArrives(m);
-    return `<div>${infoLink("mob",m.id,m.name)}${BOSS_PILL(m)} <span class="note">Lv ${m.lv} · ${chTxt(ch)}${yourCh(m,ch)!==ch?` (you ${chTxt(yourCh(m,ch))})`:""} · ${om.length?`${esc(mapLabel(om[0][0]))} ≈${om[0][1]}`:a?`none open · ${esc(a)}`:"no open map"}</span></div>`}).join("")}${ds.length>12?`<div class="note">and ${ds.length-12} more in Item info</div>`:""}</div>`}
+    return `<div>${infoLink("mob",m.id,m.name)}${BOSS_PILL(m)} <span class="note">Lv ${m.lv} · ${chTxt(ch)}${yourCh(m,ch)!==ch?` (you ${chTxt(yourCh(m,ch))})`:""} · ${om.length?`${esc(mapLabel(om[0][0]))} ≈${spN(om[0][1])}`:a?`none open · ${esc(a)}`:"no open map"}</span></div>`}).join("")}${ds.length>12?`<div class="note">and ${ds.length-12} more in Item info</div>`:""}</div>`}
 
 function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobIds.includes(m.id),a=mobArrives(m);
   const sub=`Lv ${m.lv} · ${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${BOSS_PILL(m)}${m.agg?' <span class="pill">aggressive</span>':""}`;
@@ -25,9 +25,9 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
     +infoTile(`You (${esc(state.job)})`,isFinite(r.sec)?r.sec.toFixed(1)+"s / kill":"can't hurt",`your hit ${Math.round(r.mult)}% · ${Math.round(r.hitc)}% land · you dodge ${r.dodge??"–"}%`)
     +infoTile("EXP / min",m.expUnknown?"?":r.epm?fmtN(r.epm):"–",r.hpm==null?"":`HP lost ~${fmtN(r.hpm)}/min`)
     +infoTile("Zeny / kill",hasLoot(m)?fmtN(r.zk):"–",penNote(m)||"no drop level penalty")
-    +infoTile("Best map",om.length?mapCode(om[0][0]):"–",om.length?`${esc(mapName(om[0][0]))} ≈${om[0][1]}`:a?`none open · comes with the ${esc(a)}`:"none open");
+    +infoTile("Best map",om.length?mapCode(om[0][0]):"–",om.length?`${esc(mapName(om[0][0]))} ≈${spN(om[0][1])}`:a?`none open · comes with the ${esc(a)}`:"none open");
   const drops=(m.drops||[]).slice().sort((x,y)=>(y[1]??-1)-(x[1]??-1)).map(([id,ch])=>`<div>${infoLink(infoKind(id),id,itemName(id))} <span class="note">${chTxt(ch)}${yourCh(m,ch)!==ch?` (you ${chTxt(yourCh(m,ch))})`:""}${npcSell(id)>0?` · NPC ${fmtN(npcPays(id))} z`:""}${state.prices[id]>0?` · players ${fmtN(state.prices[id])} z`:""}${looted(id)?"":" · not looted"}</span></div>`).join("");
-  const maps=(SPAWN[m.id]||[]).slice().sort((x,y)=>y[1]-x[1]).map(([mp,n])=>`<div><a href="#" data-infomap="${esc(mp)}" class="mono">${mapCode(mp)}</a> <span class="note">${esc(mapName(mp))} · ≈${n}</span>${isClosed(mp)?` <span class="pill down">closed${mapArrives(mp)?` · ${esc(mapArrives(mp).split(", ")[1])}`:""}</span>`:""}</div>`).join("");
+  const maps=(SPAWN[m.id]||[]).slice().sort((x,y)=>y[1]-x[1]).map(([mp,n])=>`<div><a href="#" data-infomap="${esc(mp)}" class="mono">${mapCode(mp)}</a> <span class="note">${esc(mapName(mp))} · ≈${spN(n)}</span>${isClosed(mp)?` <span class="pill down">closed${mapArrives(mp)?` · ${esc(mapArrives(mp).split(", ")[1])}`:""}</span>`:""}</div>`).join("");
   return {ico:"",title:m.name,sub,
     body:`<div class="calc">${tiles}</div>${infoSec("Drops",drops&&`<div class="infoList">${drops}</div>`)}${infoSec("Spawns",maps&&`<div class="infoList">${maps}</div>`)}`,
     acts:`${inS?'<span class="pill up">In this session</span>':`<button type="button" class="primary" data-infoact="farm">${s.mobIds.length?"Also killing it":"Farming it now"}</button>`}
