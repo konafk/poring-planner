@@ -27,7 +27,7 @@ Object.assign(globalThis, {
     { id: 18, slug: "sieglouse", name: "Sieglouse Card", slot: ["footgear"], g: [] },
     { id: 19, slug: "gem", name: "Gem Card", slot: ["head_upper"], g: [] },
     { id: 20, slug: "joker", name: "Joker Card", slot: ["accessory_1"], g: [] },
-    { id: 21, slug: "xjoker", name: "Extra Joker Card", slot: ["shield"], g: [] },
+    { id: 21, slug: "xjoker", name: "Extra Joker Card", slot: ["shield"], g: [{ b: [["mdef", null, null, 10, 1]] }] },
   ],
   SETS: [{ slug: "s", name: "Coat Set", pieces: ["coat", "boots"], g: [{ rs: 10, b: [["hp", null, null, 500]] }, { b: [["vit", null, null, 3]] }] },
     { slug: "sa", name: "Sieglouse & Arclouse Card", pieces: ["sieglouse", "arclouse"], ref: "arclouse", g: [{ b: [["flee", null, null, 2, 1]] }] },
@@ -99,8 +99,9 @@ t("card sets: cards slotted in worn gear, per-refine lines by the ref piece's it
   assert.equal(half.acc.flee, 0);                                           // one card short: no set
   const hat = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { headTop: { id: 4, refine: 5, cards: [19] } } }, "Knight", aspdBase);
   assert.equal(hat.acc.atk, 5);                                             // an item and a card in it: ATK +1 per refine of the item
-  const joker = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { acc1: { id: 7, cards: [20] }, shield: { id: 5, cards: [21] } } }, "Knight", aspdBase);
+  const joker = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { acc1: { id: 7, cards: [20] }, shield: { id: 5, refine: 4, cards: [21] } } }, "Knight", aspdBase);
   assert.equal(joker.acc.atk, 0);                                           // ATK +70 only while transformed
+  assert.equal(joker.acc.mdef, 40);                                         // the card's own MDEF +10 per shield refine
   assert.ok(joker.unmodelled.some(x => x.startsWith("Extra Joker & Joker Card: Chance")));
 });
 
