@@ -8,15 +8,18 @@ const MEMORIALS=[
 {name:"Orc's Memory",lv:59,npc:"Calm Scientist",at:"gef_fild10 231 203",
  normal:[[25424,"Faintly Glowing Crystal","1–3"],[15220,"Subjugation Team's Armor","0–2"],[20867,"Subjugation Team's Shoulder Belt","0–2"]],
  hard:[[25424,"Faintly Glowing Crystal","6–10"],[757,"Rough Elunium","2–8"],[756,"Rough Oridecon","2–8"],[985,"Elunium","1–3"],[984,"Oridecon","1–3"],
-   [25429,"Mithril Ore","1–4"],[null,"Wind, Fire, Water and Earth ores","1–3 each"],[25457,"Cursed Emerald","0–3"]]},
+   [25429,"Mithril Ore","1–4"],
+   [990,"Red Blood","1–3"],[991,"Crystal Blue","1–3"],[992,"Wind of Verdure","1–3"],[993,"Green Live","1–3"],[25457,"Cursed Emerald","0–3"]]},
 {name:"Prontera Culvert",lv:59,npc:"Underground Management Director",at:"prt_fild05 265 208",
  normal:[[25424,"Faintly Glowing Crystal","1–3"],[28539,"Subjugation Team's Ring","0–2"],[22150,"Subjugation Team Boots","0–2"]],
  hard:[[25424,"Faintly Glowing Crystal","6–10"],[757,"Rough Elunium","2–8"],[756,"Rough Oridecon","2–8"],[985,"Elunium","1–3"],[984,"Oridecon","1–3"],
-   [25429,"Mithril Ore","1–4"],[null,"Wind, Fire, Water and Earth ores","1–3 each"],[25458,"Shimmering Opal","0–3"]]},
+   [25429,"Mithril Ore","1–4"],
+   [990,"Red Blood","1–3"],[991,"Crystal Blue","1–3"],[992,"Wind of Verdure","1–3"],[993,"Green Live","1–3"],[25458,"Shimmering Opal","0–3"]]},
 {name:"Ant Hell",lv:70,npc:"Memory Labyrinth Association Member",at:"prt_fild06 37 197",
  normal:[[25424,"Faintly Glowing Crystal",""],[25475,"Crystal of Blue Light",""],[23649,"Jellopy Fragment Box",""]],
  hard:[[25424,"Faintly Glowing Crystal",""],[757,"Rough Elunium",""],[756,"Rough Oridecon",""],[985,"Elunium",""],[984,"Oridecon",""],
-   [25429,"Mithril Ore",""],[null,"Wind, Fire, Water and Earth ores",""],[25460,"Ruby Soaked in Blood",""]]}];
+   [25429,"Mithril Ore",""],
+   [990,"Red Blood",""],[991,"Crystal Blue",""],[992,"Wind of Verdure",""],[993,"Green Live",""],[25460,"Ruby Soaked in Blood",""]]}];
 // Poring Village's reward has one Jello Fragment, which one by weekday (day: 1 Monday … 5 Friday; Saturday and Sunday give a Jellopy
 // Fragment Box instead). 5 of a fragment make its Jellostone at the Memory Craftsman's Workshop (prontera 48 227), with a 3-day wait.
 // JELLO: frag / stone: [item id, name]
