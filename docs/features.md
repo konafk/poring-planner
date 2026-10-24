@@ -163,8 +163,6 @@ Its own tab, for the Activation System: the Taiwan server's, not on Global yet, 
 - **★ Forging Certificates:** the 17 ★ weapons Global's client has, grouped by weapon type, since a certificate is per type: Workshop Apprentice Nariya (prontera 272 264) gives one for each monster-drop weapon of the type. Type the certificates and drop weapons you have; To go counts down from the 100 a ★ to ★★ activation takes. Fastest for you is the monster (bosses aside, on an open map) that gets you them quickest: every weapon of the type it drops at its rate, with your drop bonus and level penalty, at the kill speed and walking Monsters & maps works out. Monsters with no published rate don't count. Time is To go over that rate.
 - **Activation:** each route's refine loss, certificates and Goblin Coin Fragments at Grandpa Taotao (prontera 272 260): ★ to ★★ (−7, 100 ★ certificates, 8 fragments), ★★ to ★★★ (−3, 3 ★★ certificates, 30), and ★ armor (stable −3 for 100 and 30, aggressive −7 for 10 and 3); the last three came in the Taiwan server's later updates. Type your weapon's refine to see it after each. Cards, enchants and random options stay.
 
-rozerodb's guide reads the 100-certificate route as taking a normal weapon to ★, but its own ★ Jur example and Midgard Hub's start from a ★ weapon, so the tab goes with that.
-
 ## Roadmap
 
 Its own tab: Ragnarok Zero Global's release roadmap, from August 2026 to July 2027: each update's month, the level cap it raises to, what it adds, and the map regions it opens. The heading shows the level cap now and the next update.
