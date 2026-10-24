@@ -63,7 +63,7 @@ const BUILD=(()=>{
     ign:{def:{race:{},size:{},ele:{},kind:{}},mdef:{race:{},size:{},ele:{},kind:{}}},
     phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},taken:{race:{},size:{},ele:{},kind:{}},exp:{all:0,race:{}},critRace:{},spCost:0,spRec:0,hpRec:0,wEle:null,unmodelled:[]});
   // lines that only matter for PvP survival, healing or status resistance: not part of the farming maths, so not reported either
-  const QUIET=["resistance_percent","heal_amount_percent","item_heal_percent","sp_recovery_percent","hp_recovery_percent","perfect_hit","magic_damage_taken_percent","sp_per_hit","hp_per_hit"];
+  const QUIET=["resistance_percent","heal_amount_percent","item_heal_percent","sp_heal_percent","sp_recovery_percent","hp_recovery_percent","perfect_hit","magic_damage_taken_percent","sp_per_hit","hp_per_hit"];
   const addTo=(o,k,v)=>{o[k]=(o[k]||0)+v};
   // monster groups ("against Boulder Dwarves") are kept by the text a member's name contains
   const GROUP={boulder_dwarf:"Boulder Dwarf"};
@@ -224,6 +224,7 @@ const BUILD=(()=>{
   const STONE_SLOTS=[{k:"upper",label:"Upper"},{k:"middle",label:"Middle"},{k:"lower",label:"Lower"},{k:"garment",label:"Garment"}];
   const stone=id=>(typeof STONES!=="undefined"?STONES:[]).find(x=>x.id===+id)||null;
   const tamingEgg=id=>(typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[]).find(x=>x.id===+id)||null;
+  const tamingMvp=id=>(typeof TAMING_MVP!=="undefined"?TAMING_MVP:[]).find(x=>x.id===id)||null;
   const stonesWorn=sel=>STONE_SLOTS.map(z=>stone((sel||{})[z.k])).filter((x,i)=>x&&x.slot===STONE_SLOTS[i].k);
   // does a bonus group apply? r: item refine, rs: combined refine of a set, lv: base level, cls: job slugs
   // ("Acolyte Class" in game covers Priest and Monk, so a 2nd job also matches its 1st job)
@@ -251,8 +252,10 @@ const BUILD=(()=>{
     // costume enchant stones (data/stones.js): b.stones = {upper, middle, lower, garment} -> stone id, plus the sets they complete
     const st=stonesWorn(b.stones);st.forEach(x=>{(x.b||[]).forEach(l=>apply(A,l,x.name));if(x.off)A.unmodelled.push(`${x.name}: ${x.off}`)});
     const ids=st.map(x=>x.id);(typeof STONE_SETS!=="undefined"?STONE_SETS:[]).forEach(z=>{if(z.need.every(i=>ids.includes(i)))z.b.forEach(l=>apply(A,l,z.name))});
-    // Taming Ring (Special Equipment, Accessory Right): b.special.ring = the pet egg enchant sealed in it (data/special.js)
-    const egg=tamingEgg((b.special||{}).ring);if(egg){egg.b.forEach(l=>apply(A,l,`Taming Ring (${egg.name})`));if(egg.off)A.unmodelled.push(`Taming Ring (${egg.name}): ${egg.off}`)}
+    // Taming Ring (Special Equipment, Accessory Right): b.special.ring = the pet egg enchant sealed in it, b.special.mvp = the MVP
+    // pet egg in its card slot 3 (data/special.js)
+    [tamingEgg((b.special||{}).ring),tamingMvp((b.special||{}).mvp)].forEach(egg=>{if(!egg)return;
+      egg.b.forEach(l=>apply(A,l,`Taming Ring (${egg.name})`));if(egg.off)A.unmodelled.push(`Taming Ring (${egg.name}): ${egg.off}`)});
     // other special equipment the lists don't have: b.special.own = [{on, name, opts:[{k, v}]}], effects picked from the affix list
     ((b.special||{}).own||[]).forEach(x=>{if(!x||x.on===false)return;const nm=String(x.name||"").trim()||"Special equipment",o=optLinesOf(x);
       o.lines.forEach(l=>apply(A,l,nm));o.bad.forEach(y=>A.unmodelled.push(`${nm} not understood: ${y}`));o.off.forEach(y=>A.unmodelled.push(`${nm} not counted: ${y}`))});
@@ -317,5 +320,5 @@ const BUILD=(()=>{
       if(!best||score>best.score)best={score,id:it.id,refine,cards:[...a,...b].slice(0,it.slots||0)}}
     return best&&{id:best.id,refine:best.refine,cards:best.cards}}
 
-  return {SLOTS,CARD_FOR,WTYPE,STAT6,FIRST_OF,SHIELD_ASPD,DUAL_W,LEFT_ASPD,dualOk,item,jobBonus,refineAt,status,compute,curve,parseOptions,OPTIONS,OPT_MAX,optRows,optLines,optBad,optGear,optChoices,STONE_SLOTS,stone,stonesWorn,tamingEgg,readCardNames,readGearName}})();
+  return {SLOTS,CARD_FOR,WTYPE,STAT6,FIRST_OF,SHIELD_ASPD,DUAL_W,LEFT_ASPD,dualOk,item,jobBonus,refineAt,status,compute,curve,parseOptions,OPTIONS,OPT_MAX,optRows,optLines,optBad,optGear,optChoices,STONE_SLOTS,stone,stonesWorn,tamingEgg,tamingMvp,readCardNames,readGearName}})();
 if(typeof module!=="undefined")module.exports=BUILD;

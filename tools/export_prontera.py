@@ -46,11 +46,28 @@ TAKEN = {2254: ("demon", -3), 2255: ("angel", -3), 2327: ("demon", -15), 2289: (
 LV_STEP = {300834: "atk", 300835: "matk"}
 # "Physical / Magic damage against Boulder Dwarves +30%": prontera has only the description text, no bonus line
 GROUP_DMG = {300944: ("physical_damage_percent", "boulder_dwarf", 30), 300943: ("magic_damage_percent", "boulder_dwarf", 30)}
+# memorial dungeon gear whose bonus groups prontera has wrong: the armor's set lines (counted again by SETS) as its own, its
+# +3 group twice, MaxHP / MaxSP and the "DEF +x" line (on top of the armor's DEF) missing, the shoes' SP Heal effect missing,
+# the Oath rings' INT / DEX and LUK / AGI +2 only at +7. Replaced with the groups the client's description gives
+# (also the Taiwan notices roz.gnjoy.com.tw/Notice/Notice_Info?id=217841, 217842 and 217972)
+GEAR_G = {
+    15220: [{"b": [["hp", None, None, 300], ["sp", None, None, 20], ["def", None, None, 20]]}],  # Subjugation Team's Armor
+    22150: [{"b": [["item_heal_percent", None, None, 5], ["sp_heal_percent", None, None, 3]]}],  # Subjugation Team Boots
+    15221: [{"b": [["hp", None, None, 500], ["sp", None, None, 30], ["def", None, None, 30]]},  # Expedition's Armor
+            {"r": 3, "b": [["def", None, None, 10], ["hp", None, None, 50]]}],
+    15222: [{"b": [["hp", None, None, 400], ["sp", None, None, 50], ["def", None, None, 30]]},  # Expedition's Robe
+            {"r": 3, "b": [["def", None, None, 5], ["sp", None, None, 10]]}],
+    22151: [{"b": [["item_heal_percent", None, None, 15], ["sp_heal_percent", None, None, 5]]}, {"r": 3, "b": [["agi", None, None, 1]]}],  # Expedition Boots
+    22152: [{"b": [["item_heal_percent", None, None, 10], ["sp_heal_percent", None, None, 7]]}, {"r": 3, "b": [["vit", None, None, 1]]}],  # Expedition Shoes
+    28570: [{"b": [["int", None, None, 2], ["dex", None, None, 2]]}, {"r": 7, "b": [["dex", None, None, 2], ["int", None, None, 2]]}],  # Ring of Blue Oath
+    28571: [{"b": [["luk", None, None, 2], ["agi", None, None, 2]]}, {"r": 7, "b": [["agi", None, None, 2], ["luk", None, None, 2]]}]}  # Red Oath Ring
 
 
 def client_fix(row):
-    """Apply GVG_ONLY, RACE_CRIT, TAKEN, GROUP_DMG, LV_STEP and Fur Seal Card (CRIT +9 vs Demon/Undead, Acolyte Class only) to an item row."""
+    """Apply GVG_ONLY, GEAR_G, RACE_CRIT, TAKEN, GROUP_DMG, LV_STEP and Fur Seal Card (CRIT +9 vs Demon/Undead, Acolyte Class only) to an item row."""
     i, g = row.get("id"), row.get("g", [])
+    if i in GEAR_G:
+        g = GEAR_G[i]
     lines = lambda: [b for x in g for b in x.get("b", [])]
     if i in GVG_ONLY:
         g = []

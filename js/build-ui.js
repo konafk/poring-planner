@@ -214,7 +214,7 @@ function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}}
     else if(r.by==="exp")o.exp.all+=v;else if(r.by==="expRace")add(o.exp.race,r.t,v);else if(r.by==="spCost")o.spCost+=v;else if(r.by==="spRec")o.spRec+=v;else if(r.by==="hpRec")o.hpRec+=v});return o}
 // "Fill from gear": the lines the gear saved in Build from gear gives (gear, cards, affixes, stones, Taming Ring, other special
 // equipment; not consumables or buffs), one row per bonus. A bonus with different physical and magic values gets a row for each
-const setSaved=b=>{const sp=b.special||{};return Object.keys(b.gear||{}).length>0||Object.values(b.stones||{}).some(Boolean)||!!sp.ring||(sp.own||[]).length>0};
+const setSaved=b=>{const sp=b.special||{};return Object.keys(b.gear||{}).length>0||Object.values(b.stones||{}).some(Boolean)||!!sp.ring||!!sp.mvp||(sp.own||[]).length>0};
 const gearSaved=c=>setSaved(c.build||{});
 function gearEqRows(c){const A=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,extra:[]},state.job,aspdBase).acc,rows=[];
   const add=(by,t,v,ch="both")=>{v=Math.round(v*100)/100;if(v)rows.push({by,t,ch,v})};
@@ -279,13 +279,16 @@ function optBoxes(slot,g,it){const ch=BUILD.optChoices(slot,it),gk=BUILD.optGear
 // costume enchant stones: a list per costume slot, each stone with what it gives
 const STONE_FX={str:"STR",agi:"AGI",vit:"VIT",int:"INT",dex:"DEX",luk:"LUK",crit:"CRIT",hit:"HIT",flee:"FLEE",def:"DEF",mdef:"MDEF",hp:"MaxHP",sp:"MaxSP",aspd:"ASPD",
   atk:"ATK",matk:"MATK",damage_percent:"Physical damage %",hp_recovery_percent:"HP recovery %",attack_delay_percent:"After-attack delay %",atk_percent:"ATK %",matk_percent:"MATK %",hp_percent:"MaxHP %",sp_percent:"MaxSP %",crit_damage_percent:"Critical damage %",cast_time_variable_percent:"Variable cast %"};
-const stoneFx=x=>x.off&&!x.b.length?x.off:x.b.map(([t,k,g,v])=>{const l=k==="size"?`Damage vs ${g} %`:t==="damage_taken_percent"?`${g[0].toUpperCase()+g.slice(1)} resist %`:STONE_FX[t]||t,pc=/ %$/.test(l);
+const stoneFx=x=>x.off&&!x.b.length?x.off:x.b.map(([t,k,g,v])=>{const l=k==="size"?`Damage vs ${g} %`:t==="damage_taken_percent"?`${g[0].toUpperCase()+g.slice(1)}${k==="monster_kind"?" monster":""} resist %`:STONE_FX[t]||t,pc=/ %$/.test(l);
   if(t==="damage_taken_percent")v=-v;return `${l.replace(/ %$/,"")} ${v>0?"+":""}${v}${pc?"%":""}`}).join(", ");
-// the Taming Ring (Special Equipment, Accessory Right) holds one pet egg enchant; "none" = no ring or an empty one
-function renderStones(){const b=gearSet(),sel=b.stones||{},ring=(b.special||{}).ring,all=typeof STONES!=="undefined"?STONES:[],eggs=typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[];
+// the Taming Ring (Special Equipment, Accessory Right) holds one pet egg enchant and an MVP pet egg in card slot 3; "none" = no ring or an empty one
+const eggOpt=(x,on)=>`<option value="${x.id}"${on?" selected":""}>${esc(x.name)}: ${esc([x.b.length?stoneFx({b:x.b}):"",x.off||""].filter(Boolean).join(", "))}</option>`;
+function renderStones(){const b=gearSet(),sel=b.stones||{},ring=(b.special||{}).ring,mvp=(b.special||{}).mvp,all=typeof STONES!=="undefined"?STONES:[],
+    eggs=typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[],mvps=typeof TAMING_MVP!=="undefined"?TAMING_MVP:[];
   $("stoneRow").innerHTML=BUILD.STONE_SLOTS.map(z=>`<label>Costume ${z.label.toLowerCase()} stone<select data-stone="${z.k}"><option value="">none</option>${all.filter(x=>x.slot===z.k)
     .map(x=>`<option value="${x.id}"${+sel[z.k]===x.id?" selected":""}>${esc(x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""))}: ${esc(stoneFx(x))}</option>`).join("")}</select></label>`).join("")+
-    `<label>Taming Ring pet egg<select data-ring="1"><option value="">none</option>${eggs.map(x=>`<option value="${x.id}"${+ring===x.id?" selected":""}>${esc(x.name)}: ${esc([x.b.length?stoneFx({b:x.b}):"",x.off||""].filter(Boolean).join(", "))}</option>`).join("")}</select></label>`;renderSpecialOwn()}
+    `<label>Taming Ring pet egg<select data-ring="1"><option value="">none</option>${eggs.map(x=>eggOpt(x,+ring===x.id)).join("")}</select></label>`+
+    `<label title="Card slot 3 of the Taming Ring: Phreeoni, Moonlight Flower, Orc Hero or Eddga (10 Goblin Coin Shard and 10,000 zeny at a Pet Merchant; Lv.2 is a 5% upgrade)">Taming Ring MVP egg<select data-mvp="1"><option value="">none</option>${mvps.map(x=>eggOpt(x,mvp===x.id)).join("")}</select></label>`;renderSpecialOwn()}
 // other special equipment: rows {on, name, opts} in b.special.own, each with up to OPT_MAX effects from the full affix list
 const specialOwn=()=>{const b=gearSet();b.special=b.special||{};if(!Array.isArray(b.special.own))b.special.own=[];return b.special.own};
 function renderSpecialOwn(){$("specialOwn").innerHTML=specialOwn().map((x,i)=>`<div class="eqrow" data-i="${i}">
@@ -306,6 +309,7 @@ $("specialOwn").addEventListener("input",e=>{const row=e.target.closest(".eqrow"
   save();renderAll()});
 $("stoneRow").addEventListener("change",e=>{const b=gearSet();
   if(e.target.dataset.ring){b.special=b.special||{};if(e.target.value)b.special.ring=+e.target.value;else delete b.special.ring;save();renderAll();return}
+  if(e.target.dataset.mvp){b.special=b.special||{};if(e.target.value)b.special.mvp=e.target.value;else delete b.special.mvp;save();renderAll();return}
   const k=e.target.dataset.stone;if(!k)return;b.stones=b.stones||{};
   if(e.target.value)b.stones[k]=+e.target.value;else delete b.stones[k];save();renderAll()});
 // ---- remembered gear: each item keeps the refine, cards and affixes it had when it last came off (build.mem by item id, the
