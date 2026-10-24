@@ -357,7 +357,19 @@ function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};l
 // equipment ----
 const EW_L=["headTop","headLow","weapon","garment","acc1"],EW_R=["headMid","armor","shield","shoes","acc2"];
 let EW_TAB="normal";
-{const s=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(s)document.documentElement.style.setProperty("--job-sprites",`url("${s.file}?v=${s.v}")`)}
+// the sheets of job looks and of hair styles (palette indices, coloured with the hair colour's palette), drawn into the window's
+// canvas once they load
+const ewImg=k=>typeof JOB_SPRITES!=="undefined"&&typeof Image!=="undefined"&&Object.assign(new Image(),{src:`${JOB_SPRITES[k+"File"]}?v=${JOB_SPRITES[k+"V"]}`,onload:()=>drawLook()});
+const EW_SHEET=ewImg("job"),EW_HAIR=ewImg("hair");
+let EW_HAIR_PX=null;
+const ewHairPx=()=>{if(!EW_HAIR_PX&&EW_HAIR&&EW_HAIR.complete&&EW_HAIR.naturalWidth){const c=document.createElement("canvas"),g=c.getContext("2d",{willReadFrequently:true});
+  c.width=EW_HAIR.naturalWidth;c.height=EW_HAIR.naturalHeight;g.drawImage(EW_HAIR,0,0);EW_HAIR_PX=g.getImageData(0,0,c.width,c.height)}return EW_HAIR_PX};
+// a hair style's palette in one hair colour (data/sprites.js hairPal): index -> "rrggbb"
+function ewHairPal(sex,n,color){const p=JOB_SPRITES.hairPal[sex][n],hex=(s,k)=>s.slice(k*6,k*6+6),pal={};
+  for(let k=0;k<p.i.length/2;k++)pal[parseInt(p.i.substr(k*2,2),16)]=hex(p.b,k);
+  for(let k=0;k<p.d.length/2;k++)pal[parseInt(p.d.substr(k*2,2),16)]=hex(p.c[color],k);
+  return pal}
+const ewColors=(sex,n)=>((((typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES.hairPal)||{})[sex]||{})[n]||{c:[""]}).c.length;
 // "+7 Double Healing Shining Clip": refine, then the cards' names before the item name (Double / Triple / Quadruple for repeats) or after it
 function gameName(g){const it=g&&g.id&&BUILD.item(g.id);if(!it)return "";const pre=[],post=[],n={};
   (g.cards||[]).filter(Boolean).forEach(id=>{const c=BUILD.item(id)||{id},a=cardName(c);if(!a)return;n[a]=(n[a]||0)+1;
@@ -375,23 +387,30 @@ const EW_TRANS={Knight:"Lord Knight",Crusader:"Paladin",Wizard:"High Wizard",Sag
   Priest:"High Priest",Monk:"Champion",Blacksmith:"Whitesmith",Alchemist:"Creator",Assassin:"Assassin Cross",Rogue:"Stalker"};
 const ewTrans=S=>EW_TRANS[state.job]&&S.trans&&S.trans[state.job];
 function lookHtml(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";const tj=ewTrans(S),bj=(state.look.trans&&tj)||S.body[state.job]||S.body.Novice,sex=ewSex(bj),b=bj[sex],hs=S.head[sex]||{},h=hs[state.look.hair]||hs[1];
-  const part=(p,l,t,cls)=>`<span class="${cls}" style="left:${l}px;top:${t}px;width:${p[2]}px;height:${p[3]}px;background-position:-${p[0]}px -${p[1]}px"></span>`;
-  const one=Object.keys(bj).length<2,hair=hs[state.look.hair]?state.look.hair:1;
+  // body and head go into one canvas at the sprites' own size, which the page then scales: as separate boxes each rounded to the
+  // screen's pixels on its own, so at some zooms the head sat a pixel off the body
+  const parts=[[...b.slice(0,4),b[4],b[5]],...h?[[...h.slice(0,4),b[6]+h[4],b[7]+h[5]]]:[]];
+  const L=Math.min(...parts.map(p=>p[4])),T=Math.min(...parts.map(p=>p[5])),R=Math.max(...parts.map(p=>p[4]+p[2])),B=Math.max(...parts.map(p=>p[5]+p[3]));
+  const one=Object.keys(bj).length<2,hair=hs[state.look.hair]?state.look.hair:1,nc=ewColors(sex,hair),color=state.look.color<nc?state.look.color:0;
+  const pal=S.hairPal&&S.hairPal[sex]&&S.hairPal[sex][hair],swatch=pal?pal.c[color].substr(pal.k*6,6):"";
+  const at=(p,l,t)=>[...p.slice(0,4),l-L,t-T].join(",");
   // Ragnarok Zero has no zeny stylist (iRO's): a new style or color after character creation takes a paid KP shop item (New Style
-  // Coupon, 7622), and
-  // clothes color a Clothing Dye Coupon or Clothing Dye Coupon II (6046, 6047), the transcendent look's too; the sprites are undyed
-  const hairTip="Hair style: changing it or its color after character creation takes a paid KP shop item, such as a New Style Coupon";
-  return `<div class="ewStage" title="Clothes in their default color: a Clothing Dye Coupon or Clothing Dye Coupon II (KP shop) changes their color, on the transcendent look too. The dye stays through a job change, but can look different on the new job"><div class="ewFeet">${part(b,b[4],b[5],"ewBody")}${h?part(h,b[6]+h[4],b[7]+h[5],"ewHead"):""}</div></div>
+  // Coupon, 7622), and clothes color a Clothing Dye Coupon or Clothing Dye Coupon II (6046, 6047), the transcendent look's too; the
+  // clothes are drawn undyed
+  const hairTip="changing it after character creation takes a paid KP shop item, such as a New Style Coupon";
+  return `<div class="ewStage" title="Clothes in their default color: a Clothing Dye Coupon or Clothing Dye Coupon II (KP shop) changes their color, on the transcendent look too. The dye stays through a job change, but can look different on the new job"><div class="ewFeet"><canvas class="ewPic" width="${R-L}" height="${B-T}" style="left:${L}px;top:${T}px" data-body="${at(b,b[4],b[5])}"${h?` data-head="${at(h,b[6]+h[4],b[7]+h[5])}" data-hair="${sex},${hair},${color}"`:""}></canvas></div></div>
     <div class="ewLook"><button type="button" class="small" data-ewsex="" ${one?`disabled title="${esc(state.job)}s are ${sex==="f"?"female":"male"} only"`:`title="Gender: ${sex==="f"?"female":"male"}"`} aria-label="Gender">${sex==="f"?"♀":"♂"}</button>
-      <button type="button" class="small" data-ewhair="-1" aria-label="Previous hair style" title="${hairTip}">◀</button><span title="${hairTip}"><span class="ewHairW">Hair </span>${hair}</span><button type="button" class="small" data-ewhair="1" aria-label="Next hair style" title="${hairTip}">▶</button></div>
+      <button type="button" class="small" data-ewhair="-1" aria-label="Previous hair style" title="Hair style: ${hairTip}">◀</button><span title="Hair style: ${hairTip}"><span class="ewHairW">Hair </span>${hair}</span><button type="button" class="small" data-ewhair="1" aria-label="Next hair style" title="Hair style: ${hairTip}">▶</button></div>
+      ${nc>1?`<div class="ewLook"><button type="button" class="small" data-ewcolor="-1" aria-label="Previous hair color" title="Hair color: ${hairTip}">◀</button><span title="Hair color ${color} of 0–${nc-1}: ${hairTip}"><span class="ewSwatch" style="background:#${swatch}"></span><span class="ewHairW">Color </span>${color}</span><button type="button" class="small" data-ewcolor="1" aria-label="Next hair color" title="Hair color: ${hairTip}">▶</button></div>`:""}
       ${tj?`<div class="ewLook"><button type="button" class="small ewTrans" data-ewtrans="" aria-pressed="${!!state.look.trans}" title="${esc(`${EW_TRANS[state.job]} look: Ragnarok Zero has no transcendent jobs, so a ${state.job} can look like a ${EW_TRANS[state.job]}. A Costume Change Ticket switches the look in game`)}">Trans</button></div>`:""}`}
 function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),sp=EW_TAB==="special";
   const gearSlot=(k,right)=>{const g=b.gear[k],it=g&&g.id&&BUILD.item(g.id),s=BUILD.SLOTS.find(x=>x.k===k);
     return ewSlot(k,k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label,it?gameName(g):"",iconHtml("gear",it&&it.id),right)};
   const stone=(k,right)=>{const id=(b.stones||{})[k],x=id&&(typeof STONES!=="undefined"?STONES:[]).find(s=>s.id===+id&&s.slot===k);
-    return ewSlot(k,`Costume ${k} stone`,x?x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""):"",iconHtml("gear",x&&x.id),right)};
+    return ewSlot(k,`Costume ${k} stone`,x?x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""):"",itemIcon(x&&x.id),right)};
+  // stones and the Taming Ring (item 24966) are in the item icon sheet, not the gear one
   const ring=()=>{const id=(b.special||{}).ring,x=id&&(typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[]).find(e=>e.id===+id);
-    return ewSlot("ring","Taming Ring",x?`Taming Ring [${x.name}]`:"",iconHtml("gear",null),false)};
+    return ewSlot("ring","Taming Ring",x?`Taming Ring [${x.name}]`:"",itemIcon(x&&24966),false)};
   // other special equipment you wear goes in the right column's free slots
   const own=((b.special||{}).own||[]).map((x,j)=>({x,j})).filter(o=>o.x.on!==false&&(o.x.name||"").trim()).slice(0,4);
   const L=sp?[stone("upper"),stone("lower"),ewNone(),stone("garment"),ring()]:EW_L.map(k=>gearSlot(k,false));
@@ -402,13 +421,24 @@ function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),
     <div class="ewTabs" role="tablist">${[["normal","Normal Equip"],["special","Special Equip"]].map(([k,t])=>`<button type="button" role="tab" data-ewtab="${k}" aria-selected="${EW_TAB===k}">${t}</button>`).join("")}</div>
     <div class="ewBody"><div class="ewCol">${L.join("")}</div><div class="ewChar">${lookHtml()}</div><div class="ewCol">${R.join("")}</div>${ammo}</div>`;
   // the button you pressed keeps focus through the redraw
-  const a=document.activeElement,f=a&&el.contains(a)?["ewtab","ewsex","ewhair","ewtrans","ewslot"].map(k=>a.dataset[k]!=null?`[data-${k}="${a.dataset[k]}"]`:null).find(Boolean):null;
-  if(renderEquipWin.html===html)return;renderEquipWin.html=html;el.innerHTML=html;if(f)el.querySelector(f)?.focus()}
+  const a=document.activeElement,f=a&&el.contains(a)?["ewtab","ewsex","ewhair","ewcolor","ewtrans","ewslot"].map(k=>a.dataset[k]!=null?`[data-${k}="${a.dataset[k]}"]`:null).find(Boolean):null;
+  if(renderEquipWin.html===html)return;renderEquipWin.html=html;el.innerHTML=html;drawLook();if(f)el.querySelector(f)?.focus()}
+// the body [x,y,w,h on the sheet, x,y in the canvas] copied from the job sheet, then the head the same from the hair sheet, each
+// index coloured with the hair colour's palette; once both sheets have loaded
+function drawLook(){const c=$("equipWin").querySelector("canvas.ewPic"),hp=ewHairPx();if(!c||!EW_SHEET||!EW_SHEET.complete||!EW_SHEET.naturalWidth||!hp)return;
+  const g=c.getContext("2d"),part=s=>s.split(",").map(Number);g.clearRect(0,0,c.width,c.height);
+  const [x,y,w,h,l,t]=part(c.dataset.body);g.drawImage(EW_SHEET,x,y,w,h,l,t,w,h);if(!c.dataset.head)return;
+  const [hx,hy,hw,hh,hl,ht]=part(c.dataset.head),[sex,n,color]=c.dataset.hair.split(","),pal=ewHairPal(sex,n,+color),img=g.createImageData(hw,hh);
+  for(let yy=0;yy<hh;yy++)for(let xx=0;xx<hw;xx++){const s=((hy+yy)*hp.width+hx+xx)*4,o=(yy*hw+xx)*4,rgb=hp.data[s+3]&&pal[hp.data[s]];
+    if(rgb){img.data[o]=parseInt(rgb.slice(0,2),16);img.data[o+1]=parseInt(rgb.slice(2,4),16);img.data[o+2]=parseInt(rgb.slice(4),16);img.data[o+3]=255}}
+  // through a canvas of its own: putImageData would replace the body under the head instead of drawing over it
+  const hc=document.createElement("canvas");hc.width=hw;hc.height=hh;hc.getContext("2d").putImageData(img,0,0);g.drawImage(hc,hl,ht)}
 $("equipWin").addEventListener("click",e=>{const t=e.target.closest("button");if(!t||t.disabled)return;const L=state.look;
   if(t.dataset.ewtab){EW_TAB=t.dataset.ewtab;renderEquipWin();return}
   if(t.dataset.ewtrans!=null){L.trans=!L.trans;save();renderEquipWin();return}
   if(t.dataset.ewsex!=null){L.sex=L.sex==="f"?"m":"f";if(L.hair>ewHairs(L.sex))L.hair=1;save();renderEquipWin();return}
   if(t.dataset.ewhair){const S=JOB_SPRITES.body[state.job]||JOB_SPRITES.body.Novice,n=ewHairs(ewSex(S));if(n)L.hair=(L.hair-1+ +t.dataset.ewhair+n)%n+1;save();renderEquipWin();return}
+  if(t.dataset.ewcolor){const S=JOB_SPRITES.body[state.job]||JOB_SPRITES.body.Novice,n=ewColors(ewSex(S),L.hair);if(n)L.color=((L.color<n?L.color:0)+ +t.dataset.ewcolor+n)%n;save();renderEquipWin();return}
   const k=t.dataset.ewslot;if(!k)return;
   const to=EW_TAB==="special"?(k==="ring"?$("stoneRow").querySelector("[data-ring]"):k.startsWith("own")?$("specialOwn").querySelector(`[data-i="${k.slice(3)}"] [data-f=name]`):$("stoneRow").querySelector(`[data-stone="${k}"]`))
     :$("gearTable").querySelector(`tr[data-slot="${k}"] input.item`);

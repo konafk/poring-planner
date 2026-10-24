@@ -380,7 +380,9 @@ table.cstats tbody tr,table.cmptab tbody tr{cursor:default}
 .trees{display:flex;flex-wrap:wrap;gap:16px}
 .tree{flex:1 1 100%;min-width:0;display:flex;flex-direction:column;gap:6px}
 .skgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
-.sk{border:1px solid var(--line);border-radius:8px;padding:5px 6px;display:flex;flex-direction:column;gap:2px;min-width:0;background:var(--surface)}
+.sk{border:1px solid var(--line);border-radius:8px;padding:5px 6px;display:grid;grid-template-columns:24px minmax(0,1fr);align-items:center;gap:2px 5px;min-width:0;background:var(--surface)}
+.sk>.ico{grid-row:span 2}
+.sk:not(.on)>.ico{opacity:.55}
 .sk.empty{border:0;background:none}
 .sk.on{border-color:color-mix(in srgb,var(--accent) 55%,transparent);background:var(--accent-soft)}
 .sk.pas .nm{font-style:italic}
@@ -667,6 +669,7 @@ details.more>.form{display:grid}
 .ico{display:inline-block;flex:none;background-repeat:no-repeat;vertical-align:middle}
 .ico-gear{width:24px;height:24px;background-image:var(--ico-gear)}
 .ico-item{width:24px;height:24px;background-image:var(--ico-item)}
+.ico-skill{width:24px;height:24px;background-image:var(--ico-skill)}
 /* an icon in a line of text: it doesn't make the line taller */
 .ico.il{margin:-5px 5px -4px 0}
 .ico-card{width:36px;height:48px;background-image:var(--ico-card);border-radius:3px}
@@ -678,7 +681,7 @@ details.more>.form{display:grid}
 /* the Character tab's gear table: the item's icon beside its box, a small picture beside each card box */
 #gearTable .itemBox,#gearTable .cardBox{display:flex;align-items:center;gap:6px}
 #gearTable .cardBox{flex:1;min-width:0}
-/* Build from gear: the equipment window, drawn like the game's Equipped Items; the job's look is a body and a head from one sheet
+/* Build from gear: the equipment window, drawn like the game's Equipped Items; the job's look is a body and a head in one canvas
    (data/sprites.js), drawn from the feet and scaled up by --ew-z with square pixels */
 .equipWin{--ew-z:2;max-width:560px;margin:10px 0;border:1px solid var(--ew-line);border-radius:7px;background:var(--ew-bg);box-shadow:var(--shadow);font-size:12px;line-height:1.25;overflow:hidden}
 .ewHead{display:flex;align-items:center;gap:8px;padding:4px 10px;background:var(--ew-head);border-bottom:1px solid var(--ew-line);font-weight:600}
@@ -700,10 +703,11 @@ details.more>.form{display:grid}
 .ewStage{position:relative;flex:1;width:100%;min-height:calc(100px*var(--ew-z))}
 .ewStage::before{content:"";position:absolute;left:50%;bottom:calc(8px*var(--ew-z));width:calc(26px*var(--ew-z));height:calc(7px*var(--ew-z));transform:translateX(-50%);border-radius:50%;background:var(--ew-floor)}
 .ewFeet{position:absolute;left:50%;bottom:calc(12px*var(--ew-z));width:0;height:0;transform:scale(var(--ew-z));transform-origin:0 0}
-.ewFeet span{position:absolute;background-image:var(--job-sprites);background-repeat:no-repeat;image-rendering:pixelated}
+.ewFeet canvas{position:absolute;image-rendering:pixelated}
 .ewLook{display:flex;align-items:center;gap:3px;margin-top:4px;font-size:11px;color:var(--muted);white-space:nowrap}
 .ewLook button{min-height:0;padding:1px 6px;font-size:11px;line-height:1.4}
 .ewLook .ewTrans[aria-pressed="true"]{color:var(--accent);background:var(--accent-soft);border-color:var(--accent)}
+.ewSwatch{display:inline-block;width:9px;height:9px;margin-right:3px;border:1px solid var(--ew-line);border-radius:2px;vertical-align:-1px}
 .ewAmmo{grid-column:1/-1;display:flex;justify-content:center}
 .ewAmmo .ewSlot{width:min(100%,260px)}
 @media (max-width:520px){.equipWin{--ew-z:1.5}.ewBody{padding:6px;gap:4px}.ewSlot{padding:3px 5px;gap:4px;font-size:11px}.ewLook button{padding:1px 4px}.ewHairW{display:none}}
