@@ -11,12 +11,13 @@ frame 0: the ACT's layers placed around the feet, bodies with the SPR's own pale
 body's anchor point, the way the client does, so any hair style goes on any job without a picture for each pair. Heads are drawn as
 palette indices with each hair colour's palette (data\\palette\\머리), so the page colours them; clothes dyes aren't exported.
 
-Writes img/job-sprites.png (bodies, each cropped to what it draws, packed in rows), img/hair-sprites.png (heads the same, as indices)
-and data/sprites.js: per job and gender the body's place on the sheet, where it draws from the feet and its head anchor (body, and
+Writes img/job-sprites.png (bodies, each cropped to what it draws, packed in rows) and data/sprites.js: the hair sheet (heads the same,
+as indices) as a data: URL, since the page reads its pixels to colour them, which a browser only allows for an image from the page's
+own site and never for a file opened from disk; per job and gender the body's place on the sheet, where it draws from the feet and its head anchor (body, and
 trans for the transcendent look); per gender and hair style the head's place, where it draws from the anchor and its hair colours.
 Standard library only.
 """
-import json, os, struct, sys, zlib
+import base64, json, os, struct, sys, zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # the page's job names, and the body sprite name the client uses for each (Bard is male only, Dancer female only)
@@ -283,11 +284,10 @@ def main():
     hdata = png_gray(SHEET_W, HH, hpx)
     os.makedirs(os.path.join(ROOT, "img"), exist_ok=True)
     open(os.path.join(ROOT, "img", "job-sprites.png"), "wb").write(data)
-    open(os.path.join(ROOT, "img", "hair-sprites.png"), "wb").write(hdata)
     cell = lambda i: [*at[i], *images[i][:2]]
     body = lambda bs: {j: {s: cell(i) + list(images[i][3:5]) + list(a or (0, -70)) for s, (i, a) in g.items()} for j, g in bs.items()}
     out = {"jobFile": "img/job-sprites.png", "jobV": f"{zlib.crc32(data) & 0xFFFFFFFF:08x}",
-           "hairFile": "img/hair-sprites.png", "hairV": f"{zlib.crc32(hdata) & 0xFFFFFFFF:08x}",
+           "hairData": "data:image/png;base64," + base64.b64encode(hdata).decode(),
            # [x, y, w, h on the sheet, left, top from the feet, head anchor x, y from the feet]
            "body": body(bodies),
            # the same for a 2nd job's transcendent look
@@ -298,7 +298,7 @@ def main():
            "hairPal": hair_pal}
     with open(os.path.join(ROOT, "data", "sprites.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// Job looks for the equipment window (tools/export_sprites.py, from the game client): the body and hair sheets with a\n"
-                "// checksum of each (jobFile, jobV, hairFile, hairV); per job and gender (m/f) the body [x,y,w,h on the sheet, left,top from\n"
+                "// checksum (jobFile, jobV) and the hair sheet as a data: URL, read without a cross-origin taint (hairData); per job and gender (m/f) the body [x,y,w,h on the sheet, left,top from\n"
                 "// the feet, head anchor x,y from the feet], trans the same for a 2nd job's transcendent look (Knight as a Lord Knight); per\n"
                 "// gender and hair style the head [x,y,w,h on the hair sheet, left,top from the body's head anchor]. The hair sheet holds\n"
                 "// palette indices (grey level = index), and hairPal per gender and hair style the indices it draws (i, 2 hex digits each)\n"

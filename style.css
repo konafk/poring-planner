@@ -679,7 +679,8 @@ details.more>.form{display:grid}
 .eqDlgHead .ico-card{margin-top:-2px}
 .eqPick .ico-gear{margin:-4px 6px -4px 0}
 /* the Character tab's gear table: the item's icon beside its box, a small picture beside each card box */
-#gearTable .itemBox,#gearTable .cardBox{display:flex;align-items:center;gap:6px}
+#gearTable .itemBox,#gearTable .cardBox,#stoneRow .itemBox{display:flex;align-items:center;gap:6px}
+#stoneRow .itemBox input{flex:1;min-width:0}
 #gearTable .cardBox{flex:1;min-width:0}
 /* Build from gear: the equipment window, drawn like the game's Equipped Items; the job's look is a body and a head in one canvas
    (data/sprites.js), drawn from the feet and scaled up by --ew-z with square pixels */
