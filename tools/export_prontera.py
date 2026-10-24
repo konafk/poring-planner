@@ -59,7 +59,10 @@ GEAR_G = {
     22151: [{"b": [["item_heal_percent", None, None, 15], ["sp_heal_percent", None, None, 5]]}, {"r": 3, "b": [["agi", None, None, 1]]}],  # Expedition Boots
     22152: [{"b": [["item_heal_percent", None, None, 10], ["sp_heal_percent", None, None, 7]]}, {"r": 3, "b": [["vit", None, None, 1]]}],  # Expedition Shoes
     28570: [{"b": [["int", None, None, 2], ["dex", None, None, 2]]}, {"r": 7, "b": [["dex", None, None, 2], ["int", None, None, 2]]}],  # Ring of Blue Oath
-    28571: [{"b": [["luk", None, None, 2], ["agi", None, None, 2]]}, {"r": 7, "b": [["agi", None, None, 2], ["luk", None, None, 2]]}]}  # Red Oath Ring
+    28571: [{"b": [["luk", None, None, 2], ["agi", None, None, 2]]}, {"r": 7, "b": [["agi", None, None, 2], ["luk", None, None, 2]]}],  # Red Oath Ring
+    # Extra Joker Card: prontera has ATK / MATK +70, MDEF +10 flat. Client: "Each refine on Shield grants MDEF +10. When equipped
+    # with Joker Card, ... transform you into Joker for 7 seconds. During transformation: ATK +70, MATK +70" (the set's proc, not counted)
+    27270: [{"b": [["mdef", None, None, 10, 1]]}]}
 # card sets whose lines are "per refine" of one item (client text): the piece that is or sits in that item, by set slug
 SET_REF = {"sieglouse-arclouse-card": "arclouse-card-4240",  # FLEE +2 per shield refine
            "erzsebet-bathory-card": "bathory-card-4119",  # INT +1 per armor refine

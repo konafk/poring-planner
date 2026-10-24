@@ -1,4 +1,5 @@
-"""Export the item icons and card pictures the page shows next to item names into three sprite sheets, and data/icons.js.
+"""Export the item icons, card pictures and monster pictures the page shows next to item and monster names into four sprite sheets, and
+data/icons.js.
 
     python tools/export_icons.py            # fetch what isn't cached, then write the sheets and data/icons.js
     python tools/export_icons.py --refresh  # refetch every image
@@ -7,11 +8,14 @@ Gear and every other item: the inventory icon from the game client (24 x 24), as
 (static.divine-pride.net/images/items/item/<id>.png). Cards: every card has the same inventory icon in the client, so a card shows
 a thumbnail of its illustration instead (.../images/items/cards/<id>.png, 300 x 400, shrunk to CARD_W x CARD_H). Ids: gear from
 data/equipment.js, cards from data/cards.js, and items (drops, recipe items, consumables, recovery items) from data/items.js,
-data/recipes.js, data/consumables.js and data/recovery.js that aren't gear or cards. Images are fetched a few per second and cached in tools/cache/icons/ (gitignored); delete a
-cached file to refetch it. divine-pride answers an id it has no image for with a 57 x 57 placeholder: those ids are left out (the
-page shows no icon for them) and listed at the end.
+data/recipes.js, data/consumables.js and data/recovery.js that aren't gear or cards. Monsters: the client's standing sprite, as
+divine-pride serves it for each monster id in data/mobs.js (.../images/mobs/png/<id>.png, from about 30 x 20 to over 200 x 200), shrunk
+to fit MOB_W x MOB_H (never enlarged) and centred in its cell. Images are fetched a few per second and cached in tools/cache/icons/
+(gitignored); delete a cached file to refetch it. divine-pride answers an id it has no image for with a 57 x 57 placeholder: those
+ids are left out (the page shows no icon for them) and listed at the end.
 
-Writes img/gear-icons.png, img/item-icons.png, img/card-art.png (cells left to right, then down, in data/icons.js order) and data/icons.js.
+Writes img/gear-icons.png, img/item-icons.png, img/card-art.png, img/mob-icons.png (cells left to right, then down, in data/icons.js
+order) and data/icons.js.
 Standard library only: PNGs are decoded and written here (8-bit and paletted, non-interlaced, which is what the site serves); the
 sheets are written with a palette of up to 255 colours, which keeps the card pictures small.
 """
@@ -19,17 +23,26 @@ import json, os, re, struct, sys, time, urllib.error, urllib.request, zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = os.path.join(ROOT, "tools", "cache", "icons")
-SITE = "https://static.divine-pride.net/images/items"
+SITE = "https://static.divine-pride.net/images"
+PATH = {"item": "items/item", "cards": "items/cards", "mobs": "mobs/png"}  # cached under tools/cache/icons/<kind>/
 UA = "RO-Zero-farmer-calculator data export"
 GEAR_W, GEAR_H, GEAR_COLS = 24, 24, 32
 ITEM_COLS = 32
 CARD_W, CARD_H, CARD_COLS = 36, 48, 20
+MOB_W, MOB_H, MOB_COLS = 48, 48, 20
 
 
 def ids(name, const):
     src = open(os.path.join(ROOT, "data", name), encoding="utf-8").read()
     start = src.index("[", src.index(f"const {const}="))
     return [x["id"] for x in json.JSONDecoder().raw_decode(src, start)[0] if "id" in x]  # a few novice items have no id
+
+
+def mob_ids():
+    """data/mobs.js: MOBS is a list of [id, "name", ...] (with a trailing comma, so it isn't read as JSON)."""
+    src = open(os.path.join(ROOT, "data", "mobs.js"), encoding="utf-8").read()
+    i = src.index("const MOBS=")
+    return [int(k) for k in re.findall(r'\[(\d+), *"', src[i:src.index("].map(", i)])]
 
 
 def keys(name, const):
@@ -46,7 +59,7 @@ def fetch(kind, item_id, refresh=False):
     f = os.path.join(CACHE, kind, f"{item_id}.png")
     if os.path.exists(f) and not refresh:
         return open(f, "rb").read()
-    req = urllib.request.Request(f"{SITE}/{kind}/{item_id}.png", headers={"User-Agent": UA})
+    req = urllib.request.Request(f"{SITE}/{PATH[kind]}/{item_id}.png", headers={"User-Agent": UA})
     data = b""
     for attempt in range(3):
         try:
@@ -158,6 +171,12 @@ def quantize(px):
     return b"".join(pal), idx
 
 
+def fit(img, W, H):
+    """Shrink img to fit in W x H, keeping its shape; a smaller image is left as it is."""
+    w, h, _ = img; k = min(1, W / w, H / h)
+    return img if k == 1 else shrink(img, max(1, round(w * k)), max(1, round(h * k)))
+
+
 def sheet(imgs, W, H, cols, path):
     """Cells W x H, left to right then down; an image of another size is centred in its cell (and cropped)."""
     rows = max(1, (len(imgs) + cols - 1) // cols); SW = W * cols; px = bytearray(SW * H * rows * 4)
@@ -181,15 +200,21 @@ def sheet(imgs, W, H, cols, path):
 
 def main():
     refresh = "--refresh" in sys.argv
-    gear, cards, items, gear_ids, card_ids, item_ids, missing = [], [], [], [], [], [], []
+    gear, cards, items, mobs, gear_ids, card_ids, item_ids, mob_ids_, missing = [], [], [], [], [], [], [], [], []
     eq, cd = ids("equipment.js", "EQUIP"), ids("cards.js", "CARDS")
     known = set(eq) | set(cd)
     other = sorted({i for f, c in [("items.js", "ITEMN"), ("recipes.js", "RECIPE_ITEMN"), ("consumables.js", "CONSUM"),
                                    ("recovery.js", "RECOVERY")] for i in keys(f, c)} - known)
-    todo = [("gear", i) for i in eq] + [("cards", i) for i in cd] + [("other", i) for i in other]
+    todo = [("gear", i) for i in eq] + [("cards", i) for i in cd] + [("other", i) for i in other] + [("mobs", i) for i in mob_ids()]
+    no_mob = fetch("mobs", 0, refresh)  # the placeholder, to tell it from a real monster's picture
     for n, (kind, i) in enumerate(todo, 1):
-        img = png_read(fetch("cards" if kind == "cards" else "item", i, refresh))
-        if kind != "cards" and img and img[0] <= 32 and img[1] <= 32:
+        b = fetch(kind if kind in PATH else "item", i, refresh); img = png_read(b)
+        if kind == "mobs":
+            if img and b != no_mob:
+                mobs.append(fit(img, MOB_W, MOB_H)); mob_ids_.append(i)
+            else:
+                missing.append(f"monster {i}")
+        elif kind != "cards" and img and img[0] <= 32 and img[1] <= 32:
             (gear if kind == "gear" else items).append(img); (gear_ids if kind == "gear" else item_ids).append(i)
         elif kind == "cards" and img and img[0] >= 150:
             cards.append(shrink(img, CARD_W, CARD_H)); card_ids.append(i)
@@ -200,16 +225,18 @@ def main():
     gv = sheet(gear, GEAR_W, GEAR_H, GEAR_COLS, os.path.join(ROOT, "img", "gear-icons.png"))
     iv = sheet(items, GEAR_W, GEAR_H, ITEM_COLS, os.path.join(ROOT, "img", "item-icons.png"))
     cv = sheet(cards, CARD_W, CARD_H, CARD_COLS, os.path.join(ROOT, "img", "card-art.png"))
+    mv = sheet(mobs, MOB_W, MOB_H, MOB_COLS, os.path.join(ROOT, "img", "mob-icons.png"))
     with open(os.path.join(ROOT, "data", "icons.js"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("// Gear icons, other items' icons and card pictures (tools/export_icons.py, from divine-pride.net's copies of the game client's images):\n"
-                "// each sheet's file, a checksum of it (v), its cell size, and the item ids in cell order (left to right, then down). Ids with no image\n"
-                "// aren't listed.\n")
+        f.write("// Gear icons, other items' icons, card pictures and monster pictures (tools/export_icons.py, from divine-pride.net's copies of the game\n"
+                "// client's images): each sheet's file, a checksum of it (v), its cell size, and the item or monster ids in cell order (left to right,\n"
+                "// then down). Ids with no image aren't listed.\n")
         f.write("const ICON_SHEETS=" + json.dumps({
             "gear": {"file": "img/gear-icons.png", "v": gv, "w": GEAR_W, "h": GEAR_H, "cols": GEAR_COLS, "ids": gear_ids},
             "item": {"file": "img/item-icons.png", "v": iv, "w": GEAR_W, "h": GEAR_H, "cols": ITEM_COLS, "ids": item_ids},
-            "card": {"file": "img/card-art.png", "v": cv, "w": CARD_W, "h": CARD_H, "cols": CARD_COLS, "ids": card_ids}},
+            "card": {"file": "img/card-art.png", "v": cv, "w": CARD_W, "h": CARD_H, "cols": CARD_COLS, "ids": card_ids},
+            "mob": {"file": "img/mob-icons.png", "v": mv, "w": MOB_W, "h": MOB_H, "cols": MOB_COLS, "ids": mob_ids_}},
             separators=(",", ":")) + ";\n")
-    print(f"{len(gear_ids)} gear icons, {len(item_ids)} item icons, {len(card_ids)} card pictures")
+    print(f"{len(gear_ids)} gear icons, {len(item_ids)} item icons, {len(card_ids)} card pictures, {len(mob_ids_)} monster pictures")
     if missing:
         print(f"no image for {len(missing)}: " + ", ".join(missing))
 

@@ -1064,6 +1064,7 @@ t("gear from the client check: Guild options are GvG-only, race CRIT and damage 
   assert.ok(g(4297).includes('["crit","race","brute",7]'));   // Cruiser Card
   assert.ok(g(2254).includes('["damage_taken_percent","race","demon",-3]'));   // Angel Wing
   assert.ok(g(4312).includes('"cls":["acolyte"]'));    // Fur Seal Card: Acolyte Class vs Demon/Undead
+  assert.equal(g(27270), JSON.stringify([{ b: [["mdef", null, null, 10, 1]] }]));   // Extra Joker Card: MDEF +10 per shield refine, ATK / MATK +70 only in the set's transform
 });
 
 t("Spell Fist: each basic attack also lands its physical hit", () => {
@@ -2403,6 +2404,20 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.match(run(`itemIcon(1301)`), /ico-gear"/);
   assert.match(run(`itemIcon(4123)`), /ico-card"/);
   assert.ok(run(`[...Object.keys(ITEMN),...Object.keys(RECIPE_ITEMN)].every(id=>!/ none"/.test(itemIcon(id)))`), "every item has an icon");
+});
+
+t("monster pictures: every monster has one, at icon height in lists and full size in the popup", () => {
+  const S = JSON.parse(run("JSON.stringify(ICON_SHEETS.mob)")), i = S.ids.indexOf(1002), rows = Math.ceil(S.ids.length / S.cols);
+  assert.equal(new Set(S.ids).size, S.ids.length, "mob ids repeat");
+  assert.ok(run(`MOBS.every(m=>!/ none"/.test(mobIcon(m.id)))`), "every monster has a picture");
+  const h = run(`mobIcon(1002)`);                                                                     // Poring: half size, 24 x 24
+  assert.ok(h.includes('class="ico ico-mob"'));
+  assert.ok(h.includes(`width:${S.w / 2}px;height:${S.h / 2}px;background-size:${S.cols * S.w / 2}px ${rows * S.h / 2}px;`));
+  assert.ok(h.includes(`background-position:-${i % S.cols * S.w / 2}px -${Math.floor(i / S.cols) * S.h / 2}px`));
+  assert.ok(!run(`mobIcon(1002,2)`).includes("width:"));                                             // full size: the class's 48 x 48
+  assert.match(run(`popMob(MOB_BY_ID.get(1002)).ico`), /ico-mob"/);
+  assert.match(run(`infoDroppers(909)`), /ico-mob il"/);                                              // Jellopy's droppers
+  assert.match(run(`mobIcon(-5)`), / none"/);                                                         // no picture: an empty cell
 });
 
 t("memorial gear: Subjugation Team and Expedition lines as the client describes them, each set bonus counted once", () => {

@@ -57,7 +57,7 @@ jobs:
         id: recipes
         continue-on-error: true
         run: python tools/export_recipes.py
-      - name: Item icons and card pictures (divine-pride.net)
+      - name: Item icons, card and monster pictures (divine-pride.net)
         id: icons
         continue-on-error: true
         run: python tools/export_icons.py
