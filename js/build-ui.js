@@ -358,7 +358,7 @@ function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};l
 const EW_L=["headTop","headLow","weapon","garment","acc1"],EW_R=["headMid","armor","shield","shoes","acc2"];
 let EW_TAB="normal";
 // the sheet of job looks, drawn into the window's canvas once it loads
-const EW_SHEET=typeof JOB_SPRITES!=="undefined"&&Object.assign(new Image(),{src:`${JOB_SPRITES.file}?v=${JOB_SPRITES.v}`});
+const EW_SHEET=typeof JOB_SPRITES!=="undefined"&&typeof Image!=="undefined"&&Object.assign(new Image(),{src:`${JOB_SPRITES.file}?v=${JOB_SPRITES.v}`});
 if(EW_SHEET)EW_SHEET.onload=()=>drawLook();
 // "+7 Double Healing Shining Clip": refine, then the cards' names before the item name (Double / Triple / Quadruple for repeats) or after it
 function gameName(g){const it=g&&g.id&&BUILD.item(g.id);if(!it)return "";const pre=[],post=[],n={};
