@@ -10,7 +10,7 @@ The numbers are estimates. Skill values and formulas follow the sources below an
 - The names cards give gear in the equipment window ("Healing" for Vitata Card): [divine-pride.net](https://www.divine-pride.net/database/item/4053)
 - Gear and card descriptions (in-game text) and quests: [roz.prontera.info](https://roz.prontera.info); which monsters drop them, drop rates and MVP / mini boss: [rozerodb.com](https://rozerodb.com)
 - Item icons and card pictures: the game client's images, as [divine-pride.net](https://www.divine-pride.net) serves them per item id
-- Crafting recipes (Recipes tab): [rozerodb.com Recipes](https://rozerodb.com/recipes)
+- Crafting recipes (Recipes tab): [rozerodb.com Recipes](https://rozerodb.com/recipes) and its [Alchemy Lab guide](https://rozerodb.com/guides/alchemy-lab) (Mixture, Counteragent, Dyestuffs)
 - Random options (affixes) per gear type, pool and slot, with their min–max: [rozerodb.com Affixes Simulator](https://rozerodb.com/tools/affixes)
 - Costume enchant stones and their sets: item descriptions on [rozerodb.com](https://rozerodb.com/guides/enchant), cross-checked with [midgardhub.com](https://midgardhub.com/guides/enchant-stones)
 - Taming Ring pet egg enchants: item descriptions on [rozerodb.com](https://rozerodb.com), cross-checked with [midgardhub.com pet bonuses](https://midgardhub.com/guides/pet-bonuses)

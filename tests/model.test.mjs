@@ -2386,6 +2386,13 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   const blade = "RECIPES.find(r=>r.id===1107)";                                                        // 25 Tooth of Bat + 45 Iron
   run(`state.prices={998:100,913:50}`);
   assert.deepEqual(run(`JSON.stringify(recipeWorth(${blade}))`), JSON.stringify({ z: 45 * 100 + 25 * 50, unknown: 0 }));
+  // an NPC's fee counts too: Counteragent = Alcohol + Detrimindexta + Empty Bottle + 3,000 z at Morgenstein
+  const ca = "RECIPES.find(r=>r.id===973)";
+  assert.equal(run(`${ca}.cat`), "Mixture & Counteragent"); assert.equal(run(`${ca}.npc[0]`), "Morgenstein");
+  run(`state.prices={970:1000,971:2000,713:10}`);
+  assert.equal(run(`recipeWorth(${ca}).z`), 3000 + 1000 + 2000 + 10);
+  assert.ok(ok("javadullihan").includes(983));                                                        // by NPC: Black Dyestuffs
+  assert.ok(ok("counteragent").includes(975));                                                        // Scarlet Dyestuffs uses it
   run(`state.prices={}`);
   const i = run(`popItem("909")`);                                                                     // Jellopy
   assert.match(i.body, /Used in/); assert.match(i.acts, /data-infoact="recipes"/);

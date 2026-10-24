@@ -10,7 +10,7 @@ const TAB_DESC={
   items:"Every drop: who drops it, where they spawn and what it's worth to you.",
   equip:"Every weapon and piece of armor: filter by type, job, level, card slots and stats, and put it in any of your gear sets.",
   cards:"Every card and what it does: filter by the gear it goes in, and slot it into your gear or another gear set.",
-  recipes:"What every forge, brew, arrow and cooking recipe uses up, and what a drop of yours turns into.",
+  recipes:"What every forge, brew, arrow, cooking and Alchemy Lab recipe uses up, and what a drop of yours turns into.",
   market:"The prices players pay, and a timer that tells you when to go sell.",
   ref:"EXP tables, party share, the element and size tables, and every formula with your numbers in it.",
   acct:"Back up every account, restore one, or share it as a link. Everything is saved in this browser only.",

@@ -21,7 +21,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 - **Roadmap:** the release roadmap: when each update comes, its level cap, and which maps and monsters are out (the rest open by themselves on their date).
 - **Monster info, Item info, Market:** drops, prices, player prices and a sell timer. Monster info has the monster table too. Every item shows its in-game icon.
 - **Equipment, Cards:** every weapon, armor and card, filtered by type, job, level, card slots and ATK / MATK / DEF, with one click to put it in your gear or another gear set.
-- **Recipes:** every forging, brewing, arrow crafting and cooking recipe, searchable by the item made or its materials, with what the materials are worth.
+- **Recipes:** every forging, brewing, arrow crafting, cooking, Mixture & Counteragent and Dye Making recipe, searchable by the item made or its materials, with what the materials are worth.
 - **EXP & formulas:** EXP tables, party share and every formula with your numbers.
 - **Accounts:** separate characters per account, text backups and share links.
 

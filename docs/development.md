@@ -53,7 +53,7 @@ Each table lives in its own file, so a re-export after a patch only touches that
 | `items.js` | Item names |
 | `prices.js` | NPC sell price for every drop. Written by `tools/export_prices.py`. |
 | `weights.js` | Item weight for every drop; items with no weight count as weightless. Written by `tools/export_prices.py`. |
-| `recipes.js` | Crafting recipes (forging, brewing, arrow crafting, cooking, misc): the item made, how many, the weapon level and the materials, and the name of every item in them. Written by `tools/export_recipes.py`. |
+| `recipes.js` | Crafting recipes (forging, brewing, arrow crafting, cooking, misc, and the Alchemy Lab's Mixture, Counteragent and Dyestuffs): the item made, how many, the weapon level, the materials, an NPC's fee and where they stand, and the name of every item in them. Written by `tools/export_recipes.py`. |
 | `consumables.js` | Items skills use up (gemstones, traps, bottles, arrows): NPC buy price and weight, from rAthena until Zero's buy prices are exported. |
 | `recovery.js` | HP and SP recovery items: amount restored (measured in Ragnarok Zero Global on a Merchant), weight, NPC, Discount and player prices. |
 | `itemtypes.js` | Auto-loot group for every drop, from item categories. Written by `tools/export_prices.py`. |
@@ -83,7 +83,7 @@ All scripts use only the Python standard library.
 | `python tools/export_jobs.py [--refresh]` | Writes `data/jobs.js` from rAthena's pre-renewal job tables with Zero's changes (see the top of the script). |
 | `python tools/export_cardnames.py [--refresh]` | Writes `data/cardnames.js`: each card's name in the equipment window, from divine-pride.net's item pages, for the cards in `data/cards.js`. Run it after `export_prontera.py` picks up new cards. |
 | `python tools/export_iteminfo.py [--refresh]` | Writes `data/iteminfo.js`: descriptions and quests from the roz.prontera.info pages `export_prontera.py` cached, drops from rozerodb's item API and MVP / mini boss from its monster list. Run it after `export_prontera.py`. |
-| `python tools/export_recipes.py` | Writes `data/recipes.js` from rozerodb's Recipes page (its data is in the page itself; there is no API). |
+| `python tools/export_recipes.py` | Writes `data/recipes.js` from rozerodb's Recipes page and Alchemy Lab guide (their data is in the pages themselves; there is no API). |
 | `python tools/export_icons.py [--refresh]` | Writes `img/gear-icons.png`, `img/item-icons.png`, `img/card-art.png` and `data/icons.js`: each item's inventory icon (24 × 24; gear in one sheet, every other item the page names in another: drops, recipe items, skill and recovery items) and a 36 × 48 thumbnail of each card's picture (every card has the same inventory icon), from divine-pride.net's copies of the client images. Images are cached in `tools/cache/icons/`. Run it after `export_prontera.py` or `export_recipes.py` picks up new items. |
 | `python tools/export_affixes.py` | Writes `data/affixes.js` from rozerodb's Affixes Simulator page (its data is in the page itself; there is no API). |
 | `python tools/export_mobskills.py [--refresh]` | Writes `data/mobskills.js` from rAthena's pre-renewal monster skill and monster tables, for the monsters in `data/mobs.js`. |
