@@ -377,9 +377,10 @@ const ewTrans=S=>EW_TRANS[state.job]&&S.trans&&S.trans[state.job];
 function lookHtml(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";const tj=ewTrans(S),bj=(state.look.trans&&tj)||S.body[state.job]||S.body.Novice,sex=ewSex(bj),b=bj[sex],hs=S.head[sex]||{},h=hs[state.look.hair]||hs[1];
   const part=(p,l,t,cls)=>`<span class="${cls}" style="left:${l}px;top:${t}px;width:${p[2]}px;height:${p[3]}px;background-position:-${p[0]}px -${p[1]}px"></span>`;
   const one=Object.keys(bj).length<2,hair=hs[state.look.hair]?state.look.hair:1;
-  // Ragnarok Zero has no zeny stylist (iRO's): a new style or color after character creation takes a paid KP shop item, and
+  // Ragnarok Zero has no zeny stylist (iRO's): a new style or color after character creation takes a paid KP shop item (New Style
+  // Coupon, 7622), and
   // clothes color a Clothing Dye Coupon or Clothing Dye Coupon II (6046, 6047), the transcendent look's too; the sprites are undyed
-  const hairTip="Hair style: changing it or its color after character creation takes a paid KP shop item";
+  const hairTip="Hair style: changing it or its color after character creation takes a paid KP shop item, such as a New Style Coupon";
   return `<div class="ewStage" title="Clothes in their default color: a Clothing Dye Coupon or Clothing Dye Coupon II (KP shop) changes their color, on the transcendent look too. The dye stays through a job change, but can look different on the new job"><div class="ewFeet">${part(b,b[4],b[5],"ewBody")}${h?part(h,b[6]+h[4],b[7]+h[5],"ewHead"):""}</div></div>
     <div class="ewLook"><button type="button" class="small" data-ewsex="" ${one?`disabled title="${esc(state.job)}s are ${sex==="f"?"female":"male"} only"`:`title="Gender: ${sex==="f"?"female":"male"}"`} aria-label="Gender">${sex==="f"?"♀":"♂"}</button>
       <button type="button" class="small" data-ewhair="-1" aria-label="Previous hair style" title="${hairTip}">◀</button><span title="${hairTip}"><span class="ewHairW">Hair </span>${hair}</span><button type="button" class="small" data-ewhair="1" aria-label="Next hair style" title="${hairTip}">▶</button></div>
