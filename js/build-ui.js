@@ -372,8 +372,9 @@ function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};l
 const EW_L=["headTop","headLow","weapon","garment","acc1"],EW_R=["headMid","armor","shield","shoes","acc2"];
 let EW_TAB="normal";
 // the sheets of job looks and of hair styles (palette indices, coloured with the hair colour's palette), drawn into the window's
-// canvas once they load
-const ewImg=k=>typeof JOB_SPRITES!=="undefined"&&typeof Image!=="undefined"&&Object.assign(new Image(),{src:`${JOB_SPRITES[k+"File"]}?v=${JOB_SPRITES[k+"V"]}`,onload:()=>drawLook()});
+// canvas once they load. The hair sheet is a data: URL (hairData), since reading its pixels is refused for an image from a file opened
+// from disk
+const ewImg=k=>typeof JOB_SPRITES!=="undefined"&&typeof Image!=="undefined"&&Object.assign(new Image(),{src:JOB_SPRITES[k+"Data"]||`${JOB_SPRITES[k+"File"]}?v=${JOB_SPRITES[k+"V"]}`,onload:()=>drawLook()});
 const EW_SHEET=ewImg("job"),EW_HAIR=ewImg("hair");
 let EW_HAIR_PX=null;
 const ewHairPx=()=>{if(!EW_HAIR_PX&&EW_HAIR&&EW_HAIR.complete&&EW_HAIR.naturalWidth){const c=document.createElement("canvas"),g=c.getContext("2d",{willReadFrequently:true});
