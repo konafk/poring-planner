@@ -286,36 +286,51 @@ const BUILD=(()=>{
     return {fields,acc:A,shield,jobBonus:jb,total:tot,status:S,worn:worn.map(w=>({name:w.it.name,slot:w.slot,refine:w.r,cards:w.cards.map(c=>c.name)})),unmodelled:A.unmodelled}}
 
   // the equipment window names gear by its cards: "+7 Double Healing Shining Clip" is a +7 Shining Clip with two Vitata Cards.
-  // Each card adds its name (data/cardnames.js) before the item's, or after it when the name starts with "of " ("Boots of
-  // Health"); 2-4 copies of one card show as Double / Triple / Quadruple. Long names are cut off ("Hard Nordfeld Soldier..."),
-  // so the item name may be only its start. Card names typed the usual way work too ("+9 Shining Clip Vitata Card").
+  // Each card adds its name (affix in data/cards.js) before the item's, or after it (affixPos "suffix": the names starting with
+  // "of ", "Boots of Health"); 2-4 copies of one card show as Double / Triple / Quadruple. Long names are cut off ("Hard Nordfeld
+  // Soldier..."), so the item name may be only its start. Card names typed the usual way work too ("+9 Shining Clip Vitata Card").
   const TIMES={double:2,triple:3,quadruple:4};
   const normName=s=>String(s||"").toLowerCase().replace(/[’‘`]/g,"'").replace(/(\.\.\.|…)\s*$/,"").replace(/\s+/g," ").trim();
-  // cards named one after another: "double healing hard" -> [Vitata, Vitata, <Hard card>]; null unless the whole text is card names.
-  // A card goes by its name in the equipment window or its own name, with or without "Card" ("Healing", "Vitata", "vitata card")
-  function readCardNames(text,cards,nameOf){const named=cards.flatMap(c=>[nameOf(c),c.name,(c.name||"").replace(/ card$/i,"")].map(n=>[normName(n),c.id]))
+  // cards named one after another, as runs: "double healing hard" -> [{ids: [Vitata], n: 2}, {ids: [<Hard cards>], n: 1}]. ids holds
+  // every card that goes by the name read (Poring and Lunatic Card are both "Lucky"); a cut-off "of ..." (cut: true) is the last thing
+  // shown and holds every card it may be. null unless the whole text is card names. A card goes by its name in the equipment window
+  // or its own name, with or without "Card" ("Healing", "Vitata", "vitata card")
+  function cardRuns(text,cards,nameOf){const named=cards.flatMap(c=>[nameOf(c),c.name,(c.name||"").replace(/ card$/i,"")].map(n=>[normName(n),c.id]))
       .filter(x=>x[0]).sort((a,b)=>b[0].length-a[0].length);
     let s=normName(text);const out=[];
     while(s){const m=/^(double|triple|quadruple) /.exec(s),n=m?TIMES[m[1]]:1,r=m?s.slice(m[0].length):s,
         hit=named.find(([nm])=>r===nm||r.startsWith(nm+" "));
-      // a cut-off "of ..." is the last thing shown: its card when only one fits, else left for the player to pick
-      if(!hit){const cut=!m&&r.startsWith("of ")&&named.filter(([nm])=>nm.startsWith(r));if(cut&&cut.length){const ids=[...new Set(cut.map(x=>x[1]))];if(ids.length===1)out.push(ids[0]);break}return null}
-      for(let i=0;i<n;i++)out.push(hit[1]);s=r.slice(hit[0].length).trim()}
+      if(!hit){const cut=!m&&r.startsWith("of ")&&named.filter(([nm])=>nm.startsWith(r));if(cut&&cut.length){out.push({ids:[...new Set(cut.map(x=>x[1]))],n:1,cut:true});break}return null}
+      out.push({ids:[...new Set(named.filter(([nm])=>nm===hit[0]).map(x=>x[1]))],n});s=r.slice(hit[0].length).trim()}
     return out}
+  // the cards read: "double healing hard" -> [Vitata, Vitata, <Hard card>], the first card of a shared name, and a cut-off "of ..."'s
+  // card only when one fits (else it's left for the player to pick)
+  const firstCards=runs=>runs.flatMap(x=>x.cut&&x.ids.length>1?[]:Array(x.n).fill(x.ids[0]));
+  function readCardNames(text,cards,nameOf){const r=cardRuns(text,cards,nameOf);return r&&firstCards(r)}
+  // every way to read the runs, one card per name (at most ALT_MAX)
+  const ALT_MAX=12;
+  const cardReadings=runs=>runs.reduce((acc,x)=>acc.flatMap(a=>x.ids.map(id=>[...a,...Array(x.n).fill(id)])).slice(0,ALT_MAX),[[]]);
   // "+9 Shark Family Muffler" -> {id, refine, cards}; the best item of the list whose name (or, cut off, its start) is in the text
-  // with only card names around it. null when nothing fits
-  function readGearName(text,items,cardsOf,nameOf){let s=normName(text),refine=null;const rm=/^\+(\d+) ?/.exec(s);if(rm){refine=Math.min(20,+rm[1]);s=s.slice(rm[0].length)}
-    if(!s)return null;let best=null;
-    for(const it of items){const n=normName(it.name);if(!n)continue;let pre,post,len,full=true;const at=(" "+s+" ").indexOf(" "+n+" ");
+  // with only card names around it. A slot count after the name ("Muffler [1]") keeps only items with that many slots. When the
+  // name fits more than one reading (two copies of an item, two cards with one name), the others are in alts: [{id, refine, cards}]
+  // (no alts when there's one). null when nothing fits
+  function readGearName(text,items,cardsOf,nameOf){let s=normName(text),refine=null,slots=null;const rm=/^\+(\d+) ?/.exec(s);if(rm){refine=Math.min(20,+rm[1]);s=s.slice(rm[0].length)}
+    const sm=/ ?\[(\d)\]$/.exec(s);if(sm){slots=+sm[1];s=s.slice(0,sm.index).trim()}
+    if(!s)return null;const fits=[];
+    for(const it of items){const n=normName(it.name);if(!n||slots!=null&&(it.slots||0)!==slots)continue;let pre,post,len,full=true;const at=(" "+s+" ").indexOf(" "+n+" ");
       if(at>=0){pre=s.slice(0,at);post=s.slice(at+n.length);len=n.length}
       else{full=false;const w=s.split(" ");let k=0;for(;k<w.length;k++){const rest=w.slice(k).join(" ");if(rest.length>=3&&n.startsWith(rest))break}
         if(k===w.length)continue;pre=w.slice(0,k).join(" ");post="";len=s.length-pre.length}
-      const cs=cardsOf(it),a=pre.trim()?readCardNames(pre,cs,nameOf):[],b=post.trim()?readCardNames(post,cs,nameOf):[];if(!a||!b)continue;
-      if(a.length+b.length&&!it.slots)continue; // cards named: not the slotless copy of an item
+      const cs=cardsOf(it),a=pre.trim()?cardRuns(pre,cs,nameOf):[],b=post.trim()?cardRuns(post,cs,nameOf):[];if(!a||!b)continue;
+      const runs=[...a,...b],named=runs.reduce((t,x)=>t+x.n,0);
+      if(named&&!it.slots)continue; // cards named: not the slotless copy of an item
       // the copy with room for the most of the cards named wins ("Double Bloody Damascus": the 2-slot Damascus, not the 1-slot one)
-      const score=(full?1e4:0)+Math.min(a.length+b.length,it.slots||0)*1e3+len;
-      if(!best||score>best.score)best={score,id:it.id,refine,cards:[...a,...b].slice(0,it.slots||0)}}
-    return best&&{id:best.id,refine:best.refine,cards:best.cards}}
+      fits.push({score:(full?1e4:0)+Math.min(named,it.slots||0)*1e3+len,it,runs})}
+    if(!fits.length)return null;
+    const top=fits.filter(f=>f.score===Math.max(...fits.map(x=>x.score))),read=(it,cards)=>({id:it.id,refine,cards:cards.slice(0,it.slots||0)});
+    const best=read(top[0].it,firstCards(top[0].runs)),seen=new Set([JSON.stringify(best)]),alts=[];
+    for(const f of top)for(const cs of cardReadings(f.runs)){const r=read(f.it,cs),k=JSON.stringify(r);if(!seen.has(k)&&alts.length<ALT_MAX){seen.add(k);alts.push(r)}}
+    return alts.length?{...best,alts}:best}
 
   return {SLOTS,CARD_FOR,WTYPE,STAT6,FIRST_OF,SHIELD_ASPD,DUAL_W,LEFT_ASPD,dualOk,item,jobBonus,refineAt,status,compute,curve,parseOptions,OPTIONS,OPT_MAX,optRows,optLines,optBad,optGear,optChoices,STONE_SLOTS,stone,stonesWorn,tamingEgg,readCardNames,readGearName}})();
 if(typeof module!=="undefined")module.exports=BUILD;

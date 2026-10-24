@@ -15,7 +15,7 @@ The page is plain HTML, CSS and JavaScript with no dependencies. Open `index.htm
 | `build.js` | Build simulator: turns base stats, job level, gear, refine and cards into the status window's ATK/MATK/HIT/FLEE/ASPD/DEF/HP/SP. |
 | `js/` | Calculator and tracker code (see below). |
 | `data/` | Game data tables, one per file (see below). |
-| `img/` | Gear icon and card picture sprite sheets, written by `tools/export_icons.py`. |
+| `img/` | Gear icon and card picture sprite sheets, written by `tools/export_icons.py`, and the job looks sheet, written by `tools/export_sprites.py`. |
 | `tools/` | Python scripts that export and cross-check the data, and `stamp.mjs`, which builds the deployed site with each file stamped. |
 | `tests/` | Node tests. |
 
@@ -59,14 +59,14 @@ Each table lives in its own file, so a re-export after a patch only touches that
 | `elem.js` | Monster element, HIT/FLEE |
 | `sizes.js` | Monster size and race |
 | `exp.js` | EXP tables |
-| `equipment.js`, `cards.js`, `refine.js`, `skills.js` | Gear, refine and skill data for the build simulator. Written by `tools/export_prontera.py`. |
+| `equipment.js`, `cards.js`, `refine.js`, `skills.js` | Gear, refine and skill data for the build simulator. Written by `tools/export_prontera.py`. Each card's `affix` / `affixPos` is the name it gives the gear it's in, as the equipment window shows it ("Healing" for Vitata Card, `prefix`; "of Health" for Verit Card, `suffix`), added by `tools/export_cardnames.py`. |
 | `jobs.js` | Job bonus stats and base Max HP / SP per base level. Written by `tools/export_jobs.py`. |
-| `cardnames.js` | The name each card gives the gear it's in, as the equipment window shows it ("Healing" for Vitata Card). Written by `tools/export_cardnames.py`. |
 | `affixes.js` | Random options per pool (monster drop, MVP, forging, activation, Glast Heim), gear type and option slot, with min–max and whether it's a %. Written by `tools/export_affixes.py`. |
 | `stones.js` | Costume enchant stones (one per costume slot) as bonus lines, and the stone sets. Made by hand from rozerodb's item descriptions. |
 | `special.js` | Pet egg enchants for the Taming Ring (Special Equipment, Accessory Right), Lv.1 and Lv.2 per pet, as bonus lines. Made from rozerodb's item descriptions. |
 | `iteminfo.js` | Each card's and piece of gear's in-game description, the monsters that drop it (MVP, mini boss or normal, with the drop %) and the quests that give it. Written by `tools/export_iteminfo.py`. |
 | `icons.js` | Where each item's gear icon or card picture sits in the `img/` sprite sheets, with a checksum of each sheet. Written by `tools/export_icons.py`. |
+| `sprites.js` | Each job's look for the equipment window (body per job and gender, head per hair style) and where it sits in `img/job-sprites.png`. Written by `tools/export_sprites.py`. |
 
 ## Tools
 
@@ -76,10 +76,11 @@ All scripts use only the Python standard library.
 | --- | --- |
 | `python tools/export_spawns.py [--client PATH]` | Rewrites `data/spawn.js` from `navi_mob.lub` in your installed client's `data.grf` (read-only). Default client path: `C:\Gravity\RagnarokZero`. |
 | `python tools/export_mapnames.py [--client PATH]` | Sets the map names in `data/maps.js` to the names your installed client shows in game (read-only). |
+| `python tools/export_sprites.py [--client PATH]` | Writes `img/job-sprites.png` and `data/sprites.js` from the job body and hair sprites in your installed client's `data.grf` (read-only): each drawn standing and facing front, as the game draws them, with the head anchor so the page can put any hair style on any job. |
 | `python tools/export_prices.py [--refresh]` | Writes `data/prices.js`, `data/weights.js` and `data/itemtypes.js`, and checks the prices add up to each monster's loot value. |
 | `python tools/export_prontera.py [--refresh]` | Writes the gear, refine and skill data. |
 | `python tools/export_jobs.py [--refresh]` | Writes `data/jobs.js` from rAthena's pre-renewal job tables with Zero's changes (see the top of the script). |
-| `python tools/export_cardnames.py [--refresh]` | Writes `data/cardnames.js`: each card's name in the equipment window, from divine-pride.net's item pages, for the cards in `data/cards.js`. Run it after `export_prontera.py` picks up new cards. |
+| `python tools/export_cardnames.py [--refresh]` | Adds each card's name in the equipment window (`affix`, and `affixPos`: before or after the item name) to `data/cards.js`, from divine-pride.net's item pages, and lists the cards it has no name for. rozerodb's item API only has the Chinese names. Run it after `export_prontera.py` picks up new cards (`export_prontera.py` keeps the names already there when it rewrites the file). |
 | `python tools/export_iteminfo.py [--refresh]` | Writes `data/iteminfo.js`: descriptions and quests from the roz.prontera.info pages `export_prontera.py` cached, drops from rozerodb's item API and MVP / mini boss from its monster list. Run it after `export_prontera.py`. |
 | `python tools/export_icons.py [--refresh]` | Writes `img/gear-icons.png`, `img/card-art.png` and `data/icons.js`: each item's inventory icon (24 × 24) and a 36 × 48 thumbnail of each card's picture (every card has the same inventory icon), from divine-pride.net's copies of the client images. Images are cached in `tools/cache/icons/`. Run it after `export_prontera.py` picks up new items. |
 | `python tools/export_affixes.py` | Writes `data/affixes.js` from rozerodb's Affixes Simulator page (its data is in the page itself; there is no API). |
@@ -87,7 +88,7 @@ All scripts use only the Python standard library.
 | `python tools/check_maps.py` | Compares `data/spawn.js` with the cross-check source and lists missing monsters and spawn counts that differ. Monsters marked as upcoming are expected to show up as missing. |
 | `python tools/check_drops.py` | Compares drops, drop rates and item names with the cross-check source. Loot value per kill isn't compared, because the two sources price items differently. |
 
-Every Monday, `.github/workflows/refresh-data.yml` runs the scripts that only need the internet (`export_prontera.py`, `export_cardnames.py`, `export_iteminfo.py`, `export_prices.py`, `export_affixes.py`, `export_icons.py`) from an empty cache, runs the tests, and opens a PR on the `data-refresh` branch with what changed (Actions → Refresh data → Run workflow runs it now). It needs Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests". Spawns and map names need the game client, so run those by hand.
+Every Monday, `.github/workflows/refresh-data.yml` runs the scripts that only need the internet (`export_prontera.py`, `export_cardnames.py`, `export_iteminfo.py`, `export_prices.py`, `export_affixes.py`, `export_icons.py`) from an empty cache, runs the tests, and opens a PR on the `data-refresh` branch with what changed (Actions → Refresh data → Run workflow runs it now). It needs Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests". Spawns, map names and job looks need the game client, so run those by hand.
 
 Notes on `export_prontera.py`:
 

@@ -257,8 +257,9 @@ const leftHandOk=it=>state.job==="Assassin"&&(it.slot||[]).includes("weapon")&&B
 function gearChoices(slot){const s=BUILD.SLOTS.find(x=>x.k===slot);return (typeof EQUIP!=="undefined"?EQUIP:[]).filter(it=>((it.slot||[]).some(x=>s.takes.includes(x))||slot==="shield"&&leftHandOk(it))&&canWear(it))}
 // cards follow the item: a weapon in the Shield row takes weapon cards
 function cardChoices(slot,it){const cs=it&&(it.slot||[]).includes("weapon")?"weapon":BUILD.CARD_FOR[slot];return (typeof CARDS!=="undefined"?CARDS:[]).filter(c=>(c.slot||[]).some(x=>x===cs||x.startsWith(cs)))}
-// the name a card gives its gear in the equipment window ("Healing" for Vitata Card), so the boxes also take what a screenshot shows
-const cardName=c=>typeof CARDNAMES!=="undefined"&&CARDNAMES[c.id]||"";
+// the name a card gives its gear in the equipment window ("Healing" for Vitata Card; affix in data/cards.js), so the boxes also take
+// what a screenshot shows
+const cardName=c=>(c.affix??(BUILD.item(c.id)||{}).affix)||"";
 const readGear=(slot,text,items)=>BUILD.readGearName(text,items||gearChoices(slot),it=>cardChoices(slot,it),cardName);
 // random options: a list per option the item rolled, plus an empty one to add the next (any item takes up to OPT_MAX). Each list holds
 // the affixes the row's gear rolls (BUILD.optChoices: a weapon by its type, also in the Shield row; every option for parts rozerodb has
@@ -336,7 +337,7 @@ function iconHtml(kind,id,scale=1){const s=typeof ICON_SHEETS!=="undefined"&&ICO
   return `<span class="ico ico-${kind}" aria-hidden="true" style="${size}${fit}background-position:-${i%s.cols*s.w*scale}px -${Math.floor(i/s.cols)*s.h*scale}px"></span>`}
 function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};let lists="";
   const rows=BUILD.SLOTS.map(s=>{const g0=b.gear[s.k]||{},items=gearChoices(s.k),cards=cardChoices(s.k,g0.id&&BUILD.item(g0.id));GEAR_LISTS["g_"+s.k]=pickList(items);GEAR_LISTS["c_"+s.k]=pickList(cards);
-    lists+=`<datalist id="gl_${s.k}">${[...GEAR_LISTS["g_"+s.k]].map(([n,id])=>`<option value="${esc(n)}"${mem[id]?` label="remembered: ${esc(memTxt(mem[id]))}"`:""}>`).join("")}</datalist><datalist id="cl_${s.k}">${[...GEAR_LISTS["c_"+s.k]].map(([n,id])=>{const p=cardName({id});return `<option value="${esc(n)}"${p?` label="${esc(p)}"`:""}>`}).join("")}</datalist>`;
+    lists+=`<datalist id="gl_${s.k}">${[...GEAR_LISTS["g_"+s.k]].map(([n,id])=>`<option value="${esc(n)}"${mem[id]?` label="remembered: ${esc(memTxt(mem[id]))}"`:""}>`).join("")}</datalist><datalist id="cl_${s.k}">${[...GEAR_LISTS["c_"+s.k]].map(([n,id])=>{const p=cardName({id});return `<option value="${esc(n)}"${p?` label="${esc((BUILD.item(id)||{}).affixPos==="suffix"?"… "+p:p+" …")}"`:""}>`}).join("")}</datalist>`;
     const g=b.gear[s.k]||{},it=g.id&&BUILD.item(g.id),label=n=>{const x=BUILD.item(n);return x?labelOf(x,cards):""};
     const cardBoxes=it&&it.slots?Array.from({length:it.slots},(_,i)=>`<span class="cardBox">${iconHtml("card",g.cards&&g.cards[i],.5)}<input data-card="${i}" list="cl_${s.k}" placeholder="card" title="The card (Vitata), or the name it gives the item in game (Healing)" value="${esc(g.cards&&g.cards[i]?label(g.cards[i]):"")}"></span>`).join(""):"";
     const refinable=it&&s.k!=="ammo"; // every part: some accessories and headgear refine though the data has no schedule for them
@@ -371,13 +372,23 @@ ROOTQ("[data-cmode]").forEach(x=>x.addEventListener("click",()=>{const c=C(),to=
   else if(c.statusSnap){SNAP_KEYS.forEach(k=>{const v=c.statusSnap[k];if(v==null)delete c[k];else c[k]=v});delete c.statusSnap}
   c.mode=to;save();if(to==="build")renderGearTable();renderAll();syncChar()}));
 ROOTQ("[data-bs]").forEach(x=>x.addEventListener("input",()=>{buildOf(C()).base[x.dataset.bs]=num(x.value)||1;save();renderAll()}));
+const gearRead=(c,g,r)=>{gearPut(c,g,r.id);if(r.refine!=null)g.refine=r.refine;if(r.cards.length)g.cards=[...r.cards]};
+// a name that fits more than one reading (two copies of an item, two cards with one name) fills the first; the others are buttons
+// under the table until the next name is typed
+let GEAR_ALTS=null;
+const readTxt=r=>{const it=BUILD.item(r.id),n=new Map();r.cards.forEach(id=>n.set(id,(n.get(id)||0)+1));
+  return `${it.name}${it.slots?` [${it.slots}]`:""} #${it.id}${n.size?": "+[...n].map(([id,x])=>`${(BUILD.item(id)||{}).name}${x>1?` ×${x}`:""}`).join(", "):""}`};
+function gearAlts(k,txt,r){GEAR_ALTS=r&&r.alts?{k,list:[r,...r.alts]}:null;const el=$("gearAlts");el.hidden=!GEAR_ALTS;
+  el.innerHTML=GEAR_ALTS?`“${esc(txt)}” fits more than one reading. Filled in: ${esc(readTxt(r))}. Or use: ${r.alts.map((a,i)=>`<button type="button" class="small" data-gearalt="${i+1}">${esc(readTxt(a))}</button>`).join(" ")}`:""}
+$("gearAlts").addEventListener("click",e=>{const x=e.target.closest("[data-gearalt]");if(!x||!GEAR_ALTS)return;const c=C(),b=gearSet(c),k=GEAR_ALTS.k;
+  gearRead(c,b.gear[k]||(b.gear[k]={}),GEAR_ALTS.list[+x.dataset.gearalt]);gearAlts(k,"",null);save();renderGearTable();renderAll()});
 $("gearTable").addEventListener("change",e=>{const tr=e.target.closest("tr[data-slot]");if(!tr)return;const k=tr.dataset.slot,c=C(),b=gearSet(c),g=b.gear[k]||(b.gear[k]={});
   if(e.target.classList.contains("item")){const v=e.target.value.trim();const id=GEAR_LISTS["g_"+k].get(v);
     // not on the list: read it as the equipment window names it, refine and cards included (they win over what the item last had)
     const r=id==null&&v?readGear(k,v):null;
     if(!v){memKeep(c,g);delete b.gear[k]}else if(id!=null)gearPut(c,g,id);
-    else if(r){gearPut(c,g,r.id);if(r.refine!=null)g.refine=r.refine;if(r.cards.length)g.cards=r.cards}else{e.target.value=g.id?e.target.defaultValue:"";return}
-    save();renderGearTable();renderAll();return}
+    else if(r)gearRead(c,g,r);else{e.target.value=g.id?e.target.defaultValue:"";return}
+    gearAlts(k,v,r);save();renderGearTable();renderAll();return}
   // picking an option keeps its value; "remove" drops it. The rows replace any text typed before the lists
   if(e.target.dataset.opt!=null){const rows=BUILD.optRows(g.opts),i=+e.target.dataset.opt,v=e.target.value;
     if(!v)rows.splice(i,1);else rows[i]={k:v,v:rows[i]?rows[i].v:""};optSet(g,rows);save();renderGearTable();renderAll();

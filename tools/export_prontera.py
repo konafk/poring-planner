@@ -221,7 +221,18 @@ def main():
               "// proc: text of an effect that isn't a plain stat, b: [[type, target kind, target, value, per N refines, skill, scaling skill]]}")
     write("equipment.js", f"// Equipment ({src}); GvG-only bonuses are left out.\n{fields}\n// SETS: combos by item slug, same bonus groups.",
           f"const EQUIP={js(equip)};\nconst SETS={js(list(sets.values()))};")
-    write("cards.js", f"// Cards ({src}); same fields as data/equipment.js.", f"const CARDS={js(card_rows)};")
+    # the names cards give their gear come from tools/export_cardnames.py: keep the ones already there, so a failed run of it loses none
+    old = os.path.join(ROOT, "data", "cards.js")
+    if os.path.exists(old):
+        src_js = open(old, encoding="utf-8").read()
+        had = {c["id"]: c for c in json.loads(src_js[src_js.index("[", src_js.index("const CARDS=")):src_js.rindex("]") + 1])}
+        for c in card_rows:
+            for k in ("affix", "affixPos"):
+                if k in had.get(c["id"], {}):
+                    c[k] = had[c["id"]][k]
+    write("cards.js", f"// Cards ({src}); same fields as data/equipment.js, plus affix / affixPos: the name the card gives the gear it's in, before\n"
+          "// the item's name (\"prefix\": Hydra Card's \"Bloody\") or after it (\"suffix\": Verit Card's \"of Health\"), from tools/export_cardnames.py.",
+          f"const CARDS={js(card_rows)};")
 
     rf = nuxt(fetch("/refine", refresh))["refine"]["schedules"]
     refine = {s["key"]: [[x["bonus_atk"], x["bonus_matk"], x["bonus_def"]] for x in s["steps"]] for s in rf}
