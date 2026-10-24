@@ -20,8 +20,10 @@ const starLeft=t=>Math.max(0,STAR_CERTS-(state.stellar.have[t]||0));
 const starDur=h=>h>0?fmtDur(h).split("\n")[0]:"done";
 function renderStar(){const S=state.stellar,w=walkSec();
   $("starRows").innerHTML=STAR_TYPES.map(t=>{const left=starLeft(t),b=left?starBest(t,w):null,mp=b&&openMaps(b.m)[0][0];
-    const wpns=STAR_W.filter(x=>x.type===t).map(x=>infoLink("gear",x.id,x.name)).join("<br>");
-    const how=!left?"–":b?`${infoLink("mob",b.m.id,b.m.name)} <span class="note">Lv ${b.m.lv} · ${mapCode(mp)}<br>${pct(b.per*100)} a kill · ${fmtN(b.kph)} kills/hr</span>`
+    const wpns=STAR_W.filter(x=>x.type===t).map(x=>`<div>${itemIcon(x.id,1,"il")}${infoLink("gear",x.id,x.name)}</div>`).join("");
+    const how=!left?"–":b?`${infoLink("mob",b.m.id,b.m.name)} <span class="note">Lv ${b.m.lv} · ${mapCode(mp)}</span>
+      ${b.ds.map(([id,ch])=>`<div>${itemIcon(id,1,"il")}${infoLink("gear",id,BUILD.item(id).name)} <span class="note">${ch==null?"?":ch+"%"}</span></div>`).join("")}
+      <span class="note">${pct(b.per*100)} a kill for you · ${fmtN(b.kph)} kills/hr</span>`
       :`<span class="note">${starMobs(t).length?"none you can farm on an open map":"no monster drops one"}</span>`;
     return `<tr><td class="name">${esc(BUILD.WTYPE[t])}</td><td class="name">${wpns}</td>
       <td><input class="w-xs" type="number" min="0" step="1" data-starhave="${t}" value="${S.have[t]||""}" placeholder="0" aria-label="${esc(BUILD.WTYPE[t])} certificates you have"></td>
