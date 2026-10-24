@@ -57,7 +57,7 @@ const memName=([id,name])=>id?`${itemIcon(id,1,"il")}${infoLink(infoKind(id),id,
 // an item in a reward list, with how many
 const memItem=([id,name,n])=>`${memName([id,name])}${n?` <span class="note">${esc(n)}</span>`:""}`;
 function renderMemorials(){
-  $("memRows").innerHTML=MEMORIALS.map(m=>`<tr><td class="name"><b>${esc(m.name)}</b></td><td>${m.lv}</td><td class="mono">${esc(m.at)}</td>
+  $("memRows").innerHTML=MEMORIALS.map(m=>`<tr><td class="name"><b>${esc(m.name)}</b></td><td>${m.lv}</td><td class="name">${esc(m.npc)}<div class="note mono">${esc(m.at)}</div></td>
     <td class="name">${m.normal.map(x=>`<div>${memItem(x)}</div>`).join("")}</td><td class="name">${m.hard?m.hard.map(x=>`<div>${memItem(x)}</div>`).join(""):"–"}</td></tr>`).join("")}
 function renderEnchants(){const g=$("enchGear").value||"subjugation",p=$("enchPool").value||"low",rows=MEM_ENCHANT[g][p];
   $("enchRows").innerHTML=rows.map(([l,v])=>`<tr><td class="name">${l==="spirit"?"A job spirit (below)":esc(l)}</td><td>${v}%</td></tr>`).join("");

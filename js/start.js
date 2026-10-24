@@ -98,6 +98,9 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
     // crafted items no monster drops (potions, arrows, food, forged weapons that aren't in the gear list)
     ...Object.keys(RECIPES_MAKING).filter(id=>!ITEM_DROPS[id]&&!BUILD.item(+id)).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · ${RECIPES_MAKING[id][0].cat.toLowerCase()} recipe`,ico:id,
       run:()=>openInfo("item",id)})),
+    // the memorial dungeons' rewards and materials no monster drops and no recipe makes (Mithril Ore, Jello Fragments, the gems)
+    ...Object.keys(MEM_ITEMN).filter(id=>!ITEM_DROPS[id]&&!RECIPES_MAKING[id]&&!BUILD.item(+id)).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · memorial item`,ico:id,
+      run:()=>openInfo("item",id)})),
     ...(typeof EQUIP!=="undefined"?EQUIP:[]).filter(it=>(it.slot||[]).length).map(it=>({k:"Gear",name:it.name,meta:`#${it.id} · ${gearKind(it)}${it.slots?` [${it.slots}]`:""}`,ico:it.id,
       run:()=>openInfo("item",it.id)})),
     ...(typeof CARDS!=="undefined"?CARDS:[]).map(x=>({k:"Card",name:x.name,meta:`#${x.id} · ${CARD_PART[cardPart(x)]||"–"}${cardName(x)?` · ${cardName(x)}`:""}`,ico:x.id,

@@ -2374,7 +2374,7 @@ t("details popup: a monster, an item, gear and a card, linked to each other", ()
 });
 
 t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {
-  assert.equal(run(`RECIPES.length+13`), run(`RECIPE_LIST.length`));                                    // and the 5 Jellostones, 8 Expedition pieces
+  assert.equal(run(`RECIPES.length+18`), run(`RECIPE_LIST.length`));                                    // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts
   assert.ok(run(`RECIPES.every(r=>RECIPE_CATS.includes(r.cat)&&r.mats.length&&r.mats.every(([id,n])=>RECIPE_ITEMN[id]&&n>0))`));
   assert.equal(run(`itemName(1301)`), "Axe");                                                          // a recipe's name for an item no monster drops
   const ok = (q, cat) => run(`RECIPES.filter(r=>recipeOk(r,{q:${JSON.stringify(q)},cat:${JSON.stringify(cat || "")}})).map(r=>r.id)`);
@@ -2413,6 +2413,12 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.ok(memOk("upgrader").length === 8);
   assert.match(run(`popItem("25465").body`), /Used in/); assert.match(run(`popGear(15221).body`), /Made from/);
   assert.doesNotMatch(run(`infoRecipe(RECIPE_LIST.find(r=>r.id===25470))`), /undefined| z</);         // no fee to show
+  // Mithril Ore: no monster drops it, but the hard mode boxes do, and Thor's Flame makes Mithril from it for the Oath rings
+  assert.deepEqual(JSON.parse(mem(25430)).mats, [[25429, 10]]);
+  assert.deepEqual(JSON.parse(mem(28570)).mats, [[25459, 15], [25430, 10]]);                          // Ring of Blue Oath
+  const ore = run(`popItem("25429")`);
+  assert.equal(ore.title, "Mithril Ore"); assert.match(ore.body, /Orc's Memory<\/b> hard mode/); assert.doesNotMatch(ore.body, /No monster/);
+  assert.match(run(`popItem("25465").body`), /Poring Village<\/b> on Monday/);                       // a Jello Fragment's weekday
   assert.ok(run(`RECIPE_LIST.filter(r=>r.cat==="Memorial").flatMap(r=>[r.id,...r.mats.map(m=>m[0])]).every(id=>!/ none"/.test(itemIcon(id)))`), "every memorial item has an icon");
 });
 

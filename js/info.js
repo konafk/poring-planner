@@ -22,6 +22,12 @@ const infoRecipe=r=>`<div class="recipe"><span>${infoLink("item",r.id,recipeMade
 function infoRecipes(id){const mk=RECIPES_MAKING[id]||[],us=RECIPES_USING[id]||[];
   return infoSec(`Made from${mk.length>1?` (${mk.length} ways)`:""}`,mk.length&&`<div class="infoList">${mk.slice(0,12).map(infoRecipe).join("")}${mk.length>12?`<div class="note">and ${mk.length-12} more on the Recipes tab</div>`:""}</div>`)
     +infoSec("Used in",us.length&&`<div class="infoList">${us.slice(0,12).map(infoRecipe).join("")}${us.length>12?`<div class="note">and ${us.length-12} more on the Recipes tab</div>`:""}</div>`)}
+// the memorial dungeons whose reward box has it (data/memorial.js), and the weekday Poring Village gives a Jello Fragment
+function infoMemorial(id){const j=JELLO.find(x=>x.frag[0]===+id);
+  const rows=MEMORIALS.flatMap(m=>[["",m.normal],[" hard mode",m.hard||[]]].flatMap(([h,l])=>l.filter(x=>x[0]===+id)
+    .map(x=>`<div><b>${esc(m.name)}</b>${h} <span class="note">${x[2]?`${esc(x[2])} · `:""}base Lv ${m.lv}</span></div>`)));
+  if(j)rows.unshift(`<div><b>Poring Village</b> on ${WEEKDAY[j.day]} <span class="note">1 · base Lv 30, or from a ${esc(JELLO_BOX[1])} at the weekend</span></div>`);
+  return rows.length?`<div class="infoList">${rows.join("")}</div>`:""}
 const recipeAct=id=>RECIPES_MAKING[id]||RECIPES_USING[id]?'<button type="button" data-infoact="recipes">Recipes</button>':"";
 
 function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobIds.includes(m.id),a=mobArrives(m);
@@ -41,7 +47,8 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
 
 function popItem(id){const name=itemName(id);
   return {ico:itemIcon(id,1.5),title:name,sub:`#${id} · ${GROUP_NAME[groupOf(id)]}${looted(id)?"":" (not looted)"}`,
-    body:infoPrice(id)+infoSec("Dropped by",infoDroppers(id))+(ITEM_DROPS[id]?"":'<div class="note">No monster the farm tables know drops it.</div>')+infoRecipes(id),
+    body:infoPrice(id)+infoSec("Dropped by",infoDroppers(id))+infoSec("Memorial dungeons",infoMemorial(id))
+      +(ITEM_DROPS[id]||infoMemorial(id)?"":'<div class="note">No monster the farm tables know drops it.</div>')+infoRecipes(id),
     acts:(ITEM_DROPS[id]?'<button type="button" data-infoact="items">Item info</button>':"")+recipeAct(id)}}
 
 function popGear(id){const it=BUILD.item(id),fx=fxOf(it),c=C(),txt=itemText(id),worn=wornIn(c,it.id);
