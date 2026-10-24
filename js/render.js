@@ -563,8 +563,13 @@ function renderBest(){
 const MEM_ITEMN={};
 if(typeof JELLO!=="undefined")[...MEMORIALS.flatMap(m=>[...m.normal,...(m.hard||[])]),...JELLO.flatMap(j=>[j.frag,j.stone]),JELLO_BOX,
   EXPEDITION_CRYSTALS,...EXPEDITION.flatMap(x=>[[x.id,x.name],x.from]),...MEM_CRAFTS.flatMap(x=>[[x.id,x.name],...x.mats])].forEach(([id,name])=>{if(id)MEM_ITEMN[id]=name});
-// drops first, then the recipe, memorial, recovery and skill item tables for the items no monster drops
-const itemName=id=>ITEMN[id]||(typeof RECIPE_ITEMN!=="undefined"&&RECIPE_ITEMN[id])||MEM_ITEMN[id]||(RECOVERY[id]||{}).name||(CONSUM[id]||[])[0]||"#"+id;
+const CLIENT_ITEM=typeof CLIENT_ITEMS!=="undefined"?CLIENT_ITEMS:{};
+// drops first, then the recipe, memorial, recovery and skill item tables, then the client's catalog, for the items no monster drops
+const itemName=id=>ITEMN[id]||(typeof RECIPE_ITEMN!=="undefined"&&RECIPE_ITEMN[id])||MEM_ITEMN[id]||(RECOVERY[id]||{}).name||(CONSUM[id]||[])[0]
+  ||(CLIENT_ITEM[id]||[])[0]||"#"+id;
+// the client catalog's category for an item (data/clientitems.js): "Consumable", "Costume", "Material"…; "" when it isn't in it
+const clientCat=id=>(CLIENT_ITEM[id]||[])[1]||"";
+const CLIENT_CATS=[...new Set(Object.values(CLIENT_ITEM).map(x=>x[1]))].sort();
 // a drop chance for display: "?" when there's no published rate (data/loot.js null)
 const chTxt=ch=>ch==null?"?":ch+"%";
 // each drop with its chance, NPC price and any market price; the level penalty leads when it applies
@@ -597,7 +602,7 @@ const mapTxt=mp=>`${mapCode(mp)} ${mapName(mp)}${isClosed(mp)?" closed":""}`;
 const TABLES={
   mobInfoDrops:{def:["z",-1],cols:{name:{t:r=>itemName(r.id)+" #"+r.id},group:{t:r=>GROUP_NAME[groupOf(r.id)]+(looted(r.id)?"":" not looted")},ch:{n:r=>r.ch},your:{n:r=>r.your},npc:{n:r=>r.npc},pl:{n:r=>r.pl},z:{n:r=>r.z}}},
   mobInfoMaps:{def:["n",-1],cols:{map:{t:r=>mapTxt(r.mp)},n:{n:r=>r.n},others:{t:r=>r.others.map(x=>x.m.name).join(", ")}}},
-  itemTable:{def:["npc",-1],cols:{name:{t:r=>itemName(r.id)+" #"+r.id},group:{t:r=>GROUP_NAME[groupOf(r.id)]+(looted(r.id)?"":" not looted")},npc:{n:r=>r.npc},pl:{n:r=>r.pl},best:{n:r=>r.b.ch,t:r=>r.b.m.name},nz:{n:r=>r.nz},sp:{n:r=>r.sp?r.sp.n:null,t:r=>r.sp?`${mapTxt(r.sp.mp)} ${r.sp.m.name}`:""},cnt:{n:r=>r.cnt}}},
+  itemTable:{def:["npc",-1],cols:{name:{t:r=>itemName(r.id)+" #"+r.id},group:{t:r=>itemGroupTxt(r.id)},npc:{n:r=>r.npc},pl:{n:r=>r.pl},best:{n:r=>r.b?r.b.ch:null,t:r=>r.b?r.b.m.name:""},nz:{n:r=>r.nz},sp:{n:r=>r.sp?r.sp.n:null,t:r=>r.sp?`${mapTxt(r.sp.mp)} ${r.sp.m.name}`:""},cnt:{n:r=>r.cnt}}},
   itemDropTable:{def:["ch",-1],cols:{name:{t:r=>r.m.name+bossTag(r.m)},lv:{n:r=>r.m.lv},ch:{n:r=>r.ch},your:{n:r=>r.your},nz:{n:r=>r.nz},z:{n:r=>r.z},sp:{n:r=>r.om.length?r.om[0][1]:null},map:{t:r=>r.om.length?mapTxt(r.om[0][0]):""}}},
   bestTable:{def:["epm",-1],cols:{rank:{n:r=>r.rank,asc:1},mp:{t:r=>mapTxt(r.mp)},main:{t:r=>MAPMOBS[r.mp].filter(x=>!x.m.boss&&!isSkipped(x.m)).map(x=>x.m.name).join(", ")},epm:{n:r=>r.epm},secT:{n:r=>r.secT,asc:1},epk:{n:r=>r.epk},zph:{n:r=>r.zb},heal:{n:r=>r.heal,asc:1},net:{n:r=>r.net},hpm:{n:r=>r.hpm,asc:1},sus:{n:r=>r.sus?r.sus.score:null,t:r=>r.sus?r.sus.label:""},skip:{n:r=>r.skip,asc:1},N:{n:r=>r.N},proj:{n:r=>r.proj},
     log:{n:r=>r.logged?r.logged.ratio:null,t:r=>r.logged?r.logged.list.map(x=>x.s.name).join(", "):""},wk:{n:r=>r.wk,asc:1},wph:{n:r=>r.wph,asc:1},trip:{n:r=>r.trip}}},
@@ -655,6 +660,13 @@ Object.values(ITEM_DROPS).forEach(l=>l.sort((a,b)=>b.ch-a.ch));
 // what an NPC pays for one drop, times your chance of it a kill: null with no NPC price or no published rate
 const npcZ=(m,id,ch)=>{const y=yourCh(m,ch);return y==null||(NPCSELL[id]==null&&state.npcPrices[id]==null)?null:npcPays(id)*y/100};
 // the most NPC zeny a kill of any monster that drops it gives
+// every item that isn't gear or a card (those have their own tabs), for Item info's All items and search: the drops (gear and cards
+// included), the client's catalog, and the recipe, memorial, recovery and skill items
+let ALL_ITEM_IDS=null;
+const allItemIds=()=>ALL_ITEM_IDS||(ALL_ITEM_IDS=[...new Set([ITEM_DROPS,CLIENT_ITEM,typeof RECIPE_ITEMN!=="undefined"?RECIPE_ITEMN:{},MEM_ITEMN,RECOVERY,CONSUM]
+  .flatMap(o=>Object.keys(o)))].filter(id=>ITEM_DROPS[id]||!BUILD.item(+id)));
+// Item info's Group column: a drop's auto-loot group, else the client catalog's category
+const itemGroupTxt=id=>ITEM_DROPS[id]?GROUP_NAME[groupOf(id)]+(looted(id)?"":" not looted"):clientCat(id)||"–";
 const bestNpcZ=id=>ITEM_DROPS[id].reduce((b,{m,ch})=>{const z=npcZ(m,id,ch);return z!=null&&(b==null||z>b)?z:b},null);
 // the most of one monster that drops it on one open map, bosses left out: {n, mp, m} or null
 const mostSpawns=id=>ITEM_DROPS[id].reduce((b,{m})=>{const om=!m.boss&&openMaps(m)[0];return om&&(!b||om[1]>b.n)?{n:om[1],mp:om[0],m}:b},null);
@@ -662,10 +674,14 @@ function renderItems(){
   const q=$("itemSearch").value.trim().toLowerCase();
   // Where to get (gear-db.js): MVP / mini boss / normal monster drops, quests
   const fv=state.itemFrom||"",fromOk=id=>!fv||typeof itemFromOk!=="function"||itemFromOk(id,fv);
-  const ids=Object.keys(ITEM_DROPS).filter(id=>(!q||itemName(id).toLowerCase().includes(q)||("#"+id).includes(q))&&fromOk(id)).sort((a,b)=>itemName(a).localeCompare(itemName(b)));
-  const hit=tableRows("itemTable",ids.map(id=>({id,b:ITEM_DROPS[id][0],npc:NPCSELL[id]==null?null:npcPays(id),pl:state.prices[id]>0?state.prices[id]:null,nz:bestNpcZ(id),sp:mostSpawns(id),cnt:ITEM_DROPS[id].length})));
+  // Items: the monster drops (""), every item ("all"), or one of the client catalog's categories
+  const show=state.itemShow||"",pool=show?allItemIds().filter(id=>show==="all"||clientCat(id)===show):Object.keys(ITEM_DROPS);
+  const ids=pool.filter(id=>(!q||itemName(id).toLowerCase().includes(q)||("#"+id).includes(q))&&fromOk(id)).sort((a,b)=>itemName(a).localeCompare(itemName(b)));
+  const hit=tableRows("itemTable",ids.map(id=>{const d=ITEM_DROPS[id];
+    return {id,b:d?d[0]:null,npc:NPCSELL[id]==null?null:npcPays(id),pl:state.prices[id]>0?state.prices[id]:null,nz:d?bestNpcZ(id):null,sp:d?mostSpawns(id):null,cnt:d?d.length:0}}));
+  $("itemCount").textContent=`${fmtN(hit.length)} item${hit.length===1?"":"s"}`;
   const sel=state.infoItem&&ITEM_DROPS[state.infoItem]?String(state.infoItem):null;
-  $("itemTable").tBodies[0].innerHTML=hit.slice(0,300).map(({id,b,npc,pl,nz,sp,cnt})=>`<tr data-item="${esc(id)}" class="${id===sel?"sel":""}"><td class="name">${itemIcon(id,1,"il")}${esc(itemName(id))} <span class="note">#${esc(id)}</span></td><td class="name">${GROUP_NAME[groupOf(id)]}${looted(id)?"":' <span class="note">not looted</span>'}</td><td>${npc==null?"–":fmtN(npc)}</td><td>${pl!=null?fmtN(pl):`<a href="#" data-pitem="${esc(id)}">set</a>`}</td><td class="name">${esc(b.m.name)} <span class="note">${chTxt(b.ch)}</span></td><td>${nz==null?"–":dropZTxt(nz)}</td><td class="name" title="${sp?esc(`${sp.m.name} on ${mapLabel(sp.mp)}`):""}">${sp?`≈${spN(sp.n)} <span class="note">${esc(sp.m.name)} · ${mapCode(sp.mp)}</span>`:'<span class="note">none open</span>'}</td><td>${cnt}</td></tr>`).join("")
+  $("itemTable").tBodies[0].innerHTML=hit.slice(0,300).map(({id,b,npc,pl,nz,sp,cnt})=>`<tr data-item="${esc(id)}" class="${id===sel?"sel":""}"><td class="name">${itemIcon(id,1,"il")}${esc(itemName(id))} <span class="note">#${esc(id)}</span></td><td class="name">${ITEM_DROPS[id]?`${GROUP_NAME[groupOf(id)]}${looted(id)?"":' <span class="note">not looted</span>'}`:esc(clientCat(id)||"–")}</td><td>${npc==null?"–":fmtN(npc)}</td><td>${pl!=null?fmtN(pl):`<a href="#" data-pitem="${esc(id)}">set</a>`}</td><td class="name">${b?`${esc(b.m.name)} <span class="note">${chTxt(b.ch)}</span>`:'<span class="note">no monster</span>'}</td><td>${nz==null?"–":dropZTxt(nz)}</td><td class="name" title="${sp?esc(`${sp.m.name} on ${mapLabel(sp.mp)}`):""}">${sp?`≈${spN(sp.n)} <span class="note">${esc(sp.m.name)} · ${mapCode(sp.mp)}</span>`:cnt?'<span class="note">none open</span>':"–"}</td><td>${cnt||"–"}</td></tr>`).join("")
     +(hit.length>300?`<tr><td colspan="8" class="name muted">${hit.length-300} more: narrow the search</td></tr>`:"")
     ||'<tr><td colspan="8" class="name muted">No items match.</td></tr>';
   $("itemDroppers").hidden=!sel;

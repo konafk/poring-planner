@@ -2362,6 +2362,21 @@ t("Equipment and Cards tabs: in-game text, where to get it and the Where to get 
   assert.equal(run(`JSON.stringify(ITEM_INFO)`).includes("C5_"), false);
 });
 
+t("Item info: every item in the client, by category, with the drops' columns blank for the ones no monster drops", () => {
+  assert.equal(run(`itemName(5915)`), "[Costume] Angel's Veil");                                     // a costume nothing else names
+  assert.equal(run(`clientCat(5915)`), "Costume"); assert.equal(run(`itemGroupTxt(5915)`), "Costume");
+  assert.equal(run(`itemName(909)`), "Jellopy"); assert.match(run(`itemGroupTxt(909)`), /^\S/);      // a drop keeps its auto-loot group
+  const all = run(`JSON.stringify(allItemIds())`);
+  for (const id of ["909", "5915", "1029", "25429", "25470", "501"]) assert.ok(JSON.parse(all).includes(id), id); // drop, costume, material, memorial, recovery
+  assert.ok(!JSON.parse(all).includes("15221"));                                                      // gear no monster drops stays on the Equipment tab
+  assert.equal(new Set(JSON.parse(all)).size, JSON.parse(all).length);
+  assert.ok(run(`CLIENT_CATS.includes("Costume")&&CLIENT_CATS.includes("Consumable")`));
+  // the table's columns don't need a drop: Best drop and Dropped by sort as blank
+  assert.equal(run(`TABLES.itemTable.cols.best.n({id:"5915",b:null})`), null);
+  assert.match(run(`popItem("5915").sub`), /Costume/); assert.match(run(`popItem("5915").body`), /No monster/);
+  assert.ok(run(`Object.keys(CLIENT_ITEMS).every(id=>!/ none"/.test(itemIcon(id)))`), "every client item has an icon");
+});
+
 t("Item info: the Where to get filter, and other sources the farm tables don't have", () => {
   // War Axe: Chimera (a mini boss) and two MVPs (Turtle General, Lord of Death) drop it, all in the farm tables
   assert.equal(run(`itemFromOk("1306","mvp")`), true);

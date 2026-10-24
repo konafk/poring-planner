@@ -7,9 +7,9 @@ data/icons.js.
 Gear and every other item: the inventory icon from the game client (24 x 24), as divine-pride.net serves it for each item id
 (static.divine-pride.net/images/items/item/<id>.png). Cards: every card has the same inventory icon in the client, so a card shows
 a thumbnail of its illustration instead (.../images/items/cards/<id>.png, 300 x 400, shrunk to CARD_W x CARD_H). Ids: gear from
-data/equipment.js, cards from data/cards.js, and items (drops, recipe items, consumables, recovery items) from data/items.js,
-data/recipes.js, data/consumables.js and data/recovery.js, and every [id, "name"] in data/memorial.js (Jello Fragments, Jellostones,
-memorial rewards), that aren't gear or cards. Monsters: the client's standing sprite, as
+data/equipment.js, cards from data/cards.js, and items (drops, recipe items, consumables, recovery items, every other item in the
+client) from data/items.js, data/recipes.js, data/consumables.js, data/recovery.js and data/clientitems.js, and every [id, "name"] in
+data/memorial.js (Jello Fragments, Jellostones, memorial rewards), that aren't gear or cards. Monsters: the client's standing sprite, as
 divine-pride serves it for each monster id in data/mobs.js (.../images/mobs/png/<id>.png, from about 30 x 20 to over 200 x 200), shrunk
 to fit MOB_W x MOB_H (never enlarged) and centred in its cell. Images are fetched a few per second and cached in tools/cache/icons/
 (gitignored); delete a cached file to refetch it. divine-pride answers an id it has no image for with a 57 x 57 placeholder: those
@@ -211,7 +211,8 @@ def main():
     eq, cd = ids("equipment.js", "EQUIP"), ids("cards.js", "CARDS")
     known = set(eq) | set(cd)
     other = sorted(({i for f, c in [("items.js", "ITEMN"), ("recipes.js", "RECIPE_ITEMN"), ("consumables.js", "CONSUM"),
-                                    ("recovery.js", "RECOVERY")] for i in keys(f, c)} | set(pairs("memorial.js"))) - known)
+                                    ("recovery.js", "RECOVERY"), ("clientitems.js", "CLIENT_ITEMS")] for i in keys(f, c)}
+                    | set(pairs("memorial.js"))) - known)
     todo = [("gear", i) for i in eq] + [("cards", i) for i in cd] + [("other", i) for i in other] + [("mobs", i) for i in mob_ids()]
     no_mob = fetch("mobs", 0, refresh)  # the placeholder, to tell it from a real monster's picture
     for n, (kind, i) in enumerate(todo, 1):
