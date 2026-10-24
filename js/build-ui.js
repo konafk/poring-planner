@@ -323,7 +323,7 @@ function gearPut(c,g,id){if(g.id===id)return;memKeep(c,g);const m=memOf(c)[id]||
 // "+7 · Vitata Card · 2 affixes"
 const memTxt=m=>[num(m.refine)?`+${num(m.refine)}`:"",...(m.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean),
   ...(m.opts&&m.opts.length?[`${m.opts.length} affix${m.opts.length>1?"es":""}`]:[])].filter(Boolean).join(" · ");
-// icons: gear and every other item from the game client, cards a thumbnail of their picture (data/icons.js, tools/export_icons.py); a
+// icons: gear and every other item from the game client, cards a thumbnail of their picture, monsters their sprite (data/icons.js, tools/export_icons.py); a
 // cell of a sprite sheet each, the sheet set once as a CSS variable. scale draws it smaller (the gear table's card boxes); cls adds a
 // class ("il": inline in a line of text). An item with no image gets an empty cell, so the names still line up
 const ICON_AT={};
@@ -337,6 +337,8 @@ function iconHtml(kind,id,scale=1,cls=""){const s=typeof ICON_SHEETS!=="undefine
 // any item by id: a card's picture at half size (as tall as an icon), else its gear or item icon
 const itemIcon=(id,scale=1,cls="")=>ICON_AT.card&&ICON_AT.card[id]!=null?iconHtml("card",id,scale/2,cls)
   :iconHtml(ICON_AT.gear&&ICON_AT.gear[id]!=null?"gear":"item",id,scale,cls);
+// a monster by id: its sprite at half size (as tall as an icon); scale 2 draws it full size (48 x 48)
+const mobIcon=(id,scale=1,cls="")=>iconHtml("mob",id,scale/2,cls);
 function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};let lists="";
   const rows=BUILD.SLOTS.map(s=>{const g0=b.gear[s.k]||{},items=gearChoices(s.k),cards=cardChoices(s.k,g0.id&&BUILD.item(g0.id));GEAR_LISTS["g_"+s.k]=pickList(items);GEAR_LISTS["c_"+s.k]=pickList(cards);
     lists+=`<datalist id="gl_${s.k}">${[...GEAR_LISTS["g_"+s.k]].map(([n,id])=>`<option value="${esc(n)}"${mem[id]?` label="remembered: ${esc(memTxt(mem[id]))}"`:""}>`).join("")}</datalist><datalist id="cl_${s.k}">${[...GEAR_LISTS["c_"+s.k]].map(([n,id])=>{const p=cardName({id});return `<option value="${esc(n)}"${p?` label="${esc(p)}"`:""}>`}).join("")}</datalist>`;
