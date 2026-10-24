@@ -70,7 +70,7 @@ const MOB_BY_ID=new Map(MOBS.map(m=>[m.id,m]));
 const fromHtml=(id,drops=itemInfo(id).d||[])=>[...drops.map(([mid,n,lv,k,ch])=>`${MOB_BY_ID.has(mid)?`<a href="#" data-info="mob:${mid}">${esc(n)}</a>`:esc(n)} <span class="note">Lv ${lv}${ch!=null?` · ${ch}%`:""}</span>${FROM_TAG[k]?` <span class="pill${k==="mvp"?" mvp":""}">${FROM_TAG[k]}</span>`:""}`),
   ...(itemInfo(id).q||[]).map(q=>`<span class="pill">quest</span> ${esc(q)}`)].join("<br>")||'<span class="muted">no known source</span>';
 // Item info (every drop of the monsters the farm tables know): the kinds of monster that drop an item, from those monsters (an MVP, a
-// mini boss or another Boss-class one, which counts as a mini boss) and, for gear and cards, rozerodb's full list (MVPs too)
+// mini boss or another Boss-class one, which counts as a mini boss) and, for gear and cards, the database's full list (MVPs too)
 const dropKinds=id=>new Set([...(ITEM_DROPS[id]||[]).map(d=>d.m.mvp?"mvp":d.m.mini||d.m.boss?"mini":"normal"),...(itemInfo(id).d||[]).map(r=>r[3])]);
 const itemFromOk=(id,v)=>!v||(v==="quest"?!!(itemInfo(id).q||[]).length:dropKinds(id).has(v));
 // its other sources: monsters the farm tables don't have (MVPs, champions) and quests, as in the Where to get column; "" when none

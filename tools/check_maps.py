@@ -1,10 +1,10 @@
 """Cross-check data/spawn.js against ragnarokzero.net/database/maps.
 
 Lists, per map, monsters ragnarokzero.net has that data/spawn.js doesn't, and spawn counts that differ.
-Each map is looked up under every code in data/maps.js (rozerodb code, in-game code and other codes).
+Each map is looked up under every code in data/maps.js (source map code, in-game code and other codes).
 Run: python tools/check_maps.py
 By default it leaves out plants and mushrooms (ids 1078-1085), event and elite variants (ids 2600+) and monsters
-with no spawn count; --all lists them too. Monsters rozerodb marks UPCOMING also show up as missing. On maps the client
+with no spawn count; --all lists them too. Monsters the database marks UPCOMING also show up as missing. On maps the client
 doesn't list yet our counts are null (not known), so only missing monsters show there.
 """
 import json

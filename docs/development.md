@@ -67,8 +67,8 @@ Each table lives in its own file, so a re-export after a patch only touches that
 | `jobs.js` | Job bonus stats and base Max HP / SP per base level. Written by `tools/export_jobs.py`. |
 | `cardnames.js` | The name each card gives the gear it's in, as the equipment window shows it ("Healing" for Vitata Card). Written by `tools/export_cardnames.py`. |
 | `affixes.js` | Random options per pool (monster drop, MVP, forging, activation, Glast Heim), gear type and option slot, with min–max and whether it's a %. Written by `tools/export_affixes.py`. |
-| `stones.js` | Costume enchant stones (one per costume slot) as bonus lines, and the stone sets. Made by hand from rozerodb's item descriptions. |
-| `special.js` | Pet egg enchants for the Taming Ring (Special Equipment, Accessory Right), Lv.1 and Lv.2 per pet, as bonus lines. Made from rozerodb's item descriptions. |
+| `stones.js` | Costume enchant stones (one per costume slot) as bonus lines, and the stone sets. Made by hand from the stones' item descriptions. |
+| `special.js` | Pet egg enchants for the Taming Ring (Special Equipment, Accessory Right), Lv.1 and Lv.2 per pet, as bonus lines. Made from the eggs' item descriptions. |
 | `memorial.js` | Memorial dungeons and their reward boxes, the Jello Fragment of each weekday and its Jellostone, the Expedition upgrades and the Subjugation Team / Expedition enchant pools. Made by hand from the Taiwan server's notices. |
 | `stellar.js` | The Activation routes (refine loss, certificates, Goblin Coin Fragments) and their NPCs. Made by hand from the Taiwan server's Activation System; the ★ weapons come from `equipment.js`. |
 | `iteminfo.js` | Each card's and piece of gear's in-game description, the monsters that drop it (MVP, mini boss or normal, with the drop %) and the quests that give it. Written by `tools/export_iteminfo.py`. |
@@ -86,10 +86,10 @@ All scripts use only the Python standard library.
 | `python tools/export_prontera.py [--refresh]` | Writes the gear, refine and skill data. |
 | `python tools/export_jobs.py [--refresh]` | Writes `data/jobs.js` from rAthena's pre-renewal job tables with Zero's changes (see the top of the script). |
 | `python tools/export_cardnames.py [--refresh]` | Writes `data/cardnames.js`: each card's name in the equipment window, from divine-pride.net's item pages, for the cards in `data/cards.js`. Run it after `export_prontera.py` picks up new cards. |
-| `python tools/export_iteminfo.py [--refresh]` | Writes `data/iteminfo.js`: descriptions and quests from the roz.prontera.info pages `export_prontera.py` cached, drops from rozerodb's item API and MVP / mini boss from its monster list. Run it after `export_prontera.py`. |
-| `python tools/export_recipes.py` | Writes `data/recipes.js` from rozerodb's Recipes page and Alchemy Lab guide (their data is in the pages themselves; there is no API). |
+| `python tools/export_iteminfo.py [--refresh]` | Writes `data/iteminfo.js`: descriptions and quests from the roz.prontera.info pages `export_prontera.py` cached, drops from the community database's item API and MVP / mini boss from its monster list. Run it after `export_prontera.py`. |
+| `python tools/export_recipes.py` | Writes `data/recipes.js` from the community database's Recipes page and Alchemy Lab guide (their data is in the pages themselves; there is no API). |
 | `python tools/export_icons.py [--refresh]` | Writes `img/gear-icons.png`, `img/item-icons.png`, `img/card-art.png` and `data/icons.js`: each item's inventory icon (24 × 24; gear in one sheet, every other item the page names in another: drops, recipe items, skill and recovery items) and a 36 × 48 thumbnail of each card's picture (every card has the same inventory icon), from divine-pride.net's copies of the client images. Images are cached in `tools/cache/icons/`. Run it after `export_prontera.py` or `export_recipes.py` picks up new items. |
-| `python tools/export_affixes.py` | Writes `data/affixes.js` from rozerodb's Affixes Simulator page (its data is in the page itself; there is no API). |
+| `python tools/export_affixes.py` | Writes `data/affixes.js` from the community database's Affixes Simulator page (its data is in the page itself; there is no API). |
 | `python tools/export_mobskills.py [--refresh]` | Writes `data/mobskills.js` from rAthena's pre-renewal monster skill and monster tables, for the monsters in `data/mobs.js`. |
 | `python tools/check_maps.py` | Compares `data/spawn.js` with the cross-check source and lists missing monsters and spawn counts that differ. Monsters marked as upcoming are expected to show up as missing. |
 | `python tools/check_drops.py` | Compares drops, drop rates and item names with the cross-check source. Loot value per kill isn't compared, because the two sources price items differently. |

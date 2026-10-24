@@ -37,7 +37,7 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
   return {ico:"",title:m.name,sub,
     body:`<div class="calc">${tiles}</div>${infoSec("Drops",drops&&`<div class="infoList">${drops}</div>`)}${infoSec("Spawns",maps&&`<div class="infoList">${maps}</div>`)}`,
     acts:`${inS?'<span class="pill up">In this session</span>':`<button type="button" class="primary" data-infoact="farm">${s.mobIds.length?"Also killing it":"Farming it now"}</button>`}
-      <button type="button" data-infoact="mobinfo">Monster info</button><a class="ext" href="${dbUrl(m)}" target="_blank" rel="noopener">rozerodb ↗</a>`}}
+      <button type="button" data-infoact="mobinfo">Monster info</button>`}}
 
 function popItem(id){const name=itemName(id);
   return {ico:itemIcon(id,1.5),title:name,sub:`#${id} · ${GROUP_NAME[groupOf(id)]}${looted(id)?"":" (not looted)"}`,

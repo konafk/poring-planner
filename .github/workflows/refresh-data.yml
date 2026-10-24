@@ -45,15 +45,15 @@ jobs:
         id: iteminfo
         continue-on-error: true
         run: python tools/export_iteminfo.py
-      - name: NPC prices, weights and item types (rozerodb.com)
+      - name: NPC prices, weights and item types (the community database)
         id: prices
         continue-on-error: true
         run: python tools/export_prices.py
-      - name: Random options (rozerodb.com)
+      - name: Random options (the community database)
         id: affixes
         continue-on-error: true
         run: python tools/export_affixes.py
-      - name: Crafting recipes (rozerodb.com)
+      - name: Crafting recipes (the community database)
         id: recipes
         continue-on-error: true
         run: python tools/export_recipes.py

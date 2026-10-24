@@ -1,5 +1,5 @@
 // Memorial dungeons, Jellostones and the memorial gear's upgrades and enchants. Made by hand from the Taiwan server's notices
-// (roz.gnjoy.com.tw), which run ahead of Global; item names and ids as the Global client has them (rozerodb.com).
+// (roz.gnjoy.com.tw), which run ahead of Global; item names and ids as the Global client has them.
 // MEMORIALS: one row per dungeon: name, lv (base level to enter), at (where you go in), normal / hard: the reward box,
 // [item id or null, name, how many].
 const MEMORIALS=[
