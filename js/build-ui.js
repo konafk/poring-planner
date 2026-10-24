@@ -214,7 +214,7 @@ function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}}
     else if(r.by==="exp")o.exp.all+=v;else if(r.by==="expRace")add(o.exp.race,r.t,v);else if(r.by==="spCost")o.spCost+=v;else if(r.by==="spRec")o.spRec+=v;else if(r.by==="hpRec")o.hpRec+=v});return o}
 // "Fill from gear": the lines the gear saved in Build from gear gives (gear, cards, affixes, stones, Taming Ring, other special
 // equipment; not consumables or buffs), one row per bonus. A bonus with different physical and magic values gets a row for each
-const setSaved=b=>{const sp=b.special||{};return Object.keys(b.gear||{}).length>0||Object.values(b.stones||{}).some(Boolean)||!!sp.ring||(sp.own||[]).length>0};
+const setSaved=b=>{const sp=b.special||{};return Object.keys(b.gear||{}).length>0||Object.values(b.stones||{}).some(Boolean)||!!sp.ring||(sp.own||[]).length>0||Object.values(sp.costume||{}).some(Boolean)};
 const gearSaved=c=>setSaved(c.build||{});
 function gearEqRows(c){const A=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,extra:[]},state.job,aspdBase).acc,rows=[];
   const add=(by,t,v,ch="both")=>{v=Math.round(v*100)/100;if(v)rows.push({by,t,ch,v})};
@@ -282,9 +282,18 @@ const STONE_FX={str:"STR",agi:"AGI",vit:"VIT",int:"INT",dex:"DEX",luk:"LUK",crit
   atk:"ATK",matk:"MATK",damage_percent:"Physical damage %",hp_recovery_percent:"HP recovery %",attack_delay_percent:"After-attack delay %",atk_percent:"ATK %",matk_percent:"MATK %",hp_percent:"MaxHP %",sp_percent:"MaxSP %",crit_damage_percent:"Critical damage %",cast_time_variable_percent:"Variable cast %"};
 const stoneFx=x=>x.off&&!x.b.length?x.off:x.b.map(([t,k,g,v])=>{const l=k==="size"?`Damage vs ${g} %`:t==="damage_taken_percent"?`${g[0].toUpperCase()+g.slice(1)} resist %`:STONE_FX[t]||t,pc=/ %$/.test(l);
   if(t==="damage_taken_percent")v=-v;return `${l.replace(/ %$/,"")} ${v>0?"+":""}${v}${pc?"%":""}`}).join(", ");
+// a stone goes on the costume in its slot: b.special.costume = {slot: costume id}, picked from the costumes that take the slot
+// (data/costumes.js; names from data/clientitems.js). A costume that takes more than one slot (Upper / Middle) is in each of them
+const costumeName=id=>(typeof CLIENT_ITEMS!=="undefined"&&CLIENT_ITEMS[id]||[])[0]||"";
+const COSTUME_LISTS={};
+const costumesFor=k=>COSTUME_LISTS[k]||(COSTUME_LISTS[k]=(typeof COSTUMES!=="undefined"?Object.entries(COSTUMES):[]).filter(([id,s])=>s.includes(k)&&costumeName(id))
+  .map(([id])=>[costumeName(id),+id]).sort((a,b)=>a[0].localeCompare(b[0])));
+function costumeLists(){if($("costumeLists").childElementCount)return;
+  $("costumeLists").innerHTML=BUILD.STONE_SLOTS.map(z=>`<datalist id="cos_${z.k}">${costumesFor(z.k).map(([n])=>`<option value="${esc(n)}">`).join("")}</datalist>`).join("")}
 // the Taming Ring (Special Equipment, Accessory Right) holds one pet egg enchant; "none" = no ring or an empty one
-function renderStones(){const b=gearSet(),sel=b.stones||{},ring=(b.special||{}).ring,all=typeof STONES!=="undefined"?STONES:[],eggs=typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[];
-  $("stoneRow").innerHTML=BUILD.STONE_SLOTS.map(z=>`<label>Costume ${z.label.toLowerCase()} stone<select data-stone="${z.k}"><option value="">none</option>${all.filter(x=>x.slot===z.k)
+function renderStones(){const b=gearSet(),sel=b.stones||{},ring=(b.special||{}).ring,cos=(b.special||{}).costume||{},all=typeof STONES!=="undefined"?STONES:[],eggs=typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[];costumeLists();
+  $("stoneRow").innerHTML=BUILD.STONE_SLOTS.map(z=>`<label>Costume ${z.label.toLowerCase()}<span class="itemBox">${itemIcon(cos[z.k])}<input data-costume="${z.k}" list="cos_${z.k}" placeholder="none" title="The costume the ${z.label.toLowerCase()} stone goes on" value="${esc(costumeName(cos[z.k]))}"></span></label>
+    <label>Costume ${z.label.toLowerCase()} stone<select data-stone="${z.k}"><option value="">none</option>${all.filter(x=>x.slot===z.k)
     .map(x=>`<option value="${x.id}"${+sel[z.k]===x.id?" selected":""}>${esc(x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""))}: ${esc(stoneFx(x))}</option>`).join("")}</select></label>`).join("")+
     `<label>Taming Ring pet egg<select data-ring="1"><option value="">none</option>${eggs.map(x=>`<option value="${x.id}"${+ring===x.id?" selected":""}>${esc(x.name)}: ${esc([x.b.length?stoneFx({b:x.b}):"",x.off||""].filter(Boolean).join(", "))}</option>`).join("")}</select></label>`;renderSpecialOwn()}
 // other special equipment: rows {on, name, opts} in b.special.own, each with up to OPT_MAX effects from the full affix list
@@ -307,6 +316,11 @@ $("specialOwn").addEventListener("input",e=>{const row=e.target.closest(".eqrow"
   save();renderAll()});
 $("stoneRow").addEventListener("change",e=>{const b=gearSet();
   if(e.target.dataset.ring){b.special=b.special||{};if(e.target.value)b.special.ring=+e.target.value;else delete b.special.ring;save();renderAll();return}
+  // a costume by its name; one that takes other slots too comes off what was in them, and goes in all of its slots
+  if(e.target.dataset.costume){const k=e.target.dataset.costume,v=e.target.value.trim().toLowerCase(),hit=v&&costumesFor(k).find(([n])=>n.toLowerCase()===v);
+    if(v&&!hit){renderStones();return}b.special=b.special||{};const cos=b.special.costume=b.special.costume||{},off=id=>Object.keys(cos).forEach(s=>{if(cos[s]===id)delete cos[s]});
+    if(cos[k])off(cos[k]);if(hit){const sl=COSTUMES[hit[1]];sl.forEach(s=>{if(cos[s])off(cos[s])});sl.forEach(s=>cos[s]=hit[1])}
+    if(!Object.keys(cos).length)delete b.special.costume;save();renderAll();return}
   const k=e.target.dataset.stone;if(!k)return;b.stones=b.stones||{};
   if(e.target.value)b.stones[k]=+e.target.value;else delete b.stones[k];save();renderAll()});
 // ---- remembered gear: each item keeps the refine, cards and affixes it had when it last came off (build.mem by item id, the
@@ -406,9 +420,11 @@ function lookHtml(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)
 function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),sp=EW_TAB==="special";
   const gearSlot=(k,right)=>{const g=b.gear[k],it=g&&g.id&&BUILD.item(g.id),s=BUILD.SLOTS.find(x=>x.k===k);
     return ewSlot(k,k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label,it?gameName(g):"",iconHtml("gear",it&&it.id),right)};
-  const stone=(k,right)=>{const id=(b.stones||{})[k],x=id&&(typeof STONES!=="undefined"?STONES:[]).find(s=>s.id===+id&&s.slot===k);
-    return ewSlot(k,`Costume ${k} stone`,x?x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""):"",itemIcon(x&&x.id),right)};
-  // stones and the Taming Ring (item 24966) are in the item icon sheet, not the gear one
+  // a costume slot: the costume with its stone, "[Costume] Chicken beak [STR Stone]" (or the stone alone, when no costume is picked)
+  const stone=(k,right)=>{const id=(b.stones||{})[k],x=id&&(typeof STONES!=="undefined"?STONES:[]).find(s=>s.id===+id&&s.slot===k),
+      c=((b.special||{}).costume||{})[k],cn=costumeName(c),sn=x?x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""):"";
+    return ewSlot(k,`Costume ${k}`,cn?(sn?`${cn} [${sn}]`:cn):sn,itemIcon(cn?c:x&&x.id),right)};
+  // costumes, stones and the Taming Ring (item 24966) are in the item icon sheet, not the gear one
   const ring=()=>{const id=(b.special||{}).ring,x=id&&(typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[]).find(e=>e.id===+id);
     return ewSlot("ring","Taming Ring",x?`Taming Ring [${x.name}]`:"",itemIcon(x&&24966),false)};
   // other special equipment you wear goes in the right column's free slots
@@ -440,7 +456,7 @@ $("equipWin").addEventListener("click",e=>{const t=e.target.closest("button");if
   if(t.dataset.ewhair){const S=JOB_SPRITES.body[state.job]||JOB_SPRITES.body.Novice,n=ewHairs(ewSex(S));if(n)L.hair=(L.hair-1+ +t.dataset.ewhair+n)%n+1;save();renderEquipWin();return}
   if(t.dataset.ewcolor){const S=JOB_SPRITES.body[state.job]||JOB_SPRITES.body.Novice,n=ewColors(ewSex(S),L.hair);if(n)L.color=((L.color<n?L.color:0)+ +t.dataset.ewcolor+n)%n;save();renderEquipWin();return}
   const k=t.dataset.ewslot;if(!k)return;
-  const to=EW_TAB==="special"?(k==="ring"?$("stoneRow").querySelector("[data-ring]"):k.startsWith("own")?$("specialOwn").querySelector(`[data-i="${k.slice(3)}"] [data-f=name]`):$("stoneRow").querySelector(`[data-stone="${k}"]`))
+  const to=EW_TAB==="special"?(k==="ring"?$("stoneRow").querySelector("[data-ring]"):k.startsWith("own")?$("specialOwn").querySelector(`[data-i="${k.slice(3)}"] [data-f=name]`):$("stoneRow").querySelector(`[data-costume="${k}"]`))
     :$("gearTable").querySelector(`tr[data-slot="${k}"] input.item`);
   if(to){to.scrollIntoView({block:"center",behavior:"smooth"});to.focus({preventScroll:true})}});
 function renderBuild(){const c=C(),on=c.mode==="build";
