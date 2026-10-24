@@ -1,11 +1,13 @@
 """Export the name each card adds to the gear it's in (the equipment window shows "Healing Shining Clip", not the Vitata Card)
-into data/cardnames.js.
+into data/cards.js: each card gets affix (the name) and affixPos ("prefix", or "suffix" for a name starting with "of " that goes
+after the item name, like "Boots of Health").
 
-    python tools/export_cardnames.py            # fetch what isn't cached, then write data/cardnames.js
+    python tools/export_cardnames.py            # fetch what isn't cached, then add the names to data/cards.js
     python tools/export_cardnames.py --refresh  # refetch every card
 
-Names come from divine-pride.net's item pages (the "Prefix" row; a name starting with "of " goes after the item name, like
-"Boots of Health"). Cards are the ones in data/cards.js. Pages are fetched one per second and cached in tools/cache/
+Names come from divine-pride.net's item pages (the "Prefix" row). The community database's item API (/api/items/<id>) has a card_prefix_name too, but only
+the Chinese one ("殘酷的" for Hydra Card's "Bloody"). Cards are the ones in data/cards.js, so run this after export_prontera.py
+(which keeps the names already there when it rewrites the file). Pages are fetched one per second and cached in tools/cache/
 (gitignored). Delete a cached file to refetch it. Zero's own versions of classic cards take the classic card's name (CLASSIC). Cards divine-pride has no English name for are left out and listed at the end.
 """
 import html, json, os, re, sys, time, urllib.error, urllib.request
@@ -15,17 +17,22 @@ CACHE = os.path.join(ROOT, "tools", "cache")
 SITE = "https://www.divine-pride.net"
 UA = "RO-Zero-farmer-calculator data export"
 # names divine-pride has only in Korean, as the Global equipment window shows them; other non-English names are left out
-GLOBAL = {300835: "Shark Family"}  # "+4 Shark Family Muffler"
+GLOBAL = {300835: "Shark Family",  # "+4 Shark Family Muffler"
+          300834: "Baby Shark"}
 # Zero's own versions of classic cards (27xxx: Maya, Hunter Fly, Bloody Knight...) have no name on divine-pride: they take the classic card's (ids from rAthena's item_db).
 # Checked in game for Hunter Fly: "Hybrid Malicious Sage..." is a Sidewinder and a Hunter Fly Card ("Malicious")
 CLASSIC = {27275: 4320, 27206: 4142, 27268: 4134, 27271: 300293, 27270: 300292, 27153: 4128, 27266: 4115, 27272: 300294,
            27269: 4318, 27154: 4146, 27207: 4131, 27273: 300295, 27208: 4144, 27267: 4121, 27274: 300296}
 
 
-def card_ids():
-    src = open(os.path.join(ROOT, "data", "cards.js"), encoding="utf-8").read()
-    start = src.index("[", src.index("const CARDS="))
-    return [(c["id"], c["name"]) for c in json.loads(src[start:src.rindex("]") + 1])]
+CARDS_JS = os.path.join(ROOT, "data", "cards.js")
+
+
+def read_cards():
+    """data/cards.js as (header comment lines, card list)."""
+    src = open(CARDS_JS, encoding="utf-8").read()
+    at = src.index("const CARDS=")
+    return src[:at], json.loads(src[src.index("[", at):src.rindex("]") + 1])
 
 
 def page(item_id, refresh=False):
@@ -61,24 +68,25 @@ def prefix(text):
 
 def main():
     refresh = "--refresh" in sys.argv
-    names, missing = {}, []
-    cards = card_ids()
-    for i, (cid, name) in enumerate(cards, 1):
+    named, missing = 0, []
+    head, cards = read_cards()
+    for i, c in enumerate(cards, 1):
+        cid = c["id"]
         p = GLOBAL.get(cid) or prefix(page(cid, refresh)) or (cid in CLASSIC and prefix(page(CLASSIC[cid], refresh)))
+        c.pop("affix", None)
+        c.pop("affixPos", None)
         if p and p.isascii():
-            names[cid] = p
+            c["affix"], c["affixPos"] = p, "suffix" if p.startswith("of ") else "prefix"
+            named += 1
         else:
-            missing.append(f"{cid} {name}")
+            missing.append(f"{cid} {c['name']}")
         if i % 25 == 0:
             print(f"{i}/{len(cards)}", flush=True)
-    body = ",\n".join(f"{k}:{json.dumps(v, ensure_ascii=False)}" for k, v in sorted(names.items()))
-    with open(os.path.join(ROOT, "data", "cardnames.js"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("// The name each card adds to the gear it's in, as the equipment window shows it (card id -> name; a name starting with \"of \"\n"
-                "// goes after the item name). From divine-pride.net, written by tools/export_cardnames.py.\n"
-                "const CARDNAMES={" + body + "};\n")
-    print(f"{len(names)} card names written")
+    with open(CARDS_JS, "w", encoding="utf-8", newline="\n") as f:
+        f.write(head + "const CARDS=" + json.dumps(cards, ensure_ascii=False, separators=(",", ":")) + ";\n")
+    print(f"{named} card names written to data/cards.js")
     if missing:
-        print(f"{len(missing)} cards without a name: " + ", ".join(missing))
+        print(f"{len(missing)} cards without a name (ids): " + ", ".join(missing))
 
 
 if __name__ == "__main__":

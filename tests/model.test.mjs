@@ -1496,9 +1496,35 @@ t("in-game gear names fill the item and its cards: card prefixes and suffixes, D
   assert.equal(rd("weapon", "Bloody Damascus").cards.length, 1);
   // the equipment window cuts long names: "Hard Nordfeld Soldier" is Nordfeld Soldier's Armor with a Pupa Card
   assert.deepEqual(rd("armor", "Hard Nordfeld Soldier"), { id: 450588, refine: null, cards: [4003] });
+  assert.deepEqual(rd("weapon", "+5 Double Bloody Damascus"), { id: 510132, refine: 5, cards: [4035, 4035] });
+  // one Hydra Card fits all three Damascus copies: the first is filled in, the other two are in alts
+  const one = rd("weapon", "Bloody Damascus");
+  assert.deepEqual([one, ...one.alts].map(r => r.id).sort(), [1222, 510132, 510137]);
+  assert.deepEqual(rd("garment", "+4 Shark Family Muffler"), { id: 480378, refine: 4, cards: [300835] });
+  assert.deepEqual(rd("garment", "Baby Shark Muffler [1]"), { id: 480378, refine: null, cards: [300834] });
   // Poo Poo Hat: damage from Demi-Human −10% of its own
   run(`C().build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{headTop:{id:2289}}};SKFX=skillEffects(C());applyBuild()`);
   assert.deepEqual(JSON.parse(run("JSON.stringify(C().bx.taken.race)")), { "Demi-Human": -10 });
+});
+
+t("cards carry the name they give their gear: affix before or after the item name", () => {
+  const card = id => JSON.parse(run(`JSON.stringify((({affix,affixPos})=>({affix,affixPos}))(BUILD.item(${id})))`));
+  assert.deepEqual(card(4035), { affix: "Bloody", affixPos: "prefix" });          // Hydra
+  assert.deepEqual(card(4003), { affix: "Hard", affixPos: "prefix" });            // Pupa
+  assert.deepEqual(card(4545), { affix: "Novice", affixPos: "prefix" });          // Novice Poring
+  assert.deepEqual(card(300834), { affix: "Baby Shark", affixPos: "prefix" });
+  assert.deepEqual(card(300835), { affix: "Shark Family", affixPos: "prefix" });
+  assert.deepEqual(card(4050), { affix: "of Hermes", affixPos: "suffix" });       // Matyr
+  assert.equal(run("CARDS.filter(c=>c.affix&&(c.affixPos==='suffix')!==c.affix.startsWith('of ')).length"), 0);
+  assert.equal(run("cardName({id:4035})"), "Bloody");
+  assert.equal(run("cardName(BUILD.item(4003))"), "Hard");
+  // Item info: find card by prefix, by part of it, or from a whole gear name
+  const find = q => JSON.parse(run(`JSON.stringify(cardsByAffix(${JSON.stringify(q)}).map(c=>c.id))`));
+  assert.deepEqual(find("bloody"), [4035]);
+  assert.ok(find("of herm").includes(4050));
+  assert.deepEqual(find("+5 Double Bloody Damascus"), [4035]);
+  assert.ok(find("Hard Nordfeld Soldier").includes(4003));
+  assert.deepEqual(find(" "), []);
 });
 
 t("cards any job can slot: Side Winder, Hunter Fly, Vitata", () => {

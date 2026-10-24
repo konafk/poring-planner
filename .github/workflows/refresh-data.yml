@@ -57,7 +57,7 @@ jobs:
         id: recipes
         continue-on-error: true
         run: python tools/export_recipes.py
-      - name: Every item in the client (rozerodb.com)
+      - name: Every item in the client (the community database)
         id: items
         continue-on-error: true
         run: python tools/export_items.py
