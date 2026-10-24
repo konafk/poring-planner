@@ -171,7 +171,7 @@ function renderTracker(){renderStart();
     $("logMoreMeta").textContent=bits.join(" · ")}
   // several monsters: just the map (the monsters are in the tooltip), so the line stays short
   $("subtitle").title=ms.length>1?`Farming ${ms.map(m=>m.name).join(", ")} · weighted by spawn counts`:"";
-  $("subtitle").innerHTML=ms.length>1?(smp?`Farming on ${esc(mapLabel(smp))}`:`Farming ${ms.length} monsters`):mob?`Farming ${esc(mob.name)} · Lv ${mob.lv} · ${mob.el?`<span class="el ${mob.el}">${mob.el} ${mob.elv}</span> · `:""}${mob.size||""} ${mob.race||""} · ${fmtExp(mob)} base EXP${smp?` · on ${esc(mapLabel(smp))}`:""} · <a href="${dbUrl(mob)}" target="_blank" rel="noopener">rozerodb ↗</a>`:"Pick where to farm on the Monsters &amp; maps tab and press \"Farm here\"";
+  $("subtitle").innerHTML=ms.length>1?(smp?`Farming on ${esc(mapLabel(smp))}`:`Farming ${ms.length} monsters`):mob?`Farming ${esc(mob.name)} · Lv ${mob.lv} · ${mob.el?`<span class="el ${mob.el}">${mob.el} ${mob.elv}</span> · `:""}${mob.size||""} ${mob.race||""} · ${fmtExp(mob)} base EXP${smp?` · on ${esc(mapLabel(smp))}`:""}`:"Pick where to farm on the Monsters &amp; maps tab and press \"Farm here\"";
   const lastE=[...s.entries].sort((a,b)=>a.t-b.t).pop();
   if(lastE){$("tCurLv").textContent=`Lv ${lastE.lv}`;$("tCurLvS").textContent=lvExp(lastE.lv)?`${fmtN(lvExp(lastE.lv))} EXP to level`:"Lv outside EXP table";
     $("tCurPct").textContent=pct(lastE.pct,1);$("tCurPctS").textContent=`logged ${fmtT(lastE.t)}`}
@@ -453,7 +453,7 @@ function renderMobs(){
     <td class="${m.mult>100?"good":m.mult<=0?"bad":""}">${m.mult<=0?"can't hurt":Math.round(m.mult)+"%"}${elTag(m.el2)}</td><td class="${m.hitc>=95?"good":m.hitc>=70?"warnc":"bad"}">${Math.round(m.hitc)}%</td><td>${isFinite(m.uses)?m.uses.toFixed(1):"–"}</td>
     <td class="${m.sec<=3?"good":m.sec<=8?"warnc":"bad"}">${isFinite(m.sec)?m.sec.toFixed(1)+"s":"–"}</td><td><b>${m.epm?fmtN(m.epm):"–"}</b></td>
     <td class="${m.dodge==null?"":m.dodge>=70?"good":m.dodge>=40?"warnc":"bad"}">${m.dodge==null?"–":m.dodge+"%"}</td><td>${m.hpm==null?"–":fmtN(m.hpm)}</td><td>${hasLoot(m)?fmtN(m.zk):"–"}</td><td>${hasLoot(m)&&isFinite(m.sec)?fmtN(m.zph):"–"}</td>
-    <td class="name">${m.om.length?`<span class="map" title="${esc(m.om.map(x=>mapLabel(x[0])+" ≈"+spN(x[1])).join(", "))}"><b>${mapCode(m.om[0][0])}</b><span>≈${spN(m.om[0][1])}</span></span>`:noneOpen(m)}</td><td><a href="${dbUrl(m)}" target="_blank" rel="noopener" title="rozerodb">↗</a></td></tr>`).join("")
+    <td class="name">${m.om.length?`<span class="map" title="${esc(m.om.map(x=>mapLabel(x[0])+" ≈"+spN(x[1])).join(", "))}"><b>${mapCode(m.om[0][0])}</b><span>≈${spN(m.om[0][1])}</span></span>`:noneOpen(m)}</td><td></td></tr>`).join("")
     ||'<tr><td colspan="19" class="name muted">No monsters match these filters.</td></tr>';
   renderMobTiles();
 }
@@ -476,7 +476,7 @@ function renderMobTiles(){
    <div class="tile" title="${esc(hpTip(r))}"><div class="k">Defence</div><div class="v mono">${r.hpm==null?"–":fmtN(r.hpm)}</div><div class="s">HP lost/min${r.hpm>0&&vitHeals()?" (your Heals cover it)":""}${r.pz>0.005?` · poisoned ${Math.round(r.pz*100)}%`:""}${crowdN(m)>1?` · rampage of ${fmtP(crowdN(m))}`:""} · you dodge ${r.dodge??"–"}% · DEF ${m.def??"–"} · MDEF ${m.mdef??"–"}</div></div>
 ${withEl(r.el2,()=>susTile(susMob(m,walkSec()),"vs "+esc(m.name)))}
 ${weightTile(m)}
-   <div class="tile"><div class="k">Maps</div><div class="v mono">${om.length?mapCode(om[0][0]):"–"}</div><div class="s">${om.length?om.slice(0,4).map(x=>`${esc(mapLabel(x[0]))} ≈${spN(x[1])}`).join(" · "):`none open${mobArrives(m)?`, comes with the ${esc(mobArrives(m))}`:""}`} · <a href="${dbUrl(m)}" target="_blank" rel="noopener">rozerodb ↗</a></div></div>
+   <div class="tile"><div class="k">Maps</div><div class="v mono">${om.length?mapCode(om[0][0]):"–"}</div><div class="s">${om.length?om.slice(0,4).map(x=>`${esc(mapLabel(x[0]))} ≈${spN(x[1])}`).join(" · "):`none open${mobArrives(m)?`, comes with the ${esc(mobArrives(m))}`:""}`}</div></div>
    <div class="bar span-all">${s.mobIds.includes(m.id)?'<span class="pill up">In this session</span> <button type="button" class="small" id="dropMobBtn">Remove from session</button>':`<button type="button" class="primary" id="useMobBtn">${s.mobIds.length?`Also killing ${esc(m.name)}`:`Farming ${esc(m.name)} now`}</button>`}</div>`;
   const b=$("useMobBtn");if(b)b.addEventListener("click",()=>{toggleSessMob(m.id);state.calcMobId=null;save();renderAll()});
   const d=$("dropMobBtn");if(d)d.addEventListener("click",()=>{toggleSessMob(m.id);save();renderAll()});
@@ -630,7 +630,6 @@ const infoMob=()=>MOBS.find(m=>m.id===state.infoMobId)||calcMob()||MOBS.find(m=>
 function renderMobInfo(){
   const m=infoMob();if(!m)return;
   if(document.activeElement!==$("mobInfoInput"))$("mobInfoInput").value=m.name;
-  $("mobInfoDb").href=dbUrl(m);
   const r=mobRow(m,walkSec());
   $("mobInfoTiles").innerHTML=`<div class="tile now"><div class="k">${mobIcon(m.id,1,"il")}${esc(m.name)} · Lv ${m.lv}</div><div class="v mono">${fmtN(m.hp)} HP</div><div class="s">${m.el?`${m.el} ${m.elv}`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${m.mvp?" · MVP":""}${m.mini?" · mini boss":""}${m.boss?" · Boss class":""}${m.agg?" · aggressive":""}</div></div>
    <div class="tile"><div class="k">EXP</div><div class="v mono">${fmtExp(m)}</div><div class="s">${m.expUnknown?"no EXP data for it yet":`job ${fmtN(m.job)} · you get ${fmtN(killExp(m))} / ${fmtN(killJobExp(m))} job a kill`}</div></div>

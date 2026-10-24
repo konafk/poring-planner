@@ -37,7 +37,7 @@ Object.assign(globalThis, {
             armor: Array.from({ length: 20 }, (_, i) => [0, 0, (i + 1) ** 2]) },
   JOBDATA: { Knight: { bonus: { str: [1, 6], vit: [5] }, hp: [40, 48, 58], sp: [10, 12, 14] } },
 });
-// the real affix list (rozerodb) and costume enchant stones, as the page loads them before build.js
+// the real affix list (the database) and costume enchant stones, as the page loads them before build.js
 for (const f of ["affixes", "stones", "special"]) (0, eval)(readFileSync(new URL(`../data/${f}.js`, import.meta.url), "utf8").replace(/^const (\w+)=/gm, "globalThis.$1="));
 const BUILD = require("../build.js");
 const aspdBase = () => 150;
@@ -202,14 +202,14 @@ t("random options picked from lists: any item takes up to 5, resists and cast ti
   assert.ok(kept.unmodelled.some(x => /option not understood: EXP \+5%$/.test(x)));
 });
 
-t("random options come from rozerodb's affixes, filtered to what the row's gear rolls", () => {
+t("random options come from the affix list, filtered to what the row's gear rolls", () => {
   const keys = (slot, it) => BUILD.optChoices(slot, it).map(o => o.k);
   const by = (slot, it, k) => BUILD.optChoices(slot, it).find(o => o.k === k);
   // a sword rolls melee weapon affixes (monster / MVP drop, forging, activation), with the min–max over all of them
   const sword = keys("weapon", BUILD.item(1));
   assert.ok(sword.includes("atk") && sword.includes("dmg_race_demon") && sword.includes("dmg_size_small") && sword.includes("ign_def_race_demon"));
   assert.ok(!sword.includes("matk") && !sword.includes("res_race_demon") && !sword.includes("mdmg_race_demon"));
-  // options rozerodb has no affix for ("Other": special enchants) go on every part, with no min–max
+  // options the database has no affix for ("Other": special enchants) go on every part, with no min–max
   assert.ok(sword.includes("str") && sword.includes("magic_damage_percent") && keys("armor", BUILD.item(2)).includes("str"));
   assert.equal(by("weapon", BUILD.item(1), "str").range, null);
   assert.deepEqual(by("weapon", BUILD.item(1), "atk").range, [1, 60]);           // drops 5–30, activation 1–39, forging 1–60
@@ -228,7 +228,7 @@ t("random options come from rozerodb's affixes, filtered to what the row's gear 
   assert.deepEqual(by("armor", BUILD.item(2), "res_race_demon").range, [3, 7]);
   assert.ok(keys("garment", null).includes("res_ele_fire") && !keys("armor", BUILD.item(2)).includes("res_ele_fire"));
   assert.deepEqual(by("shoes", BUILD.item(3), "hp").range, [150, 300]);
-  // rozerodb has no pool for accessories, headgear or shields: those list every option, old hand-made ones too
+  // the database has no pool for accessories, headgear or shields: those list every option, old hand-made ones too
   assert.equal(BUILD.optGear("acc1", BUILD.item(7)), null);
   assert.equal(keys("acc1", BUILD.item(7)).length, BUILD.OPTIONS.length);
   assert.ok(keys("acc1", BUILD.item(7)).includes("str") && keys("headTop", BUILD.item(4)).includes("mele_fire"));
@@ -252,7 +252,7 @@ t("random options come from rozerodb's affixes, filtered to what the row's gear 
 
 t("ignore DEF / MDEF of a race, size, element or boss / normal monsters", () => {
   const keys = (slot, it) => BUILD.optChoices(slot, it).map(o => o.k);
-  // rozerodb's race and Normal Enemy affixes go on the weapons that roll them; the sizes, elements and boss it has none for yet on every part
+  // the database's race and Normal Enemy affixes go on the weapons that roll them; the sizes, elements and boss it has none for yet on every part
   assert.ok(keys("weapon", { slot: ["weapon"], type: "staff_1h" }).includes("ign_mdef_race_dragon") && keys("weapon", BUILD.item(1)).includes("ign_def_kind_normal"));
   for (const k of ["ign_def_kind_boss", "ign_def_size_small", "ign_mdef_size_large", "ign_def_ele_fire", "ign_mdef_ele_undead"])
     assert.ok(keys("weapon", BUILD.item(1)).includes(k) && keys("armor", BUILD.item(2)).includes(k), k);

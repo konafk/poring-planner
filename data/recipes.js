@@ -1,5 +1,5 @@
-// Crafting recipes from rozerodb.com's Recipes page (https://rozerodb.com/recipes), exported by tools/export_recipes.py.
-// The Alchemy Lab guide (https://rozerodb.com/guides/alchemy-lab) adds what NPCs make for a fee (type npc).
+// Crafting recipes from the community database's Recipes page, exported by tools/export_recipes.py.
+// Its Alchemy Lab guide adds what NPCs make for a fee (type npc).
 // RECIPES: cat (Forging, Brewing, Arrows, Cooking, Misc, Mixture & Counteragent, Dye Making), type (forge, ore, brew, arrow, cook,
 // other, npc), id (the item made), n (how many one craft makes), lv (a forged weapon's level, else null), mats [[item id, amount]],
 // and for an NPC's: fee (zeny) and npc [name, map x,y]. RECIPE_ITEMN: the name of every item in them.

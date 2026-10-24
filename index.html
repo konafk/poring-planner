@@ -614,14 +614,14 @@
   </section>
 
   <section class="card" id="starCard" data-tab="star">
-    <div class="bar"><h2 class="grow">★ Forging Certificates</h2></div>
-    <div class="note">Not on Global yet: the Activation System is the Taiwan server's, and the costs may change when it comes. The ★ weapons below are in Global's client already.</div>
+    <div class="bar"><h2 class="grow">★ Forging Certificates</h2><span class="pill down" title="Taiwan Zero data: the Activation System isn't on Global yet">Not open in game yet</span></div>
+    <div class="note"><b>Not open in game yet.</b> This is Taiwan Zero data: the Activation System isn't on Global, and its costs may change when it comes. The ★ weapons below are in Global's client already.</div>
     <div class="scroll mt"><table id="starTable"><thead><tr><th>Weapon type</th><th>★ weapons</th><th>You have</th><th>To go</th><th>Fastest for you</th><th>Certificates / hr</th><th>Time</th></tr></thead><tbody id="starRows"></tbody></table></div>
     <div class="note hint">Taking a ★ weapon to ★★ takes 100 ★ Forging Certificates of its weapon type. Workshop Apprentice Nariya gives one for each monster-drop weapon of that type, so type the certificates and drop weapons of the type you have. Fastest for you is the monster on an open map that gets you them quickest at your kill speed (Monsters &amp; maps' walking included), counting every weapon of the type it drops at its drop rate with your drop bonus; monsters with no published rate don't count. Saved per account.</div>
   </section>
 
   <section class="card" id="starRulesCard" data-tab="star">
-    <div class="bar"><h2 class="grow">Activation</h2><label class="bar note">Your weapon's refine <input class="w-xs" id="starRefine" type="number" min="0" max="20" step="1" placeholder="+0"></label></div>
+    <div class="bar"><h2 class="grow">Activation</h2><span class="pill down" title="Taiwan Zero data: the Activation System isn't on Global yet">Not open in game yet</span><label class="bar note">Your weapon's refine <input class="w-xs" id="starRefine" type="number" min="0" max="20" step="1" placeholder="+0"></label></div>
     <div class="scroll"><table id="starRulesTable"><thead><tr><th>Route</th><th>Refine</th><th>Certificates</th><th>Goblin Coin Fragments</th><th>Yours after</th></tr></thead><tbody id="starRoutes"></tbody></table></div>
     <div class="scroll mt"><table id="starNpcTable"><thead><tr><th>NPC</th><th>Where</th><th>What for</th></tr></thead><tbody id="starNpcs"></tbody></table></div>
     <div class="note hint">Activation keeps the cards, enchants and random options; only the refine drops, so refine to +9 or +10 first (+9 ends at +2 on the −7 route, +6 on the −3 one). That makes a well-rolled monster-drop weapon worth keeping. ★★ to ★★★ and ★ armor came in the Taiwan server's later updates. Whether Blacksmith-forged weapons count for certificates isn't known.</div>
@@ -662,7 +662,7 @@
   </section>
 
   <section class="card" id="mobInfoCard" data-tab="mobinfo">
-    <div class="bar"><h2 class="grow">Monster info</h2><a class="ext" id="mobInfoDb" target="_blank" rel="noopener">rozerodb ↗</a></div>
+    <div class="bar"><h2 class="grow">Monster info</h2></div>
     <div class="bar" id="mobInfoF" title="Element, Race, Size and Boss narrow the monster search"><label class="grow">Monster<input id="mobInfoInput" list="mobInfoList" placeholder="Search monster"></label></div>
     <datalist id="mobInfoList"></datalist>
     <div class="calc" id="mobInfoTiles"></div>
@@ -677,7 +677,7 @@
     <div class="bar"><h2 class="grow">Item info</h2></div>
     <div class="bar">
       <label class="grow">Item<input id="itemSearch" placeholder="name or #id"></label>
-      <label title="Monsters that drop it (MVPs from rozerodb's drop lists, for gear and cards), or a quest">Where to get<select id="itemFrom"></select></label>
+      <label title="Monsters that drop it (MVPs from the full drop lists, for gear and cards), or a quest">Where to get<select id="itemFrom"></select></label>
     </div>
     <div class="calc" id="itemTiles"></div>
     <div id="itemDroppers" hidden><div class="scroll"><table id="itemDropTable"><thead><tr><th data-sk="name">Dropped by</th><th data-sk="lv">Lv</th><th data-sk="ch">Chance</th><th data-sk="your">Your chance</th><th data-sk="nz" title="what an NPC pays for it × your chance">NPC z / kill</th><th data-sk="z">Zeny / kill from it</th><th data-sk="sp" title="how many of it spawn on its best open map">Spawns</th><th data-sk="map">Best open map</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><input type="search" data-tf="lv" placeholder="30-60"></td><td><input type="search" data-tf="ch" placeholder=">1"></td><td><input type="search" data-tf="your" placeholder=">1"></td><td><input type="search" data-tf="nz" placeholder=">1"></td><td><input type="search" data-tf="z" placeholder=">1"></td><td><input type="search" data-tf="sp" placeholder=">20"></td><td><input type="search" data-tf="map" placeholder="map"></td></tr></thead><tbody></tbody></table></div></div>
@@ -725,7 +725,7 @@
     </div>
     <div class="seg" role="radiogroup" aria-label="Category" id="recipeCats"></div>
     <div class="scroll tall"><table id="recipeTable" class="dbTable"><thead><tr><th data-sk="name">Makes</th><th data-sk="cat" class="l">Category</th><th data-sk="lv" title="a forged weapon's level">Lv</th><th data-sk="mats" class="l">Materials</th><th data-sk="worth" title="what the materials are worth (your Market price, else what an NPC pays), plus the fee for what an NPC makes">Materials worth</th></tr></thead><tbody></tbody></table></div>
-    <div class="note hint">What each craft uses up, from rozerodb's Recipes page and Alchemy Lab guide. Search matches the materials and NPCs too, so you can find what a drop turns into. Forging is weapons (Lv = the weapon's level) and ores into Iron, Steel and elemental stones; Arrows is Arrow Crafting, where one item makes a stack. Mixture &amp; Counteragent are made by Morgenstein in Geffen (talk to Merchant Louitz in Alberta, then Aure Dupon in Geffen, first) and the Dyestuffs by JavaDullihan in Morroc, each for a zeny fee. Materials worth = each material at your Market price, else what an NPC pays (+? when one has neither), plus that fee. Click any item for who drops it and every recipe that makes or uses it.</div>
+    <div class="note hint">What each craft uses up. Search matches the materials and NPCs too, so you can find what a drop turns into. Forging is weapons (Lv = the weapon's level) and ores into Iron, Steel and elemental stones; Arrows is Arrow Crafting, where one item makes a stack. Mixture &amp; Counteragent are made by Morgenstein in Geffen (talk to Merchant Louitz in Alberta, then Aure Dupon in Geffen, first) and the Dyestuffs by JavaDullihan in Morroc, each for a zeny fee. Materials worth = each material at your Market price, else what an NPC pays (+? when one has neither), plus that fee. Click any item for who drops it and every recipe that makes or uses it.</div>
   </section>
 
   <section class="card" data-tab="ref">

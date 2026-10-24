@@ -1,13 +1,13 @@
-"""Export crafting recipes from rozerodb.com's Recipes page and Alchemy Lab guide into data/recipes.js.
+"""Export crafting recipes from the community database's Recipes page and Alchemy Lab guide into data/recipes.js.
 
     python tools/export_recipes.py
 
-The page (https://rozerodb.com/recipes) has no API: its whole list is in the server-rendered Next.js payload (self.__next_f.push
+The page has no API: its whole list is in the server-rendered Next.js payload (self.__next_f.push
 chunks) as [{category, craft_type, name, item_id, quantity, level, materials: [{name, id, amount}]}], which is what every tab of
 the page shows. Categories: Forging (weapons, and ores refined into Iron / Steel / elemental stones), Brewing, Arrows (Arrow
 Crafting: one item makes a stack of arrows), Cooking and Misc. level is the weapon level of a forged weapon.
 
-The Alchemy Lab guide (https://rozerodb.com/guides/alchemy-lab) adds the recipes NPCs make for a fee: Mixture & Counteragent
+The Alchemy Lab guide adds the recipes NPCs make for a fee: Mixture & Counteragent
 (Morgenstein, after a short quest) and Dye Making (JavaDullihan). They're only in its rendered HTML, one recipe card each: a name,
 a zeny fee, the materials (item links with a quantity) and the result (an item link with "x N"). The NPC is the last one each
 section's steps name.
@@ -64,8 +64,8 @@ def main():
                      "mats": [[m["id"], m["amount"]] for m in r["materials"]]})
     rows += lab(names)
     rows.sort(key=lambda r: (CATS.index(r["cat"]) if r["cat"] in CATS else len(CATS), names[r["id"]], r["mats"]))
-    head = ("// Crafting recipes from rozerodb.com's Recipes page (https://rozerodb.com/recipes), exported by tools/export_recipes.py.\n"
-            "// The Alchemy Lab guide (https://rozerodb.com/guides/alchemy-lab) adds what NPCs make for a fee (type npc).\n"
+    head = ("// Crafting recipes from the community database's Recipes page, exported by tools/export_recipes.py.\n"
+            "// Its Alchemy Lab guide adds what NPCs make for a fee (type npc).\n"
             "// RECIPES: cat (Forging, Brewing, Arrows, Cooking, Misc, Mixture & Counteragent, Dye Making), type (forge, ore, brew, arrow, cook,\n"
             "// other, npc), id (the item made), n (how many one craft makes), lv (a forged weapon's level, else null), mats [[item id, amount]],\n"
             "// and for an NPC's: fee (zeny) and npc [name, map x,y]. RECIPE_ITEMN: the name of every item in them.\n")

@@ -137,7 +137,7 @@ const C=()=>{if(!state.chars[state.job])state.chars[state.job]=charDefault(state
   {const p=c.preset>=0&&JOBS[state.job]&&JOBS[state.job].p[c.preset];if(p&&c.a){if(p.zeny!=null&&c.a.zeny==null)c.a.zeny=p.zeny;if(p.cart!=null&&c.a.cart==null)c.a.cart=p.cart;if(p.consumes&&c.a.consumes==null)c.a.consumes=p.consumes;if(p.arrows!=null&&c.a.arrows==null)c.a.arrows=p.arrows;if(p.blvBug&&c.a.blvBug==null)c.a.blvBug=p.blvBug;if(p.shw&&c.a.shw==null)c.a.shw=p.shw}}const d=charDefault(state.job);for(const k in d)if(c[k]==null)c[k]=d[k];if(!c.a)c.a={...d.a};return c};
 const cur=()=>state.sessions.find(s=>s.id===state.current)||state.sessions[0];
 
-// skills v2: presets now come from rozerodb; reset each saved job to its first preset
+// skills v2: presets now come from the data; reset each saved job to its first preset
 (function weaponsV2(){if(state.weaponsV2)return;state.weaponsV2=true;for(const j in state.chars){const c=state.chars[j];if(c&&WREN[c.weapon])c.weapon=WREN[c.weapon]}save()})();
 (function sfV2(){if(state.sfV2)return;state.sfV2=true;const c=state.chars&&state.chars.Sage;if(c&&c.preset>=0&&c.preset<3){c.a={...JOBS.Sage.p[c.preset]}}save()})();
 (function sfV3(){if(state.sfV3)return;state.sfV3=true;const c=state.chars&&state.chars.Sage;if(c){c.preset=0;c.a={...JOBS.Sage.p[0]}}save()})();
@@ -164,7 +164,6 @@ const pct=(n,d=2)=>isFinite(n)?n.toFixed(d)+"%":"–";
 function fmtDur(h){if(!isFinite(h)||h<0)return "–";const m=Math.round(h*60),hh=Math.floor(m/60),mm=m%60;if(hh>=24){const d=Math.floor(hh/24);return `~${d}d ${hh%24}h ${mm}m\n~${hh}h ${mm}m`}return hh?`~${hh}h ${mm}m`:`~${mm}m`}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 const num=(v,d=0)=>{const x=+v;return isFinite(x)?x:d};
-const dbUrl=m=>`https://rozerodb.com/monsters/${m.id}`;
 const lvExp=lv=>EXP_TABLE[lv]||null;
 // the server's base level cap: raise it when a patch does. At it base EXP no longer counts, so the EXP Hunter ranks by zeny
 const MAX_BASE_LV=70;

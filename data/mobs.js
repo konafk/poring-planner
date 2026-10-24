@@ -1,4 +1,4 @@
-// Monsters from rozerodb.com: [id, name, level, HP, base EXP, job EXP, boss]; EXP null = rozerodb has no EXP for it yet (expUnknown). Boulder Dwarf Siege Trooper HP 53,518 from einh-guild.de and midgardhub.com (rozerodb has 32,952). Whisper (1185), the Lv 34 one on Payon Cave 4F, HP 1,017 from rz.fharr.com (rozerodb has none)
+// Monsters from the community database: [id, name, level, HP, base EXP, job EXP, boss]; EXP null = it has no EXP for it yet (expUnknown). Boulder Dwarf Siege Trooper HP 53,518 from einh-guild.de (the database has 32,952). Whisper (1185), the Lv 34 one on Payon Cave 4F, HP 1,017 from rz.fharr.com (the database has none)
 const MOBS=[
 [1013,"Wolf",54,3534,2390,634],[1016,"Skeleton Archer",50,3280,1968,393],[1023,"Orc Warrior",52,3266,1959,391],[1026,"Munak",58,4644,2786,795],
 [1034,"Thara Frog",40,1950,1170,234],[1035,"Hunter Fly",63,5991,3594,718],[1036,"Ghoul",61,29630,26667,5332],[1037,"Side Winder",91,15958,9575,2387],
@@ -53,6 +53,6 @@ const MOBS=[
 // Mini bosses: one per map on a long respawn (Vocal, Eclipse, Mastering…). That's how they spawn, not the Boss class above (boss: what boss / normal
 // bonuses go by), so Vocal and Garm Baby are mini bosses without being Boss class, and Owl Duke is Boss class without being a mini boss
 const MINIBOSS=new Set([1088,1089,1090,1091,1092,1093,1096,1120,1262,1283,1299,1302,1515,1582]);
-// MVPs: the bosses that announce themselves and drop an MVP reward (rozerodb's is_mvp). Boss class too, so the farming tables leave them out
+// MVPs: the bosses that announce themselves and drop an MVP reward (the database's is_mvp). Boss class too, so the farming tables leave them out
 const MVP=new Set([1038,1039,1046,1059,1086,1087,1112,1115,1147,1150,1157,1159,1190,1251,1252,1272,1312,1373,1389,1418,1492,1511,1630,1688]);
 MOBS.forEach(m=>{m.mini=MINIBOSS.has(m.id);m.mvp=MVP.has(m.id)});

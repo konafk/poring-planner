@@ -430,7 +430,7 @@ t("Hunter tables: an older save's sort carries over to the shared table sort", (
   assert.equal(run(`tblSort("huntTable").join()`), "net,-1");          // a new save starts on net zeny / hr
 });
 
-t("map names: in-game codes, rozerodb codes and unique names all find the same map", () => {
+t("map names: in-game codes, source codes and unique names all find the same map", () => {
   assert.equal(run(`mapCode("sp_d05")`), "in_sphinx5");
   assert.equal(run(`mapName("sp_d05")`), "Sphinx B5F");
   for (const s of ["in_sphinx5", "SP_D05", "sp_dun05", " Sphinx B5F "]) assert.equal(run(`mapKey(${JSON.stringify(s)})`), "sp_d05");
@@ -483,7 +483,7 @@ t("roadmap: regions open on their update's day, or after its month when the day 
   run(`state.regions={};ROADMAP_TODAY=undefined`);
 });
 
-t("monsters with no EXP in rozerodb are listed but left out of EXP averages", () => {
+t("monsters with no EXP in the data are listed but left out of EXP averages", () => {
   const myst = run(`MOBS.find(m=>m.name==="Myst")`);
   assert.ok(myst.expUnknown && myst.exp === 0);
   assert.equal(run(`fmtExp(MOBS.find(m=>m.name==="Myst"))`), "?");
@@ -520,7 +520,7 @@ t("Amon Ra is in the monster tables as an MVP, Boss class, on Pyramid B2F", () =
   assert.ok(run(`MVP.size`) > 20);
   assert.ok(run(`MOBS.filter(m=>m.mvp).every(m=>m.boss&&!m.mini&&(SPAWN[m.id]||[]).every(([,n])=>n===1||n===null))`));
   assert.ok(run(`MOBS.filter(m=>m.mvp&&SPAWN[m.id]).length`) >= 15);
-  // the client's table doesn't have Maya, Mistress, Phreeoni, Eddga, Pharaoh or Drake on their maps, and no rozerodb estimate stands in
+  // the client's table doesn't have Maya, Mistress, Phreeoni, Eddga, Pharaoh or Drake on their maps, and no estimate stands in
   assert.equal(run(`[1147,1059,1159,1115,1157,1112].filter(i=>SPAWN[i]).length`), 0);
   assert.equal(run(`MOBS.find(m=>m.name==="Baphomet").mvp`), true);
   assert.equal(run(`JSON.stringify(SPAWN[1511])`), JSON.stringify([["pry_d06", 1, 1]]));
@@ -548,7 +548,7 @@ t("Zeny Hunter: net zeny per hour is loot less skill and item costs, and counts 
   const p = run(`huntMob0(${mob},2)`);
   near(p.cost, 2000 + p.hpZ); near(p.net, p.loot - 2000 - p.hpZ);
   run(`C().potOn=false`);
-  // Myst has no EXP in rozerodb but still drops loot, so it counts towards zeny on its map
+  // Myst has no EXP in the data but still drops loot, so it counts towards zeny on its map
   const map = run(`huntMap0("mjo_d03",2)`);
   assert.ok(map.earn.some(x => x.m.name === "Myst") && map.epm > 0 && map.loot > 0);  // net can go below 0: this character loses ~4k HP/min there
   // monsters you skip are left out
@@ -613,8 +613,8 @@ t("skill items: catalysts and arrows per use, your prices, support casts and gro
 
 t("market prices: a drop sold to players counts at its player price instead of its NPC price", () => {
   const mob = "({id:-2,name:'Seller',loot:50,drops:[[909,10],[4001,0.5]]})";
-  near(run(`zenyKill(${mob})`), 50);                                     // no prices typed: rozerodb loot value only
-  run(`state.prices={909:200}`);                                          // players pay 200, NPC price from rozerodb (data/prices.js)
+  near(run(`zenyKill(${mob})`), 50);                                     // no prices typed: the exported loot value only
+  run(`state.prices={909:200}`);                                          // players pay 200, NPC price from the data (data/prices.js)
   near(run(`zenyKill(${mob})`), 50 + (200 - run(`NPCSELL[909]`)) * 0.10);
   run(`state.npcPrices={909:10}`);                                        // NPC pays 10: that part is already in the loot value
   near(run(`zenyKill(${mob})`), 50 + (200 - 10) * 0.10);
@@ -705,14 +705,14 @@ t("sell timer: a saved trip keeps only its times", () => {
   assert.equal(r(`state.sessions[1].trip`), undefined);
 });
 
-t("NPC prices: rozerodb's NPC price is the default, a typed one overrides it", () => {
+t("NPC prices: the database's NPC price is the default, a typed one overrides it", () => {
   assert.ok(run(`NPCSELL[909]`) > 0);                                     // Jellopy has an NPC price in data/prices.js
   assert.equal(run(`npcSell(909)`), run(`NPCSELL[909]`));
   run(`state.npcPrices={909:1}`); assert.equal(run(`npcSell(909)`), 1);    // typed value wins
   run(`state.npcPrices={909:0}`); assert.equal(run(`npcSell(909)`), 0);    // even 0
   run(`state.npcPrices={}`);
   assert.equal(run(`npcSell(-99)`), 0);                                   // unknown item: 0
-  // every drop in loot.js is listed; null where rozerodb has no price, which counts as 0
+  // every drop in loot.js is listed; null where the database has no price, which counts as 0
   assert.deepEqual(run(`Object.values(LOOT).flatMap(v=>v[3].map(d=>String(d[0]))).filter(id=>!(id in NPCSELL)).length`), 0);
   assert.equal(run(`NPCSELL[7001]`), null); assert.equal(run(`npcSell(7001)`), 0);
   // players pay 200, an NPC 10, at 10%: the loot value plus what the player price beats the NPC price by
@@ -769,7 +769,7 @@ t("auto loot: drops of a group you don't loot earn nothing", () => {
   run(`C().baseLv=1;state.dropBonus=0;state.prices={};state.npcPrices={};state.autoLoot={}`);
   assert.equal(run(`ITEMTYPE[909]`), "e"); assert.equal(run(`ITEMTYPE[4001]`), "c"); assert.equal(run(`ITEMTYPE[1202]`), "w");
   const mob = "({id:-4,name:'Looter',lv:1,loot:50,drops:[[909,10],[4001,0.5]]})";
-  near(run(`zenyKill(${mob})`), 50);                                       // everything looted: rozerodb's loot value as is
+  near(run(`zenyKill(${mob})`), 50);                                       // everything looted: the database's loot value as is
   run(`state.autoLoot={c:false}`);                                          // cards left behind: only the Jellopy counts
   near(run(`zenyKill(${mob})`), run(`NPCSELL[909]`) * 0.10);
   run(`state.prices={4001:100000}`);                                        // a market price doesn't matter for an item you don't pick up
@@ -1006,7 +1006,7 @@ t("spawn counts come from the client's navigation table (normal channels)", () =
   assert.equal(sp(1031, "prt_maze02"), JSON.stringify(["prt_maze02", 32, 32]));  // from maz_d02_z
   assert.equal(sp(1087, "gef_fild03"), JSON.stringify(["gef_fild03", 1, 1]));    // Orc Hero, from b_gef_f03 / b_gef_f03_z
   assert.equal(run(`Object.values(SPAWN).flat().filter(x=>!(x[1]>0)&&x[1]!==null).length`), 0);
-  // maps the client doesn't list yet: which monsters come, but no count (no rozerodb estimate), and only on the roadmap's regions
+  // maps the client doesn't list yet: which monsters come, but no count (no estimate), and only on the roadmap's regions
   assert.equal(sp(1045, "iz_d03"), JSON.stringify(["iz_d03", null]));      // Marc on Undersea Cave 4F
   // (Western Cave Karu, bea_d01, isn't in the client either but isn't on the roadmap: open, counts ?)
   assert.ok(run(`Object.values(SPAWN).flat().filter(x=>x[1]===null&&x[0]!=="bea_d01").every(x=>regionOf(x[0]))`));
@@ -2332,7 +2332,7 @@ t("Equipment and Cards tabs: in-game text, where to get it and the Where to get 
   assert.equal(ok(1168, { q: "doppelganger" }), true);
   assert.match(run(`fromHtml(2284)`), /quest/);
   assert.match(run(`fromHtml(-1)`), /no known source/);
-  // champion monsters read as their name, not rozerodb's code
+  // champion monsters read as their name, not its code
   assert.equal(run(`JSON.stringify(ITEM_INFO)`).includes("C5_"), false);
 });
 
@@ -2345,7 +2345,7 @@ t("Item info: the Where to get filter, and other sources the farm tables don't h
   assert.equal(run(`itemFromOk("507","mvp")`), false);
   assert.equal(run(`itemFromOk("507","")`), true);
   assert.equal(run(`otherSourcesHtml("1306")`), "");                                                  // every one is in the table
-  // Tao Gunka's drops: an MVP the farm tables don't have (rozerodb has no HP for it), so only its drop list has it
+  // Tao Gunka's drops: an MVP the farm tables don't have (the database has no HP for it), so only its drop list has it
   const o = run(`otherSourcesHtml("2296")`);
   assert.match(o, /Tao Gunka/); assert.match(o, /MVP/);
   assert.equal(run(`otherSourcesHtml("507")`), "");                                                   // nothing beyond the table

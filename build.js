@@ -110,7 +110,7 @@ const BUILD=(()=>{
     def:"def",mdef:"mdef",aspd:"aspd",maxhp:"hp",mhp:"hp",hp:"hp",maxsp:"sp",msp:"sp",sp:"sp"};
   const PCT={atk:"atk_percent",matk:"matk_percent",aspd:"aspd_percent",hp:"hp_percent",sp:"sp_percent",
     str:"str_percent",agi:"agi_percent",vit:"vit_percent",int:"int_percent",dex:"dex_percent",luk:"luk_percent"};
-  // also the way the game and rozerodb name them: "Resistance to Demi-Human 7%", "Fire resistance increase 5%", "Phys Damage to Large targets +3%"
+  // also the way the game names them: "Resistance to Demi-Human 7%", "Fire resistance increase 5%", "Phys Damage to Large targets +3%"
   function parseOptions(txt){const out=[],bad=[];String(txt||"").split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean).forEach(p=>{
     const m=p.match(/^([a-z ]+?)\s*([+-]\s*\d+(?:\.\d+)?)\s*(%?)$/i);const k=m&&OPT[m[1].toLowerCase().replace(/\s+/g,"")];
     if(!k){const a=named(p);if(a)out.push(a);else bad.push(p);return}const v=parseFloat(m[2].replace(/\s/g,""));
@@ -121,18 +121,18 @@ const BUILD=(()=>{
     const v=(m[2]==="-"?-1:1)*+m[3];return [...o.line,o.neg?-v:v]}
   // random options picked from lists in build mode: gear.opts = [{k, v}], up to OPT_MAX per item whatever the item. Typed lines a save
   // had from before the lists that don't match one are kept as text in gear.optsText when the rows replace them (still not understood)
-  // (one item can roll 2 on one drop and 4 on the next). The list is rozerodb's affixes (data/affixes.js), one entry per
+  // (one item can roll 2 on one drop and 4 on the next). The list is the database's affixes (data/affixes.js), one entry per
   // distinct affix with the bonus line apply() counts it as; line null = an affix the model has no use for (shown, but listed
   // under "Not counted"). neg lines store the value negated: "Resistance to Demon 5%" is damage taken −5%, "Variable Casting
   // reduction 5%" is the data's −5. gear: the min–max it rolls on each gear kind (all pools together)
   const OPT_MAX=5; // the most random options the game rolls on one item
   const RACE_BY=Object.fromEntries(Object.entries(RACE).map(([k,v])=>[v.toLowerCase(),k]));
   const ELES=["neutral","water","earth","fire","wind","poison","holy","shadow","ghost","undead"];
-  // rozerodb gear type -> gear kinds (see optGear). Blacksmiths forge melee weapons; the Activation System's Physical Series
+  // affix table gear type -> gear kinds (see optGear). Blacksmiths forge melee weapons; the Activation System's Physical Series
   // covers melee and ranged weapons
   const AFFIX_GEAR={"Melee Series":["melee"],"Ranged Series":["ranged"],"Magic Series":["magic"],"Physical Series":["melee","ranged"],
     "Forging Weapons":["melee"],"Armor":["armor"],"Garment":["garment"],"Shoes":["shoes"]};
-  // rozerodb affix name -> [key, group, bonus line or null, neg]
+  // affix name -> [key, group, bonus line or null, neg]
   function affixOpt(name){const n=name.replace(/\s*\(%\)$/,"").trim();let m;const L=(t,kind,target)=>[t,kind||null,target||null];
     const flat={"ATK":["atk","Offense","atk"],"MATK":["matk","Offense","matk"],"ASPD":["aspd","Offense","aspd"],"CRI":["crit","Offense","crit"],"HIT":["hit","Offense","hit"],
       "FLEE":["flee","Defense","flee"],"DEF":["def","Defense","def"],"MDEF":["mdef","Defense","mdef"],"MaxHP":["hp","Defense","hp"],"MaxHP(MHP)":["hp","Defense","hp"],
@@ -162,7 +162,7 @@ const BUILD=(()=>{
     if((m=n.match(/^Magic Damage from (.+) enemies reduction$/))&&ele(m[1]))return ["mres_ele_"+ele(m[1]),"Resist",null];
     if((m=n.match(/^(.+) resistance increase$/))&&ele(m[1]))return ["res_ele_"+ele(m[1]),"Resist",L("damage_taken_percent","element",ele(m[1])),true];
     if((m=n.match(/^Resistance to (.+)$/))&&race(m[1]))return ["res_race_"+race(m[1]),"Resist",L("damage_taken_percent","race",race(m[1])),true];
-    return ["affix_"+n.toLowerCase().replace(/[^a-z0-9]+/g,"_"),"Other",null]} // an affix added to rozerodb since: listed, not counted
+    return ["affix_"+n.toLowerCase().replace(/[^a-z0-9]+/g,"_"),"Other",null]} // an affix added to the database since: listed, not counted
   // options lists made by hand before data/affixes.js: kept so builds and share links saved with them still load and count
   const LEGACY=(()=>{const o=[],add=(g,k,label,type,kind,target,pct,neg)=>o.push({k,g,label,line:[type,kind||null,target||null],pct:!!pct,neg:!!neg});
     STAT6.forEach(k=>add("Stats",k,k.toUpperCase(),k));
@@ -182,7 +182,7 @@ const BUILD=(()=>{
       add("Element","mele_"+e,`${cap(e)} magic damage %`,"magic_damage_percent","element",e,true);add("Element","res_ele_"+e,`Resist ${cap(e)} %`,"damage_taken_percent","element",e,true,true)});
     [["normal","Normal"],["boss","Boss"]].forEach(([t,l])=>{add("Monster type","dmg_kind_"+t,`Damage vs ${l} monsters %`,"damage_percent","monster_kind",t,true);
       add("Monster type","mdmg_kind_"+t,`Magic damage vs ${l} monsters %`,"magic_damage_percent","monster_kind",t,true)});
-    // ignore DEF / MDEF of a race, size, element or boss / normal monsters, named and keyed as affixOpt reads rozerodb's: the ones its
+    // ignore DEF / MDEF of a race, size, element or boss / normal monsters, named and keyed as affixOpt reads the database's: the ones its
     // affix tables don't have yet (sizes, elements, boss) can still be picked, on every part
     const ign=(g,kind,t,l)=>[["def","Phys"],["mdef","Magic"]].forEach(([d,p])=>add(g,`ign_${d}_${{race:"race",size:"size",element:"ele",monster_kind:"kind"}[kind]}_${t}`,`Ignore ${l} ${p} Def %`,`ignore_${d}_percent`,kind,t,true));
     for(const r in RACE)ign("Race","race",r,RACE[r]);for(const z in SIZE)ign("Size","size",z,cap(z)+" size");ELES.forEach(e=>ign("Element","element",e,cap(e)+" element"));
@@ -197,13 +197,13 @@ const BUILD=(()=>{
     LEGACY.forEach(x=>{if(!by[x.k]&&!OPT_ALIAS[x.k]){by[x.k]={...x,g:"Other",gear:{}};o.push(by[x.k])}});return o})();
   const OPT_BY=Object.fromEntries(OPTIONS.map(x=>[x.k,x]));
   // the gear kind a row's item rolls options as: weapons by type (staves magic, bows / instruments / whips ranged, the rest
-  // melee; a weapon in the Shield row too), else armor / garment / shoes; null for parts rozerodb lists no pool for. Books and
+  // melee; a weapon in the Shield row too), else armor / garment / shoes; null for parts the database lists no pool for. Books and
   // weapons with MATK (Encyclopedia, Bazerald) also roll the magic series: "melee+magic"
   function optGear(slot,it){if(it&&(it.slot||[]).includes("weapon")){const w=WTYPE[it.type];
       if(/staff/.test(it.type||""))return "magic";const k=RANGED_W.includes(w)?"ranged":"melee";return it.type==="book"||it.matk>0?k+"+magic":k}
     return {armor:"armor",garment:"garment",shoes:"shoes"}[slot]||null}
   // the options a row offers, with the min–max for its gear (over every kind it rolls as); every option when its gear has no
-  // pool. Options rozerodb has no affix for ("Other": special enchants, like a dungeon's gear) go on every part
+  // pool. Options the database has no affix for ("Other": special enchants, like a dungeon's gear) go on every part
   function optChoices(slot,it){const gk=optGear(slot,it),ks=gk?gk.split("+"):[],other=x=>!Object.keys(x.gear).length;
     if(!ks.some(k=>OPTIONS.some(x=>x.gear[k])))return OPTIONS.map(x=>({...x,range:null}));
     return OPTIONS.filter(x=>other(x)||ks.some(k=>x.gear[k])).map(x=>{const rs=ks.map(k=>x.gear[k]).filter(Boolean);
