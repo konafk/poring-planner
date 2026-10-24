@@ -1,5 +1,5 @@
-"""Export the item icons, card pictures and monster pictures the page shows next to item and monster names into four sprite sheets, and
-data/icons.js.
+"""Export the item icons, card pictures, monster pictures and skill icons the page shows next to item, monster and skill names into five
+sprite sheets, and data/icons.js.
 
     python tools/export_icons.py            # fetch what isn't cached, then write the sheets and data/icons.js
     python tools/export_icons.py --refresh  # refetch every image
@@ -13,10 +13,11 @@ data/memorial.js (Jello Fragments, Jellostones, memorial rewards), that aren't g
 divine-pride serves it for each monster id in data/mobs.js (.../images/mobs/png/<id>.png, from about 30 x 20 to over 200 x 200), shrunk
 to fit MOB_W x MOB_H (never enlarged) and centred in its cell. Images are fetched a few per second and cached in tools/cache/icons/
 (gitignored); delete a cached file to refetch it. divine-pride answers an id it has no image for with a 57 x 57 placeholder: those
-ids are left out (the page shows no icon for them) and listed at the end.
+ids are left out (the page shows no icon for them) and listed at the end. Skills: the client's skill icon (24 x 24), as roz.prontera.info
+serves it (roz.prontera.info/assets/<icon>, the icon id export_prontera.py writes for each skill in data/skills.js), one per skill slug.
 
-Writes img/gear-icons.png, img/item-icons.png, img/card-art.png, img/mob-icons.png (cells left to right, then down, in data/icons.js
-order) and data/icons.js.
+Writes img/gear-icons.png, img/item-icons.png, img/card-art.png, img/mob-icons.png, img/skill-icons.png (cells left to right, then
+down, in data/icons.js order) and data/icons.js.
 Standard library only: PNGs are decoded and written here (8-bit and paletted, non-interlaced, which is what the site serves); the
 sheets are written with a palette of up to 255 colours, which keeps the card pictures small.
 """
@@ -26,11 +27,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = os.path.join(ROOT, "tools", "cache", "icons")
 SITE = "https://static.divine-pride.net/images"
 PATH = {"item": "items/item", "cards": "items/cards", "mobs": "mobs/png"}  # cached under tools/cache/icons/<kind>/
+SKILL_SITE = "https://roz.prontera.info/assets"  # skill icons, cached under tools/cache/icons/skills/
 UA = "RO-Zero-farmer-calculator data export"
 GEAR_W, GEAR_H, GEAR_COLS = 24, 24, 32
 ITEM_COLS = 32
 CARD_W, CARD_H, CARD_COLS = 36, 48, 20
 MOB_W, MOB_H, MOB_COLS = 48, 48, 20
+SKILL_W, SKILL_H, SKILL_COLS = 24, 24, 32
 
 
 def ids(name, const):
@@ -44,6 +47,18 @@ def mob_ids():
     src = open(os.path.join(ROOT, "data", "mobs.js"), encoding="utf-8").read()
     i = src.index("const MOBS=")
     return [int(k) for k in re.findall(r'\[(\d+), *"', src[i:src.index("].map(", i)])]
+
+
+def skill_icons():
+    """data/skills.js: [(slug, icon id)] for every skill with an icon, each slug once (Novice skills are in every job's trees)."""
+    src = open(os.path.join(ROOT, "data", "skills.js"), encoding="utf-8").read()
+    i = src.index("{", src.index("const SKILLS=")); out = {}
+    for trees in json.JSONDecoder().raw_decode(src, i)[0].values():
+        for t in trees:
+            for s in t["skills"]:
+                if s.get("icon"):
+                    out.setdefault(s["slug"], s["icon"])
+    return list(out.items())
 
 
 def keys(name, const):
@@ -66,7 +81,8 @@ def fetch(kind, item_id, refresh=False):
     f = os.path.join(CACHE, kind, f"{item_id}.png")
     if os.path.exists(f) and not refresh:
         return open(f, "rb").read()
-    req = urllib.request.Request(f"{SITE}/{PATH[kind]}/{item_id}.png", headers={"User-Agent": UA})
+    url = f"{SKILL_SITE}/{item_id}" if kind == "skills" else f"{SITE}/{PATH[kind]}/{item_id}.png"
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
     data = b""
     for attempt in range(3):
         try:
@@ -207,17 +223,23 @@ def sheet(imgs, W, H, cols, path):
 
 def main():
     refresh = "--refresh" in sys.argv
-    gear, cards, items, mobs, gear_ids, card_ids, item_ids, mob_ids_, missing = [], [], [], [], [], [], [], [], []
+    gear, cards, items, mobs, skills, gear_ids, card_ids, item_ids, mob_ids_, skill_ids, missing = [], [], [], [], [], [], [], [], [], [], []
     eq, cd = ids("equipment.js", "EQUIP"), ids("cards.js", "CARDS")
     known = set(eq) | set(cd)
     other = sorted(({i for f, c in [("items.js", "ITEMN"), ("recipes.js", "RECIPE_ITEMN"), ("consumables.js", "CONSUM"),
                                     ("recovery.js", "RECOVERY"), ("clientitems.js", "CLIENT_ITEMS")] for i in keys(f, c)}
                     | set(pairs("memorial.js"))) - known)
     todo = [("gear", i) for i in eq] + [("cards", i) for i in cd] + [("other", i) for i in other] + [("mobs", i) for i in mob_ids()]
+    icon_of = dict(skill_icons()); todo += [("skills", slug) for slug in icon_of]
     no_mob = fetch("mobs", 0, refresh)  # the placeholder, to tell it from a real monster's picture
     for n, (kind, i) in enumerate(todo, 1):
-        b = fetch(kind if kind in PATH else "item", i, refresh); img = png_read(b)
-        if kind == "mobs":
+        b = fetch("skills", icon_of[i], refresh) if kind == "skills" else fetch(kind if kind in PATH else "item", i, refresh); img = png_read(b)
+        if kind == "skills":
+            if img and img[0] <= 32 and img[1] <= 32:
+                skills.append(img); skill_ids.append(i)
+            else:
+                missing.append(f"skill {i}")
+        elif kind == "mobs":
             if img and b != no_mob:
                 mobs.append(fit(img, MOB_W, MOB_H)); mob_ids_.append(i)
             else:
@@ -234,17 +256,19 @@ def main():
     iv = sheet(items, GEAR_W, GEAR_H, ITEM_COLS, os.path.join(ROOT, "img", "item-icons.png"))
     cv = sheet(cards, CARD_W, CARD_H, CARD_COLS, os.path.join(ROOT, "img", "card-art.png"))
     mv = sheet(mobs, MOB_W, MOB_H, MOB_COLS, os.path.join(ROOT, "img", "mob-icons.png"))
+    sv = sheet(skills, SKILL_W, SKILL_H, SKILL_COLS, os.path.join(ROOT, "img", "skill-icons.png"))
     with open(os.path.join(ROOT, "data", "icons.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// Gear icons, other items' icons, card pictures and monster pictures (tools/export_icons.py, from divine-pride.net's copies of the game\n"
-                "// client's images): each sheet's file, a checksum of it (v), its cell size, and the item or monster ids in cell order (left to right,\n"
-                "// then down). Ids with no image aren't listed.\n")
+                "// client's images), and skill icons (from roz.prontera.info): each sheet's file, a checksum of it (v), its cell size, and the item or\n"
+                "// monster ids, or skill slugs, in cell order (left to right, then down). Ids with no image aren't listed.\n")
         f.write("const ICON_SHEETS=" + json.dumps({
             "gear": {"file": "img/gear-icons.png", "v": gv, "w": GEAR_W, "h": GEAR_H, "cols": GEAR_COLS, "ids": gear_ids},
             "item": {"file": "img/item-icons.png", "v": iv, "w": GEAR_W, "h": GEAR_H, "cols": ITEM_COLS, "ids": item_ids},
             "card": {"file": "img/card-art.png", "v": cv, "w": CARD_W, "h": CARD_H, "cols": CARD_COLS, "ids": card_ids},
-            "mob": {"file": "img/mob-icons.png", "v": mv, "w": MOB_W, "h": MOB_H, "cols": MOB_COLS, "ids": mob_ids_}},
+            "mob": {"file": "img/mob-icons.png", "v": mv, "w": MOB_W, "h": MOB_H, "cols": MOB_COLS, "ids": mob_ids_},
+            "skill": {"file": "img/skill-icons.png", "v": sv, "w": SKILL_W, "h": SKILL_H, "cols": SKILL_COLS, "ids": skill_ids}},
             separators=(",", ":")) + ";\n")
-    print(f"{len(gear_ids)} gear icons, {len(item_ids)} item icons, {len(card_ids)} card pictures, {len(mob_ids_)} monster pictures")
+    print(f"{len(gear_ids)} gear icons, {len(item_ids)} item icons, {len(card_ids)} card pictures, {len(mob_ids_)} monster pictures, {len(skill_ids)} skill icons")
     if missing:
         print(f"no image for {len(missing)}: " + ", ".join(missing))
 

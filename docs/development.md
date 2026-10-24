@@ -15,7 +15,7 @@ The page is plain HTML, CSS and JavaScript with no dependencies. Open `index.htm
 | `build.js` | Build simulator: turns base stats, job level, gear, refine and cards into the status window's ATK/MATK/HIT/FLEE/ASPD/DEF/HP/SP. |
 | `js/` | Calculator and tracker code (see below). |
 | `data/` | Game data tables, one per file (see below). |
-| `img/` | Gear icon, item icon, card picture and monster picture sprite sheets, written by `tools/export_icons.py`. |
+| `img/` | Gear icon, item icon, card picture, monster picture and skill icon sprite sheets, written by `tools/export_icons.py`. |
 | `tools/` | Python scripts that export and cross-check the data, and `stamp.mjs`, which builds the deployed site with each file stamped. |
 | `tests/` | Node tests. |
 
@@ -73,7 +73,7 @@ Each table lives in its own file, so a re-export after a patch only touches that
 | `clientitems.js` | Every item in the game client's catalog that isn't gear or a card (2,850, costumes included), with its category, for Item info's All items and search. Written by `tools/export_items.py`. |
 | `costumes.js` | The costume slots (Upper, Middle, Lower, Garment) each costume in `clientitems.js` takes, for the costume a costume enchant stone goes on. Written by `tools/export_costumes.py`. |
 | `iteminfo.js` | Each card's and piece of gear's in-game description, the monsters that drop it (MVP, mini boss or normal, with the drop %) and the quests that give it. Written by `tools/export_iteminfo.py`. |
-| `icons.js` | Where each item's icon (gear, or any other item, the memorial ones included), card picture or monster picture sits in the `img/` sprite sheets, with a checksum of each sheet. Written by `tools/export_icons.py`. |
+| `icons.js` | Where each item's icon (gear, or any other item, the memorial ones included), card picture, monster picture or skill icon (by skill slug) sits in the `img/` sprite sheets, with a checksum of each sheet. Written by `tools/export_icons.py`. |
 
 ## Tools
 
@@ -91,7 +91,7 @@ All scripts use only the Python standard library.
 | `python tools/export_items.py [--refresh]` | Writes `data/clientitems.js` from the community database's item catalog (`/api/items`, which it reads from the Global client): every item that isn't gear or a card, with its category. Run it before `export_icons.py`, which fetches their icons. |
 | `python tools/export_costumes.py [--refresh]` | Writes `data/costumes.js`: the costume slots each costume in `data/clientitems.js` takes, from the community database's item records (`/api/items/<id>`: slot). Run it after `export_items.py`. |
 | `python tools/export_recipes.py` | Writes `data/recipes.js` from the community database's Recipes page and Alchemy Lab guide (their data is in the pages themselves; there is no API). |
-| `python tools/export_icons.py [--refresh]` | Writes `img/gear-icons.png`, `img/item-icons.png`, `img/card-art.png`, `img/mob-icons.png` and `data/icons.js`: each item's inventory icon (24 × 24; gear in one sheet, every other item in another: drops, recipe items, memorial items, skill and recovery items and the rest of the client's items) and a 36 × 48 thumbnail of each card's picture (every card has the same inventory icon), and each monster's sprite in `data/mobs.js` shrunk to fit 48 × 48, from divine-pride.net's copies of the client images. Images are cached in `tools/cache/icons/`. Run it after `export_prontera.py` or `export_recipes.py` picks up new items, or a monster is added to `data/mobs.js`. |
+| `python tools/export_icons.py [--refresh]` | Writes `img/gear-icons.png`, `img/item-icons.png`, `img/card-art.png`, `img/mob-icons.png`, `img/skill-icons.png` and `data/icons.js`: each item's inventory icon (24 × 24; gear in one sheet, every other item in another: drops, recipe items, memorial items, skill and recovery items and the rest of the client's items) and a 36 × 48 thumbnail of each card's picture (every card has the same inventory icon), and each monster's sprite in `data/mobs.js` shrunk to fit 48 × 48, from divine-pride.net's copies of the client images, and each skill's 24 × 24 icon in `data/skills.js` from roz.prontera.info. Images are cached in `tools/cache/icons/`. Run it after `export_prontera.py` or `export_recipes.py` picks up new items or skills, or a monster is added to `data/mobs.js`. |
 | `python tools/export_affixes.py` | Writes `data/affixes.js` from the community database's Affixes Simulator page (its data is in the page itself; there is no API). |
 | `python tools/export_mobskills.py [--refresh]` | Writes `data/mobskills.js` from rAthena's pre-renewal monster skill and monster tables, for the monsters in `data/mobs.js`. |
 | `python tools/check_maps.py` | Compares `data/spawn.js` with the cross-check source and lists missing monsters and spawn counts that differ. Monsters marked as upcoming are expected to show up as missing. |

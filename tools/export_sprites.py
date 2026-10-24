@@ -1,4 +1,4 @@
-"""Export each job's look for the Character tab's equipment window into img/job-sprites.png and data/sprites.js, from your installed
+"""Export each job's look for the Character tab's equipment window into data/sprites.js, from your installed
 Ragnarok Zero client (official Global client, read-only). Each 2nd job also gets its transcendent job's look (Knight as a Lord Knight),
 which Zero lets a 2nd job wear since it has no transcendent jobs.
 
@@ -7,15 +7,15 @@ which Zero lets a 2nd job wear since it has no transcendent jobs.
 
 The client's data.grf holds every job's body (data\\sprite\\인간족\\몸통\\<남|여>\\<job>_<남|여>.spr/.act) and every hair style
 (data\\sprite\\인간족\\머리통\\<남|여>\\<n>_<남|여>.spr/.act). Each is drawn as the game draws it standing and facing you (action 0,
-frame 0: the ACT's layers placed around the feet, bodies with the SPR's own palette). The page puts the head on the body at the
-body's anchor point, the way the client does, so any hair style goes on any job without a picture for each pair. Heads are drawn as
-palette indices with each hair colour's palette (data\\palette\\머리), so the page colours them; clothes dyes aren't exported.
+frame 0: the ACT's layers placed around the feet). The page puts the head on the body at the body's anchor point, the way the client
+does, so any hair style goes on any job without a picture for each pair. Bodies and heads are drawn as palette indices, with each
+clothes colour's palette (data\\palette\\몸) and each hair colour's (data\\palette\\머리), so the page colours them.
 
-Writes img/job-sprites.png (bodies, each cropped to what it draws, packed in rows) and data/sprites.js: the hair sheet (heads the same,
-as indices) as a data: URL, since the page reads its pixels to colour them, which a browser only allows for an image from the page's
-own site and never for a file opened from disk; per job and gender the body's place on the sheet, where it draws from the feet and its head anchor (body, and
-trans for the transcendent look); per gender and hair style the head's place, where it draws from the anchor and its hair colours.
-Standard library only.
+Writes data/sprites.js: the body sheet and the hair sheet (each sprite cropped to what it draws, packed in rows, as indices) as data:
+URLs, since the page reads their pixels to colour them, which a browser only allows for an image from the page's own site and never
+for a file opened from disk; per job and gender the body's place on the sheet, where it draws from the feet, its head anchor and its
+clothes colours (body, and trans for the transcendent look); per gender and hair style the head's place, where it draws from the
+anchor and its hair colours. Standard library only.
 """
 import base64, json, os, struct, sys, zlib
 
@@ -31,6 +31,8 @@ ONE_SEX = {"Bard": "m", "Dancer": "f"}
 TRANS = {"Knight": "로드나이트", "Crusader": "팔라딘", "Wizard": "하이위저드", "Sage": "프로페서", "Hunter": "스나이퍼", "Bard": "클라운",
          "Dancer": "집시", "Priest": "하이프리", "Monk": "챔피온", "Blacksmith": "화이트스미스", "Alchemist": "크리에이터",
          "Assassin": "어쌔신크로스", "Rogue": "스토커"}
+# bodies whose clothes palettes go by another name: the Clown's are the Gypsy's male ones
+PAL_NAME = {"클라운": "집시"}
 SHEET_W = 512
 
 
@@ -187,23 +189,6 @@ def crop(img):
     return W, y1 - y0, out, L + x0, T + y0
 
 
-def png(w, h, px):
-    """A paletted PNG when the image has up to 255 colours (sprites do), else RGBA."""
-    cols = {}
-    for i in range(0, len(px), 4):
-        if px[i + 3]:
-            cols.setdefault(bytes(px[i:i + 3]), len(cols) + 1)
-    chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
-    if len(cols) <= 255:
-        idx = bytes(cols[bytes(px[i:i + 3])] if px[i + 3] else 0 for i in range(0, len(px), 4))
-        raw = b"".join(b"\0" + idx[y * w:(y + 1) * w] for y in range(h))
-        return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 3, 0, 0, 0))
-                + chunk(b"PLTE", b"\0\0\0" + b"".join(cols)) + chunk(b"tRNS", b"\0") + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
-    raw = b"".join(b"\0" + bytes(px[y * w * 4:(y + 1) * w * 4]) for y in range(h))
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0))
-            + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
-
-
 def png_gray(w, h, px):
     """A greyscale PNG of the red channel, 0 transparent: the palette indices of index images, read back exactly by a canvas."""
     chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
@@ -228,12 +213,35 @@ def pack(images):
     return at, px, H
 
 
+def colours(img, pals):
+    """The colours of an index image in each of its palettes (pals[0] the sprite's own): the indices it draws (i, 2 hex digits each)
+    with their colours in pals[0] (b, 6 hex digits each), once; then per palette only the indices the palettes change (d), with their
+    colours (c), since one colour in the sprite's palette can become different ones; k is the swatch, the changed index drawn most."""
+    w, h, px = img[:3]; count = {}
+    for k in range(0, len(px), 4):
+        if px[k + 3]:
+            count[px[k]] = count.get(px[k], 0) + 1
+    used = sorted(count); dyed = [i for i in used if len({p[i * 4:i * 4 + 3] for p in pals}) > 1] or used[:1]
+    hex2 = lambda idx: "".join(f"{i:02x}" for i in idx)
+    return {"i": hex2(used), "b": "".join(pals[0][i * 4:i * 4 + 3].hex() for i in used), "d": hex2(dyed),
+            "k": dyed.index(max(dyed, key=lambda i: count[i])), "c": ["".join(p[i * 4:i * 4 + 3].hex() for i in dyed) for p in pals]}
+
+
+def palettes(grf, spr, path):
+    """A sprite's own palette, then path.format(n) for n = 1, 2 ... up to the first missing or encrypted one: colour 0 is no dye,
+    the sprite's own palette as the client draws it (its _0.pal, where there is one, is the same or unused)."""
+    pals, n = [grf.read(spr)[-1024:]], 1
+    while grf.readable(path.format(n)):
+        pals.append(grf.read(path.format(n))[:1024]); n += 1
+    return pals
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     client = sys.argv[sys.argv.index("--client") + 1] if "--client" in sys.argv else r"C:\Gravity\RagnarokZero"
     grf = Grf(os.path.join(client, "data.grf"))
     base = "data\\sprite\\인간족\\"
-    images, hair_images, bodies, trans, heads, hair_pal, missing = [], [], {}, {}, {}, {}, []
+    images, hair_images, bodies, trans, heads, body_pal, trans_pal, hair_pal, missing = [], [], {}, {}, {}, {}, {}, {}, []
 
     def take(path, into=images, indexed=False):
         if not grf.has(path + ".spr") or not grf.has(path + ".act"):
@@ -247,65 +255,52 @@ def main():
         for s, ko in SEX.items():
             if ONE_SEX.get(job, s) != s:
                 continue
-            r = take(f"{base}몸통\\{ko}\\{name}_{ko}")
-            if r:
-                bodies.setdefault(job, {})[s] = r
-            r = job in TRANS and take(f"{base}몸통\\{ko}\\{TRANS[job]}_{ko}")
-            if r:
-                trans.setdefault(job, {})[s] = r
+            for into, pal, nm in [(bodies, body_pal, name), (trans, trans_pal, TRANS.get(job))]:
+                r = nm and take(f"{base}몸통\\{ko}\\{nm}_{ko}", images, True)
+                if r:
+                    # clothes colour n is data\\palette\\몸\\<name>_<남|여>_<n>.pal
+                    into.setdefault(job, {})[s] = r
+                    pal.setdefault(job, {})[s] = colours(images[r[0]], palettes(
+                        grf, f"{base}몸통\\{ko}\\{nm}_{ko}.spr", f"data\\palette\\몸\\{PAL_NAME.get(nm, nm)}_{ko}_{{}}.pal"))
     for s, ko in SEX.items():
         n = 1
         while grf.has(f"{base}머리통\\{ko}\\{n}_{ko}.spr"):
             r = take(f"{base}머리통\\{ko}\\{n}_{ko}", hair_images, True)
             if r:
                 heads.setdefault(s, {})[n] = r
-                # hair colour 0 is no dye, the sprite's own palette, as the client draws it (its 머리<n>_<남|여>_0.pal, where there is
-                # one, isn't used); 1, 2 ... are data\palette\머리\머리<n>_<남|여>_<colour>.pal, up to the first missing or encrypted
-                # one (female style 7's colour 11, past a gap)
-                pals, c = [grf.read(f"{base}머리통\\{ko}\\{n}_{ko}.spr")[-1024:]], 1
-                while grf.readable(p := f"data\\palette\\머리\\머리{n}_{ko}_{c}.pal"):
-                    pals.append(grf.read(p)[:1024]); c += 1
-                w, h, px = hair_images[r[0]][:3]
-                count = {}
-                for k in range(0, len(px), 4):
-                    if px[k + 3]:
-                        count[px[k]] = count.get(px[k], 0) + 1
-                # the colours every hair colour shares once, then per hair colour only the ones the dyes change; the swatch is the
-                # dyed index drawn most
-                used = sorted(count); dyed = [i for i in used if len({p[i * 4:i * 4 + 3] for p in pals}) > 1] or used[:1]
-                hex2 = lambda idx: "".join(f"{i:02x}" for i in idx)
-                hair_pal.setdefault(s, {})[n] = {"i": hex2(used), "b": "".join(pals[0][i * 4:i * 4 + 3].hex() for i in used), "d": hex2(dyed),
-                                                 "k": dyed.index(max(dyed, key=lambda i: count[i])),
-                                                 "c": ["".join(p[i * 4:i * 4 + 3].hex() for i in dyed) for p in pals]}
+                # hair colour n is data\\palette\\머리\\머리<n>_<남|여>_<colour>.pal (female style 7 stops at colour 11, past a gap)
+                hair_pal.setdefault(s, {})[n] = colours(hair_images[r[0]], palettes(
+                    grf, f"{base}머리통\\{ko}\\{n}_{ko}.spr", f"data\\palette\\머리\\머리{n}_{ko}_{{}}.pal"))
             n += 1
     at, px, H = pack(images)
-    data = png(SHEET_W, H, px)
+    data = png_gray(SHEET_W, H, px)
     hat, hpx, HH = pack(hair_images)
     hdata = png_gray(SHEET_W, HH, hpx)
-    os.makedirs(os.path.join(ROOT, "img"), exist_ok=True)
-    open(os.path.join(ROOT, "img", "job-sprites.png"), "wb").write(data)
     cell = lambda i: [*at[i], *images[i][:2]]
     body = lambda bs: {j: {s: cell(i) + list(images[i][3:5]) + list(a or (0, -70)) for s, (i, a) in g.items()} for j, g in bs.items()}
-    out = {"jobFile": "img/job-sprites.png", "jobV": f"{zlib.crc32(data) & 0xFFFFFFFF:08x}",
+    out = {"jobData": "data:image/png;base64," + base64.b64encode(data).decode(),
            "hairData": "data:image/png;base64," + base64.b64encode(hdata).decode(),
            # [x, y, w, h on the sheet, left, top from the feet, head anchor x, y from the feet]
            "body": body(bodies),
            # the same for a 2nd job's transcendent look
            "trans": body(trans),
+           # per job and gender the clothes colours, as hairPal's
+           "bodyPal": body_pal, "transPal": trans_pal,
            # [x, y, w, h on the hair sheet, left, top from the body's head anchor]
            "head": {s: {n: [*hat[i], *hair_images[i][:2], hair_images[i][3] - (a or (0, 0))[0], hair_images[i][4] - (a or (0, 0))[1]]
                         for n, (i, a) in g.items()} for s, g in heads.items()},
            "hairPal": hair_pal}
     with open(os.path.join(ROOT, "data", "sprites.js"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("// Job looks for the equipment window (tools/export_sprites.py, from the game client): the body and hair sheets with a\n"
-                "// checksum (jobFile, jobV) and the hair sheet as a data: URL, read without a cross-origin taint (hairData); per job and gender (m/f) the body [x,y,w,h on the sheet, left,top from\n"
-                "// the feet, head anchor x,y from the feet], trans the same for a 2nd job's transcendent look (Knight as a Lord Knight); per\n"
-                "// gender and hair style the head [x,y,w,h on the hair sheet, left,top from the body's head anchor]. The hair sheet holds\n"
-                "// palette indices (grey level = index), and hairPal per gender and hair style the indices it draws (i, 2 hex digits each)\n"
-                "// with their colours (b, 6 hex digits each), the indices the hair colours change (d), the swatch's place among those (k)\n"
-                "// and per hair colour their colours (c).\n")
+        f.write("// Job looks for the equipment window (tools/export_sprites.py, from the game client): the body and hair sheets as data:\n"
+                "// URLs, so the page can read their pixels even opened from disk (jobData, hairData); per job and gender (m/f) the body\n"
+                "// [x,y,w,h on the sheet, left,top from the feet, head anchor x,y from the feet], trans the same for a 2nd job's\n"
+                "// transcendent look (Knight as a Lord Knight); per gender and hair style the head [x,y,w,h on the hair sheet, left,top from\n"
+                "// the body's head anchor]. Both sheets hold palette indices (grey level = index); hairPal per gender and hair style, and\n"
+                "// bodyPal / transPal per job and gender, have the indices it draws (i, 2 hex digits each) with their colours (b, 6 hex\n"
+                "// digits each), the indices the colours change (d), the swatch's place among those (k) and per colour their colours (c).\n")
         f.write("const JOB_SPRITES=" + json.dumps(out, separators=(",", ":"), ensure_ascii=False) + ";\n")
-    print(f"{sum(len(g) for g in bodies.values())} bodies, {sum(len(g) for g in trans.values())} transcendent, {sum(len(g) for g in heads.values())} hair styles "
+    print(f"{sum(len(g) for g in bodies.values())} bodies, {sum(len(g) for g in trans.values())} transcendent "
+          f"({sum(len(p['c']) for d in (body_pal, trans_pal) for g in d.values() for p in g.values())} clothes colours), {sum(len(g) for g in heads.values())} hair styles "
           f"({sum(len(p['c']) for g in hair_pal.values() for p in g.values())} colours), sheets {SHEET_W} x {H} ({len(data)} bytes) and {SHEET_W} x {HH} ({len(hdata)} bytes)")
     if missing:
         print("not in the client: " + ", ".join(missing))

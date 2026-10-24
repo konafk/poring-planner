@@ -2341,6 +2341,15 @@ t("Equipment and Cards tabs: each item's cell in the icon and card picture sheet
   assert.ok(h.includes('class="ico ico-card"')); assert.ok(!/class="([^"]*)"/.exec(run(`iconHtml("card",4035)`))[1].split(" ").includes("card"));
 });
 
+t("Skill tree: each skill's icon cell, by slug", () => {
+  const S = JSON.parse(run("JSON.stringify(ICON_SHEETS.skill)")), slugs = JSON.parse(run("JSON.stringify([...new Set(Object.values(SKILLS).flat().flatMap(t=>t.skills.map(s=>s.slug)))])"));
+  assert.equal(new Set(S.ids).size, S.ids.length, "skill ids repeat");
+  // every skill has one but Skilled Special Singer, which roz.prontera.info has no picture for
+  assert.deepEqual(slugs.filter(s => !S.ids.includes(s)), ["skilled-special-singer"]);
+  const i = S.ids.indexOf("bash");
+  assert.ok(run(`iconHtml("skill","bash")`).includes(`class="ico ico-skill" aria-hidden="true" style="background-position:-${i % S.cols * S.w}px -${Math.floor(i / S.cols) * S.h}px"`));
+});
+
 t("Equipment and Cards tabs: in-game text, where to get it and the Where to get filter", () => {
   // Eddga Card: its bonus line is only MaxHP -25%; Endure is in the in-game text, which the search and the card's effects use
   assert.match(run(`itemText(4123)`), /Endure/);
