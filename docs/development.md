@@ -34,9 +34,9 @@ Plain scripts that `index.html` loads in this order. They share one global scope
 | `build-ui.js` | Build mode, consumables and the equipment stats rows. |
 | `ref.js` | The EXP & formulas tab, and the Character tab's Your gear vs other gear sets. |
 | `gear-db.js` | The Equipment and Cards tabs (filters, effects text) and the Equip dialog that puts gear or a card in a gear set. |
-| `recipes.js` | The Recipes tab, and the recipes that make or use each item (the details popup lists them). |
+| `recipes.js` | The Recipes tab (with the Jellostones and Expedition upgrades from `data/memorial.js`), and the recipes that make or use each item (the details popup lists them). |
 | `info.js` | The details popup for a monster, item, piece of gear or card, opened from any name with `data-info="mob:<id>"` or `"item:<id>"`. |
-| `memorial.js` | The Memorials tab: the Jellostone tracker and its estimate, the Expedition upgrades, the memorial dungeons and their gear's enchants. |
+| `memorial.js` | The Memorial dungeons tab: the Jellostone tracker and its estimate, the Expedition upgrades, the memorial dungeons and their gear's enchants. |
 | `stellar.js` | The Stellar weapons tab: the ★ weapons by weapon type, the certificates each still needs and the monster that gets you them fastest, and the Activation routes. |
 | `start.js` | Tabs and their headings, collapsible cards, the Character tab's section links, the get started card's buttons, the search (Ctrl+K), the sidebar's Compact button and its Settings menu (Hints / Theme / Full width), and the first render. |
 
@@ -72,7 +72,7 @@ Each table lives in its own file, so a re-export after a patch only touches that
 | `memorial.js` | Memorial dungeons and their reward boxes, the Jello Fragment of each weekday and its Jellostone, the Expedition upgrades and the Subjugation Team / Expedition enchant pools. Made by hand from the Taiwan server's notices. |
 | `stellar.js` | The Activation routes (refine loss, certificates, Goblin Coin Fragments) and their NPCs. Made by hand from rozerodb's and Midgard Hub's guides; the ★ weapons come from `equipment.js`. |
 | `iteminfo.js` | Each card's and piece of gear's in-game description, the monsters that drop it (MVP, mini boss or normal, with the drop %) and the quests that give it. Written by `tools/export_iteminfo.py`. |
-| `icons.js` | Where each item's icon (gear, or any other item) or card picture sits in the `img/` sprite sheets, with a checksum of each sheet. Written by `tools/export_icons.py`. |
+| `icons.js` | Where each item's icon (gear, or any other item, the memorial ones included) or card picture sits in the `img/` sprite sheets, with a checksum of each sheet. Written by `tools/export_icons.py`. |
 
 ## Tools
 
@@ -88,7 +88,7 @@ All scripts use only the Python standard library.
 | `python tools/export_cardnames.py [--refresh]` | Writes `data/cardnames.js`: each card's name in the equipment window, from divine-pride.net's item pages, for the cards in `data/cards.js`. Run it after `export_prontera.py` picks up new cards. |
 | `python tools/export_iteminfo.py [--refresh]` | Writes `data/iteminfo.js`: descriptions and quests from the roz.prontera.info pages `export_prontera.py` cached, drops from rozerodb's item API and MVP / mini boss from its monster list. Run it after `export_prontera.py`. |
 | `python tools/export_recipes.py` | Writes `data/recipes.js` from rozerodb's Recipes page and Alchemy Lab guide (their data is in the pages themselves; there is no API). |
-| `python tools/export_icons.py [--refresh]` | Writes `img/gear-icons.png`, `img/item-icons.png`, `img/card-art.png` and `data/icons.js`: each item's inventory icon (24 × 24; gear in one sheet, every other item the page names in another: drops, recipe items, skill and recovery items) and a 36 × 48 thumbnail of each card's picture (every card has the same inventory icon), from divine-pride.net's copies of the client images. Images are cached in `tools/cache/icons/`. Run it after `export_prontera.py` or `export_recipes.py` picks up new items. |
+| `python tools/export_icons.py [--refresh]` | Writes `img/gear-icons.png`, `img/item-icons.png`, `img/card-art.png` and `data/icons.js`: each item's inventory icon (24 × 24; gear in one sheet, every other item the page names in another: drops, recipe items, memorial items, skill and recovery items) and a 36 × 48 thumbnail of each card's picture (every card has the same inventory icon), from divine-pride.net's copies of the client images. Images are cached in `tools/cache/icons/`. Run it after `export_prontera.py` or `export_recipes.py` picks up new items. |
 | `python tools/export_affixes.py` | Writes `data/affixes.js` from rozerodb's Affixes Simulator page (its data is in the page itself; there is no API). |
 | `python tools/export_mobskills.py [--refresh]` | Writes `data/mobskills.js` from rAthena's pre-renewal monster skill and monster tables, for the monsters in `data/mobs.js`. |
 | `python tools/check_maps.py` | Compares `data/spawn.js` with the cross-check source and lists missing monsters and spawn counts that differ. Monsters marked as upcoming are expected to show up as missing. |

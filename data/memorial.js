@@ -26,10 +26,10 @@ const JELLO=[
 {day:3,frag:[25467,"Drops Jello Fragment"],stone:[25472,"Dusk Jellostone"]},
 {day:4,frag:[25468,"Deviling Jello Fragment"],stone:[25473,"Chaos Jellostone"]},
 {day:5,frag:[25469,"Angeling Jello Fragment"],stone:[25474,"Holy Jellostone"]}];
-const JELLO_PER_STONE=5,JELLO_CRAFT_DAYS=3,JELLO_BOX=[23649,"Jellopy Fragment Box"];
+const JELLO_PER_STONE=5,JELLO_CRAFT_DAYS=3,JELLO_BOX=[23649,"Jellopy Fragment Box"],JELLO_NPC=["Memory Craftsman's Workshop","prontera 48,227"];
 // Expedition gear (Ant Hell): the Upgrader (prt_in 118 34) makes it from a Subjugation Team piece, 50 Faintly Glowing Crystal and
 // Jellostones. EXPEDITION: id, name, from: [id, name], stones: {Jellostone id: how many}
-const EXPEDITION_CRYSTALS=[25424,"Faintly Glowing Crystal",50];
+const EXPEDITION_CRYSTALS=[25424,"Faintly Glowing Crystal",50],EXPEDITION_NPC=["Upgrader","prt_in 118,34"];
 const EXPEDITION=[
 {id:15221,name:"Expedition's Armor",from:[15220,"Subjugation Team's Armor"],stones:{25470:2}},
 {id:15222,name:"Expedition's Robe",from:[15220,"Subjugation Team's Armor"],stones:{25471:2}},

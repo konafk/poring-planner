@@ -7,7 +7,8 @@ Gear and every other item: the inventory icon from the game client (24 x 24), as
 (static.divine-pride.net/images/items/item/<id>.png). Cards: every card has the same inventory icon in the client, so a card shows
 a thumbnail of its illustration instead (.../images/items/cards/<id>.png, 300 x 400, shrunk to CARD_W x CARD_H). Ids: gear from
 data/equipment.js, cards from data/cards.js, and items (drops, recipe items, consumables, recovery items) from data/items.js,
-data/recipes.js, data/consumables.js and data/recovery.js that aren't gear or cards. Images are fetched a few per second and cached in tools/cache/icons/ (gitignored); delete a
+data/recipes.js, data/consumables.js and data/recovery.js, and every [id, "name"] in data/memorial.js (Jello Fragments, Jellostones,
+memorial rewards), that aren't gear or cards. Images are fetched a few per second and cached in tools/cache/icons/ (gitignored); delete a
 cached file to refetch it. divine-pride answers an id it has no image for with a 57 x 57 placeholder: those ids are left out (the
 page shows no icon for them) and listed at the end.
 
@@ -40,6 +41,12 @@ def keys(name, const):
     src = open(path, encoding="utf-8").read()
     i = src.index(f"const {const}=")
     return [int(k) for k in re.findall(r'"(\d+)":', src[i:src.index("};", i)])]
+
+
+def pairs(name):
+    """The item ids a hand-made table names as [id, "name", ...] (data/memorial.js isn't JSON either)."""
+    path = os.path.join(ROOT, "data", name)
+    return [int(k) for k in re.findall(r'\[(\d+),"', open(path, encoding="utf-8").read())] if os.path.exists(path) else []
 
 
 def fetch(kind, item_id, refresh=False):
@@ -184,8 +191,8 @@ def main():
     gear, cards, items, gear_ids, card_ids, item_ids, missing = [], [], [], [], [], [], []
     eq, cd = ids("equipment.js", "EQUIP"), ids("cards.js", "CARDS")
     known = set(eq) | set(cd)
-    other = sorted({i for f, c in [("items.js", "ITEMN"), ("recipes.js", "RECIPE_ITEMN"), ("consumables.js", "CONSUM"),
-                                   ("recovery.js", "RECOVERY")] for i in keys(f, c)} - known)
+    other = sorted(({i for f, c in [("items.js", "ITEMN"), ("recipes.js", "RECIPE_ITEMN"), ("consumables.js", "CONSUM"),
+                                   ("recovery.js", "RECOVERY")] for i in keys(f, c)} | set(pairs("memorial.js"))) - known)
     todo = [("gear", i) for i in eq] + [("cards", i) for i in cd] + [("other", i) for i in other]
     for n, (kind, i) in enumerate(todo, 1):
         img = png_read(fetch("cards" if kind == "cards" else "item", i, refresh))

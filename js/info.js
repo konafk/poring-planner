@@ -18,7 +18,7 @@ function infoDroppers(id){const ds=ITEM_DROPS[id]||[];if(!ds.length)return "";
   return `<div class="infoList">${ds.slice(0,12).map(({m,ch})=>{const om=openMaps(m),a=mobArrives(m);
     return `<div>${infoLink("mob",m.id,m.name)}${BOSS_PILL(m)} <span class="note">Lv ${m.lv} · ${chTxt(ch)}${yourCh(m,ch)!==ch?` (you ${chTxt(yourCh(m,ch))})`:""} · ${om.length?`${esc(mapLabel(om[0][0]))} ≈${spN(om[0][1])}`:a?`none open · ${esc(a)}`:"no open map"}</span></div>`}).join("")}${ds.length>12?`<div class="note">and ${ds.length-12} more in Item info</div>`:""}</div>`}
 // the recipes that make it and the ones that use it (js/recipes.js), each with its materials
-const infoRecipe=r=>`<div class="recipe"><span>${infoLink("item",r.id,recipeMade(r))} <span class="note">${esc(r.cat)}${r.lv?` Lv ${r.lv}`:""}${r.npc?` · ${esc(r.npc[0])}, ${fmtN(r.fee)} z`:""}</span></span>${recipeMats(r)}</div>`;
+const infoRecipe=r=>`<div class="recipe"><span>${infoLink("item",r.id,recipeMade(r))} <span class="note">${esc(r.cat)}${r.lv?` Lv ${r.lv}`:""}${r.npc?` · ${esc(r.npc[0])}${r.fee?`, ${fmtN(r.fee)} z`:""}`:""}</span></span>${recipeMats(r)}</div>`;
 function infoRecipes(id){const mk=RECIPES_MAKING[id]||[],us=RECIPES_USING[id]||[];
   return infoSec(`Made from${mk.length>1?` (${mk.length} ways)`:""}`,mk.length&&`<div class="infoList">${mk.slice(0,12).map(infoRecipe).join("")}${mk.length>12?`<div class="note">and ${mk.length-12} more on the Recipes tab</div>`:""}</div>`)
     +infoSec("Used in",us.length&&`<div class="infoList">${us.slice(0,12).map(infoRecipe).join("")}${us.length>12?`<div class="note">and ${us.length-12} more on the Recipes tab</div>`:""}</div>`)}

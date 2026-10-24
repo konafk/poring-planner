@@ -1,9 +1,16 @@
-// ---- the Recipes tab: what each craft (forging, brewing, arrow crafting, cooking) uses up, from rozerodb's Recipes page, and what the
-// Alchemy Lab NPCs make for a fee (Mixture, Counteragent, Dyestuffs) from its Alchemy Lab guide (data/recipes.js).
+// ---- the Recipes tab: what each craft (forging, brewing, arrow crafting, cooking) uses up, from rozerodb's Recipes page, what the
+// Alchemy Lab NPCs make for a fee (Mixture, Counteragent, Dyestuffs) from its Alchemy Lab guide (data/recipes.js), and the Jellostones
+// and Expedition upgrades.
 // Search also matches the materials, so a drop finds what it turns into. Every item opens its details (js/info.js), which list the
-// recipes that make it and the ones that use it ----
-const RECIPE_LIST=typeof RECIPES!=="undefined"?RECIPES:[];
-const RECIPE_CATS=["Forging","Brewing","Arrows","Cooking","Misc","Mixture & Counteragent","Dye Making"];
+// recipes that make it and the ones that use it. The Memorial category comes from data/memorial.js: 5 Jello Fragments into their
+// Jellostone at the Memory Craftsman's Workshop, and the Upgrader's Expedition pieces from a Subjugation Team piece, Faintly Glowing
+// Crystals and Jellostones ----
+const MEMORIAL_RECIPES=typeof JELLO==="undefined"?[]:[
+  ...JELLO.map(j=>({cat:"Memorial",type:"npc",id:j.stone[0],n:1,lv:null,mats:[[j.frag[0],JELLO_PER_STONE]],npc:JELLO_NPC})),
+  ...EXPEDITION.map(x=>({cat:"Memorial",type:"npc",id:x.id,n:1,lv:null,
+    mats:[[x.from[0],1],[EXPEDITION_CRYSTALS[0],EXPEDITION_CRYSTALS[2]],...Object.entries(x.stones).map(([id,k])=>[+id,k])],npc:EXPEDITION_NPC}))];
+const RECIPE_LIST=[...(typeof RECIPES!=="undefined"?RECIPES:[]),...MEMORIAL_RECIPES];
+const RECIPE_CATS=["Forging","Brewing","Arrows","Cooking","Misc","Mixture & Counteragent","Dye Making","Memorial"];
 // by item id: the recipes that make it, and the ones it's a material of
 const RECIPES_MAKING={},RECIPES_USING={};
 RECIPE_LIST.forEach(r=>{(RECIPES_MAKING[r.id]=RECIPES_MAKING[r.id]||[]).push(r);

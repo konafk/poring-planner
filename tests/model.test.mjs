@@ -2374,7 +2374,7 @@ t("details popup: a monster, an item, gear and a card, linked to each other", ()
 });
 
 t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {
-  assert.equal(run(`RECIPES.length`), run(`RECIPE_LIST.length`));
+  assert.equal(run(`RECIPES.length+13`), run(`RECIPE_LIST.length`));                                    // and the 5 Jellostones, 8 Expedition pieces
   assert.ok(run(`RECIPES.every(r=>RECIPE_CATS.includes(r.cat)&&r.mats.length&&r.mats.every(([id,n])=>RECIPE_ITEMN[id]&&n>0))`));
   assert.equal(run(`itemName(1301)`), "Axe");                                                          // a recipe's name for an item no monster drops
   const ok = (q, cat) => run(`RECIPES.filter(r=>recipeOk(r,{q:${JSON.stringify(q)},cat:${JSON.stringify(cat || "")}})).map(r=>r.id)`);
@@ -2403,6 +2403,17 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.match(run(`itemIcon(1301)`), /ico-gear"/);
   assert.match(run(`itemIcon(4123)`), /ico-card"/);
   assert.ok(run(`[...Object.keys(ITEMN),...Object.keys(RECIPE_ITEMN)].every(id=>!/ none"/.test(itemIcon(id)))`), "every item has an icon");
+  // Memorial: 5 Jello Fragments make their Jellostone, and an Expedition piece takes its Subjugation Team piece, crystals and stones
+  const mem = id => run(`JSON.stringify(RECIPE_LIST.find(r=>r.cat==="Memorial"&&r.id===${id}))`);
+  assert.deepEqual(JSON.parse(mem(25470)).mats, [[25465, 5]]);                                        // Crimson Jellostone: 5 Poring Jello Fragment
+  assert.deepEqual(JSON.parse(mem(15221)).mats, [[15220, 1], [25424, 50], [25470, 2]]);                // Expedition's Armor
+  assert.equal(run(`itemName(25470)`), "Crimson Jellostone"); assert.equal(run(`itemName(15221)`), "Expedition's Armor");
+  const memOk = q => run(`RECIPE_LIST.filter(r=>recipeOk(r,{q:${JSON.stringify(q)},cat:"Memorial"})).map(r=>r.id)`);
+  assert.deepEqual([...memOk("poporing")], [25471]);                                                       // a fragment finds its stone
+  assert.ok(memOk("upgrader").length === 8);
+  assert.match(run(`popItem("25465").body`), /Used in/); assert.match(run(`popGear(15221).body`), /Made from/);
+  assert.doesNotMatch(run(`infoRecipe(RECIPE_LIST.find(r=>r.id===25470))`), /undefined| z</);         // no fee to show
+  assert.ok(run(`RECIPE_LIST.filter(r=>r.cat==="Memorial").flatMap(r=>[r.id,...r.mats.map(m=>m[0])]).every(id=>!/ none"/.test(itemIcon(id)))`), "every memorial item has an icon");
 });
 
 t("memorial gear: Subjugation Team and Expedition lines as the client describes them, each set bonus counted once", () => {
