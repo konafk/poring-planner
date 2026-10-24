@@ -1,4 +1,4 @@
-# Once a week, refetches the data that comes from websites (gear, cards, skills, item text, NPC prices, affixes, icons) and opens a PR
+# Once a week, refetches the data that comes from websites (gear, cards, skills, item text, NPC prices, affixes, recipes, icons) and opens a PR
 # with whatever changed. Spawns and map names come from the installed game client, so they stay manual (docs/development.md, Tools).
 # Needs Settings → Actions → General → Workflow permissions: "Allow GitHub Actions to create and approve pull requests".
 # A PR opened by this workflow doesn't start the Tests workflow (GitHub doesn't run workflows for its own token's PRs), so the tests run
@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: 22
       # The cache starts empty, so every page is fetched fresh (one per second): changed stats on existing items come through too.
-      # Order matters: cardnames, iteminfo and icons read what export_prontera.py wrote and cached. A script that fails (a site down)
+      # Order matters: cardnames, iteminfo and icons read what export_prontera.py wrote and cached, and icons what export_recipes.py wrote. A script that fails (a site down)
       # leaves its files as they were, and the PR lists it.
       - name: Gear, cards, refine and skills (roz.prontera.info)
         id: prontera
@@ -53,7 +53,11 @@ jobs:
         id: affixes
         continue-on-error: true
         run: python tools/export_affixes.py
-      - name: Gear icons and card pictures (divine-pride.net)
+      - name: Crafting recipes (rozerodb.com)
+        id: recipes
+        continue-on-error: true
+        run: python tools/export_recipes.py
+      - name: Item icons and card pictures (divine-pride.net)
         id: icons
         continue-on-error: true
         run: python tools/export_icons.py
@@ -69,7 +73,7 @@ jobs:
             echo
             failed=""
             for x in "prontera:${{ steps.prontera.outcome }}" "cardnames:${{ steps.cardnames.outcome }}" "iteminfo:${{ steps.iteminfo.outcome }}" \
-                     "prices:${{ steps.prices.outcome }}" "affixes:${{ steps.affixes.outcome }}" "icons:${{ steps.icons.outcome }}"; do
+                     "prices:${{ steps.prices.outcome }}" "affixes:${{ steps.affixes.outcome }}" "recipes:${{ steps.recipes.outcome }}" "icons:${{ steps.icons.outcome }}"; do
               [ "${x#*:}" = "success" ] || failed="$failed tools/export_${x%%:*}.py"
             done
             if [ -n "$failed" ]; then echo "**Failed, files left as they were:**$failed"; echo; fi

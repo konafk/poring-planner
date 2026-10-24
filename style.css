@@ -659,9 +659,12 @@ details.more>.form{display:grid}
 .eqSet>b{font-size:11px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
 .eqPick{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px;text-align:left;font-weight:500;padding:8px 12px}
 .eqPick .to{color:var(--accent);font-weight:600}
-/* gear icons and card pictures: one cell of a sprite sheet (data/icons.js) */
+/* item icons and card pictures: one cell of a sprite sheet (data/icons.js) */
 .ico{display:inline-block;flex:none;background-repeat:no-repeat;vertical-align:middle}
 .ico-gear{width:24px;height:24px;background-image:var(--ico-gear)}
+.ico-item{width:24px;height:24px;background-image:var(--ico-item)}
+/* an icon in a line of text: it doesn't make the line taller */
+.ico.il{margin:-5px 5px -4px 0}
 .ico-card{width:36px;height:48px;background-image:var(--ico-card);border-radius:3px}
 .ico.none{background:none}
 .dbName{display:flex;align-items:center;gap:8px}
@@ -690,3 +693,11 @@ details.more>.form{display:grid}
 .infoActs{padding:10px 16px;border-top:1px solid var(--line);background:var(--raised);flex-wrap:wrap}
 #infoBack{margin-top:-1px}
 @media (max-width:680px){.infoDlg .calc{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* Recipes tab: the category buttons wrap on a phone; each material on its own line */
+#recipeCats{flex-wrap:wrap}
+#recipeCats .note{margin-left:2px}
+.dbTable td.mats{white-space:normal;min-width:200px;line-height:1.9}
+.dbTable td.mats .mat{display:block;white-space:nowrap}
+/* the details popup: recipes that make or use an item */
+.infoList .recipe{display:flex;flex-wrap:wrap;gap:0 10px;align-items:baseline}
+.infoList .recipe .mat{white-space:nowrap}

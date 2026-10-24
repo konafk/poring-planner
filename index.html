@@ -30,6 +30,7 @@
       <button type="button" role="tab" data-tabbtn="items" title="Item info"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><span>Item info</span></button>
       <button type="button" role="tab" data-tabbtn="equip" title="Equipment"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3z"/></svg><span>Equipment</span></button>
       <button type="button" role="tab" data-tabbtn="cards" title="Cards"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>Cards</span></button>
+      <button type="button" role="tab" data-tabbtn="recipes" title="Recipes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg><span>Recipes</span></button>
       <button type="button" role="tab" data-tabbtn="market" title="Market"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="M15.5 9.5A6 6 0 1 1 9.5 15.5"/></svg><span>Market</span></button>
       <button type="button" role="tab" data-tabbtn="ref" title="EXP &amp; formulas"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg><span>EXP &amp; formulas</span></button>
       <span class="navGrp" role="presentation">Data</span>
@@ -716,6 +717,17 @@
     <div class="note hint">Click a row (or Equip) to put a card in a card slot of your gear or one of your other gear sets. The item has to be on and have a free (or replaceable) slot: equip one from the Equipment tab first. Effects are the card's in-game text. Where to get lists the monsters that drop it, MVPs and mini bosses marked; click one the farm tables know to open it in Monster info.</div>
   </section>
 
+  <section class="card" id="recipeCard" data-tab="recipes">
+    <div class="bar"><h2 class="grow">Recipes</h2><span class="note" id="recipeCount"></span></div>
+    <div class="bar dbF">
+      <label class="grow">Search<input data-rcf="q" type="search" placeholder="item, #id or a material (Iron, Jellopy…)"></label>
+      <label><span>&nbsp;</span><button type="button" id="recipeReset">Reset</button></label>
+    </div>
+    <div class="seg" role="radiogroup" aria-label="Category" id="recipeCats"></div>
+    <div class="scroll tall"><table id="recipeTable" class="dbTable"><thead><tr><th data-sk="name">Makes</th><th data-sk="cat" class="l">Category</th><th data-sk="lv" title="a forged weapon's level">Lv</th><th data-sk="mats" class="l">Materials</th><th data-sk="worth" title="what the materials are worth (your Market price, else what an NPC pays), plus the fee for what an NPC makes">Materials worth</th></tr></thead><tbody></tbody></table></div>
+    <div class="note hint">What each craft uses up, from rozerodb's Recipes page and Alchemy Lab guide. Search matches the materials and NPCs too, so you can find what a drop turns into. Forging is weapons (Lv = the weapon's level) and ores into Iron, Steel and elemental stones; Arrows is Arrow Crafting, where one item makes a stack. Mixture &amp; Counteragent are made by Morgenstein in Geffen (talk to Merchant Louitz in Alberta, then Aure Dupon in Geffen, first) and the Dyestuffs by JavaDullihan in Morroc, each for a zeny fee. Materials worth = each material at your Market price, else what an NPC pays (+? when one has neither), plus that fee. Click any item for who drops it and every recipe that makes or uses it.</div>
+  </section>
+
   <section class="card" data-tab="ref">
     <div class="bar"><h2 class="grow">EXP tables</h2><span class="note" id="refExpNote"></span></div>
     <div class="row2">
@@ -783,6 +795,7 @@
 <script src="data/jobs.js"></script>
 <script src="data/consumables.js"></script>
 <script src="data/recovery.js"></script>
+<script src="data/recipes.js"></script>
 <script src="data/skills.js"></script>
 <script src="data/affixes.js"></script>
 <script src="data/stones.js"></script>
@@ -818,6 +831,7 @@
 <script src="js/build-ui.js"></script>
 <script src="js/ref.js"></script>
 <script src="js/gear-db.js"></script>
+<script src="js/recipes.js"></script>
 <script src="js/info.js"></script>
 <script src="js/memorial.js"></script>
 <script src="js/stellar.js"></script>

@@ -323,17 +323,20 @@ function gearPut(c,g,id){if(g.id===id)return;memKeep(c,g);const m=memOf(c)[id]||
 // "+7 · Vitata Card · 2 affixes"
 const memTxt=m=>[num(m.refine)?`+${num(m.refine)}`:"",...(m.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean),
   ...(m.opts&&m.opts.length?[`${m.opts.length} affix${m.opts.length>1?"es":""}`]:[])].filter(Boolean).join(" · ");
-// icons: gear from the game client, cards a thumbnail of their picture (data/icons.js, tools/export_icons.py); a cell of a sprite sheet
-// each, the sheet set once as a CSS variable. scale draws it smaller (the gear table's card boxes). An item with no image gets an
-// empty cell, so the names still line up
+// icons: gear and every other item from the game client, cards a thumbnail of their picture (data/icons.js, tools/export_icons.py); a
+// cell of a sprite sheet each, the sheet set once as a CSS variable. scale draws it smaller (the gear table's card boxes); cls adds a
+// class ("il": inline in a line of text). An item with no image gets an empty cell, so the names still line up
 const ICON_AT={};
 (typeof ICON_SHEETS!=="undefined"?Object.entries(ICON_SHEETS):[]).forEach(([k,s])=>{ICON_AT[k]={};s.ids.forEach((id,i)=>ICON_AT[k][id]=i);
   document.documentElement.style.setProperty(`--ico-${k}`,`url("${s.file}?v=${s.v}")`)});
-function iconHtml(kind,id,scale=1){const s=typeof ICON_SHEETS!=="undefined"&&ICON_SHEETS[kind],i=ICON_AT[kind]&&ICON_AT[kind][id];
-  const size=s&&scale!==1?`width:${s.w*scale}px;height:${s.h*scale}px;`:"";
-  if(!s||i==null)return `<span class="ico ico-${kind} none" aria-hidden="true"${size?` style="${size}"`:""}></span>`;
+function iconHtml(kind,id,scale=1,cls=""){const s=typeof ICON_SHEETS!=="undefined"&&ICON_SHEETS[kind],i=ICON_AT[kind]&&ICON_AT[kind][id];
+  const size=s&&scale!==1?`width:${s.w*scale}px;height:${s.h*scale}px;`:"",c=`ico ico-${kind}${cls?" "+cls:""}`;
+  if(!s||i==null)return `<span class="${c} none" aria-hidden="true"${size?` style="${size}"`:""}></span>`;
   const rows=Math.ceil(s.ids.length/s.cols),fit=scale!==1?`background-size:${s.cols*s.w*scale}px ${rows*s.h*scale}px;`:"";
-  return `<span class="ico ico-${kind}" aria-hidden="true" style="${size}${fit}background-position:-${i%s.cols*s.w*scale}px -${Math.floor(i/s.cols)*s.h*scale}px"></span>`}
+  return `<span class="${c}" aria-hidden="true" style="${size}${fit}background-position:-${i%s.cols*s.w*scale}px -${Math.floor(i/s.cols)*s.h*scale}px"></span>`}
+// any item by id: a card's picture at half size (as tall as an icon), else its gear or item icon
+const itemIcon=(id,scale=1,cls="")=>ICON_AT.card&&ICON_AT.card[id]!=null?iconHtml("card",id,scale/2,cls)
+  :iconHtml(ICON_AT.gear&&ICON_AT.gear[id]!=null?"gear":"item",id,scale,cls);
 function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};let lists="";
   const rows=BUILD.SLOTS.map(s=>{const g0=b.gear[s.k]||{},items=gearChoices(s.k),cards=cardChoices(s.k,g0.id&&BUILD.item(g0.id));GEAR_LISTS["g_"+s.k]=pickList(items);GEAR_LISTS["c_"+s.k]=pickList(cards);
     lists+=`<datalist id="gl_${s.k}">${[...GEAR_LISTS["g_"+s.k]].map(([n,id])=>`<option value="${esc(n)}"${mem[id]?` label="remembered: ${esc(memTxt(mem[id]))}"`:""}>`).join("")}</datalist><datalist id="cl_${s.k}">${[...GEAR_LISTS["c_"+s.k]].map(([n,id])=>{const p=cardName({id});return `<option value="${esc(n)}"${p?` label="${esc(p)}"`:""}>`}).join("")}</datalist>`;

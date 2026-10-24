@@ -17,6 +17,12 @@ function infoPrice(id){const npc=NPCSELL[id]!=null||state.npcPrices[id]!=null?np
 function infoDroppers(id){const ds=ITEM_DROPS[id]||[];if(!ds.length)return "";
   return `<div class="infoList">${ds.slice(0,12).map(({m,ch})=>{const om=openMaps(m),a=mobArrives(m);
     return `<div>${infoLink("mob",m.id,m.name)}${BOSS_PILL(m)} <span class="note">Lv ${m.lv} · ${chTxt(ch)}${yourCh(m,ch)!==ch?` (you ${chTxt(yourCh(m,ch))})`:""} · ${om.length?`${esc(mapLabel(om[0][0]))} ≈${spN(om[0][1])}`:a?`none open · ${esc(a)}`:"no open map"}</span></div>`}).join("")}${ds.length>12?`<div class="note">and ${ds.length-12} more in Item info</div>`:""}</div>`}
+// the recipes that make it and the ones that use it (js/recipes.js), each with its materials
+const infoRecipe=r=>`<div class="recipe"><span>${infoLink("item",r.id,recipeMade(r))} <span class="note">${esc(r.cat)}${r.lv?` Lv ${r.lv}`:""}${r.npc?` · ${esc(r.npc[0])}, ${fmtN(r.fee)} z`:""}</span></span>${recipeMats(r)}</div>`;
+function infoRecipes(id){const mk=RECIPES_MAKING[id]||[],us=RECIPES_USING[id]||[];
+  return infoSec(`Made from${mk.length>1?` (${mk.length} ways)`:""}`,mk.length&&`<div class="infoList">${mk.slice(0,12).map(infoRecipe).join("")}${mk.length>12?`<div class="note">and ${mk.length-12} more on the Recipes tab</div>`:""}</div>`)
+    +infoSec("Used in",us.length&&`<div class="infoList">${us.slice(0,12).map(infoRecipe).join("")}${us.length>12?`<div class="note">and ${us.length-12} more on the Recipes tab</div>`:""}</div>`)}
+const recipeAct=id=>RECIPES_MAKING[id]||RECIPES_USING[id]?'<button type="button" data-infoact="recipes">Recipes</button>':"";
 
 function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobIds.includes(m.id),a=mobArrives(m);
   const sub=`Lv ${m.lv} · ${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${BOSS_PILL(m)}${m.agg?' <span class="pill">aggressive</span>':""}`;
@@ -26,7 +32,7 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
     +infoTile("EXP / min",m.expUnknown?"?":r.epm?fmtN(r.epm):"–",r.hpm==null?"":`HP lost ~${fmtN(r.hpm)}/min`)
     +infoTile("Zeny / kill",hasLoot(m)?fmtN(r.zk):"–",penNote(m)||"no drop level penalty")
     +infoTile("Best map",om.length?mapCode(om[0][0]):"–",om.length?`${esc(mapName(om[0][0]))} ≈${spN(om[0][1])}`:a?`none open · comes with the ${esc(a)}`:"none open");
-  const drops=(m.drops||[]).slice().sort((x,y)=>(y[1]??-1)-(x[1]??-1)).map(([id,ch])=>`<div>${infoLink(infoKind(id),id,itemName(id))} <span class="note">${chTxt(ch)}${yourCh(m,ch)!==ch?` (you ${chTxt(yourCh(m,ch))})`:""}${npcSell(id)>0?` · NPC ${fmtN(npcPays(id))} z`:""}${state.prices[id]>0?` · players ${fmtN(state.prices[id])} z`:""}${looted(id)?"":" · not looted"}</span></div>`).join("");
+  const drops=(m.drops||[]).slice().sort((x,y)=>(y[1]??-1)-(x[1]??-1)).map(([id,ch])=>`<div>${itemIcon(id,1,"il")}${infoLink(infoKind(id),id,itemName(id))} <span class="note">${chTxt(ch)}${yourCh(m,ch)!==ch?` (you ${chTxt(yourCh(m,ch))})`:""}${npcSell(id)>0?` · NPC ${fmtN(npcPays(id))} z`:""}${state.prices[id]>0?` · players ${fmtN(state.prices[id])} z`:""}${looted(id)?"":" · not looted"}</span></div>`).join("");
   const maps=(SPAWN[m.id]||[]).slice().sort((x,y)=>y[1]-x[1]).map(([mp,n])=>`<div><a href="#" data-infomap="${esc(mp)}" class="mono">${mapCode(mp)}</a> <span class="note">${esc(mapName(mp))} · ≈${spN(n)}</span>${isClosed(mp)?` <span class="pill down">closed${mapArrives(mp)?` · ${esc(mapArrives(mp).split(", ")[1])}`:""}</span>`:""}</div>`).join("");
   return {ico:"",title:m.name,sub,
     body:`<div class="calc">${tiles}</div>${infoSec("Drops",drops&&`<div class="infoList">${drops}</div>`)}${infoSec("Spawns",maps&&`<div class="infoList">${maps}</div>`)}`,
@@ -34,9 +40,9 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
       <button type="button" data-infoact="mobinfo">Monster info</button><a class="ext" href="${dbUrl(m)}" target="_blank" rel="noopener">rozerodb ↗</a>`}}
 
 function popItem(id){const name=itemName(id);
-  return {ico:"",title:name,sub:`#${id} · ${GROUP_NAME[groupOf(id)]}${looted(id)?"":" (not looted)"}`,
-    body:infoPrice(id)+infoSec("Dropped by",infoDroppers(id))+(ITEM_DROPS[id]?"":'<div class="note">No monster the farm tables know drops it.</div>'),
-    acts:ITEM_DROPS[id]?'<button type="button" data-infoact="items">Item info</button>':""}}
+  return {ico:itemIcon(id,1.5),title:name,sub:`#${id} · ${GROUP_NAME[groupOf(id)]}${looted(id)?"":" (not looted)"}`,
+    body:infoPrice(id)+infoSec("Dropped by",infoDroppers(id))+(ITEM_DROPS[id]?"":'<div class="note">No monster the farm tables know drops it.</div>')+infoRecipes(id),
+    acts:(ITEM_DROPS[id]?'<button type="button" data-infoact="items">Item info</button>':"")+recipeAct(id)}}
 
 function popGear(id){const it=BUILD.item(id),fx=fxOf(it),c=C(),txt=itemText(id),worn=wornIn(c,it.id);
   const stats=[it.lv?`Lv ${it.lv}+`:"",it.slots?`[${it.slots}] card slot${it.slots>1?"s":""}`:"no card slots",it.atk?`ATK ${it.atk}`:"",it.matk?`MATK ${it.matk}`:"",it.def?`DEF ${it.def}`:"",
@@ -44,8 +50,8 @@ function popGear(id){const it=BUILD.item(id),fx=fxOf(it),c=C(),txt=itemText(id),
   const ok=eqPlaces(it,state.job).length&&wearsJob(it,state.job);
   return {ico:iconHtml("gear",id,1.5),title:it.name,sub:`${esc(gearKind(it))} · #${id} · ${esc(jobsTxt(it))}${worn.map(x=>` <span class="pill up">${x}</span>`).join("")}`,
     body:`<div class="note mono">${esc(stats)}</div>${infoSec("Effects",fx.length?`<div class="infoList">${fx.map(x=>`<div>${esc(x)}</div>`).join("")}</div>`:"")}${infoSec("In-game text",txt&&`<div class="infoText">${esc(txt)}</div>`)}
-      ${infoSec("Where to get",`<div class="infoFrom">${fromHtml(id)}</div>`)}${ITEM_DROPS[id]?infoPrice(id):""}`,
-    acts:`<button type="button" class="primary" data-infoact="equip"${ok?"":` disabled title="${esc(eqPlaces(it,state.job).length?`A ${state.job} can't wear it`:"Not something you wear")}"`}>Equip</button><button type="button" data-infoact="equiptab">Equipment tab</button>`}}
+      ${infoSec("Where to get",`<div class="infoFrom">${fromHtml(id)}</div>`)}${infoRecipes(id)}${ITEM_DROPS[id]?infoPrice(id):""}`,
+    acts:`<button type="button" class="primary" data-infoact="equip"${ok?"":` disabled title="${esc(eqPlaces(it,state.job).length?`A ${state.job} can't wear it`:"Not something you wear")}"`}>Equip</button><button type="button" data-infoact="equiptab">Equipment tab</button>${recipeAct(id)}`}}
 
 function popCard(id){const x=BUILD.item(id),fx=fxOf(x),c=C(),txt=itemText(id),worn=wornIn(c,x.id,true);
   return {ico:iconHtml("card",id),title:x.name,sub:`${CARD_PART[cardPart(x)]||"–"} card · #${id}${cardName(x)?` · names gear "${esc(cardName(x))}"`:""}${worn.map(w=>` <span class="pill up">${w}</span>`).join("")}`,
@@ -70,7 +76,8 @@ function infoAct(a){const [kind,id]=INFO[INFO.length-1],d=$("infoDlg");
   else if(a==="items"){state.infoItem=String(id);save();showTab("items");renderItems();$("itemTiles").scrollIntoView({behavior:"smooth",block:"nearest"})}
   else if(a==="equip")openEquip(kind==="card"?"card":"item",+id);
   else if(a==="equiptab"){state.eqDb={...EQDB_D,job:"",q:"#"+id};save();showTab("equip");scrollTo({top:0})}
-  else if(a==="cardtab"){state.cardDb={...CARDDB_D,q:"#"+id};save();showTab("cards");scrollTo({top:0})}}
+  else if(a==="cardtab"){state.cardDb={...CARDDB_D,q:"#"+id};save();showTab("cards");scrollTo({top:0})}
+  else if(a==="recipes"){state.recipeDb={...RECIPEDB_D,q:"#"+id};save();showTab("recipes");scrollTo({top:0})}}
 (function setupInfo(){const d=$("infoDlg");
   // anywhere on the page (capture, so a row's own click doesn't also run)
   document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("[data-info]");if(!a)return;e.preventDefault();e.stopPropagation();
