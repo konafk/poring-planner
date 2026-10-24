@@ -9,7 +9,7 @@ table lists the map, _a, _b (always the same counts) and _z (PvP, about 1.5x the
 MVPs sit in their own tables, b_<map> and b_<map>_z, which count toward the map.
 Fields also have a table under their old name (prt_fild06, mjolnir_04, prt_maze02) with the same counts but no channels; their PvP
 and boss tables are only under the Zero name (prt_f06_z, mjo_f04_z, maz_d02_z), so those are looked up there.
-rozerodb takes its spawn list from this same file but fills field counts with rAthena Renewal estimates, so field counts were
+The database takes its spawn list from this same file but fills field counts with rAthena Renewal estimates, so field counts were
 far too high; its dungeon counts already matched the client.
 Each spawn becomes [map, normal count, PvP count], or [map, normal count] when the table has no PvP channel for the map. The client is
 the only source for counts: on maps it doesn't list yet (regions not out) each monster already there becomes [map, null], so the

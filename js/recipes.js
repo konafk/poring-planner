@@ -1,4 +1,4 @@
-// ---- the Recipes tab: what each craft (forging, brewing, arrow crafting, cooking) uses up, from rozerodb's Recipes page, what the
+// ---- the Recipes tab: what each craft (forging, brewing, arrow crafting, cooking) uses up, from the exported recipe list, what the
 // Alchemy Lab NPCs make for a fee (Mixture, Counteragent, Dyestuffs) from its Alchemy Lab guide (data/recipes.js), and the memorial
 // crafts (Jellostones, Expedition upgrades, Mithril and the Oath accessories).
 // Search also matches the materials, so a drop finds what it turns into. Every item opens its details (js/info.js), which list the

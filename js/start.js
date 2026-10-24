@@ -5,7 +5,7 @@ const TAB_DESC={
   char:"Your job, stats, gear and attack: everything the damage, EXP and zeny numbers work from.",
   track:"Log your EXP as you farm to see your real EXP/hr, when you'll level and how far your goals are.",
   maps:"The best maps for your character by EXP or zeny, and one click to farm one. Then the map planner and every monster.",
-  star:"The ★ Forging Certificates each ★ weapon type needs, where you'd farm them fastest, and what Activation costs.",
+  star:"Not open in game yet (Taiwan Zero data). The ★ Forging Certificates each ★ weapon type needs, where you'd farm them fastest, and what Activation costs.",
   mem:"Jellostones from Poring Village, the Expedition gear they upgrade to, and the memorial dungeons' rewards and enchants.",
   roadmap:"Ragnarok Zero Global's release roadmap: when each update comes, its level cap, and which maps and monsters are open now.",
   mobinfo:"Drops, spawn maps and your numbers against any monster.",

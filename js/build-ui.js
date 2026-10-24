@@ -84,7 +84,7 @@ const CONS_PRESETS=[
   {name:"Ale's Blessing",eff:"Recovery items +20%, Heal received +20%"}];
 // stacking: stat food (the + column) and Blessing of Yggdrasil don't add up, the higher one counts per stat;
 // course meals, event drinks and other rows stack on top
-// clans (Ragnarok Zero Global; Midgard Hub's new player guide, the same as iRO Wiki's Clan System): a buff that stays on while you're
+// clans (Ragnarok Zero Global; as iRO Wiki's Clan System has it): a buff that stays on while you're
 // a member, two stats +1, Max HP +30 and Max SP +10. It stacks with food and Blessing of Yggdrasil. It can't be switched off, so a
 // typed status window always has it: only build mode adds it
 const CLANS={sword:{name:"Sword Clan",st:["str","vit"]},archwand:{name:"Arch Wand Clan",st:["int","dex"]},goldenmace:{name:"Golden Mace Clan",st:["luk","int"]},crossbow:{name:"Crossbow Clan",st:["dex","agi"]}};
@@ -261,7 +261,7 @@ function cardChoices(slot,it){const cs=it&&(it.slot||[]).includes("weapon")?"wea
 const cardName=c=>typeof CARDNAMES!=="undefined"&&CARDNAMES[c.id]||"";
 const readGear=(slot,text,items)=>BUILD.readGearName(text,items||gearChoices(slot),it=>cardChoices(slot,it),cardName);
 // random options: a list per option the item rolled, plus an empty one to add the next (any item takes up to OPT_MAX). Each list holds
-// the affixes the row's gear rolls (BUILD.optChoices: a weapon by its type, also in the Shield row; every option for parts rozerodb has
+// the affixes the row's gear rolls (BUILD.optChoices: a weapon by its type, also in the Shield row; every option for parts the database has
 // no pool for), with its min–max on the value box. An option saved before that this gear can't roll stays, listed under "Saved"
 const OPT_HTML={};
 // rows replacing typed option text keep the typed lines that match no option (g.optsText), so none are lost

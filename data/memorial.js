@@ -1,5 +1,5 @@
-// Memorial dungeons, Jellostones and the memorial gear's upgrades and enchants. Made by hand, cross-checked with Midgard Hub's
-// Memorial Dungeons guide (midgardhub.com/guides/memorial-dungeons); item names and ids as the Global client has them (rozerodb.com).
+// Memorial dungeons, Jellostones and the memorial gear's upgrades and enchants. Made by hand; item names and ids as the Global
+// client has them.
 // MEMORIALS: one row per dungeon: name, lv (base level to enter), npc (who lets you in), at (where they stand), normal / hard: the
 // reward box, [item id or null, name, how many]. A party of 7 or more gets more from Orc's Memory, Prontera Culvert and Ant Hell.
 const MEMORIALS=[

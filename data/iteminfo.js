@@ -1,5 +1,5 @@
 // Gear and cards: item id -> {t: in-game description (roz.prontera.info), d: monsters that drop it [[monster id, name, level,
-// "mvp" | "mini" (mini boss) | "normal", drop %]] best rate first (rozerodb.com), q: quests that give it (roz.prontera.info)};
+// "mvp" | "mini" (mini boss) | "normal", drop %]] best rate first (the community database), q: quests that give it (roz.prontera.info)};
 // written by tools/export_iteminfo.py
 const ITEM_INFO={2617:{"t":"Gloves said to have been used by priests or clergy when conducting rituals, said to carry their accumulated knowledge. INT +1.","d":[[2763,"Elusive Marduk",109,"normal",0.05],[1098,"Anubis",105,"normal",0.01],[1140,"Marduk",109,"normal",0.01]]},
 550005:{"t":"Unbreakable. ※ Additional options in Siege areas Magic damage to players +15%. Ignores 10% of players' magic defense. For every 2 refines, MATK +5. MATK +140"},

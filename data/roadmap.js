@@ -1,5 +1,5 @@
-// Ragnarok Zero Global release roadmap: the official one (mygnjoy.com/en/event/roadmap), as rozerodb.com/guides/roadmap-update and
-// jpgames.de's copy of it list it. ROADMAP: one update each, in order: when (YYYY-MM, or YYYY-MM-DD once the day is announced), name,
+// Ragnarok Zero Global release roadmap: the official one (mygnjoy.com/en/event/roadmap), as
+// jpgames.de's copy of it lists it. ROADMAP: one update each, in order: when (YYYY-MM, or YYYY-MM-DD once the day is announced), name,
 // cap (the base / job level cap it raises to), add (what it brings), and regions: the maps it opens, as {id, name, pre: map code prefixes in
 // data/spawn.js}. A region opens by itself once its update's day has come, or the month after its update's month when the day isn't known;
 // mark it open or closed yourself on the Roadmap tab. Maps in no region are open: Comodo's and Umbala's fields, Sphinx, Prontera Labyrinth and Mjolnir Dead Pit, which the roadmap puts with Clock Tower

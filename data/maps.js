@@ -1,4 +1,4 @@
-// In-game map code and name per spawn map (rozerodb code -> [in-game code, name, other codes]): codes from ragnarokzero.net/database/maps, names as the official Global client shows them (System/mapInfo_enUS.lub, written by tools/export_mapnames.py); maps the client doesn't have yet keep ragnarokzero.net's names
+// In-game map code and name per spawn map (source map code -> [in-game code, name, other codes]): codes from ragnarokzero.net/database/maps, names as the official Global client shows them (System/mapInfo_enUS.lub, written by tools/export_mapnames.py); maps the client doesn't have yet keep ragnarokzero.net's names
 const MAPNAMES={"alde_dun01":["alde_dun01","Clock Tower B1F"],
 "alde_dun02":["alde_dun02","Clock Tower B2F"],
 "alde_dun03":["alde_dun03","Clock Tower B3F"],
