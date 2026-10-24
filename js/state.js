@@ -117,6 +117,8 @@ state.mobbed=Object.fromEntries(Object.entries(numMap(state.mobbed)).map(([k,v])
 // per account: buy at the Discount price (on unless switched off): recovery items, the ASPD potion, skill items and Custom HP / SP items
 state.recovery={discount:!(state.recovery&&state.recovery.discount===false)};
 delete state.flyPrice;
+// per account: how the character looks in the equipment window (Build from gear): gender m/f and hair style number
+state.look={sex:state.look&&state.look.sex==="f"?"f":"m",hair:Math.max(1,Math.round(+(state.look&&state.look.hair))||1)};
 ["teleSec","tripEarly","tripMin"].forEach(k=>{if(state[k]!=null&&!(Number.isFinite(+state[k])&&+state[k]>=0))delete state[k]});
 if(!state.current||!state.sessions.some(s=>s.id===state.current))state.current=state.sessions[0].id;
 // Element / Race / Size / Boss dropdowns: the Monsters card's (mobF) and Monster info's (infoF), {key: value}

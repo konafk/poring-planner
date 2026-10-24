@@ -346,12 +346,63 @@ function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};l
       <td>${it?optBoxes(s.k,g,it):""}</td></tr>`}).join("");
   $("gearTable").tBodies[0].innerHTML=rows;$("gearLists").innerHTML=lists;renderStones();
   BUILD.SLOTS.forEach(s=>{const g=b.gear[s.k];if(g)BUILD.optRows(g.opts).forEach((x,i)=>{const el=$("gearTable").querySelector(`tr[data-slot="${s.k}"] [data-opt="${i}"]`);if(el)el.value=x.k})})}
+// ---- the equipment window, drawn like the game's Equipped Items: your job's look (data/sprites.js, tools/export_sprites.py; gender and
+// hair style per account, state.look) between two columns of slots in the game's order, each with its icon and its name as the game
+// shows it. A slot opens its row of the table below. Special Equip holds the costume enchant stones, the Taming Ring and other special
+// equipment ----
+const EW_L=["headTop","headLow","weapon","garment","acc1"],EW_R=["headMid","armor","shield","shoes","acc2"];
+let EW_TAB="normal";
+{const s=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(s)document.documentElement.style.setProperty("--job-sprites",`url("${s.file}?v=${s.v}")`)}
+// "+7 Double Healing Shining Clip": refine, then the cards' names before the item name (Double / Triple / Quadruple for repeats) or after it
+function gameName(g){const it=g&&g.id&&BUILD.item(g.id);if(!it)return "";const pre=[],post=[],n={};
+  (g.cards||[]).filter(Boolean).forEach(id=>{const c=BUILD.item(id)||{id},a=cardName(c);if(!a)return;n[a]=(n[a]||0)+1;
+    if(n[a]===1)(c.affixPos==="suffix"||/^of /i.test(a)?post:pre).push(a)});
+  const rep=a=>{const x=["","","Double ","Triple ","Quadruple "][n[a]]||"";return /^of /i.test(a)?"of "+x+a.slice(3):x+a};
+  return [num(g.refine)?`+${num(g.refine)}`:"",...pre.map(rep),it.name,...post.map(rep)].filter(Boolean).join(" ")}
+const ewSlot=(k,label,name,ico,right)=>`<button type="button" class="ewSlot${right?" r":""}${name?"":" empty"}" data-ewslot="${k}" title="${esc(`${label}: ${name||"empty"}`)}">${ico}<span class="ewName">${esc(name)}</span></button>`;
+const ewNone=right=>`<div class="ewSlot empty none${right?" r":""}" aria-hidden="true"><span class="ico none"></span></div>`;
+// the body at the feet, the head on the body's anchor; Bards are always male and Dancers female
+const ewSex=bj=>bj[state.look.sex]?state.look.sex:Object.keys(bj)[0];
+const ewHairs=sex=>Object.keys(((typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES.head)||{})[sex]||{}).length;
+function lookHtml(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";const bj=S.body[state.job]||S.body.Novice,sex=ewSex(bj),b=bj[sex],hs=S.head[sex]||{},h=hs[state.look.hair]||hs[1];
+  const part=(p,l,t,cls)=>`<span class="${cls}" style="left:${l}px;top:${t}px;width:${p[2]}px;height:${p[3]}px;background-position:-${p[0]}px -${p[1]}px"></span>`;
+  const one=Object.keys(bj).length<2,hair=hs[state.look.hair]?state.look.hair:1;
+  return `<div class="ewStage"><div class="ewFeet">${part(b,b[4],b[5],"ewBody")}${h?part(h,b[6]+h[4],b[7]+h[5],"ewHead"):""}</div></div>
+    <div class="ewLook"><button type="button" class="small" data-ewsex="" ${one?`disabled title="${esc(state.job)}s are ${sex==="f"?"female":"male"} only"`:`title="Gender: ${sex==="f"?"female":"male"}"`} aria-label="Gender">${sex==="f"?"♀":"♂"}</button>
+      <button type="button" class="small" data-ewhair="-1" aria-label="Previous hair style">◀</button><span title="Hair style"><span class="ewHairW">Hair </span>${hair}</span><button type="button" class="small" data-ewhair="1" aria-label="Next hair style">▶</button></div>`}
+function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),sp=EW_TAB==="special";
+  const gearSlot=(k,right)=>{const g=b.gear[k],it=g&&g.id&&BUILD.item(g.id),s=BUILD.SLOTS.find(x=>x.k===k);
+    return ewSlot(k,k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label,it?gameName(g):"",iconHtml("gear",it&&it.id),right)};
+  const stone=(k,right)=>{const id=(b.stones||{})[k],x=id&&(typeof STONES!=="undefined"?STONES:[]).find(s=>s.id===+id&&s.slot===k);
+    return ewSlot(k,`Costume ${k} stone`,x?x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""):"",iconHtml("gear",x&&x.id),right)};
+  const ring=()=>{const id=(b.special||{}).ring,x=id&&(typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[]).find(e=>e.id===+id);
+    return ewSlot("ring","Taming Ring",x?`Taming Ring [${x.name}]`:"",iconHtml("gear",null),false)};
+  // other special equipment you wear goes in the right column's free slots
+  const own=((b.special||{}).own||[]).map((x,j)=>({x,j})).filter(o=>o.x.on!==false&&(o.x.name||"").trim()).slice(0,4);
+  const L=sp?[stone("upper"),stone("lower"),ewNone(),stone("garment"),ring()]:EW_L.map(k=>gearSlot(k,false));
+  const R=sp?[stone("middle",true),...[0,1,2,3].map(n=>own[n]?ewSlot("own"+own[n].j,"Special equipment",own[n].x.name.trim(),iconHtml("gear",null),true):ewNone(true))]:EW_R.map(k=>gearSlot(k,true));
+  // arrows only for jobs that can hold a bow, or when some are set
+  const ammo=!sp&&(b.gear.ammo&&b.gear.ammo.id||gearChoices("weapon").some(it=>BUILD.WTYPE[it.type]==="Bow"))?`<div class="ewAmmo">${gearSlot("ammo",false)}</div>`:"";
+  const html=`<div class="ewHead"><span>Equipped Items</span>${i>=0?`<span class="ewSet">Set ${i+1}</span>`:""}</div>
+    <div class="ewTabs" role="tablist">${[["normal","Normal Equip"],["special","Special Equip"]].map(([k,t])=>`<button type="button" role="tab" data-ewtab="${k}" aria-selected="${EW_TAB===k}">${t}</button>`).join("")}</div>
+    <div class="ewBody"><div class="ewCol">${L.join("")}</div><div class="ewChar">${lookHtml()}</div><div class="ewCol">${R.join("")}</div>${ammo}</div>`;
+  // the button you pressed keeps focus through the redraw
+  const a=document.activeElement,f=a&&el.contains(a)?["ewtab","ewsex","ewhair","ewslot"].map(k=>a.dataset[k]!=null?`[data-${k}="${a.dataset[k]}"]`:null).find(Boolean):null;
+  if(renderEquipWin.html===html)return;renderEquipWin.html=html;el.innerHTML=html;if(f)el.querySelector(f)?.focus()}
+$("equipWin").addEventListener("click",e=>{const t=e.target.closest("button");if(!t||t.disabled)return;const L=state.look;
+  if(t.dataset.ewtab){EW_TAB=t.dataset.ewtab;renderEquipWin();return}
+  if(t.dataset.ewsex!=null){L.sex=L.sex==="f"?"m":"f";if(L.hair>ewHairs(L.sex))L.hair=1;save();renderEquipWin();return}
+  if(t.dataset.ewhair){const S=JOB_SPRITES.body[state.job]||JOB_SPRITES.body.Novice,n=ewHairs(ewSex(S));if(n)L.hair=(L.hair-1+ +t.dataset.ewhair+n)%n+1;save();renderEquipWin();return}
+  const k=t.dataset.ewslot;if(!k)return;
+  const to=EW_TAB==="special"?(k==="ring"?$("stoneRow").querySelector("[data-ring]"):k.startsWith("own")?$("specialOwn").querySelector(`[data-i="${k.slice(3)}"] [data-f=name]`):$("stoneRow").querySelector(`[data-stone="${k}"]`))
+    :$("gearTable").querySelector(`tr[data-slot="${k}"] input.item`);
+  if(to){to.scrollIntoView({block:"center",behavior:"smooth"});to.focus({preventScroll:true})}});
 function renderBuild(){const c=C(),on=c.mode==="build";
   if(on&&renderBuild.job!==state.job){renderBuild.job=state.job;renderGearTable()}if(!on)renderBuild.job=null;
   ROOTQ("[data-cmode]").forEach(x=>x.setAttribute("aria-checked",String(x.dataset.cmode===(on?"build":"status"))));
   $("buildPanel").hidden=!on;$("statNote").hidden=on;$("shieldRow").hidden=on;$("onTopWrap").hidden=on;$("addOnTop").checked=c.addOnTop!==false;BUILT_IDS.forEach(id=>{const el=$(id);el.disabled=on;if(on&&document.activeElement!==el)el.value=id.startsWith("st_")?(c.st||{})[id.slice(3)]??"":c[id]??""});
   $("modeNote").textContent=on?"Stats below are worked out from your base stats, job level and gear.":"Type the numbers from your in-game status window.";
-  if(!on)return;renderAltBar(c);renderLoadouts(c);const b=buildOf(c);ROOTQ("[data-bs]").forEach(x=>{if(document.activeElement!==x)x.value=b.base[x.dataset.bs]??""});
+  if(!on)return;renderAltBar(c);renderLoadouts(c);renderEquipWin();const b=buildOf(c);ROOTQ("[data-bs]").forEach(x=>{if(document.activeElement!==x)x.value=b.base[x.dataset.bs]??""});
   const r=BUILD_LAST;if(!r)return;const jb=r.jobBonus;
   $("jobBonusNote").textContent=`Job Lv ${r.fields.jobLv} bonus: `+BUILD.STAT6.map(k=>`${k.toUpperCase()} +${jb[k]}`).join(" · ")+(BUILD.curve(state.job,"hp",num(c.baseLv))==null?" · no HP/SP table for this job, type Max HP/SP after switching back":"");
   // check against the game: type the in-game totals, see the difference per stat

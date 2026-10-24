@@ -13,6 +13,7 @@
   --side-hover:rgba(20,18,40,.045); --side-on:rgba(106,85,245,.10); --side-on-ic:#6a55f5; --side-field:rgba(20,18,40,.03);
   --display:"Bricolage Grotesque","Inter",system-ui,sans-serif; --body:"Inter",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
   --r:10px; --side:220px;
+  --ew-bg:#fbfcfe; --ew-head:linear-gradient(#ffffff,#e3e8f1); --ew-tabbar:#e8ecf3; --ew-line:#c5ccdb; --ew-slot:#e6ebf5; --ew-slot-hover:#d5def0; --ew-slot-empty:#eef1f7; --ew-floor:rgba(30,40,70,.16);
   color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
@@ -21,6 +22,7 @@
   --glow-a:rgba(159,144,255,.10); --glow-b:rgba(255,111,165,.06);
   --side-bg:#09080d; --side-fg:#d9d7e4; --side-muted:#7d7a8f; --side-strong:#ffffff; --side-line:rgba(255,255,255,.06); --side-line-strong:rgba(255,255,255,.14);
   --side-hover:rgba(255,255,255,.06); --side-on:rgba(143,128,255,.16); --side-on-ic:#b9adff; --side-field:rgba(255,255,255,.04);
+  --ew-bg:#14131c; --ew-head:linear-gradient(#24232f,#1a1924); --ew-tabbar:#191822; --ew-line:#302e3c; --ew-slot:#222030; --ew-slot-hover:#2c2a3c; --ew-slot-empty:#1b1a25; --ew-floor:rgba(0,0,0,.45);
   --shadow:0 1px 0 rgba(255,255,255,.03) inset; --shadow-pop:0 14px 40px rgba(0,0,0,.55); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0d0c12; --surface:#15141c; --raised:#1a1922; --field:#111017; --fg:#ecebf3; --muted:#8e8ba0; --line:#25232f; --line-strong:#34313f; --grid:#1d1c26;
@@ -28,6 +30,7 @@
   --glow-a:rgba(159,144,255,.10); --glow-b:rgba(255,111,165,.06);
   --side-bg:#09080d; --side-fg:#d9d7e4; --side-muted:#7d7a8f; --side-strong:#ffffff; --side-line:rgba(255,255,255,.06); --side-line-strong:rgba(255,255,255,.14);
   --side-hover:rgba(255,255,255,.06); --side-on:rgba(143,128,255,.16); --side-on-ic:#b9adff; --side-field:rgba(255,255,255,.04);
+  --ew-bg:#14131c; --ew-head:linear-gradient(#24232f,#1a1924); --ew-tabbar:#191822; --ew-line:#302e3c; --ew-slot:#222030; --ew-slot-hover:#2c2a3c; --ew-slot-empty:#1b1a25; --ew-floor:rgba(0,0,0,.45);
   --shadow:0 1px 0 rgba(255,255,255,.03) inset; --shadow-pop:0 14px 40px rgba(0,0,0,.55); color-scheme:dark}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -660,6 +663,34 @@ details.more>.form{display:grid}
 /* the Character tab's gear table: the item's icon beside its box, a small picture beside each card box */
 #gearTable .itemBox,#gearTable .cardBox{display:flex;align-items:center;gap:6px}
 #gearTable .cardBox{flex:1;min-width:0}
+/* Build from gear: the equipment window, drawn like the game's Equipped Items; the job's look is a body and a head from one sheet
+   (data/sprites.js), drawn from the feet and scaled up by --ew-z with square pixels */
+.equipWin{--ew-z:2;max-width:560px;margin:10px 0;border:1px solid var(--ew-line);border-radius:7px;background:var(--ew-bg);box-shadow:var(--shadow);font-size:12px;line-height:1.25;overflow:hidden}
+.ewHead{display:flex;align-items:center;gap:8px;padding:4px 10px;background:var(--ew-head);border-bottom:1px solid var(--ew-line);font-weight:600}
+.ewSet{margin-left:auto;font-weight:500;font-size:11px;color:var(--muted)}
+.ewTabs{display:flex;background:var(--ew-tabbar);border-bottom:1px solid var(--ew-line)}
+.ewTabs button{flex:1 1 0;min-width:0;border:0;border-right:1px solid var(--ew-line);border-radius:0;background:none;padding:4px 6px;font-size:12px;font-weight:500;color:var(--muted)}
+.ewTabs button:last-child{border-right:0}
+.ewTabs button[aria-selected="true"]{background:var(--ew-bg);color:var(--fg);font-weight:600}
+.ewBody{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px;padding:8px}
+.ewCol{display:flex;flex-direction:column;gap:5px}
+.ewSlot{display:flex;align-items:center;gap:6px;min-height:36px;padding:3px 7px;border:0;border-radius:9px;background:var(--ew-slot);color:var(--fg);font-size:12px;font-weight:500;line-height:1.2;text-align:left;cursor:pointer}
+.ewSlot.r{flex-direction:row-reverse;text-align:right}
+.ewSlot:hover{background:var(--ew-slot-hover);border:0}
+.ewSlot.empty{background:var(--ew-slot-empty)}
+.ewSlot.none{cursor:default}
+.ewSlot .ico.none{width:24px;height:24px}
+.ewName{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.ewChar{display:flex;flex-direction:column;align-items:center;width:calc(52px*var(--ew-z))}
+.ewStage{position:relative;flex:1;width:100%;min-height:calc(100px*var(--ew-z))}
+.ewStage::before{content:"";position:absolute;left:50%;bottom:calc(8px*var(--ew-z));width:calc(26px*var(--ew-z));height:calc(7px*var(--ew-z));transform:translateX(-50%);border-radius:50%;background:var(--ew-floor)}
+.ewFeet{position:absolute;left:50%;bottom:calc(12px*var(--ew-z));width:0;height:0;transform:scale(var(--ew-z));transform-origin:0 0}
+.ewFeet span{position:absolute;background-image:var(--job-sprites);background-repeat:no-repeat;image-rendering:pixelated}
+.ewLook{display:flex;align-items:center;gap:3px;margin-top:4px;font-size:11px;color:var(--muted);white-space:nowrap}
+.ewLook button{min-height:0;padding:1px 6px;font-size:11px;line-height:1.4}
+.ewAmmo{grid-column:1/-1;display:flex;justify-content:center}
+.ewAmmo .ewSlot{width:min(100%,260px)}
+@media (max-width:520px){.equipWin{--ew-z:1.5}.ewBody{padding:6px;gap:4px}.ewSlot{padding:3px 5px;gap:4px;font-size:11px}.ewLook button{padding:1px 4px}.ewHairW{display:none}}
 /* Equipment and Cards tabs: where to get it, MVPs marked */
 .dbTable td.from{white-space:normal;min-width:150px;max-width:210px;font-size:12.5px;line-height:1.5}
 .pill.mvp{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,transparent);background:color-mix(in srgb,var(--warn) 8%,transparent)}
