@@ -1,5 +1,5 @@
-// Stellar (★) equipment and the Activation System. Made by hand from rozerodb.com's Stellar Weapons guide (guides/stellar-weapons) and
-// midgardhub.com's Activation System guide; both follow the Taiwan server's notice, and Global doesn't have the Activation NPCs yet.
+// Stellar (★) equipment and the Activation System. Made by hand from the Taiwan server's Activation System; Global doesn't have the
+// Activation NPCs yet.
 // The ★ weapons themselves come from data/equipment.js (the Global client has them). STAR_ROUTES: one row per activation:
 // name, refine (levels it takes off), cert: [how many, which Forging Certificate], frag: Goblin Coin Fragments, tw (true: only on the Taiwan
 // server's later updates so far)

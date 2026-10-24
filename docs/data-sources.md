@@ -15,7 +15,7 @@ The numbers are estimates. Skill values and formulas follow the sources below an
 - Costume enchant stones and their sets: item descriptions on [rozerodb.com](https://rozerodb.com/guides/enchant), cross-checked with [midgardhub.com](https://midgardhub.com/guides/enchant-stones)
 - Taming Ring pet egg enchants: item descriptions on [rozerodb.com](https://rozerodb.com), cross-checked with [midgardhub.com pet bonuses](https://midgardhub.com/guides/pet-bonuses)
 - Memorial dungeons, Jellostones, the Expedition upgrades and the memorial gear's enchants (`data/memorial.js`): the Taiwan server's notices (roz.gnjoy.com.tw), which run ahead of Global; item names and ids as the Global client has them, from [rozerodb.com](https://rozerodb.com)
-- Stellar weapons and the Activation System (`data/stellar.js`): [rozerodb.com's Stellar Weapons guide](https://rozerodb.com/guides/stellar-weapons) and its [crafting list](https://rozerodb.com/guides/stellar-weapons/crafting-list), cross-checked with [midgardhub.com's Activation System guide](https://midgardhub.com/guides/activation); both follow the Taiwan server
+- Stellar weapons and the Activation System (`data/stellar.js`): the Taiwan server's Activation System; the ★ weapons from the official client
 - Spawn counts: the official Ragnarok Zero Global client (navigation table)
 - Map names: the official client (`System/mapInfo_enUS.lub`)
 - Spawn, drop and item name cross-check, in-game map codes: [ragnarokzero.net](https://ragnarokzero.net/database/maps)
