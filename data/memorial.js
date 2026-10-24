@@ -1,19 +1,19 @@
-// Memorial dungeons, Jellostones and the memorial gear's upgrades and enchants. Made by hand from the Taiwan server's notices
-// (roz.gnjoy.com.tw), which run ahead of Global; item names and ids as the Global client has them.
-// MEMORIALS: one row per dungeon: name, lv (base level to enter), at (where you go in), normal / hard: the reward box,
-// [item id or null, name, how many].
+// Memorial dungeons, Jellostones and the memorial gear's upgrades and enchants. Made by hand; item names and ids as the Global
+// client has them.
+// MEMORIALS: one row per dungeon: name, lv (base level to enter), npc (who lets you in), at (where they stand), normal / hard: the
+// reward box, [item id or null, name, how many]. A party of 7 or more gets more from Orc's Memory, Prontera Culvert and Ant Hell.
 const MEMORIALS=[
-{name:"Poring Village",lv:30,at:"prt_fild05 145 235",
+{name:"Poring Village",lv:30,npc:"Emily",at:"prt_fild05 145 235",
  normal:[[null,"Jello Fragment of the day (Jellostones card)","1"],[null,"Jellopy crystals, Poring Village Carrot or Leek, herbs and an Apple",""]]},
-{name:"Orc's Memory",lv:59,at:"gef_fild10 231 203",
+{name:"Orc's Memory",lv:59,npc:"Calm Scientist",at:"gef_fild10 231 203",
  normal:[[25424,"Faintly Glowing Crystal","1–3"],[15220,"Subjugation Team's Armor","0–2"],[20867,"Subjugation Team's Shoulder Belt","0–2"]],
  hard:[[25424,"Faintly Glowing Crystal","6–10"],[757,"Rough Elunium","2–8"],[756,"Rough Oridecon","2–8"],[985,"Elunium","1–3"],[984,"Oridecon","1–3"],
    [25429,"Mithril Ore","1–4"],[null,"Wind, Fire, Water and Earth ores","1–3 each"],[25457,"Cursed Emerald","0–3"]]},
-{name:"Prontera Culvert",lv:59,at:"prt_fild05 265 208",
+{name:"Prontera Culvert",lv:59,npc:"Underground Management Director",at:"prt_fild05 265 208",
  normal:[[25424,"Faintly Glowing Crystal","1–3"],[28539,"Subjugation Team's Ring","0–2"],[22150,"Subjugation Team Boots","0–2"]],
  hard:[[25424,"Faintly Glowing Crystal","6–10"],[757,"Rough Elunium","2–8"],[756,"Rough Oridecon","2–8"],[985,"Elunium","1–3"],[984,"Oridecon","1–3"],
    [25429,"Mithril Ore","1–4"],[null,"Wind, Fire, Water and Earth ores","1–3 each"],[25458,"Shimmering Opal","0–3"]]},
-{name:"Ant Hell",lv:70,at:"prt_fild06 37 197",
+{name:"Ant Hell",lv:70,npc:"Memory Labyrinth Association Member",at:"prt_fild06 37 197",
  normal:[[25424,"Faintly Glowing Crystal",""],[25475,"Crystal of Blue Light",""],[23649,"Jellopy Fragment Box",""]],
  hard:[[25424,"Faintly Glowing Crystal",""],[757,"Rough Elunium",""],[756,"Rough Oridecon",""],[985,"Elunium",""],[984,"Oridecon",""],
    [25429,"Mithril Ore",""],[null,"Wind, Fire, Water and Earth ores",""],[25460,"Ruby Soaked in Blood",""]]}];
@@ -26,10 +26,10 @@ const JELLO=[
 {day:3,frag:[25467,"Drops Jello Fragment"],stone:[25472,"Dusk Jellostone"]},
 {day:4,frag:[25468,"Deviling Jello Fragment"],stone:[25473,"Chaos Jellostone"]},
 {day:5,frag:[25469,"Angeling Jello Fragment"],stone:[25474,"Holy Jellostone"]}];
-const JELLO_PER_STONE=5,JELLO_CRAFT_DAYS=3,JELLO_BOX=[23649,"Jellopy Fragment Box"];
+const JELLO_PER_STONE=5,JELLO_CRAFT_DAYS=3,JELLO_BOX=[23649,"Jellopy Fragment Box"],JELLO_NPC=["Memory Craftsman's Workshop","prontera 48,227"];
 // Expedition gear (Ant Hell): the Upgrader (prt_in 118 34) makes it from a Subjugation Team piece, 50 Faintly Glowing Crystal and
 // Jellostones. EXPEDITION: id, name, from: [id, name], stones: {Jellostone id: how many}
-const EXPEDITION_CRYSTALS=[25424,"Faintly Glowing Crystal",50];
+const EXPEDITION_CRYSTALS=[25424,"Faintly Glowing Crystal",50],EXPEDITION_NPC=["Upgrader","prt_in 118,34"];
 const EXPEDITION=[
 {id:15221,name:"Expedition's Armor",from:[15220,"Subjugation Team's Armor"],stones:{25470:2}},
 {id:15222,name:"Expedition's Robe",from:[15220,"Subjugation Team's Armor"],stones:{25471:2}},
@@ -39,6 +39,17 @@ const EXPEDITION=[
 {id:22152,name:"Expedition Shoes",from:[22150,"Subjugation Team Boots"],stones:{25471:1,25474:1}},
 {id:28540,name:"Expedition Ring",from:[28539,"Subjugation Team's Ring"],stones:{25472:3}},
 {id:28541,name:"Expedition Magic Ring",from:[28539,"Subjugation Team's Ring"],stones:{25474:3}}];
+// what the hard mode gems and Mithril Ore make: Thor's Flame (alberta_in 18 58, prt_in 64 68, morocc_in 74 35, payon 143 169,
+// geffen_in 102 176, aldeba_in 33 50) turns 10 Mithril Ore into a Mithril, and the Suspicious Craftsman (morocc_in 76 167) makes each
+// Oath ring and earring from 15 of its gem and 10 Mithril (or without the Mithril, in a week). MEM_CRAFTS: id, name, npc [name, map
+// x,y], mats [[id, name, how many]]
+const MEM_CRAFT_NPC=["Suspicious Craftsman","morocc_in 76,167"];
+const MEM_CRAFTS=[
+{id:25430,name:"Mithril",npc:["Thor's Flame","prt_in 64,68"],mats:[[25429,"Mithril Ore",10]]},
+{id:28568,name:"Cursed Emerald Earring",npc:MEM_CRAFT_NPC,mats:[[25457,"Cursed Emerald",15],[25430,"Mithril",10]]},
+{id:28569,name:"Shimmering Opal Earrings",npc:MEM_CRAFT_NPC,mats:[[25458,"Shimmering Opal",15],[25430,"Mithril",10]]},
+{id:28570,name:"Ring of Blue Oath",npc:MEM_CRAFT_NPC,mats:[[25459,"Sapphire of the Blue Sea",15],[25430,"Mithril",10]]},
+{id:28571,name:"Red Oath Ring",npc:MEM_CRAFT_NPC,mats:[[25460,"Ruby Soaked in Blood",15],[25430,"Mithril",10]]}];
 // the enchant in card slot 4 of Subjugation Team and Expedition armor, garments and shoes (Enchant Association staff, prt_in 135 35
 // for Subjugation Team gear, prt_in 135 28 for Expedition): 100,000 zeny for one random line. Its pool depends on the gear and on
 // refine: MEM_ENCHANT[gear][pool] = [[line, %], …]; "spirit" rows are the job spirit enchants, together (see MEM_SPIRITS)

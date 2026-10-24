@@ -18,12 +18,12 @@ It's a single page that runs entirely in your browser. There's no server, no log
 - **Character:** every 2nd job with Zero skill data, a build simulator that matches the status window, and a damage model covering elements, sizes, DEF, crits, dual wield, auto-casts, cards, buffs, consumables (HP / SP items included), skill items and weight. Up to 10 **other gear sets** (add or remove them as you need) are worked out next to your gear, so you can compare weapons or cards before you switch. Gear you take off keeps its refine, cards and affixes for when you put it back on, and whole setups can be saved as named **loadouts** to swap between.
 - **Session:** an EXP tracker with EXP/hr, time to level, a progress chart and level goals.
 - **Monsters & maps:** Where to farm (the best spots and one map ranking by EXP or zeny, with Farm here), a Map planner, a monster table, and a green / yellow / red check of whether you can farm a map with no HP or SP items.
-- **Memorials:** a Jellostone tracker (today's Poring Village fragment, the 3-day craft, when you'll have the stones for the Expedition pieces you want), and the memorial dungeons' rewards and gear enchants.
+- **Memorial dungeons:** a Jellostone tracker (today's Poring Village fragment, the 3-day craft, when you'll have the stones for the Expedition pieces you want), and the memorial dungeons' rewards and gear enchants.
 - **Stellar weapons:** the ★ Forging Certificates each weapon type needs to take a ★ weapon to ★★, the monster you'd get them from fastest at your kill speed, and what each Activation route costs and does to your refine (it's the Taiwan server's system; Global doesn't have it yet).
 - **Roadmap:** the release roadmap: when each update comes, its level cap, and which maps and monsters are out (the rest open by themselves on their date).
 - **Monster info, Item info, Market:** drops, prices, player prices and a sell timer. Monster info has the monster table too. Every item shows its in-game icon, and every monster its sprite.
 - **Equipment, Cards:** every weapon, armor and card, filtered by type, job, level, card slots and ATK / MATK / DEF, with one click to put it in your gear or another gear set.
-- **Recipes:** every forging, brewing, arrow crafting, cooking, Mixture & Counteragent and Dye Making recipe, searchable by the item made or its materials, with what the materials are worth.
+- **Recipes:** every forging, brewing, arrow crafting, cooking, Mixture & Counteragent and Dye Making recipe, the Jellostone exchange and the Expedition upgrades, searchable by the item made or its materials, with what the materials are worth.
 - **EXP & formulas:** EXP tables, party share and every formula with your numbers.
 - **Accounts:** separate characters per account, text backups and share links.
 

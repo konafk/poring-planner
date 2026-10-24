@@ -558,8 +558,13 @@ function renderBest(){
   renderSpots();syncFarm();
 }
 // ---- render: Where to farm, by zeny ----
-// drops first, then the recipe, recovery and skill item tables for the items no monster drops
-const itemName=id=>ITEMN[id]||(typeof RECIPE_ITEMN!=="undefined"&&RECIPE_ITEMN[id])||(RECOVERY[id]||{}).name||(CONSUM[id]||[])[0]||"#"+id;
+// the memorial items' names (data/memorial.js): reward boxes, Jello Fragments, Jellostones, the Subjugation Team / Expedition gear,
+// Mithril and the Oath rings and earrings
+const MEM_ITEMN={};
+if(typeof JELLO!=="undefined")[...MEMORIALS.flatMap(m=>[...m.normal,...(m.hard||[])]),...JELLO.flatMap(j=>[j.frag,j.stone]),JELLO_BOX,
+  EXPEDITION_CRYSTALS,...EXPEDITION.flatMap(x=>[[x.id,x.name],x.from]),...MEM_CRAFTS.flatMap(x=>[[x.id,x.name],...x.mats])].forEach(([id,name])=>{if(id)MEM_ITEMN[id]=name});
+// drops first, then the recipe, memorial, recovery and skill item tables for the items no monster drops
+const itemName=id=>ITEMN[id]||(typeof RECIPE_ITEMN!=="undefined"&&RECIPE_ITEMN[id])||MEM_ITEMN[id]||(RECOVERY[id]||{}).name||(CONSUM[id]||[])[0]||"#"+id;
 // a drop chance for display: "?" when there's no published rate (data/loot.js null)
 const chTxt=ch=>ch==null?"?":ch+"%";
 // each drop with its chance, NPC price and any market price; the level penalty leads when it applies
