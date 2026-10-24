@@ -369,7 +369,8 @@ const ewNone=right=>`<div class="ewSlot empty none${right?" r":""}" aria-hidden=
 // the body at the feet, the head on the body's anchor; Bards are always male and Dancers female
 const ewSex=bj=>bj[state.look.sex]?state.look.sex:Object.keys(bj)[0];
 const ewHairs=sex=>Object.keys(((typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES.head)||{})[sex]||{}).length;
-// Zero has no transcendent jobs, so a 2nd job can wear its transcendent job's look (data/sprites.js trans)
+// Zero has no transcendent jobs, so a 2nd job can wear its transcendent job's look (data/sprites.js trans), switched in game with a
+// Costume Change Ticket
 const EW_TRANS={Knight:"Lord Knight",Crusader:"Paladin",Wizard:"High Wizard",Sage:"Professor",Hunter:"Sniper",Bard:"Clown",Dancer:"Gypsy",
   Priest:"High Priest",Monk:"Champion",Blacksmith:"Whitesmith",Alchemist:"Creator",Assassin:"Assassin Cross",Rogue:"Stalker"};
 const ewTrans=S=>EW_TRANS[state.job]&&S.trans&&S.trans[state.job];
@@ -382,7 +383,7 @@ function lookHtml(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)
   return `<div class="ewStage" title="Clothes in their default color: a Clothing Dye Coupon (KP shop) dyes them and a Clothing Dye Coupon II puts the default color back. The dye stays through a job change, but can look different on the new job"><div class="ewFeet">${part(b,b[4],b[5],"ewBody")}${h?part(h,b[6]+h[4],b[7]+h[5],"ewHead"):""}</div></div>
     <div class="ewLook"><button type="button" class="small" data-ewsex="" ${one?`disabled title="${esc(state.job)}s are ${sex==="f"?"female":"male"} only"`:`title="Gender: ${sex==="f"?"female":"male"}"`} aria-label="Gender">${sex==="f"?"♀":"♂"}</button>
       <button type="button" class="small" data-ewhair="-1" aria-label="Previous hair style" title="${hairTip}">◀</button><span title="${hairTip}"><span class="ewHairW">Hair </span>${hair}</span><button type="button" class="small" data-ewhair="1" aria-label="Next hair style" title="${hairTip}">▶</button></div>
-      ${tj?`<div class="ewLook"><button type="button" class="small ewTrans" data-ewtrans="" aria-pressed="${!!state.look.trans}" title="${esc(`${EW_TRANS[state.job]} look: Ragnarok Zero has no transcendent jobs, so a ${state.job} can look like a ${EW_TRANS[state.job]}`)}">Trans</button></div>`:""}`}
+      ${tj?`<div class="ewLook"><button type="button" class="small ewTrans" data-ewtrans="" aria-pressed="${!!state.look.trans}" title="${esc(`${EW_TRANS[state.job]} look: Ragnarok Zero has no transcendent jobs, so a ${state.job} can look like a ${EW_TRANS[state.job]}. A Costume Change Ticket switches the look in game`)}">Trans</button></div>`:""}`}
 function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),sp=EW_TAB==="special";
   const gearSlot=(k,right)=>{const g=b.gear[k],it=g&&g.id&&BUILD.item(g.id),s=BUILD.SLOTS.find(x=>x.k===k);
     return ewSlot(k,k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label,it?gameName(g):"",iconHtml("gear",it&&it.id),right)};
