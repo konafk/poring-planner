@@ -46,7 +46,7 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
       <button type="button" data-infoact="mobinfo">Monster info</button>`}}
 
 function popItem(id){const name=itemName(id);
-  return {ico:itemIcon(id,1.5),title:name,sub:`#${id} · ${GROUP_NAME[groupOf(id)]}${looted(id)?"":" (not looted)"}`,
+  return {ico:itemIcon(id,1.5),title:name,sub:`#${id} · ${ITEM_DROPS[id]||!clientCat(id)?`${GROUP_NAME[groupOf(id)]}${looted(id)?"":" (not looted)"}`:esc(clientCat(id))}`,
     body:infoPrice(id)+infoSec("Dropped by",infoDroppers(id))+infoSec("Memorial dungeons",infoMemorial(id))
       +(ITEM_DROPS[id]||infoMemorial(id)?"":'<div class="note">No monster the farm tables know drops it.</div>')+infoRecipes(id),
     acts:(ITEM_DROPS[id]?'<button type="button" data-infoact="items">Item info</button>':"")+recipeAct(id)}}

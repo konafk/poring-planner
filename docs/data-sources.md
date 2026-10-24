@@ -15,6 +15,7 @@ The numbers are estimates. Skill values and formulas follow the sources below an
 - Costume enchant stones and their sets: the stones' item descriptions (Global client text)
 - Taming Ring pet egg enchants: the eggs' item descriptions (Global client text)
 - Memorial dungeons, Jellostones, the Expedition upgrades and the memorial gear's enchants (`data/memorial.js`): made by hand; item names and ids as the Global client has them
+- Every item in the game client that isn't gear or a card (Item info's All items): the community database's item catalog, read from the Global client
 - Stellar weapons and the Activation System (`data/stellar.js`): the Taiwan server's Activation System; the ★ weapons from the official client
 - Spawn counts: the official Ragnarok Zero Global client (navigation table)
 - Map names: the official client (`System/mapInfo_enUS.lub`)
