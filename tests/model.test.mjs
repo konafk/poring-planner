@@ -2405,4 +2405,40 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.ok(run(`[...Object.keys(ITEMN),...Object.keys(RECIPE_ITEMN)].every(id=>!/ none"/.test(itemIcon(id)))`), "every item has an icon");
 });
 
+t("memorial gear: Subjugation Team and Expedition lines as the client describes them, each set bonus counted once", () => {
+  const acc = gear => run(`BUILD.compute({baseLv:70,jobLv:1,base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:${JSON.stringify(gear)}},"Knight",aspdBase).acc`);
+  const none = acc({});
+  const armor = r => acc({ armor: { id: 15221, refine: r } });                   // Expedition's Armor: MaxHP +500, MaxSP +30, DEF +30; at +3 DEF +10, MaxHP +50
+  assert.deepEqual([armor(0).hp, armor(0).sp, armor(0).def], [500, 30, 30]);
+  assert.deepEqual([armor(3).hp, armor(3).def], [550, 40]);
+  assert.equal(armor(0).aspdPct, none.aspdPct);                                  // its after-attack delay is the set's, not the armor's
+  assert.equal(armor(0).fct, none.fct);
+  assert.deepEqual([acc({ armor: { id: 15220 } }).hp, acc({ armor: { id: 15220 } }).def], [300, 20]);
+  assert.equal(acc({ acc2: { id: 28570 } }).st.int, 2);                           // Ring of Blue Oath: INT +2, DEX +2 at any refine
+  assert.equal(acc({ acc2: { id: 28570, refine: 7 } }).st.dex, 4);
+  const set = acc({ armor: { id: 15221, refine: 6 }, garment: { id: 20868, refine: 5 }, shoes: { id: 22151, refine: 5 }, acc1: { id: 28540, refine: 5 } });
+  assert.equal(set.atk - none.atk, 20);
+  assert.equal(set.aspdPct - none.aspdPct, 5);                                    // total refine 21: after-attack delay −5% once
+  assert.ok(!set.unmodelled.some(x => /heal/.test(x)));                           // HP / SP heal effect lines are quiet
+});
+
+t("Jellostones: what the wanted Expedition pieces still need, and when the last stone is ready", () => {
+  run(`state.jello={frag:{},stone:{},want:[],crystals:0}`);
+  assert.equal(run(`jelloReady()`), null);                                        // nothing wanted
+  run(`state.jello.want=[15221]`);                                                // Expedition's Armor: 2 Crimson Jellostone
+  assert.deepEqual(run(`jelloShort().find(x=>x.j.stone[0]===25470)`).stones, 2);
+  assert.equal(run(`jelloShort().find(x=>x.j.stone[0]===25470)`).frags, 10);
+  run(`state.jello.stone[25470]=1;state.jello.frag[25465]=5`);                     // one stone and 5 fragments: craft now, ready in 3 days
+  const now = Date.UTC(2026, 9, 21, 12);
+  assert.equal(run(`jelloReady(${now})`), now + 3 * 864e5);
+  run(`state.jello.craft={id:25470,due:${now + 864e5}};state.jello.frag={}`);      // the one crafting counts too
+  assert.equal(run(`jelloShort().find(x=>x.j.stone[0]===25470)`).stones, 0);
+  assert.equal(run(`jelloReady(${now})`), null);
+  // Expedition Ring: 3 Dusk = 15 Drops fragments at one a Wednesday and a fifth of each weekend box (1.4 a week), then the last 3-day craft
+  run(`state.jello={frag:{},stone:{},want:[28540],crystals:0}`);
+  const d = (run(`jelloReady(${now})`) - now) / 864e5;
+  assert.ok(d > 15 / 1.4 * 7 && d < 15 / 1.4 * 7 + 10, String(d));
+  assert.equal(run(`jelloNeed()[25472]`), 3);
+});
+
 console.log(`${n} tests passed`);

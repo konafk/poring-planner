@@ -14,6 +14,7 @@ The numbers are estimates. Skill values and formulas follow the sources below an
 - Random options (affixes) per gear type, pool and slot, with their min–max: [rozerodb.com Affixes Simulator](https://rozerodb.com/tools/affixes)
 - Costume enchant stones and their sets: item descriptions on [rozerodb.com](https://rozerodb.com/guides/enchant), cross-checked with [midgardhub.com](https://midgardhub.com/guides/enchant-stones)
 - Taming Ring pet egg enchants: item descriptions on [rozerodb.com](https://rozerodb.com), cross-checked with [midgardhub.com pet bonuses](https://midgardhub.com/guides/pet-bonuses)
+- Memorial dungeons, Jellostones, the Expedition upgrades and the memorial gear's enchants (`data/memorial.js`): the Taiwan server's notices (roz.gnjoy.com.tw), which run ahead of Global; item names and ids as the Global client has them, from [rozerodb.com](https://rozerodb.com)
 - Spawn counts: the official Ragnarok Zero Global client (navigation table)
 - Map names: the official client (`System/mapInfo_enUS.lub`)
 - Spawn, drop and item name cross-check, in-game map codes: [ragnarokzero.net](https://ragnarokzero.net/database/maps)

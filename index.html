@@ -22,6 +22,7 @@
       <button type="button" role="tab" data-tabbtn="char" title="Character"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg><span>Character</span></button>
       <button type="button" role="tab" data-tabbtn="track" title="Session"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Session</span></button>
       <button type="button" role="tab" data-tabbtn="maps" title="Monsters &amp; maps"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Monsters &amp; maps</span></button>
+      <button type="button" role="tab" data-tabbtn="mem" title="Memorials"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21 8 9l4-6 4 6z"/></svg><span>Memorials</span></button>
       <span class="navGrp" role="presentation">Look up</span>
       <button type="button" role="tab" data-tabbtn="roadmap" title="Roadmap"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Roadmap</span></button>
       <button type="button" role="tab" data-tabbtn="mobinfo" title="Monster info"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a7 7 0 0 0-7 7v10l2.5-2 2.5 2 2-2 2 2 2.5-2 2.5 2V10a7 7 0 0 0-7-7z"/><circle cx="9.5" cy="10.5" r=".8"/><circle cx="14.5" cy="10.5" r=".8"/></svg><span>Monster info</span></button>
@@ -580,6 +581,37 @@
     <div class="note hint">Ragnarok Zero Global's release roadmap (<a href="https://www.mygnjoy.com/en/event/roadmap" target="_blank" rel="noopener">official ↗</a>). A region's maps and monsters open by themselves on its update's day, or once its month is over when the day isn't announced; until then Where to farm and the monster table leave them out, and show when they come. Click a region to mark it open or closed yourself; click it back to follow the roadmap again.</div>
   </section>
 
+  <section class="card" id="jelloCard" data-tab="mem">
+    <div class="bar"><h2 class="grow">Jellostones</h2></div>
+    <div class="note" id="jelloToday"></div>
+    <div class="scroll mt"><table id="jelloTable"><thead><tr><th>Day</th><th>Fragment</th><th>You have</th><th>Jellostone</th><th>You have</th><th>Need</th><th>Short</th><th></th></tr></thead><tbody id="jelloRows"></tbody></table></div>
+    <div class="bar note mt" id="jelloCraft"></div>
+    <div class="tiles mt" id="jelloTiles"></div>
+    <div class="note hint">Poring Village (base Lv 30) gives one Jello Fragment a run: Monday's is Poring, Tuesday's Poporing, Wednesday's Drops, Thursday's Deviling and Friday's Angeling, and at the weekend a Jellopy Fragment Box (Ant Hell's reward has one too). 5 fragments make that fragment's Jellostone at the Memory Craftsman's Workshop (prontera 48 227) after a 3-day wait; the wait is one quest for all five, so one stone at a time. A stone you have spare turns into the one you need with a Zelstar (KP shop) at the Stone Transmuter (prt_in 118 28). Craft starts the wait here and takes the fragments; Collect adds the stone. The estimate counts a weekend box as a fifth of each fragment and no swaps. Saved per account.</div>
+  </section>
+
+  <section class="card" id="expCard" data-tab="mem">
+    <div class="bar"><h2 class="grow">Expedition upgrades</h2><label class="bar note">Faintly Glowing Crystals you have <input class="w-md" id="expCrystals" type="number" min="0" step="1" placeholder="0"></label></div>
+    <div class="scroll"><table id="expTable"><thead><tr><th>Want</th><th>Expedition piece</th><th>Made from</th><th>Jellostones</th></tr></thead><tbody id="expRows"></tbody></table></div>
+    <div class="note mt" id="expCryNote"></div>
+    <div class="note hint">The Upgrader (prt_in 118 34, Ant Hell memorial) makes each Expedition piece from a Subjugation Team piece, 50 Faintly Glowing Crystal and the Jellostones listed. Tick the ones you want and the Jellostones card counts what they still need. A set's bonus needs all four of its pieces: Manteau, Armor, Ring and Boots for ATK, Muffler, Robe, Magic Ring and Shoes for MATK.</div>
+  </section>
+
+  <section class="card" id="memCard" data-tab="mem">
+    <div class="bar"><h2 class="grow">Memorial dungeons</h2></div>
+    <div class="scroll"><table id="memTable"><thead><tr><th>Dungeon</th><th>Base Lv</th><th>Way in</th><th>Reward box</th><th>Hard mode box</th></tr></thead><tbody id="memRows"></tbody></table></div>
+    <div class="note hint">From the Taiwan server's notices, which run ahead of Global (the Roadmap tab has when each comes). Mithril Ore turns into Mithril 10 to 1 at Thor's Flame (alberta_in 18 58, prt_in 64 68, morocc_in 74 35, payon 143 169, geffen_in 102 176, aldeba_in 33 50); the Suspicious Craftsman (morocc_in 76 167) makes the Oath rings and the earrings from 15 of their gem and 10 Mithril, in a week or at once for 10 more Mithril.</div>
+  </section>
+
+  <section class="card" id="enchCard" data-tab="mem">
+    <div class="bar"><h2 class="grow">Memorial gear enchants</h2>
+      <label>Gear<select id="enchGear"><option value="subjugation">Subjugation Team (prt_in 135 35)</option><option value="expedition">Expedition (prt_in 135 28)</option></select></label>
+      <label>Refine and part<select id="enchPool"><option value="low">+0 to +8, any part</option><option value="garment">+9 or more, garment</option><option value="shoes">+9 or more, shoes</option><option value="armor">+9 or more, armor</option></select></label></div>
+    <div class="scroll"><table id="enchTable"><thead><tr><th>Enchant</th><th>Chance</th></tr></thead><tbody id="enchRows"></tbody></table></div>
+    <div class="note mt" id="enchSpirits"></div>
+    <div class="note hint">The armor, garment and shoes take one enchant in card slot 4: 100,000 zeny for one line at random, from the pool for the gear's refine and part. Reset it for 10,000,000 zeny (works 70% of the time) or a Zelstar (KP shop; always). Put the line you get in the item's random options on the Character tab and it counts.</div>
+  </section>
+
   <section class="card" data-tab="market" id="tripCard">
     <div class="bar"><h2 class="grow">Sell timer</h2><span id="tripBtns" class="bar"></span></div>
     <div class="note hint">Start it when you leave town; it rings when loot should reach your sell point. Timing <b id="tripFor"></b> (the current session). Starting weight = what you leave town with. Time the session spends paused is added on; Start and Back from town end a pause.</div>
@@ -753,6 +785,7 @@
 <script src="data/affixes.js"></script>
 <script src="data/stones.js"></script>
 <script src="data/special.js"></script>
+<script src="data/memorial.js"></script>
 <script src="data/icons.js"></script>
 <script src="data/iteminfo.js"></script>
 <script src="build.js"></script>
@@ -784,6 +817,7 @@
 <script src="js/gear-db.js"></script>
 <script src="js/recipes.js"></script>
 <script src="js/info.js"></script>
+<script src="js/memorial.js"></script>
 <script src="js/start.js"></script>
 </body>
 </html>
