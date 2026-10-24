@@ -253,6 +253,12 @@ menus.forEach(m=>{const b=m.querySelector(".menuBtn"),list=m.querySelector(".men
     else if(e.key==="Tab")closeMenu(m)})});
 document.addEventListener("click",e=>menus.forEach(m=>{if(!m.contains(e.target))closeMenu(m)}));
 document.addEventListener("keydown",e=>{if(e.key==="Escape")menus.forEach(m=>closeMenu(m,m.contains(document.activeElement)))});
+// item and monster names sit in links and clickable rows: dragging across one selects it to copy (links don't drag away as links),
+// and a drag that leaves text selected isn't a click, so it doesn't open the name or re-draw the table
+let DOWN_AT=null;
+addEventListener("mousedown",e=>{DOWN_AT=[e.clientX,e.clientY];const a=e.target.closest?.('a[href="#"]');if(a)a.draggable=false},true);
+addEventListener("click",e=>{const d=DOWN_AT;if(!d||e.target.closest?.("input,textarea,select,button,label"))return;
+  if(Math.hypot(e.clientX-d[0],e.clientY-d[1])>4&&String(getSelection()).trim()){e.preventDefault();e.stopPropagation()}},true);
 renderAccts();
 $("sessionSel").addEventListener("change",e=>openSession(e.target.value));
 // rename: swap the session picker for a text box; Enter or leaving the box saves, Esc cancels
