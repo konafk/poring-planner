@@ -23,6 +23,7 @@
       <button type="button" role="tab" data-tabbtn="track" title="Session"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Session</span></button>
       <button type="button" role="tab" data-tabbtn="maps" title="Monsters &amp; maps"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Monsters &amp; maps</span></button>
       <button type="button" role="tab" data-tabbtn="mem" title="Memorials"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21 8 9l4-6 4 6z"/></svg><span>Memorials</span></button>
+      <button type="button" role="tab" data-tabbtn="star" title="Stellar weapons"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Stellar weapons</span></button>
       <span class="navGrp" role="presentation">Look up</span>
       <button type="button" role="tab" data-tabbtn="roadmap" title="Roadmap"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Roadmap</span></button>
       <button type="button" role="tab" data-tabbtn="mobinfo" title="Monster info"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a7 7 0 0 0-7 7v10l2.5-2 2.5 2 2-2 2 2 2.5-2 2.5 2V10a7 7 0 0 0-7-7z"/><circle cx="9.5" cy="10.5" r=".8"/><circle cx="14.5" cy="10.5" r=".8"/></svg><span>Monster info</span></button>
@@ -612,6 +613,20 @@
     <div class="note hint">The armor, garment and shoes take one enchant in card slot 4: 100,000 zeny for one line at random, from the pool for the gear's refine and part. Reset it for 10,000,000 zeny (works 70% of the time) or a Zelstar (KP shop; always). Put the line you get in the item's random options on the Character tab and it counts.</div>
   </section>
 
+  <section class="card" id="starCard" data-tab="star">
+    <div class="bar"><h2 class="grow">★ Forging Certificates</h2></div>
+    <div class="note">Not on Global yet: the Activation System is the Taiwan server's, and the costs may change when it comes. The ★ weapons below are in Global's client already.</div>
+    <div class="scroll mt"><table id="starTable"><thead><tr><th>Weapon type</th><th>★ weapons</th><th>You have</th><th>To go</th><th>Fastest for you</th><th>Certificates / hr</th><th>Time</th></tr></thead><tbody id="starRows"></tbody></table></div>
+    <div class="note hint">Taking a ★ weapon to ★★ takes 100 ★ Forging Certificates of its weapon type. Workshop Apprentice Nariya gives one for each monster-drop weapon of that type, so type the certificates and drop weapons of the type you have. Fastest for you is the monster on an open map that gets you them quickest at your kill speed (Monsters &amp; maps' walking included), counting every weapon of the type it drops at its drop rate with your drop bonus; monsters with no published rate don't count. Saved per account.</div>
+  </section>
+
+  <section class="card" id="starRulesCard" data-tab="star">
+    <div class="bar"><h2 class="grow">Activation</h2><label class="bar note">Your weapon's refine <input class="w-xs" id="starRefine" type="number" min="0" max="20" step="1" placeholder="+0"></label></div>
+    <div class="scroll"><table id="starRulesTable"><thead><tr><th>Route</th><th>Refine</th><th>Certificates</th><th>Goblin Coin Fragments</th><th>Yours after</th></tr></thead><tbody id="starRoutes"></tbody></table></div>
+    <div class="scroll mt"><table id="starNpcTable"><thead><tr><th>NPC</th><th>Where</th><th>What for</th></tr></thead><tbody id="starNpcs"></tbody></table></div>
+    <div class="note hint">Activation keeps the cards, enchants and random options; only the refine drops, so refine to +9 or +10 first (+9 ends at +2 on the −7 route, +6 on the −3 one). That makes a well-rolled monster-drop weapon worth keeping. ★★ to ★★★ and ★ armor came in the Taiwan server's later updates. Whether Blacksmith-forged weapons count for certificates isn't known. From <a href="https://rozerodb.com/guides/stellar-weapons" target="_blank" rel="noopener">rozerodb ↗</a> and <a href="https://midgardhub.com/guides/activation" target="_blank" rel="noopener">Midgard Hub ↗</a>.</div>
+  </section>
+
   <section class="card" data-tab="market" id="tripCard">
     <div class="bar"><h2 class="grow">Sell timer</h2><span id="tripBtns" class="bar"></span></div>
     <div class="note hint">Start it when you leave town; it rings when loot should reach your sell point. Timing <b id="tripFor"></b> (the current session). Starting weight = what you leave town with. Time the session spends paused is added on; Start and Back from town end a pause.</div>
@@ -786,6 +801,7 @@
 <script src="data/stones.js"></script>
 <script src="data/special.js"></script>
 <script src="data/memorial.js"></script>
+<script src="data/stellar.js"></script>
 <script src="data/icons.js"></script>
 <script src="data/iteminfo.js"></script>
 <script src="build.js"></script>
@@ -818,6 +834,7 @@
 <script src="js/recipes.js"></script>
 <script src="js/info.js"></script>
 <script src="js/memorial.js"></script>
+<script src="js/stellar.js"></script>
 <script src="js/start.js"></script>
 </body>
 </html>

@@ -338,6 +338,11 @@ td .map{cursor:default}
 #memTable tbody tr,#expTable tbody tr,#jelloTable tbody tr,#enchTable tbody tr{cursor:default}
 #jelloCraft{flex-wrap:wrap}
 #enchSpirits div{margin-top:2px}
+/* Stellar tab: tables read left to right, lists stack in their cell */
+#starTable th,#starTable td,#starRulesTable th,#starRulesTable td,#starNpcTable th,#starNpcTable td{text-align:left;vertical-align:top;cursor:default}
+#starTable tbody tr,#starRulesTable tbody tr,#starNpcTable tbody tr{cursor:default}
+#starNpcTable td:nth-child(3){white-space:normal;min-width:220px}
+#starTable td div{margin:2px 0}
 #gearTable td{vertical-align:middle;font-family:var(--body)}
 #gearTable th{text-align:left}
 #gearTable td:first-child{color:var(--muted);font-size:12px}
