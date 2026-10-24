@@ -7,6 +7,7 @@
 - [Session (EXP tracker)](#session-exp-tracker)
 - [Monsters & maps](#monsters--maps): Where to farm, Map planner, Monster table
 - [Memorials](#memorials): Jellostones, Expedition upgrades, memorial dungeons and their gear's enchants
+- [Stellar weapons](#stellar-weapons): ★ Forging Certificates and Activation
 - [Roadmap](#roadmap)
 - [Monster info](#monster-info)
 - [Item info](#item-info)
@@ -154,6 +155,15 @@ Its own tab, from the Taiwan server's notices (it runs ahead of Global) with Glo
 - **Memorial gear enchants:** the card slot 4 enchant on Subjugation Team and Expedition armor, garments and shoes, by refine (+0 to +8, or +9 and up per part), with each line's chance, the +9 armor's job spirit enchants and the reset cost. The line you get goes in the item's random options on the Character tab.
 
 The Subjugation Team and Expedition gear itself is on the Equipment tab with the lines its client description gives (MaxHP / MaxSP and "DEF +x", +3 refine bonuses once, the set's after-attack delay and cast lines only with the whole set). The Lv 80 Contingent gear the Izlude memorial upgrades to is only on the Roadmap for now.
+
+## Stellar weapons
+
+Its own tab, for the Activation System: the Taiwan server's, not on Global yet, from [rozerodb's guide](https://rozerodb.com/guides/stellar-weapons) and [Midgard Hub's](https://midgardhub.com/guides/activation). The certificates you have and your weapon's refine are saved per account.
+
+- **★ Forging Certificates:** the 17 ★ weapons Global's client has, grouped by weapon type, since a certificate is per type: Workshop Apprentice Nariya (prontera 272 264) gives one for each monster-drop weapon of the type. Type the certificates and drop weapons you have; To go counts down from the 100 a ★ to ★★ activation takes. Fastest for you is the monster (bosses aside, on an open map) that gets you them quickest: every weapon of the type it drops at its rate, with your drop bonus and level penalty, at the kill speed and walking Monsters & maps works out. Monsters with no published rate don't count. Time is To go over that rate.
+- **Activation:** each route's refine loss, certificates and Goblin Coin Fragments at Grandpa Taotao (prontera 272 260): ★ to ★★ (−7, 100 ★ certificates, 8 fragments), ★★ to ★★★ (−3, 3 ★★ certificates, 30), and ★ armor (stable −3 for 100 and 30, aggressive −7 for 10 and 3); the last three came in the Taiwan server's later updates. Type your weapon's refine to see it after each. Cards, enchants and random options stay.
+
+rozerodb's guide reads the 100-certificate route as taking a normal weapon to ★, but its own ★ Jur example and Midgard Hub's start from a ★ weapon, so the tab goes with that.
 
 ## Roadmap
 

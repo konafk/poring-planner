@@ -2410,4 +2410,24 @@ t("Jellostones: what the wanted Expedition pieces still need, and when the last 
   assert.equal(run(`jelloNeed()[25472]`), 3);
 });
 
+t("Stellar weapons: certificates by weapon type, and the monster that gets them to you fastest", () => {
+  assert.equal(run(`STAR_W.length`), 17);                                         // the ★ weapons in Global's client
+  assert.ok(run(`STAR_TYPES.includes("katar")&&STAR_W.some(x=>x.id===610092)`));   // ★ Jur
+  assert.equal(run(`DROP_W[610066]`), "katar");                                   // Jur, the monster-drop one
+  assert.equal(run(`DROP_W[610092]`), undefined);                                 // ★ weapons don't make certificates
+  // Martin drops the Jur at 0.05%: 0.0005 a kill, twice that with +100% drop bonus
+  const per = () => run(`starMobs("katar").find(x=>x.m.id===1145).per`);
+  near(per(), 0.0005);
+  run(`state.dropBonus=100`);
+  near(per(), 0.001);
+  run(`state.dropBonus=0;state.stellar={have:{katar:40},refine:9}`);
+  assert.equal(run(`starLeft("katar")`), 60);
+  run(`state.stellar.have.katar=150`);
+  assert.equal(run(`starLeft("katar")`), 0);
+  setup("Assassin", { atkTxt: "300+300", st: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  const b = run(`(()=>{const b=starBest("katar",0);return b&&{ph:b.ph,per:b.per,kph:b.kph}})()`);
+  assert.ok(b && b.ph > 0, JSON.stringify(b));
+  near(b.ph, b.per * b.kph);
+});
+
 console.log(`${n} tests passed`);
