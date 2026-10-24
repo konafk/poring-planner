@@ -171,7 +171,8 @@ def item_row(slug):
     k = next(k for k in d if k.startswith("item-") and k.endswith("-en"))
     page = d[k]
     it = page["item"]
-    row = {"id": it["item_id_ingame"], "slug": slug, "name": it["name"], "slot": it.get("equip_slots") or ([it["equip_slot"]] if it.get("equip_slot") else None),
+    # names as the game client spells them: a straight apostrophe ("Subjugation Team's Armor", not prontera's "Team’s")
+    row = {"id": it["item_id_ingame"], "slug": slug, "name": it["name"].replace("’", "'"), "slot": it.get("equip_slots") or ([it["equip_slot"]] if it.get("equip_slot") else None),
            "type": it.get("weapon_type"), "el": it.get("element"), "slots": it.get("slots") or 0,
            "lv": it.get("min_level") or 0, "wlv": it.get("weapon_level") or 0,
            # weapon and shield weight, as in game: Axe Boomerang, Shield Boomerang and Rapid Smiting add it to their damage %
