@@ -2373,4 +2373,29 @@ t("details popup: a monster, an item, gear and a card, linked to each other", ()
   assert.match(run(`fromHtml(1306)`), /data-info="mob:\d+"/);                                         // Where to get links open the popup
 });
 
+t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {
+  assert.equal(run(`RECIPES.length`), run(`RECIPE_LIST.length`));
+  assert.ok(run(`RECIPES.every(r=>RECIPE_CATS.includes(r.cat)&&r.mats.length&&r.mats.every(([id,n])=>RECIPE_ITEMN[id]&&n>0))`));
+  assert.equal(run(`itemName(1301)`), "Axe");                                                          // a recipe's name for an item no monster drops
+  const ok = (q, cat) => run(`RECIPES.filter(r=>recipeOk(r,{q:${JSON.stringify(q)},cat:${JSON.stringify(cat || "")}})).map(r=>r.id)`);
+  assert.ok(ok("axe").includes(1301));
+  assert.ok(ok("jellopy").includes(1750));                                                             // a material finds what it turns into: Arrow
+  assert.ok(ok("jellopy", "Forging").every(id => run(`RECIPES_MAKING[${id}][0].cat`) === "Forging"));
+  assert.ok(ok("#998").length > 10);                                                                   // Iron, by its number
+  // Materials worth: your Market price first, else what an NPC pays; +? counted for a material with neither
+  const blade = "RECIPES.find(r=>r.id===1107)";                                                        // 25 Tooth of Bat + 45 Iron
+  run(`state.prices={998:100,913:50}`);
+  assert.deepEqual(run(`JSON.stringify(recipeWorth(${blade}))`), JSON.stringify({ z: 45 * 100 + 25 * 50, unknown: 0 }));
+  run(`state.prices={}`);
+  const i = run(`popItem("909")`);                                                                     // Jellopy
+  assert.match(i.body, /Used in/); assert.match(i.acts, /data-infoact="recipes"/);
+  assert.match(run(`popItem("1750").body`), /Made from \(\d+ ways\)/);                                // Arrow: many ways
+  assert.match(run(`popGear(1107).body`), /Made from/);                                                // Blade: a forged weapon
+  // icons: drops and recipe items from the item sheet, gear from its own, cards their picture
+  assert.match(run(`itemIcon(909)`), /ico-item"/);
+  assert.match(run(`itemIcon(1301)`), /ico-gear"/);
+  assert.match(run(`itemIcon(4123)`), /ico-card"/);
+  assert.ok(run(`[...Object.keys(ITEMN),...Object.keys(RECIPE_ITEMN)].every(id=>!/ none"/.test(itemIcon(id)))`), "every item has an icon");
+});
+
 console.log(`${n} tests passed`);
