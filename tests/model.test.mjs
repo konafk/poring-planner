@@ -2460,7 +2460,9 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.deepEqual(JSON.parse(mem(28570)).mats, [[25459, 15], [25430, 10]]);                          // Ring of Blue Oath
   const ore = run(`popItem("25429")`);
   assert.equal(ore.title, "Mithril Ore"); assert.match(ore.body, /Orc's Memory<\/b> hard mode/); assert.doesNotMatch(ore.body, /No monster/);
-  assert.match(run(`popItem("25465").body`), /Poring Village<\/b> on Monday/);                       // a Jello Fragment's weekday
+  assert.match(run(`popItem("25465").body`), /Poring Village<\/b> on Monday/);
+  assert.match(run(`popItem("990").body`), /Ant Hell<\/b> hard mode/);                               // Red Blood: the hard mode boxes' elemental ores
+  assert.ok(run(`MEMORIALS.every(m=>(m.hard||[]).every(x=>x[0]))`), "every hard mode reward is an item");                       // a Jello Fragment's weekday
   assert.ok(run(`RECIPE_LIST.filter(r=>r.cat==="Memorial").flatMap(r=>[r.id,...r.mats.map(m=>m[0])]).every(id=>!/ none"/.test(itemIcon(id)))`), "every memorial item has an icon");
 });
 
