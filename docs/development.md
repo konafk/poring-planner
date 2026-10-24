@@ -77,7 +77,7 @@ Each table lives in its own file, so a re-export after a patch only touches that
 
 ## Tools
 
-All scripts use only the Python standard library.
+All scripts use only the Python standard library. The ones that read the community database (`export_prices.py`, `export_iteminfo.py`, `export_items.py`, `export_costumes.py`, `export_affixes.py`, `export_recipes.py`, `export_mluk.py`) take its address from the `DB_SITE` environment variable: `DB_SITE=https://... python tools/export_prices.py`. Without it they stop and say so.
 
 | Command | What it does |
 | --- | --- |
@@ -97,7 +97,7 @@ All scripts use only the Python standard library.
 | `python tools/check_maps.py` | Compares `data/spawn.js` with the cross-check source and lists missing monsters and spawn counts that differ. Monsters marked as upcoming are expected to show up as missing. |
 | `python tools/check_drops.py` | Compares drops, drop rates and item names with the cross-check source. Loot value per kill isn't compared, because the two sources price items differently. |
 
-Every Monday, `.github/workflows/refresh-data.yml` runs the scripts that only need the internet (`export_prontera.py`, `export_cardnames.py`, `export_iteminfo.py`, `export_prices.py`, `export_affixes.py`, `export_recipes.py`, `export_items.py`, `export_costumes.py`, `export_icons.py`) from an empty cache, runs the tests, and opens a PR on the `data-refresh` branch with what changed (Actions → Refresh data → Run workflow runs it now). It needs Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests". Spawns, map names and job looks need the game client, so run those by hand.
+Every Monday, `.github/workflows/refresh-data.yml` runs the scripts that only need the internet (`export_prontera.py`, `export_cardnames.py`, `export_iteminfo.py`, `export_prices.py`, `export_affixes.py`, `export_recipes.py`, `export_items.py`, `export_costumes.py`, `export_icons.py`) from an empty cache, runs the tests, and opens a PR on the `data-refresh` branch with what changed (Actions → Refresh data → Run workflow runs it now). The `DB_SITE` repository variable (Settings → Secrets and variables → Actions → Variables) gives those scripts the address; without it they're listed as failed in the PR. It also needs Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests". Spawns, map names and job looks need the game client, so run those by hand.
 
 Notes on `export_prontera.py`:
 

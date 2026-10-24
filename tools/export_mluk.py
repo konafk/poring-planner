@@ -9,10 +9,12 @@ Monsters the database has no record for keep LUK 0.
 """
 import json, os, sys, time, urllib.error, urllib.request
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from export_prices import site  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PATH = os.path.join(ROOT, "data", "mstat.js")
 CACHE = os.path.join(ROOT, "tools", "cache")
-SITE = "https://rozerodb.com"
 UA = "RO-Zero-farmer-calculator data export"
 HEAD = "// Monster stats per id (the community database): [DEF, MDEF, ATK min, ATK max, VIT, INT, aggressive 0/1, LUK]"
 
@@ -22,7 +24,7 @@ def monster(mid, refresh):
     f = os.path.join(CACHE, f"mob_{mid}.json")
     if os.path.exists(f) and not refresh:
         return json.load(open(f, encoding="utf-8"))
-    req = urllib.request.Request(f"{SITE}/api/monsters/{mid}", headers={"User-Agent": UA})
+    req = urllib.request.Request(site(f"/api/monsters/{mid}"), headers={"User-Agent": UA})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             d = json.loads(r.read().decode("utf-8"))

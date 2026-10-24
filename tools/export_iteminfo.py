@@ -16,7 +16,7 @@ Items with none of these are left out.
 import json, os, re, sys, time, urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from export_prices import item, ROOT, CACHE, SITE, UA  # noqa: E402
+from export_prices import item, ROOT, CACHE, site, UA  # noqa: E402
 import export_prontera  # noqa: E402
 
 
@@ -33,7 +33,7 @@ def monsters(refresh=False):
         return {int(k): v for k, v in json.load(open(f, encoding="utf-8")).items()}
     out, off = {}, 0
     while True:
-        req = urllib.request.Request(f"{SITE}/api/monsters?limit=200&offset={off}", headers={"User-Agent": UA})
+        req = urllib.request.Request(site(f"/api/monsters?limit=200&offset={off}"), headers={"User-Agent": UA})
         with urllib.request.urlopen(req, timeout=30) as r:
             d = json.loads(r.read().decode("utf-8"))
         for m in d["items"]:

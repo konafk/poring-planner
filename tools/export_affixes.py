@@ -7,17 +7,20 @@ The page has no API: its whole dataset is in the server-rendered Next.js payload
 what every tab and gear button of the page shows. Values are "min-max" or a single number. A % is marked "(%)" in the
 name, except two lines whose names leave it out (PCT_NAMES).
 """
-import json, os, re, urllib.request
+import json, os, re, sys, urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from export_prices import site  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-URL = "https://rozerodb.com/tools/affixes"
+PATH = "/tools/affixes"  # on the community database (DB_SITE)
 UA = "RO-Zero-farmer-calculator data export"
 # percentages whose name in the database has no "(%)"
 PCT_NAMES = {"Variable Casting reduction", "Received Healing increase"}
 
 
 def payload():
-    html = urllib.request.urlopen(urllib.request.Request(URL, headers={"User-Agent": UA}), timeout=60).read().decode("utf-8")
+    html = urllib.request.urlopen(urllib.request.Request(site(PATH), headers={"User-Agent": UA}), timeout=60).read().decode("utf-8")
     s = "".join(json.loads('"' + c + '"') for c in re.findall(r'self\.__next_f\.push\(\[1,"(.*?)"\]\)\s*</script>', html, re.S))
     i = s.index('{"data":{')
     return json.JSONDecoder().raw_decode(s[i:])[0]

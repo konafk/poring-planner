@@ -22,6 +22,10 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    env:
+      # the community database's address, for the scripts that read it (tools/export_prices.py: site()); set it under
+      # Settings → Secrets and variables → Actions → Variables
+      DB_SITE: ${{ vars.DB_SITE }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

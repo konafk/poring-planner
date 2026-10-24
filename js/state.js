@@ -123,9 +123,9 @@ state.recovery={discount:!(state.recovery&&state.recovery.discount===false)};
   stones=JELLO.map(x=>x.stone[0]),c=objOr(j.craft);
   state.jello={frag:cnt(j.frag,JELLO.map(x=>x.frag[0])),stone:cnt(j.stone,stones),want:[...new Set((Array.isArray(j.want)?j.want:[]).map(Number))].filter(id=>EXPEDITION.some(x=>x.id===id)),
     crystals:Number.isFinite(+j.crystals)&&+j.crystals>0?Math.round(+j.crystals):0,...(stones.includes(+c.id)&&Number.isFinite(+c.due)?{craft:{id:+c.id,due:+c.due}}:{})}}
-// the Stellar tab (stellar.js): certificates you have by weapon type (whole counts above 0) and your weapon's refine (0 to 20)
+// the Stellar tab (stellar.js): certificates you have by ★ weapon id (whole counts above 0) and your weapon's refine (0 to 20)
 {const t=objOr(state.stellar),r=Math.round(+t.refine);
-  state.stellar={have:Object.fromEntries(Object.entries(numMap(t.have)).filter(([k,v])=>/^[a-z0-9_]+$/.test(k)&&v>=1).map(([k,v])=>[k,Math.round(v)])),refine:Number.isFinite(r)?Math.min(20,Math.max(0,r)):0}}
+  state.stellar={have:Object.fromEntries(Object.entries(numMap(t.have)).filter(([k,v])=>/^\d+$/.test(k)&&v>=1).map(([k,v])=>[k,Math.round(v)])),refine:Number.isFinite(r)?Math.min(20,Math.max(0,r)):0}}
 delete state.flyPrice;
 // per account: how the character looks in the equipment window (Build from gear): gender m/f, hair style number, hair colour number
 // (0 the default), clothes dye number (0 undyed) and whether a 2nd job wears its transcendent look

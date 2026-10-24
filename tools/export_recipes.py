@@ -12,11 +12,15 @@ The Alchemy Lab guide adds the recipes NPCs make for a fee: Mixture & Counterage
 a zeny fee, the materials (item links with a quantity) and the result (an item link with "x N"). The NPC is the last one each
 section's steps name.
 """
-import html as htmllib, json, os, re, urllib.request
+import html as htmllib, json, os, re, sys, urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from export_prices import site  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-URL = "https://rozerodb.com/recipes"
-LAB_URL = "https://rozerodb.com/guides/alchemy-lab"
+# the two pages on the community database (DB_SITE)
+PATH = "/recipes"
+LAB_PATH = "/guides/alchemy-lab"
 UA = "RO-Zero-farmer-calculator data export"
 # the Alchemy Lab's sections (their id in the page) and the category each becomes
 LAB = {"mixtures": "Mixture & Counteragent", "dyes": "Dye Making"}
@@ -28,7 +32,7 @@ def get(url):
 
 
 def payload():
-    html = get(URL)
+    html = get(site(PATH))
     s = "".join(json.loads('"' + c + '"') for c in re.findall(r'self\.__next_f\.push\(\[1,"(.*?)"\]\)\s*</script>', html, re.S))
     i = s.index('[{"category":')
     return json.JSONDecoder().raw_decode(s[i:])[0]
@@ -36,7 +40,7 @@ def payload():
 
 def lab(names):
     """The Alchemy Lab's recipe cards, as rows like the Recipes page's with the NPC's fee and the NPC (name, map x,y)."""
-    page, rows = get(LAB_URL), []
+    page, rows = get(site(LAB_PATH)), []
     text = lambda x: htmllib.unescape(re.sub(r"<[^>]+>", "", x)).strip()
     for sid, cat in LAB.items():
         i = page.index(f'id="{sid}"'); j = page.find("</section>", page.find("recipeGrid", i))
