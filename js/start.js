@@ -91,7 +91,7 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
   const build=()=>ALL=[
     ...[...document.querySelectorAll("[data-tabbtn]")].map(b=>({k:"Tab",name:tabName(b.dataset.tabbtn),meta:TAB_DESC[b.dataset.tabbtn]||"",run:go(b.dataset.tabbtn)})),
     ...ACTIONS,
-    ...MOBS.map(m=>({k:"Monster",name:m.name,meta:`Lv ${m.lv}${m.el?` · ${m.el} ${m.elv}`:""}${m.race?` · ${m.race}`:""}${m.mvp?" · MVP":m.boss||m.mini?" · boss":""}`,
+    ...MOBS.map(m=>({k:"Monster",name:m.name,meta:`Lv ${m.lv}${m.el?` · ${m.el} ${m.elv}`:""}${m.race?` · ${m.race}`:""}${m.mvp?" · MVP":m.boss||m.mini?" · boss":""}`,mob:m.id,
       run:()=>openInfo("mob",m.id)})),
     ...Object.keys(ITEM_DROPS).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · dropped by ${ITEM_DROPS[id].length}`,ico:id,
       run:()=>openInfo("item",id)})),
@@ -113,7 +113,7 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
   const draw=()=>{const q=inp.value.trim().toLowerCase();if(!ALL)build();
     hits=q?ALL.filter(x=>!x.ok||x.ok()).map(x=>[score(x,q),x]).filter(([v])=>v<9).sort((a,b)=>a[0]-b[0]||a[1].name.length-b[1].name.length).slice(0,40).map(([,x])=>x)
       :ALL.filter(x=>(x.k==="Tab"||x.k==="Action")&&(!x.ok||x.ok()));
-    at=0;list.innerHTML=hits.length?hits.map((x,i)=>`<button type="button" role="option" class="jr" data-i="${i}" aria-selected="${i===at}"><span class="jk k${x.k}">${x.k}</span><span class="jn">${x.ico!=null?itemIcon(x.ico,1,"il"):""}${esc(x.name)}</span><span class="jm">${esc(x.meta)}</span></button>`).join("")
+    at=0;list.innerHTML=hits.length?hits.map((x,i)=>`<button type="button" role="option" class="jr" data-i="${i}" aria-selected="${i===at}"><span class="jk k${x.k}">${x.k}</span><span class="jn">${x.mob!=null?mobIcon(x.mob,1,"il"):x.ico!=null?itemIcon(x.ico,1,"il"):""}${esc(x.name)}</span><span class="jm">${esc(x.meta)}</span></button>`).join("")
       :`<div class="jEmpty">Nothing matches “${esc(inp.value.trim())}”.</div>`};
   const mark=()=>list.querySelectorAll(".jr").forEach((b,i)=>{b.setAttribute("aria-selected",String(i===at));if(i===at)b.scrollIntoView({block:"nearest"})});
   const pick=i=>{const x=hits[i];if(!x)return;dlg.close();x.run()};

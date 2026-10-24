@@ -9,13 +9,13 @@ The numbers are estimates. Skill values and formulas follow the sources below an
 - Job bonus stats and base HP / SP: [rAthena](https://github.com/rathena/rathena/tree/master/db/pre-re)'s pre-renewal `job_stats.yml` and `job_basepoints.yml`, with Zero's changes worked out from in-game status windows (see `tools/export_jobs.py`). The same job bonus table as [ROZero Planner](https://rozeroplanner.com)
 - The names cards give gear in the equipment window ("Healing" for Vitata Card): [divine-pride.net](https://www.divine-pride.net/database/item/4053)
 - Gear and card descriptions (in-game text) and quests: [roz.prontera.info](https://roz.prontera.info); which monsters drop them, drop rates and MVP / mini boss: [rozerodb.com](https://rozerodb.com)
-- Item icons and card pictures: the game client's images, as [divine-pride.net](https://www.divine-pride.net) serves them per item id
+- Item icons, card pictures and monster pictures: the game client's images, as [divine-pride.net](https://www.divine-pride.net) serves them per item or monster id
 - Crafting recipes (Recipes tab): [rozerodb.com Recipes](https://rozerodb.com/recipes) and its [Alchemy Lab guide](https://rozerodb.com/guides/alchemy-lab) (Mixture, Counteragent, Dyestuffs)
 - Random options (affixes) per gear type, pool and slot, with their min–max: [rozerodb.com Affixes Simulator](https://rozerodb.com/tools/affixes)
 - Costume enchant stones and their sets: item descriptions on [rozerodb.com](https://rozerodb.com/guides/enchant), cross-checked with [midgardhub.com](https://midgardhub.com/guides/enchant-stones)
 - Taming Ring pet egg enchants: item descriptions on [rozerodb.com](https://rozerodb.com), cross-checked with [midgardhub.com pet bonuses](https://midgardhub.com/guides/pet-bonuses)
 - Memorial dungeons, Jellostones, the Expedition upgrades and the memorial gear's enchants (`data/memorial.js`): made by hand, cross-checked with [midgardhub.com's Memorial Dungeons guide](https://midgardhub.com/guides/memorial-dungeons); item names and ids as the Global client has them, from [rozerodb.com](https://rozerodb.com)
-- Stellar weapons and the Activation System (`data/stellar.js`): [rozerodb.com's Stellar Weapons guide](https://rozerodb.com/guides/stellar-weapons) and its [crafting list](https://rozerodb.com/guides/stellar-weapons/crafting-list), cross-checked with [midgardhub.com's Activation System guide](https://midgardhub.com/guides/activation); both follow the Taiwan server
+- Stellar weapons and the Activation System (`data/stellar.js`): the Taiwan server's Activation System; the ★ weapons from the official client
 - Spawn counts: the official Ragnarok Zero Global client (navigation table)
 - Map names: the official client (`System/mapInfo_enUS.lub`)
 - Spawn, drop and item name cross-check, in-game map codes: [ragnarokzero.net](https://ragnarokzero.net/database/maps)

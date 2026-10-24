@@ -230,6 +230,8 @@ const BUILD=(()=>{
   const groupOn=(g,ctx)=>(g.r==null||ctx.refine>=g.r)&&(g.rs==null||ctx.refineSum>=g.rs)&&(g.lv==null||ctx.baseLv>=g.lv)&&(!g.cls||!g.cls.length||g.cls.includes(ctx.jobSlug)||g.cls.includes(ctx.firstSlug));
   function applyGroups(A,gs,ctx,src){(gs||[]).forEach(g=>{if(!groupOn(g,ctx))return;
     if(g.proc||g.text){A.unmodelled.push(`${src}: ${g.proc||g.text}`);}
+    // a proc's lines last only while it's up (Extra Joker & Joker: ATK +70 while transformed): listed, not counted
+    if(g.proc)return;
     // "For every 10 BaseLv ... (up to BaseLv 50)": lvPer / lvMax on the group multiply its lines by the base level steps
     const lk=g.lvPer?Math.floor(Math.min(ctx.baseLv,g.lvMax||Infinity)/g.lvPer):1;
     (g.b||[]).forEach(b=>{const per=b[4];const k=(per?Math.floor(ctx.refine/per):1)*lk;if(k<=0)return;const bb=b.slice();bb[3]=(+b[3]||0)*k;apply(A,bb,src)})})}
@@ -258,9 +260,12 @@ const BUILD=(()=>{
       o.lines.forEach(l=>apply(A,l,nm));o.bad.forEach(y=>A.unmodelled.push(`${nm} not understood: ${y}`));o.off.forEach(y=>A.unmodelled.push(`${nm} not counted: ${y}`))});
     // consumables and buffs picked on the Character tab: plain bonus lines on top of the gear
     (b.extra||[]).forEach(x=>apply(A,x,"consumable"));
-    // sets: every piece worn; "combined refine" sums the pieces' refines
-    (typeof SETS!=="undefined"?SETS:[]).forEach(st=>{const ps=st.pieces.map(p=>worn.find(w=>w.it.slug===p));if(ps.some(p=>!p))return;
-      applyGroups(A,st.g,{...ctxBase,refine:0,refineSum:ps.reduce((a,p)=>a+p.r,0)},st.name)});
+    // sets: every piece worn, a piece being a worn item or a card in one; "combined refine" sums the item pieces' refines.
+    // Per-refine lines count the refine of the item that is or holds the set's ref piece (Sieglouse & Arclouse: "FLEE +2 per
+    // shield refine", ref Arclouse Card, so the shield it's in)
+    (typeof SETS!=="undefined"?SETS:[]).forEach(st=>{const at=p=>worn.find(w=>w.it.slug===p||w.cards.some(c=>c.slug===p));
+      const ps=st.pieces.map(at);if(ps.some(p=>!p))return;const rw=st.ref?at(st.ref):null;
+      applyGroups(A,st.g,{...ctxBase,refine:rw?rw.r:0,refineSum:ps.reduce((a,w,i)=>a+(w.it.slug===st.pieces[i]?w.r:0),0)},st.name)});
     const jb=jobBonus(job,jobLv),base={},tot={};STAT6.forEach(k=>{base[k]=Math.max(1,+((b.base||{})[k])||1);tot[k]=base[k]+jb[k]+A.st[k];tot[k]+=Math.floor(tot[k]*A.stPct[k]/100)}); // "STR +10%": a share of the total stat, rounded down
     const weapon=wpn?WTYPE[wpn.type]||"Bare hands":"Bare hands",ranged=RANGED_W.includes(weapon),S=status(lv,tot,ranged),f=Math.floor;
     const lw=wpnL?WTYPE[wpnL.type]||null:null,dual=dualOk(job,weapon,lw);
