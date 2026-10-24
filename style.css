@@ -703,6 +703,7 @@ details.more>.form{display:grid}
 .ewFeet span{position:absolute;background-image:var(--job-sprites);background-repeat:no-repeat;image-rendering:pixelated}
 .ewLook{display:flex;align-items:center;gap:3px;margin-top:4px;font-size:11px;color:var(--muted);white-space:nowrap}
 .ewLook button{min-height:0;padding:1px 6px;font-size:11px;line-height:1.4}
+.ewLook .ewTrans[aria-pressed="true"]{color:var(--accent);background:var(--accent-soft);border-color:var(--accent)}
 .ewAmmo{grid-column:1/-1;display:flex;justify-content:center}
 .ewAmmo .ewSlot{width:min(100%,260px)}
 @media (max-width:520px){.equipWin{--ew-z:1.5}.ewBody{padding:6px;gap:4px}.ewSlot{padding:3px 5px;gap:4px;font-size:11px}.ewLook button{padding:1px 4px}.ewHairW{display:none}}

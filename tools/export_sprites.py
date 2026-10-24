@@ -1,5 +1,6 @@
 """Export each job's look for the Character tab's equipment window into img/job-sprites.png and data/sprites.js, from your installed
-Ragnarok Zero client (official Global client, read-only).
+Ragnarok Zero client (official Global client, read-only). Each 2nd job also gets its transcendent job's look (Knight as a Lord Knight),
+which Zero lets a 2nd job wear since it has no transcendent jobs.
 
     python tools/export_sprites.py                                  # client in C:\\Gravity\\RagnarokZero
     python tools/export_sprites.py --client "D:\\Games\\RagnarokZero"
@@ -11,8 +12,8 @@ the body at the body's anchor point, the way the client does, so any hair style 
 Hair dyes and clothes dyes (palette files) aren't exported.
 
 Writes img/job-sprites.png (each image cropped to what it draws, packed in rows) and data/sprites.js: per job and gender the body's
-place on the sheet, where it draws from the feet and its head anchor; per gender and hair style the head's place and where it draws
-from the anchor. Standard library only.
+place on the sheet, where it draws from the feet and its head anchor (body, and trans for the transcendent look); per gender and
+hair style the head's place and where it draws from the anchor. Standard library only.
 """
 import json, os, struct, sys, zlib
 
@@ -23,6 +24,11 @@ JOBS = {"Novice": "초보자", "Swordsman": "검사", "Mage": "마법사", "Arch
         "Priest": "프리스트", "Monk": "몽크", "Blacksmith": "제철공", "Alchemist": "연금술사", "Assassin": "어세신", "Rogue": "로그"}
 SEX = {"m": "남", "f": "여"}
 ONE_SEX = {"Bard": "m", "Dancer": "f"}
+# Zero has no transcendent jobs, so a 2nd job can wear its transcendent job's look instead (Knight as a Lord Knight). The client's
+# <job>_h bodies are the same as the plain ones, not these
+TRANS = {"Knight": "로드나이트", "Crusader": "팔라딘", "Wizard": "하이위저드", "Sage": "프로페서", "Hunter": "스나이퍼", "Bard": "클라운",
+         "Dancer": "집시", "Priest": "하이프리", "Monk": "챔피온", "Blacksmith": "화이트스미스", "Alchemist": "크리에이터",
+         "Assassin": "어쌔신크로스", "Rogue": "스토커"}
 SHEET_W = 512
 
 
@@ -191,7 +197,7 @@ def main():
     client = sys.argv[sys.argv.index("--client") + 1] if "--client" in sys.argv else r"C:\Gravity\RagnarokZero"
     grf = Grf(os.path.join(client, "data.grf"))
     base = "data\\sprite\\인간족\\"
-    images, bodies, heads, missing = [], {}, {}, []
+    images, bodies, trans, heads, missing = [], {}, {}, {}, []
 
     def take(path):
         if not grf.has(path + ".spr") or not grf.has(path + ".act"):
@@ -208,6 +214,9 @@ def main():
             r = take(f"{base}몸통\\{ko}\\{name}_{ko}")
             if r:
                 bodies.setdefault(job, {})[s] = r
+            r = job in TRANS and take(f"{base}몸통\\{ko}\\{TRANS[job]}_{ko}")
+            if r:
+                trans.setdefault(job, {})[s] = r
     for s, ko in SEX.items():
         n = 1
         while grf.has(f"{base}머리통\\{ko}\\{n}_{ko}.spr"):
@@ -231,17 +240,21 @@ def main():
     os.makedirs(os.path.join(ROOT, "img"), exist_ok=True)
     open(os.path.join(ROOT, "img", "job-sprites.png"), "wb").write(data)
     cell = lambda i: [*at[i], *images[i][:2]]
+    body = lambda bs: {j: {s: cell(i) + list(images[i][3:5]) + list(a or (0, -70)) for s, (i, a) in g.items()} for j, g in bs.items()}
     out = {"file": "img/job-sprites.png", "v": f"{zlib.crc32(data) & 0xFFFFFFFF:08x}",
            # [x, y, w, h on the sheet, left, top from the feet, head anchor x, y from the feet]
-           "body": {j: {s: cell(i) + list(images[i][3:5]) + list(a or (0, -70)) for s, (i, a) in g.items()} for j, g in bodies.items()},
+           "body": body(bodies),
+           # the same for a 2nd job's transcendent look
+           "trans": body(trans),
            # [x, y, w, h on the sheet, left, top from the body's head anchor]
            "head": {s: {n: cell(i) + [images[i][3] - (a or (0, 0))[0], images[i][4] - (a or (0, 0))[1]] for n, (i, a) in g.items()} for s, g in heads.items()}}
     with open(os.path.join(ROOT, "data", "sprites.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// Job looks for the equipment window (tools/export_sprites.py, from the game client): the sheet, a checksum of it (v); per job and\n"
-                "// gender (m/f) the body [x,y,w,h on the sheet, left,top from the feet, head anchor x,y from the feet]; per gender and hair style\n"
-                "// the head [x,y,w,h on the sheet, left,top from the body's head anchor].\n")
+                "// gender (m/f) the body [x,y,w,h on the sheet, left,top from the feet, head anchor x,y from the feet], trans the same\n"
+                "// for a 2nd job's transcendent look (Knight as a Lord Knight); per gender and hair style the head [x,y,w,h on the sheet,\n"
+                "// left,top from the body's head anchor].\n")
         f.write("const JOB_SPRITES=" + json.dumps(out, separators=(",", ":"), ensure_ascii=False) + ";\n")
-    print(f"{sum(len(g) for g in bodies.values())} bodies, {sum(len(g) for g in heads.values())} hair styles, sheet {SHEET_W} x {H}, {len(data)} bytes")
+    print(f"{sum(len(g) for g in bodies.values())} bodies, {sum(len(g) for g in trans.values())} transcendent, {sum(len(g) for g in heads.values())} hair styles, sheet {SHEET_W} x {H}, {len(data)} bytes")
     if missing:
         print("not in the client: " + ", ".join(missing))
 
