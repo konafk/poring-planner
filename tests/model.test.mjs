@@ -1064,6 +1064,7 @@ t("gear from the client check: Guild options are GvG-only, race CRIT and damage 
   assert.ok(g(4297).includes('["crit","race","brute",7]'));   // Cruiser Card
   assert.ok(g(2254).includes('["damage_taken_percent","race","demon",-3]'));   // Angel Wing
   assert.ok(g(4312).includes('"cls":["acolyte"]'));    // Fur Seal Card: Acolyte Class vs Demon/Undead
+  assert.equal(g(27270), JSON.stringify([{ b: [["mdef", null, null, 10, 1]] }]));   // Extra Joker Card: MDEF +10 per shield refine, ATK / MATK +70 only in the set's transform
 });
 
 t("Spell Fist: each basic attack also lands its physical hit", () => {
