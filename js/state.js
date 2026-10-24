@@ -128,9 +128,9 @@ state.recovery={discount:!(state.recovery&&state.recovery.discount===false)};
   state.stellar={have:Object.fromEntries(Object.entries(numMap(t.have)).filter(([k,v])=>/^[a-z0-9_]+$/.test(k)&&v>=1).map(([k,v])=>[k,Math.round(v)])),refine:Number.isFinite(r)?Math.min(20,Math.max(0,r)):0}}
 delete state.flyPrice;
 // per account: how the character looks in the equipment window (Build from gear): gender m/f, hair style number, hair colour number
-// (0 the default) and whether a 2nd job wears its transcendent look
+// (0 the default), clothes dye number (0 undyed) and whether a 2nd job wears its transcendent look
 state.look={sex:state.look&&state.look.sex==="f"?"f":"m",hair:Math.max(1,Math.round(+(state.look&&state.look.hair))||1),
-  color:Math.max(0,Math.round(+(state.look&&state.look.color))||0),trans:!!(state.look&&state.look.trans)};
+  color:Math.max(0,Math.round(+(state.look&&state.look.color))||0),dye:Math.max(0,Math.round(+(state.look&&state.look.dye))||0),trans:!!(state.look&&state.look.trans)};
 ["teleSec","tripEarly","tripMin"].forEach(k=>{if(state[k]!=null&&!(Number.isFinite(+state[k])&&+state[k]>=0))delete state[k]});
 if(!state.current||!state.sessions.some(s=>s.id===state.current))state.current=state.sessions[0].id;
 // Element / Race / Size / Boss dropdowns: the Monsters card's (mobF) and Monster info's (infoF), {key: value}
