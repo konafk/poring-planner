@@ -357,7 +357,9 @@ function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};l
 // equipment ----
 const EW_L=["headTop","headLow","weapon","garment","acc1"],EW_R=["headMid","armor","shield","shoes","acc2"];
 let EW_TAB="normal";
-{const s=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(s)document.documentElement.style.setProperty("--job-sprites",`url("${s.file}?v=${s.v}")`)}
+// the sheet of job looks, drawn into the window's canvas once it loads
+const EW_SHEET=typeof JOB_SPRITES!=="undefined"&&Object.assign(new Image(),{src:`${JOB_SPRITES.file}?v=${JOB_SPRITES.v}`});
+if(EW_SHEET)EW_SHEET.onload=()=>drawLook();
 // "+7 Double Healing Shining Clip": refine, then the cards' names before the item name (Double / Triple / Quadruple for repeats) or after it
 function gameName(g){const it=g&&g.id&&BUILD.item(g.id);if(!it)return "";const pre=[],post=[],n={};
   (g.cards||[]).filter(Boolean).forEach(id=>{const c=BUILD.item(id)||{id},a=cardName(c);if(!a)return;n[a]=(n[a]||0)+1;
@@ -375,13 +377,16 @@ const EW_TRANS={Knight:"Lord Knight",Crusader:"Paladin",Wizard:"High Wizard",Sag
   Priest:"High Priest",Monk:"Champion",Blacksmith:"Whitesmith",Alchemist:"Creator",Assassin:"Assassin Cross",Rogue:"Stalker"};
 const ewTrans=S=>EW_TRANS[state.job]&&S.trans&&S.trans[state.job];
 function lookHtml(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";const tj=ewTrans(S),bj=(state.look.trans&&tj)||S.body[state.job]||S.body.Novice,sex=ewSex(bj),b=bj[sex],hs=S.head[sex]||{},h=hs[state.look.hair]||hs[1];
-  const part=(p,l,t,cls)=>`<span class="${cls}" style="left:${l}px;top:${t}px;width:${p[2]}px;height:${p[3]}px;background-position:-${p[0]}px -${p[1]}px"></span>`;
+  // body and head go into one canvas at the sprites' own size, which the page then scales: as separate boxes each rounded to the
+  // screen's pixels on its own, so at some zooms the head sat a pixel off the body
+  const parts=[[...b.slice(0,4),b[4],b[5]],...h?[[...h.slice(0,4),b[6]+h[4],b[7]+h[5]]]:[]];
+  const L=Math.min(...parts.map(p=>p[4])),T=Math.min(...parts.map(p=>p[5])),R=Math.max(...parts.map(p=>p[4]+p[2])),B=Math.max(...parts.map(p=>p[5]+p[3]));
   const one=Object.keys(bj).length<2,hair=hs[state.look.hair]?state.look.hair:1;
   // Ragnarok Zero has no zeny stylist (iRO's): a new style or color after character creation takes a paid KP shop item (New Style
-  // Coupon, 7622), and
-  // clothes color a Clothing Dye Coupon or Clothing Dye Coupon II (6046, 6047), the transcendent look's too; the sprites are undyed
+  // Coupon, 7622), and clothes color a Clothing Dye Coupon or Clothing Dye Coupon II (6046, 6047), the transcendent look's too; the
+  // sprites are undyed
   const hairTip="Hair style: changing it or its color after character creation takes a paid KP shop item, such as a New Style Coupon";
-  return `<div class="ewStage" title="Clothes in their default color: a Clothing Dye Coupon or Clothing Dye Coupon II (KP shop) changes their color, on the transcendent look too. The dye stays through a job change, but can look different on the new job"><div class="ewFeet">${part(b,b[4],b[5],"ewBody")}${h?part(h,b[6]+h[4],b[7]+h[5],"ewHead"):""}</div></div>
+  return `<div class="ewStage" title="Clothes in their default color: a Clothing Dye Coupon or Clothing Dye Coupon II (KP shop) changes their color, on the transcendent look too. The dye stays through a job change, but can look different on the new job"><div class="ewFeet"><canvas class="ewPic" width="${R-L}" height="${B-T}" style="left:${L}px;top:${T}px" data-parts="${parts.map(p=>[...p.slice(0,4),p[4]-L,p[5]-T].join(",")).join(";")}"></canvas></div></div>
     <div class="ewLook"><button type="button" class="small" data-ewsex="" ${one?`disabled title="${esc(state.job)}s are ${sex==="f"?"female":"male"} only"`:`title="Gender: ${sex==="f"?"female":"male"}"`} aria-label="Gender">${sex==="f"?"♀":"♂"}</button>
       <button type="button" class="small" data-ewhair="-1" aria-label="Previous hair style" title="${hairTip}">◀</button><span title="${hairTip}"><span class="ewHairW">Hair </span>${hair}</span><button type="button" class="small" data-ewhair="1" aria-label="Next hair style" title="${hairTip}">▶</button></div>
       ${tj?`<div class="ewLook"><button type="button" class="small ewTrans" data-ewtrans="" aria-pressed="${!!state.look.trans}" title="${esc(`${EW_TRANS[state.job]} look: Ragnarok Zero has no transcendent jobs, so a ${state.job} can look like a ${EW_TRANS[state.job]}. A Costume Change Ticket switches the look in game`)}">Trans</button></div>`:""}`}
@@ -389,9 +394,10 @@ function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),
   const gearSlot=(k,right)=>{const g=b.gear[k],it=g&&g.id&&BUILD.item(g.id),s=BUILD.SLOTS.find(x=>x.k===k);
     return ewSlot(k,k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label,it?gameName(g):"",iconHtml("gear",it&&it.id),right)};
   const stone=(k,right)=>{const id=(b.stones||{})[k],x=id&&(typeof STONES!=="undefined"?STONES:[]).find(s=>s.id===+id&&s.slot===k);
-    return ewSlot(k,`Costume ${k} stone`,x?x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""):"",iconHtml("gear",x&&x.id),right)};
+    return ewSlot(k,`Costume ${k} stone`,x?x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""):"",itemIcon(x&&x.id),right)};
+  // stones and the Taming Ring (item 24966) are in the item icon sheet, not the gear one
   const ring=()=>{const id=(b.special||{}).ring,x=id&&(typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[]).find(e=>e.id===+id);
-    return ewSlot("ring","Taming Ring",x?`Taming Ring [${x.name}]`:"",iconHtml("gear",null),false)};
+    return ewSlot("ring","Taming Ring",x?`Taming Ring [${x.name}]`:"",itemIcon(x&&24966),false)};
   // other special equipment you wear goes in the right column's free slots
   const own=((b.special||{}).own||[]).map((x,j)=>({x,j})).filter(o=>o.x.on!==false&&(o.x.name||"").trim()).slice(0,4);
   const L=sp?[stone("upper"),stone("lower"),ewNone(),stone("garment"),ring()]:EW_L.map(k=>gearSlot(k,false));
@@ -403,7 +409,11 @@ function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),
     <div class="ewBody"><div class="ewCol">${L.join("")}</div><div class="ewChar">${lookHtml()}</div><div class="ewCol">${R.join("")}</div>${ammo}</div>`;
   // the button you pressed keeps focus through the redraw
   const a=document.activeElement,f=a&&el.contains(a)?["ewtab","ewsex","ewhair","ewtrans","ewslot"].map(k=>a.dataset[k]!=null?`[data-${k}="${a.dataset[k]}"]`:null).find(Boolean):null;
-  if(renderEquipWin.html===html)return;renderEquipWin.html=html;el.innerHTML=html;if(f)el.querySelector(f)?.focus()}
+  if(renderEquipWin.html===html)return;renderEquipWin.html=html;el.innerHTML=html;drawLook();if(f)el.querySelector(f)?.focus()}
+// each part [x,y,w,h on the sheet, x,y in the canvas] copied from the sheet, once it has loaded
+function drawLook(){const c=$("equipWin").querySelector("canvas.ewPic");if(!c||!EW_SHEET||!EW_SHEET.complete||!EW_SHEET.naturalWidth)return;
+  const g=c.getContext("2d");g.clearRect(0,0,c.width,c.height);
+  c.dataset.parts.split(";").forEach(s=>{const [x,y,w,h,l,t]=s.split(",").map(Number);g.drawImage(EW_SHEET,x,y,w,h,l,t,w,h)})}
 $("equipWin").addEventListener("click",e=>{const t=e.target.closest("button");if(!t||t.disabled)return;const L=state.look;
   if(t.dataset.ewtab){EW_TAB=t.dataset.ewtab;renderEquipWin();return}
   if(t.dataset.ewtrans!=null){L.trans=!L.trans;save();renderEquipWin();return}
