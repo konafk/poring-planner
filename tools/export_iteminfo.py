@@ -2,13 +2,13 @@
 Cards tabs.
 
     python tools/export_iteminfo.py            # fetch what isn't cached, then write data/iteminfo.js
-    python tools/export_iteminfo.py --refresh  # refetch rozerodb's item records and monster list (prontera pages stay cached)
+    python tools/export_iteminfo.py --refresh  # refetch the database's item records and monster list (prontera pages stay cached)
 
 Items are the ones in data/equipment.js and data/cards.js. For each:
 - t: the item description as the game shows it, from its roz.prontera.info page (tools/export_prontera.py's cache). The bonus lines
   there leave out effects they have no type for (Eddga Card's "Grants continuous [Endure] effect", Baphomet Card's splash), so the
   tabs show this text too.
-- d: the monsters that drop it, from rozerodb.com's item API (/api/items/<id>: dropped_by, cached like tools/export_prices.py's),
+- d: the monsters that drop it, from the community database's item API (/api/items/<id>: dropped_by, cached like tools/export_prices.py's),
   each tagged MVP, mini boss or normal from its monster list (/api/monsters: is_mvp, is_mini_boss).
 - q: the quests that give it, from its roz.prontera.info page.
 Items with none of these are left out.
@@ -27,8 +27,8 @@ def rows(name, const):
 
 
 def monsters(refresh=False):
-    """monster id -> [MVP, mini boss], every monster rozerodb lists (200 a page). Cached as JSON."""
-    f = os.path.join(CACHE, "rozerodb_monsters.json")
+    """monster id -> [MVP, mini boss], every monster the database lists (200 a page). Cached as JSON."""
+    f = os.path.join(CACHE, "db_monsters.json")
     if os.path.exists(f) and not refresh:
         return {int(k): v for k, v in json.load(open(f, encoding="utf-8")).items()}
     out, off = {}, 0
@@ -47,7 +47,7 @@ def monsters(refresh=False):
     return out
 
 
-# champion monsters rozerodb has no English name for, only their code ("C5_ALARM"): C1 to C5 are the Swift, Solid, Ringleader,
+# champion monsters the database has no English name for, only their code ("C5_ALARM"): C1 to C5 are the Swift, Solid, Ringleader,
 # Furious and Elusive versions of a monster (rAthena's mob_db), so "C5_ALARM" reads "Elusive Alarm"
 CHAMPION = {"1": "Swift", "2": "Solid", "3": "Ringleader", "4": "Furious", "5": "Elusive"}
 
@@ -88,7 +88,7 @@ def main():
             out[x["id"]] = o
     with open(os.path.join(ROOT, "data", "iteminfo.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// Gear and cards: item id -> {t: in-game description (roz.prontera.info), d: monsters that drop it [[monster id, name, level,\n"
-                "// \"mvp\" | \"mini\" (mini boss) | \"normal\", drop %]] best rate first (rozerodb.com), q: quests that give it (roz.prontera.info)};\n"
+                "// \"mvp\" | \"mini\" (mini boss) | \"normal\", drop %]] best rate first (the community database), q: quests that give it (roz.prontera.info)};\n"
                 "// written by tools/export_iteminfo.py\n")
         f.write("const ITEM_INFO={" + ",\n".join(f"{k}:{json.dumps(v, ensure_ascii=False, separators=(',', ':'))}" for k, v in out.items()) + "};\n")
     n = lambda k: sum(k in v for v in out.values())

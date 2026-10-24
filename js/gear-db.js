@@ -7,7 +7,7 @@ const FX_LABEL={str:"STR",agi:"AGI",vit:"VIT",int:"INT",dex:"DEX",luk:"LUK",all_
   cast_time_fixed_percent:"Fixed cast time",after_cast_delay_percent:"After-cast delay",attack_delay_percent:"After-attack delay",damage_percent:"Physical damage",
   physical_damage_percent:"Physical damage",magic_damage_percent:"Magic damage",ranged_damage_percent:"Ranged physical damage",melee_damage_percent:"Melee physical damage",
   skill_damage_percent:"Skill damage",damage_taken_percent:"Damage taken",magic_damage_taken_percent:"Magic damage taken",resistance_percent:"Resistance",
-  exp_percent:"EXP",heal_amount_percent:"Heal power",item_heal_percent:"Recovery from items",heal_received_percent:"Heal received",sp_recovery_percent:"SP recovery",
+  exp_percent:"EXP",heal_amount_percent:"Heal power",item_heal_percent:"HP heal effect",sp_heal_percent:"SP heal effect",heal_received_percent:"Heal received",sp_recovery_percent:"SP recovery",
   hp_recovery_percent:"HP recovery",sp_cost_percent:"SP cost",ignore_def_percent:"Ignore DEF",ignore_mdef_percent:"Ignore MDEF",sp_per_hit:"SP per hit",hp_per_hit:"HP per hit"};
 const fxCap=s=>String(s||"").split("_").map(w=>w&&w[0].toUpperCase()+w.slice(1)).join(" ").replace("Demi Human","Demi-Human");
 // one bonus line [type, target kind, target, value, per N refines, skill, scaling skill] -> "Physical damage vs Demon +10%"
@@ -67,10 +67,10 @@ const fromTxt=id=>[...(itemInfo(id).d||[]).map(([,n,lv,k,ch])=>`${n} Lv ${lv}${F
 const fromOk=(id,v)=>{const x=itemInfo(id),d=x.d||[];return !v||(v==="none"?!d.length&&!(x.q||[]).length:v==="quest"?!!(x.q||[]).length:d.some(r=>r[3]===v))};
 // the column: each monster (a link to its details when the farm tables know it), its level, MVP / mini boss and drop %, then quests
 const MOB_BY_ID=new Map(MOBS.map(m=>[m.id,m]));
-const fromHtml=(id,drops=itemInfo(id).d||[])=>[...drops.map(([mid,n,lv,k,ch])=>`${MOB_BY_ID.has(mid)?`<a href="#" data-info="mob:${mid}">${esc(n)}</a>`:esc(n)} <span class="note">Lv ${lv}${ch!=null?` · ${ch}%`:""}</span>${FROM_TAG[k]?` <span class="pill${k==="mvp"?" mvp":""}">${FROM_TAG[k]}</span>`:""}`),
+const fromHtml=(id,drops=itemInfo(id).d||[])=>[...drops.map(([mid,n,lv,k,ch])=>`${mobIcon(mid,1,"il")}${MOB_BY_ID.has(mid)?`<a href="#" data-info="mob:${mid}">${esc(n)}</a>`:esc(n)} <span class="note">Lv ${lv}${ch!=null?` · ${ch}%`:""}</span>${FROM_TAG[k]?` <span class="pill${k==="mvp"?" mvp":""}">${FROM_TAG[k]}</span>`:""}`),
   ...(itemInfo(id).q||[]).map(q=>`<span class="pill">quest</span> ${esc(q)}`)].join("<br>")||'<span class="muted">no known source</span>';
 // Item info (every drop of the monsters the farm tables know): the kinds of monster that drop an item, from those monsters (an MVP, a
-// mini boss or another Boss-class one, which counts as a mini boss) and, for gear and cards, rozerodb's full list (MVPs too)
+// mini boss or another Boss-class one, which counts as a mini boss) and, for gear and cards, the database's full list (MVPs too)
 const dropKinds=id=>new Set([...(ITEM_DROPS[id]||[]).map(d=>d.m.mvp?"mvp":d.m.mini||d.m.boss?"mini":"normal"),...(itemInfo(id).d||[]).map(r=>r[3])]);
 const itemFromOk=(id,v)=>!v||(v==="quest"?!!(itemInfo(id).q||[]).length:dropKinds(id).has(v));
 // its other sources: monsters the farm tables don't have (MVPs, champions) and quests, as in the Where to get column; "" when none

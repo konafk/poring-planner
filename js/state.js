@@ -108,14 +108,23 @@ state.tsort=Object.fromEntries(Object.entries(objOr(state.tsort)).filter(([,v])=
 // the Hunter tables kept their sort in bestSort/huntSort before they moved to tsort
 [["bestTable","bestSort","bestDir"],["huntTable","huntSort","huntDir"]].forEach(([id,k,d])=>{if(typeof state[k]==="string"&&!state.tsort[id])state.tsort[id]=[state[k],state[d]===1?1:-1];delete state[k];delete state[d]});
 state.tfilt=Object.fromEntries(Object.entries(objOr(state.tfilt)).map(([k,v])=>[k,Object.fromEntries(Object.entries(objOr(v)).filter(([,x])=>typeof x==="string"))]));
-// the Equipment and Cards tabs' filters: {key: text as typed}
+// the Equipment, Cards and Recipes tabs' filters: {key: text as typed}
 if(state.itemFrom!=null&&typeof state.itemFrom!=="string")delete state.itemFrom; // Item info's Where to get filter
-["eqDb","cardDb"].forEach(k=>{if(state[k]!=null)state[k]=Object.fromEntries(Object.entries(objOr(state[k])).filter(([,x])=>typeof x==="string"))});
+["eqDb","cardDb","recipeDb"].forEach(k=>{if(state[k]!=null)state[k]=Object.fromEntries(Object.entries(objOr(state[k])).filter(([,x])=>typeof x==="string"))});
 state.noTele=(Array.isArray(state.noTele)?state.noTele:[]).map(String);
 // possible rampage per map (monsters attacking you together) (Map planner): whole numbers 1–12
 state.mobbed=Object.fromEntries(Object.entries(numMap(state.mobbed)).map(([k,v])=>[k,Math.min(12,Math.max(1,Math.round(v)))]));
 // per account: buy at the Discount price (on unless switched off): recovery items, the ASPD potion, skill items and Custom HP / SP items
 state.recovery={discount:!(state.recovery&&state.recovery.discount===false)};
+// the Memorials tab's Jellostone tracker (memorial.js): whole counts of 0 or more by fragment / stone id, the stone crafting
+// ({id, due: ms}), the Expedition pieces you want (item ids) and your Faintly Glowing Crystals
+{const j=objOr(state.jello),cnt=(o,ids)=>Object.fromEntries(Object.entries(numMap(o)).filter(([k,v])=>ids.includes(+k)&&v>=0).map(([k,v])=>[k,Math.round(v)]).filter(([,v])=>v>0)),
+  stones=JELLO.map(x=>x.stone[0]),c=objOr(j.craft);
+  state.jello={frag:cnt(j.frag,JELLO.map(x=>x.frag[0])),stone:cnt(j.stone,stones),want:[...new Set((Array.isArray(j.want)?j.want:[]).map(Number))].filter(id=>EXPEDITION.some(x=>x.id===id)),
+    crystals:Number.isFinite(+j.crystals)&&+j.crystals>0?Math.round(+j.crystals):0,...(stones.includes(+c.id)&&Number.isFinite(+c.due)?{craft:{id:+c.id,due:+c.due}}:{})}}
+// the Stellar tab (stellar.js): certificates you have by weapon type (whole counts above 0) and your weapon's refine (0 to 20)
+{const t=objOr(state.stellar),r=Math.round(+t.refine);
+  state.stellar={have:Object.fromEntries(Object.entries(numMap(t.have)).filter(([k,v])=>/^[a-z0-9_]+$/.test(k)&&v>=1).map(([k,v])=>[k,Math.round(v)])),refine:Number.isFinite(r)?Math.min(20,Math.max(0,r)):0}}
 delete state.flyPrice;
 ["teleSec","tripEarly","tripMin"].forEach(k=>{if(state[k]!=null&&!(Number.isFinite(+state[k])&&+state[k]>=0))delete state[k]});
 if(!state.current||!state.sessions.some(s=>s.id===state.current))state.current=state.sessions[0].id;
@@ -128,7 +137,7 @@ const C=()=>{if(!state.chars[state.job])state.chars[state.job]=charDefault(state
   {const p=c.preset>=0&&JOBS[state.job]&&JOBS[state.job].p[c.preset];if(p&&c.a){if(p.zeny!=null&&c.a.zeny==null)c.a.zeny=p.zeny;if(p.cart!=null&&c.a.cart==null)c.a.cart=p.cart;if(p.consumes&&c.a.consumes==null)c.a.consumes=p.consumes;if(p.arrows!=null&&c.a.arrows==null)c.a.arrows=p.arrows;if(p.blvBug&&c.a.blvBug==null)c.a.blvBug=p.blvBug;if(p.shw&&c.a.shw==null)c.a.shw=p.shw}}const d=charDefault(state.job);for(const k in d)if(c[k]==null)c[k]=d[k];if(!c.a)c.a={...d.a};return c};
 const cur=()=>state.sessions.find(s=>s.id===state.current)||state.sessions[0];
 
-// skills v2: presets now come from rozerodb; reset each saved job to its first preset
+// skills v2: presets now come from the data; reset each saved job to its first preset
 (function weaponsV2(){if(state.weaponsV2)return;state.weaponsV2=true;for(const j in state.chars){const c=state.chars[j];if(c&&WREN[c.weapon])c.weapon=WREN[c.weapon]}save()})();
 (function sfV2(){if(state.sfV2)return;state.sfV2=true;const c=state.chars&&state.chars.Sage;if(c&&c.preset>=0&&c.preset<3){c.a={...JOBS.Sage.p[c.preset]}}save()})();
 (function sfV3(){if(state.sfV3)return;state.sfV3=true;const c=state.chars&&state.chars.Sage;if(c){c.preset=0;c.a={...JOBS.Sage.p[0]}}save()})();
@@ -155,7 +164,6 @@ const pct=(n,d=2)=>isFinite(n)?n.toFixed(d)+"%":"–";
 function fmtDur(h){if(!isFinite(h)||h<0)return "–";const m=Math.round(h*60),hh=Math.floor(m/60),mm=m%60;if(hh>=24){const d=Math.floor(hh/24);return `~${d}d ${hh%24}h ${mm}m\n~${hh}h ${mm}m`}return hh?`~${hh}h ${mm}m`:`~${mm}m`}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 const num=(v,d=0)=>{const x=+v;return isFinite(x)?x:d};
-const dbUrl=m=>`https://rozerodb.com/monsters/${m.id}`;
 const lvExp=lv=>EXP_TABLE[lv]||null;
 // the server's base level cap: raise it when a patch does. At it base EXP no longer counts, so the EXP Hunter ranks by zeny
 const MAX_BASE_LV=70;

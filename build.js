@@ -63,7 +63,7 @@ const BUILD=(()=>{
     ign:{def:{race:{},size:{},ele:{},kind:{}},mdef:{race:{},size:{},ele:{},kind:{}}},
     phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},taken:{race:{},size:{},ele:{},kind:{}},exp:{all:0,race:{}},critRace:{},spCost:0,spRec:0,hpRec:0,wEle:null,unmodelled:[]});
   // lines that only matter for PvP survival, healing or status resistance: not part of the farming maths, so not reported either
-  const QUIET=["resistance_percent","heal_amount_percent","item_heal_percent","sp_recovery_percent","hp_recovery_percent","perfect_hit","magic_damage_taken_percent","sp_per_hit","hp_per_hit"];
+  const QUIET=["resistance_percent","heal_amount_percent","item_heal_percent","sp_heal_percent","sp_recovery_percent","hp_recovery_percent","perfect_hit","magic_damage_taken_percent","sp_per_hit","hp_per_hit"];
   const addTo=(o,k,v)=>{o[k]=(o[k]||0)+v};
   // monster groups ("against Boulder Dwarves") are kept by the text a member's name contains
   const GROUP={boulder_dwarf:"Boulder Dwarf"};
@@ -110,7 +110,7 @@ const BUILD=(()=>{
     def:"def",mdef:"mdef",aspd:"aspd",maxhp:"hp",mhp:"hp",hp:"hp",maxsp:"sp",msp:"sp",sp:"sp"};
   const PCT={atk:"atk_percent",matk:"matk_percent",aspd:"aspd_percent",hp:"hp_percent",sp:"sp_percent",
     str:"str_percent",agi:"agi_percent",vit:"vit_percent",int:"int_percent",dex:"dex_percent",luk:"luk_percent"};
-  // also the way the game and rozerodb name them: "Resistance to Demi-Human 7%", "Fire resistance increase 5%", "Phys Damage to Large targets +3%"
+  // also the way the game names them: "Resistance to Demi-Human 7%", "Fire resistance increase 5%", "Phys Damage to Large targets +3%"
   function parseOptions(txt){const out=[],bad=[];String(txt||"").split(/[,;\n]+/).map(x=>x.trim()).filter(Boolean).forEach(p=>{
     const m=p.match(/^([a-z ]+?)\s*([+-]\s*\d+(?:\.\d+)?)\s*(%?)$/i);const k=m&&OPT[m[1].toLowerCase().replace(/\s+/g,"")];
     if(!k){const a=named(p);if(a)out.push(a);else bad.push(p);return}const v=parseFloat(m[2].replace(/\s/g,""));
@@ -121,18 +121,18 @@ const BUILD=(()=>{
     const v=(m[2]==="-"?-1:1)*+m[3];return [...o.line,o.neg?-v:v]}
   // random options picked from lists in build mode: gear.opts = [{k, v}], up to OPT_MAX per item whatever the item. Typed lines a save
   // had from before the lists that don't match one are kept as text in gear.optsText when the rows replace them (still not understood)
-  // (one item can roll 2 on one drop and 4 on the next). The list is rozerodb's affixes (data/affixes.js), one entry per
+  // (one item can roll 2 on one drop and 4 on the next). The list is the database's affixes (data/affixes.js), one entry per
   // distinct affix with the bonus line apply() counts it as; line null = an affix the model has no use for (shown, but listed
   // under "Not counted"). neg lines store the value negated: "Resistance to Demon 5%" is damage taken −5%, "Variable Casting
   // reduction 5%" is the data's −5. gear: the min–max it rolls on each gear kind (all pools together)
   const OPT_MAX=5; // the most random options the game rolls on one item
   const RACE_BY=Object.fromEntries(Object.entries(RACE).map(([k,v])=>[v.toLowerCase(),k]));
   const ELES=["neutral","water","earth","fire","wind","poison","holy","shadow","ghost","undead"];
-  // rozerodb gear type -> gear kinds (see optGear). Blacksmiths forge melee weapons; the Activation System's Physical Series
+  // affix table gear type -> gear kinds (see optGear). Blacksmiths forge melee weapons; the Activation System's Physical Series
   // covers melee and ranged weapons
   const AFFIX_GEAR={"Melee Series":["melee"],"Ranged Series":["ranged"],"Magic Series":["magic"],"Physical Series":["melee","ranged"],
     "Forging Weapons":["melee"],"Armor":["armor"],"Garment":["garment"],"Shoes":["shoes"]};
-  // rozerodb affix name -> [key, group, bonus line or null, neg]
+  // affix name -> [key, group, bonus line or null, neg]
   function affixOpt(name){const n=name.replace(/\s*\(%\)$/,"").trim();let m;const L=(t,kind,target)=>[t,kind||null,target||null];
     const flat={"ATK":["atk","Offense","atk"],"MATK":["matk","Offense","matk"],"ASPD":["aspd","Offense","aspd"],"CRI":["crit","Offense","crit"],"HIT":["hit","Offense","hit"],
       "FLEE":["flee","Defense","flee"],"DEF":["def","Defense","def"],"MDEF":["mdef","Defense","mdef"],"MaxHP":["hp","Defense","hp"],"MaxHP(MHP)":["hp","Defense","hp"],
@@ -162,7 +162,7 @@ const BUILD=(()=>{
     if((m=n.match(/^Magic Damage from (.+) enemies reduction$/))&&ele(m[1]))return ["mres_ele_"+ele(m[1]),"Resist",null];
     if((m=n.match(/^(.+) resistance increase$/))&&ele(m[1]))return ["res_ele_"+ele(m[1]),"Resist",L("damage_taken_percent","element",ele(m[1])),true];
     if((m=n.match(/^Resistance to (.+)$/))&&race(m[1]))return ["res_race_"+race(m[1]),"Resist",L("damage_taken_percent","race",race(m[1])),true];
-    return ["affix_"+n.toLowerCase().replace(/[^a-z0-9]+/g,"_"),"Other",null]} // an affix added to rozerodb since: listed, not counted
+    return ["affix_"+n.toLowerCase().replace(/[^a-z0-9]+/g,"_"),"Other",null]} // an affix added to the database since: listed, not counted
   // options lists made by hand before data/affixes.js: kept so builds and share links saved with them still load and count
   const LEGACY=(()=>{const o=[],add=(g,k,label,type,kind,target,pct,neg)=>o.push({k,g,label,line:[type,kind||null,target||null],pct:!!pct,neg:!!neg});
     STAT6.forEach(k=>add("Stats",k,k.toUpperCase(),k));
@@ -182,7 +182,7 @@ const BUILD=(()=>{
       add("Element","mele_"+e,`${cap(e)} magic damage %`,"magic_damage_percent","element",e,true);add("Element","res_ele_"+e,`Resist ${cap(e)} %`,"damage_taken_percent","element",e,true,true)});
     [["normal","Normal"],["boss","Boss"]].forEach(([t,l])=>{add("Monster type","dmg_kind_"+t,`Damage vs ${l} monsters %`,"damage_percent","monster_kind",t,true);
       add("Monster type","mdmg_kind_"+t,`Magic damage vs ${l} monsters %`,"magic_damage_percent","monster_kind",t,true)});
-    // ignore DEF / MDEF of a race, size, element or boss / normal monsters, named and keyed as affixOpt reads rozerodb's: the ones its
+    // ignore DEF / MDEF of a race, size, element or boss / normal monsters, named and keyed as affixOpt reads the database's: the ones its
     // affix tables don't have yet (sizes, elements, boss) can still be picked, on every part
     const ign=(g,kind,t,l)=>[["def","Phys"],["mdef","Magic"]].forEach(([d,p])=>add(g,`ign_${d}_${{race:"race",size:"size",element:"ele",monster_kind:"kind"}[kind]}_${t}`,`Ignore ${l} ${p} Def %`,`ignore_${d}_percent`,kind,t,true));
     for(const r in RACE)ign("Race","race",r,RACE[r]);for(const z in SIZE)ign("Size","size",z,cap(z)+" size");ELES.forEach(e=>ign("Element","element",e,cap(e)+" element"));
@@ -197,13 +197,13 @@ const BUILD=(()=>{
     LEGACY.forEach(x=>{if(!by[x.k]&&!OPT_ALIAS[x.k]){by[x.k]={...x,g:"Other",gear:{}};o.push(by[x.k])}});return o})();
   const OPT_BY=Object.fromEntries(OPTIONS.map(x=>[x.k,x]));
   // the gear kind a row's item rolls options as: weapons by type (staves magic, bows / instruments / whips ranged, the rest
-  // melee; a weapon in the Shield row too), else armor / garment / shoes; null for parts rozerodb lists no pool for. Books and
+  // melee; a weapon in the Shield row too), else armor / garment / shoes; null for parts the database lists no pool for. Books and
   // weapons with MATK (Encyclopedia, Bazerald) also roll the magic series: "melee+magic"
   function optGear(slot,it){if(it&&(it.slot||[]).includes("weapon")){const w=WTYPE[it.type];
       if(/staff/.test(it.type||""))return "magic";const k=RANGED_W.includes(w)?"ranged":"melee";return it.type==="book"||it.matk>0?k+"+magic":k}
     return {armor:"armor",garment:"garment",shoes:"shoes"}[slot]||null}
   // the options a row offers, with the min–max for its gear (over every kind it rolls as); every option when its gear has no
-  // pool. Options rozerodb has no affix for ("Other": special enchants, like a dungeon's gear) go on every part
+  // pool. Options the database has no affix for ("Other": special enchants, like a dungeon's gear) go on every part
   function optChoices(slot,it){const gk=optGear(slot,it),ks=gk?gk.split("+"):[],other=x=>!Object.keys(x.gear).length;
     if(!ks.some(k=>OPTIONS.some(x=>x.gear[k])))return OPTIONS.map(x=>({...x,range:null}));
     return OPTIONS.filter(x=>other(x)||ks.some(k=>x.gear[k])).map(x=>{const rs=ks.map(k=>x.gear[k]).filter(Boolean);
@@ -230,6 +230,8 @@ const BUILD=(()=>{
   const groupOn=(g,ctx)=>(g.r==null||ctx.refine>=g.r)&&(g.rs==null||ctx.refineSum>=g.rs)&&(g.lv==null||ctx.baseLv>=g.lv)&&(!g.cls||!g.cls.length||g.cls.includes(ctx.jobSlug)||g.cls.includes(ctx.firstSlug));
   function applyGroups(A,gs,ctx,src){(gs||[]).forEach(g=>{if(!groupOn(g,ctx))return;
     if(g.proc||g.text){A.unmodelled.push(`${src}: ${g.proc||g.text}`);}
+    // a proc's lines last only while it's up (Extra Joker & Joker: ATK +70 while transformed): listed, not counted
+    if(g.proc)return;
     // "For every 10 BaseLv ... (up to BaseLv 50)": lvPer / lvMax on the group multiply its lines by the base level steps
     const lk=g.lvPer?Math.floor(Math.min(ctx.baseLv,g.lvMax||Infinity)/g.lvPer):1;
     (g.b||[]).forEach(b=>{const per=b[4];const k=(per?Math.floor(ctx.refine/per):1)*lk;if(k<=0)return;const bb=b.slice();bb[3]=(+b[3]||0)*k;apply(A,bb,src)})})}
@@ -258,9 +260,12 @@ const BUILD=(()=>{
       o.lines.forEach(l=>apply(A,l,nm));o.bad.forEach(y=>A.unmodelled.push(`${nm} not understood: ${y}`));o.off.forEach(y=>A.unmodelled.push(`${nm} not counted: ${y}`))});
     // consumables and buffs picked on the Character tab: plain bonus lines on top of the gear
     (b.extra||[]).forEach(x=>apply(A,x,"consumable"));
-    // sets: every piece worn; "combined refine" sums the pieces' refines
-    (typeof SETS!=="undefined"?SETS:[]).forEach(st=>{const ps=st.pieces.map(p=>worn.find(w=>w.it.slug===p));if(ps.some(p=>!p))return;
-      applyGroups(A,st.g,{...ctxBase,refine:0,refineSum:ps.reduce((a,p)=>a+p.r,0)},st.name)});
+    // sets: every piece worn, a piece being a worn item or a card in one; "combined refine" sums the item pieces' refines.
+    // Per-refine lines count the refine of the item that is or holds the set's ref piece (Sieglouse & Arclouse: "FLEE +2 per
+    // shield refine", ref Arclouse Card, so the shield it's in)
+    (typeof SETS!=="undefined"?SETS:[]).forEach(st=>{const at=p=>worn.find(w=>w.it.slug===p||w.cards.some(c=>c.slug===p));
+      const ps=st.pieces.map(at);if(ps.some(p=>!p))return;const rw=st.ref?at(st.ref):null;
+      applyGroups(A,st.g,{...ctxBase,refine:rw?rw.r:0,refineSum:ps.reduce((a,w,i)=>a+(w.it.slug===st.pieces[i]?w.r:0),0)},st.name)});
     const jb=jobBonus(job,jobLv),base={},tot={};STAT6.forEach(k=>{base[k]=Math.max(1,+((b.base||{})[k])||1);tot[k]=base[k]+jb[k]+A.st[k];tot[k]+=Math.floor(tot[k]*A.stPct[k]/100)}); // "STR +10%": a share of the total stat, rounded down
     const weapon=wpn?WTYPE[wpn.type]||"Bare hands":"Bare hands",ranged=RANGED_W.includes(weapon),S=status(lv,tot,ranged),f=Math.floor;
     const lw=wpnL?WTYPE[wpnL.type]||null:null,dual=dualOk(job,weapon,lw);

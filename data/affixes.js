@@ -1,7 +1,7 @@
-// Random options (affixes) per pool, gear type and option slot, from rozerodb.com's Affixes Simulator (https://rozerodb.com/tools/affixes).
+// Random options (affixes) per pool, gear type and option slot, from the community database's Affixes Simulator.
 // Exported by tools/export_affixes.py. pools: pool id -> name. rows: [pool, gear type, option slot, name, min, max, pct (1 = a %)].
 // Gear types: Melee / Ranged / Magic Series (weapons), Physical / Magic Series (Activation System weapons), Forging Weapons,
-// Armor, Garment, Shoes. rozerodb lists no pool for shields, headgear or accessories.
+// Armor, Garment, Shoes. It lists no pool for shields, headgear or accessories.
 const AFFIXES={pools:{"monsterDrop":"Monster Drop","mvp":"MVP Drop","blacksmith":"Blacksmith Forging","activation":"Activation System","glast":"Glast Heim"},rows:[
 ["monsterDrop","Melee Series",1,"ATK",5,30,0],
 ["monsterDrop","Melee Series",1,"ATK (%)",1,5,1],

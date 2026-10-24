@@ -6,7 +6,7 @@ MOBS.forEach(m=>{const e=ELEM[m.id];if(e){m.el=e[0];m.elv=e[1];m.hit100=e[2];m.f
   const sz=SIZES[m.id];if(sz){m.size=sz[0];m.race=RACES[sz[1]]}
   m.poison=MOBPOISON[m.id]||null;m.assist=MOB_ASSIST.has(m.id)});
 
-// ---- element table: defender element -> element level 1-4 -> attacker element (rozerodb.com/guides/elements-sizes) ----
+// ---- element table: defender element -> element level 1-4 -> attacker element ----
 const AE=["Neutral","Water","Earth","Fire","Wind","Poison","Holy","Shadow","Ghost","Undead"];
 const ET0={
 Neutral:["100,100,100,100,100,100,100,100,90,100","100,100,100,100,100,100,100,100,70,100","100,100,100,100,100,100,100,100,50,100","100,100,100,100,100,100,100,100,0,100"],
@@ -28,8 +28,8 @@ const WEAPONS={"Bare hands":[100,100,100],"Dagger":[100,75,50],"One-handed sword
 const WREN={"Bare hand":"Bare hands","Spear":"Two-handed spear","Axe":"Two-handed axe","Mace":"One-handed mace","Staff / Rod":"One-handed staff","Instrument":"Musical instrument"};
 const sizeMod=(m,w)=>{const t=WEAPONS[w]||WEAPONS[WREN[w]]||WEAPONS["Bare hands"];return t[{S:0,M:1,L:2}[m.size]??1]};
 
-// ---- jobs and attack presets: max-level values from rozerodb.com/tools/skill-tree (Ragnarok Zero) ----
-// type: phys / magic / auto · pct per hit · hits per use · el ("W" = weapon/arrow element) · cast = rozerodb base cast (lower it for your DEX/gear) · delay = cooldown · sp · targets
+// ---- jobs and attack presets: max-level values from Ragnarok Zero's skill tree ----
+// type: phys / magic / auto · pct per hit · hits per use · el ("W" = weapon/arrow element) · cast = base cast (lower it for your DEX/gear) · delay = cooldown · sp · targets
 // what each use costs (catalysts from rAthena's renewal skill_db; prices and weights in data/consumables.js, see useItems in model.js):
 // consumes: [{item, qty}] by item name · arrows: arrows per use with a bow, instrument or whip (basic attacks always fire one) · zeny: zeny per use (Mammonite, scaled to the learned level)
 // wgt: Axe Boomerang adds the weapon's weight to its % · wpct: {weapon type: extra %} · mvit: + N × the monster's VIT % (Acid Bomb)
@@ -39,7 +39,7 @@ const BASIC=A("Basic attack","auto",100,1,"W",0,0,0,1);
 // Cast (fixed / variable), cooldown and after-cast delay (the gcd slot) come from the in-game skill table in data/skills.js
 // (roz.prontera.info, verified for Zero); Plagiarism copies follow their source. The Monk combos have no row and keep their own numbers.
 // Zero skill data (with the Zero Global ratios): base-level scaling (blv) and stat add-ons
-// (sadd: [stat, % per point]); ratios cross-checked with rozerodb.
+// (sadd: [stat, % per point]); ratios cross-checked with the database.
 // blv: × base level / 100, but only above Lv100, so it never lowers a skill. blvBug: Soul Destroyer, Axe Tornado and Triangle Shot miss
 // that check in Zero (and on Global) and take × base level / 100 at every level (forum.gamer.com.tw/C.php?bsn=83142&snA=3087)
 const Z=(fct,vct,cd,gcd,more)=>({fct,vct,cd,gcd,...(more||{})});

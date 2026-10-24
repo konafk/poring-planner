@@ -1,6 +1,6 @@
 // Costume enchant stones (Ragnarok Zero Global): one stone per costume slot (Upper / Middle / Lower headgear, Garment).
-// Effects from each stone's item description on rozerodb.com (/api/items/<id>, the Global client text); the stone list and pools
-// follow https://rozerodb.com/guides/enchant, cross-checked with https://midgardhub.com/guides/enchant-stones.
+// Effects from each stone's item description on the community database (/api/items/<id>, the Global client text); the stone list and pools
+// follow its enchant guide.
 // STONES: id, name, slot, b: bonus lines [type, target kind, target, value] as build.js applies them, off: effects the model
 // doesn't count (listed under "Not counted"). STONE_SETS: extra lines when every stone in "need" is worn.
 // The ATK / MATK Stone (Lower) descriptions name a 3-piece set with an ATK / MATK Stone (Upper), which Global doesn't have: left out.

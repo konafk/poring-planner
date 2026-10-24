@@ -18,7 +18,7 @@ assert.equal(stamp(out), out, "stamping is stable");
 assert.notEqual(hashOf("js/events.js"), hashOf("js/state.js"));
 // the sprite sheets data/icons.js names are deployed (img/ is copied as it is)
 const sheets = [...readFileSync(new URL("../data/icons.js", import.meta.url), "utf8").matchAll(/"file":"([^"]+)"/g)].map(m => m[1]);
-assert.equal(sheets.length, 2);
+assert.equal(sheets.length, 4);                                     // gear icons, item icons, card pictures, monster pictures
 for (const f of sheets) { assert.ok(assetFiles().includes(f), `${f} isn't deployed`); assert.ok(existsSync(new URL(`../${f}`, import.meta.url)), `${f} missing`) }
 console.log(`ok ${local.length} files unstamped in index.html and stamped with their hash on deploy`);
 console.log("1 tests passed");
