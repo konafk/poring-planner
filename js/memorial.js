@@ -56,8 +56,7 @@ function renderJello(){const J=jello(),now=Date.now(),wd=new Date(now).getDay(),
 const memItem=([id,name,n])=>`${id&&(BUILD.item(id)||ITEMN[id])?infoLink(infoKind(id),id,name):esc(name)}${n?` <span class="note">${esc(n)}</span>`:""}`;
 function renderMemorials(){
   $("memRows").innerHTML=MEMORIALS.map(m=>`<tr><td class="name"><b>${esc(m.name)}</b></td><td>${m.lv}</td><td class="mono">${esc(m.at)}</td>
-    <td class="name">${m.normal.map(memItem).join("<br>")}</td><td class="name">${m.hard?m.hard.map(memItem).join("<br>"):"–"}</td>
-    <td><a class="ext" href="https://roz.gnjoy.com.tw/Notice/Notice_Info?id=${m.notice}" target="_blank" rel="noopener">notice ↗</a></td></tr>`).join("")}
+    <td class="name">${m.normal.map(memItem).join("<br>")}</td><td class="name">${m.hard?m.hard.map(memItem).join("<br>"):"–"}</td></tr>`).join("")}
 function renderEnchants(){const g=$("enchGear").value||"subjugation",p=$("enchPool").value||"low",rows=MEM_ENCHANT[g][p];
   $("enchRows").innerHTML=rows.map(([l,v])=>`<tr><td class="name">${l==="spirit"?"A job spirit (below)":esc(l)}</td><td>${v}%</td></tr>`).join("");
   $("enchSpirits").innerHTML=p==="armor"?MEM_SPIRITS[g].map(s=>`<div>${esc(s)}</div>`).join(""):""}

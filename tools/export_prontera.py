@@ -48,8 +48,7 @@ LV_STEP = {300834: "atk", 300835: "matk"}
 GROUP_DMG = {300944: ("physical_damage_percent", "boulder_dwarf", 30), 300943: ("magic_damage_percent", "boulder_dwarf", 30)}
 # memorial dungeon gear whose bonus groups prontera has wrong: the armor's set lines (counted again by SETS) as its own, its
 # +3 group twice, MaxHP / MaxSP and the "DEF +x" line (on top of the armor's DEF) missing, the shoes' SP Heal effect missing,
-# the Oath rings' INT / DEX and LUK / AGI +2 only at +7. Replaced with the groups the client's description gives
-# (also the Taiwan notices roz.gnjoy.com.tw/Notice/Notice_Info?id=217841, 217842 and 217972)
+# the Oath rings' INT / DEX and LUK / AGI +2 only at +7. Replaced with the groups the Global client's item description gives
 GEAR_G = {
     15220: [{"b": [["hp", None, None, 300], ["sp", None, None, 20], ["def", None, None, 20]]}],  # Subjugation Team's Armor
     22150: [{"b": [["item_heal_percent", None, None, 5], ["sp_heal_percent", None, None, 3]]}],  # Subjugation Team Boots

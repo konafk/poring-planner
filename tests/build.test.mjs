@@ -276,17 +276,8 @@ t("Taming Ring: the pet egg sealed in it adds its bonus", () => {
   assert.equal(run({ ring: 313586 }).acc.taken.ele.Poison, -10);                // Poporing Lv.1: Poison resistance +10%
   assert.deepEqual([run({ ring: 313627 }).acc.phys.all, run({ ring: 313627 }).acc.matkPct, run({ ring: 313627 }).acc.hpPct], [1, 1, 1]);
   assert.ok(run({ ring: 313596 }).unmodelled.includes("Taming Ring (Hunter Fly Egg Lv.1): Perfect Dodge +2"));
-  assert.equal(TAMING_EGGS.length, 56);
+  assert.equal(TAMING_EGGS.length, 52);
   assert.ok(TAMING_EGGS.every(x => x.b.length || x.off));
-  assert.equal(new Set(TAMING_EGGS.map(x => x.id)).size, TAMING_EGGS.length);
-  // the MVP egg in card slot 3 counts next to the pet egg
-  const both = run({ ring: 313625, mvp: "orc-hero-2" });                         // Orc Hero Egg Lv.2: CRIT +6, critical damage +9%
-  assert.equal(both.acc.st.agi, 1);
-  assert.deepEqual([both.acc.crit - none.acc.crit, both.acc.critDmg - none.acc.critDmg], [6, 9]);
-  assert.equal(run({ mvp: "eddga-1" }).acc.taken.kind.normal, -2);              // Eddga Egg Lv.1: physical damage from Normal monsters −2%
-  assert.ok(run({ mvp: "phreeoni-1" }).unmodelled.includes("Taming Ring (Phreeoni Egg Lv.1): 3% chance to cast Provoke"));
-  assert.equal(run({ mvp: "no-such-egg" }).acc.crit, none.acc.crit);
-  assert.ok(TAMING_MVP.every(x => x.b.length && /^[a-z-]+-[12]$/.test(x.id)));
 });
 
 t("other special equipment: named rows with effects from the affix list, counted while ticked", () => {

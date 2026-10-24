@@ -1,7 +1,6 @@
 // Taming Ring (Special Equipment, Accessory (Right), item 24966): it seals one Cute Pet's bonus, an "<pet> Egg Lv.1 / Lv.2"
 // enchant (Lv.1 = the pet's Cordial bonus, Lv.2 its Loyal one). Effects from each egg's item description on rozerodb.com
-// (/api/items/<id>, ids 313582-313653, Fei-chai and Tai-zi 314783-314785 and 300735), cross-checked with
-// https://midgardhub.com/guides/pet-bonuses. Its card slot 3 holds an MVP pet egg (TAMING_MVP below).
+// (/api/items/<id>, ids 313582-313653), cross-checked with https://midgardhub.com/guides/pet-bonuses.
 // TAMING_EGGS: id, name, b: bonus lines [type, target kind, target, value] as build.js applies them ("Physical Damage to All Grades
 // of Enemies" is physical damage +%, Poison Resistance resists the Poison element), off: effects the model doesn't count.
 const TAMING_EGGS=[
@@ -56,21 +55,4 @@ const TAMING_EGGS=[
 {id:313630,name:"Bongun Egg Lv.1",b:[["vit",null,null,1]],off:"Stun Resistance +1%"},
 {id:313631,name:"Bongun Egg Lv.2",b:[["vit",null,null,2]],off:"Stun Resistance +2%"},
 {id:313652,name:"Little Poring Egg Lv.1",b:[["hp_recovery_percent",null,null,50]]},
-{id:313653,name:"Little Poring Egg Lv.2",b:[["hp_recovery_percent",null,null,75]]},
-{id:314784,name:"Fei-chai Egg Lv.1",b:[["agi",null,null,1],["attack_delay_percent",null,null,-1]]},
-{id:300735,name:"Fei-chai Egg Lv.2",b:[["agi",null,null,3],["attack_delay_percent",null,null,-3]]},
-{id:314783,name:"Tai-zi Egg Lv.1",b:[["luk",null,null,1],["crit_damage_percent",null,null,1]]},
-{id:314785,name:"Tai-zi Egg Lv.2",b:[["luk",null,null,3],["crit_damage_percent",null,null,3]]}];
-// MVP pet eggs: the Taming Ring's card slot 3, next to the Cute Pet egg (slot 1). From the Taiwan notice
-// (roz.gnjoy.com.tw/Notice/Notice_Info?id=217539): Lv.1 costs 10 Goblin Coin Shard and 10,000 zeny at a Pet Merchant, Lv.2 is an
-// upgrade of Lv.1 that works 5% of the time (the materials are lost when it fails). Global has no item ids for them yet, so
-// they're keyed by name; "normal monsters" is the Normal grade (not Boss). Same fields as TAMING_EGGS.
-const TAMING_MVP=[
-{id:"phreeoni-1",name:"Phreeoni Egg Lv.1",b:[["hit",null,null,7]],off:"3% chance to cast Provoke"},
-{id:"phreeoni-2",name:"Phreeoni Egg Lv.2",b:[["hit",null,null,20]],off:"10% chance to cast Provoke; Emergency Heal cooldown +12 s, turns you into Phreeoni for 3 s"},
-{id:"moonlight-1",name:"Moonlight Flower Egg Lv.1",b:[["int",null,null,1],["matk",null,null,15]]},
-{id:"moonlight-2",name:"Moonlight Flower Egg Lv.2",b:[["int",null,null,3],["matk",null,null,40]],off:"Emergency Heal cooldown +12 s, turns you into Moonlight Flower for 3 s"},
-{id:"orc-hero-1",name:"Orc Hero Egg Lv.1",b:[["crit",null,null,2],["crit_damage_percent",null,null,3]]},
-{id:"orc-hero-2",name:"Orc Hero Egg Lv.2",b:[["crit",null,null,6],["crit_damage_percent",null,null,9]],off:"Emergency Heal cooldown +12 s, turns you into Orc Hero for 3 s"},
-{id:"eddga-1",name:"Eddga Egg Lv.1",b:[["def",null,null,20],["damage_taken_percent","monster_kind","normal",-2]]},
-{id:"eddga-2",name:"Eddga Egg Lv.2",b:[["def",null,null,60],["damage_taken_percent","monster_kind","normal",-5]],off:"Emergency Heal cooldown +12 s, turns you into Eddga for 3 s"}];
+{id:313653,name:"Little Poring Egg Lv.2",b:[["hp_recovery_percent",null,null,75]]}];
