@@ -2373,6 +2373,37 @@ t("details popup: a monster, an item, gear and a card, linked to each other", ()
   assert.match(run(`fromHtml(1306)`), /data-info="mob:\d+"/);                                         // Where to get links open the popup
 });
 
+t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {
+  assert.equal(run(`RECIPES.length`), run(`RECIPE_LIST.length`));
+  assert.ok(run(`RECIPES.every(r=>RECIPE_CATS.includes(r.cat)&&r.mats.length&&r.mats.every(([id,n])=>RECIPE_ITEMN[id]&&n>0))`));
+  assert.equal(run(`itemName(1301)`), "Axe");                                                          // a recipe's name for an item no monster drops
+  const ok = (q, cat) => run(`RECIPES.filter(r=>recipeOk(r,{q:${JSON.stringify(q)},cat:${JSON.stringify(cat || "")}})).map(r=>r.id)`);
+  assert.ok(ok("axe").includes(1301));
+  assert.ok(ok("jellopy").includes(1750));                                                             // a material finds what it turns into: Arrow
+  assert.ok(ok("jellopy", "Forging").every(id => run(`RECIPES_MAKING[${id}][0].cat`) === "Forging"));
+  assert.ok(ok("#998").length > 10);                                                                   // Iron, by its number
+  // Materials worth: your Market price first, else what an NPC pays; +? counted for a material with neither
+  const blade = "RECIPES.find(r=>r.id===1107)";                                                        // 25 Tooth of Bat + 45 Iron
+  run(`state.prices={998:100,913:50}`);
+  assert.deepEqual(run(`JSON.stringify(recipeWorth(${blade}))`), JSON.stringify({ z: 45 * 100 + 25 * 50, unknown: 0 }));
+  // an NPC's fee counts too: Counteragent = Alcohol + Detrimindexta + Empty Bottle + 3,000 z at Morgenstein
+  const ca = "RECIPES.find(r=>r.id===973)";
+  assert.equal(run(`${ca}.cat`), "Mixture & Counteragent"); assert.equal(run(`${ca}.npc[0]`), "Morgenstein");
+  run(`state.prices={970:1000,971:2000,713:10}`);
+  assert.equal(run(`recipeWorth(${ca}).z`), 3000 + 1000 + 2000 + 10);
+  assert.ok(ok("javadullihan").includes(983));                                                        // by NPC: Black Dyestuffs
+  assert.ok(ok("counteragent").includes(975));                                                        // Scarlet Dyestuffs uses it
+  run(`state.prices={}`);
+  const i = run(`popItem("909")`);                                                                     // Jellopy
+  assert.match(i.body, /Used in/); assert.match(i.acts, /data-infoact="recipes"/);
+  assert.match(run(`popItem("1750").body`), /Made from \(\d+ ways\)/);                                // Arrow: many ways
+  assert.match(run(`popGear(1107).body`), /Made from/);                                                // Blade: a forged weapon
+  // icons: drops and recipe items from the item sheet, gear from its own, cards their picture
+  assert.match(run(`itemIcon(909)`), /ico-item"/);
+  assert.match(run(`itemIcon(1301)`), /ico-gear"/);
+  assert.match(run(`itemIcon(4123)`), /ico-card"/);
+  assert.ok(run(`[...Object.keys(ITEMN),...Object.keys(RECIPE_ITEMN)].every(id=>!/ none"/.test(itemIcon(id)))`), "every item has an icon");
+});
 
 t("memorial gear: Subjugation Team and Expedition lines as the client describes them, each set bonus counted once", () => {
   const acc = gear => run(`BUILD.compute({baseLv:70,jobLv:1,base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:${JSON.stringify(gear)}},"Knight",aspdBase).acc`);
