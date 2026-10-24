@@ -116,6 +116,12 @@ state.noTele=(Array.isArray(state.noTele)?state.noTele:[]).map(String);
 state.mobbed=Object.fromEntries(Object.entries(numMap(state.mobbed)).map(([k,v])=>[k,Math.min(12,Math.max(1,Math.round(v)))]));
 // per account: buy at the Discount price (on unless switched off): recovery items, the ASPD potion, skill items and Custom HP / SP items
 state.recovery={discount:!(state.recovery&&state.recovery.discount===false)};
+// the Memorials tab's Jellostone tracker (memorial.js): whole counts of 0 or more by fragment / stone id, the stone crafting
+// ({id, due: ms}), the Expedition pieces you want (item ids) and your Faintly Glowing Crystals
+{const j=objOr(state.jello),cnt=(o,ids)=>Object.fromEntries(Object.entries(numMap(o)).filter(([k,v])=>ids.includes(+k)&&v>=0).map(([k,v])=>[k,Math.round(v)]).filter(([,v])=>v>0)),
+  stones=JELLO.map(x=>x.stone[0]),c=objOr(j.craft);
+  state.jello={frag:cnt(j.frag,JELLO.map(x=>x.frag[0])),stone:cnt(j.stone,stones),want:[...new Set((Array.isArray(j.want)?j.want:[]).map(Number))].filter(id=>EXPEDITION.some(x=>x.id===id)),
+    crystals:Number.isFinite(+j.crystals)&&+j.crystals>0?Math.round(+j.crystals):0,...(stones.includes(+c.id)&&Number.isFinite(+c.due)?{craft:{id:+c.id,due:+c.due}}:{})}}
 delete state.flyPrice;
 ["teleSec","tripEarly","tripMin"].forEach(k=>{if(state[k]!=null&&!(Number.isFinite(+state[k])&&+state[k]>=0))delete state[k]});
 if(!state.current||!state.sessions.some(s=>s.id===state.current))state.current=state.sessions[0].id;

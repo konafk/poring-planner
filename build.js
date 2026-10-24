@@ -63,7 +63,7 @@ const BUILD=(()=>{
     ign:{def:{race:{},size:{},ele:{},kind:{}},mdef:{race:{},size:{},ele:{},kind:{}}},
     phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},taken:{race:{},size:{},ele:{},kind:{}},exp:{all:0,race:{}},critRace:{},spCost:0,spRec:0,hpRec:0,wEle:null,unmodelled:[]});
   // lines that only matter for PvP survival, healing or status resistance: not part of the farming maths, so not reported either
-  const QUIET=["resistance_percent","heal_amount_percent","item_heal_percent","sp_recovery_percent","hp_recovery_percent","perfect_hit","magic_damage_taken_percent","sp_per_hit","hp_per_hit"];
+  const QUIET=["resistance_percent","heal_amount_percent","item_heal_percent","sp_heal_percent","sp_recovery_percent","hp_recovery_percent","perfect_hit","magic_damage_taken_percent","sp_per_hit","hp_per_hit"];
   const addTo=(o,k,v)=>{o[k]=(o[k]||0)+v};
   // monster groups ("against Boulder Dwarves") are kept by the text a member's name contains
   const GROUP={boulder_dwarf:"Boulder Dwarf"};

@@ -6,6 +6,7 @@
 - [Accounts, sessions and Backup](#accounts-sessions-and-backup)
 - [Session (EXP tracker)](#session-exp-tracker)
 - [Monsters & maps](#monsters--maps): Where to farm, Map planner, Monster table
+- [Memorials](#memorials): Jellostones, Expedition upgrades, memorial dungeons and their gear's enchants
 - [Roadmap](#roadmap)
 - [Monster info](#monster-info)
 - [Item info](#item-info)
@@ -142,6 +143,17 @@ Mini boss is how they spawn, not the game's Boss class, which is what boss / nor
 ### MVPs
 
 The MVPs that spawn on the maps here (Amon Ra, Osiris, Baphomet, Moonlight, Orc Hero, Orc Lord, Dracula and the rest) are in the monster tables: each carries an `MVP` tag wherever monsters are listed, Monster info says so, and the Boss dropdown's MVPs lists them. Type `mvp` in a Monster filter to find them. They're Boss class, so they stay out of the farming tables like the other bosses; the ones rozerodb has no EXP for yet show it as unknown. Maya, Mistress, Phreeoni, Eddga, Pharaoh and Drake are in the tables too but have no map: the client's spawn table doesn't list them on any map it has.
+
+## Memorials
+
+Its own tab, from the Taiwan server's notices (it runs ahead of Global) with Global's item names. Fragments, stones, the stone being crafted and the pieces you want are saved per account.
+
+- **Jellostones:** Poring Village (base Lv 30) gives one Jello Fragment a run, which one by weekday (Poring on Monday, Poporing, Drops, Deviling, Angeling on Friday, a Jellopy Fragment Box at the weekend); today's row is marked, by this device's clock. Type the fragments and stones you have, or press **+1** after a run. **Craft** takes 5 fragments and starts the 3-day wait at the Memory Craftsman's Workshop (one stone at a time: the wait is one quest for all five); set **ready at** to the game's time if you started earlier, and **Collect** adds the stone. The tiles show the stones and fragments the pieces you want still need and the day the last stone is ready, at one run a day from tomorrow, a weekend box counted as a fifth of each fragment, crafts one after another, and no stone swaps.
+- **Expedition upgrades:** the eight Expedition pieces the Ant Hell memorial's Upgrader makes, each from a Subjugation Team piece, 50 Faintly Glowing Crystal and its Jellostones. Tick the ones you want; the crystals they take show under the table.
+- **Memorial dungeons:** Poring Village, Orc's Memory, Prontera Culvert and Ant Hell: base level, way in, and the normal and hard mode reward boxes.
+- **Memorial gear enchants:** the card slot 4 enchant on Subjugation Team and Expedition armor, garments and shoes, by refine (+0 to +8, or +9 and up per part), with each line's chance, the +9 armor's job spirit enchants and the reset cost. The line you get goes in the item's random options on the Character tab.
+
+The Subjugation Team and Expedition gear itself is on the Equipment tab with the lines its client description gives (MaxHP / MaxSP and "DEF +x", +3 refine bonuses once, the set's after-attack delay and cast lines only with the whole set). The Lv 80 Contingent gear the Izlude memorial upgrades to is only on the Roadmap for now.
 
 ## Roadmap
 

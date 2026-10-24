@@ -7,7 +7,7 @@ const FX_LABEL={str:"STR",agi:"AGI",vit:"VIT",int:"INT",dex:"DEX",luk:"LUK",all_
   cast_time_fixed_percent:"Fixed cast time",after_cast_delay_percent:"After-cast delay",attack_delay_percent:"After-attack delay",damage_percent:"Physical damage",
   physical_damage_percent:"Physical damage",magic_damage_percent:"Magic damage",ranged_damage_percent:"Ranged physical damage",melee_damage_percent:"Melee physical damage",
   skill_damage_percent:"Skill damage",damage_taken_percent:"Damage taken",magic_damage_taken_percent:"Magic damage taken",resistance_percent:"Resistance",
-  exp_percent:"EXP",heal_amount_percent:"Heal power",item_heal_percent:"Recovery from items",heal_received_percent:"Heal received",sp_recovery_percent:"SP recovery",
+  exp_percent:"EXP",heal_amount_percent:"Heal power",item_heal_percent:"HP heal effect",sp_heal_percent:"SP heal effect",heal_received_percent:"Heal received",sp_recovery_percent:"SP recovery",
   hp_recovery_percent:"HP recovery",sp_cost_percent:"SP cost",ignore_def_percent:"Ignore DEF",ignore_mdef_percent:"Ignore MDEF",sp_per_hit:"SP per hit",hp_per_hit:"HP per hit"};
 const fxCap=s=>String(s||"").split("_").map(w=>w&&w[0].toUpperCase()+w.slice(1)).join(" ").replace("Demi Human","Demi-Human");
 // one bonus line [type, target kind, target, value, per N refines, skill, scaling skill] -> "Physical damage vs Demon +10%"
