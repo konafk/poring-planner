@@ -339,13 +339,16 @@ t("gear named the way the equipment window shows it: card names, Double / Triple
   const read = s => BUILD.readGearName(s, items, () => cards, c => names[c.id]);
   assert.deepEqual(read("+9 Healing Shining Clip"), { id: 1, refine: 9, cards: [10] });
   assert.deepEqual(read("+4 Shark Family Muffler"), { id: 3, refine: 4, cards: [11] }, "the slotted Muffler");
-  assert.deepEqual(read("Muffler"), { id: 2, refine: null, cards: [] });
+  assert.deepEqual(read("Muffler"), { id: 2, refine: null, cards: [], alts: [{ id: 3, refine: null, cards: [] }] }, "either copy: the other in alts");
+  assert.deepEqual(read("+4 Muffler [1]"), { id: 3, refine: 4, cards: [] }, "the slot count picks the copy");
+  assert.deepEqual(read("Muffler [0]"), { id: 2, refine: null, cards: [] });
   assert.deepEqual(read("+7 Hard Nordfeld Soldier..."), { id: 4, refine: 7, cards: [12] }, "cut-off item name");
   assert.deepEqual(read("+7 hard nordfeld soldier’s armor"), { id: 4, refine: 7, cards: [12] }, "any case, curly apostrophe");
   assert.deepEqual(read("Hard Hill Patrol Boots of Health"), { id: 5, refine: null, cards: [12, 13] }, "prefix and suffix");
   assert.deepEqual(read("+7 Hill Patrol Boots of Hea"), { id: 5, refine: 7, cards: [13] }, "cut-off suffix only one card fits");
   assert.deepEqual(read("Double Bloody Triple Healing Sage's Diary"), { id: 6, refine: null, cards: [15, 15, 10, 10] }, "copies, up to the slots");
-  assert.deepEqual(read("Hill Patrol Boots of H"), { id: 5, refine: null, cards: [] }, "cut-off suffix two cards fit: the item alone");
+  assert.deepEqual(read("Hill Patrol Boots of H"), { id: 5, refine: null, cards: [], alts: [{ id: 5, refine: null, cards: [13] }, { id: 5, refine: null, cards: [14] }] },
+    "cut-off suffix two cards fit: the item alone, each card in alts");
   assert.equal(read("Hill Patrol Boots of X"), null);
   assert.equal(read("Hybrid Malicious Sage"), null, "unknown item");
   assert.equal(read("Healing Boots"), null);
@@ -356,6 +359,20 @@ t("gear named the way the equipment window shows it: card names, Double / Triple
   assert.deepEqual(BUILD.readCardNames("Double Vitata Hard", cards, c => names[c.id]), [10, 10, 12], "own names and window names mixed");
   assert.deepEqual(read("+9 Shining Clip Vitata Card"), { id: 1, refine: 9, cards: [10] }, "item then its card");
   assert.deepEqual(read("+4 Shark Family Card Muffler"), { id: 3, refine: 4, cards: [11] });
+  assert.deepEqual(read("Bloody Healing Shark Family Sage's Diary"), { id: 6, refine: null, cards: [15, 10, 11] }, "three different prefixes");
+  assert.deepEqual(read("Hard Hill Patrol Boots of Hermes [2]"), { id: 5, refine: null, cards: [12, 14] }, "prefix, suffix and slot count");
+});
+
+t("gear names that fit more than one reading list them all", () => {
+  const items = [{ id: 1, name: "Muffler", slots: 1 }, { id: 2, name: "Damascus", slots: 1 }, { id: 3, name: "Damascus", slots: 2 }];
+  const cards = [{ id: 10, name: "Poring Card" }, { id: 11, name: "Lunatic Card" }, { id: 12, name: "Hydra Card" }];
+  const names = { 10: "Lucky", 11: "Lucky", 12: "Bloody" };
+  const read = s => BUILD.readGearName(s, items, () => cards, c => names[c.id]);
+  assert.deepEqual(read("+2 Lucky Muffler"), { id: 1, refine: 2, cards: [10], alts: [{ id: 1, refine: 2, cards: [11] }] }, "two cards named Lucky");
+  assert.deepEqual(read("Double Lucky Damascus").alts, [{ id: 3, refine: null, cards: [11, 11] }], "copies stay one card");
+  assert.deepEqual(read("Bloody Damascus"), { id: 2, refine: null, cards: [12], alts: [{ id: 3, refine: null, cards: [12] }] }, "either Damascus holds one card");
+  assert.deepEqual(read("Double Bloody Damascus"), { id: 3, refine: null, cards: [12, 12] }, "only the 2-slot one holds both: no alts");
+  assert.deepEqual(BUILD.readCardNames("lucky", cards, c => names[c.id]), [10], "card boxes take the first");
 });
 
 console.log(`${n} tests passed`);

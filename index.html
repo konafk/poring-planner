@@ -144,6 +144,7 @@
       <div class="note" id="loadoutNote"></div>
       <div class="scroll"><table id="gearTable"><thead><tr><th>Slot</th><th>Item</th><th>Refine</th><th>Cards</th><th>Affixes</th></tr></thead><tbody></tbody></table></div>
       <div id="gearLists"></div>
+      <div class="note" id="gearAlts" hidden></div>
       <div class="note mt" title="The Special Equipment tab: one enchant stone per costume slot (Costume Enchanter, Prontera Cash Room; stones that complete a set add its bonus too) and the Taming Ring with the pet egg sealed in it">Special equipment: costume enchant stones and the Taming Ring</div>
       <div class="form cfill" id="stoneRow"></div>
       <div id="specialOwn" class="eqlist"></div>
@@ -678,7 +679,9 @@
     <div class="bar">
       <label class="grow">Item<input id="itemSearch" placeholder="name or #id"></label>
       <label title="Monsters that drop it (MVPs from the full drop lists, for gear and cards), or a quest">Where to get<select id="itemFrom"></select></label>
+      <label title="The name a card gives the gear it's in (Bloody is the Hydra Card, of Health the Verit Card), or a whole name from the equipment window">Find card by prefix<input id="itemCardQ" type="search" placeholder="Bloody, of Health…"></label>
     </div>
+    <div class="note" id="itemCardHits" hidden></div>
     <div class="calc" id="itemTiles"></div>
     <div id="itemDroppers" hidden><div class="scroll"><table id="itemDropTable"><thead><tr><th data-sk="name">Dropped by</th><th data-sk="lv">Lv</th><th data-sk="ch">Chance</th><th data-sk="your">Your chance</th><th data-sk="nz" title="what an NPC pays for it × your chance">NPC z / kill</th><th data-sk="z">Zeny / kill from it</th><th data-sk="sp" title="how many of it spawn on its best open map">Spawns</th><th data-sk="map">Best open map</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><input type="search" data-tf="lv" placeholder="30-60"></td><td><input type="search" data-tf="ch" placeholder=">1"></td><td><input type="search" data-tf="your" placeholder=">1"></td><td><input type="search" data-tf="nz" placeholder=">1"></td><td><input type="search" data-tf="z" placeholder=">1"></td><td><input type="search" data-tf="sp" placeholder=">20"></td><td><input type="search" data-tf="map" placeholder="map"></td></tr></thead><tbody></tbody></table></div></div>
     <div class="scroll tall"><table id="itemTable"><thead><tr><th data-sk="name">Item</th><th data-sk="group">Group</th><th data-sk="npc">NPC pays</th><th data-sk="pl">Players pay</th><th data-sk="best" title="the monster with the best drop chance; sorts and filters by that chance, or by its name">Best drop</th><th data-sk="nz" title="what an NPC pays for it × your drop chance, at the monster where that comes to most">NPC z / kill</th><th data-sk="sp" title="the most of one monster that drops it on one open map, bosses left out; filters by count, map or monster">Spawns</th><th data-sk="cnt" title="how many monsters drop it">Dropped by</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><select data-tf="group" aria-label="Auto-loot group"></select></td><td><input type="search" data-tf="npc" placeholder=">1000"></td><td><input type="search" data-tf="pl" placeholder="-"></td><td><input type="search" data-tf="best" placeholder=">1"></td><td><input type="search" data-tf="nz" placeholder=">1"></td><td><input type="search" data-tf="sp" placeholder=">20"></td><td><input type="search" data-tf="cnt" placeholder=">5"></td></tr></thead><tbody></tbody></table></div>
@@ -790,7 +793,6 @@
 <script src="data/sizes.js"></script>
 <script src="data/equipment.js"></script>
 <script src="data/cards.js"></script>
-<script src="data/cardnames.js"></script>
 <script src="data/refine.js"></script>
 <script src="data/jobs.js"></script>
 <script src="data/consumables.js"></script>
