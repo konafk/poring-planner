@@ -2415,6 +2415,20 @@ t("details popup: a monster, an item, gear and a card, linked to each other", ()
   assert.match(run(`fromHtml(1306)`), /data-info="mob:\d+"/);                                         // Where to get links open the popup
 });
 
+t("equipment window: gear named as the game shows it, and the job's look (Bards male, Dancers female)", () => {
+  setup("Novice", { mode: "build" });
+  const muf = run(`EQUIP.find(x=>/muffler/i.test(x.name)).id`), name = run(`BUILD.item(${muf}).name`);
+  assert.equal(run(`gameName({id:${muf},refine:5,cards:[]})`), `+5 ${name}`);
+  assert.equal(run(`gameName({})`), "");
+  // two of one card: "Double <its name>" before the item name
+  const card = run(`(CARDS.find(c=>cardName(c)&&c.affixPos!=="suffix"&&!/^of /i.test(cardName(c)))||{}).id`);
+  if (card) assert.equal(run(`gameName({id:${muf},refine:0,cards:[${card},${card}]})`), `Double ${run(`cardName(BUILD.item(${card}))`)} ${name}`);
+  run(`state.look={sex:"m",hair:2};state.job="Dancer"`);
+  assert.match(run(`lookHtml()`), /disabled[^>]*>♀/);                    // a male look still draws a Dancer female
+  run(`state.job="Knight"`);
+  assert.match(run(`lookHtml()`), /aria-label="Gender">♂/); assert.match(run(`lookHtml()`), /Hair <\/span>2</);
+});
+
 t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {
   assert.equal(run(`RECIPES.length+18`), run(`RECIPE_LIST.length`));                                    // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts
   assert.ok(run(`RECIPES.every(r=>RECIPE_CATS.includes(r.cat)&&r.mats.length&&r.mats.every(([id,n])=>RECIPE_ITEMN[id]&&n>0))`));

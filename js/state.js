@@ -127,6 +127,8 @@ state.recovery={discount:!(state.recovery&&state.recovery.discount===false)};
 {const t=objOr(state.stellar),r=Math.round(+t.refine);
   state.stellar={have:Object.fromEntries(Object.entries(numMap(t.have)).filter(([k,v])=>/^[a-z0-9_]+$/.test(k)&&v>=1).map(([k,v])=>[k,Math.round(v)])),refine:Number.isFinite(r)?Math.min(20,Math.max(0,r)):0}}
 delete state.flyPrice;
+// per account: how the character looks in the equipment window (Build from gear): gender m/f and hair style number
+state.look={sex:state.look&&state.look.sex==="f"?"f":"m",hair:Math.max(1,Math.round(+(state.look&&state.look.hair))||1)};
 ["teleSec","tripEarly","tripMin"].forEach(k=>{if(state[k]!=null&&!(Number.isFinite(+state[k])&&+state[k]>=0))delete state[k]});
 if(!state.current||!state.sessions.some(s=>s.id===state.current))state.current=state.sessions[0].id;
 // Element / Race / Size / Boss dropdowns: the Monsters card's (mobF) and Monster info's (infoF), {key: value}
