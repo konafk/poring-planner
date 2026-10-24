@@ -20,8 +20,17 @@ import json, os, sys, time, urllib.error, urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA = os.path.join(ROOT, "data")
 CACHE = os.path.join(ROOT, "tools", "cache")
-SITE = "https://rozerodb.com"
+# the community database's address comes from the DB_SITE environment variable (the Refresh data workflow sets it from the
+# repository variable of the same name), so no script names the site. site() stops with a message when it isn't set
+SITE = os.environ.get("DB_SITE", "").strip().rstrip("/")
 UA = "RO-Zero-farmer-calculator data export"
+
+
+def site(path=""):
+    """the community database's address followed by path"""
+    if not SITE:
+        sys.exit(f"Set DB_SITE to the community database's address first, e.g. DB_SITE=https://... python tools/{os.path.basename(sys.argv[0])}")
+    return SITE + path
 
 
 def js_object(name, var):
@@ -35,7 +44,7 @@ def item(item_id, refresh=False):
     f = os.path.join(CACHE, f"db_item_{item_id}.json")
     if os.path.exists(f) and not refresh:
         return json.load(open(f, encoding="utf-8"))
-    req = urllib.request.Request(f"{SITE}/api/items/{item_id}", headers={"User-Agent": UA})
+    req = urllib.request.Request(site(f"/api/items/{item_id}"), headers={"User-Agent": UA})
     for attempt in range(3):
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
