@@ -2530,23 +2530,26 @@ t("Jellostones: what the wanted Expedition pieces still need, and when the last 
   assert.equal(run(`jelloNeed()[25472]`), 3);
 });
 
-t("Stellar weapons: certificates by weapon type, and the monster that gets them to you fastest", () => {
+t("Stellar weapons: each ★ weapon's certificates come from its own weapon, and the monster that gets you copies fastest", () => {
   assert.equal(run(`STAR_W.length`), 17);                                         // the ★ weapons in Global's client
-  assert.ok(run(`STAR_TYPES.includes("katar")&&STAR_W.some(x=>x.id===610092)`));   // ★ Jur
-  assert.equal(run(`DROP_W[610066]`), "katar");                                   // Jur, the monster-drop one
-  assert.equal(run(`DROP_W[610092]`), undefined);                                 // ★ weapons don't make certificates
-  // Martin drops the Jur at 0.05%: 0.0005 a kill, twice that with +100% drop bonus
-  const per = () => run(`starMobs("katar").find(x=>x.m.id===1145).per`);
+  const src = id => JSON.parse(run(`JSON.stringify(starSrc(STAR_W.find(x=>x.id===${id})).map(x=>x.id))`));
+  assert.deepEqual(src(540118), [540106]);                                        // ★ Book: the Book monsters drop
+  assert.deepEqual(src(510183), [510131]);                                        // ★ Stiletto: Stiletto, not any dagger
+  // ★ Book: Mimic, Garm Baby and Lude drop it with no published rate: listed, not timed
+  const book = JSON.parse(run(`JSON.stringify(starMobs(STAR_W.find(x=>x.id===540118)).map(o=>[o.id,o.per,o.unk]))`));
+  assert.ok(book.some(([id, per, unk]) => id === 1191 && per === 0 && unk), JSON.stringify(book));
+  // ★ Jur: Martin drops the Jur at 0.05%, twice that with +100% drop bonus
+  const per = () => run(`starMobs(STAR_W.find(x=>x.id===610092)).find(o=>o.id===1145).per`);
   near(per(), 0.0005);
   run(`state.dropBonus=100`);
   near(per(), 0.001);
-  run(`state.dropBonus=0;state.stellar={have:{katar:40},refine:9}`);
-  assert.equal(run(`starLeft("katar")`), 60);
-  run(`state.stellar.have.katar=150`);
-  assert.equal(run(`starLeft("katar")`), 0);
+  run(`state.dropBonus=0;state.stellar={have:{610092:40},refine:9}`);
+  assert.equal(run(`starLeft(STAR_W.find(x=>x.id===610092))`), 60);
+  run(`state.stellar.have[610092]=150`);
+  assert.equal(run(`starLeft(STAR_W.find(x=>x.id===610092))`), 0);
   setup("Assassin", { atkTxt: "300+300", st: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
-  const b = run(`(()=>{const b=starBest("katar",0);return b&&{ph:b.ph,per:b.per,kph:b.kph}})()`);
-  assert.ok(b && b.ph > 0, JSON.stringify(b));
+  const b = JSON.parse(run(`JSON.stringify((()=>{const b=starBest(STAR_W.find(x=>x.id===510183),0);return b&&{ph:b.ph,per:b.per,kph:b.kph,ds:b.ds}})())`));
+  assert.ok(b && b.ph > 0 && b.ds.every(([id]) => id === 510131), JSON.stringify(b));   // a Stiletto dropper
   near(b.ph, b.per * b.kph);
 });
 

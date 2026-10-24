@@ -9,5 +9,5 @@ const STAR_ROUTES=[
 {name:"Armor, stable",refine:3,cert:[100,"★ Forging Certificate"],frag:30,tw:true},
 {name:"Armor, aggressive",refine:7,cert:[10,"★ Forging Certificate"],frag:3,tw:true}];
 // the NPCs, side by side in Prontera: [name, where, what they do]
-const STAR_NPCS=[["Workshop Apprentice Nariya","prontera 272 264","one monster-drop weapon or armor for a ★ Forging Certificate of its type; an activated ★ weapon for a ★★ one"],
+const STAR_NPCS=[["Workshop Apprentice Nariya","prontera 272 264","a monster-drop weapon or armor for a ★ Forging Certificate of that item (Book for ★ Book's); an activated ★ weapon for a ★★ one"],
 ["Grandpa Taotao","prontera 272 260","activates the gear with the certificates and Goblin Coin Fragments"]];
