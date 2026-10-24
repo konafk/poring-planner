@@ -20,7 +20,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 - **Monsters & maps:** Where to farm (the best spots and one map ranking by EXP or zeny, with Farm here), a Map planner, a monster table, and a green / yellow / red check of whether you can farm a map with no HP or SP items.
 - **Memorials:** a Jellostone tracker (today's Poring Village fragment, the 3-day craft, when you'll have the stones for the Expedition pieces you want), and the memorial dungeons' rewards and gear enchants.
 - **Roadmap:** the release roadmap: when each update comes, its level cap, and which maps and monsters are out (the rest open by themselves on their date).
-- **Monster info, Item info, Market:** drops, prices, player prices and a sell timer. Monster info has the monster table too. Every item shows its in-game icon.
+- **Monster info, Item info, Market:** drops, prices, player prices and a sell timer. Monster info has the monster table too. Every item shows its in-game icon, and every monster its sprite.
 - **Equipment, Cards:** every weapon, armor and card, filtered by type, job, level, card slots and ATK / MATK / DEF, with one click to put it in your gear or another gear set.
 - **Recipes:** every forging, brewing, arrow crafting, cooking, Mixture & Counteragent and Dye Making recipe, searchable by the item made or its materials, with what the materials are worth.
 - **EXP & formulas:** EXP tables, party share and every formula with your numbers.

@@ -655,13 +655,14 @@ details.more>.form{display:grid}
 .eqSet>b{font-size:11px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
 .eqPick{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px;text-align:left;font-weight:500;padding:8px 12px}
 .eqPick .to{color:var(--accent);font-weight:600}
-/* item icons and card pictures: one cell of a sprite sheet (data/icons.js) */
+/* item icons, card pictures and monster pictures: one cell of a sprite sheet (data/icons.js) */
 .ico{display:inline-block;flex:none;background-repeat:no-repeat;vertical-align:middle}
 .ico-gear{width:24px;height:24px;background-image:var(--ico-gear)}
 .ico-item{width:24px;height:24px;background-image:var(--ico-item)}
 /* an icon in a line of text: it doesn't make the line taller */
 .ico.il{margin:-5px 5px -4px 0}
 .ico-card{width:36px;height:48px;background-image:var(--ico-card);border-radius:3px}
+.ico-mob{width:48px;height:48px;background-image:var(--ico-mob)}
 .ico.none{background:none}
 .dbName{display:flex;align-items:center;gap:8px}
 .eqDlgHead .ico-card{margin-top:-2px}
