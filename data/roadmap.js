@@ -1,5 +1,5 @@
-// Ragnarok Zero Global release roadmap: the official one (mygnjoy.com/en/event/roadmap), as rozerodb.com/guides/roadmap-update and
-// jpgames.de's copy of it list it. ROADMAP: one update each, in order: when (YYYY-MM, or YYYY-MM-DD once the day is announced), name,
+// Ragnarok Zero Global release roadmap: the official one (mygnjoy.com/en/event/roadmap), as
+// jpgames.de's copy of it lists it. ROADMAP: one update each, in order: when (YYYY-MM, or YYYY-MM-DD once the day is announced), name,
 // cap (the base / job level cap it raises to), add (what it brings), and regions: the maps it opens, as {id, name, pre: map code prefixes in
 // data/spawn.js}. A region opens by itself once its update's day has come, or the month after its update's month when the day isn't known;
 // mark it open or closed yourself on the Roadmap tab. Maps in no region are open: Comodo's and Umbala's fields, Sphinx, Prontera Labyrinth and Mjolnir Dead Pit, which the roadmap puts with Clock Tower
@@ -12,10 +12,10 @@ const ROADMAP=[
  regions:[{id:"ct",name:"Clock Tower",pre:["c_tower","tow_d","alde_dun"]}]},
 {when:"2026-11-12",name:"Byalan Dungeon 4F & 5F",add:["Byalan Dungeon (Undersea Cave) 4F and 5F"],
  regions:[{id:"by",name:"Byalan 4F & 5F",pre:["iz_d03","iz_d04","iz_dun03","iz_dun04"]}]},
-{when:"2026-11",name:"Ant Hell memorial",cap:{base:80},add:["Memorial dungeon: Ant Hell (Mutant Maya)","Ant Hell 1F and 2F are open already"]},
+{when:"2026-11",name:"Ant Hell memorial",cap:{base:80},add:["Memorial dungeon: Ant Hell (Mutant Maya, base Lv 70): Expedition gear, upgraded from Subjugation Team gear with 50 Faintly Glowing Crystal and Jellostones","Ant Hell 1F and 2F are open already"]},
 {when:"2026-12",name:"Glast Heim",add:["Glast Heim: the Monastery, Catacombs, caves, Underground Prison and Culvert"],
  regions:[{id:"gh",name:"Glast Heim",pre:["gl_","glast_"]}]},
-{when:"2027-01",name:"Lutie",cap:{base:90},add:["Lutie and the Toy Factory","Memorial dungeon: Izlude"],
+{when:"2027-01",name:"Lutie",cap:{base:90},add:["Lutie and the Toy Factory","Memorial dungeon: Izlude (Byalan Dungeon 2F, base Lv 80): Contingent gear, upgraded from Expedition gear with 50 Crystal of Blue Light and Jellostones"],
  regions:[{id:"lu",name:"Lutie",pre:["xma_"]}]},
 {when:"2027-02",name:"Marriage",add:["Marriage system","Niflheim and Turtle Island"],
  regions:[{id:"nf",name:"Niflheim",pre:["nif_","niflheim"]},{id:"tu",name:"Turtle Island",pre:["tur_"]}]},

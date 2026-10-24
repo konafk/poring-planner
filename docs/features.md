@@ -6,27 +6,30 @@
 - [Accounts, sessions and Backup](#accounts-sessions-and-backup)
 - [Session (EXP tracker)](#session-exp-tracker)
 - [Monsters & maps](#monsters--maps): Where to farm, Map planner, Monster table
+- [Memorials](#memorials): Jellostones, Expedition upgrades, memorial dungeons and their gear's enchants
+- [Stellar weapons](#stellar-weapons): ★ Forging Certificates and Activation
 - [Roadmap](#roadmap)
 - [Monster info](#monster-info)
 - [Item info](#item-info)
 - [Equipment and Cards](#equipment-and-cards)
+- [Recipes](#recipes)
 - [Market](#market)
 - [EXP & formulas](#exp--formulas)
 - [Tables everywhere](#tables-everywhere)
 
 ## Page layout
 
-The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Monsters & maps), Look up (Roadmap, Monster info, Item info, Equipment, Cards, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
+The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Monsters & maps), Look up (Roadmap, Monster info, Item info, Equipment, Cards, Recipes, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
 
 **Log EXP from any tab:** type in the Log EXP box on the right of the top bar, or press **L** on any tab to jump to it. It takes a line like the paste box does: `17.9` (EXP %), `17.9 63` (with job %), `15:05 17.9 63` (at that time), and `died` on the line for EXP after a death. The entry goes in at the level of your last one, and a level-up is picked up the same way as in the Log EXP card. On a phone the box opens as a sheet from the round **+** button. At the max base level (70) base EXP no longer counts, so the box, the + button and **L** go away.
 
-**Search:** press **Ctrl+K** (⌘K on a Mac) or **/** on any tab, or the Search button at the top of the sidebar, and type part of a name. It finds tabs, a few actions (Log EXP, theme, hints, new session), every monster, every item a monster drops, every piece of gear and card, and every map, by name, map code or item number. **Enter** opens a monster, item, piece of gear or card in its details popup (below), and a map in the Map planner.
+**Search:** press **Ctrl+K** (⌘K on a Mac) or **/** on any tab, or the Search button at the top of the sidebar, and type part of a name. It finds tabs, a few actions (Log EXP, theme, hints, new session), every monster, every item a monster drops or a recipe makes, every piece of gear and card, and every map, by name, map code or item number. **Enter** opens a monster, item, piece of gear or card in its details popup (below), and a map in the Map planner.
 
-**Details popup:** click a monster, item, gear or card name (underlined) and its details open over the page, without leaving the tab you're on. The names are in drop lists, Where to get, the Map planner, Where to farm, Item info's droppers, the Market prices, the Equipment and Cards tabs and search.
+**Details popup:** click a monster, item, gear or card name (underlined) and its details open over the page, without leaving the tab you're on. The names are in drop lists, Where to get, the Map planner, Where to farm, Item info's droppers, the Market prices, the Recovery items, the Equipment, Cards and Recipes tabs and search. Every item name has its inventory icon from the game client beside it (a card, its picture), and every monster name its sprite (the popup shows it full size).
 
-- **Monster:** HP, DEF, MDEF and ATK, EXP (and what you get), your kill time, hit and dodge, EXP / min, zeny per kill, its best open map, every drop (with your chance and the price), and every spawn map, with when closed ones come (Roadmap). Buttons: Farming it now (or Also killing it), Monster info, rozerodb.
-- **Item:** a box for what players pay (it's saved like the Market tab's), the NPC price and weight, and the monsters that drop it with their best open map.
-- **Gear:** level, card slots, ATK / MATK / DEF, weapon level, element, weight, the jobs that wear it, its effects, the in-game text and where to get it. Buttons: Equip (the Equip dialog) and Equipment tab.
+- **Monster:** HP, DEF, MDEF and ATK, EXP (and what you get), your kill time, hit and dodge, EXP / min, zeny per kill, its best open map, every drop (with your chance and the price), and every spawn map, with when closed ones come (Roadmap). Buttons: Farming it now (or Also killing it), Monster info.
+- **Item:** its icon, a box for what players pay (it's saved like the Market tab's), the NPC price and weight, the monsters that drop it with their best open map, and the recipes that make it (**Made from**) and use it (**Used in**). Buttons: Item info, Recipes.
+- **Gear:** level, card slots, ATK / MATK / DEF, weapon level, element, weight, the jobs that wear it, its effects, the in-game text, where to get it and, for a weapon a Blacksmith forges, its recipe. Buttons: Equip (the Equip dialog), Equipment tab and Recipes.
 - **Card:** its picture, the gear it goes in, the name it gives that gear, its effects, the in-game text and where to get it. Buttons: Equip and Cards tab.
 - Names inside the popup open theirs (a drop from a monster, a monster from an item); **←** goes back. A map opens in the Map planner.
 
@@ -141,7 +144,25 @@ Mini boss is how they spawn, not the game's Boss class, which is what boss / nor
 
 ### MVPs
 
-The MVPs that spawn on the maps here (Amon Ra, Osiris, Baphomet, Moonlight, Orc Hero, Orc Lord, Dracula and the rest) are in the monster tables: each carries an `MVP` tag wherever monsters are listed, Monster info says so, and the Boss dropdown's MVPs lists them. Type `mvp` in a Monster filter to find them. They're Boss class, so they stay out of the farming tables like the other bosses; the ones rozerodb has no EXP for yet show it as unknown. Maya, Mistress, Phreeoni, Eddga, Pharaoh and Drake are in the tables too but have no map: the client's spawn table doesn't list them on any map it has.
+The MVPs that spawn on the maps here (Amon Ra, Osiris, Baphomet, Moonlight, Orc Hero, Orc Lord, Dracula and the rest) are in the monster tables: each carries an `MVP` tag wherever monsters are listed, Monster info says so, and the Boss dropdown's MVPs lists them. Type `mvp` in a Monster filter to find them. They're Boss class, so they stay out of the farming tables like the other bosses; the ones with no EXP data yet show it as unknown. Maya, Mistress, Phreeoni, Eddga, Pharaoh and Drake are in the tables too but have no map: the client's spawn table doesn't list them on any map it has.
+
+## Memorials
+
+Its own tab, from the Taiwan server's notices (it runs ahead of Global) with Global's item names. Fragments, stones, the stone being crafted and the pieces you want are saved per account.
+
+- **Jellostones:** Poring Village (base Lv 30) gives one Jello Fragment a run, which one by weekday (Poring on Monday, Poporing, Drops, Deviling, Angeling on Friday, a Jellopy Fragment Box at the weekend); today's row is marked, by this device's clock. Type the fragments and stones you have, or press **+1** after a run. **Craft** takes 5 fragments and starts the 3-day wait at the Memory Craftsman's Workshop (one stone at a time: the wait is one quest for all five); set **ready at** to the game's time if you started earlier, and **Collect** adds the stone. The tiles show the stones and fragments the pieces you want still need and the day the last stone is ready, at one run a day from tomorrow, a weekend box counted as a fifth of each fragment, crafts one after another, and no stone swaps.
+- **Expedition upgrades:** the eight Expedition pieces the Ant Hell memorial's Upgrader makes, each from a Subjugation Team piece, 50 Faintly Glowing Crystal and its Jellostones. Tick the ones you want; the crystals they take show under the table.
+- **Memorial dungeons:** Poring Village, Orc's Memory, Prontera Culvert and Ant Hell: base level, way in, and the normal and hard mode reward boxes.
+- **Memorial gear enchants:** the card slot 4 enchant on Subjugation Team and Expedition armor, garments and shoes, by refine (+0 to +8, or +9 and up per part), with each line's chance, the +9 armor's job spirit enchants and the reset cost. The line you get goes in the item's random options on the Character tab.
+
+The Subjugation Team and Expedition gear itself is on the Equipment tab with the lines its client description gives (MaxHP / MaxSP and "DEF +x", +3 refine bonuses once, the set's after-attack delay and cast lines only with the whole set). The Lv 80 Contingent gear the Izlude memorial upgrades to is only on the Roadmap for now.
+
+## Stellar weapons
+
+Its own tab, for the Activation System. It's marked **Not open in game yet**: it's Taiwan Zero data, and Global doesn't have the system yet. The certificates you have and your weapon's refine are saved per account.
+
+- **★ Forging Certificates:** the 17 ★ weapons Global's client has, grouped by weapon type, since a certificate is per type: Workshop Apprentice Nariya (prontera 272 264) gives one for each monster-drop weapon of the type. Type the certificates and drop weapons you have; To go counts down from the 100 a ★ to ★★ activation takes. Fastest for you is the monster (bosses aside, on an open map) that gets you them quickest: every weapon of the type it drops at its rate, with your drop bonus and level penalty, at the kill speed and walking Monsters & maps works out. Monsters with no published rate don't count. Time is To go over that rate.
+- **Activation:** each route's refine loss, certificates and Goblin Coin Fragments at Grandpa Taotao (prontera 272 260): ★ to ★★ (−7, 100 ★ certificates, 8 fragments), ★★ to ★★★ (−3, 3 ★★ certificates, 30), and ★ armor (stable −3 for 100 and 30, aggressive −7 for 10 and 3); the last three came in the Taiwan server's later updates. Type your weapon's refine to see it after each. Cards, enchants and random options stay.
 
 ## Roadmap
 
@@ -159,17 +180,21 @@ One monster's stats, how you do against it, and every map it spawns on. The Elem
 
 ## Item info
 
-Every item monsters drop, searchable and filterable by auto-loot group (the Group dropdown in the filter row), with NPC and player prices and NPC zeny per kill: the NPC price times your drop chance (after drop bonus and level penalty), at the monster where that comes to most, and spawns: the most of one monster that drops it on one open map. Click an item to see every monster that drops it, the drop chance, the NPC zeny per kill from each, and its best open map with how many spawn there. The **Where to get** filter shows only items an MVP, a mini boss or a normal monster drops, or a quest gives. The farm tables have no MVPs, so for gear and cards it also uses rozerodb's full drop lists, and an item's **Other sources** lists the monsters that aren't in its table (MVPs, champion monsters) and its quests.
+Every item monsters drop, searchable and filterable by auto-loot group (the Group dropdown in the filter row), with NPC and player prices and NPC zeny per kill: the NPC price times your drop chance (after drop bonus and level penalty), at the monster where that comes to most, and spawns: the most of one monster that drops it on one open map. Click an item to see every monster that drops it, the drop chance, the NPC zeny per kill from each, and its best open map with how many spawn there. The **Where to get** filter shows only items an MVP, a mini boss or a normal monster drops, or a quest gives. The farm tables have no MVPs, so for gear and cards it also uses the full drop lists, and an item's **Other sources** lists the monsters that aren't in its table (MVPs, champion monsters) and its quests.
 
 **Find card by prefix:** type the name a card gives its gear in the equipment window (`Bloody`, `of Health`) to list the cards that give it, with whether it goes before or after the item name and the part the card goes in. A whole gear name works too: `+5 Double Bloody Damascus` lists Hydra Card. Click a card for its details.
 
 ## Equipment and Cards
 
-Every piece of gear and every card the build simulator knows, like rozerodb's equipment list. Gear shows its inventory icon from the game client. Every card has the same inventory icon, so cards show a small picture of the card instead.
+Every piece of gear and every card the build simulator knows. Gear shows its inventory icon from the game client. Every card has the same inventory icon, so cards show a small picture of the card instead.
 
 - **Equipment:** search by name, item number or effect (`demon` finds gear that does more to Demons), and filter by **Type** (one weapon type, all weapons, one armor part such as upper headgear, shield or accessory, or all armor), weapon **Element**, **Job** (your job by default; a 2nd job wears its 1st job's gear), **Required Lv** (from–to), **Card slots** (none, 1–4 or 1 or more), and the least **ATK**, **MATK** and **DEF**. **Sort** by name, level, ATK, MATK, DEF, card slots, weight or ID, or click a column header. A **Where to get** filter shows only gear an MVP, a mini boss or a normal monster drops, gear a quest gives, or gear with no known source. Each row shows the item's type and weapon level, required level, slots, ATK, MATK, DEF, weight, the jobs that wear it, where to get it (the monsters that drop it with their level and drop rate, best first, MVPs and mini bosses marked, and quests), and its effects: the lines the calculator counts (refine and level conditions included), with the item's **In-game text** folded under them, which also has anything the lines leave out. Click a monster the farm tables know to open it in Monster info.
 - **Cards:** search by name, item number, the name it gives its gear in game (`healing` finds Vitata Card), effect or monster, and filter by the **Equipment slot** it goes in and **Where to get** it: MVP, mini boss or normal monster cards. Effects are the card's in-game text, which has everything the card does (Eddga Card's Endure, Baphomet Card's splash), and Where to get lists the monsters that drop it.
 - **Equip:** click a row (or its Equip button) and pick which gear set it goes in: **My gear**, any of your other gear sets, or a **New set** with only it on. An accessory asks which accessory slot, and an Assassin's dagger, one-handed sword or one-handed axe which hand. A headgear that covers more than one row (Coif: upper and middle) fills them all, and takes off whatever was there. Gear you take off keeps its refine, cards and affixes for when you put it back on. A card asks for the set, the item and the card slot, from the gear in each set that takes it; a set with no slotted item for it links to the Equipment tab with the matching filter. Items your job can't wear can't be equipped. If the Character tab is on typed status window values, equipping switches it to Build from gear (switching back brings your typed values back). Rows mark the sets each item or card is in now.
+
+## Recipes
+
+Every crafting recipe: 343 of them under **Forging** (weapons, with the weapon's level, and ores refined into Iron, Steel and elemental stones), **Brewing** (potions), **Arrows** (Arrow Crafting: one item makes a stack, such as 700 Arrows from a Wooden Mail), **Cooking**, **Misc** (Holy Water, elemental converters, Poison Bottle), and the two that NPCs make for a zeny fee: **Mixture & Counteragent** (Morgenstein in Geffen, once Merchant Louitz in Alberta and Aure Dupon in Geffen have sent you to him) and **Dye Making** (the eight Dyestuffs, JavaDullihan in Morroc). The NPC and where they stand show under the category. The category buttons show how many recipes each has for your search. **Search** matches the item made, its number, the materials and the NPC, so typing a drop (`jellopy`) finds everything it turns into. Each row lists the materials with their icons and amounts, and **Materials worth**: each material at your Market price, else what an NPC pays, `+?` when one has neither, plus an NPC's fee, and per arrow or item when a craft makes more than one. Click a header to sort, and any item to open its details, which show who drops it and every recipe that makes or uses it.
 
 ## Market
 

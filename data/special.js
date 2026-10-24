@@ -1,6 +1,6 @@
 // Taming Ring (Special Equipment, Accessory (Right), item 24966): it seals one Cute Pet's bonus, an "<pet> Egg Lv.1 / Lv.2"
-// enchant (Lv.1 = the pet's Cordial bonus, Lv.2 its Loyal one). Effects from each egg's item description on rozerodb.com
-// (/api/items/<id>, ids 313582-313653), cross-checked with https://midgardhub.com/guides/pet-bonuses.
+// enchant (Lv.1 = the pet's Cordial bonus, Lv.2 its Loyal one). Effects from each egg's item description on
+// the community database (/api/items/<id>, ids 313582-313653).
 // TAMING_EGGS: id, name, b: bonus lines [type, target kind, target, value] as build.js applies them ("Physical Damage to All Grades
 // of Enemies" is physical damage +%, Poison Resistance resists the Poison element), off: effects the model doesn't count.
 const TAMING_EGGS=[

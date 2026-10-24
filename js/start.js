@@ -5,11 +5,14 @@ const TAB_DESC={
   char:"Your job, stats, gear and attack: everything the damage, EXP and zeny numbers work from.",
   track:"Log your EXP as you farm to see your real EXP/hr, when you'll level and how far your goals are.",
   maps:"The best maps for your character by EXP or zeny, and one click to farm one. Then the map planner and every monster.",
+  star:"Not open in game yet (Taiwan Zero data). The ★ Forging Certificates each ★ weapon type needs, where you'd farm them fastest, and what Activation costs.",
+  mem:"Jellostones from Poring Village, the Expedition gear they upgrade to, and the memorial dungeons' rewards and enchants.",
   roadmap:"Ragnarok Zero Global's release roadmap: when each update comes, its level cap, and which maps and monsters are open now.",
   mobinfo:"Drops, spawn maps and your numbers against any monster.",
   items:"Every drop: who drops it, where they spawn and what it's worth to you.",
   equip:"Every weapon and piece of armor: filter by type, job, level, card slots and stats, and put it in any of your gear sets.",
   cards:"Every card and what it does: filter by the gear it goes in, and slot it into your gear or another gear set.",
+  recipes:"What every forge, brew, arrow, cooking and Alchemy Lab recipe uses up, and what a drop of yours turns into.",
   market:"The prices players pay, and a timer that tells you when to go sell.",
   ref:"EXP tables, party share, the element and size tables, and every formula with your numbers in it.",
   acct:"Back up every account, restore one, or share it as a link. Everything is saved in this browser only.",
@@ -33,7 +36,7 @@ function showTab(t,local){
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
   // renderAll only draws these while their tab is showing
-  if(t==="maps")renderHunt();if(t==="market")renderPrices();if(t==="mobinfo")renderMobInfo();if(t==="items")renderItems();if(t==="equip")renderEquipDb();if(t==="cards")renderCardDb();
+  if(t==="maps")renderHunt();if(t==="market")renderPrices();if(t==="mobinfo")renderMobInfo();if(t==="items")renderItems();if(t==="equip")renderEquipDb();if(t==="cards")renderCardDb();if(t==="recipes")renderRecipes();if(t==="mem")renderMem();if(t==="star")renderStar();
 }
 document.querySelectorAll("[data-tabbtn]").forEach(b=>b.addEventListener("click",()=>{showTab(b.dataset.tabbtn);scrollTo({top:0})}));
 // a link to another tab (data-gotab="roadmap")
@@ -88,13 +91,16 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
   const build=()=>ALL=[
     ...[...document.querySelectorAll("[data-tabbtn]")].map(b=>({k:"Tab",name:tabName(b.dataset.tabbtn),meta:TAB_DESC[b.dataset.tabbtn]||"",run:go(b.dataset.tabbtn)})),
     ...ACTIONS,
-    ...MOBS.map(m=>({k:"Monster",name:m.name,meta:`Lv ${m.lv}${m.el?` · ${m.el} ${m.elv}`:""}${m.race?` · ${m.race}`:""}${m.mvp?" · MVP":m.boss||m.mini?" · boss":""}`,
+    ...MOBS.map(m=>({k:"Monster",name:m.name,meta:`Lv ${m.lv}${m.el?` · ${m.el} ${m.elv}`:""}${m.race?` · ${m.race}`:""}${m.mvp?" · MVP":m.boss||m.mini?" · boss":""}`,mob:m.id,
       run:()=>openInfo("mob",m.id)})),
-    ...Object.keys(ITEM_DROPS).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · dropped by ${ITEM_DROPS[id].length}`,
+    ...Object.keys(ITEM_DROPS).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · dropped by ${ITEM_DROPS[id].length}`,ico:id,
       run:()=>openInfo("item",id)})),
-    ...(typeof EQUIP!=="undefined"?EQUIP:[]).filter(it=>(it.slot||[]).length).map(it=>({k:"Gear",name:it.name,meta:`#${it.id} · ${gearKind(it)}${it.slots?` [${it.slots}]`:""}`,
+    // crafted items no monster drops (potions, arrows, food, forged weapons that aren't in the gear list)
+    ...Object.keys(RECIPES_MAKING).filter(id=>!ITEM_DROPS[id]&&!BUILD.item(+id)).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · ${RECIPES_MAKING[id][0].cat.toLowerCase()} recipe`,ico:id,
+      run:()=>openInfo("item",id)})),
+    ...(typeof EQUIP!=="undefined"?EQUIP:[]).filter(it=>(it.slot||[]).length).map(it=>({k:"Gear",name:it.name,meta:`#${it.id} · ${gearKind(it)}${it.slots?` [${it.slots}]`:""}`,ico:it.id,
       run:()=>openInfo("item",it.id)})),
-    ...(typeof CARDS!=="undefined"?CARDS:[]).map(x=>({k:"Card",name:x.name,meta:`#${x.id} · ${CARD_PART[cardPart(x)]||"–"}${cardName(x)?` · ${cardName(x)}`:""}`,
+    ...(typeof CARDS!=="undefined"?CARDS:[]).map(x=>({k:"Card",name:x.name,meta:`#${x.id} · ${CARD_PART[cardPart(x)]||"–"}${cardName(x)?` · ${cardName(x)}`:""}`,ico:x.id,
       run:()=>openInfo("item",x.id)})),
     ...Object.keys(MAPNAMES).map(mp=>({k:"Map",name:mapName(mp)||mapCode(mp),meta:mapCode(mp),alt:mp,
       run:go("maps",()=>{state.map=mp;save();renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})})}))];
@@ -104,7 +110,7 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
   const draw=()=>{const q=inp.value.trim().toLowerCase();if(!ALL)build();
     hits=q?ALL.filter(x=>!x.ok||x.ok()).map(x=>[score(x,q),x]).filter(([v])=>v<9).sort((a,b)=>a[0]-b[0]||a[1].name.length-b[1].name.length).slice(0,40).map(([,x])=>x)
       :ALL.filter(x=>(x.k==="Tab"||x.k==="Action")&&(!x.ok||x.ok()));
-    at=0;list.innerHTML=hits.length?hits.map((x,i)=>`<button type="button" role="option" class="jr" data-i="${i}" aria-selected="${i===at}"><span class="jk k${x.k}">${x.k}</span><span class="jn">${esc(x.name)}</span><span class="jm">${esc(x.meta)}</span></button>`).join("")
+    at=0;list.innerHTML=hits.length?hits.map((x,i)=>`<button type="button" role="option" class="jr" data-i="${i}" aria-selected="${i===at}"><span class="jk k${x.k}">${x.k}</span><span class="jn">${x.mob!=null?mobIcon(x.mob,1,"il"):x.ico!=null?itemIcon(x.ico,1,"il"):""}${esc(x.name)}</span><span class="jm">${esc(x.meta)}</span></button>`).join("")
       :`<div class="jEmpty">Nothing matches “${esc(inp.value.trim())}”.</div>`};
   const mark=()=>list.querySelectorAll(".jr").forEach((b,i)=>{b.setAttribute("aria-selected",String(i===at));if(i===at)b.scrollIntoView({block:"nearest"})});
   const pick=i=>{const x=hits[i];if(!x)return;dlg.close();x.run()};

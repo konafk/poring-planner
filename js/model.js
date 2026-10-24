@@ -532,11 +532,11 @@ const hpHeal=hpm=>{const p=recPick("hp");if(!p||!(hpm>0)||!(p.avg>0))return {n:0
 // would cover; they're only bought with "auto-use when needed" on (Sage: with Hindsight), else you rest
 function mapSpShort(mp,w,el){let s=0,t=0;withMobbed(mp,()=>withEl(el,()=>(MAPMOBS[mp]||[]).forEach(({m,n})=>{if(m.boss||isSkipped(m)||m.expUnknown)return;const r=mobRow0(m,w);if(!isFinite(r.tot))return;
   const k=SG_MOB;SG_MOB=m;try{s+=n*r.tot*Math.max(0,spNeedPerSec()-regenPerSec())}finally{SG_MOB=k}t+=n*r.tot})));return t?s/t*3600:0}
-// zeny per kill: the exported loot value (rozerodb, NPC prices) scaled by your drop rate bonus. A drop you sell to players
+// zeny per kill: the exported loot value (the database, NPC prices) scaled by your drop rate bonus. A drop you sell to players
 // counts at the market price you typed instead: the loot value already holds its NPC price, so the market price adds only what
 // it beats the NPC price by. Its chance is scaled by the drop bonus and the level penalty, capped at 100%
 const dropMul=()=>1+num(state.dropBonus)/100;
-// NPC sell price: the one you typed, else rozerodb's (data/prices.js), else 0
+// NPC sell price: the one you typed, else the database's (data/prices.js), else 0
 const npcSell=id=>{const v=state.npcPrices[id];return v!=null&&v!==""?num(v):num(NPCSELL[id])};
 // drop rate cut by level gap = monster Lv − your base Lv (official guide, roz.mygnjoy.com/en/intro/guide/11): "~ -19" no penalty,
 // "-40 ~" 50% reduction. The guide gives nothing for −20 to −39 (pct null), so that band counts as no cut and is flagged as unknown
@@ -555,13 +555,13 @@ const marketGain=id=>{const p=state.prices[id];return p>0?Math.max(0,p-npcPays(i
 const LOOT_GROUPS=[["w","Weapons"],["a","Armor"],["u","Consumable"],["c","Cards"],["e","Miscellaneous"],["o","Costume"]];
 const looted0=g=>(state.autoLoot||{})[g]!==false;
 const looted=id=>looted0(ITEMTYPE[id]||"e");
-// the exported loot value holds every drop at rozerodb's NPC price; when you leave some behind, the ones you loot are added up instead
+// the exported loot value holds every drop at the database's NPC price; when you leave some behind, the ones you loot are added up instead
 const lootVal=m=>m.loot==null?0:(m.drops||[]).every(([id])=>looted(id))?m.loot:(m.drops||[]).reduce((a,[id,ch])=>looted(id)?a+num(NPCSELL[id])*ch/100:a,0);
 // the guide doesn't give an order: chance × drop bonus × level penalty, then the 100% cap
 const marketVal=m=>(m.drops||[]).reduce((a,[id,ch])=>{const g=looted(id)?marketGain(id):0;return g>0?a+g*Math.min(100,ch*dropMul()*penMul(m))/100:a},0);
 const hasLoot=m=>m.loot!=null||marketVal(m)>0;
 const zenyKill=m=>lootVal(m)*ocMul()*dropMul()*penMul(m)+marketVal(m);
-// one drop's share of zeny per kill (0 if you don't loot it); over all drops they add up to zenyKill, give or take rozerodb's rounding
+// one drop's share of zeny per kill (0 if you don't loot it); over all drops they add up to zenyKill, give or take the database's rounding
 const dropZ=(m,id,ch)=>looted(id)?num(NPCSELL[id])*ocMul()*ch/100*dropMul()*penMul(m)+marketGain(id)*Math.min(100,ch*dropMul()*penMul(m))/100:0;
 
 // ---- maps ----
@@ -588,11 +588,11 @@ const mapArrives=mp=>{const r=regionOf(mp);return r&&!upOut(r.up)&&regionClosed(
 // a monster with no open map: the soonest update that opens one of its maps
 const mobArrives=m=>{const rs=(SPAWN[m.id]||[]).map(([mp])=>regionOf(mp)).filter(r=>r&&!upOut(r.up)&&regionClosed(r));
   if(!rs.length)return "";const u=rs.reduce((a,r)=>r.up.when<a.when?r.up:a,rs[0].up);return `${u.name} update, ${upWhen(u)}`};
-// map names: SPAWN and saves use rozerodb codes (sp_d05); data/maps.js has the in-game code and name (in_sphinx5 · Sphinx B5F) and other codes
+// map names: SPAWN and saves use source codes (sp_d05); data/maps.js has the in-game code and name (in_sphinx5 · Sphinx B5F) and other codes
 const mapCode=mp=>(MAPNAMES[mp]||[])[0]||mp;
 const mapName=mp=>(MAPNAMES[mp]||[])[1]||"";
 const mapLabel=mp=>mapName(mp)?`${mapCode(mp)} (${mapName(mp)})`:mapCode(mp);
-// any code, or a name only one map has, back to the rozerodb code
+// any code, or a name only one map has, back to the source code
 const MAPALIAS={};{const byName={};Object.entries(MAPNAMES).forEach(([k,[g,n,...rest]])=>{[k,g,...rest].forEach(a=>MAPALIAS[a.toLowerCase()]=k);const l=n.toLowerCase();byName[l]=l in byName?null:k});
   Object.entries(byName).forEach(([n,k])=>{if(k&&!(n in MAPALIAS))MAPALIAS[n]=k})}
 const mapKey=s=>{const t=String(s??"").trim().toLowerCase();return MAPALIAS[t]||t};
@@ -611,9 +611,9 @@ const slowPill=r=>r.slow?` <span class="pill down" title="Over your max ${maxSec
 const lockPill=mp=>lvLocked(mp)?` <span class="pill down" title="Needs base Lv ${mapMinLv(mp)} to enter">Lv ${mapMinLv(mp)}+</span>`:"";
 // monsters you skip (e.g. ones that stun you): left out of map averages, you walk past them
 const isSkipped=m=>!!(state.skipMobs&&state.skipMobs.includes(m.id));
-// rozerodb has no EXP for some monsters yet (Myst, Isis, Anubis...): shown as "?" and left out of EXP averages
+// the database has no EXP for some monsters yet (Myst, Isis, Anubis...): shown as "?" and left out of EXP averages
 const fmtExp=m=>m.expUnknown?"?":fmtN(m.exp);
-// a spawn count, or ? on a map the client doesn't list yet (SPAWN has [map, null] there: which monsters, from rozerodb, but no count)
+// a spawn count, or ? on a map the client doesn't list yet (SPAWN has [map, null] there: which monsters, from the data, but no count)
 const spN=n=>n==null?"?":n;
 const MAPMOBS={};
 Object.entries(SPAWN).forEach(([id,arr])=>{const m=MOBS.find(x=>x.id===+id);if(!m)return;arr.forEach(([mp,n])=>{(MAPMOBS[mp]=MAPMOBS[mp]||[]).push({m,n})})});
@@ -849,7 +849,7 @@ function startTrip(s,now=Date.now()){const min=tripMinutes(s);if(!(min>0))return
 
 // ---- Zeny Hunter: maps and monsters ranked by net zeny per hour ----
 // loot per hour (with your drop bonus, less skill costs such as Mammonite, catalysts and arrows) minus HP and SP items, the ASPD potion and ground buffs.
-// Unlike the EXP rankings, monsters with no EXP in rozerodb still count here: they drop loot all the same
+// Unlike the EXP rankings, monsters with no EXP in the data still count here: they drop loot all the same
 // SP items per hour against a monster (spItemsHr), and the SP items, ASPD potion and ground buffs per hour (huntCostHr). The hunters add HP items
 // for the HP lost (huntCosts: hpHr, hpZ, spHr, spZ, other, cost = all of them)
 const spItemsHr=m=>{const k=SG_MOB;SG_MOB=m||null;try{return itemsPerSec()*3600}finally{SG_MOB=k}};
@@ -862,7 +862,7 @@ const huntCosts=(m,hpi)=>{const spHr=spItemsHr(m),spZ=spHr*spItemPrice(),other=h
 // rarely waiting for you, and nothing here knows respawn times. Passing monsters by thins out your targets: the next one is about
 // 1/√density away, so walking per kill grows by √(monsters you can hurt / ones you hunt)
 // Or teleport past them, but only with a free teleport (a Creamy Card or the Teleport skill): Fly Wings cost too much to burn one
-// on every landing, so without one you walk. Not on maps you've marked "no teleport" either (rozerodb has no map flags).
+// on every landing, so without one you walk. Not on maps you've marked "no teleport" either (the database has no map flags).
 // Each landing finds a hunted monster about hunted/all of the time, so a kill takes all/hunted − 1 extra jumps of state.teleSec
 // seconds each. Each pick uses whichever of the two nets more.
 // Kill time includes selling trips (tripTot), like every other ranking

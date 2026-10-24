@@ -5,7 +5,7 @@ after the item name, like "Boots of Health").
     python tools/export_cardnames.py            # fetch what isn't cached, then add the names to data/cards.js
     python tools/export_cardnames.py --refresh  # refetch every card
 
-Names come from divine-pride.net's item pages (the "Prefix" row). rozerodb.com's item API has a card_prefix_name too, but only
+Names come from divine-pride.net's item pages (the "Prefix" row). The community database's item API (/api/items/<id>) has a card_prefix_name too, but only
 the Chinese one ("殘酷的" for Hydra Card's "Bloody"). Cards are the ones in data/cards.js, so run this after export_prontera.py
 (which keeps the names already there when it rewrites the file). Pages are fetched one per second and cached in tools/cache/
 (gitignored). Delete a cached file to refetch it. Zero's own versions of classic cards take the classic card's name (CLASSIC). Cards divine-pride has no English name for are left out and listed at the end.

@@ -84,7 +84,7 @@ const CONS_PRESETS=[
   {name:"Ale's Blessing",eff:"Recovery items +20%, Heal received +20%"}];
 // stacking: stat food (the + column) and Blessing of Yggdrasil don't add up, the higher one counts per stat;
 // course meals, event drinks and other rows stack on top
-// clans (Ragnarok Zero Global; Midgard Hub's new player guide, the same as iRO Wiki's Clan System): a buff that stays on while you're
+// clans (Ragnarok Zero Global; as iRO Wiki's Clan System has it): a buff that stays on while you're
 // a member, two stats +1, Max HP +30 and Max SP +10. It stacks with food and Blessing of Yggdrasil. It can't be switched off, so a
 // typed status window always has it: only build mode adds it
 const CLANS={sword:{name:"Sword Clan",st:["str","vit"]},archwand:{name:"Arch Wand Clan",st:["int","dex"]},goldenmace:{name:"Golden Mace Clan",st:["luk","int"]},crossbow:{name:"Crossbow Clan",st:["dex","agi"]}};
@@ -262,7 +262,7 @@ function cardChoices(slot,it){const cs=it&&(it.slot||[]).includes("weapon")?"wea
 const cardName=c=>(c.affix??(BUILD.item(c.id)||{}).affix)||"";
 const readGear=(slot,text,items)=>BUILD.readGearName(text,items||gearChoices(slot),it=>cardChoices(slot,it),cardName);
 // random options: a list per option the item rolled, plus an empty one to add the next (any item takes up to OPT_MAX). Each list holds
-// the affixes the row's gear rolls (BUILD.optChoices: a weapon by its type, also in the Shield row; every option for parts rozerodb has
+// the affixes the row's gear rolls (BUILD.optChoices: a weapon by its type, also in the Shield row; every option for parts the database has
 // no pool for), with its min–max on the value box. An option saved before that this gear can't roll stays, listed under "Saved"
 const OPT_HTML={};
 // rows replacing typed option text keep the typed lines that match no option (g.optsText), so none are lost
@@ -324,17 +324,22 @@ function gearPut(c,g,id){if(g.id===id)return;memKeep(c,g);const m=memOf(c)[id]||
 // "+7 · Vitata Card · 2 affixes"
 const memTxt=m=>[num(m.refine)?`+${num(m.refine)}`:"",...(m.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean),
   ...(m.opts&&m.opts.length?[`${m.opts.length} affix${m.opts.length>1?"es":""}`]:[])].filter(Boolean).join(" · ");
-// icons: gear from the game client, cards a thumbnail of their picture (data/icons.js, tools/export_icons.py); a cell of a sprite sheet
-// each, the sheet set once as a CSS variable. scale draws it smaller (the gear table's card boxes). An item with no image gets an
-// empty cell, so the names still line up
+// icons: gear and every other item from the game client, cards a thumbnail of their picture, monsters their sprite (data/icons.js, tools/export_icons.py); a
+// cell of a sprite sheet each, the sheet set once as a CSS variable. scale draws it smaller (the gear table's card boxes); cls adds a
+// class ("il": inline in a line of text). An item with no image gets an empty cell, so the names still line up
 const ICON_AT={};
 (typeof ICON_SHEETS!=="undefined"?Object.entries(ICON_SHEETS):[]).forEach(([k,s])=>{ICON_AT[k]={};s.ids.forEach((id,i)=>ICON_AT[k][id]=i);
   document.documentElement.style.setProperty(`--ico-${k}`,`url("${s.file}?v=${s.v}")`)});
-function iconHtml(kind,id,scale=1){const s=typeof ICON_SHEETS!=="undefined"&&ICON_SHEETS[kind],i=ICON_AT[kind]&&ICON_AT[kind][id];
-  const size=s&&scale!==1?`width:${s.w*scale}px;height:${s.h*scale}px;`:"";
-  if(!s||i==null)return `<span class="ico ico-${kind} none" aria-hidden="true"${size?` style="${size}"`:""}></span>`;
+function iconHtml(kind,id,scale=1,cls=""){const s=typeof ICON_SHEETS!=="undefined"&&ICON_SHEETS[kind],i=ICON_AT[kind]&&ICON_AT[kind][id];
+  const size=s&&scale!==1?`width:${s.w*scale}px;height:${s.h*scale}px;`:"",c=`ico ico-${kind}${cls?" "+cls:""}`;
+  if(!s||i==null)return `<span class="${c} none" aria-hidden="true"${size?` style="${size}"`:""}></span>`;
   const rows=Math.ceil(s.ids.length/s.cols),fit=scale!==1?`background-size:${s.cols*s.w*scale}px ${rows*s.h*scale}px;`:"";
-  return `<span class="ico ico-${kind}" aria-hidden="true" style="${size}${fit}background-position:-${i%s.cols*s.w*scale}px -${Math.floor(i/s.cols)*s.h*scale}px"></span>`}
+  return `<span class="${c}" aria-hidden="true" style="${size}${fit}background-position:-${i%s.cols*s.w*scale}px -${Math.floor(i/s.cols)*s.h*scale}px"></span>`}
+// any item by id: a card's picture at half size (as tall as an icon), else its gear or item icon
+const itemIcon=(id,scale=1,cls="")=>ICON_AT.card&&ICON_AT.card[id]!=null?iconHtml("card",id,scale/2,cls)
+  :iconHtml(ICON_AT.gear&&ICON_AT.gear[id]!=null?"gear":"item",id,scale,cls);
+// a monster by id: its sprite at half size (as tall as an icon); scale 2 draws it full size (48 x 48)
+const mobIcon=(id,scale=1,cls="")=>iconHtml("mob",id,scale/2,cls);
 function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};let lists="";
   const rows=BUILD.SLOTS.map(s=>{const g0=b.gear[s.k]||{},items=gearChoices(s.k),cards=cardChoices(s.k,g0.id&&BUILD.item(g0.id));GEAR_LISTS["g_"+s.k]=pickList(items);GEAR_LISTS["c_"+s.k]=pickList(cards);
     lists+=`<datalist id="gl_${s.k}">${[...GEAR_LISTS["g_"+s.k]].map(([n,id])=>`<option value="${esc(n)}"${mem[id]?` label="remembered: ${esc(memTxt(mem[id]))}"`:""}>`).join("")}</datalist><datalist id="cl_${s.k}">${[...GEAR_LISTS["c_"+s.k]].map(([n,id])=>{const p=cardName({id});return `<option value="${esc(n)}"${p?` label="${esc((BUILD.item(id)||{}).affixPos==="suffix"?"… "+p:p+" …")}"`:""}>`}).join("")}</datalist>`;

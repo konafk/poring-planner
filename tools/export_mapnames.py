@@ -27,7 +27,7 @@ def main():
             changed.append(f"{key}: {row[1]} -> {name.strip()}")
             row[1] = name.strip()
     with open(os.path.join(DATA, "maps.js"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("// In-game map code and name per spawn map (rozerodb code -> [in-game code, name, other codes]): codes from ragnarokzero.net/database/maps, "
+        f.write("// In-game map code and name per spawn map (source map code -> [in-game code, name, other codes]): codes from ragnarokzero.net/database/maps, "
                 "names as the official Global client shows them (System/mapInfo_enUS.lub, written by tools/export_mapnames.py); "
                 "maps the client doesn't have yet keep ragnarokzero.net's names\n")
         f.write("const MAPNAMES={" + ",\n".join(f"{json.dumps(k)}:{json.dumps(v, ensure_ascii=False, separators=(',', ':'))}" for k, v in names.items()) + "};\n")

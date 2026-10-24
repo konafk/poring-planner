@@ -23,13 +23,21 @@ Object.assign(globalThis, {
     { id: 14, slug: "captain", name: "Captain Card", slot: ["weapon"], g: [{ b: [["physical_damage_percent", "monster_group", "boulder_dwarf", 30]] }] },
     { id: 16, slug: "shark", name: "Shark Card", slot: ["garment"], g: [{ lvPer: 10, lvMax: 50, b: [["atk", null, null, 7], ["def", null, null, 3], ["mdef", null, null, 1]] }] },
     { id: 15, slug: "leader", name: "Leader Card", slot: ["weapon"], g: [{ b: [["magic_damage_percent", "monster_group", "boulder_dwarf", 30]] }] },
+    { id: 17, slug: "arclouse", name: "Arclouse Card", slot: ["shield"], g: [] },
+    { id: 18, slug: "sieglouse", name: "Sieglouse Card", slot: ["footgear"], g: [] },
+    { id: 19, slug: "gem", name: "Gem Card", slot: ["head_upper"], g: [] },
+    { id: 20, slug: "joker", name: "Joker Card", slot: ["accessory_1"], g: [] },
+    { id: 21, slug: "xjoker", name: "Extra Joker Card", slot: ["shield"], g: [{ b: [["mdef", null, null, 10, 1]] }] },
   ],
-  SETS: [{ slug: "s", name: "Coat Set", pieces: ["coat", "boots"], g: [{ rs: 10, b: [["hp", null, null, 500]] }, { b: [["vit", null, null, 3]] }] }],
+  SETS: [{ slug: "s", name: "Coat Set", pieces: ["coat", "boots"], g: [{ rs: 10, b: [["hp", null, null, 500]] }, { b: [["vit", null, null, 3]] }] },
+    { slug: "sa", name: "Sieglouse & Arclouse Card", pieces: ["sieglouse", "arclouse"], ref: "arclouse", g: [{ b: [["flee", null, null, 2, 1]] }] },
+    { slug: "gh", name: "Gem Card & Hat", pieces: ["gem", "hat"], ref: "hat", g: [{ b: [["atk", null, null, 1, 1]] }] },
+    { slug: "jx", name: "Extra Joker & Joker Card", pieces: ["joker", "xjoker"], g: [{ proc: "Chance to transform into Joker", b: [["atk", null, null, 70]] }] }],
   REFINE: { weapon_lv2: Array.from({ length: 20 }, (_, i) => [3 * (i + 1), 3 * (i + 1), 0]),
             armor: Array.from({ length: 20 }, (_, i) => [0, 0, (i + 1) ** 2]) },
   JOBDATA: { Knight: { bonus: { str: [1, 6], vit: [5] }, hp: [40, 48, 58], sp: [10, 12, 14] } },
 });
-// the real affix list (rozerodb) and costume enchant stones, as the page loads them before build.js
+// the real affix list (the database) and costume enchant stones, as the page loads them before build.js
 for (const f of ["affixes", "stones", "special"]) (0, eval)(readFileSync(new URL(`../data/${f}.js`, import.meta.url), "utf8").replace(/^const (\w+)=/gm, "globalThis.$1="));
 const BUILD = require("../build.js");
 const aspdBase = () => 150;
@@ -81,6 +89,20 @@ t("armor refine DEF, sets with combined refine, HP from the job curve", () => {
   assert.equal(off.fields.maxHp, Math.floor(Math.floor(58 * (1 + 23 / 100)) + 0));   // combined refine 9 < 10: no set HP
   const on = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { armor: { id: 2, refine: 5 }, shoes: { id: 3, refine: 5 } } }, "Knight", aspdBase);
   assert.equal(on.fields.maxHp, Math.floor(58 * 1.23) + 500);
+});
+
+t("card sets: cards slotted in worn gear, per-refine lines by the ref piece's item, procs listed only", () => {
+  const gear = { shield: { id: 5, refine: 6, cards: [17] }, shoes: { id: 3, refine: 9, cards: [18] } };
+  const r = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear }, "Knight", aspdBase);
+  assert.equal(r.acc.flee, 2 * 6);                                          // FLEE +2 per shield refine, not the shoes' +9
+  const half = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { ...gear, shoes: { id: 3, refine: 9 } } }, "Knight", aspdBase);
+  assert.equal(half.acc.flee, 0);                                           // one card short: no set
+  const hat = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { headTop: { id: 4, refine: 5, cards: [19] } } }, "Knight", aspdBase);
+  assert.equal(hat.acc.atk, 5);                                             // an item and a card in it: ATK +1 per refine of the item
+  const joker = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { acc1: { id: 7, cards: [20] }, shield: { id: 5, refine: 4, cards: [21] } } }, "Knight", aspdBase);
+  assert.equal(joker.acc.atk, 0);                                           // ATK +70 only while transformed
+  assert.equal(joker.acc.mdef, 40);                                         // the card's own MDEF +10 per shield refine
+  assert.ok(joker.unmodelled.some(x => x.startsWith("Extra Joker & Joker Card: Chance")));
 });
 
 t("ASPD % pivots on 195 and caps at 190; multi-slot headgear counts once", () => {
@@ -180,14 +202,14 @@ t("random options picked from lists: any item takes up to 5, resists and cast ti
   assert.ok(kept.unmodelled.some(x => /option not understood: EXP \+5%$/.test(x)));
 });
 
-t("random options come from rozerodb's affixes, filtered to what the row's gear rolls", () => {
+t("random options come from the affix list, filtered to what the row's gear rolls", () => {
   const keys = (slot, it) => BUILD.optChoices(slot, it).map(o => o.k);
   const by = (slot, it, k) => BUILD.optChoices(slot, it).find(o => o.k === k);
   // a sword rolls melee weapon affixes (monster / MVP drop, forging, activation), with the min–max over all of them
   const sword = keys("weapon", BUILD.item(1));
   assert.ok(sword.includes("atk") && sword.includes("dmg_race_demon") && sword.includes("dmg_size_small") && sword.includes("ign_def_race_demon"));
   assert.ok(!sword.includes("matk") && !sword.includes("res_race_demon") && !sword.includes("mdmg_race_demon"));
-  // options rozerodb has no affix for ("Other": special enchants) go on every part, with no min–max
+  // options the database has no affix for ("Other": special enchants) go on every part, with no min–max
   assert.ok(sword.includes("str") && sword.includes("magic_damage_percent") && keys("armor", BUILD.item(2)).includes("str"));
   assert.equal(by("weapon", BUILD.item(1), "str").range, null);
   assert.deepEqual(by("weapon", BUILD.item(1), "atk").range, [1, 60]);           // drops 5–30, activation 1–39, forging 1–60
@@ -206,7 +228,7 @@ t("random options come from rozerodb's affixes, filtered to what the row's gear 
   assert.deepEqual(by("armor", BUILD.item(2), "res_race_demon").range, [3, 7]);
   assert.ok(keys("garment", null).includes("res_ele_fire") && !keys("armor", BUILD.item(2)).includes("res_ele_fire"));
   assert.deepEqual(by("shoes", BUILD.item(3), "hp").range, [150, 300]);
-  // rozerodb has no pool for accessories, headgear or shields: those list every option, old hand-made ones too
+  // the database has no pool for accessories, headgear or shields: those list every option, old hand-made ones too
   assert.equal(BUILD.optGear("acc1", BUILD.item(7)), null);
   assert.equal(keys("acc1", BUILD.item(7)).length, BUILD.OPTIONS.length);
   assert.ok(keys("acc1", BUILD.item(7)).includes("str") && keys("headTop", BUILD.item(4)).includes("mele_fire"));
@@ -230,7 +252,7 @@ t("random options come from rozerodb's affixes, filtered to what the row's gear 
 
 t("ignore DEF / MDEF of a race, size, element or boss / normal monsters", () => {
   const keys = (slot, it) => BUILD.optChoices(slot, it).map(o => o.k);
-  // rozerodb's race and Normal Enemy affixes go on the weapons that roll them; the sizes, elements and boss it has none for yet on every part
+  // the database's race and Normal Enemy affixes go on the weapons that roll them; the sizes, elements and boss it has none for yet on every part
   assert.ok(keys("weapon", { slot: ["weapon"], type: "staff_1h" }).includes("ign_mdef_race_dragon") && keys("weapon", BUILD.item(1)).includes("ign_def_kind_normal"));
   for (const k of ["ign_def_kind_boss", "ign_def_size_small", "ign_mdef_size_large", "ign_def_ele_fire", "ign_mdef_ele_undead"])
     assert.ok(keys("weapon", BUILD.item(1)).includes(k) && keys("armor", BUILD.item(2)).includes(k), k);

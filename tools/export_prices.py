@@ -4,11 +4,11 @@ data/weights.js and data/itemtypes.js.
     python tools/export_prices.py            # fetch what isn't cached, then write data/prices.js, data/weights.js and data/itemtypes.js
     python tools/export_prices.py --refresh  # refetch every item (prices changed after a patch)
 
-Prices come from rozerodb.com's item API (/api/items/<id>: buy_price, sell_price), the site data/loot.js came from, so
+Prices come from the community database's item API (/api/items/<id>: buy_price, sell_price), the site data/loot.js came from, so
 they should add up to its loot value per kill. Not from rAthena: its prices don't match RO Zero.
 Items are fetched one per second and cached in tools/cache/ (gitignored). Delete a cached file to refetch it.
-Items rozerodb has no sell price for are written as null (roz.prontera.info and ragnarokzero.net had none for the ones checked either).
-Weights come from the same records (weight). rozerodb may store them in tenths like the game files (Jellopy 10) or as
+Items the database has no sell price for are written as null (roz.prontera.info and ragnarokzero.net had none for the ones checked either).
+Weights come from the same records (weight). The database may store them in tenths like the game files (Jellopy 10) or as
 shown in game (Jellopy 1): Jellopy (909) weighs 1 in game, so its record sets the scale. Items with no weight count as 0.
 Cached records from before weights were exported have no weight: run with --refresh once.
 Item types follow the in-game auto-loot (Looting tab) groups; see loot_type().
@@ -31,8 +31,8 @@ def js_object(name, var):
 
 
 def item(item_id, refresh=False):
-    """rozerodb's item record, or None when it has no such item. Cached as JSON."""
-    f = os.path.join(CACHE, f"rozerodb_item_{item_id}.json")
+    """the database's item record, or None when it has no such item. Cached as JSON."""
+    f = os.path.join(CACHE, f"db_item_{item_id}.json")
     if os.path.exists(f) and not refresh:
         return json.load(open(f, encoding="utf-8"))
     req = urllib.request.Request(f"{SITE}/api/items/{item_id}", headers={"User-Agent": UA})
@@ -66,7 +66,7 @@ def item(item_id, refresh=False):
     return rec
 
 
-# rozerodb category -> in-game auto-loot group: w weapon, a armor, u consumable, c card, e miscellaneous, o costume.
+# the database category -> in-game auto-loot group: w weapon, a armor, u consumable, c card, e miscellaneous, o costume.
 # Taming items (category Pet) are usable, so they loot as consumables; ETC and Other are both miscellaneous.
 # A few records have no category: the ones with a weapon slot (in Chinese, e.g. 短劍 dagger) are weapons, the rest are ETC drops
 LOOT_TYPE = {"Weapon": "w", "Armor": "a", "Consumable": "u", "Pet": "u", "Card": "c", "ETC": "e", "Other": "e"}
@@ -98,10 +98,10 @@ def main():
         if n % 100 == 99:
             print(f"{n + 1}/{len(ids)} items", flush=True)
     with open(os.path.join(DATA, "prices.js"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("// NPC sell price (zeny) by item id, for every item in data/loot.js (rozerodb.com /api/items: sell_price; null = rozerodb has none, and its loot value counts it as 0); written by tools/export_prices.py\n")
+        f.write("// NPC sell price (zeny) by item id, for every item in data/loot.js (the community database /api/items: sell_price; null = it has none, and its loot value counts it as 0); written by tools/export_prices.py\n")
         f.write("const NPCSELL=" + json.dumps(sell, separators=(",", ":")) + ";\n")
     with open(os.path.join(DATA, "itemtypes.js"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("// Auto-loot group by item id, for every item in data/loot.js (rozerodb.com /api/items: category): w weapon, a armor, u consumable, c card, e miscellaneous, o costume; written by tools/export_prices.py\n")
+        f.write("// Auto-loot group by item id, for every item in data/loot.js (the community database /api/items: category): w weapon, a armor, u consumable, c card, e miscellaneous, o costume; written by tools/export_prices.py\n")
         f.write("const ITEMTYPE=" + json.dumps(kind, separators=(",", ":")) + ";\n")
     print(f"{len(ids) - len(missing)} of {len(ids)} items priced")
     print("auto-loot groups:", {k: list(kind.values()).count(k) for k in "wauceo"})
@@ -111,18 +111,18 @@ def main():
     # weights: scale so Jellopy weighs 1, as in game
     jel = weight.get("909")
     if not jel:
-        print("WARNING: no weight for Jellopy (909): rozerodb's records may name the field differently; data/weights.js not written")
+        print("WARNING: no weight for Jellopy (909): the database's records may name the field differently; data/weights.js not written")
     else:
         scale = 1 / jel
         w = {i: round(v * scale, 2) for i, v in weight.items() if isinstance(v, (int, float))}
         w = {i: int(v) if v == int(v) else v for i, v in w.items()}
         with open(os.path.join(DATA, "weights.js"), "w", encoding="utf-8", newline="\n") as f:
-            f.write(f"// Item weight by id for every item in data/loot.js, as shown in game (rozerodb.com /api/items: weight{'' if jel == 1 else f' / {jel:g}'}; missing = none on rozerodb, counted as 0); written by tools/export_prices.py\n")
+            f.write(f"// Item weight by id for every item in data/loot.js, as shown in game (the community database /api/items: weight{'' if jel == 1 else f' / {jel:g}'}; missing = none there, counted as 0); written by tools/export_prices.py\n")
             f.write("const ITEMW=" + json.dumps(w, separators=(",", ":")) + ";\n")
         nw = [i for i in ids if i not in w]
-        print(f"{len(w)} of {len(ids)} items weighed (rozerodb weight / {jel:g})" + (f"; no weight: {' '.join(nw)}" if nw else ""))
+        print(f"{len(w)} of {len(ids)} items weighed (the database weight / {jel:g})" + (f"; no weight: {' '.join(nw)}" if nw else ""))
 
-    # check: each monster's drops at these prices should give rozerodb's loot value per kill
+    # check: each monster's drops at these prices should give the database's loot value per kill
     # monsters with no loot value (null: none of their drops has a published rate) are skipped
     rows = []
     for mob, (val, priced, n, drops) in loot.items():

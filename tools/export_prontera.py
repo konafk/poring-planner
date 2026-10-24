@@ -46,11 +46,36 @@ TAKEN = {2254: ("demon", -3), 2255: ("angel", -3), 2327: ("demon", -15), 2289: (
 LV_STEP = {300834: "atk", 300835: "matk"}
 # "Physical / Magic damage against Boulder Dwarves +30%": prontera has only the description text, no bonus line
 GROUP_DMG = {300944: ("physical_damage_percent", "boulder_dwarf", 30), 300943: ("magic_damage_percent", "boulder_dwarf", 30)}
+# memorial dungeon gear whose bonus groups prontera has wrong: the armor's set lines (counted again by SETS) as its own, its
+# +3 group twice, MaxHP / MaxSP and the "DEF +x" line (on top of the armor's DEF) missing, the shoes' SP Heal effect missing,
+# the Oath rings' INT / DEX and LUK / AGI +2 only at +7. Replaced with the groups the Global client's item description gives
+GEAR_G = {
+    15220: [{"b": [["hp", None, None, 300], ["sp", None, None, 20], ["def", None, None, 20]]}],  # Subjugation Team's Armor
+    22150: [{"b": [["item_heal_percent", None, None, 5], ["sp_heal_percent", None, None, 3]]}],  # Subjugation Team Boots
+    15221: [{"b": [["hp", None, None, 500], ["sp", None, None, 30], ["def", None, None, 30]]},  # Expedition's Armor
+            {"r": 3, "b": [["def", None, None, 10], ["hp", None, None, 50]]}],
+    15222: [{"b": [["hp", None, None, 400], ["sp", None, None, 50], ["def", None, None, 30]]},  # Expedition's Robe
+            {"r": 3, "b": [["def", None, None, 5], ["sp", None, None, 10]]}],
+    22151: [{"b": [["item_heal_percent", None, None, 15], ["sp_heal_percent", None, None, 5]]}, {"r": 3, "b": [["agi", None, None, 1]]}],  # Expedition Boots
+    22152: [{"b": [["item_heal_percent", None, None, 10], ["sp_heal_percent", None, None, 7]]}, {"r": 3, "b": [["vit", None, None, 1]]}],  # Expedition Shoes
+    28570: [{"b": [["int", None, None, 2], ["dex", None, None, 2]]}, {"r": 7, "b": [["dex", None, None, 2], ["int", None, None, 2]]}],  # Ring of Blue Oath
+    28571: [{"b": [["luk", None, None, 2], ["agi", None, None, 2]]}, {"r": 7, "b": [["agi", None, None, 2], ["luk", None, None, 2]]}],  # Red Oath Ring
+    # Extra Joker Card: prontera has ATK / MATK +70, MDEF +10 flat. Client: "Each refine on Shield grants MDEF +10. When equipped
+    # with Joker Card, ... transform you into Joker for 7 seconds. During transformation: ATK +70, MATK +70" (the set's proc, not counted)
+    27270: [{"b": [["mdef", None, None, 10, 1]]}]}
+# card sets whose lines are "per refine" of one item (client text): the piece that is or sits in that item, by set slug
+SET_REF = {"sieglouse-arclouse-card": "arclouse-card-4240",  # FLEE +2 per shield refine
+           "erzsebet-bathory-card": "bathory-card-4119",  # INT +1 per armor refine
+           "jeniffer-penomena-card": "penomena-card-4314",  # ASPD +1 per 2 shield refines
+           "nordtfelt-onyx-helm-gem-poring-card": "nordfeld-onyx-helm-401509",  # ATK / MATK +1 per refine of the Helm
+           "nordtfelt-platinum-helm-gem-poring-card": "nordfeld-platinum-helm-401510"}
 
 
 def client_fix(row):
-    """Apply GVG_ONLY, RACE_CRIT, TAKEN, GROUP_DMG, LV_STEP and Fur Seal Card (CRIT +9 vs Demon/Undead, Acolyte Class only) to an item row."""
+    """Apply GVG_ONLY, GEAR_G, RACE_CRIT, TAKEN, GROUP_DMG, LV_STEP and Fur Seal Card (CRIT +9 vs Demon/Undead, Acolyte Class only) to an item row."""
     i, g = row.get("id"), row.get("g", [])
+    if i in GEAR_G:
+        g = GEAR_G[i]
     lines = lambda: [b for x in g for b in x.get("b", [])]
     if i in GVG_ONLY:
         g = []
@@ -155,7 +180,8 @@ def item_row(slug):
     k = next(k for k in d if k.startswith("item-") and k.endswith("-en"))
     page = d[k]
     it = page["item"]
-    row = {"id": it["item_id_ingame"], "slug": slug, "name": it["name"], "slot": it.get("equip_slots") or ([it["equip_slot"]] if it.get("equip_slot") else None),
+    # names as the game client spells them: a straight apostrophe ("Subjugation Team's Armor", not prontera's "Team’s")
+    row = {"id": it["item_id_ingame"], "slug": slug, "name": it["name"].replace("’", "'"), "slot": it.get("equip_slots") or ([it["equip_slot"]] if it.get("equip_slot") else None),
            "type": it.get("weapon_type"), "el": it.get("element"), "slots": it.get("slots") or 0,
            "lv": it.get("min_level") or 0, "wlv": it.get("weapon_level") or 0,
            # weapon and shield weight, as in game: Axe Boomerang, Shield Boomerang and Rapid Smiting add it to their damage %
@@ -176,7 +202,8 @@ def item_row(slug):
     flat = [[t, None, None, it[c]] for c, t in cols.items() if it.get(c) and t not in have]
     if flat:
         row["g"].insert(0, {"b": flat})
-    sets = [{"slug": s["slug"], "name": s["name"], "pieces": s["piece_slugs"], "g": groups(s.get("bonus_groups"))}
+    sets = [{k: v for k, v in {"slug": s["slug"], "name": s["name"], "pieces": s["piece_slugs"], "ref": SET_REF.get(s["slug"]),
+                               "g": groups(s.get("bonus_groups"))}.items() if v is not None}
             for s in page.get("sets") or []]
     return client_fix({k: v for k, v in row.items() if v not in (None, [], "")}), sets
 
@@ -219,7 +246,7 @@ def main():
     fields = ("// fields: id, slug, name, slot (every slot it takes), type (weapon type), el, slots, lv (required), wlv (weapon level), w (weapon and shield weight, as in game; none = weightless), refine (schedule),\n"
               "// atk, matk, def, mdef, g: bonus groups {r: min refine, rs: min combined refine, lv: min base level, cls: job slugs, lvPer / lvMax: lines count once per lvPer base levels up to lvMax,\n"
               "// proc: text of an effect that isn't a plain stat, b: [[type, target kind, target, value, per N refines, skill, scaling skill]]}")
-    write("equipment.js", f"// Equipment ({src}); GvG-only bonuses are left out.\n{fields}\n// SETS: combos by item slug, same bonus groups.",
+    write("equipment.js", f"// Equipment ({src}); GvG-only bonuses are left out.\n{fields}\n// SETS: combos by item or card slug, same bonus groups; ref: the piece whose item's refine per-refine lines count.",
           f"const EQUIP={js(equip)};\nconst SETS={js(list(sets.values()))};")
     # the names cards give their gear come from tools/export_cardnames.py: keep the ones already there, so a failed run of it loses none
     old = os.path.join(ROOT, "data", "cards.js")
