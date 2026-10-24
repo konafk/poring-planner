@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: 22
       # The cache starts empty, so every page is fetched fresh (one per second): changed stats on existing items come through too.
-      # Order matters: cardnames, iteminfo and icons read what export_prontera.py wrote and cached, and icons what export_recipes.py wrote. A script that fails (a site down)
+      # Order matters: cardnames, iteminfo and icons read what export_prontera.py wrote and cached, and icons what export_recipes.py and export_items.py wrote. A script that fails (a site down)
       # leaves its files as they were, and the PR lists it.
       - name: Gear, cards, refine and skills (roz.prontera.info)
         id: prontera
@@ -57,6 +57,10 @@ jobs:
         id: recipes
         continue-on-error: true
         run: python tools/export_recipes.py
+      - name: Every item in the client (the community database)
+        id: items
+        continue-on-error: true
+        run: python tools/export_items.py
       - name: Item icons, card and monster pictures (divine-pride.net)
         id: icons
         continue-on-error: true
@@ -73,7 +77,7 @@ jobs:
             echo
             failed=""
             for x in "prontera:${{ steps.prontera.outcome }}" "cardnames:${{ steps.cardnames.outcome }}" "iteminfo:${{ steps.iteminfo.outcome }}" \
-                     "prices:${{ steps.prices.outcome }}" "affixes:${{ steps.affixes.outcome }}" "recipes:${{ steps.recipes.outcome }}" "icons:${{ steps.icons.outcome }}"; do
+                     "prices:${{ steps.prices.outcome }}" "affixes:${{ steps.affixes.outcome }}" "recipes:${{ steps.recipes.outcome }}" "items:${{ steps.items.outcome }}" "icons:${{ steps.icons.outcome }}"; do
               [ "${x#*:}" = "success" ] || failed="$failed tools/export_${x%%:*}.py"
             done
             if [ -n "$failed" ]; then echo "**Failed, files left as they were:**$failed"; echo; fi

@@ -110,13 +110,14 @@ state.tsort=Object.fromEntries(Object.entries(objOr(state.tsort)).filter(([,v])=
 state.tfilt=Object.fromEntries(Object.entries(objOr(state.tfilt)).map(([k,v])=>[k,Object.fromEntries(Object.entries(objOr(v)).filter(([,x])=>typeof x==="string"))]));
 // the Equipment, Cards and Recipes tabs' filters: {key: text as typed}
 if(state.itemFrom!=null&&typeof state.itemFrom!=="string")delete state.itemFrom; // Item info's Where to get filter
+if(state.itemShow!=null&&typeof state.itemShow!=="string")delete state.itemShow; // Item info's Items: "", "all" or a client category
 ["eqDb","cardDb","recipeDb"].forEach(k=>{if(state[k]!=null)state[k]=Object.fromEntries(Object.entries(objOr(state[k])).filter(([,x])=>typeof x==="string"))});
 state.noTele=(Array.isArray(state.noTele)?state.noTele:[]).map(String);
 // possible rampage per map (monsters attacking you together) (Map planner): whole numbers 1–12
 state.mobbed=Object.fromEntries(Object.entries(numMap(state.mobbed)).map(([k,v])=>[k,Math.min(12,Math.max(1,Math.round(v)))]));
 // per account: buy at the Discount price (on unless switched off): recovery items, the ASPD potion, skill items and Custom HP / SP items
 state.recovery={discount:!(state.recovery&&state.recovery.discount===false)};
-// the Memorials tab's Jellostone tracker (memorial.js): whole counts of 0 or more by fragment / stone id, the stone crafting
+// the Memorial dungeons tab's Jellostone tracker (memorial.js): whole counts of 0 or more by fragment / stone id, the stone crafting
 // ({id, due: ms}), the Expedition pieces you want (item ids) and your Faintly Glowing Crystals
 {const j=objOr(state.jello),cnt=(o,ids)=>Object.fromEntries(Object.entries(numMap(o)).filter(([k,v])=>ids.includes(+k)&&v>=0).map(([k,v])=>[k,Math.round(v)]).filter(([,v])=>v>0)),
   stones=JELLO.map(x=>x.stone[0]),c=objOr(j.craft);

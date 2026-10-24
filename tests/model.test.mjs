@@ -2362,6 +2362,21 @@ t("Equipment and Cards tabs: in-game text, where to get it and the Where to get 
   assert.equal(run(`JSON.stringify(ITEM_INFO)`).includes("C5_"), false);
 });
 
+t("Item info: every item in the client, by category, with the drops' columns blank for the ones no monster drops", () => {
+  assert.equal(run(`itemName(5915)`), "[Costume] Angel's Veil");                                     // a costume nothing else names
+  assert.equal(run(`clientCat(5915)`), "Costume"); assert.equal(run(`itemGroupTxt(5915)`), "Costume");
+  assert.equal(run(`itemName(909)`), "Jellopy"); assert.match(run(`itemGroupTxt(909)`), /^\S/);      // a drop keeps its auto-loot group
+  const all = run(`JSON.stringify(allItemIds())`);
+  for (const id of ["909", "5915", "1029", "25429", "25470", "501"]) assert.ok(JSON.parse(all).includes(id), id); // drop, costume, material, memorial, recovery
+  assert.ok(!JSON.parse(all).includes("15221"));                                                      // gear no monster drops stays on the Equipment tab
+  assert.equal(new Set(JSON.parse(all)).size, JSON.parse(all).length);
+  assert.ok(run(`CLIENT_CATS.includes("Costume")&&CLIENT_CATS.includes("Consumable")`));
+  // the table's columns don't need a drop: Best drop and Dropped by sort as blank
+  assert.equal(run(`TABLES.itemTable.cols.best.n({id:"5915",b:null})`), null);
+  assert.match(run(`popItem("5915").sub`), /Costume/); assert.match(run(`popItem("5915").body`), /No monster/);
+  assert.ok(run(`Object.keys(CLIENT_ITEMS).every(id=>!/ none"/.test(itemIcon(id)))`), "every client item has an icon");
+});
+
 t("Item info: the Where to get filter, and other sources the farm tables don't have", () => {
   // War Axe: Chimera (a mini boss) and two MVPs (Turtle General, Lord of Death) drop it, all in the farm tables
   assert.equal(run(`itemFromOk("1306","mvp")`), true);
@@ -2415,7 +2430,7 @@ t("equipment window: gear named as the game shows it, and the job's look (Bards 
 });
 
 t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {
-  assert.equal(run(`RECIPES.length`), run(`RECIPE_LIST.length`));
+  assert.equal(run(`RECIPES.length+18`), run(`RECIPE_LIST.length`));                                    // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts
   assert.ok(run(`RECIPES.every(r=>RECIPE_CATS.includes(r.cat)&&r.mats.length&&r.mats.every(([id,n])=>RECIPE_ITEMN[id]&&n>0))`));
   assert.equal(run(`itemName(1301)`), "Axe");                                                          // a recipe's name for an item no monster drops
   const ok = (q, cat) => run(`RECIPES.filter(r=>recipeOk(r,{q:${JSON.stringify(q)},cat:${JSON.stringify(cat || "")}})).map(r=>r.id)`);
@@ -2444,6 +2459,23 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.match(run(`itemIcon(1301)`), /ico-gear"/);
   assert.match(run(`itemIcon(4123)`), /ico-card"/);
   assert.ok(run(`[...Object.keys(ITEMN),...Object.keys(RECIPE_ITEMN)].every(id=>!/ none"/.test(itemIcon(id)))`), "every item has an icon");
+  // Memorial: 5 Jello Fragments make their Jellostone, and an Expedition piece takes its Subjugation Team piece, crystals and stones
+  const mem = id => run(`JSON.stringify(RECIPE_LIST.find(r=>r.cat==="Memorial"&&r.id===${id}))`);
+  assert.deepEqual(JSON.parse(mem(25470)).mats, [[25465, 5]]);                                        // Crimson Jellostone: 5 Poring Jello Fragment
+  assert.deepEqual(JSON.parse(mem(15221)).mats, [[15220, 1], [25424, 50], [25470, 2]]);                // Expedition's Armor
+  assert.equal(run(`itemName(25470)`), "Crimson Jellostone"); assert.equal(run(`itemName(15221)`), "Expedition's Armor");
+  const memOk = q => run(`RECIPE_LIST.filter(r=>recipeOk(r,{q:${JSON.stringify(q)},cat:"Memorial"})).map(r=>r.id)`);
+  assert.deepEqual([...memOk("poporing")], [25471]);                                                       // a fragment finds its stone
+  assert.ok(memOk("upgrader").length === 8);
+  assert.match(run(`popItem("25465").body`), /Used in/); assert.match(run(`popGear(15221).body`), /Made from/);
+  assert.doesNotMatch(run(`infoRecipe(RECIPE_LIST.find(r=>r.id===25470))`), /undefined| z</);         // no fee to show
+  // Mithril Ore: no monster drops it, but the hard mode boxes do, and Thor's Flame makes Mithril from it for the Oath rings
+  assert.deepEqual(JSON.parse(mem(25430)).mats, [[25429, 10]]);
+  assert.deepEqual(JSON.parse(mem(28570)).mats, [[25459, 15], [25430, 10]]);                          // Ring of Blue Oath
+  const ore = run(`popItem("25429")`);
+  assert.equal(ore.title, "Mithril Ore"); assert.match(ore.body, /Orc's Memory<\/b> hard mode/); assert.doesNotMatch(ore.body, /No monster/);
+  assert.match(run(`popItem("25465").body`), /Poring Village<\/b> on Monday/);                       // a Jello Fragment's weekday
+  assert.ok(run(`RECIPE_LIST.filter(r=>r.cat==="Memorial").flatMap(r=>[r.id,...r.mats.map(m=>m[0])]).every(id=>!/ none"/.test(itemIcon(id)))`), "every memorial item has an icon");
 });
 
 t("monster pictures: every monster has one, at icon height in lists and full size in the popup", () => {

@@ -12,7 +12,7 @@ const TAB_DESC={
   items:"Every drop: who drops it, where they spawn and what it's worth to you.",
   equip:"Every weapon and piece of armor: filter by type, job, level, card slots and stats, and put it in any of your gear sets.",
   cards:"Every card and what it does: filter by the gear it goes in, and slot it into your gear or another gear set.",
-  recipes:"What every forge, brew, arrow, cooking and Alchemy Lab recipe uses up, and what a drop of yours turns into.",
+  recipes:"What every forge, brew, arrow, cooking, Alchemy Lab and memorial recipe uses up, and what a drop of yours turns into.",
   market:"The prices players pay, and a timer that tells you when to go sell.",
   ref:"EXP tables, party share, the element and size tables, and every formula with your numbers in it.",
   acct:"Back up every account, restore one, or share it as a link. Everything is saved in this browser only.",
@@ -97,6 +97,9 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
       run:()=>openInfo("item",id)})),
     // crafted items no monster drops (potions, arrows, food, forged weapons that aren't in the gear list)
     ...Object.keys(RECIPES_MAKING).filter(id=>!ITEM_DROPS[id]&&!BUILD.item(+id)).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · ${RECIPES_MAKING[id][0].cat.toLowerCase()} recipe`,ico:id,
+      run:()=>openInfo("item",id)})),
+    // every other item in the client, the memorial ones and the recovery and skill items (Mithril Ore, Jello Fragments, costumes)
+    ...allItemIds().filter(id=>!ITEM_DROPS[id]&&!RECIPES_MAKING[id]).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · ${MEM_ITEMN[id]?"memorial item":(clientCat(id)||"item").toLowerCase()}`,ico:id,
       run:()=>openInfo("item",id)})),
     ...(typeof EQUIP!=="undefined"?EQUIP:[]).filter(it=>(it.slot||[]).length).map(it=>({k:"Gear",name:it.name,meta:`#${it.id} · ${gearKind(it)}${it.slots?` [${it.slots}]`:""}`,ico:it.id,
       run:()=>openInfo("item",it.id)})),

@@ -1,4 +1,4 @@
-// ---- Memorials tab: the Jellostone tracker (fragments and stones you have, the stone being crafted and when it's ready), the
+// ---- Memorial dungeons tab: the Jellostone tracker (fragments and stones you have, the stone being crafted and when it's ready), the
 // Expedition pieces you want and what they still need, the memorial dungeons and their rewards, and the memorial gear's enchants
 // (data/memorial.js). Saved per account in state.jello: frag / stone {item id: count}, craft {id: Jellostone, due: ms} or none,
 // want [Expedition item ids], crystals (Faintly Glowing Crystals you have) ----
@@ -29,11 +29,11 @@ function jelloReady(now=Date.now()){const J=jello(),short=jelloShort(),left={},f
   return Object.values(left).some(v=>v>0)?Infinity:last}
 const durTxt=ms=>{if(ms<=0)return "ready";const h=Math.ceil(ms/36e5),d=Math.floor(h/24);return d?`${d}d ${h%24}h`:`${h}h`};
 function renderJello(){const J=jello(),now=Date.now(),wd=new Date(now).getDay(),today=JELLO.find(j=>j.day===wd),short=jelloShort();
-  $("jelloToday").innerHTML=`Today is ${WEEKDAY[wd]} (this device's clock): Poring Village gives ${today?`a <b>${esc(today.frag[1])}</b>`:`a <b>${esc(JELLO_BOX[1])}</b> (one of the five fragments)`}.`;
+  $("jelloToday").innerHTML=`Today is ${WEEKDAY[wd]} (this device's clock): Poring Village gives ${today?`a ${itemIcon(today.frag[0],1,"il")}<b>${esc(today.frag[1])}</b>`:`a ${itemIcon(JELLO_BOX[0],1,"il")}<b>${esc(JELLO_BOX[1])}</b> (one of the five fragments)`}.`;
   $("jelloRows").innerHTML=short.map(({j,need,stones,frags})=>{const s=j.stone[0],f=j.frag[0],have=J.frag[f]||0;
-    return `<tr${today===j?' class="sel"':""}><td class="name">${WEEKDAY[j.day]}</td><td class="name">${esc(j.frag[1])}</td>
+    return `<tr${today===j?' class="sel"':""}><td class="name">${WEEKDAY[j.day]}</td><td class="name">${memName(j.frag)}</td>
       <td><input class="w-xs" type="number" min="0" step="1" data-jfrag="${f}" value="${have||""}" placeholder="0" aria-label="${esc(j.frag[1])} you have"> <button type="button" class="small" data-jadd="${f}" title="Add one">+1</button></td>
-      <td class="name">${esc(j.stone[1])}</td><td><input class="w-xs" type="number" min="0" step="1" data-jstone="${s}" value="${J.stone[s]||""}" placeholder="0" aria-label="${esc(j.stone[1])} you have"></td>
+      <td class="name">${memName(j.stone)}</td><td><input class="w-xs" type="number" min="0" step="1" data-jstone="${s}" value="${J.stone[s]||""}" placeholder="0" aria-label="${esc(j.stone[1])} you have"></td>
       <td>${need||"–"}</td><td>${stones?`<span class="pill down">${stones} stone${stones>1?"s":""}</span> ${frags} fragments`:need?'<span class="pill up">done</span>':"–"}</td>
       <td><button type="button" class="small" data-jcraft="${s}"${J.craft||have<JELLO_PER_STONE?" disabled":""} title="Use ${JELLO_PER_STONE} fragments and start the ${JELLO_CRAFT_DAYS}-day craft">Craft</button></td></tr>`}).join("");
   const c=J.craft,cs=c&&JELLO.find(j=>j.stone[0]===c.id);
@@ -47,16 +47,18 @@ function renderJello(){const J=jello(),now=Date.now(),wd=new Date(now).getDay(),
     <div class="tile"><div class="k">Fragments short</div><div class="v mono">${nPieces?fr:"–"}</div><div class="s">${JELLO_PER_STONE} make a stone</div></div>
     <div class="tile now"><div class="k">All stones by</div><div class="v mono">${rd==null?(nPieces?"now":"–"):rd===Infinity?"> 2 years":fmtD(rd)}</div><div class="s">${rd==null||rd===Infinity?"":`~${Math.ceil((rd-now)/DAY_MS)} days, a run a day from tomorrow`}</div></div>`;
   $("expRows").innerHTML=EXPEDITION.map(x=>`<tr${J.want.includes(x.id)?' class="sel"':""}><td><input type="checkbox" data-jwant="${x.id}"${J.want.includes(x.id)?" checked":""} aria-label="Want ${esc(x.name)}"></td>
-    <td class="name">${infoLink("gear",x.id,x.name)}</td><td class="name">${infoLink("gear",x.from[0],x.from[1])}</td>
-    <td class="name">${Object.entries(x.stones).map(([id,k])=>`${k} ${esc(JELLO.find(j=>j.stone[0]===+id).stone[1])}`).join(", ")}</td></tr>`).join("");
+    <td class="name">${memName([x.id,x.name])}</td><td class="name">${memName(x.from)}</td>
+    <td class="name">${Object.entries(x.stones).map(([id,k])=>`<div>${k} × ${memName(JELLO.find(j=>j.stone[0]===+id).stone)}</div>`).join("")}</td></tr>`).join("");
   $("expCrystals").value=J.crystals||"";
   $("expCryNote").textContent=nPieces?`${fmtN(cry)} ${EXPEDITION_CRYSTALS[1]} for them (${EXPEDITION_CRYSTALS[2]} each)${cry>(J.crystals||0)?`: ${fmtN(cry-(J.crystals||0))} to go`:": you have them"}.`:"";
   renderEnchants()}
-// an item in a reward list: a link when the details popup knows it
-const memItem=([id,name,n])=>`${id&&(BUILD.item(id)||ITEMN[id])?infoLink(infoKind(id),id,name):esc(name)}${n?` <span class="note">${esc(n)}</span>`:""}`;
+// an item with its icon, opening its details (a reward line with no item id, just its text)
+const memName=([id,name])=>id?`${itemIcon(id,1,"il")}${infoLink(infoKind(id),id,name)}`:esc(name);
+// an item in a reward list, with how many
+const memItem=([id,name,n])=>`${memName([id,name])}${n?` <span class="note">${esc(n)}</span>`:""}`;
 function renderMemorials(){
-  $("memRows").innerHTML=MEMORIALS.map(m=>`<tr><td class="name"><b>${esc(m.name)}</b></td><td>${m.lv}</td><td class="mono">${esc(m.at)}</td>
-    <td class="name">${m.normal.map(memItem).join("<br>")}</td><td class="name">${m.hard?m.hard.map(memItem).join("<br>"):"–"}</td></tr>`).join("")}
+  $("memRows").innerHTML=MEMORIALS.map(m=>`<tr><td class="name"><b>${esc(m.name)}</b></td><td>${m.lv}</td><td class="name">${esc(m.npc)}<div class="note mono">${esc(m.at)}</div></td>
+    <td class="name">${m.normal.map(x=>`<div>${memItem(x)}</div>`).join("")}</td><td class="name">${m.hard?m.hard.map(x=>`<div>${memItem(x)}</div>`).join(""):"–"}</td></tr>`).join("")}
 function renderEnchants(){const g=$("enchGear").value||"subjugation",p=$("enchPool").value||"low",rows=MEM_ENCHANT[g][p];
   $("enchRows").innerHTML=rows.map(([l,v])=>`<tr><td class="name">${l==="spirit"?"A job spirit (below)":esc(l)}</td><td>${v}%</td></tr>`).join("");
   $("enchSpirits").innerHTML=p==="armor"?MEM_SPIRITS[g].map(s=>`<div>${esc(s)}</div>`).join(""):""}

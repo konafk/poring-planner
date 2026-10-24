@@ -6,7 +6,7 @@
 - [Accounts, sessions and Backup](#accounts-sessions-and-backup)
 - [Session (EXP tracker)](#session-exp-tracker)
 - [Monsters & maps](#monsters--maps): Where to farm, Map planner, Monster table
-- [Memorials](#memorials): Jellostones, Expedition upgrades, memorial dungeons and their gear's enchants
+- [Memorial dungeons](#memorial-dungeons): Jellostones, Expedition upgrades, memorial dungeons and their gear's enchants
 - [Stellar weapons](#stellar-weapons): ★ Forging Certificates and Activation
 - [Roadmap](#roadmap)
 - [Monster info](#monster-info)
@@ -146,13 +146,15 @@ Mini boss is how they spawn, not the game's Boss class, which is what boss / nor
 
 The MVPs that spawn on the maps here (Amon Ra, Osiris, Baphomet, Moonlight, Orc Hero, Orc Lord, Dracula and the rest) are in the monster tables: each carries an `MVP` tag wherever monsters are listed, Monster info says so, and the Boss dropdown's MVPs lists them. Type `mvp` in a Monster filter to find them. They're Boss class, so they stay out of the farming tables like the other bosses; the ones with no EXP data yet show it as unknown. Maya, Mistress, Phreeoni, Eddga, Pharaoh and Drake are in the tables too but have no map: the client's spawn table doesn't list them on any map it has.
 
-## Memorials
+## Memorial dungeons
 
-Its own tab, from the Taiwan server's notices (it runs ahead of Global) with Global's item names. Fragments, stones, the stone being crafted and the pieces you want are saved per account.
+Its own tab, with Global's item names. Fragments, stones, the stone being crafted and the pieces you want are saved per account.
 
 - **Jellostones:** Poring Village (base Lv 30) gives one Jello Fragment a run, which one by weekday (Poring on Monday, Poporing, Drops, Deviling, Angeling on Friday, a Jellopy Fragment Box at the weekend); today's row is marked, by this device's clock. Type the fragments and stones you have, or press **+1** after a run. **Craft** takes 5 fragments and starts the 3-day wait at the Memory Craftsman's Workshop (one stone at a time: the wait is one quest for all five); set **ready at** to the game's time if you started earlier, and **Collect** adds the stone. The tiles show the stones and fragments the pieces you want still need and the day the last stone is ready, at one run a day from tomorrow, a weekend box counted as a fifth of each fragment, crafts one after another, and no stone swaps.
 - **Expedition upgrades:** the eight Expedition pieces the Ant Hell memorial's Upgrader makes, each from a Subjugation Team piece, 50 Faintly Glowing Crystal and its Jellostones. Tick the ones you want; the crystals they take show under the table.
-- **Memorial dungeons:** Poring Village, Orc's Memory, Prontera Culvert and Ant Hell: base level, way in, and the normal and hard mode reward boxes.
+- **Memorial dungeons:** Poring Village, Orc's Memory, Prontera Culvert and Ant Hell: base level, the NPC who lets you in and where they stand, and the normal and hard mode reward boxes (a party of 7 or more gets more from the last three).
+
+Every item on the tab shows its in-game icon and opens its details, which say which memorial box gives it (or which weekday Poring Village gives a Jello Fragment) and what it makes or is made from, as on the Recipes tab. Search finds the memorial items no monster drops too (Mithril Ore, the Jello Fragments, the gems); the Item info tab only lists monster drops.
 - **Memorial gear enchants:** the card slot 4 enchant on Subjugation Team and Expedition armor, garments and shoes, by refine (+0 to +8, or +9 and up per part), with each line's chance, the +9 armor's job spirit enchants and the reset cost. The line you get goes in the item's random options on the Character tab.
 
 The Subjugation Team and Expedition gear itself is on the Equipment tab with the lines its client description gives (MaxHP / MaxSP and "DEF +x", +3 refine bonuses once, the set's after-attack delay and cast lines only with the whole set). The Lv 80 Contingent gear the Izlude memorial upgrades to is only on the Roadmap for now.
@@ -180,6 +182,8 @@ One monster's stats, how you do against it, and every map it spawns on. The Elem
 
 ## Item info
 
+**Items** picks what the table lists: **Monster drops** (the default, below), **All items** (every item in the game client, from the community database's item catalog: consumables, materials, costumes, enchant stones, boxes, pet items and the rest, plus the recipe, memorial and skill items; gear and cards are on the Equipment and Cards tabs), or one of the client's categories, each with how many it has. An item no monster drops shows its category under Group, `–` for the drop columns, and opens its details when you click it. Search (Ctrl+K) finds every one of them too.
+
 Every item monsters drop, searchable and filterable by auto-loot group (the Group dropdown in the filter row), with NPC and player prices and NPC zeny per kill: the NPC price times your drop chance (after drop bonus and level penalty), at the monster where that comes to most, and spawns: the most of one monster that drops it on one open map. Click an item to see every monster that drops it, the drop chance, the NPC zeny per kill from each, and its best open map with how many spawn there. The **Where to get** filter shows only items an MVP, a mini boss or a normal monster drops, or a quest gives. The farm tables have no MVPs, so for gear and cards it also uses the full drop lists, and an item's **Other sources** lists the monsters that aren't in its table (MVPs, champion monsters) and its quests.
 
 **Find card by prefix:** type the name a card gives its gear in the equipment window (`Bloody`, `of Health`) to list the cards that give it, with whether it goes before or after the item name and the part the card goes in. A whole gear name works too: `+5 Double Bloody Damascus` lists Hydra Card. Click a card for its details.
@@ -194,7 +198,7 @@ Every piece of gear and every card the build simulator knows. Gear shows its inv
 
 ## Recipes
 
-Every crafting recipe: 343 of them under **Forging** (weapons, with the weapon's level, and ores refined into Iron, Steel and elemental stones), **Brewing** (potions), **Arrows** (Arrow Crafting: one item makes a stack, such as 700 Arrows from a Wooden Mail), **Cooking**, **Misc** (Holy Water, elemental converters, Poison Bottle), and the two that NPCs make for a zeny fee: **Mixture & Counteragent** (Morgenstein in Geffen, once Merchant Louitz in Alberta and Aure Dupon in Geffen have sent you to him) and **Dye Making** (the eight Dyestuffs, JavaDullihan in Morroc). The NPC and where they stand show under the category. The category buttons show how many recipes each has for your search. **Search** matches the item made, its number, the materials and the NPC, so typing a drop (`jellopy`) finds everything it turns into. Each row lists the materials with their icons and amounts, and **Materials worth**: each material at your Market price, else what an NPC pays, `+?` when one has neither, plus an NPC's fee, and per arrow or item when a craft makes more than one. Click a header to sort, and any item to open its details, which show who drops it and every recipe that makes or uses it.
+Every crafting recipe: 343 of them under **Forging** (weapons, with the weapon's level, and ores refined into Iron, Steel and elemental stones), **Brewing** (potions), **Arrows** (Arrow Crafting: one item makes a stack, such as 700 Arrows from a Wooden Mail), **Cooking**, **Misc** (Holy Water, elemental converters, Poison Bottle), and the two that NPCs make for a zeny fee: **Mixture & Counteragent** (Morgenstein in Geffen, once Merchant Louitz in Alberta and Aure Dupon in Geffen have sent you to him) and **Dye Making** (the eight Dyestuffs, JavaDullihan in Morroc). **Memorial** has the five Jellostones (5 of their Jello Fragment at the Memory Craftsman's Workshop, then a 3-day wait), the eight Expedition upgrades (the Upgrader: a Subjugation Team piece, 50 Faintly Glowing Crystal and Jellostones), Mithril (10 Mithril Ore at Thor's Flame) and the Oath rings and earrings (15 of their gem and 10 Mithril at the Suspicious Craftsman), from the [Memorial dungeons](#memorial-dungeons) tab's data. The NPC and where they stand show under the category. The category buttons show how many recipes each has for your search. **Search** matches the item made, its number, the materials and the NPC, so typing a drop (`jellopy`) finds everything it turns into. Each row lists the materials with their icons and amounts, and **Materials worth**: each material at your Market price, else what an NPC pays, `+?` when one has neither, plus an NPC's fee, and per arrow or item when a craft makes more than one. Click a header to sort, and any item to open its details, which show who drops it and every recipe that makes or uses it.
 
 ## Market
 

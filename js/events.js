@@ -363,6 +363,11 @@ $("mobInfoInput").addEventListener("change",e=>{const m=MOBS.find(x=>x.name.toLo
 $("mobInfoMaps").addEventListener("click",e=>{const tr=e.target.closest("tr[data-map]");if(!tr)return;state.map=tr.dataset.map;save();showTab("maps");renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})});
 // Item info: search and filter; click an item for its droppers, a dropper for its Monster info
 $("itemSearch").addEventListener("input",renderItems);
+// Items: the monster drops, every item, or one client catalog category, with how many each has
+$("itemShow").innerHTML=[["","Monster drops",Object.keys(ITEM_DROPS).length],["all","All items",allItemIds().length],
+  ...CLIENT_CATS.map(c=>[c,c,allItemIds().filter(id=>clientCat(id)===c).length])].map(([v,n,k])=>`<option value="${esc(v)}">${esc(n)} (${fmtN(k)})</option>`).join("");
+$("itemShow").value=state.itemShow||"";
+$("itemShow").addEventListener("change",e=>{state.itemShow=e.target.value;save();renderItems()});
 // the auto-loot group filters (Monster info drops, Item info) are dropdowns
 ROOTQ('select[data-tf="group"]').forEach(sel=>sel.innerHTML=`<option value="">Any</option>${LOOT_GROUPS.map(([,n])=>`<option>${n}</option>`).join("")}<option value="not looted">Not looted</option>`);
 // Compare sessions, Monster info, Item info, Market and the Hunter tables: click a header to sort (again to flip it), type under it to filter; saved per table
@@ -377,7 +382,8 @@ const TF_RENDER={};
 document.addEventListener("click",e=>{const a=e.target.closest("[data-tfclear]");if(!a)return;e.preventDefault();const id=a.dataset.tfclear;delete state.tfilt[id];
   $(id).querySelectorAll("[data-tf]").forEach(i=>i.value="");save();TF_RENDER[id]()});
 $("itemCard").addEventListener("click",e=>{const a=e.target.closest("[data-pitem]");if(a){e.preventDefault();addPrice(a.dataset.pitem,true);return}
-  const it=e.target.closest("tr[data-item]");if(it){state.infoItem=it.dataset.item;save();renderItems();$("itemTiles").scrollIntoView({behavior:"smooth",block:"nearest"});return}
+  const it=e.target.closest("tr[data-item]");if(it&&!ITEM_DROPS[it.dataset.item]){openInfo("item",it.dataset.item);return}
+  if(it){state.infoItem=it.dataset.item;save();renderItems();$("itemTiles").scrollIntoView({behavior:"smooth",block:"nearest"});return}
   const mo=e.target.closest("#itemDroppers tr[data-id]");if(mo){state.infoMobId=+mo.dataset.id;save();showTab("mobinfo");scrollTo({top:0})}});
 // map planner
 $("mapList").innerHTML=Object.keys(MAPMOBS).sort((a,b)=>mapCode(a).localeCompare(mapCode(b))).map(m=>`<option value="${mapCode(m)}">${esc(mapName(m))} · ${MAPMOBS[m].length} monsters</option>`).join("");
