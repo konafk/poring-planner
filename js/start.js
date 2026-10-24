@@ -22,6 +22,11 @@ function showHero(t){
   let g=b.previousElementSibling;while(g&&!g.classList.contains("navGrp"))g=g.previousElementSibling;
   $("heroGrp").textContent=g?g.textContent:"";$("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
 }
+// a link to a tab: #Memorial-dungeons (its name, any case) or #mem (its key); the address bar always shows the open tab's link
+const tabSlug=t=>document.querySelector(`[data-tabbtn="${t}"] span`).textContent.replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"");
+function hashTab(){let h="";try{h=decodeURIComponent(location.hash.slice(1)).toLowerCase()}catch(e){}if(!h)return null;
+  const b=[...document.querySelectorAll("[data-tabbtn]")].find(b=>b.dataset.tabbtn===h||tabSlug(b.dataset.tabbtn).toLowerCase()===h);
+  return b?b.dataset.tabbtn:null}
 function showTab(t,local){
   if(t==="data")t="acct";// the old Data tab is the Account tab
   if(![...document.querySelectorAll("[data-tabbtn]")].some(b=>b.dataset.tabbtn===t))t="char";
@@ -31,6 +36,8 @@ function showTab(t,local){
   document.querySelectorAll("[data-tabbtn]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tabbtn===t)));
   showHero(t);$("startCard").classList.toggle("offTab",!["char","track","maps"].includes(t));
   if(!local&&state.tab!==t){state.tab=t;save()}
+  // not over a share link (#s=…) that loadShareLink hasn't read yet
+  if(location.hash!=="#"+tabSlug(t)&&!location.hash.startsWith("#s="))try{history.replaceState(null,"",location.pathname+location.search+"#"+tabSlug(t))}catch(e){}
   if(t==="ref"){renderRef();refScroll()}
   if(t==="char")renderGearCmp();
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
@@ -41,7 +48,8 @@ function showTab(t,local){
 document.querySelectorAll("[data-tabbtn]").forEach(b=>b.addEventListener("click",()=>{showTab(b.dataset.tabbtn);scrollTo({top:0})}));
 // a link to another tab (data-gotab="roadmap")
 document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("[data-gotab]");if(!a)return;e.preventDefault();showTab(a.dataset.gotab);scrollTo({top:0})});
-showTab(VIEW&&VIEW.tab||state.tab||"char",!!VIEW);
+{const h=hashTab();showTab(h||VIEW&&VIEW.tab||state.tab||"char",!h&&!!VIEW)}
+addEventListener("hashchange",()=>{const t=hashTab();if(t){showTab(t);scrollTo({top:0})}});
 // ---- collapsible cards: click a heading (or Enter/Space on it) to fold the card; saved by heading text ----
 (function setupCollapse(){
   if(!state.collapsed)state.collapsed={};
