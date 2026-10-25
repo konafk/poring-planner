@@ -30,6 +30,8 @@ const run = load();
 let n = 0;
 const t = (name, fn) => { run("state.sessions=[{id:'s1',name:'t',mobIds:[],entries:[]}];state.current='s1';state.chars={};state.bonus=0;state.jobBonus=0;state.dropBonus=0"); fn(); n++; console.log("ok", name); };
 const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg ?? ""} ${a} != ${b}`);
+// a kill by whole hits: the damage of u uses (avg each) covers the Dummy's 10,000 HP, overshooting by less than one landed hit (max)
+const overkill = (u, avg, max) => assert.ok(u * avg >= 10000 - 1e-6 && u * avg <= 10000 + max, `${u} uses × ${avg} vs 10000 HP`);
 // a made-up monster, so the expected numbers don't depend on the exported tables
 const MOB = "({id:-1,name:'Dummy',lv:50,hp:10000,exp:2000,el:'Water',elv:1,size:'L',race:'Brute',def:20,mdef:10,vit:30,int:20,hit100:200,flee95:250,atkMin:100,atkMax:200,drops:[]})";
 // pick a job and character fields, then redo what renderAll does before the maths reads them
@@ -141,6 +143,19 @@ t("hit chance and uses per kill spread over misses", () => {
   const d = run(`dmgPerHit(${MOB})`);
   near(run(`usesPerKill(${MOB})`), Math.ceil(10000 / (d * 2)) / 0.5);
   assert.equal(run(`C().a.type="magic";hitChance(${MOB})`), 100);      // magic always lands
+});
+
+t("uses per kill counts whole hits and crits: 3.5 hits of HP takes 4 hits, or 3 when two of them crit", () => {
+  setup("Knight", { atkTxt: "100+300", hitTxt: "250", wAtk: 0, weapon: "Two-handed spear", wElem: "Neutral", crit: 30, critDmg: 0, st: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  const d = run(`dmgPerHit(${MOB})`), mob = `({...${MOB},hp:${Math.ceil(3.5 * d)}})`;
+  near(run("critMul()"), 1.4);
+  near(run(`critChance(${mob})`), 0.3);
+  const two = c => 3 * c * c * (1 - c) + c ** 3;                         // 1.4 + 1.4 + 1 = 3.8 hits' worth; one crit's 3.4 isn't enough
+  near(run(`usesPerKill(${mob})`), 3 * two(0.3) + 4 * (1 - two(0.3)));
+  run(`C().hitTxt="150"`);                                              // 50% hit: crits always land, so 65% of swings land, 0.3 / 0.65 of them crits
+  near(run(`usesPerKill(${mob})`), (3 * two(0.3 / 0.65) + 4 * (1 - two(0.3 / 0.65))) / 0.65);
+  run(`C().crit=0`);
+  near(run(`usesPerKill(${mob})`), 4 / 0.5);
 });
 
 t("cast time: variable part shrinks with DEX and INT, fixed part doesn't", () => {
@@ -1143,7 +1158,7 @@ t("Auto Shadow Spell procs on a miss too; card auto-casts need a hit", () => {
     a: JSON.parse(run(`JSON.stringify(JOBS.Rogue.p.find(p=>p.name.startsWith("Shadow Spell: Fire Bolt")))`)) });
   const per = run(`perUse(${MOB})`), hc = run(`hitChance(${MOB})`) / 100, ss = run(`ssDmg(${MOB})`);
   assert.ok(hc < 0.1 && ss > 0);
-  near(run(`usesPerKill(${MOB})`), 10000 / (per * hc + ss * 0.3));    // the 30% Shadow Spell isn't cut by the misses
+  overkill(run(`usesPerKill(${MOB})`), per * hc + ss * 0.3, per + ss * 0.3);    // the 30% Shadow Spell isn't cut by the misses
 });
 
 t("Duple Light: a physical orb per hit (own hit roll) and a magic orb half the time", () => {
@@ -1153,7 +1168,7 @@ t("Duple Light: a physical orb per hit (own hit roll) and a magic orb half the t
   const orb = (type, pct, el) => run(`withAtk({...C().a,dl:false,type:'${type}',pct:${pct},el:'${el}'},()=>dmgPerHit(${MOB}))`);
   near(run(`dlDmg(${MOB})`), orb("phys", 1000, "W") * hc + orb("magic", 1600, "Neutral") * 0.5);
   const base = run(`dmgPerHit(${MOB})`);
-  near(run(`usesPerKill(${MOB})`), 10000 / ((base + run(`dlDmg(${MOB})`)) * hc));   // both orbs need the basic attack to land
+  overkill(run(`usesPerKill(${MOB})`), (base + run(`dlDmg(${MOB})`)) * hc, base + run(`dlDmg(${MOB})`));   // both orbs need the basic attack to land
   near(run("dlUpkeep()"), 100 / 360);                                  // 100 SP every 6 minutes
   run("C().skills={'duple-light':3}");                                   // a skill tree at Lv3: same chances, Lv3 damage %
   near(run(`dlDmg(${MOB})`), orb("phys", 650, "W") * hc + orb("magic", 1040, "Neutral") * 0.5);
@@ -1179,7 +1194,8 @@ t("Blitz Beat: falcon hits that always land, ignore DEF and bonuses; auto Blitz 
   run("C().jobLv=25");
   assert.equal(run("autoBlitzLv()"), 3);
   const hc = run(`hitChance(${MOB})`) / 100;
-  near(run(`usesPerKill(${MOB})`), 10000 / ((run(`dmgPerHit(${MOB})`) + run(`autoBlitzDmg(${MOB})`)) * hc));
+  const ab = run(`dmgPerHit(${MOB})`) + run(`autoBlitzDmg(${MOB})`);
+  overkill(run(`usesPerKill(${MOB})`), ab * hc, ab);
   assert.equal(run(`JOBS.Monk.p[0].pct`), 1600);                       // Throw Spirit Sphere Lv5 on Global: 600 + 200 × Lv
   const fa = JSON.parse(run(`JSON.stringify(JOBS.Hunter.p.find(p=>p.falcon==="assault"))`));
   run(`C().a=${JSON.stringify(fa)};C().baseLv=99`);                    // Falcon Assault Lv5: the Lv5 Blitz Beat hit / 10 × 5 × (55 + 99/5)
@@ -1224,7 +1240,7 @@ t("auto-cast spells from cards work on any job's basic attacks", () => {
   const per = run(`dmgPerHit(${MOB})`), hc = run(`hitChance(${MOB})`) / 100;
   const bolt = run(`magicDmg(${MOB},120,'Fire')`) * 3;                     // (100 + ½ × 40 INT)% × 3 hits, Fire vs Water 1
   near(run(`acDmg(${MOB})`), bolt);
-  near(run(`usesPerKill(${MOB})`), 10000 / (per * hc + bolt * 0.05 * hc));   // only procs on swings that connect
+  overkill(run(`usesPerKill(${MOB})`), per * hc + bolt * 0.05 * hc, per + bolt * 0.05);   // only procs on swings that connect
   assert.ok(run(`usesPerKill(${MOB})`) < off);
   run("C().ac.spell='Soul Strike';C().ac.lv=10");                          // Soul Strike Lv10: 5 Ghost hits
   near(run(`acDmg(${MOB})`), run(`magicDmg(${MOB},100,'Ghost')`) * 5);
