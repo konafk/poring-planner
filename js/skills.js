@@ -113,15 +113,28 @@ function renderSkills(){const c=C(),L=learned(c),S=skOf(state.job),trees=treesOf
   $("skillTrees").innerHTML=trees.length?trees.map((t,ti)=>{const used=t.skills.reduce((a,s)=>a+(s.free||SK_QUEST.includes(s.slug)?0:L[s.slug]||0),0);
     // the 2nd-job tree's points follow your job level past the data's Job Lv 60 (one point per level after the first)
     const pts=t.points!=null&&ti===trees.length-1&&SECOND(state.job)?Math.max(t.points,num(c.jobLv)-1):t.points;const rows=Math.ceil((Math.max(0,...t.skills.map(s=>s.slot))+1)/7);
-    const cells=Array.from({length:rows*7},(_,i)=>{const s=t.skills.find(x=>x.slot===i);if(!s)return '<div class="sk empty"></div>';const lv=L[s.slug]||0,d=skRow(s,Math.max(1,lv))[7];
-      return `<div class="sk${lv?" on":""}${s.passive?" pas":""}" data-sk="${s.slug}" title="${esc(s.name)} Lv${Math.max(1,lv)}${d?": "+esc(d):""}">${iconHtml("skill",s.slug)}<button type="button" class="nm" data-act="max">${esc(s.name)}</button>
+    const cells=Array.from({length:rows*7},(_,i)=>{const s=t.skills.find(x=>x.slot===i);if(!s)return '<div class="sk empty"></div>';const lv=L[s.slug]||0;
+      return `<div class="sk${lv?" on":""}${s.passive?" pas":""}" data-sk="${s.slug}">${iconHtml("skill",s.slug)}<button type="button" class="nm" data-act="max">${esc(s.name)}</button>
         <div class="lv"><button type="button" data-act="dn" aria-label="Lower">−</button><span class="mono">${num(lv)}/${s.max}</span><button type="button" data-act="up" aria-label="Raise">+</button></div></div>`}).join("");
     return `<div class="tree"><div class="bar"><b>${esc(t.job)}</b><span class="note${pts!=null&&used>pts?" bad":""}">${used}${pts!=null?" / "+pts:""} points</span></div><div class="skgrid">${cells}</div></div>`}).join(""):'<div class="note">No skill tree data for this job.</div>';
   const buffs=Object.keys(SK_BUFF).filter(k=>S[k]&&skLv(c,k)>0);
   $("buffList").innerHTML=buffs.length?`<span class="note">Self-buffs while farming (read your status window with them off):</span> `+buffs.map(k=>`<label class="bar"><input type="checkbox" data-buff="${k}" ${(c.buffs||{})[k]?"checked":""}> ${iconHtml("skill",k,1,"il")}${esc(S[k].name)} <span class="muted">${esc(skRow(S[k],skLv(c,k))[7].replace(/Duration:[^,]*,?\s*/i,""))}</span>${SK_BUFF[k].w&&!SK_BUFF[k].w.includes(c.weapon)?` <span class="warnc">(needs ${esc(SK_BUFF[k].w.join(" / "))})</span>`:""}</label>`).join(""):"";
   ROOTQ("#preset option").forEach(o=>{const p=JOBS[state.job].p[+o.value];if(!p)return;const r=levelPreset(p,c);o.textContent=r.s&&(hasTree(c)||r.named)?(r.lv?r.a.name:`${p.name} (not learned)`):p.name})}
+// hover or focus a skill: what it does, and what its learned and next levels give
+let skTip=null;
+function showSkTip(cell){const t=$("skTip"),s=cell&&skOf(state.job)[cell.dataset.sk];skTip=s?s.slug:null;if(!s){t.hidden=true;return}
+  const lv=skLv(C(),s.slug),fx=l=>skRow(s,l)[7],line=l=>fx(l)?`<div><span class="note">Lv ${l}${l>lv?" (next)":""}:</span> ${esc(fx(l))}</div>`:"";
+  t.innerHTML=`<div class="bar">${iconHtml("skill",s.slug)}<b>${esc(s.name)}</b><span class="note">${s.passive?"Passive":"Active"} · Lv ${lv}/${s.max}</span></div>`+
+    (s.desc?`<p>${esc(s.desc)}</p>`:"")+(lv?line(lv):"")+(lv<s.max?line(lv+1):"");
+  t.hidden=false;const box=$("skillCard").getBoundingClientRect(),r=cell.getBoundingClientRect(),h=t.offsetHeight,
+    up=r.bottom+h+8>innerHeight&&r.top-h-8>0;
+  t.style.left=Math.max(8,Math.min(r.left-box.left,box.width-t.offsetWidth-8))+"px";t.style.top=(up?r.top-box.top-h-6:r.bottom-box.top+6)+"px"}
+$("skillTrees").addEventListener("mouseover",e=>{const cell=e.target.closest("[data-sk]");if(cell&&cell.dataset.sk!==skTip)showSkTip(cell)});
+$("skillTrees").addEventListener("mouseleave",()=>showSkTip(null));
+$("skillTrees").addEventListener("focusin",e=>showSkTip(e.target.closest("[data-sk]")));
+$("skillTrees").addEventListener("focusout",e=>{if(!$("skillTrees").contains(e.relatedTarget))showSkTip(null)});
 $("skillTrees").addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const slug=b.closest("[data-sk]").dataset.sk,c=C(),s=skOf(state.job)[slug],lv=skLv(c,slug);let why=null;
   if(b.dataset.act==="up")raiseSkill(c,slug,lv+1);else if(b.dataset.act==="dn")why=lowerSkill(c,slug,lv-1);else if(lv<s.max)raiseSkill(c,slug,s.max);else why=lowerSkill(c,slug,0);
-  $("skillNote").textContent=why?why.join(" · "):"";refreshPreset(c);save();renderSkills();syncChar();renderAll()});
+  $("skillNote").textContent=why?why.join(" · "):"";refreshPreset(c);save();renderSkills();syncChar();renderAll();showSkTip($("skillTrees").querySelector(`[data-sk="${slug}"]`))});
 $("skReset").addEventListener("click",()=>{const c=C();c.skills={};c.buffs={};refreshPreset(c);$("skillNote").textContent="";save();renderSkills();syncChar();renderAll()});
 $("buffList").addEventListener("change",e=>{const k=e.target.dataset.buff;if(!k)return;const c=C();c.buffs=c.buffs||{};c.buffs[k]=e.target.checked;save();renderAll()});

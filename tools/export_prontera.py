@@ -279,14 +279,14 @@ def main():
                        L.get("after_cast_delay_ms"), L.get("cooldown_ms") if L.get("cooldown_ms") is not None else CLIENT_FIX.get(sk["slug"], {}).get("cooldown_ms"), L.get("description_text") or ""]
                       for L in sorted(sk["levels"], key=lambda L: L["level"])]
                 lv, f = global_pct(sk["slug"], lv, sk.get("damage_formula_expression"))
-                row = {"slug": sk["slug"], "name": sk["name"], "max": sk["max_level"], "slot": sk["tree_slot"], "passive": sk["passive"] == "passive",
+                row = {"slug": sk["slug"], "name": sk["name"], "desc": (sk.get("description") or "").strip(), "max": sk["max_level"], "slot": sk["tree_slot"], "passive": sk["passive"] == "passive",
                        "el": sk.get("element"), "pre": [[slug_of.get(p["skill_id"], p["skill_id"]), p["level"]] for p in sk.get("prerequisites") or []],
                        "f": f, "lv": lv, "g": groups(sk.get("bonus_groups")), "free": True if sk.get("free") else None,
                        "icon": (sk.get("image") or "").rsplit("/", 1)[-1] or None}
                 rows.append({k: x for k, x in row.items() if x not in (None, [], "")})
             trees.append({"job": t["job_class"]["name"], "points": POINTS_FIX.get(t["job_class"]["name"], t.get("skill_points")), "skills": rows})
         skills[j] = trees
-    write("skills.js", f"// Skill trees per job: Novice, 1st and 2nd job trees with points, and per skill slug, name, max level, slot (grid position),\n"
+    write("skills.js", f"// Skill trees per job: Novice, 1st and 2nd job trees with points, and per skill slug, name, desc (what the skill does), max level, slot (grid position),\n"
           f"// passive, free (quest skill, no points), el, pre: [[skill slug, level]], f: damage formula, lv: per level [SP, damage %, hits, variable cast ms, fixed cast ms,\n"
           f"// after-cast delay ms, cooldown ms, description], g: bonus groups, icon: the skill's icon ({SITE}/assets/<icon>, fetched by tools/export_icons.py) ({src})", f"const SKILLS={js(skills)};")
     print(f"wrote {len(equip)} equipment, {len(card_rows)} cards, {len(sets)} sets, {len(refine)} refine schedules", flush=True)
