@@ -50,9 +50,14 @@ def monsters(refresh=False):
 # champion monsters the database has no English name for, only their code ("C5_ALARM"): C1 to C5 are the Swift, Solid, Ringleader,
 # Furious and Elusive versions of a monster (rAthena's mob_db), so "C5_ALARM" reads "Elusive Alarm"
 CHAMPION = {"1": "Swift", "2": "Solid", "3": "Ringleader", "4": "Furious", "5": "Elusive"}
+# data/mobs.js names (the client's, from tools/export_mobnames.py) win over the database's ("CocO" is Coco in game)
+_src = open(os.path.join(ROOT, "data", "mobs.js"), encoding="utf-8").read()
+MOB_NAMES = {int(i): n for i, n in re.findall(r'\[(\d+),"([^"]*)"', _src[_src.index("const MOBS="):])}
 
 
 def mob_name(m):
+    if m["monster_id"] in MOB_NAMES:
+        return MOB_NAMES[m["monster_id"]]
     n = m.get("name_en") or m.get("aegis_name") or ""
     c = re.fullmatch(r"C([1-5])_([A-Z0-9_]+)", n)
     return f"{CHAMPION[c.group(1)]} {c.group(2).replace('_', ' ').title()}" if c else n

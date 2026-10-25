@@ -623,7 +623,7 @@ const slowPill=r=>r.slow?` <span class="pill down" title="Over your max ${maxSec
 const lockPill=mp=>lvLocked(mp)?` <span class="pill down" title="Needs base Lv ${mapMinLv(mp)} to enter">Lv ${mapMinLv(mp)}+</span>`:"";
 // monsters you skip (e.g. ones that stun you): left out of map averages, you walk past them
 const isSkipped=m=>!!(state.skipMobs&&state.skipMobs.includes(m.id));
-// the database has no EXP for some monsters yet (Myst, Isis, Anubis...): shown as "?" and left out of EXP averages
+// the database has no EXP for some monsters yet (Mist, Isis, Anubis...): shown as "?" and left out of EXP averages
 const fmtExp=m=>m.expUnknown?"?":fmtN(m.exp);
 // a spawn count, or ? on a map the client doesn't list yet (SPAWN has [map, null] there: which monsters, from the data, but no count)
 const spN=n=>n==null?"?":n;

@@ -46,7 +46,7 @@ Each table lives in its own file, so a re-export after a patch only touches that
 
 | File | Contents |
 | --- | --- |
-| `mobs.js` | Monsters (EXP is `null` where there's no data yet) |
+| `mobs.js` | Monsters (EXP is `null` where there's no data yet). Names written by `tools/export_mobnames.py`. |
 | `spawn.js` | Spawn maps and counts, normal and PvP channels, all from the client. Maps the client doesn't list yet have `[map, null]`: the monster comes there, count not known. Written by `tools/export_spawns.py`. |
 | `maps.js` | In-game map code and name for each spawn map. Names written by `tools/export_mapnames.py`. |
 | `roadmap.js` | Release roadmap: each update's month (or day), level cap, what it adds and the map regions it opens (by map code prefix). Made by hand from the official roadmap. |
@@ -83,6 +83,7 @@ All scripts use only the Python standard library.
 | --- | --- |
 | `python tools/export_spawns.py [--client PATH]` | Rewrites `data/spawn.js` from `navi_mob.lub` in your installed client's `data.grf` (read-only). Default client path: `C:\Gravity\RagnarokZero`. |
 | `python tools/export_mapnames.py [--client PATH]` | Sets the map names in `data/maps.js` to the names your installed client shows in game (read-only). |
+| `python tools/export_mobnames.py [--client PATH]` | Sets the monster names in `data/mobs.js` and the drop lists in `data/iteminfo.js` to the names your installed client shows in game (read-only). A name two monsters would share keeps ours. |
 | `python tools/export_prices.py [--refresh]` | Writes `data/prices.js`, `data/weights.js` and `data/itemtypes.js`, and checks the prices add up to each monster's loot value. |
 | `python tools/export_prontera.py [--refresh]` | Writes the gear, refine and skill data. |
 | `python tools/export_jobs.py [--refresh]` | Writes `data/jobs.js` from rAthena's pre-renewal job tables with Zero's changes (see the top of the script). |
