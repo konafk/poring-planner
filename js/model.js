@@ -215,10 +215,22 @@ const dlUpkeep=()=>{const lv=dlLv();return lv?(50+5*lv)*spCostMul()/(60+30*lv):0
 const critMul=()=>{const k=1.4*(1+(num(C().critDmg)+consSum("crit_dmg"))/100);return C().a.critHalf?1+(k-1)/2:k};
 const useAvg=(m,per,proc,free=0)=>{const cr=critChance(m),hc=hitChance(m)/100;return per*(cr*critMul()+(1-cr)*hc)+proc*(cr+(1-cr)*hc)+free};
 const dpsOf=m=>{if(isSF())return null;return useAvg(m,perUse(m),procPerUse(m),procFree(m))*targets()/useSec()};
+// by hit and miss: each use misses, hits or crits (and Double Attack doubles the right hand), and the monster dies on the use whose damage
+// reaches its HP, so 1,085 HP at 300 a hit takes 4 hits, not 3.6 averaged
+// (3 when one of them crits for 420). Card auto-casts are averaged into each use that connects,
+// Shadow Spell into every use. Past KILL_EXACT hits the overkill is averaged instead (renewal: HP / μ + E[X²] / 2μ²)
+const KILL_EXACT=40;
 function usesPerKill(m){if(isSF()){const d=sfPerAttack(m);return d>0?Math.ceil(m.hp/d):Infinity}const per=perUse(m),proc=procPerUse(m),free=procFree(m);if(per<=0&&proc<=0&&free<=0)return Infinity;
-  // Shadow Spell and card auto-casts are averaged into each attack
-  if(critChance(m)>0||proc>0||free>0)return Math.max(1,m.hp/useAvg(m,per,proc,free));
-  return Math.ceil(m.hp/per)/(hitChance(m)/100)}
+  const cr=critChance(m),hc=hitChance(m)/100,L=leftDmg(m),sw=swMul(),da=sw-1,base=(per-L)/sw,O=[];
+  [[cr,critMul()],[(1-cr)*hc,1]].forEach(([p,k])=>[[1-da,1],[da,2]].forEach(([q,n])=>O.push([p*q,(base*n+L)*k+proc+free])));O.push([(1-cr)*(1-hc),free]);
+  const hit=O.filter(([p,d])=>p>0&&d>0),land=hit.reduce((t,[p])=>t+p,0);if(!(land>0))return Infinity;hit.forEach(o=>o[0]/=land);
+  const hp=m.hp,lo=Math.min(...hit.map(o=>o[1])),hi=Math.max(...hit.map(o=>o[1]));
+  if(hi-lo<1e-9)return Math.ceil(hp/hi)/land;
+  // hits that land: the chance each number of them leaves it alive, summed
+  if(hp/lo>KILL_EXACT){const mu=hit.reduce((t,[p,d])=>t+p*d,0),m2=hit.reduce((t,[p,d])=>t+p*d*d,0);return Math.max(Math.ceil(hp/hi),hp/mu+m2/(2*mu*mu))/land}
+  let dist=new Map([[0,1]]),n=0;while(dist.size){dist.forEach(p=>n+=p);const nx=new Map();
+    dist.forEach((p,s)=>hit.forEach(([q,d])=>{const t=Math.round(s+d);if(t<hp)nx.set(t,(nx.get(t)||0)+p*q)}));dist=nx}
+  return n/land}
 // SP: a use costs SP; natural regen is 1 + MaxSP/100 + INT/6 per 8s, + (INT − 120)/2 + 4 from INT 120 (roz.prontera.info), unless typed
 // "SP Recovery +x%" from gear (Eggyra, Sohee, Merman Cards…) raises it by x%; a typed regen already has it
 const spRecPct=()=>{const c=C();return c.bx?num(c.bx.spRec):0};
