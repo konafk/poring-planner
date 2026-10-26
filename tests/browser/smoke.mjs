@@ -76,6 +76,7 @@ try {
 
   await t("the account picker is on the Character tab, the session picker on the Session tab, each with a + New button", async () => {
     const { page, errs } = await open();
+    await page.click('[data-tabbtn="char"]');                          // a new player starts on Home
     assert.ok(await page.isVisible("#acctSel") && await page.isVisible("#newAcct"));
     assert.ok(!await page.isVisible("#sessionSel"));
     await page.click('[data-tabbtn="track"]');
