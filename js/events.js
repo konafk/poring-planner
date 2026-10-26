@@ -93,7 +93,8 @@ $("recSp").addEventListener("change",e=>{REC().spItem=e.target.value;save();rend
 $("recDisc").addEventListener("change",e=>{state.recovery.discount=e.target.checked;save();renderAll()});
 // a value typed back to the default (or cleared) drops the change
 $("recTable").addEventListener("input",e=>{const i=e.target,id=i.dataset.rid,k=i.dataset.rk;if(!id||!k||!RECOVERY[id])return;const O=REC().overrides,o=O[id]=O[id]||{};
-  if(i.value===""||+i.value===RECOVERY[id][k])delete o[k];else o[k]=Math.max(0,num(i.value));if(!Object.keys(o).length)delete O[id];save();renderAll()});
+  // amt: an item that heals a fixed amount has one box, for both min and max
+  (k==="amt"?["min","max"]:[k]).forEach(k=>{if(i.value===""||+i.value===RECOVERY[id][k])delete o[k];else o[k]=Math.max(0,num(i.value))});if(!Object.keys(o).length)delete O[id];save();renderAll()});
 $("recTable").addEventListener("change",e=>{if(e.target.dataset.rid)setTimeout(renderRecovery,0)});
 $("recTable").addEventListener("focusout",()=>setTimeout(renderRecovery,0));
 $("recTable").addEventListener("click",e=>{const a=e.target.closest("[data-rreset]");if(!a)return;e.preventDefault();delete REC().overrides[a.dataset.rreset];save();renderAll()});

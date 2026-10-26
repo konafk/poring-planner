@@ -29,7 +29,7 @@ Basic attacks hit with both hands: the right hand × Righthand Mastery (50 + 10 
 
 ## Consumables
 
-One card for everything you buy and use up: the Discount setting, HP and SP items (below) and the ASPD potion, converters, food and buffs. Read your status window with these off; they add on top. If your typed numbers already include your buffs and items, untick the box under the status window stats and nothing is added (the ASPD potion still costs zeny).
+One card for everything you buy and use up: the Discount setting, HP and SP items (below), the Elemental converter, and the ASPD potion, food and buffs. Read your status window with these off; they add on top. If your typed numbers already include your buffs and items, untick the box under the status window stats and nothing is added (the ASPD potion still costs zeny).
 
 - **ASPD potion:** Concentration (any job), Awakening (Base Lv 40+, not Novice, Acolyte, Priest, Bard or Dancer) or Berserk (Base Lv 85+; Swordsman, Knight, Crusader, Mage, Wizard, Merchant, Blacksmith, Alchemist and Rogue). One you can't drink yet is greyed out, and the strongest you can drink is used instead.
 - **Elemental converter:** one element at a time. Pick Fire, Water, Earth or Wind, or let it pick the best per monster and map; it shows each one's element-table rate against the monster you picked.
@@ -108,7 +108,7 @@ A Merchant, Blacksmith or Alchemist with Overcharge learned gets more from NPCs.
 
 ## HP and SP items
 
-In the Consumables card: HP and SP items with what they really cost per HP / SP: Red, Orange, Yellow and White Potion, Cheese, Blue Herb, Strawberry and Blue Potion. The amounts were measured in Ragnarok Zero Global on a Merchant (they don't match classic RO) and the average of min and max is counted.
+In the Consumables card: HP and SP items with what they really cost per HP / SP: Red, Orange, Yellow and White Potion, Cheese, Blue Herb, Strawberry and Blue Potion were measured in Ragnarok Zero Global on a Merchant (they don't match classic RO). The slim potions, herbs, fruit, juices, Meat, Milk, Candy, Hinalle and Aloe Leaflet, Mastela Fruit and Grape have classic RO's amounts, marked ?, until they're measured, and no price, since Zero's NPCs may not sell them: type what you pay to count them. The average of min and max is counted.
 
 - With **Buy with Discount** each item uses its Discount price, else the NPC price. Items NPCs don't sell (Strawberry, Blue Potion) use a player price you type; Blue Potion has none until you do, shows n/a and is never picked as the cheapest.
 - Edit any item's min, max, price or weight in the table (saved per job); "reset" goes back to the defaults. Sort by any column; the item in use is marked.

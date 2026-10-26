@@ -122,10 +122,10 @@ function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp
   const f=document.activeElement;if(f&&f.tagName==="INPUT"&&$("recTable").tBodies[0].contains(f))return;
   const rows=tableRows("recTable",recItems().map(x=>{const n=!need||!(x.avg>0)?null:x.kind==="hp"?(need.hpm==null?null:need.hpm*60/x.avg):need.sp/x.avg;
     return {...x,uph:n,zph:n!=null&&x.price!=null?n*x.price:null,wph:n!=null?n*x.w:null}}));
-  const inp=(x,k,v,w)=>`<input type="number" min="0" step="any" data-rid="${x.id}" data-rk="${k}" value="${v??""}" placeholder="${k==="player"||RECOVERY[x.id][k]==null?"n/a":RECOVERY[x.id][k]}" aria-label="${esc(x.name)} ${k}" style="width:${w}px">`;
+  const inp=(x,k,v,w)=>`<input type="number" min="0" step="any" data-rid="${x.id}" data-rk="${k}" value="${v??""}" placeholder="${k==="player"||RECOVERY[x.id][k==="amt"?"min":k]==null?"n/a":RECOVERY[x.id][k==="amt"?"min":k]}" aria-label="${esc(x.name)} ${k}" style="width:${w}px">`;
   $("recTable").querySelector("tbody").innerHTML=rows.map(x=>{const use=pick[x.kind]&&pick[x.kind].id===x.id,u=x.kind.toUpperCase();
     return `<tr><td class="name">${itemIcon(x.id,1,"il")}<a href="#" data-info="item:${x.id}"><b>${esc(x.name)}</b></a>${use?' <span class="pill">in use</span>':""}${x.edited?` <a href="#" data-rreset="${x.id}">reset</a>`:""}</td><td>${u}</td>
-      <td class="nowrap">${inp(x,"min",x.min,56)}–${inp(x,"max",x.max,56)} <b>${fmtSig(x.avg)}</b></td>
+      <td class="nowrap">${x.min===x.max?inp(x,"amt",x.min,56):`${inp(x,"min",x.min,56)}–${inp(x,"max",x.max,56)}`}${x.min===x.max&&x.avg===x.min?"":` <b>${fmtSig(x.avg)}</b>`}${x.aOk?"":' <span title="not measured in Zero yet: classic RO\'s amount">?</span>'}</td>
       <td class="nowrap">${inp(x,x.src||"player",x.price,72)} <span class="note">${x.src?REC_SRC[x.src]:"no price"}</span></td>
       <td>${x.per==null?"n/a":`<b>${fmtSig(x.per)}</b> z/${u}`}</td>
       <td class="nowrap">${x.perW==null?"–":fmtSig(x.perW)} <span class="note">per ${inp(x,"w",x.w,52)}${x.wOk?"":' <span title="weight not checked in game yet">?</span>'}</span></td>

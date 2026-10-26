@@ -528,7 +528,7 @@ const recMul=()=>1+consSum("rec_item_pct")/100;
 function recItem(id){const b=RECOVERY[id];if(!b)return null;const o=REC().overrides[id]||{},v=k=>o[k]!=null?o[k]:b[k];
   const min=num(v("min")),max=Math.max(min,num(v("max"))),avg=(min+max)/2*recMul(),w=num(v("w")),npc=v("npc"),disc=v("disc"),player=v("player");
   const src=npc!=null?(recDisc()&&disc!=null?"disc":"npc"):player!=null?"player":null,price=src?{disc,npc,player}[src]:null;
-  return {id,name:b.name,kind:b.kind,min,max,avg,w,wOk:b.wOk!==false,npc,disc,player,src,price,per:price!=null&&avg>0?price/avg:null,perW:w>0?avg/w:null,edited:Object.keys(o).length>0}}
+  return {id,name:b.name,kind:b.kind,min,max,avg,w,wOk:b.wOk!==false,aOk:b.aOk!==false,npc,disc,player,src,price,per:price!=null&&avg>0?price/avg:null,perW:w>0?avg/w:null,edited:Object.keys(o).length>0}}
 const recItems=kind=>REC_IDS.filter(id=>!kind||RECOVERY[id].kind===kind).map(recItem);
 const recCheapest=kind=>recItems(kind).filter(x=>x.per!=null).sort((a,b)=>a.per-b.per)[0]||null;
 // the item in use: the one you picked when it has a price, else the cheapest (auto, with want = a picked item that has no price); null with "none"

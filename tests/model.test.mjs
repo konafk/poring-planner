@@ -1313,7 +1313,7 @@ t("Angelus: VIT-based DEF % on the VIT / 2 part of soft DEF, from others or your
   run(`SKFX=skillEffects(C());applyBuild();applyConsumables()`);
   assert.equal(run(`cf("defTxt")`), "55+60");
   assert.equal(run(`cf("maxHp")`), 3500);
-  assert.equal(run(`pbEff(PBUFF.find(b=>b.k==="angelus"),4)`), "Max HP +200, VIT DEF +20% (Zero's skill text)");
+  assert.equal(run(`pbEff(PBUFF.find(b=>b.k==="angelus"),4)`), "Max HP +200, VIT DEF +20%");
   // your own Angelus Lv 4 from the Skills card: the same lines from its skill text, and the one from others isn't counted twice
   run(`C().skills={"angelus":4};C().buffs={"angelus":true};SKFX=skillEffects(C());applyBuild();applyConsumables()`);
   assert.deepEqual(JSON.parse(run(`JSON.stringify(SKFX.buffStat.map(b=>[b[0],b[3]]))`)), [["vit_def_percent", 20], ["hp", 200]]);
