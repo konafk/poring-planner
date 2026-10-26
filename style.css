@@ -336,9 +336,10 @@ td .map{cursor:default}
 #roadmapTable .maps{min-width:180px;max-width:320px}
 #roadmapTable tbody tr.muted td{color:var(--muted)}
 /* Memorials tab: tables read left to right, reward lists stack in their cell */
-#memTable th,#memTable td,#expTable th,#expTable td,#jelloTable th,#jelloTable td{text-align:left;vertical-align:top;cursor:default}
+#memTable th,#memTable td,#expTable th,#expTable td,#jelloTable th,#jelloTable td,#memNpcTable th,#memNpcTable td{text-align:left;vertical-align:top;cursor:default}
 #memTable td:nth-child(4),#memTable td:nth-child(5){white-space:normal;min-width:200px}
-#memTable tbody tr,#expTable tbody tr,#jelloTable tbody tr,#enchTable tbody tr{cursor:default}
+#memTable tbody tr,#expTable tbody tr,#jelloTable tbody tr,#enchTable tbody tr,#memNpcTable tbody tr{cursor:default}
+#memNpcTable td:nth-child(3){white-space:normal;min-width:220px}
 #jelloCraft{flex-wrap:wrap}
 #enchSpirits div{margin-top:2px}
 /* Stellar tab: tables read left to right, lists stack in their cell */
@@ -347,7 +348,7 @@ td .map{cursor:default}
 #starNpcTable td:nth-child(3){white-space:normal;min-width:220px}
 #starTable td div{margin:2px 0}
 #starTable td:nth-child(5){white-space:normal;min-width:260px}
-#starNpcTable .navi{user-select:all}
+.navi{user-select:all}
 #gearTable td{vertical-align:middle;font-family:var(--body)}
 #gearTable th{text-align:left}
 #gearTable td:first-child{color:var(--muted);font-size:12px}

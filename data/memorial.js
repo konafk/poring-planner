@@ -78,3 +78,17 @@ const MEM_SPIRITS={
    "Acolyte Spirit Lv 1: Heal, Increase AGI and Blessing SP −15%, heal +1% per 2 levels of Heal",
    "Archer Spirit Lv 1: Double Strafe SP −5, bow ATK +1% per level of Owl's Eye"],
  expedition:["Knight, Blacksmith, Assassin, Wizard, Priest, Hunter, Crusader, Alchemist, Rogue, Sage, Monk, Bard / Dancer and Ninja spirits, Lv 1 and Lv 2: skill damage, cast and after-attack delay bonuses for that job"]};
+// every NPC the tab's memorials, Jellostones, upgrades, crafts and enchants need, for the NPCs card: [name, where ("map x y", or a
+// list when there are several), what they do]
+const MEM_NPCS=[
+["Emily","prt_fild05 145 235","lets you into Poring Village (base Lv 30)"],
+["Calm Scientist","gef_fild10 231 203","lets you into Orc's Memory (base Lv 59)"],
+["Underground Management Director","prt_fild05 265 208","lets you into Prontera Culvert (base Lv 59)"],
+["Memory Labyrinth Association Member","prt_fild06 37 197","lets you into Ant Hell (base Lv 70)"],
+["Memory Craftsman's Workshop","prontera 48 227","makes a Jellostone from 5 of its Jello Fragment, after a 3-day wait (one at a time)"],
+["Stone Transmuter","prt_in 118 28","turns a Jellostone you have spare into another with a Zelstar (KP shop)"],
+["Upgrader","prt_in 118 34","makes an Expedition piece from a Subjugation Team piece, 50 Faintly Glowing Crystal and Jellostones"],
+["Enchant Association staff","prt_in 135 35","enchants Subjugation Team armor, garments and shoes (card slot 4)"],
+["Enchant Association staff","prt_in 135 28","enchants Expedition armor, garments and shoes (card slot 4)"],
+["Thor's Flame",["prt_in 64 68","alberta_in 18 58","morocc_in 74 35","payon 143 169","geffen_in 102 176","aldeba_in 33 50"],"turns 10 Mithril Ore into a Mithril"],
+["Suspicious Craftsman","morocc_in 76 167","makes the Oath rings and the earrings from 15 of their gem and 10 Mithril, in a week or at once for 10 more Mithril"]];
