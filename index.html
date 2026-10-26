@@ -375,23 +375,28 @@
         <span id="itemInfo"></span>
       </div>
       <div class="bar note" id="useItems"></div>
+      <label class="bar note" title="Saved for the whole account. Off: potions, Cheese, Strawberry and White / Blue Herb, plus any item you changed or picked"><input type="checkbox" id="recAll"> Show all items <span class="muted" id="recAllN"></span></label>
       <div class="scroll"><table id="recTable"><thead><tr><th data-sk="name">Item</th><th data-sk="kind">Type</th><th data-sk="avg" title="min – max restored (edit them); the average is what's counted">Avg amount</th><th data-sk="price" title="With Buy with Discount: the Discount price, else the NPC price; player-only items use the player price">Price used</th><th data-sk="per">Cost per HP / SP</th><th data-sk="perW" title="restored per point of weight (edit the weight)">HP or SP per weight</th><th data-sk="uph">Uses / hr</th><th data-sk="zph">Cost / hr</th><th data-sk="wph">Weight / hr</th></tr></thead><tbody></tbody></table></div>
-      <div class="note hint">Values measured in Ragnarok Zero Global on a Merchant. Edit any min, max, price or weight in the table (saved for this job); "reset" goes back to the defaults. Uses / hr: HP items cover the map's HP lost / min, SP items the SP your attack uses beyond regen. SP items are only bought with "auto-use when needed" on (Sage: with Hindsight); otherwise you rest. Pick None to use no HP or SP item. Where to farm takes healing off in Heal cost / hr and Net zeny / hr, the Zeny Hunter in Costs / hr.</div>
+      <div class="note hint">Values measured in Ragnarok Zero Global on a Merchant; an amount with ? is classic RO's, not measured in Zero yet, and items without a price aren't counted until you type what you pay. Edit any min, max, price or weight in the table (saved for this job); "reset" goes back to the defaults. Uses / hr: HP items cover the map's HP lost / min, SP items the SP your attack uses beyond regen. SP items are only bought with "auto-use when needed" on (Sage: with Hindsight); otherwise you rest. Pick None to use no HP or SP item. Where to farm takes healing off in Heal cost / hr and Net zeny / hr, the Zeny Hunter in Costs / hr.</div>
+    </details>
+    <details class="card sub" id="convPanel" open>
+      <summary><b>Elemental converter</b> <span class="note">one element at a time, on basic attacks and weapon-element skills</span></summary>
+      <div class="bar note">
+        <select id="convSel" aria-label="Elemental converter"><option value="">none</option><option value="auto">best per monster / map</option><option>Fire</option><option>Water</option><option>Earth</option><option>Wind</option></select>
+        <span id="convNote" class="warnc"></span>
+        <span id="convItems" class="bar"></span>
+        <div class="full" id="convInfo"></div>
+      </div>
     </details>
     <details class="card sub" id="consPanel" open>
-      <summary><b>ASPD potion, converters, food &amp; buffs</b> <span class="note">read your status window with these off; they add on top</span></summary>
+      <summary><b>ASPD potion, food &amp; buffs</b> <span class="note">read your status window with these off; they add on top</span></summary>
       <div class="warnc" id="consOff" hidden>Not added: the status window box above says your numbers already include buffs and items.</div>
       <div class="bar note"><span>ASPD potion:</span>
         <label class="bar"><input type="checkbox" id="potOn"> using one</label>
-        <select id="potType" aria-label="Which potion"></select>
+        <span id="potIcon"></span><select id="potType" aria-label="Which potion"></select>
         <label class="bar"><input class="w-md" id="potPrice" type="number" step="100"> z each</label>
         <label class="bar">lasts <input class="w-xs" id="potMin" type="number" step="1"> min</label>
         <span id="potInfo"></span>
-      </div>
-      <div class="bar note"><span>Elemental converter:</span>
-        <select id="convSel" aria-label="Elemental converter"><option value="">none</option><option value="auto">best per monster / map</option><option>Fire</option><option>Water</option><option>Earth</option><option>Wind</option></select>
-        <span class="muted">one element at a time, on basic attacks and weapon-element skills</span> <span id="convNote" class="warnc"></span>
-        <div class="full" id="convInfo"></div>
       </div>
       <div class="bar note"><label class="bar" title="Consumes 1 World Tree Dew or Zelstar for a 1-hour buff"><input type="checkbox" id="yggOn"> Blessing of Yggdrasil</label>
         <span class="muted">World Tree Dew or Zelstar (KP shop), lasts 1 hour: all stats +7, ATK +30, MATK +30, HIT +5, FLEE +5</span>
@@ -870,6 +875,7 @@
 <script src="data/icons.js"></script>
 <script src="data/sprites.js"></script>
 <script src="data/iteminfo.js"></script>
+<script src="data/itemtext.js"></script>
 <script src="build.js"></script>
 <button type="button" class="fab" id="qlFab" aria-label="Log EXP" aria-expanded="false" aria-controls="quickLog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
 <dialog class="jump" id="jump" aria-label="Search">

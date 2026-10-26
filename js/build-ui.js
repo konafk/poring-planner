@@ -97,8 +97,8 @@ const consLines=()=>{const lines=[],bad=[],cs=consStatOf(C()),ygg=Object.fromEnt
   OWN_LISTS.forEach(L=>rowsOf(C(),L.key).filter(r=>r.on).forEach(r=>{const o=parseCons(r.eff);lines.push(...o.lines);bad.push(...o.bad.map(x=>`${r.name||L.what}: ${x}`))}));return {lines,bad}};
 // ---- ASPD potions and buffs from others, from the RO樂園攻速計算機 sheet (2026-09-07, "增益"). "aspd_mod" is the sheet's potion/skill
 // value: it adds value × AGI/200 to ASPD1 (see build.js). Who can drink them and from which base level (lv): rAthena item_db_usable ----
-const ASPD_POT={conc:{name:"Concentration Potion",mod:4},awak:{name:"Awakening Potion",mod:6,lv:40,no:["Novice","Acolyte","Priest","Bard","Dancer"]},
-  bers:{name:"Berserk Potion",mod:9,lv:85,only:["Mage","Merchant","Swordsman","Wizard","Blacksmith","Alchemist","Knight","Crusader","Rogue"]}};
+const ASPD_POT={conc:{id:645,name:"Concentration Potion",mod:4},awak:{id:656,name:"Awakening Potion",mod:6,lv:40,no:["Novice","Acolyte","Priest","Bard","Dancer"]},
+  bers:{id:657,name:"Berserk Potion",mod:9,lv:85,only:["Mage","Merchant","Swordsman","Wizard","Blacksmith","Alchemist","Knight","Crusader","Rogue"]}};
 const potJobOk=(k,job=state.job)=>{const p=ASPD_POT[k];return !!p&&!(p.no||[]).includes(job)&&(!p.only||p.only.includes(job))};
 // below the potion's base level it can't be drunk (a blank base level doesn't hold it back)
 const potLvOk=(k,lv=num(C().baseLv))=>{const p=ASPD_POT[k];return !p||!p.lv||!(lv>0)||lv>=p.lv};
@@ -114,7 +114,7 @@ const PBUFF=[
     how:"Blessing Lv 10 + Priest Job Lv/10"},
   {k:"incAgi",name:"Increase AGI",lv:[1,10,10],fx:l=>[["agi",2+l],["aspd_percent",l]]},
   // Angelus on Zero: Max HP +50 and VIT-based DEF +5% per level (the VIT / 2 part of soft DEF), 30 s × level, the caster's whole party
-  {k:"angelus",name:"Angelus",lv:[1,10,10],fx:l=>[["hp",50*l],["vit_def_percent",5*l]],how:"Zero's skill text"},
+  {k:"angelus",name:"Angelus",lv:[1,10,10],fx:l=>[["hp",50*l],["vit_def_percent",5*l]]},
   {k:"impositio",name:"Impositio Manus (Priest)",lv:[1,5,5],fx:l=>[["atk",5*l],["matk",5*l]],how:"Zero: ATK and MATK, not only weapon ATK"},
   {k:"assumptio",name:"Assumptio (Priest)",lv:[1,5,5],fx:l=>[["def",50*l],["heal_pct",2*l]],how:"Zero: flat DEF, not classic's half damage"},
   {k:"canto",name:"Canto Candidus (Priest)",fx:()=>[["agi",19],["aspd_percent",17]]},
@@ -174,6 +174,8 @@ function renderAspdBuffs(){const c=C(),k=potKey(c),act=document.activeElement;$(
   $("clanSel").value=CLANS[c.clan]?c.clan:"";$("clanInfo").textContent=(CLANS[c.clan]?clanEff(CLANS[c.clan]):"two stats +1, Max HP +30, Max SP +10")+(c.mode==="build"?"":" · build mode only: your status window already shows it");
   if(act!==$("potType"))$("potType").innerHTML=Object.entries(ASPD_POT).filter(([key])=>potJobOk(key)).map(([key,p])=>{const lvOk=potLvOk(key);
     return `<option value="${key}"${key===k?" selected":""}${lvOk?"":" disabled"}>${p.name} (${p.mod})${lvOk?"":` · Base Lv ${p.lv}+`}</option>`}).join("");
+  // the potion in use, its icon opening its details like the other item names
+  $("potIcon").innerHTML=k?`<a href="#" data-info="item:${ASPD_POT[k].id}" title="${esc(ASPD_POT[k].name)}">${itemIcon(ASPD_POT[k].id)}</a>`:"";
   if(!$("pbuffList").contains(act))$("pbuffList").innerHTML=PBUFF.map(b=>{const o=pbuffOf(c)[b.k]||{},off=b.w&&!b.w.includes(c.weapon),own=PB_SELF[b.k]&&(c.buffs||{})[PB_SELF[b.k]]&&skLv(c,PB_SELF[b.k]);
     return `<div class="eqrow" data-pb="${b.k}"><label class="bar pbName"><input type="checkbox" data-f="on" ${o.on?"checked":""}>${esc(b.name)}</label>
     ${b.lv?`<label class="bar">${b.lv[3]||"Lv"} <input data-f="lv" type="number" min="${b.lv[0]}" max="${b.lv[1]}" value="${pbLv(b,o)}" class="w-xs"></label>`:""}

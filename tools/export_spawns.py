@@ -47,15 +47,25 @@ def grf_file(grf, name):
     raise SystemExit(f"{name} not found in {grf}")
 
 
-def lua_data(b):
-    """Globals set by a compiled Lua 5.1 data file, running only the opcodes that build tables."""
+def text(raw, enc):
+    """enc "utf-8": the English client's strings are UTF-8 with a few cp1252 ones"""
+    if enc != "utf-8":
+        return raw.decode(enc, "replace")
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode("cp1252", "replace")
+
+
+def lua_data(b, enc="cp949"):
+    """Globals set by a compiled Lua 5.1 data file, running only the opcodes that build tables. enc: how its strings are written."""
     p = [12]
 
     def u8(): p[0] += 1; return b[p[0] - 1]
     def i32(): p[0] += 4; return struct.unpack_from("<i", b, p[0] - 4)[0]
     def s():
         n = struct.unpack_from("<I", b, p[0])[0]; p[0] += 4 + n
-        return b[p[0] - n:p[0] - 1].decode("cp949", "replace") if n else None
+        return text(b[p[0] - n:p[0] - 1], enc) if n else None
 
     def func():
         s(); i32(); i32(); u8(); u8(); u8(); u8()

@@ -46,9 +46,16 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
     acts:`${inS?'<span class="pill up">In this session</span>':`<button type="button" class="primary" data-infoact="farm">${s.mobIds.length?"Also killing it":"Farming it now"}</button>`}
       <button type="button" data-infoact="mobinfo">Monster info</button>`}}
 
+// an HP / SP recovery item (data/recovery.js): what it heals with your changes, the price the Consumables card uses and the cost per HP / SP
+function infoHeal(id){if(!RECOVERY[id])return "";
+  return `<div class="infoList">${recItems().filter(x=>x.id===String(id)).map(x=>{const u=x.kind.toUpperCase();
+    const amt=x.pct!=null?`${x.pct}% of Max ${u}${x.avg>0?` (${fmtN(x.avg)} ${u})`:""}`:`${x.min===x.max?fmtN(x.min):`${fmtN(x.min)}–${fmtN(x.max)}`} ${u}${x.min===x.max&&x.avg===x.min?"":` (avg ${fmtSig(x.avg)})`}`;
+    return `<div><b>${amt}</b>${x.aOk?"":' <span class="note" title="not measured in Zero yet: classic RO\'s amount">?</span>'} <span class="note">${x.price!=null?`${fmtN(x.price)} z (${REC_SRC[x.src]}) · ${x.per!=null?`${fmtSig(x.per)} z/${u}`:"–"}`:"no price: type what players pay"}</span></div>`}).join("")}</div>`}
+
 function popItem(id){const name=itemName(id);
   return {ico:itemIcon(id,1.5),title:name,sub:`#${id} · ${ITEM_DROPS[id]||!clientCat(id)?`${GROUP_NAME[groupOf(id)]}${looted(id)?"":" (not looted)"}`:esc(clientCat(id))}`,
-    body:infoPrice(id)+infoSec("Dropped by",infoDroppers(id))+infoSec("Memorial dungeons",infoMemorial(id))
+    body:infoSec("Heals",infoHeal(id))+infoSec("In-game text",typeof ITEM_TEXT!=="undefined"&&ITEM_TEXT[id]&&`<div class="infoText">${esc(ITEM_TEXT[id])}</div>`)
+      +infoPrice(id)+infoSec("Dropped by",infoDroppers(id))+infoSec("Memorial dungeons",infoMemorial(id))
       +(ITEM_DROPS[id]||infoMemorial(id)?"":'<div class="note">No monster the farm tables know drops it.</div>')+infoRecipes(id),
     acts:(ITEM_DROPS[id]?'<button type="button" data-infoact="items">Item info</button>':"")+recipeAct(id)}}
 

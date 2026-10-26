@@ -26,6 +26,10 @@ function crowdInfo(){const c=C(),m=calcMob();if(document.activeElement!==$("crow
   $("crowdInfo").textContent=`vs ${m.name}: ${m.agg||m.assist?`${m.agg?"aggressive":"assists its kind"}, possible rampage of ${fmtP(n)}`:"fights you alone"}${n>2?` (FLEE −${Math.round((1-crowdFlee(n))*100)}%, DEF −${Math.round((1-crowdDef(n))*100)}%)`:""}${m.poison?` · poisons you ${Math.round(pz*100)}% of the time: −${fmtN(poisonHpPerSec())} HP/s, no HP or SP regen then`:""}`}
 function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   // converters vs the monster you picked: the element-table rate of each one, and the one the EXP/min picks
+  // the converters in use, each with its icon and what players pay for it (made by Sages, so bought from players); not while you type in one
+  if(!$("convItems").contains(document.activeElement))$("convItems").innerHTML=C().converters?(convFixed()?[convFixed()]:CONV_ELS).map(el=>{const id=CONV_ID[el];
+    return `<label class="bar"><a href="#" data-info="item:${id}" title="${esc(itemName(id))}">${itemIcon(id)}</a><input class="w-md" type="number" min="0" step="100" data-convprice="${id}" value="${state.prices[id]>0?state.prices[id]:""}" placeholder="price" aria-label="${esc(itemName(id))}: what players pay"> z</label>`}).join("")
+    +`<span class="muted">from players, 20 min each (3 / hr)${convFixed()&&convPrice(convFixed())>0?`: ${fmtN(3*convPrice(convFixed()))} z/hr`:""}</span>`:"";
   {const m=convOn()&&calcMob();$("convInfo").innerHTML=m?`vs ${esc(m.name)} (${m.el||"Neutral"} ${m.elv||1}): ${convAll().map(el=>elRateHtml(el,elemMult(m,el))).join(" · ")} → ${convFixed()?`using ${convFixed()}`:`best ${esc(mobRow(m,walkSec()).el2)}`}`:""}
   if(typeof renderStatNote==="function")renderStatNote();
   const c=C(),a=c.a,p=JOBS[state.job].p[c.preset];
@@ -108,24 +112,28 @@ function renderUseItems(){const c=C(),a=c.a,ui=useItems(),sup=supShown(),fb=Obje
 const fmtSig=n=>n==null||!isFinite(n)?"n/a":n>=100?fmtN(n):String(+n.toPrecision(3));
 const fmtQty=n=>n==null||!isFinite(n)?"–":n<10?n.toFixed(1):fmtN(n);
 const REC_SRC={disc:"Discount",npc:"NPC",player:"players"};
+// the item value a one-box amount (an item that heals a fixed amount) shows as its placeholder
+const REC_BASE={amt:"min",spAmt:"spMin"};
 // the map uses per hour are worked out on: the Map planner's, else the picked monster's best open map, else the session's. HP lost / min and SP short per hour there
 function recNeed(){let mp=mapKey(state.map);if(!MAPMOBS[mp])mp=mobMap(calcMob())||currentMap();if(!MAPMOBS[mp])return null;
   const w=walkSec(),r=mapStats(mp,w);return {mp,hpm:r?r.hpi:null,loss:r?r.hpm:null,sp:r?mapSpShort(mp,w,r.el2):0}}
 function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp:recPick("sp")},ch={hp:recCheapest("hp"),sp:recCheapest("sp")};
-  const opts=kind=>`<option value="auto">Auto (cheapest${ch[kind]?": "+esc(ch[kind].name):""})</option><option value="none">None</option>`+recItems(kind).map(x=>`<option value="${x.id}">${esc(x.name)}${x.per==null?" (no price)":""}</option>`).join("")+'<option value="custom">Custom (type it)</option>';
-  $("recHp").innerHTML=opts("hp");$("recHp").value=R.hpItem==="custom"||R.hpItem==="none"||(RECOVERY[R.hpItem]&&RECOVERY[R.hpItem].kind==="hp")?R.hpItem:"auto";
-  $("recSp").innerHTML=opts("sp");$("recSp").value=R.spItem==="custom"||R.spItem==="none"||(RECOVERY[R.spItem]&&RECOVERY[R.spItem].kind==="sp")?R.spItem:"auto";
+  const opts=kind=>`<option value="auto">Auto (cheapest${ch[kind]?": "+esc(ch[kind].name):""})</option><option value="none">None</option>`+recItems(kind).filter(x=>recShown(x,R[kind==="hp"?"hpItem":"spItem"])).map(x=>`<option value="${x.id}">${esc(x.name)}${x.per==null?" (no price)":""}</option>`).join("")+'<option value="custom">Custom (type it)</option>';
+  $("recHp").innerHTML=opts("hp");$("recHp").value=R.hpItem==="custom"||R.hpItem==="none"||recFor(R.hpItem,"hp")?R.hpItem:"auto";
+  $("recSp").innerHTML=opts("sp");$("recSp").value=R.spItem==="custom"||R.spItem==="none"||recFor(R.spItem,"sp")?R.spItem:"auto";
   $("recHp").title=pick.hp&&pick.hp.want?`${pick.hp.want.name} has no price, so the cheapest is used`:"";$("recSp").title=pick.sp&&pick.sp.want?`${pick.sp.want.name} has no price, so the cheapest is used`:"";
   $("recCustom").hidden=R.spItem!=="custom";$("recCustomHp").hidden=R.hpItem!=="custom";$("recDisc").checked=recDisc();
   $("recNote").textContent=need?`${state.job} on ${mapCode(need.mp)}: ${need.loss==null?"HP loss unknown":`${fmtN(need.loss)} HP lost/min${need.loss>0&&vitHeals()?" (your Vitata Heals cover it)":""}`} · ${fmtN(need.sp/60)} SP/min short`+` · using ${pick.hp?pick.hp.name:"no HP item"} and ${pick.sp?pick.sp.name:"no SP item"}`:"pick a monster or a map (Map planner) to see uses per hour";
   // don't rebuild the box you're typing in; the table catches up when you leave it
   const f=document.activeElement;if(f&&f.tagName==="INPUT"&&$("recTable").tBodies[0].contains(f))return;
-  const rows=tableRows("recTable",recItems().map(x=>{const n=!need||!(x.avg>0)?null:x.kind==="hp"?(need.hpm==null?null:need.hpm*60/x.avg):need.sp/x.avg;
+  const all=recItems(),shown=all.filter(x=>recShown(x,(pick[x.kind]||{}).id));$("recAll").checked=recAll();$("recAllN").textContent=all.length>shown.length?`${all.length-shown.length} more`:"";
+  const rows=tableRows("recTable",shown.map(x=>{const n=!need||!(x.avg>0)?null:x.kind==="hp"?(need.hpm==null?null:need.hpm*60/x.avg):need.sp/x.avg;
     return {...x,uph:n,zph:n!=null&&x.price!=null?n*x.price:null,wph:n!=null?n*x.w:null}}));
-  const inp=(x,k,v,w)=>`<input type="number" min="0" step="any" data-rid="${x.id}" data-rk="${k}" value="${v??""}" placeholder="${k==="player"||RECOVERY[x.id][k]==null?"n/a":RECOVERY[x.id][k]}" aria-label="${esc(x.name)} ${k}" style="width:${w}px">`;
+  const inp=(x,k,v,w)=>`<input type="number" min="0" step="any" data-rid="${x.id}" data-rk="${k}" value="${v??""}" placeholder="${k==="player"||RECOVERY[x.id][REC_BASE[k]||k]==null?"n/a":RECOVERY[x.id][REC_BASE[k]||k]}" aria-label="${esc(x.name)} ${k}" style="width:${w}px">`;
   $("recTable").querySelector("tbody").innerHTML=rows.map(x=>{const use=pick[x.kind]&&pick[x.kind].id===x.id,u=x.kind.toUpperCase();
     return `<tr><td class="name">${itemIcon(x.id,1,"il")}<a href="#" data-info="item:${x.id}"><b>${esc(x.name)}</b></a>${use?' <span class="pill">in use</span>':""}${x.edited?` <a href="#" data-rreset="${x.id}">reset</a>`:""}</td><td>${u}</td>
-      <td class="nowrap">${inp(x,"min",x.min,56)}–${inp(x,"max",x.max,56)} <b>${fmtSig(x.avg)}</b></td>
+      <td class="nowrap">${x.pct!=null?`${inp(x,"pct",x.pct,60)}% of Max ${u} <b${x.avg>0?"":` title="set your Max ${u} in the Character tab"`}>${x.avg>0?fmtN(x.avg):"?"}</b>`
+        :x.min===x.max?inp(x,x.sp?"spAmt":"amt",x.min,56):`${inp(x,x.sp?"spMin":"min",x.min,56)}–${inp(x,x.sp?"spMax":"max",x.max,56)}`}${x.pct!=null||x.min===x.max&&x.avg===x.min?"":` <b>${fmtSig(x.avg)}</b>`}${x.aOk?"":' <span title="not measured in Zero yet: classic RO\'s amount">?</span>'}</td>
       <td class="nowrap">${inp(x,x.src||"player",x.price,72)} <span class="note">${x.src?REC_SRC[x.src]:"no price"}</span></td>
       <td>${x.per==null?"n/a":`<b>${fmtSig(x.per)}</b> z/${u}`}</td>
       <td class="nowrap">${x.perW==null?"–":fmtSig(x.perW)} <span class="note">per ${inp(x,"w",x.w,52)}${x.wOk?"":' <span title="weight not checked in game yet">?</span>'}</span></td>
@@ -505,7 +513,7 @@ const mobbedPill=mp=>mobbedOf(mp)>1?` <span class="pill down" title="Possible ra
 const healTip=r=>{const h=recPick("hp"),s=recPick("sp");return [r.hpm==null?"HP: no damage data":r.hpm>0&&vitHeals()?`HP: your Vitata Heals cover ${fmtN(r.hpm)}/min (SP and time, no HP items)`:r.hpZ>0&&h?`HP: ${h.name} ×${fmtQty(r.hpHr)}/hr = ${fmtN(r.hpZ)} z`:r.hpm>0&&!h?"HP: no HP item":"HP: none lost",
   r.spHr>0&&s?`SP: ${s.name} ×${fmtQty(r.spHr)}/hr = ${fmtN(r.spZ)} z`:!s?"SP: no SP item (you rest)":itemsOnNow()?"SP: regen covers it":"SP: no SP items (auto-use off, you rest)"].join("\n")};
 // the Zeny Hunter's Costs / hr: healing as above, plus the ASPD potion and ground buffs
-const costTip=r=>healTip(r)+(r.other>=0.5?`\nASPD potion${fieldBuffs().length?", ground buffs":""}: ${fmtN(r.other)} z`:"");
+const costTip=r=>healTip(r)+(r.other>=0.5?`\n${["ASPD potion",fieldBuffs().length&&"ground buffs",convOn()&&"converters"].filter(Boolean).join(", ")}: ${fmtN(r.other)} z`:"");
 const UNK_PILL=' <span class="pill down" title="No EXP data for it yet, so it\'s left out of EXP / min">EXP ?</span>';
 // the EXP Hunter's tooltips: what a kill's seconds are made of and where the walking comes from; the HP a minute taken, regen and healing
 const secTip=r=>`${r.sec.toFixed(1)}s fighting + ${r.walk.toFixed(1)}s walking${r.sell>=0.05?` + ${r.sell.toFixed(1)}s of selling trips`:""} per kill${r.cal?`\ncalibrated to your logs (×${r.cal.toFixed(2)}): ~${r.secT.toFixed(1)}s a kill`:""}\n${walkSrcTxt()}`;

@@ -936,6 +936,17 @@ t("recovery items: cost per HP / SP, the cheapest pick and healing per hour", ()
   assert.equal(run(`hpHeal(202).z`), 0); assert.equal(run(`hpHeal(202).n`), 0);
   assert.equal(run(`spItemAmt()`), 0); assert.equal(run(`spItemPrice()`), 0);
   run(`REC().spItem="auto";REC().hpItem="auto"`);
+  // items that heal HP and SP: listed as an HP item and as an SP item. Yggdrasil Berry / Seed: all / half of Max HP and SP, at the price you type
+  run(`C().maxHp=2000;C().maxSp=300`);
+  assert.equal(run(`recItem("607","hp").avg`), 2000); assert.equal(run(`recItem("607","sp").avg`), 300);
+  assert.equal(run(`recItem("608","hp").avg`), 1000); assert.equal(run(`recItem("608","sp").avg`), 150);
+  assert.equal(run(`recItems().filter(x=>x.id==="607").map(x=>x.kind).join()`), "hp,sp");
+  near(run(`recItem("526","hp").avg`), 365); near(run(`recItem("526","sp").avg`), 50);   // Royal Jelly: 325–405 HP, 40–60 SP
+  run(`REC().overrides={"607":{player:5000}};REC().spItem="607"`);
+  near(run(`spItemAmt()`), 300); near(run(`spItemPrice()`), 5000); near(run(`recItem("607","hp").per`), 2.5);
+  run(`REC().overrides={"526":{spMin:30,spMax:30}}`);                        // the SP side's own amounts; the HP side keeps its own
+  near(run(`recItem("526","sp").avg`), 30); near(run(`recItem("526","hp").avg`), 365);
+  run(`REC().overrides={};REC().spItem="auto"`);
 });
 
 t("recovery items: SP items in the SP model, Heal cost / hr and Net zeny / hr in the EXP Hunter", () => {
@@ -1264,8 +1275,19 @@ t("elemental converter: one element picked, or the best per monster / map", () =
   assert.equal(run(`mobRow(${jakk},0).el2`), "Fire");
   assert.equal(run(`mapStats(mapKey("gef_dun01"),0).el2`), "Fire");
   assert.ok(run(`withEl("Fire",()=>hitPctOf(${jakk}))`) < run(`withEl("Water",()=>hitPctOf(${jakk}))`));
+  // bought from players (made by Sages): 3 an hour at what players pay, off zeny/hr; none on the weapon's own element or without a price
+  assert.equal(run(`convCostHr()`), 0);
+  run(`state.prices[12114]=1500`);
+  near(run(`convCostHr()`), 4500);
+  near(run(`mobRow(${jakk},0).hc`), 4500);
+  run(`C().convEl=""`);
+  assert.equal(run(`withEl("Neutral",()=>convCostHr())`), 0);              // auto, on your weapon's own element
+  near(run(`withEl("Fire",()=>convCostHr())`), 4500);
+  assert.equal(run(`withEl("Water",()=>convCostHr())`), 0);                // no price typed for Water
   run(`C().converters=false`);
+  assert.equal(run(`convCostHr()`), 0);
   assert.equal(run(`JSON.stringify(elOptions())`), "[null]");
+  run(`delete state.prices[12114]`);
 });
 
 t("ASPD potion and buffs from others (RO樂園攻速計算機 values)", () => {
@@ -1313,7 +1335,7 @@ t("Angelus: VIT-based DEF % on the VIT / 2 part of soft DEF, from others or your
   run(`SKFX=skillEffects(C());applyBuild();applyConsumables()`);
   assert.equal(run(`cf("defTxt")`), "55+60");
   assert.equal(run(`cf("maxHp")`), 3500);
-  assert.equal(run(`pbEff(PBUFF.find(b=>b.k==="angelus"),4)`), "Max HP +200, VIT DEF +20% (Zero's skill text)");
+  assert.equal(run(`pbEff(PBUFF.find(b=>b.k==="angelus"),4)`), "Max HP +200, VIT DEF +20%");
   // your own Angelus Lv 4 from the Skills card: the same lines from its skill text, and the one from others isn't counted twice
   run(`C().skills={"angelus":4};C().buffs={"angelus":true};SKFX=skillEffects(C());applyBuild();applyConsumables()`);
   assert.deepEqual(JSON.parse(run(`JSON.stringify(SKFX.buffStat.map(b=>[b[0],b[3]]))`)), [["vit_def_percent", 20], ["hp", 200]]);

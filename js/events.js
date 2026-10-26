@@ -75,6 +75,8 @@ $("acOn").addEventListener("change",e=>{AC().on=e.target.checked;save();renderAl
 $("acSpell").addEventListener("change",e=>{AC().spell=e.target.value;save();renderAll()});
 ["acLv","acPct"].forEach(id=>$(id).addEventListener("input",e=>{AC()[id==="acLv"?"lv":"pct"]=num(e.target.value);save();renderAll()}));
 $("convSel").addEventListener("change",e=>{const v=e.target.value,c=C();c.converters=!!v;c.convEl=v==="auto"?"":v;save();renderAll()});
+// a converter's price: what players pay for it, the same price as the Market tab and its details popup
+$("convItems").addEventListener("input",e=>{const id=e.target.dataset.convprice;if(!id)return;const v=num(e.target.value);if(v>0)state.prices[id]=v;else delete state.prices[id];save();renderAll()});
 // attack detail fields: editing makes the attack "Custom"
 $("cartW").addEventListener("input",e=>{C().cartW=Math.min(8000,Math.max(0,num(e.target.value)));save();renderAll()});
 $("weaponW").addEventListener("input",e=>{C().weaponW=Math.max(0,num(e.target.value));save();renderAll()});
@@ -91,9 +93,13 @@ $("useItems").addEventListener("input",e=>{const i=e.target,c=C();if(i.dataset.s
 $("recHp").addEventListener("change",e=>{REC().hpItem=e.target.value;save();renderAll()});
 $("recSp").addEventListener("change",e=>{REC().spItem=e.target.value;save();renderAll()});
 $("recDisc").addEventListener("change",e=>{state.recovery.discount=e.target.checked;save();renderAll()});
+$("recAll").addEventListener("change",e=>{state.recovery.all=e.target.checked;save();renderAll()});
 // a value typed back to the default (or cleared) drops the change
 $("recTable").addEventListener("input",e=>{const i=e.target,id=i.dataset.rid,k=i.dataset.rk;if(!id||!k||!RECOVERY[id])return;const O=REC().overrides,o=O[id]=O[id]||{};
-  if(i.value===""||+i.value===RECOVERY[id][k])delete o[k];else o[k]=Math.max(0,num(i.value));if(!Object.keys(o).length)delete O[id];save();renderAll()});
+  // the player price is what players pay for the item, the one the Market tab and the details popup show
+  if(k==="player"){delete o.player;if(i.value===""||!(num(i.value)>0))delete state.prices[id];else state.prices[id]=num(i.value)}
+  // amt: an item that heals a fixed amount has one box, for both min and max (spAmt: the SP side of an item that heals HP and SP)
+  else (k==="amt"?["min","max"]:k==="spAmt"?["spMin","spMax"]:[k]).forEach(k=>{if(i.value===""||+i.value===RECOVERY[id][k])delete o[k];else o[k]=Math.max(0,num(i.value))});if(!Object.keys(o).length)delete O[id];save();renderAll()});
 $("recTable").addEventListener("change",e=>{if(e.target.dataset.rid)setTimeout(renderRecovery,0)});
 $("recTable").addEventListener("focusout",()=>setTimeout(renderRecovery,0));
 $("recTable").addEventListener("click",e=>{const a=e.target.closest("[data-rreset]");if(!a)return;e.preventDefault();delete REC().overrides[a.dataset.rreset];save();renderAll()});

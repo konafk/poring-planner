@@ -88,7 +88,7 @@ for(const j in state.chars){let c=state.chars[j];if(!c||typeof c!=="object"){del
   if(c.recovery==null&&((c.itemSp!=null&&+c.itemSp!==37)||(c.itemPrice!=null&&+c.itemPrice!==200)))c.recovery={spItem:"custom"};
   if(c.recovery!=null){const r=c.recovery&&typeof c.recovery==="object"&&!Array.isArray(c.recovery)?c.recovery:{},o=r.overrides&&typeof r.overrides==="object"?r.overrides:{},keys=(x,ks)=>Object.fromEntries(Object.entries(numMap(x)).filter(([k,v])=>ks.includes(k)&&v>=0));
     c.recovery={hpItem:typeof r.hpItem==="string"?r.hpItem:"auto",spItem:typeof r.spItem==="string"?r.spItem:"auto",
-      overrides:Object.fromEntries(Object.entries(o).filter(([id])=>Object.hasOwn(RECOVERY,id)).map(([id,x])=>[id,keys(x,["min","max","w","npc","disc","player"])]).filter(([,x])=>Object.keys(x).length))}}}
+      overrides:Object.fromEntries(Object.entries(o).filter(([id])=>Object.hasOwn(RECOVERY,id)).map(([id,x])=>[id,keys(x,["min","max","spMin","spMax","pct","w","npc","disc","player"])]).filter(([,x])=>Object.keys(x).length))}}}
 // market prices you typed for items, and optionally what an NPC pays for them (item id → zeny); numbers only, so a pasted backup can't put anything else in
 state.prices=Object.fromEntries(Object.entries(numMap(state.prices)).filter(([k,v])=>/^\d+$/.test(k)&&v>=0)); // keys are item ids
 state.npcPrices=Object.fromEntries(Object.entries(numMap(state.npcPrices)).filter(([k,v])=>v>=0&&k in state.prices));
@@ -115,8 +115,9 @@ if(state.itemShow!=null&&typeof state.itemShow!=="string")delete state.itemShow;
 state.noTele=(Array.isArray(state.noTele)?state.noTele:[]).map(String);
 // possible rampage per map (monsters attacking you together) (Map planner): whole numbers 1–12
 state.mobbed=Object.fromEntries(Object.entries(numMap(state.mobbed)).map(([k,v])=>[k,Math.min(12,Math.max(1,Math.round(v)))]));
-// per account: buy at the Discount price (on unless switched off): recovery items, the ASPD potion, skill items and Custom HP / SP items
-state.recovery={discount:!(state.recovery&&state.recovery.discount===false)};
+// per account: buy at the Discount price (on unless switched off): recovery items, the ASPD potion, skill items and Custom HP / SP items;
+// all: list the less used recovery items too
+state.recovery={discount:!(state.recovery&&state.recovery.discount===false),all:!!(state.recovery&&state.recovery.all===true)};
 // the Memorial dungeons tab's Jellostone tracker (memorial.js): whole counts of 0 or more by fragment / stone id, the stone crafting
 // ({id, due: ms}), the Expedition pieces you want (item ids) and your Faintly Glowing Crystals
 {const j=objOr(state.jello),cnt=(o,ids)=>Object.fromEntries(Object.entries(numMap(o)).filter(([k,v])=>ids.includes(+k)&&v>=0).map(([k,v])=>[k,Math.round(v)]).filter(([,v])=>v>0)),
