@@ -1306,6 +1306,44 @@ t("Max SP from Dance Lessons with any weapon, Max HP from Angelus", () => {
   assert.equal(run(`cf("maxHp")`), 1500);
 });
 
+t("Angelus: VIT-based DEF % on the VIT / 2 part of soft DEF, from others or your own Skills card, both modes", () => {
+  // status window: VIT 61 -> VIT / 2 = 30; Lv 10 is +50% -> soft DEF +15, typed 40+60 -> 55+60; Max HP 3000 + 500
+  setup("Acolyte", { atkTxt: "50+20", aspd: 150, weapon: "One-handed mace", maxHp: 3000, maxSp: 300, defTxt: "40+60", st: { vit: "61", int: "40" }, intTxt: "40",
+    cons: [], pbuffs: { angelus: { on: true, lv: 10 } }, buffs: {}, skills: {} });
+  run(`SKFX=skillEffects(C());applyBuild();applyConsumables()`);
+  assert.equal(run(`cf("defTxt")`), "55+60");
+  assert.equal(run(`cf("maxHp")`), 3500);
+  assert.equal(run(`pbEff(PBUFF.find(b=>b.k==="angelus"),4)`), "Max HP +200, VIT DEF +20% (Zero's skill text)");
+  // your own Angelus Lv 4 from the Skills card: the same lines from its skill text, and the one from others isn't counted twice
+  run(`C().skills={"angelus":4};C().buffs={"angelus":true};SKFX=skillEffects(C());applyBuild();applyConsumables()`);
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(SKFX.buffStat.map(b=>[b[0],b[3]]))`)), [["vit_def_percent", 20], ["hp", 200]]);
+  assert.equal(run(`aspdBuffLines().length`), 0);
+  assert.equal(run(`cf("defTxt")`), "46+60");                              // 30 × 20% = 6
+  assert.equal(run(`cf("maxHp")`), 3200);
+  // build mode: the same on the computed soft DEF and Max HP
+  setup("Acolyte", { mode: "build", baseLv: 50, jobLv: 40, build: { base: { str: 1, agi: 1, vit: 60, int: 1, dex: 1, luk: 1 }, gear: {} }, cons: [], consStat: {}, pbuffs: {}, buffs: {}, skills: {} });
+  run(`SKFX=skillEffects(C());applyBuild()`);
+  const def0 = run(`BUILD_LAST.status.softDef`), vit = run(`BUILD_LAST.total.vit`), hp0 = run(`C().maxHp`);
+  run(`C().pbuffs={angelus:{on:true,lv:10}};SKFX=skillEffects(C());applyBuild()`);
+  assert.equal(run(`BUILD_LAST.status.softDef`), def0 + Math.floor(Math.floor(vit / 2) / 2));
+  assert.equal(run(`C().maxHp`), hp0 + 500);                                // flat Max HP, after the VIT multiplier
+  assert.equal(run(`BUILD_LAST.unmodelled.length`), 0);
+});
+
+t("buffs from others: Zero's Impositio Manus, Assumptio and Adrenaline Rush values", () => {
+  setup("Blacksmith", { atkTxt: "100+100", matkTxt: "50+0", hitTxt: "200", aspd: 160, weapon: "Two-handed axe", maxHp: 4000, defTxt: "40+60", st: { vit: "40" },
+    cons: [], pbuffs: { impositio: { on: true, lv: 5 }, assumptio: { on: true, lv: 5 }, adren: { on: true } }, buffs: {}, skills: {} });
+  run(`SKFX=skillEffects(C());applyBuild();applyConsumables()`);
+  assert.equal(run(`cf("atkTxt")`), "100+125");                            // ATK +25
+  assert.equal(run(`cf("defTxt")`), "40+310");                             // Assumptio Lv 5: DEF +250
+  assert.equal(run(`cf("hitTxt")`), "220");                                // Adrenaline Rush Lv 5: HIT +20
+  assert.equal(run(`consSum("heal_pct")`), 10);                            // Assumptio Lv 5: Heal received +10%
+  // build mode: DEF on the gear side, and Heal received isn't listed as not counted (consSum counts it)
+  setup("Blacksmith", { mode: "build", baseLv: 50, jobLv: 40, build: { base: { str: 1, agi: 1, vit: 1, int: 1, dex: 1, luk: 1 }, gear: {} }, cons: [], consStat: {}, pbuffs: { assumptio: { on: true, lv: 5 } }, buffs: {}, skills: {} });
+  assert.equal(run(`BUILD_LAST.acc.def`), 250);
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(BUILD_LAST.unmodelled)`)), []);
+});
+
 t("consumables: + and +% per main stat, old food buffs move into the table", () => {
   setup("Knight", { atkTxt: "100+300", aspd: 160, weapon: "Two-handed sword", st: { str: "50", agi: "80", vit: "1", int: "1", dex: "40", luk: "1" }, intTxt: "1",
     potOn: false, cons: [], consStat: { str: { n: 10, p: 10 } }, pbuffs: { agiFood: { on: true, lv: 7 }, dexFood: { on: false, lv: 5 } }, buffs: {}, skills: {},

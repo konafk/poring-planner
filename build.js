@@ -57,13 +57,18 @@ const BUILD=(()=>{
       hit:175+lv+s.dex+f(s.luk/3),flee:100+lv+s.agi+f(s.luk/5),softDef:f(lv/2)+f(s.vit/2)+f(s.agi/5), // each part rounds down: Lv 63 VIT 5 AGI 100 shows 53 in game, not 54
       softMdef:Math.max(0,f(s.int+lv/4+(s.dex+s.vit)/5)),crit:1+s.luk*0.3+lv/100,aspdTerm:Math.sqrt(s.agi*s.agi/2+s.dex*s.dex/(ranged?7:5))/4}}
 
+  // soft DEF that "VIT-based Defense +pct%" adds at total VIT vit: pct % of floor(VIT / 2), rounded down
+  const vitDefAdd=(vit,pct)=>pct?Math.floor(Math.floor(vit/2)*pct/100):0;
+
   // ---- bonus accumulation ----
   const blank=()=>({st:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},stPct:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},atk:0,matk:0,atkPct:0,matkPct:0,hit:0,flee:0,pd:0,crit:0,critDmg:0,aspd:0,aspdPct:0,aspdMod:0,
-    hp:0,hpPct:0,sp:0,spPct:0,def:0,mdef:0,ranged:0,melee:0,skill:0,skillOf:{},vct:0,fct:0,acd:0,vctOf:{},fctOf:{},ignDef:0,ignMdef:0,
+    hp:0,hpPct:0,sp:0,spPct:0,def:0,vitDef:0,mdef:0,ranged:0,melee:0,skill:0,skillOf:{},vct:0,fct:0,acd:0,vctOf:{},fctOf:{},ignDef:0,ignMdef:0,
     ign:{def:{race:{},size:{},ele:{},kind:{}},mdef:{race:{},size:{},ele:{},kind:{}}},
     phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},taken:{race:{},size:{},ele:{},kind:{}},exp:{all:0,race:{}},critRace:{},spCost:0,spRec:0,hpRec:0,wEle:null,unmodelled:[]});
   // lines that only matter for PvP survival, healing or status resistance: not part of the farming maths, so not reported either
   const QUIET=["resistance_percent","heal_amount_percent","item_heal_percent","sp_heal_percent","sp_recovery_percent","hp_recovery_percent","perfect_hit","magic_damage_taken_percent","sp_per_hit","hp_per_hit"];
+  // consumable and buff lines the page counts itself (consSum in js/model.js): not reported as not counted
+  const PAGE=["heal_pct","rec_item_pct","hp_regen","hp_regen_pct","sp_regen","sp_regen_pct","exp_base","exp_job","crit_dmg","fct_percent","no_break"];
   const addTo=(o,k,v)=>{o[k]=(o[k]||0)+v};
   // monster groups ("against Boulder Dwarves") are kept by the text a member's name contains
   const GROUP={boulder_dwarf:"Boulder Dwarf"};
@@ -73,7 +78,7 @@ const BUILD=(()=>{
   function apply(A,b,src){const [type,kind,target,value]=b;const v=+value||0;
     if(type==="sp_recovery_percent"&&!kind){A.spRec+=v;return true}
     if(type==="hp_recovery_percent"&&!kind){A.hpRec+=v;return true}
-    if(QUIET.includes(type))return true;
+    if(QUIET.includes(type)||PAGE.includes(type)&&!kind)return true;
     // "Fire Magical Damage +x%" boosts your own spells of that element; physical lines with an element target the monster's element
     if(type==="magic_damage_percent"&&kind==="element"){addTo(A.myEle,tgt(kind,target),v);return true}
     if(type==="exp_percent"&&!kind){A.exp.all+=v;return true}
@@ -86,7 +91,7 @@ const BUILD=(()=>{
     // "When attacking Brute monsters, CRIT +7": counted only against that race
     if(type==="crit"&&kind==="race"){addTo(A.critRace,tgt(kind,target),v);return true}
     const flat={atk:"atk",matk:"matk",atk_percent:"atkPct",matk_percent:"matkPct",hit:"hit",flee:"flee",perfect_dodge:"pd",crit:"crit",crit_damage_percent:"critDmg",
-      aspd:"aspd",aspd_percent:"aspdPct",aspd_mod:"aspdMod",hp:"hp",hp_percent:"hpPct",sp:"sp",sp_percent:"spPct",def:"def",mdef:"mdef",
+      aspd:"aspd",aspd_percent:"aspdPct",aspd_mod:"aspdMod",hp:"hp",hp_percent:"hpPct",sp:"sp",sp_percent:"spPct",def:"def",vit_def_percent:"vitDef",mdef:"mdef",
       ranged_damage_percent:"ranged",melee_damage_percent:"melee"}[type];
     if(flat&&!kind){A[flat]+=v;return true}
     if(type==="attack_delay_percent"&&!kind){A.aspdPct-=v;return true} // −10% delay counts as +10% ASPD
@@ -268,6 +273,8 @@ const BUILD=(()=>{
       applyGroups(A,st.g,{...ctxBase,refine:rw?rw.r:0,refineSum:ps.reduce((a,w,i)=>a+(w.it.slug===st.pieces[i]?w.r:0),0)},st.name)});
     const jb=jobBonus(job,jobLv),base={},tot={};STAT6.forEach(k=>{base[k]=Math.max(1,+((b.base||{})[k])||1);tot[k]=base[k]+jb[k]+A.st[k];tot[k]+=Math.floor(tot[k]*A.stPct[k]/100)}); // "STR +10%": a share of the total stat, rounded down
     const weapon=wpn?WTYPE[wpn.type]||"Bare hands":"Bare hands",ranged=RANGED_W.includes(weapon),S=status(lv,tot,ranged),f=Math.floor;
+    // "VIT-based Defense +x%" (Angelus) raises only the VIT / 2 part of soft DEF (rAthena renewal SC_ANGELUS; not checked in game)
+    S.softDef+=vitDefAdd(tot.vit,A.vitDef);
     const lw=wpnL?WTYPE[wpnL.type]||null:null,dual=dualOk(job,weapon,lw);
     if(wpnL&&!dual)A.unmodelled.push(`${wpnL.name}: a left-hand weapon needs an Assassin with a dagger, one-handed sword or one-handed axe in each hand`);
     // ATK % isn't in the status window's ATK: it's passed on as atkPct, which the damage model adds next to the race / size cards
@@ -337,5 +344,5 @@ const BUILD=(()=>{
     for(const f of top)for(const cs of cardReadings(f.runs)){const r=read(f.it,cs),k=JSON.stringify(r);if(!seen.has(k)&&alts.length<ALT_MAX){seen.add(k);alts.push(r)}}
     return alts.length?{...best,alts}:best}
 
-  return {SLOTS,CARD_FOR,WTYPE,STAT6,FIRST_OF,SHIELD_ASPD,DUAL_W,LEFT_ASPD,dualOk,item,jobBonus,refineAt,status,compute,curve,parseOptions,OPTIONS,OPT_MAX,optRows,optLines,optBad,optGear,optChoices,STONE_SLOTS,stone,stonesWorn,tamingEgg,readCardNames,readGearName}})();
+  return {SLOTS,CARD_FOR,WTYPE,STAT6,FIRST_OF,SHIELD_ASPD,DUAL_W,LEFT_ASPD,dualOk,item,jobBonus,refineAt,status,vitDefAdd,compute,curve,parseOptions,OPTIONS,OPT_MAX,optRows,optLines,optBad,optGear,optChoices,STONE_SLOTS,stone,stonesWorn,tamingEgg,readCardNames,readGearName}})();
 if(typeof module!=="undefined")module.exports=BUILD;

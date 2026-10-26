@@ -106,28 +106,35 @@ const potOk=(k,job=state.job,lv)=>potJobOk(k,job)&&potLvOk(k,lv);
 // the potion in use: the one picked, else the strongest this job can drink (older saves had a flat "+ASPD" box instead)
 const potKey=c=>potOk(c.potType)?c.potType:["bers","awak","conc"].find(k=>potOk(k));
 const AXE_MACE=["One-handed axe","Two-handed axe","One-handed mace","Two-handed mace"];
-// lv: [min, max, default, label]; fx(level) -> bonus lines; eff: what it does, when the lines don't say it plainly; how: where the numbers come from
+// lv: [min, max, default, label]; fx(level) -> bonus lines; eff: what it does, when the lines don't say it plainly; how: where the numbers come from.
+// Skill values are Zero's in-game skill text (data/skills.js), which differs from classic RO for several of them
 const PBUFF=[
   {k:"blessing",name:"Blessing",lv:[1,10,10],fx:l=>[["str",l],["int",l],["dex",l],["hit",2*l]]},
   {k:"clementia",name:"Clementia (Priest)",lv:[1,70,50,"Priest Job Lv"],fx:j=>{const v=10+Math.floor(j/10);return [["str",v],["int",v],["dex",v]]},
     how:"Blessing Lv 10 + Priest Job Lv/10"},
   {k:"incAgi",name:"Increase AGI",lv:[1,10,10],fx:l=>[["agi",2+l],["aspd_percent",l]]},
-  {k:"angelus",name:"Angelus",lv:[1,10,10],fx:l=>[["hp",50*l]],how:"Zero's skill text; its VIT DEF +5% per level isn't counted"},
+  // Angelus on Zero: Max HP +50 and VIT-based DEF +5% per level (the VIT / 2 part of soft DEF), 30 s × level, the caster's whole party
+  {k:"angelus",name:"Angelus",lv:[1,10,10],fx:l=>[["hp",50*l],["vit_def_percent",5*l]],how:"Zero's skill text"},
+  {k:"impositio",name:"Impositio Manus (Priest)",lv:[1,5,5],fx:l=>[["atk",5*l],["matk",5*l]],how:"Zero: ATK and MATK, not only weapon ATK"},
+  {k:"assumptio",name:"Assumptio (Priest)",lv:[1,5,5],fx:l=>[["def",50*l],["heal_pct",2*l]],how:"Zero: flat DEF, not classic's half damage"},
   {k:"canto",name:"Canto Candidus (Priest)",fx:()=>[["agi",19],["aspd_percent",17]]},
   {k:"riff",name:"Impressive Riff (Bard)",lv:[1,10,10],fx:l=>[["aspd_percent",l===10?17:1+2*(l-1)]],how:"Zero: 17% at Lv 10, not the description's 20%"},
-  {k:"adren",name:"Adrenaline Rush (from a Blacksmith)",w:AXE_MACE,fx:()=>[["aspd_mod",6],["aspd_percent",10]],eff:"potion/skill value 6, ASPD +10%; axes and maces"}];
+  {k:"adren",name:"Adrenaline Rush (from a Blacksmith)",w:AXE_MACE,lv:[1,5,5],fx:l=>[["aspd_mod",6],["aspd_percent",10],["hit",5+3*l]],how:"axes and maces; HIT +5 + 3 per level from Zero's skill text"}];
 const pbuffOf=c=>{if(!c.pbuffs||typeof c.pbuffs!=="object")c.pbuffs={};return c.pbuffs};
 const pbLv=(b,o)=>b.lv?Math.min(b.lv[1],Math.max(b.lv[0],num(o.lv,b.lv[2]))):0;
 // what it does at level lv (the level you typed, else the default)
-const pbEff=(b,lv=b.lv?b.lv[2]:0)=>b.eff||b.fx(lv).map(([t,v])=>t==="aspd_percent"?`ASPD +${v}%`:t==="aspd_mod"?`potion/skill value ${v}`:t==="hp"?`Max HP +${v}`:`${t.toUpperCase()} +${v}`).join(", ")+(b.how?` (${b.how})`:"");
+const PB_LABEL={aspd_percent:v=>`ASPD +${v}%`,aspd_mod:v=>`potion/skill value ${v}`,hp:v=>`Max HP +${v}`,vit_def_percent:v=>`VIT DEF +${v}%`,heal_pct:v=>`Heal received +${v}%`};
+const pbEff=(b,lv=b.lv?b.lv[2]:0)=>b.eff||b.fx(lv).map(([t,v])=>PB_LABEL[t]?PB_LABEL[t](v):`${t.toUpperCase()} +${v}`).join(", ")+(b.how?` (${b.how})`:"");
 // a buff counts when ticked and it fits your weapon. It doesn't stack with the same buff switched on in your Skills card, and
 // Clementia replaces Blessing, Canto Candidus replaces Increase AGI
-const PB_SELF={blessing:"blessing",incAgi:"increase-agility",adren:"adrenaline-rush"},PB_OVER={blessing:"clementia",incAgi:"canto"};
+const PB_SELF={blessing:"blessing",incAgi:"increase-agility",angelus:"angelus",impositio:"impositio-manus",adren:"adrenaline-rush"},PB_OVER={blessing:"clementia",incAgi:"canto"};
 const pbTicked=(k,c)=>!!(pbuffOf(c)[k]||{}).on;
 const pbOn=(b,c)=>{if(!pbTicked(b.k,c)||(b.w&&!b.w.includes(c.weapon)))return false;const own=PB_SELF[b.k];
   if(own&&(c.buffs||{})[own]&&skLv(c,own))return false;return !(PB_OVER[b.k]&&pbTicked(PB_OVER[b.k],c))};
 function aspdBuffLines(c=C()){const out=[];if(c.potOn){const k=potKey(c);if(k)out.push(["aspd_mod",null,null,ASPD_POT[k].mod])}
   PBUFF.forEach(b=>{if(pbOn(b,c))b.fx(pbLv(b,pbuffOf(c)[b.k])).forEach(([t,v])=>out.push([t,null,null,v]))});return out}
+// one line type summed over the buffs from others that count (Assumptio's Heal received % for consSum)
+const pbSum=(t,c=C())=>aspdBuffLines(c).reduce((a,b)=>a+(b[0]===t?b[3]:0),0);
 // status-window mode: the typed numbers are read with consumables off, so their effect is added here into EFF (see cf).
 // Unticking "addOnTop" says the typed numbers already include them, so nothing is added
 const addOnTop=c=>c.mode!=="build"&&c.addOnTop!==false;
@@ -147,10 +154,12 @@ function applyConsumables(){EFF=null;const c=C();if(!addOnTop(c))return;const li
   // ASPD as in build.js: stat term and potion/skill value × AGI/200 go into ASPD1, then ASPD % and flat ASPD, rounded down
   let aspd=num(c.aspd,170)+d("aspdTerm")+g("aspd_mod")*(statVal(tmp,"agi")||0)/200;aspd=Math.min(190,Math.floor(aspd+(195-aspd)*g("aspd_percent")/100+g("aspd")));
   const vit0=statVal(c,"vit"),vit1=statVal(tmp,"vit"),int0=statVal(c,"int"),int1=statVal(tmp,"int");
+  // Angelus's VIT-based DEF % goes on the soft DEF (needs the VIT you typed)
+  const vitDef=vit1!=null?BUILD.vitDefAdd(vit1,g("vit_def_percent")):0;
   const hp=num(c.maxHp)>0?f((num(c.maxHp)*(vit0!=null?(100+vit1)/(100+vit0):1)+g("hp"))*(1+g("hp_percent")/100)):c.maxHp;
   const sp=num(c.maxSp)>0?f((num(c.maxSp)*(100+int1)/(100+int0)+g("sp"))*(1+g("sp_percent")/100)):c.maxSp;
   EFF={atkTxt:`${atkSt}+${atkGear}`,matkTxt:`${matkSt}+${matkTot-matkSt}`,hitTxt:String(sumStat(c.hitTxt)+d("hit")+g("hit")),fleeTxt:String(sumStat(c.fleeTxt)+d("flee")+g("flee")),
-    atkPct:num(c.atkPct)+g("atk_percent"),defTxt:`${ds+d("def")}+${dh+g("def")}`,crit:num(c.crit)+d("crit")+g("crit"),aspd,maxHp:hp,maxSp:sp,st:tmp.st,intTxt:tmp.intTxt}}
+    atkPct:num(c.atkPct)+g("atk_percent"),defTxt:`${ds+d("def")+vitDef}+${dh+g("def")}`,crit:num(c.crit)+d("crit")+g("crit"),aspd,maxHp:hp,maxSp:sp,st:tmp.st,intTxt:tmp.intTxt}}
 function renderCons(){const c=C(),cs=consStatOf(c);
   $("consStats").tBodies[0].innerHTML=STAT6_UI.map(k=>{const o=cs[k]||{};return `<tr data-cs="${k}"><td>${k.toUpperCase()}</td>
     <td><input data-f="n" type="number" step="1" value="${esc(o.n??"")}" placeholder="0" aria-label="${k.toUpperCase()} +"></td>
