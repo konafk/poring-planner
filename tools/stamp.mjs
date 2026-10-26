@@ -3,7 +3,7 @@
 // The committed index.html carries no stamps (they changed in nearly every PR and conflicted); the Pages workflow runs this.
 // Run: node tools/stamp.mjs [outDir]  (default _site)
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync } from "fs";
-import { dirname, join } from "path";
+import { dirname, join, relative } from "path";
 import { createHash } from "crypto";
 import { fileURLToPath, pathToFileURL } from "url";
 
@@ -13,8 +13,10 @@ export const hashOf = path => createHash("sha256").update(readFileSync(new URL(p
 // each local src="…" / href="…" (not http, not #) on a script or link tag
 const LOCAL = /(<(?:script|link)\b[^>]*?\b(?:src|href)=")(?![a-z]+:|\/\/|#)([^"?]+)(?:\?v=[^"]*)?"/g;
 export const localFiles = html => [...html.matchAll(LOCAL)].map(m => m[2]);
-// images the page loads from its scripts (the gear icon and card picture sheets, data/icons.js): copied as they are, every file in img/
-export const assetFiles = () => readdirSync(new URL("img/", root)).map(f => `img/${f}`);
+// images the page loads from its scripts (the gear icon and card picture sheets, data/icons.js; the map pictures in img/maps/,
+// data/minimaps.js): copied as they are, every file in img/ and its folders
+export const assetFiles = () => readdirSync(new URL("img/", root), { recursive: true, withFileTypes: true }).filter(d => d.isFile())
+  .map(d => `img/${relative(fileURLToPath(new URL("img/", root)), join(d.parentPath, d.name)).replace(/\\/g, "/")}`);
 // the stamped page: each local file's ?v= set to that file's hash
 export const stamp = html => html.replace(LOCAL, (_, pre, path) => `${pre}${path}?v=${hashOf(path)}"`);
 

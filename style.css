@@ -726,6 +726,18 @@ details.more>.form{display:grid}
 .dbTable details.desc summary{cursor:pointer;color:var(--accent);font-size:11.5px;width:max-content}
 /* Item info: an item's other sources (monsters the farm tables don't have, quests) across the tile row */
 .calc .tile.wide{grid-column:1/-1}
+.mapPics{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin:8px 0 12px}
+.mapPic{display:block;width:min(100%,320px)}
+.mapPic[hidden],.worldMap[hidden]{display:none}
+.worldMap{position:relative;flex:1 1 360px;max-width:640px}
+.worldMap>img{display:block;width:100%;height:auto;border-radius:8px}
+#worldBoxes{position:absolute;inset:0;bottom:auto}
+.wmBox{position:absolute;padding:0;min-width:0;border:1px solid rgba(255,255,255,.35);border-radius:2px;background:transparent;cursor:pointer;box-shadow:none}
+.wmBox:hover{border-color:#fff;background:rgba(255,255,255,.2)}
+.wmBox.closed{border-style:dashed;border-color:rgba(0,0,0,.35)}
+.wmBox.on{border:2px solid #ff3b30;background:rgba(255,59,48,.3);box-shadow:0 0 0 2px rgba(255,255,255,.8)}
+.worldMap .note{margin-top:4px}
+.mapPic img{display:block;width:100%;height:auto;border-radius:8px;background:var(--raised)}
 .tile .s.from{line-height:1.7}
 /* the details popup (js/info.js): a monster, item, gear or card */
 .infoDlg{width:min(720px,calc(100vw - 32px));max-height:min(760px,calc(100vh - 48px));margin-top:6vh}

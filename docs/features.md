@@ -81,7 +81,7 @@ Open maps ranked by EXP/min, weighted by spawn counts. At the max base level (70
 - **Max sec / kill** (60 by default, 0 for no limit; one box for both rankings, under More options): maps that take longer a kill, like a Lv 45 Thief on nrd_dun02's Boulder Dwarves, get a **too slow** badge and rank after every other map, so a huge EXP per kill can't put a map you can't really farm at #1. They stay last in the default sort too; sort by another column to see them in place.
 - Maps with an entry level (nrd_dun02 needs base Lv 50) are left out of both hunters below it, with a note in the line above the table, and show a "Lv 50+" badge on Monster info.
 - Maps show their in-game code and name (`in_sphinx5` · Sphinx B5F). You can also type the database code (`sp_d05`).
-- Monsters with no EXP data yet (Myst, Isis, Anubis…) show EXP `?` and are left out of EXP/min.
+- Monsters with no EXP data yet (Mist, Isis, Anubis…) show EXP `?` and are left out of EXP/min.
 - **Logged vs projected:** for each map you have sessions on, your logged kills / hr ÷ what the table projects for them, each with the stats it was logged with (hover for every session). **Calibrate to my logs** scales kills / hr by the median of that ratio over your sessions longer than 60 minutes, so EXP / min, loot and weight per hour follow; HP and SP items and other hourly costs don't.
 - **Weight columns** (off until you tick them under Show / hide columns): loot weight per kill and per hour, from item weights and drop chances with your drop rate bonus and the level penalty, and how often you go to town (farming to your sell point, then the trip). The line above the table shows the Max Weight, weight now and sell point they assume.
 - HP lost / min is the damage that gets through less HP regen and Hunter Fly. Casters and archers take the same hits as melee: aggressive monsters, and monsters that reach you while you cast, are in "swings reach you". With Vitata your Heals cover it, so it costs SP and time instead of HP items. Hover it to see the damage taken, poison and regen. "Damage taken from" a race, size or element (Thara Frog Card, Poo Poo Hat's −10% from Demi-Human, "Resistance to Demi-Human" options, Equipment stats lines) scales each monster hit first, so it lowers HP lost, the HP items and heal cost, and raises net zeny.
@@ -104,7 +104,7 @@ Open maps, or single monsters, ranked by net zeny/hr. That's the loot value per 
 
 ### Map planner
 
-Per-map averages, kills/hr, EXP/hr and net zeny/hr. Its **Farming this map now** button does what Farm here does. The EXP ranking's Zeny / hr column is net the same way.
+Per-map averages, kills/hr, EXP/hr and net zeny/hr, under the map's picture from the game client's map window (click it for full size; Ayothaya - Ancient Shrine Maze has none in the client), beside the game's world map with the map lit. Every spawn map is a box on the world map: click one to plan that map (a dungeon's floors share a box, so click again for the next floor; dashed boxes aren't open yet). Maps whose region isn't out yet aren't on the game's world map. Its **Farming this map now** button does what Farm here does. The EXP ranking's Zeny / hr column is net the same way.
 
 ### Farm without items
 
