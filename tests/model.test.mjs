@@ -370,7 +370,7 @@ t("a restored save is cleaned up before anything uses it", () => {
   assert.equal(app("'Knight' in state.chars"), false);
   assert.deepEqual(app("JSON.stringify(state.prices)"), JSON.stringify({ "904": 3000 }));   // item ids only, numbers only
   assert.deepEqual(app("JSON.stringify(state.npcPrices)"), JSON.stringify({ "904": 10 }));
-  assert.equal(app("state.tab"), "char");                              // not one of the tabs: back to Character
+  assert.equal(app("state.tab"), "home");                              // not one of the tabs: back to Home
   assert.ok(app("stats(cur())").avgRaw > 0);                            // the tracker maths still runs
 });
 
