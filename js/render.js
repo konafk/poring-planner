@@ -749,6 +749,8 @@ function renderMap(){
   let mp=mapKey(state.map);const mob=calcMob();
   if(!mp)mp=mobMap(mob);
   $("mapInput").value=mp?mapCode(mp):"";$("mapName").textContent=mapName(mp)+(isRoomMap(mp)?` · room dungeon: one map cut into small rooms, so monsters crowd into yours (a possible rampage of ${ROOM_CROWD} unless you change it)`:"");
+  // the map's picture from the client (data/minimaps.js, tools/export_minimaps.py), asked for with its checksum so a new one isn't read from an old cache
+  {const a=$("mapPicLink"),v=typeof MINIMAPS!=="undefined"&&mp&&MINIMAPS[mp];a.hidden=!v;if(v){const u=`img/maps/${mp}.png?v=${v}`;if(a.getAttribute("href")!==u){a.href=u;$("mapPic").src=u;$("mapPic").alt=`Map of ${mapName(mp)||mapCode(mp)}`}}}
   {const b=$("mobbedIn");b.disabled=!MAPMOBS[mp];b.placeholder=MAPMOBS[mp]?(mobbedDef(mp)?`${mobbedDef(mp)} (room dungeon)`:"Character tab's number"):"";if(document.activeElement!==b)b.value=MAPMOBS[mp]&&(state.mobbed||{})[mp]!=null?state.mobbed[mp]:""}
   {const b=$("mapToSess"),s=cur(),here=!!MAPMOBS[mp]&&sessMap(s)===mp,ids=MAPMOBS[mp]?mapHuntIds(mp):[],same=here&&ids.length===s.mobIds.length&&ids.every(id=>s.mobIds.includes(id));
     b.dataset.map=mp||"";b.disabled=!MAPMOBS[mp]||same;b.textContent=same?"✓ Farming this map":here?"Farming here: hunt all its monsters":"Farming this map now";

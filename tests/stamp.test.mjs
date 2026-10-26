@@ -20,5 +20,9 @@ assert.notEqual(hashOf("js/events.js"), hashOf("js/state.js"));
 const sheets = [...readFileSync(new URL("../data/icons.js", import.meta.url), "utf8").matchAll(/"file":"([^"]+)"/g)].map(m => m[1]);
 assert.equal(sheets.length, 5);                                     // gear icons, item icons, card pictures, monster pictures, skill icons
 for (const f of sheets) { assert.ok(assetFiles().includes(f), `${f} isn't deployed`); assert.ok(existsSync(new URL(`../${f}`, import.meta.url)), `${f} missing`) }
+// so are the map pictures data/minimaps.js names (img/maps/, a folder inside img/)
+const minimaps = Object.keys(JSON.parse(readFileSync(new URL("../data/minimaps.js", import.meta.url), "utf8").match(/MINIMAPS=(\{.*\});/)[1])).map(k => `img/maps/${k}.png`);
+assert.ok(minimaps.length > 100, `only ${minimaps.length} map pictures`);
+for (const f of minimaps) assert.ok(assetFiles().includes(f), `${f} isn't deployed`);
 console.log(`ok ${local.length} files unstamped in index.html and stamped with their hash on deploy`);
 console.log("1 tests passed");
