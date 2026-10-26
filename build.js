@@ -57,6 +57,12 @@ const BUILD=(()=>{
       hit:175+lv+s.dex+f(s.luk/3),flee:100+lv+s.agi+f(s.luk/5),softDef:f(lv/2)+f(s.vit/2)+f(s.agi/5), // each part rounds down: Lv 63 VIT 5 AGI 100 shows 53 in game, not 54
       softMdef:Math.max(0,f(s.int+lv/4+(s.dex+s.vit)/5)),crit:1+s.luk*0.3+lv/100,aspdTerm:Math.sqrt(s.agi*s.agi/2+s.dex*s.dex/(ranged?7:5))/4}}
 
+  // status points: 48 at Lv 1 with every stat at 1, then floor(Lv / 5) + 3 a level (Lv 40 305, Lv 60 555, as the game's window
+  // adds up); raising a stat from v costs floor((v − 1) / 10) + 2
+  const raiseCost=v=>Math.floor((v-1)/10)+2;
+  function statPoints(lv){let p=48;for(let l=1;l<Math.min(99,lv);l++)p+=Math.floor(l/5)+3;return p}
+  function statSpent(v){let p=0;for(let x=1;x<v;x++)p+=raiseCost(x);return p}
+
   // soft DEF that "VIT-based Defense +pct%" adds at total VIT vit: pct % of floor(VIT / 2), rounded down
   const vitDefAdd=(vit,pct)=>pct?Math.floor(Math.floor(vit/2)*pct/100):0;
 
@@ -295,7 +301,7 @@ const BUILD=(()=>{
       maxHp,maxSp,aspd,crit:Math.round((S.crit+A.crit)*10)/10,critDmg:A.critDmg,rangePct:ranged?A.ranged:A.melee,
       vctPct:A.vct,fctPct:A.fct,acdPct:A.acd,ignDef:A.ignDef,ignMdef:A.ignMdef,
       lw:dual?lw:"",lwAtk:dual?f((wpnL.atk||0)+refineAt(wpnL,(gear.shield||{}).refine)[0]):0,lwElem:dual&&wpnL.el?cap(wpnL.el):"Neutral"};
-    return {fields,acc:A,shield,jobBonus:jb,total:tot,status:S,worn:worn.map(w=>({name:w.it.name,slot:w.slot,refine:w.r,cards:w.cards.map(c=>c.name)})),unmodelled:A.unmodelled}}
+    return {fields,acc:A,shield,jobBonus:jb,total:tot,status:S,hardMdef:gearMdef+A.mdef,worn:worn.map(w=>({name:w.it.name,slot:w.slot,refine:w.r,cards:w.cards.map(c=>c.name)})),unmodelled:A.unmodelled}}
 
   // the equipment window names gear by its cards: "+7 Double Healing Shining Clip" is a +7 Shining Clip with two Vitata Cards.
   // Each card adds its name (affix in data/cards.js) before the item's, or after it (affixPos "suffix": the names starting with
@@ -344,5 +350,5 @@ const BUILD=(()=>{
     for(const f of top)for(const cs of cardReadings(f.runs)){const r=read(f.it,cs),k=JSON.stringify(r);if(!seen.has(k)&&alts.length<ALT_MAX){seen.add(k);alts.push(r)}}
     return alts.length?{...best,alts}:best}
 
-  return {SLOTS,CARD_FOR,WTYPE,STAT6,FIRST_OF,SHIELD_ASPD,DUAL_W,LEFT_ASPD,dualOk,item,jobBonus,refineAt,status,vitDefAdd,compute,curve,parseOptions,OPTIONS,OPT_MAX,optRows,optLines,optBad,optGear,optChoices,STONE_SLOTS,stone,stonesWorn,tamingEgg,readCardNames,readGearName}})();
+  return {SLOTS,CARD_FOR,WTYPE,STAT6,FIRST_OF,SHIELD_ASPD,DUAL_W,LEFT_ASPD,dualOk,item,jobBonus,refineAt,status,raiseCost,statPoints,statSpent,vitDefAdd,compute,curve,parseOptions,OPTIONS,OPT_MAX,optRows,optLines,optBad,optGear,optChoices,STONE_SLOTS,stone,stonesWorn,tamingEgg,readCardNames,readGearName}})();
 if(typeof module!=="undefined")module.exports=BUILD;
