@@ -1,7 +1,8 @@
-// ---- tabs: show one group of sections at a time; the last one opened is remembered in state.tab (Character first for new players) ----
+// ---- tabs: show one group of sections at a time; the last one opened is remembered in state.tab (Home first for new players) ----
 // local: show it in this browser tab only, without saving it (a reload that keeps this tab's view)
 // the heading over each tab: its sidebar group, its name and what it's for
 const TAB_DESC={
+  home:"What the planner does, where you left off, and every tool in it.",
   char:"Your job, stats, gear and attack: everything the damage, EXP and zeny numbers work from.",
   track:"Log your EXP as you farm to see your real EXP/hr, when you'll level and how far your goals are.",
   maps:"The best maps for your character by EXP or zeny, and one click to farm one. Then the map planner and every monster.",
@@ -32,16 +33,17 @@ function hashTab(){let h="";try{h=decodeURIComponent(location.hash.slice(1)).toL
   return b?b.dataset.tabbtn:null}
 function showTab(t,local){
   if(t==="data")t="acct";// the old Data tab is the Account tab
-  if(![...document.querySelectorAll("[data-tabbtn]")].some(b=>b.dataset.tabbtn===t))t="char";
+  if(![...document.querySelectorAll("[data-tabbtn]")].some(b=>b.dataset.tabbtn===t))t="home";
   // a card can sit on several tabs (data-tab="maps mobinfo"): the Monsters card goes under Monster info there, and back under the Map planner on Monsters & maps
   document.querySelectorAll("[data-tab]").forEach(el=>el.hidden=!el.dataset.tab.split(" ").includes(t));
   if(t==="mobinfo")$("mobInfoCard").after($("mobCard"));else if(t==="maps")$("mapCard").after($("mobCard"));
   document.querySelectorAll("[data-tabbtn]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tabbtn===t)));
-  showHero(t);$("startCard").classList.toggle("offTab",!["char","track","maps"].includes(t));
+  // Home has its own heading (the hero) instead of the page heading
+  showHero(t);document.querySelector(".pageHead").hidden=t==="home";$("startCard").classList.toggle("offTab",!["home","char","track","maps"].includes(t));
   if(!local&&state.tab!==t){state.tab=t;save()}
   // not over a share link (#s=…) that loadShareLink hasn't read yet
   if(location.hash!=="#"+tabSlug(t)&&!location.hash.startsWith("#s="))try{history.replaceState(null,"",location.pathname+location.search+"#"+tabSlug(t))}catch(e){}
-  if(t==="ref"){renderRef();refScroll()}
+  if(t==="home")renderHome();if(t==="ref"){renderRef();refScroll()}
   if(t==="char")renderGearCmp();
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
@@ -51,8 +53,40 @@ function showTab(t,local){
 document.querySelectorAll("[data-tabbtn]").forEach(b=>b.addEventListener("click",()=>{showTab(b.dataset.tabbtn);scrollTo({top:0})}));
 // a link to another tab (data-gotab="roadmap")
 document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("[data-gotab]");if(!a)return;e.preventDefault();showTab(a.dataset.gotab);scrollTo({top:0})});
-{const h=hashTab();showTab(h||VIEW&&VIEW.tab||state.tab||"char",!h&&!!VIEW)}
+{const h=hashTab();showTab(h||VIEW&&VIEW.tab||state.tab||"home",!h&&!!VIEW)}
 addEventListener("hashchange",()=>{const t=hashTab();if(t){showTab(t);scrollTo({top:0})}});
+// ---- Home tab: the hero's numbers and next update, where you left off, and a card for every other tab (from the sidebar, so it
+// keeps up with it) ----
+(function setupHome(){
+  let grp="",html="";
+  for(const el of document.querySelector(".tabs").children){
+    if(el.classList.contains("navGrp")){html+=`${grp?"</div></div>":""}<div class="toolGrp"><div class="secHead">${esc(el.textContent)}</div><div class="toolGrid">`;grp=el.textContent;continue}
+    const t=el.dataset.tabbtn;if(!t||t==="home")continue;
+    html+=`<button type="button" class="tool" data-gotab="${t}"><span class="toolIc">${el.querySelector("svg").outerHTML}</span><span class="toolTxt"><b>${esc(el.querySelector("span").textContent)}</b><span>${esc(TAB_DESC[t]||"")}</span></span></button>`}
+  $("homeTools").innerHTML=html+(grp?"</div></div>":"");
+  const n=[[MOBS.length,"monsters"],[Object.keys(MAPMOBS).length,"spawn maps"],[allItemIds().length,"items"],[typeof CARDS!=="undefined"?CARDS.length:0,"cards"],[Object.keys(RECIPES_MAKING).length,"recipes"]];
+  $("homeCounts").innerHTML=n.filter(([v])=>v).map(([v,k])=>`<div><b>${fmtN(v)}</b><span>${k}</span></div>`).join("");
+  $("homeSearch").addEventListener("click",()=>$("searchBtn").click());
+})();
+function renderHome(){
+  const nx=ROADMAP.find(u=>!upOut(u)),cap=capNow();
+  $("homeNext").innerHTML=[cap&&`<b>Level cap ${esc(capTxt(cap))}</b>`,nx&&`Next: ${esc(nx.name)}, ${esc(upWhen(nx))}`].filter(Boolean).join('<span aria-hidden="true">·</span>')+'<span aria-hidden="true">→</span>';
+  const c=C(),set=charSet(c),s=cur(),st=stats(s),last=[...s.entries].sort((a,b)=>a.t-b.t).pop(),ms=sessMobs(s),smp=sessMap(s);
+  $("homeCharBtn").textContent=set?"Open Character":"Set up your character";
+  // a new player has the get started card instead
+  $("homeNowCard").hidden=!set&&!last;if($("homeNowCard").hidden)return;
+  const tile=(k,v,sub,tab,now)=>`<button type="button" class="tile${now?" now":""}" data-gotab="${tab}"><div class="k">${k}</div><div class="v">${esc(v)}</div><div class="s">${esc(sub)}</div></button>`;
+  $("homeTiles").innerHTML=
+    tile("Character",state.job,set?[c.baseLv&&`Base ${c.baseLv}`,c.jobLv&&`Job ${c.jobLv}`,c.a&&c.a.name].filter(Boolean).join(" · "):"Not set up yet","char",true)+
+    tile("Session",last?`Lv ${last.lv} · ${pct(last.pct,1)}`:"–",[s.name,smp?`on ${mapCode(smp)}`:ms.length===1?ms[0].name:ms.length?`${ms.length} monsters`:""].filter(Boolean).join(" · "),"track",true)+
+    tile("Average EXP/hr",st?pct(st.avgPct):"–",st?`over ${st.spanMin} min`:"Log at least two entries","track")+
+    tile(st?`To Lv ${st.last.lv+1}`:"To next level",st?fmtDur(st.nextH):"–",st?`${(100-st.last.pct).toFixed(1)}% left`:"From your EXP/hr","track");
+  $("homeNowNote").textContent=last?`last logged ${fmtD(last.t)} ${fmtT(last.t)}`:"";
+  // the best maps for EXP (zeny at the max level) as Where to farm ranks them
+  const max=atMaxLv(),sm=smp;
+  $("homeSpots").innerHTML=set&&SPOT_EXP.length?`<div class="secHead">${max?"Best for zeny":"Best for EXP"} right now</div>`+SPOT_EXP.map(r=>`<div class="spot${r.mp===sm?" on":""}"><span class="spotN">${r.rank}</span>
+    <div class="spotTxt"><div><b class="mono">${mapCode(r.mp)}</b> <span class="note">${esc(mapName(r.mp))}</span></div><div class="spotV">${max?`<b>${fmtN(r.net)}</b> z/hr net`:`<b>${fmtN(r.epm)}</b> EXP / min · ${fmtN(r.net)} z/hr net`}</div></div>${farmBtn(r)}</div>`).join(""):"";
+}
 // ---- collapsible cards: click a heading (or Enter/Space on it) to fold the card; saved by heading text ----
 (function setupCollapse(){
   if(!state.collapsed)state.collapsed={};

@@ -525,6 +525,39 @@ table.formulas td.chg{background:var(--accent-soft)}
 .steps li.done button{display:none}
 .tiles.noData{display:none!important}
 .startCard.offTab{display:none}
+
+/* ---- Home tab ---- */
+.homeHero{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:34px 0 10px}
+.homeHero h1{font-size:2.7rem;font-weight:800;letter-spacing:-.04em;line-height:1.02;max-width:18ch}
+.homeHero p{margin:0;max-width:64ch;color:var(--muted);font-size:15px;line-height:1.6;text-wrap:pretty}
+.homeHero kbd{font-family:var(--mono);font-size:11px;padding:0 5px;margin-left:4px;border-radius:5px;border:1px solid currentColor;opacity:.6}
+.homeActs{margin-top:4px}
+.homeActs button{padding:8px 16px}
+.homeNext{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:5px 12px;border-radius:999px;font-size:12.5px;text-decoration:none;color:var(--fg);
+  background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);transition:border-color .12s}
+.homeNext:hover{border-color:var(--accent)}
+.homeNext b{color:var(--accent);font-weight:650}
+.homeNext span{color:var(--muted)}
+.homeNext:empty{display:none}
+.homeCounts{display:flex;flex-wrap:wrap;gap:10px 30px;margin-top:10px;padding-top:16px;border-top:1px solid var(--line)}
+.homeCounts div{display:flex;flex-direction:column}
+.homeCounts b{font-family:var(--display);font-size:1.5rem;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.homeCounts span{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tiles.homeTiles{grid-template-columns:repeat(4,minmax(0,1fr))}
+button.tile{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+button.tile:hover{border-color:var(--accent)}
+.homeTools{display:flex;flex-direction:column;gap:18px}
+.toolGrp{display:flex;flex-direction:column;gap:8px}
+.toolGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.tool{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:12px;background:var(--raised);border:1px solid var(--line);text-align:left;font-weight:400;color:inherit}
+.tool:hover{border-color:var(--accent);background:var(--accent-soft)}
+.toolIc{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent)}
+.toolIc .ic{width:18px;height:18px}
+.toolTxt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.toolTxt b{font-family:var(--display);font-weight:650;font-size:14.5px;letter-spacing:-.01em}
+.toolTxt span{font-size:12.5px;color:var(--muted);line-height:1.45}
+@media (max-width:900px){.tiles.homeTiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.homeHero{padding-top:20px}.homeHero h1{font-size:2rem}}
 @media (max-width:760px){.startCard{padding:14px}.startHead{margin-bottom:10px}.startHead h2{font-size:1.05rem}
   .steps{grid-template-columns:1fr;gap:8px}.steps li{flex-direction:row;align-items:center;padding:10px 12px}
   .steps li.done .stepTxt span{display:none}.stepN{flex:none}}

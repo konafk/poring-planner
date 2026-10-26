@@ -18,7 +18,7 @@ async function open(opts = {}) {
   page.on("pageerror", e => errs.push(e.message));
   page.on("console", m => { if (m.type() === "error" && !/Failed to load resource|net::ERR_/.test(m.text())) errs.push(m.text()); });
   await page.goto(page_url);
-  await page.waitForSelector('[data-tabbtn="char"][aria-selected="true"]');
+  await page.waitForSelector('[data-tabbtn="home"][aria-selected="true"]');
   return { page, errs };
 }
 const tabs = page => page.$$eval("[data-tabbtn]", bs => bs.map(b => b.dataset.tabbtn));

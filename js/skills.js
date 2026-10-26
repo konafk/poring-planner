@@ -156,7 +156,7 @@ wireTree("skillTrees",SK_TIP,"skillCard",()=>state.job,()=>learned(C()),(slug,ac
 $("skReset").addEventListener("click",()=>{const c=C();c.skills={};c.buffs={};refreshPreset(c);$("skillNote").textContent="";save();renderSkills();syncChar();renderAll()});
 $("buffList").addEventListener("change",e=>{const k=e.target.dataset.buff;if(!k)return;const c=C();c.buffs=c.buffs||{};c.buffs[k]=e.target.checked;save();renderAll()});
 
-// ---- Skill tree tab (Look up): try any job's tree without a character. state.skPlan = {job, jobLv: {job: Lv, blank = 70}, skills: {job: {slug: level}}};
+// ---- Skill tree tab (Game data): try any job's tree without a character. state.skPlan = {job, jobLv: {job: Lv, blank = 70}, skills: {job: {slug: level}}};
 // it never touches your characters unless you press "Use on my character" ----
 // cleaned once per save it comes from (an imported backup brings its own)
 const SKP_OK=new WeakSet();
