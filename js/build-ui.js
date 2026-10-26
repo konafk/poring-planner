@@ -489,8 +489,8 @@ $("equipWin").addEventListener("click",e=>{const t=e.target.closest("button");if
   const to=EW_TAB==="special"?(k==="ring"?$("stoneRow").querySelector("[data-ringon]"):k==="shield"?$("stoneRow").querySelector("[data-shadow]"):k.startsWith("own")?$("specialOwn").querySelector(`[data-i="${k.slice(3)}"] [data-f=name]`):$("stoneRow").querySelector(`[data-costume="${k}"]`))
     :$("gearTable").querySelector(`tr[data-slot="${k}"] input.item`);
   if(to){const d=to.closest("details");if(d)d.open=true;to.scrollIntoView({block:"center",behavior:"smooth"});to.focus({preventScroll:true})}});
-// the Equipment and Special equipment tables fold away, remembered like a card (state.collapsed)
-[["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
+// Build from gear's Status, Gear, Equipment and Special equipment panels fold away, remembered like a card (state.collapsed)
+[["buildStatFold","Build from gear: status"],["gsetFold","Build from gear: gear sets"],["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
   d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[key])return;if(d.open)delete c[key];else c[key]=true;save()})});
 function renderBuild(){const c=C(),on=c.mode==="build";
   if(on&&renderBuild.job!==state.job){renderBuild.job=state.job;renderGearTable()}if(!on)renderBuild.job=null;

@@ -120,15 +120,18 @@
   <div class="charMain">
   <section class="card" id="charCard">
     <div class="bar"><h2 class="grow">Your character</h2><span class="note" id="jobNote"></span></div>
-    <div class="form c7">
-      <label>Job<select id="job"></select></label>
-      <label>Attack<select id="preset"></select></label>
-      <label>Base level<input id="baseLv" type="number" min="1" max="99"></label>
-      <label>Job level<input id="jobLv" type="number" min="1" max="70"></label>
-      <label title="Items and buffs that say &quot;EXP +X%&quot; (base EXP), plus EXP gear if you aren't building from gear">EXP bonus %<input id="bonus" type="number" step="1"></label>
-      <label title="Only items and buffs that say &quot;Job EXP +X%&quot;, plus EXP gear if you aren't building from gear">Job EXP bonus %<input id="jobBonus" type="number" step="1"></label>
-      <label>Drop rate bonus %<input id="dropBonus" type="number" step="1"></label>
-    </div>
+    <details class="card sub" id="basicsPanel" open>
+      <summary><b>Job &amp; level</b> <span class="note">your job, the attack you farm with, your levels and EXP / drop bonuses</span></summary>
+      <div class="form c7">
+        <label>Job<select id="job"></select></label>
+        <label>Attack<select id="preset"></select></label>
+        <label>Base level<input id="baseLv" type="number" min="1" max="99"></label>
+        <label>Job level<input id="jobLv" type="number" min="1" max="70"></label>
+        <label title="Items and buffs that say &quot;EXP +X%&quot; (base EXP), plus EXP gear if you aren't building from gear">EXP bonus %<input id="bonus" type="number" step="1"></label>
+        <label title="Only items and buffs that say &quot;Job EXP +X%&quot;, plus EXP gear if you aren't building from gear">Job EXP bonus %<input id="jobBonus" type="number" step="1"></label>
+        <label>Drop rate bonus %<input id="dropBonus" type="number" step="1"></label>
+      </div>
+    </details>
     <div class="bar">
       <div class="seg" role="radiogroup" aria-label="Where your stats come from">
         <button type="button" role="radio" data-cmode="status">Status window</button>
@@ -136,78 +139,88 @@
       </div>
       <span class="note" id="modeNote"></span>
     </div>
-    <div id="buildPanel" class="build" hidden>
-      <div class="statWin" id="statWin" role="group" aria-label="Status"></div>
-      <div class="note" id="jobBonusNote"></div>
-      <div class="bar">
-        <div class="seg" role="radiogroup" aria-label="Which gear the table shows" id="gsetSeg"></div>
-        <button type="button" class="small" id="altAdd">+ Add set</button>
-        <button type="button" class="small" id="altCopy" title="Start this set from your gear, then change a part">Copy my gear to it</button>
-        <button type="button" class="small" id="altSwap" title="Wear this set: it becomes your gear, and yours this set (swap again to go back)">Swap with my gear</button>
-        <button type="button" class="small danger" id="altDel">Remove set</button>
-      </div>
-      <div class="note" id="altNote"></div>
-      <div class="bar">
-        <select id="loadoutPick" aria-label="Saved loadouts"></select>
-        <button type="button" class="small" id="loadoutLoad" title="Put this loadout in the table shown: its gear comes off and stays remembered">Wear it</button>
-        <button type="button" class="small" id="loadoutSave" title="Save the gear in the table under a name, to swap back to it later">Save as loadout…</button>
-        <button type="button" class="small danger" id="loadoutDel">Delete</button>
-        <button type="button" class="small" id="memClear" title="Gear you take off keeps its refine, cards and affixes for when you put it on again" hidden>Forget remembered items</button>
-      </div>
-      <div class="note" id="loadoutNote"></div>
-      <div class="equipWin" id="equipWin" aria-label="Equipped items"></div>
-      <details class="fold" id="gearFold" open>
-        <summary>Equipment <span class="note">the Normal Equip tab: item, refine, cards and affixes per slot</span></summary>
-        <div class="scroll"><table id="gearTable"><thead><tr><th>Slot</th><th>Item</th><th>Refine</th><th>Cards</th><th>Affixes</th></tr></thead><tbody></tbody></table></div>
+    <details class="card sub build" id="buildPanel" open hidden>
+      <summary><b>Build from gear</b> <span class="note">your stats worked out from base stats, job level and gear</span></summary>
+      <details class="card sub" id="buildStatFold" open>
+        <summary><b>Status</b> <span class="note">your base stats; the job and gear bonuses add on top</span></summary>
+        <div class="statWin" id="statWin" role="group" aria-label="Status"></div>
+        <div class="note" id="jobBonusNote"></div>
       </details>
-      <div id="gearLists"></div>
-      <div class="note" id="gearAlts" hidden></div>
-      <details class="fold" id="specialFold" open>
-        <summary title="The Special Equipment tab: a costume per costume slot with one enchant stone on it (Costume Enchanter, Prontera Cash Room; stones that complete a set add its bonus too) and the Taming Ring with the pet egg sealed in it">Special equipment <span class="note">costumes with their enchant stones, the Guild shield, the Taming Ring and others</span></summary>
+      <details class="card sub" id="gsetFold" open>
+        <summary><b>Gear</b> <span class="note">gear sets to compare, saved loadouts and what you have on</span></summary>
+        <div class="bar">
+          <div class="seg" role="radiogroup" aria-label="Which gear the table shows" id="gsetSeg"></div>
+          <button type="button" class="small" id="altAdd">+ Add set</button>
+          <button type="button" class="small" id="altCopy" title="Start this set from your gear, then change a part">Copy my gear to it</button>
+          <button type="button" class="small" id="altSwap" title="Wear this set: it becomes your gear, and yours this set (swap again to go back)">Swap with my gear</button>
+          <button type="button" class="small danger" id="altDel">Remove set</button>
+        </div>
+        <div class="note" id="altNote"></div>
+        <div class="bar">
+          <select id="loadoutPick" aria-label="Saved loadouts"></select>
+          <button type="button" class="small" id="loadoutLoad" title="Put this loadout in the table shown: its gear comes off and stays remembered">Wear it</button>
+          <button type="button" class="small" id="loadoutSave" title="Save the gear in the table under a name, to swap back to it later">Save as loadout…</button>
+          <button type="button" class="small danger" id="loadoutDel">Delete</button>
+          <button type="button" class="small" id="memClear" title="Gear you take off keeps its refine, cards and affixes for when you put it on again" hidden>Forget remembered items</button>
+        </div>
+        <div class="note" id="loadoutNote"></div>
+        <div class="equipWin" id="equipWin" aria-label="Equipped items"></div>
+      </details>
+      <details class="card sub" id="gearFold" open>
+        <summary><b>Equipment</b> <span class="note">the Normal Equip tab: item, refine, cards and affixes per slot</span></summary>
+        <div class="scroll"><table id="gearTable"><thead><tr><th>Slot</th><th>Item</th><th>Refine</th><th>Cards</th><th>Affixes</th></tr></thead><tbody></tbody></table></div>
+        <div id="gearLists"></div>
+        <div class="note" id="gearAlts" hidden></div>
+      </details>
+      <details class="card sub" id="specialFold" open>
+        <summary title="The Special Equipment tab: a costume per costume slot with one enchant stone on it (Costume Enchanter, Prontera Cash Room; stones that complete a set add its bonus too) and the Taming Ring with the pet egg sealed in it"><b>Special equipment</b> <span class="note">costumes with their enchant stones, the Guild shield, the Taming Ring and others</span></summary>
         <div class="scroll"><table id="specialTable"><thead><tr><th>Slot</th><th>Item</th><th>Enchant</th><th>Affixes</th></tr></thead><tbody id="stoneRow"></tbody><tbody id="specialOwn"></tbody></table></div>
         <div class="bar"><button type="button" class="small" id="specialAdd">+ Add other special equipment</button><span class="note hint">Special equipment the rows above don't have: name it and pick its effects from the affix list. Untick a row to take it off</span></div>
+        <div id="costumeLists"></div>
       </details>
-      <div id="costumeLists"></div>
-      <details class="note">
-        <summary>Check against the game</summary>
-        <div class="mt">Type totals from your status window (ATK/DEF: both parts added; FLEE without "+N"). ✓ = match; a number = how far off. Max HP/SP here replace the computed ones.</div>
+      <details class="card sub" id="checkPanel">
+        <summary><b>Check against the game</b> <span class="note">type your status window's totals to see where the build is off</span></summary>
+        <div class="note">Type totals from your status window (ATK/DEF: both parts added; FLEE without "+N"). ✓ = match; a number = how far off. Max HP/SP here replace the computed ones.</div>
         <div class="form c4" id="checkGrid"></div>
       </details>
       <div class="note" id="buildNote"></div>
-    </div>
-    <div class="form c6">
-      <label>ATK<input id="atkTxt" inputmode="numeric" placeholder="120+300"></label>
-      <label>MATK<input id="matkTxt" inputmode="numeric" placeholder="100+227"></label>
-      <label>HIT<input id="hitTxt" inputmode="numeric" placeholder="267"></label>
-      <label>FLEE<input id="fleeTxt" inputmode="numeric" placeholder="350+1"></label>
-      <label>ASPD<input id="aspd" type="number" min="100" max="199"></label>
-      <label>DEF (soft+hard)<input id="defTxt" inputmode="numeric" placeholder="52+237"></label>
-    </div>
-    <div class="form c6">
-      <label>Max HP<input id="maxHp" type="number"></label>
-      <label>Max SP<input id="maxSp" type="number"></label>
-            <label title="Blank (auto): 1 + Max SP/100 + INT/6 (+ more from INT 120), with SP Recovery +% gear. Increase SP Recovery (Skills card) and consumables that restore SP over time are added on their own, so type only the natural regen tick">SP regen per 8s<input id="spRegen" type="number" placeholder="auto"></label>
-      <label>Weapon ATK<input id="wAtk" type="number" min="0" placeholder="all gear"></label>
-      <label>Weapon<select id="weapon"></select></label>
-      <label>Weapon / arrow element<select id="wElem"></select></label>
-    </div>
-    <div class="bar note" id="shieldRow"><label class="bar"><input type="checkbox" id="shield"> Wearing a shield</label> <span id="shieldNote"></span></div>
-    <div class="form c6" id="dualRow" hidden>
-      <label title="Assassin dual wield: a dagger, one-handed sword or one-handed axe in each hand">Left hand<select id="lw"></select></label>
-      <label title="The left weapon's ATK with refine. Type the right one's in Weapon ATK too">Left weapon ATK<input id="lwAtk" type="number" min="0"></label>
-      <label>Left weapon element<select id="lwElem"></select></label>
-      <div class="note hint span3">Dual wield: basic attacks hit with both hands (right × Righthand Mastery, left × Lefthand Mastery); skills use the right hand. Type Weapon ATK for the right hand.</div>
-    </div>
-    <div class="form c6">
-      <label>STR<input id="st_str" inputmode="numeric" placeholder="60+8"></label>
-      <label>AGI<input id="st_agi" inputmode="numeric"></label>
-      <label>VIT<input id="st_vit" inputmode="numeric"></label>
-      <label>INT<input id="intTxt" inputmode="numeric" placeholder="43+12"></label>
-      <label>DEX<input id="st_dex" inputmode="numeric"></label>
-      <label>LUK<input id="st_luk" inputmode="numeric"></label>
-    </div>
-    <div class="note" id="statNote"></div>
-    <div class="bar note" id="onTopWrap"><label class="check-top"><input type="checkbox" id="addOnTop"> <span>Status window typed <b>without</b> active skill buffs and items: add the Consumables card and Skills card buffs on top (untick if your numbers already include them)</span></label></div>
+    </details>
+    <details class="card sub" id="statPanel" open>
+      <summary><b>Status</b> <span class="note">what your status window shows, plus your weapon; in Build from gear they're worked out for you</span></summary>
+      <div class="form c6">
+        <label>ATK<input id="atkTxt" inputmode="numeric" placeholder="120+300"></label>
+        <label>MATK<input id="matkTxt" inputmode="numeric" placeholder="100+227"></label>
+        <label>HIT<input id="hitTxt" inputmode="numeric" placeholder="267"></label>
+        <label>FLEE<input id="fleeTxt" inputmode="numeric" placeholder="350+1"></label>
+        <label>ASPD<input id="aspd" type="number" min="100" max="199"></label>
+        <label>DEF (soft+hard)<input id="defTxt" inputmode="numeric" placeholder="52+237"></label>
+      </div>
+      <div class="form c6">
+        <label>Max HP<input id="maxHp" type="number"></label>
+        <label>Max SP<input id="maxSp" type="number"></label>
+        <label title="Blank (auto): 1 + Max SP/100 + INT/6 (+ more from INT 120), with SP Recovery +% gear. Increase SP Recovery (Skills card) and consumables that restore SP over time are added on their own, so type only the natural regen tick">SP regen per 8s<input id="spRegen" type="number" placeholder="auto"></label>
+        <label>Weapon ATK<input id="wAtk" type="number" min="0" placeholder="all gear"></label>
+        <label>Weapon<select id="weapon"></select></label>
+        <label>Weapon / arrow element<select id="wElem"></select></label>
+      </div>
+      <div class="bar note" id="shieldRow"><label class="bar"><input type="checkbox" id="shield"> Wearing a shield</label> <span id="shieldNote"></span></div>
+      <div class="form c6" id="dualRow" hidden>
+        <label title="Assassin dual wield: a dagger, one-handed sword or one-handed axe in each hand">Left hand<select id="lw"></select></label>
+        <label title="The left weapon's ATK with refine. Type the right one's in Weapon ATK too">Left weapon ATK<input id="lwAtk" type="number" min="0"></label>
+        <label>Left weapon element<select id="lwElem"></select></label>
+        <div class="note hint span3">Dual wield: basic attacks hit with both hands (right × Righthand Mastery, left × Lefthand Mastery); skills use the right hand. Type Weapon ATK for the right hand.</div>
+      </div>
+      <div class="form c6">
+        <label>STR<input id="st_str" inputmode="numeric" placeholder="60+8"></label>
+        <label>AGI<input id="st_agi" inputmode="numeric"></label>
+        <label>VIT<input id="st_vit" inputmode="numeric"></label>
+        <label>INT<input id="intTxt" inputmode="numeric" placeholder="43+12"></label>
+        <label>DEX<input id="st_dex" inputmode="numeric"></label>
+        <label>LUK<input id="st_luk" inputmode="numeric"></label>
+      </div>
+      <div class="note" id="statNote"></div>
+      <div class="bar note" id="onTopWrap"><label class="check-top"><input type="checkbox" id="addOnTop"> <span>Status window typed <b>without</b> active skill buffs and items: add the Consumables card and Skills card buffs on top (untick if your numbers already include them)</span></label></div>
+    </details>
     <details class="card sub" id="eqPanel" open>
       <summary><b>Equipment stats</b> <span class="note">% lines from Equipment Stats that the status window doesn't show</span></summary>
       <div id="eqList" class="eqlist"></div>
@@ -352,11 +365,11 @@
 
   <section class="card" id="recCard">
     <div class="bar"><h2 class="grow">Consumables</h2><span class="note" id="recNote"></span></div>
-    <div class="bar note"><label class="bar" title="Saved for the whole account: a Merchant on the account with Discount Lv 10 (−24%) buys for the others. Covers recovery items, the ASPD potion, skill items and Custom HP / SP items. Off: the NPC price"><input type="checkbox" id="recDisc"> Buy with Discount <span class="muted">(Lv 10 on another character, this account)</span></label>
-      <span id="mercNote"></span>
-    </div>
     <details class="card sub" id="recPanel" open>
       <summary><b>HP &amp; SP recovery items</b> <span class="note">potions, herbs and food bought to cover HP lost and SP short</span></summary>
+      <div class="bar note"><label class="bar" title="Saved for the whole account: a Merchant on the account with Discount Lv 10 (−24%) buys for the others. Covers recovery items, the ASPD potion, skill items and Custom HP / SP items. Off: the NPC price"><input type="checkbox" id="recDisc"> Buy with Discount <span class="muted">(Lv 10 on another character, this account; also for the ASPD potion and skill items)</span></label>
+        <span id="mercNote"></span>
+      </div>
       <div class="bar note" id="recSet">
         <label class="bar">HP item <select id="recHp"></select></label>
         <span id="recCustomHp" class="bar" hidden>
@@ -423,7 +436,7 @@
   </section>
   </div>
   <aside class="charAside">
-    <nav class="secNav" aria-label="Character sections"><span class="secHead">On this tab</span><a href="#charCard" data-sec="charCard">Stats</a><a href="#buildPanel" data-sec="buildPanel">Gear</a><a href="#eqPanel" data-sec="eqPanel">Equipment stats</a><a href="#atkPanel" data-sec="atkPanel">Attack</a><a href="#cardRow" data-sec="cardRow">Cards</a><a href="#sagePanel" data-sec="sagePanel">Sage</a><a href="#weightPanel" data-sec="weightPanel">Weight</a><a href="#skillCard" data-sec="skillCard">Skills</a><a href="#recCard" data-sec="recCard">Consumables</a><a href="#gearCmpCard" data-sec="gearCmpCard">Gear sets</a></nav>
+    <nav class="secNav" aria-label="Character sections"><span class="secHead">On this tab</span><a href="#charCard" data-sec="charCard">Character</a><a href="#buildPanel" data-sec="buildPanel">Gear</a><a href="#statPanel" data-sec="statPanel">Stats</a><a href="#eqPanel" data-sec="eqPanel">Equipment stats</a><a href="#atkPanel" data-sec="atkPanel">Attack</a><a href="#cardRow" data-sec="cardRow">Cards</a><a href="#sagePanel" data-sec="sagePanel">Sage</a><a href="#weightPanel" data-sec="weightPanel">Weight</a><a href="#skillCard" data-sec="skillCard">Skills</a><a href="#recCard" data-sec="recCard">Consumables</a><a href="#gearCmpCard" data-sec="gearCmpCard">Gear sets</a></nav>
     <div class="sumCard" aria-label="Your numbers"><div class="secHead">Your numbers</div><div class="calc" id="charTiles"></div></div>
   </aside>
   </div>
