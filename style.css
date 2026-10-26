@@ -181,6 +181,12 @@ textarea,.mono-area{font-family:var(--mono);font-size:12.5px;background:var(--fi
 details>summary{cursor:pointer}
 details.note>summary{color:var(--fg);font-weight:500;width:fit-content}
 details.note>summary::marker{color:var(--muted)}
+/* Build from gear: the equipment tables fold away under a heading */
+details.fold{display:flex;flex-direction:column;gap:8px}
+details.fold>summary{font-weight:600;width:fit-content}
+details.fold>summary::marker{color:var(--muted)}
+details.fold>summary .note{font-weight:400;margin-left:4px}
+details.fold[open]>summary{margin-bottom:8px}
 /* account and session ⋯ menus: the secondary account and session actions open in a small list under the button */
 .menu{position:relative;flex:none}
 .editBtn{flex:none;-webkit-tap-highlight-color:transparent;padding:6px 11px}
@@ -236,7 +242,6 @@ details.sub>summary>b{font-weight:650}
 .form.cfill{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
 .span-all{grid-column:1/-1}.span3{grid-column:span 3;align-self:end}.span-rest{grid-column:2/-1;align-self:center}
 #bonusRow{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
-#stoneRow{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 @media (max-width:900px){.form.c6,.form.c7{grid-template-columns:repeat(3,minmax(0,1fr))}.form.c5{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:600px){.form.c4,.form.c5,.form.c6,.form.c7,.form.c211{grid-template-columns:repeat(2,minmax(0,1fr))}#bonusRow{grid-template-columns:1fr}
   .form.c211>:first-child,.span3,.span-rest{grid-column:1/-1}}
@@ -349,20 +354,23 @@ td .map{cursor:default}
 #starTable td div{margin:2px 0}
 #starTable td:nth-child(5){white-space:normal;min-width:260px}
 .navi{user-select:all}
-#gearTable td{vertical-align:middle;font-family:var(--body)}
-#gearTable th{text-align:left}
-#gearTable td:first-child{color:var(--muted);font-size:12px}
-#gearTable input{padding:4px 8px;font-size:13px;width:100%}
-#gearTable .item{min-width:220px}
+#gearTable td,#specialTable td{vertical-align:middle;font-family:var(--body)}
+#gearTable th,#specialTable th{text-align:left}
+#gearTable td:first-child,#specialTable td:first-child{color:var(--muted);font-size:12px}
+#gearTable input,#specialTable input:not([type=checkbox]){padding:4px 8px;font-size:13px;width:100%}
+#gearTable .item,#specialTable .item{min-width:220px}
 #gearTable .ref{width:64px}
-#gearTable .opts,#specialOwn .opts{display:flex;flex-direction:column;gap:4px;min-width:250px}
-#gearTable .opt,#specialOwn .opt{display:flex;gap:6px}
-#gearTable .opt select,#specialOwn .opt select{flex:1;min-width:0;padding:4px 26px 4px 6px;font-size:13px}
-#gearTable .opt input,#specialOwn .opt input{width:72px;flex:none}
+#specialTable .itemBox>select{flex:1;width:240px;padding:4px 26px 4px 8px;font-size:13px}
+#specialTable .ownOn{display:flex;align-items:center;gap:8px;white-space:nowrap}
+#specialTable .ownOn>label{display:flex;flex-direction:row;align-items:center;gap:6px}
+#gearTable .opts,#specialTable .opts{display:flex;flex-direction:column;gap:4px;min-width:250px}
+#gearTable .opt,#specialTable .opt{display:flex;gap:6px}
+#gearTable .opt select,#specialTable .opt select{flex:1;min-width:0;padding:4px 26px 4px 6px;font-size:13px}
+#gearTable .opt input,#specialTable .opt input{width:72px;flex:none}
 #gearTable .cards{display:flex;gap:6px;min-width:180px}
 #gearTable .cards input{min-width:140px}
-#gearTable tbody tr,#gearTable tbody tr:hover td{cursor:default;background:none}
-#buildPanel.altedit #gearTable,#buildPanel.altedit #stoneRow,#buildPanel.altedit #specialOwn{background:var(--accent-soft)}
+#gearTable tbody tr,#gearTable tbody tr:hover td,#specialTable tbody tr,#specialTable tbody tr:hover td{cursor:default;background:none}
+#buildPanel.altedit :is(#gearTable,#specialTable){background:var(--accent-soft)}
 /* card tick boxes: one card per line, its numbers only while ticked */
 .cdList{display:flex;flex-direction:column;gap:6px;margin:4px 0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
 .cdHead{margin-bottom:2px}
@@ -536,7 +544,7 @@ table.formulas td.chg{background:var(--accent-soft)}
 :is(#bestTable,#huntTable) thead :is(th,td):nth-child(2){background:var(--raised)}
 :is(#bestTable,#huntTable) tbody tr:hover td:nth-child(2){background:var(--grid)}
 :is(#bestTable,#huntTable) tr.sel td:nth-child(2){background:linear-gradient(var(--accent-soft),var(--accent-soft)),var(--surface)}
-#gearTable :is(th,td):first-child{position:static;box-shadow:none}
+#gearTable :is(th,td):first-child,#specialTable :is(th,td):first-child{position:static;box-shadow:none}
 .colBar{gap:8px 10px}
 .colBar .seg button{padding:3px 11px;font-size:12.5px}
 .colBar details[open]{flex-basis:100%}
@@ -687,8 +695,8 @@ details.more>.form{display:grid}
 .eqDlgHead .ico-card{margin-top:-2px}
 .eqPick .ico-gear{margin:-4px 6px -4px 0}
 /* the Character tab's gear table: the item's icon beside its box, a small picture beside each card box */
-#gearTable .itemBox,#gearTable .cardBox,#stoneRow .itemBox{display:flex;align-items:center;gap:6px}
-#stoneRow .itemBox input{flex:1;min-width:0}
+#gearTable .itemBox,#gearTable .cardBox,#specialTable .itemBox{display:flex;align-items:center;gap:6px}
+#specialTable .itemBox input{flex:1}
 #gearTable .cardBox{flex:1;min-width:0}
 /* Build from gear: the equipment window, drawn like the game's Equipped Items; the job's look is a body and a head in one canvas
    (data/sprites.js), drawn from the feet and scaled up by --ew-z with square pixels */

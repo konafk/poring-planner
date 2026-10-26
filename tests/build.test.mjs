@@ -10,6 +10,7 @@ Object.assign(globalThis, {
       g: [{ b: [["str", null, null, 2]] }, { b: [["atk", null, null, 5, 1]] }, { r: 7, b: [["damage_percent", "race", "demi_human", 10]] }] },
     { id: 2, slug: "coat", name: "Coat", slot: ["armor"], refine: "armor", def: 10, g: [] },
     { id: 3, slug: "boots", name: "Boots", slot: ["footgear"], refine: "armor", def: 2, g: [] },
+    { id: 1270293, slug: "guild-shield-embrace", name: "Guild Shield (Embrace)", g: [{ b: [["def", null, null, 10], ["exp_percent", null, null, 5], ["mdef", null, null, 2]] }] },
     { id: 5, slug: "guard", name: "Guard", slot: ["shield"], refine: "armor", def: 3, g: [] },
     { id: 6, slug: "knife", name: "Knife", slot: ["weapon"], type: "dagger", wlv: 2, refine: "weapon", atk: 40, el: "fire", slots: 1, g: [] },
     { id: 7, slug: "ring", name: "Ring", slot: ["accessory_1", "accessory_2"], g: [{ b: [["matk", null, null, 10, 1]] }, { r: 7, b: [["int", null, null, 3]] }] },
@@ -300,6 +301,13 @@ t("Taming Ring: the pet egg sealed in it adds its bonus", () => {
   assert.ok(run({ ring: 313596 }).unmodelled.includes("Taming Ring (Hunter Fly Egg Lv.1): Perfect Dodge +2"));
   assert.equal(TAMING_EGGS.length, 52);
   assert.ok(TAMING_EGGS.every(x => x.b.length || x.off));
+});
+
+t("shadow shield: the Guild shield in the Special Equipment shield slot adds its bonuses", () => {
+  const run = special => BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: {}, special }, "Knight", aspdBase);
+  const none = run({}), emb = run({ shield: 1270293 });                         // DEF +10, MDEF +2, EXP +5%
+  assert.deepEqual([emb.acc.def - none.acc.def, emb.acc.mdef - none.acc.mdef, emb.acc.exp.all - none.acc.exp.all], [10, 2, 5]);
+  assert.ok(SHADOW_SHIELDS.includes(1270293));
 });
 
 t("other special equipment: named rows with effects from the affix list, counted while ticked", () => {

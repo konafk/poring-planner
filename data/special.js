@@ -56,3 +56,6 @@ const TAMING_EGGS=[
 {id:313631,name:"Bongun Egg Lv.2",b:[["vit",null,null,2]],off:"Stun Resistance +2%"},
 {id:313652,name:"Little Poring Egg Lv.1",b:[["hp_recovery_percent",null,null,50]]},
 {id:313653,name:"Little Poring Egg Lv.2",b:[["hp_recovery_percent",null,null,75]]}];
+// Shadow Equipment, Shield (Special Equipment tab): the event Guild shields, each with EXP +5% (deleted when the event ends).
+// Their bonuses are in data/equipment.js, which gives them no slot
+const SHADOW_SHIELDS=[1270260,1270291,1270292,1270293,1270294];

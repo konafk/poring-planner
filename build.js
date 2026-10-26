@@ -264,8 +264,10 @@ const BUILD=(()=>{
     // costume enchant stones (data/stones.js): b.stones = {upper, middle, lower, garment} -> stone id, plus the sets they complete
     const st=stonesWorn(b.stones);st.forEach(x=>{(x.b||[]).forEach(l=>apply(A,l,x.name));if(x.off)A.unmodelled.push(`${x.name}: ${x.off}`)});
     const ids=st.map(x=>x.id);(typeof STONE_SETS!=="undefined"?STONE_SETS:[]).forEach(z=>{if(z.need.every(i=>ids.includes(i)))z.b.forEach(l=>apply(A,l,z.name))});
-    // Taming Ring (Special Equipment, Accessory Right): b.special.ring = the pet egg enchant sealed in it (data/special.js)
+    // Taming Ring (Special Equipment, Accessory Right): b.special.ring = the pet egg enchant sealed in it (data/special.js), true when empty
     const egg=tamingEgg((b.special||{}).ring);if(egg){egg.b.forEach(l=>apply(A,l,`Taming Ring (${egg.name})`));if(egg.off)A.unmodelled.push(`Taming Ring (${egg.name}): ${egg.off}`)}
+    // shadow shield (Special Equipment, Shield): b.special.shield = item id (data/special.js SHADOW_SHIELDS), its bonuses from data/equipment.js
+    const sh=item((b.special||{}).shield);if(sh)applyGroups(A,sh.g,{...ctxBase,refine:0},sh.name);
     // other special equipment the lists don't have: b.special.own = [{on, name, opts:[{k, v}]}], effects picked from the affix list
     ((b.special||{}).own||[]).forEach(x=>{if(!x||x.on===false)return;const nm=String(x.name||"").trim()||"Special equipment",o=optLinesOf(x);
       o.lines.forEach(l=>apply(A,l,nm));o.bad.forEach(y=>A.unmodelled.push(`${nm} not understood: ${y}`));o.off.forEach(y=>A.unmodelled.push(`${nm} not counted: ${y}`))});
