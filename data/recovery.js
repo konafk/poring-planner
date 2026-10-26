@@ -1,7 +1,8 @@
 // HP and SP recovery items by item id: kind "hp"/"sp", what one restores (min–max, measured in Ragnarok Zero Global on a Merchant; classic RO values don't match),
 // weight, NPC price and the price with the Merchant Discount skill (disc). Player-only items have npc null and a player price you can change (player, null = unknown).
 // wOk false: the weight isn't checked in game yet. aOk false: the amount isn't measured in Zero yet: classic RO's (slim potions: the measured
-// full potion's; Candy: Zero's item text), and the item has no price since Zero's NPCs may not sell it. Each value can be changed per character in the Recovery items card (chars.<Job>.recovery.overrides)
+// full potion's; Candy: Zero's item text), and the item has no price since Zero's NPCs may not sell it. more: a less used item, listed
+// only with "show all items" (or once you change it). Each value can be changed per character in the Recovery items card (chars.<Job>.recovery.overrides)
 const RECOVERY={
 "501":{name:"Red Potion",kind:"hp",min:45,max:45,w:7,npc:10,disc:8},
 "502":{name:"Orange Potion",kind:"hp",min:105,max:105,w:10,npc:50,disc:41},
@@ -14,21 +15,21 @@ const RECOVERY={
 "545":{name:"Red Slim Potion",kind:"hp",min:45,max:45,w:2,wOk:false,aOk:false,npc:null,player:null},
 "546":{name:"Yellow Slim Potion",kind:"hp",min:175,max:175,w:3,wOk:false,aOk:false,npc:null,player:null},
 "547":{name:"White Slim Potion",kind:"hp",min:325,max:325,w:5,wOk:false,aOk:false,npc:null,player:null},
-"507":{name:"Red Herb",kind:"hp",min:18,max:28,w:3,aOk:false,npc:null,player:null},
-"508":{name:"Yellow Herb",kind:"hp",min:38,max:58,w:5,aOk:false,npc:null,player:null},
+"507":{name:"Red Herb",more:true,kind:"hp",min:18,max:28,w:3,aOk:false,npc:null,player:null},
+"508":{name:"Yellow Herb",more:true,kind:"hp",min:38,max:58,w:5,aOk:false,npc:null,player:null},
 "509":{name:"White Herb",kind:"hp",min:75,max:115,w:7,aOk:false,npc:null,player:null},
-"512":{name:"Apple",kind:"hp",min:16,max:22,w:2,aOk:false,npc:null,player:null},
-"513":{name:"Banana",kind:"hp",min:17,max:21,w:2,aOk:false,npc:null,player:null},
-"515":{name:"Carrot",kind:"hp",min:18,max:24,w:2,aOk:false,npc:null,player:null},
-"516":{name:"Sweet Potato",kind:"hp",min:15,max:23,w:2,aOk:false,npc:null,player:null},
-"517":{name:"Meat",kind:"hp",min:70,max:99,w:15,aOk:false,npc:null,player:null},
-"519":{name:"Milk",kind:"hp",min:27,max:36,w:3,aOk:false,npc:null,player:null},
-"529":{name:"Candy",kind:"hp",min:45,max:45,w:3,aOk:false,npc:null,player:null},
-"531":{name:"Apple Juice",kind:"hp",min:25,max:31,w:4,aOk:false,npc:null,player:null},
-"532":{name:"Banana Juice",kind:"hp",min:26,max:30,w:4,aOk:false,npc:null,player:null},
-"534":{name:"Carrot Juice",kind:"hp",min:27,max:33,w:4,wOk:false,aOk:false,npc:null,player:null},
-"520":{name:"Hinalle Leaflet",kind:"hp",min:175,max:235,w:1,aOk:false,npc:null,player:null},
-"521":{name:"Aloe Leaflet",kind:"hp",min:325,max:405,w:2,aOk:false,npc:null,player:null},
-"522":{name:"Mastela Fruit",kind:"hp",min:400,max:600,w:3,aOk:false,npc:null,player:null},
-"514":{name:"Grape",kind:"sp",min:10,max:15,w:2,aOk:false,npc:null,player:null},
-"533":{name:"Grape Juice",kind:"sp",min:15,max:25,w:4,aOk:false,npc:null,player:null}};
+"512":{name:"Apple",more:true,kind:"hp",min:16,max:22,w:2,aOk:false,npc:null,player:null},
+"513":{name:"Banana",more:true,kind:"hp",min:17,max:21,w:2,aOk:false,npc:null,player:null},
+"515":{name:"Carrot",more:true,kind:"hp",min:18,max:24,w:2,aOk:false,npc:null,player:null},
+"516":{name:"Sweet Potato",more:true,kind:"hp",min:15,max:23,w:2,aOk:false,npc:null,player:null},
+"517":{name:"Meat",more:true,kind:"hp",min:70,max:99,w:15,aOk:false,npc:null,player:null},
+"519":{name:"Milk",more:true,kind:"hp",min:27,max:36,w:3,aOk:false,npc:null,player:null},
+"529":{name:"Candy",more:true,kind:"hp",min:45,max:45,w:3,aOk:false,npc:null,player:null},
+"531":{name:"Apple Juice",more:true,kind:"hp",min:25,max:31,w:4,aOk:false,npc:null,player:null},
+"532":{name:"Banana Juice",more:true,kind:"hp",min:26,max:30,w:4,aOk:false,npc:null,player:null},
+"534":{name:"Carrot Juice",more:true,kind:"hp",min:27,max:33,w:4,wOk:false,aOk:false,npc:null,player:null},
+"520":{name:"Hinalle Leaflet",more:true,kind:"hp",min:175,max:235,w:1,aOk:false,npc:null,player:null},
+"521":{name:"Aloe Leaflet",more:true,kind:"hp",min:325,max:405,w:2,aOk:false,npc:null,player:null},
+"522":{name:"Mastela Fruit",more:true,kind:"hp",min:400,max:600,w:3,aOk:false,npc:null,player:null},
+"514":{name:"Grape",more:true,kind:"sp",min:10,max:15,w:2,aOk:false,npc:null,player:null},
+"533":{name:"Grape Juice",more:true,kind:"sp",min:15,max:25,w:4,aOk:false,npc:null,player:null}};

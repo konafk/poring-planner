@@ -530,6 +530,9 @@ function recItem(id){const b=RECOVERY[id];if(!b)return null;const o=REC().overri
   const src=npc!=null?(recDisc()&&disc!=null?"disc":"npc"):player!=null?"player":null,price=src?{disc,npc,player}[src]:null;
   return {id,name:b.name,kind:b.kind,min,max,avg,w,wOk:b.wOk!==false,aOk:b.aOk!==false,npc,disc,player,src,price,per:price!=null&&avg>0?price/avg:null,perW:w>0?avg/w:null,edited:Object.keys(o).length>0}}
 const recItems=kind=>REC_IDS.filter(id=>!kind||RECOVERY[id].kind===kind).map(recItem);
+// listed in the table and the HP / SP pickers: the popular items, else every item with "show all items" (per account), one you changed or the one picked
+const recAll=()=>!!(state.recovery&&state.recovery.all);
+const recShown=(x,picked)=>recAll()||!RECOVERY[x.id].more||x.edited||x.id===picked;
 const recCheapest=kind=>recItems(kind).filter(x=>x.per!=null).sort((a,b)=>a.per-b.per)[0]||null;
 // the item in use: the one you picked when it has a price, else the cheapest (auto, with want = a picked item that has no price); null with "none"
 function recPick(kind){const k=REC()[kind==="hp"?"hpItem":"spItem"];if(k==="none")return null;

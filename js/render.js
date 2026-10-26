@@ -112,7 +112,7 @@ const REC_SRC={disc:"Discount",npc:"NPC",player:"players"};
 function recNeed(){let mp=mapKey(state.map);if(!MAPMOBS[mp])mp=mobMap(calcMob())||currentMap();if(!MAPMOBS[mp])return null;
   const w=walkSec(),r=mapStats(mp,w);return {mp,hpm:r?r.hpi:null,loss:r?r.hpm:null,sp:r?mapSpShort(mp,w,r.el2):0}}
 function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp:recPick("sp")},ch={hp:recCheapest("hp"),sp:recCheapest("sp")};
-  const opts=kind=>`<option value="auto">Auto (cheapest${ch[kind]?": "+esc(ch[kind].name):""})</option><option value="none">None</option>`+recItems(kind).map(x=>`<option value="${x.id}">${esc(x.name)}${x.per==null?" (no price)":""}</option>`).join("")+'<option value="custom">Custom (type it)</option>';
+  const opts=kind=>`<option value="auto">Auto (cheapest${ch[kind]?": "+esc(ch[kind].name):""})</option><option value="none">None</option>`+recItems(kind).filter(x=>recShown(x,R[kind==="hp"?"hpItem":"spItem"])).map(x=>`<option value="${x.id}">${esc(x.name)}${x.per==null?" (no price)":""}</option>`).join("")+'<option value="custom">Custom (type it)</option>';
   $("recHp").innerHTML=opts("hp");$("recHp").value=R.hpItem==="custom"||R.hpItem==="none"||(RECOVERY[R.hpItem]&&RECOVERY[R.hpItem].kind==="hp")?R.hpItem:"auto";
   $("recSp").innerHTML=opts("sp");$("recSp").value=R.spItem==="custom"||R.spItem==="none"||(RECOVERY[R.spItem]&&RECOVERY[R.spItem].kind==="sp")?R.spItem:"auto";
   $("recHp").title=pick.hp&&pick.hp.want?`${pick.hp.want.name} has no price, so the cheapest is used`:"";$("recSp").title=pick.sp&&pick.sp.want?`${pick.sp.want.name} has no price, so the cheapest is used`:"";
@@ -120,7 +120,8 @@ function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp
   $("recNote").textContent=need?`${state.job} on ${mapCode(need.mp)}: ${need.loss==null?"HP loss unknown":`${fmtN(need.loss)} HP lost/min${need.loss>0&&vitHeals()?" (your Vitata Heals cover it)":""}`} · ${fmtN(need.sp/60)} SP/min short`+` · using ${pick.hp?pick.hp.name:"no HP item"} and ${pick.sp?pick.sp.name:"no SP item"}`:"pick a monster or a map (Map planner) to see uses per hour";
   // don't rebuild the box you're typing in; the table catches up when you leave it
   const f=document.activeElement;if(f&&f.tagName==="INPUT"&&$("recTable").tBodies[0].contains(f))return;
-  const rows=tableRows("recTable",recItems().map(x=>{const n=!need||!(x.avg>0)?null:x.kind==="hp"?(need.hpm==null?null:need.hpm*60/x.avg):need.sp/x.avg;
+  const all=recItems(),shown=all.filter(x=>recShown(x,(pick[x.kind]||{}).id));$("recAll").checked=recAll();$("recAllN").textContent=all.length>shown.length?`${all.length-shown.length} more`:"";
+  const rows=tableRows("recTable",shown.map(x=>{const n=!need||!(x.avg>0)?null:x.kind==="hp"?(need.hpm==null?null:need.hpm*60/x.avg):need.sp/x.avg;
     return {...x,uph:n,zph:n!=null&&x.price!=null?n*x.price:null,wph:n!=null?n*x.w:null}}));
   const inp=(x,k,v,w)=>`<input type="number" min="0" step="any" data-rid="${x.id}" data-rk="${k}" value="${v??""}" placeholder="${k==="player"||RECOVERY[x.id][k==="amt"?"min":k]==null?"n/a":RECOVERY[x.id][k==="amt"?"min":k]}" aria-label="${esc(x.name)} ${k}" style="width:${w}px">`;
   $("recTable").querySelector("tbody").innerHTML=rows.map(x=>{const use=pick[x.kind]&&pick[x.kind].id===x.id,u=x.kind.toUpperCase();

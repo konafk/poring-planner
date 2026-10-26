@@ -91,6 +91,7 @@ $("useItems").addEventListener("input",e=>{const i=e.target,c=C();if(i.dataset.s
 $("recHp").addEventListener("change",e=>{REC().hpItem=e.target.value;save();renderAll()});
 $("recSp").addEventListener("change",e=>{REC().spItem=e.target.value;save();renderAll()});
 $("recDisc").addEventListener("change",e=>{state.recovery.discount=e.target.checked;save();renderAll()});
+$("recAll").addEventListener("change",e=>{state.recovery.all=e.target.checked;save();renderAll()});
 // a value typed back to the default (or cleared) drops the change
 $("recTable").addEventListener("input",e=>{const i=e.target,id=i.dataset.rid,k=i.dataset.rk;if(!id||!k||!RECOVERY[id])return;const O=REC().overrides,o=O[id]=O[id]||{};
   // amt: an item that heals a fixed amount has one box, for both min and max
