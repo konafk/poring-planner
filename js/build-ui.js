@@ -482,7 +482,7 @@ function renderBuild(){const c=C(),on=c.mode==="build";
   ROOTQ("[data-cmode]").forEach(x=>x.setAttribute("aria-checked",String(x.dataset.cmode===(on?"build":"status"))));
   $("buildPanel").hidden=!on;$("statNote").hidden=on;$("shieldRow").hidden=on;$("onTopWrap").hidden=on;$("addOnTop").checked=c.addOnTop!==false;BUILT_IDS.forEach(id=>{const el=$(id);el.disabled=on;if(on&&document.activeElement!==el)el.value=id.startsWith("st_")?(c.st||{})[id.slice(3)]??"":c[id]??""});
   $("modeNote").textContent=on?"Stats below are worked out from your base stats, job level and gear.":"Type the numbers from your in-game status window.";
-  if(!on)return;renderAltBar(c);renderLoadouts(c);renderEquipWin();const b=buildOf(c);ROOTQ("[data-bs]").forEach(x=>{if(document.activeElement!==x)x.value=b.base[x.dataset.bs]??""});
+  if(!on)return;renderAltBar(c);renderLoadouts(c);renderEquipWin();const b=buildOf(c);renderStatWin(c);
   const r=BUILD_LAST;if(!r)return;const jb=r.jobBonus;
   $("jobBonusNote").textContent=`Job Lv ${r.fields.jobLv} bonus: `+BUILD.STAT6.map(k=>`${k.toUpperCase()} +${jb[k]}`).join(" · ")+(BUILD.curve(state.job,"hp",num(c.baseLv))==null?" · no HP/SP table for this job, type Max HP/SP after switching back":"");
   // check against the game: type the in-game totals, see the difference per stat
@@ -502,7 +502,30 @@ ROOTQ("[data-cmode]").forEach(x=>x.addEventListener("click",()=>{const c=C(),to=
   if(to==="build")c.statusSnap=JSON.parse(JSON.stringify(Object.fromEntries(SNAP_KEYS.map(k=>[k,c[k]??null]))));
   else if(c.statusSnap){SNAP_KEYS.forEach(k=>{const v=c.statusSnap[k];if(v==null)delete c[k];else c[k]=v});delete c.statusSnap}
   c.mode=to;save();if(to==="build")renderGearTable();renderAll();syncChar()}));
-ROOTQ("[data-bs]").forEach(x=>x.addEventListener("input",()=>{buildOf(C()).base[x.dataset.bs]=num(x.value)||1;save();renderAll()}));
+// the status window, drawn like the game's: each base stat with − / +, what job and gear add to it, and what the next point costs;
+// the status points left at this Base Lv under it, and the numbers the window shows beside the stats
+const STAT_NAME=k=>k[0].toUpperCase()+k.slice(1);
+function renderStatWin(c){const el=$("statWin"),b=buildOf(c),r=BUILD_LAST,lv=num(c.baseLv)||1,f=r&&r.fields;
+  if(!el.firstChild)el.innerHTML=`<div class="ewHead">Status</div><div class="swBody"><div class="swStats">${BUILD.STAT6.map(k=>`<span class="swK">${STAT_NAME(k)}</span>
+    <span class="swIn"><button type="button" data-bsd="${k}" data-d="-1" aria-label="Lower base ${k.toUpperCase()}" title="Shift: 10">−</button><input data-bs="${k}" type="number" min="1" max="99" aria-label="Base ${k.toUpperCase()}"><button type="button" data-bsd="${k}" data-d="1" aria-label="Raise base ${k.toUpperCase()}" title="Shift: 10">+</button></span>
+    <span class="swAdd" data-bsadd="${k}"></span><span class="swCost" data-bscost="${k}"></span>`).join("")}</div><dl class="swDer"></dl></div><div class="swFoot"></div>`;
+  let spent=0;BUILD.STAT6.forEach(k=>{const v=Math.max(1,num(b.base[k])||1),x=el.querySelector(`[data-bs="${k}"]`);spent+=BUILD.statSpent(v);
+    if(document.activeElement!==x)x.value=b.base[k]??"";
+    const jb=r?r.jobBonus[k]:0,add=r?r.total[k]-Math.max(1,num(b.base[k])||1):0,a=el.querySelector(`[data-bsadd="${k}"]`);
+    a.textContent=r?`+ ${add}`:"";a.title=r?`Job Lv ${f.jobLv} +${jb} · gear and the rest +${add-jb}`:"";
+    const cost=el.querySelector(`[data-bscost="${k}"]`);cost.textContent=v<99?BUILD.raiseCost(v):"–";cost.title=v<99?`${BUILD.raiseCost(v)} status points to raise ${k.toUpperCase()} to ${v+1}`:"";
+    el.querySelectorAll(`[data-bsd="${k}"]`).forEach(x=>x.disabled=+x.dataset.d<0?v<=1:v>=99)});
+  // the window's pairs: soft + hard, FLEE + Perfect Dodge, as the Character tab reads them
+  const two=t=>t==null?"–":String(t).replace("+"," + "),S=r&&r.status;
+  const der=[["Atk",f&&two(f.atkTxt)],["Def",f&&two(f.defTxt)],["Matk",f&&two(f.matkTxt)],["Mdef",S&&`${S.softMdef} + ${r.hardMdef}`],
+    ["Hit",f&&String(f.hitTxt).split("+").reduce((a,x)=>a+num(x),0)],["Flee",f&&two(f.fleeTxt)],["Critical",f&&f.crit],["Aspd",f&&(f.aspd??"–")]];
+  el.querySelector(".swDer").innerHTML=der.map(([k,v])=>`<dt>${k}</dt><dd>${v??"–"}</dd>`).join("");
+  const tot=BUILD.statPoints(lv),left=tot-spent;
+  el.querySelector(".swFoot").innerHTML=`<span>Status Point</span><b class="${left<0?"bad":""}">${left}</b><span class="note">${left<0?`${-left} over`:"left"} of ${tot} at Base Lv ${lv}</span>`}
+const setBase=(k,v)=>{buildOf(C()).base[k]=Math.min(99,Math.max(1,v));save();renderAll()};
+$("statWin").addEventListener("input",e=>{const x=e.target.closest("[data-bs]");if(x)setBase(x.dataset.bs,num(x.value)||1)});
+$("statWin").addEventListener("click",e=>{const x=e.target.closest("[data-bsd]");if(!x)return;const k=x.dataset.bsd;
+  setBase(k,(num(buildOf(C()).base[k])||1)+ +x.dataset.d*(e.shiftKey?10:1))});
 const gearRead=(c,g,r)=>{gearPut(c,g,r.id);if(r.refine!=null)g.refine=r.refine;if(r.cards.length)g.cards=[...r.cards]};
 // a name that fits more than one reading (two copies of an item, two cards with one name) fills the first; the others are buttons
 // under the table until the next name is typed

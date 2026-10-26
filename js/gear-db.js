@@ -130,7 +130,7 @@ function renderEquipDb(){const c=C(),f=eqDbF(),all=typeof EQUIP!=="undefined"?EQ
   const rows=tableRows("equipTable",all.filter(it=>eqDbOk(it,f,state.job)).map(it=>({it,fx:fxOf(it)})));
   $("eqDbCount").textContent=`${rows.length} of ${all.length} items`;
   $("equipTable").tBodies[0].innerHTML=rows.slice(0,400).map(({it,fx})=>{const pl=eqPlaces(it,state.job),ok=pl.length&&wearsJob(it,state.job);
-    return `<tr data-eqrow="${it.id}"><td class="name"><div class="dbName">${iconHtml("gear",it.id)}<div>${eqBtn("item",it.id,ok,!pl.length?"Not something you wear":`A ${state.job} can't wear it`)} <a href="#" data-info="item:${it.id}">${esc(it.name)}</a> <span class="note">#${it.id}</span>${wornPills(c,it.id)}</div></div></td><td class="name l kind">${esc(gearKind(it))}${it.wlv?` <span class="note">Lv ${it.wlv}</span>`:""}${it.el&&it.el!=="neutral"?` <span class="el ${fxCap(it.el)}">${fxCap(it.el)}</span>`:""}</td>
+    return `<tr data-eqrow="${it.id}"><td class="name"><div class="dbName"><a href="#" data-info="item:${it.id}" aria-label="${esc(it.name)} details">${iconHtml("gear",it.id)}</a><div>${eqBtn("item",it.id,ok,!pl.length?"Not something you wear":`A ${state.job} can't wear it`)} <a href="#" data-info="item:${it.id}">${esc(it.name)}</a> <span class="note">#${it.id}</span>${wornPills(c,it.id)}</div></div></td><td class="name l kind">${esc(gearKind(it))}${it.wlv?` <span class="note">Lv ${it.wlv}</span>`:""}${it.el&&it.el!=="neutral"?` <span class="el ${fxCap(it.el)}">${fxCap(it.el)}</span>`:""}</td>
       <td>${it.lv||"–"}</td><td>${it.slots?`[${it.slots}]`:"–"}</td><td>${it.atk||"–"}</td><td>${it.matk||"–"}</td><td>${it.def||"–"}</td><td>${it.w!=null?it.w:"–"}</td>
       <td class="name l jobs">${esc(jobsTxt(it))}</td><td class="name l from">${fromHtml(it.id)}</td>
       <td class="name fx">${fx.map(esc).join("<br>")||'<span class="muted">–</span>'}${itemText(it.id)?`<details class="desc"><summary>In-game text</summary>${esc(itemText(it.id))}</details>`:""}</td></tr>`}).join("")
@@ -143,7 +143,7 @@ function renderCardDb(){const c=C(),f=cardDbF(),all=typeof CARDS!=="undefined"?C
   ROOTQ("[data-cdf]").forEach(x=>{if(document.activeElement!==x)x.value=f[x.dataset.cdf]??""});
   const rows=tableRows("cardTable",all.filter(x=>cardDbOk(x,f)).map(x=>({c:x,fx:fxOf(x)})));
   $("cardDbCount").textContent=`${rows.length} of ${all.length} cards`;
-  $("cardTable").tBodies[0].innerHTML=rows.map(({c:x,fx})=>`<tr data-cdrow="${x.id}"><td class="name"><div class="dbName">${iconHtml("card",x.id)}<div>${eqBtn("card",x.id,!!cardPart(x),"Not a card that goes in gear")} <a href="#" data-info="item:${x.id}">${esc(x.name)}</a> <span class="note">#${x.id}</span>${wornPills(c,x.id,true)}</div></div></td>
+  $("cardTable").tBodies[0].innerHTML=rows.map(({c:x,fx})=>`<tr data-cdrow="${x.id}"><td class="name"><div class="dbName"><a href="#" data-info="item:${x.id}" aria-label="${esc(x.name)} details">${iconHtml("card",x.id)}</a><div>${eqBtn("card",x.id,!!cardPart(x),"Not a card that goes in gear")} <a href="#" data-info="item:${x.id}">${esc(x.name)}</a> <span class="note">#${x.id}</span>${wornPills(c,x.id,true)}</div></div></td>
       <td class="name l">${CARD_PART[cardPart(x)]||"–"}</td><td class="name l">${esc(cardName(x))||"–"}</td>
       <td class="name l from">${fromHtml(x.id)}</td><td class="name fx">${itemText(x.id)?esc(itemText(x.id)):fx.map(esc).join("<br>")||'<span class="muted">–</span>'}</td></tr>`).join("")
     ||'<tr><td colspan="5" class="name muted">No cards match these filters.</td></tr>'}
