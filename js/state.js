@@ -73,7 +73,7 @@ for(const j in state.chars){let c=state.chars[j];if(!c||typeof c!=="object"){del
   if(c.build&&typeof c.build==="object"){const b=c.build;if(b.alt){if(!Array.isArray(b.alts)&&typeof b.alt==="object")b.alts=[b.alt];delete b.alt}
     if(b.alts!=null&&!Array.isArray(b.alts))delete b.alts;
     if(b.alts){b.alts=b.alts.map(a=>a&&typeof a==="object"&&!Array.isArray(a)?a:{gear:{}});const ed=/^alt(\d+)$/.exec(c.gearEdit||""),keep=ed?+ed[1]:-1;
-      const empty=a=>!Object.keys(a.gear||{}).length&&!Object.values(a.stones||{}).some(Boolean)&&!(a.special&&(a.special.ring||(a.special.own||[]).length||Object.values(a.special.costume||{}).some(Boolean)));
+      const empty=a=>!Object.keys(a.gear||{}).length&&!Object.values(a.stones||{}).some(Boolean)&&!(a.special&&(a.special.ring||a.special.shield||(a.special.own||[]).length||Object.values(a.special.costume||{}).some(Boolean)));
       while(b.alts.length&&b.alts.length-1>keep&&empty(b.alts[b.alts.length-1]))b.alts.pop()}}
   if(c.gearEdit==="alt")c.gearEdit="alt0";
   // "HP back per minute" (hpRegen) became "HP regen per 6s" (hpRegen6, blank = worked out): a typed value carries over as 10 ticks a minute

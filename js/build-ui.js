@@ -223,7 +223,7 @@ function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}}
     else if(r.by==="exp")o.exp.all+=v;else if(r.by==="expRace")add(o.exp.race,r.t,v);else if(r.by==="spCost")o.spCost+=v;else if(r.by==="spRec")o.spRec+=v;else if(r.by==="hpRec")o.hpRec+=v});return o}
 // "Fill from gear": the lines the gear saved in Build from gear gives (gear, cards, affixes, stones, Taming Ring, other special
 // equipment; not consumables or buffs), one row per bonus. A bonus with different physical and magic values gets a row for each
-const setSaved=b=>{const sp=b.special||{};return Object.keys(b.gear||{}).length>0||Object.values(b.stones||{}).some(Boolean)||!!sp.ring||(sp.own||[]).length>0||Object.values(sp.costume||{}).some(Boolean)};
+const setSaved=b=>{const sp=b.special||{};return Object.keys(b.gear||{}).length>0||Object.values(b.stones||{}).some(Boolean)||!!sp.ring||!!sp.shield||(sp.own||[]).length>0||Object.values(sp.costume||{}).some(Boolean)};
 const gearSaved=c=>setSaved(c.build||{});
 function gearEqRows(c){const A=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,extra:[]},state.job,aspdBase).acc,rows=[];
   const add=(by,t,v,ch="both")=>{v=Math.round(v*100)/100;if(v)rows.push({by,t,ch,v})};
@@ -288,7 +288,7 @@ function optBoxes(slot,g,it){const ch=BUILD.optChoices(slot,it),gk=BUILD.optGear
   return `<div class="opts">${rows.map(one).join("")}${rows.length<BUILD.OPT_MAX?one(null,rows.length):""}${optFoot(g,rows.length)}</div>`}
 // costume enchant stones: a list per costume slot, each stone with what it gives
 const STONE_FX={str:"STR",agi:"AGI",vit:"VIT",int:"INT",dex:"DEX",luk:"LUK",crit:"CRIT",hit:"HIT",flee:"FLEE",def:"DEF",mdef:"MDEF",hp:"MaxHP",sp:"MaxSP",aspd:"ASPD",
-  atk:"ATK",matk:"MATK",damage_percent:"Physical damage %",hp_recovery_percent:"HP recovery %",attack_delay_percent:"After-attack delay %",atk_percent:"ATK %",matk_percent:"MATK %",hp_percent:"MaxHP %",sp_percent:"MaxSP %",crit_damage_percent:"Critical damage %",cast_time_variable_percent:"Variable cast %"};
+  atk:"ATK",matk:"MATK",exp_percent:"EXP %",damage_percent:"Physical damage %",hp_recovery_percent:"HP recovery %",attack_delay_percent:"After-attack delay %",atk_percent:"ATK %",matk_percent:"MATK %",hp_percent:"MaxHP %",sp_percent:"MaxSP %",crit_damage_percent:"Critical damage %",cast_time_variable_percent:"Variable cast %"};
 const stoneFx=x=>x.off&&!x.b.length?x.off:x.b.map(([t,k,g,v])=>{const l=k==="size"?`Damage vs ${g} %`:t==="damage_taken_percent"?`${g[0].toUpperCase()+g.slice(1)} resist %`:STONE_FX[t]||t,pc=/ %$/.test(l);
   if(t==="damage_taken_percent")v=-v;return `${l.replace(/ %$/,"")} ${v>0?"+":""}${v}${pc?"%":""}`}).join(", ");
 // a stone goes on the costume in its slot: b.special.costume = {slot: costume id}, picked from the costumes that take the slot
@@ -299,39 +299,48 @@ const costumesFor=k=>COSTUME_LISTS[k]||(COSTUME_LISTS[k]=(typeof COSTUMES!=="und
   .map(([id])=>[costumeName(id),+id]).sort((a,b)=>a[0].localeCompare(b[0])));
 function costumeLists(){if($("costumeLists").childElementCount)return;
   $("costumeLists").innerHTML=BUILD.STONE_SLOTS.map(z=>`<datalist id="cos_${z.k}">${costumesFor(z.k).map(([n])=>`<option value="${esc(n)}">`).join("")}</datalist>`).join("")}
-// the Taming Ring (Special Equipment, Accessory Right) holds one pet egg enchant; "none" = no ring or an empty one
-function renderStones(){const b=gearSet(),sel=b.stones||{},ring=(b.special||{}).ring,cos=(b.special||{}).costume||{},all=typeof STONES!=="undefined"?STONES:[],eggs=typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[];costumeLists();
-  $("stoneRow").innerHTML=BUILD.STONE_SLOTS.map(z=>`<label>Costume ${z.label.toLowerCase()}<span class="itemBox">${itemIcon(cos[z.k])}<input data-costume="${z.k}" list="cos_${z.k}" placeholder="none" title="The costume the ${z.label.toLowerCase()} stone goes on" value="${esc(costumeName(cos[z.k]))}"></span></label>
-    <label>Costume ${z.label.toLowerCase()} stone<select data-stone="${z.k}"><option value="">none</option>${all.filter(x=>x.slot===z.k)
-    .map(x=>`<option value="${x.id}"${+sel[z.k]===x.id?" selected":""}>${esc(x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""))}: ${esc(stoneFx(x))}</option>`).join("")}</select></label>`).join("")+
-    `<label>Taming Ring pet egg<select data-ring="1"><option value="">none</option>${eggs.map(x=>`<option value="${x.id}"${+ring===x.id?" selected":""}>${esc(x.name)}: ${esc([x.b.length?stoneFx({b:x.b}):"",x.off||""].filter(Boolean).join(", "))}</option>`).join("")}</select></label>`;renderSpecialOwn()}
+// the Special Equipment table, a row a slot like the gear table: a costume per costume slot with its enchant stone, the Taming Ring
+// (Special Equipment, Accessory Right: b.special.ring = the pet egg sealed in it, or true for the ring with no egg), the shadow shield
+// (b.special.shield, an item id), then other special equipment
+const shadowShields=()=>(typeof SHADOW_SHIELDS!=="undefined"?SHADOW_SHIELDS:[]).map(id=>BUILD.item(id)).filter(Boolean);
+function renderStones(){const b=gearSet(),sel=b.stones||{},ring=(b.special||{}).ring,sh=(b.special||{}).shield,cos=(b.special||{}).costume||{},all=typeof STONES!=="undefined"?STONES:[],eggs=typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[];costumeLists();
+  $("stoneRow").innerHTML=BUILD.STONE_SLOTS.map(z=>{const lo=z.label.toLowerCase();
+    return `<tr><td>Costume ${lo}</td><td><div class="itemBox">${itemIcon(cos[z.k])}<input class="item" data-costume="${z.k}" list="cos_${z.k}" placeholder="none" title="The costume the ${lo} stone goes on" aria-label="Costume ${lo}" value="${esc(costumeName(cos[z.k]))}"></div></td>
+    <td><div class="itemBox">${itemIcon(sel[z.k])}<select data-stone="${z.k}" aria-label="Costume ${lo} stone"><option value="">no stone</option>${all.filter(x=>x.slot===z.k)
+    .map(x=>`<option value="${x.id}"${+sel[z.k]===x.id?" selected":""}>${esc(x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""))}: ${esc(stoneFx(x))}</option>`).join("")}</select></div></td><td></td></tr>`}).join("")+
+    `<tr><td>Shield</td><td><div class="itemBox">${iconHtml("gear",sh)}<select data-shadow="shield" aria-label="Shadow shield"><option value="">none</option>${shadowShields().map(x=>`<option value="${x.id}"${+sh===x.id?" selected":""}>${esc(x.name)}: ${esc(stoneFx({b:(x.g||[]).flatMap(g=>g.b||[])}))}</option>`).join("")}</select></div></td><td></td><td></td></tr>
+    <tr><td>Accessory right</td><td><div class="itemBox">${itemIcon(ring&&24966)}<select data-ringon="1" aria-label="Accessory right"><option value="">none</option><option value="1"${ring?" selected":""}>Taming Ring</option></select></div></td><td><div class="itemBox">${itemIcon(ring)}<select data-ring="1" aria-label="Taming Ring pet egg" title="${ring?"The pet egg sealed in the ring":"Picking an egg puts the Taming Ring on"}"><option value="">no egg</option>${eggs.map(x=>`<option value="${x.id}"${+ring===x.id?" selected":""}>${esc(x.name)}: ${esc([x.b.length?stoneFx({b:x.b}):"",x.off||""].filter(Boolean).join(", "))}</option>`).join("")}</select></div></td><td></td></tr>`;renderSpecialOwn()}
 // other special equipment: rows {on, name, opts} in b.special.own, each with up to OPT_MAX effects from the full affix list
 const specialOwn=()=>{const b=gearSet();b.special=b.special||{};if(!Array.isArray(b.special.own))b.special.own=[];return b.special.own};
-function renderSpecialOwn(){$("specialOwn").innerHTML=specialOwn().map((x,i)=>`<div class="eqrow" data-i="${i}">
-    <input type="checkbox" data-f="on" ${x.on!==false?"checked":""} aria-label="Wearing it">
-    <input data-f="name" value="${esc(x.name||"")}" placeholder="name" class="w-3xl">${optBoxes("special",x,null)}
-    <button type="button" class="small danger" data-del aria-label="Remove">✕</button></div>`).join("");
+function renderSpecialOwn(){$("specialOwn").innerHTML=specialOwn().map((x,i)=>`<tr data-i="${i}">
+    <td><div class="ownOn"><label><input type="checkbox" data-f="on" ${x.on!==false?"checked":""} title="Wearing it"> Other</label><button type="button" class="small danger" data-del aria-label="Remove" title="Remove">✕</button></div></td>
+    <td><div class="itemBox">${iconHtml("gear",null)}<input class="item" data-f="name" value="${esc(x.name||"")}" placeholder="name" aria-label="Name"></div></td><td></td><td>${optBoxes("special",x,null)}</td></tr>`).join("");
   specialOwn().forEach((x,i)=>BUILD.optRows(x.opts).forEach((o,j)=>{const el=$("specialOwn").querySelector(`[data-i="${i}"] [data-opt="${j}"]`);if(el)el.value=o.k}))}
 $("specialAdd").addEventListener("click",()=>{specialOwn().push({on:true,name:"",opts:[]});save();renderSpecialOwn();renderAll();
-  $("specialOwn").querySelector(".eqrow:last-child [data-f=name]")?.focus()});
-$("specialOwn").addEventListener("click",e=>{if(e.target.closest("[data-optsdrop]")){e.preventDefault();optDrop(specialOwn()[+e.target.closest(".eqrow").dataset.i]);save();renderSpecialOwn();renderAll();return}
-  if(!e.target.closest("[data-del]"))return;specialOwn().splice(+e.target.closest(".eqrow").dataset.i,1);save();renderSpecialOwn();renderAll()});
-$("specialOwn").addEventListener("change",e=>{if(e.target.dataset.opt==null)return;const row=e.target.closest(".eqrow"),x=specialOwn()[+row.dataset.i],rows=BUILD.optRows(x.opts),i=+e.target.dataset.opt,v=e.target.value;
+  $("specialOwn").querySelector("tr:last-child [data-f=name]")?.focus()});
+$("specialOwn").addEventListener("click",e=>{if(e.target.closest("[data-optsdrop]")){e.preventDefault();optDrop(specialOwn()[+e.target.closest("tr[data-i]").dataset.i]);save();renderSpecialOwn();renderAll();return}
+  if(!e.target.closest("[data-del]"))return;specialOwn().splice(+e.target.closest("tr[data-i]").dataset.i,1);save();renderSpecialOwn();renderAll()});
+$("specialOwn").addEventListener("change",e=>{if(e.target.dataset.opt==null)return;const row=e.target.closest("tr[data-i]"),x=specialOwn()[+row.dataset.i],rows=BUILD.optRows(x.opts),i=+e.target.dataset.opt,v=e.target.value;
   if(!v)rows.splice(i,1);else rows[i]={k:v,v:rows[i]?rows[i].v:""};optSet(x,rows);save();renderSpecialOwn();renderAll();
   if(v)$("specialOwn").querySelector(`[data-i="${row.dataset.i}"] [data-optv="${i}"]`)?.focus()});
-$("specialOwn").addEventListener("input",e=>{const row=e.target.closest(".eqrow");if(!row)return;const x=specialOwn()[+row.dataset.i],f=e.target.dataset.f;
+$("specialOwn").addEventListener("input",e=>{const row=e.target.closest("tr[data-i]");if(!row)return;const x=specialOwn()[+row.dataset.i],f=e.target.dataset.f;
   if(f)x[f]=f==="on"?e.target.checked:e.target.value;
   else if(e.target.dataset.optv!=null){const rows=BUILD.optRows(x.opts),o=rows[+e.target.dataset.optv];if(!o)return;o.v=e.target.value===""?"":num(e.target.value);optSet(x,rows)}else return;
   save();renderAll()});
+// redraw the rows (their icons), the box you changed keeping focus
+const stonesRedraw=el=>{const f=["ringon","ring","shadow","costume","stone"].map(k=>el.dataset[k]!=null?`[data-${k}="${el.dataset[k]}"]`:null).find(Boolean);renderStones();if(f)$("stoneRow").querySelector(f)?.focus()};
 $("stoneRow").addEventListener("change",e=>{const b=gearSet();
-  if(e.target.dataset.ring){b.special=b.special||{};if(e.target.value)b.special.ring=+e.target.value;else delete b.special.ring;save();renderAll();return}
+  // the ring on or off (off takes its egg with it); an egg puts the ring on, no egg leaves it on empty
+  if(e.target.dataset.shadow){b.special=b.special||{};if(e.target.value)b.special.shield=+e.target.value;else delete b.special.shield;save();stonesRedraw(e.target);renderAll();return}
+  if(e.target.dataset.ringon){b.special=b.special||{};if(!e.target.value)delete b.special.ring;else if(!b.special.ring)b.special.ring=true;save();stonesRedraw(e.target);renderAll();return}
+  if(e.target.dataset.ring){b.special=b.special||{};const on=b.special.ring;if(e.target.value)b.special.ring=+e.target.value;else if(on)b.special.ring=true;save();stonesRedraw(e.target);renderAll();return}
   // a costume by its name; one that takes other slots too comes off what was in them, and goes in all of its slots
   if(e.target.dataset.costume){const k=e.target.dataset.costume,v=e.target.value.trim().toLowerCase(),hit=v&&costumesFor(k).find(([n])=>n.toLowerCase()===v);
     if(v&&!hit){renderStones();return}b.special=b.special||{};const cos=b.special.costume=b.special.costume||{},off=id=>Object.keys(cos).forEach(s=>{if(cos[s]===id)delete cos[s]});
     if(cos[k])off(cos[k]);if(hit){const sl=COSTUMES[hit[1]];sl.forEach(s=>{if(cos[s])off(cos[s])});sl.forEach(s=>cos[s]=hit[1])}
-    if(!Object.keys(cos).length)delete b.special.costume;save();renderAll();return}
+    if(!Object.keys(cos).length)delete b.special.costume;save();stonesRedraw(e.target);renderAll();return}
   const k=e.target.dataset.stone;if(!k)return;b.stones=b.stones||{};
-  if(e.target.value)b.stones[k]=+e.target.value;else delete b.stones[k];save();renderAll()});
+  if(e.target.value)b.stones[k]=+e.target.value;else delete b.stones[k];save();stonesRedraw(e.target);renderAll()});
 // ---- remembered gear: each item keeps the refine, cards and affixes it had when it last came off (build.mem by item id, the
 // MEM_N newest), in any of your gear sets, so swapping a part out and back brings it back as it was. The item lists mark them ----
 const MEM_N=100;
@@ -442,11 +451,12 @@ function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),
     return ewSlot(k,`Costume ${k}`,cn?(sn?`${cn} [${sn}]`:cn):sn,itemIcon(cn?c:x&&x.id),right)};
   // costumes, stones and the Taming Ring (item 24966) are in the item icon sheet, not the gear one
   const ring=()=>{const id=(b.special||{}).ring,x=id&&(typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[]).find(e=>e.id===+id);
-    return ewSlot("ring","Taming Ring",x?`Taming Ring [${x.name}]`:"",itemIcon(x&&24966),false)};
-  // other special equipment you wear goes in the right column's free slots
-  const own=((b.special||{}).own||[]).map((x,j)=>({x,j})).filter(o=>o.x.on!==false&&(o.x.name||"").trim()).slice(0,4);
+    return ewSlot("ring","Taming Ring",x?`Taming Ring [${x.name}]`:id?"Taming Ring":"",itemIcon(id&&24966),false)};
+  // the shadow shield in the shield's place, as in game; other special equipment you wear in the right column's free slots
+  const shield=()=>{const it=BUILD.item((b.special||{}).shield);return ewSlot("shield","Shield",it?it.name:"",iconHtml("gear",it&&it.id),true)};
+  const own=((b.special||{}).own||[]).map((x,j)=>({x,j})).filter(o=>o.x.on!==false&&(o.x.name||"").trim()).slice(0,3),ownSlot=n=>own[n]?ewSlot("own"+own[n].j,"Special equipment",own[n].x.name.trim(),iconHtml("gear",null),true):ewNone(true);
   const L=sp?[stone("upper"),stone("lower"),ewNone(),stone("garment"),ring()]:EW_L.map(k=>gearSlot(k,false));
-  const R=sp?[stone("middle",true),...[0,1,2,3].map(n=>own[n]?ewSlot("own"+own[n].j,"Special equipment",own[n].x.name.trim(),iconHtml("gear",null),true):ewNone(true))]:EW_R.map(k=>gearSlot(k,true));
+  const R=sp?[stone("middle",true),ownSlot(0),shield(),ownSlot(1),ownSlot(2)]:EW_R.map(k=>gearSlot(k,true));
   // arrows only for jobs that can hold a bow, or when some are set
   const ammo=!sp&&(b.gear.ammo&&b.gear.ammo.id||gearChoices("weapon").some(it=>BUILD.WTYPE[it.type]==="Bow"))?`<div class="ewAmmo">${gearSlot("ammo",false)}</div>`:"";
   const html=`<div class="ewHead"><span>Equipped Items</span>${i>=0?`<span class="ewSet">Set ${i+1}</span>`:""}</div>
@@ -474,9 +484,12 @@ $("equipWin").addEventListener("click",e=>{const t=e.target.closest("button");if
   if(t.dataset.ewcolor){const S=JOB_SPRITES.body[state.job]||JOB_SPRITES.body.Novice,n=ewColors(ewSex(S),L.hair);if(n)L.color=((L.color<n?L.color:0)+ +t.dataset.ewcolor+n)%n;save();renderEquipWin();return}
   if(t.dataset.ewdye){const p=ewBodyPal(),n=p?p.c.length:0;if(n)L.dye=((L.dye<n?L.dye:0)+ +t.dataset.ewdye+n)%n;save();renderEquipWin();return}
   const k=t.dataset.ewslot;if(!k)return;
-  const to=EW_TAB==="special"?(k==="ring"?$("stoneRow").querySelector("[data-ring]"):k.startsWith("own")?$("specialOwn").querySelector(`[data-i="${k.slice(3)}"] [data-f=name]`):$("stoneRow").querySelector(`[data-costume="${k}"]`))
+  const to=EW_TAB==="special"?(k==="ring"?$("stoneRow").querySelector("[data-ringon]"):k==="shield"?$("stoneRow").querySelector("[data-shadow]"):k.startsWith("own")?$("specialOwn").querySelector(`[data-i="${k.slice(3)}"] [data-f=name]`):$("stoneRow").querySelector(`[data-costume="${k}"]`))
     :$("gearTable").querySelector(`tr[data-slot="${k}"] input.item`);
-  if(to){to.scrollIntoView({block:"center",behavior:"smooth"});to.focus({preventScroll:true})}});
+  if(to){const d=to.closest("details");if(d)d.open=true;to.scrollIntoView({block:"center",behavior:"smooth"});to.focus({preventScroll:true})}});
+// the Equipment and Special equipment tables fold away, remembered like a card (state.collapsed)
+[["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
+  d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[key])return;if(d.open)delete c[key];else c[key]=true;save()})});
 function renderBuild(){const c=C(),on=c.mode==="build";
   if(on&&renderBuild.job!==state.job){renderBuild.job=state.job;renderGearTable()}if(!on)renderBuild.job=null;
   ROOTQ("[data-cmode]").forEach(x=>x.setAttribute("aria-checked",String(x.dataset.cmode===(on?"build":"status"))));

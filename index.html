@@ -138,14 +138,18 @@
       </div>
       <div class="note" id="loadoutNote"></div>
       <div class="equipWin" id="equipWin" aria-label="Equipped items"></div>
-      <div class="scroll"><table id="gearTable"><thead><tr><th>Slot</th><th>Item</th><th>Refine</th><th>Cards</th><th>Affixes</th></tr></thead><tbody></tbody></table></div>
+      <details class="fold" id="gearFold" open>
+        <summary>Equipment <span class="note">the Normal Equip tab: item, refine, cards and affixes per slot</span></summary>
+        <div class="scroll"><table id="gearTable"><thead><tr><th>Slot</th><th>Item</th><th>Refine</th><th>Cards</th><th>Affixes</th></tr></thead><tbody></tbody></table></div>
+      </details>
       <div id="gearLists"></div>
       <div class="note" id="gearAlts" hidden></div>
-      <div class="note mt" title="The Special Equipment tab: a costume per costume slot with one enchant stone on it (Costume Enchanter, Prontera Cash Room; stones that complete a set add its bonus too) and the Taming Ring with the pet egg sealed in it">Special equipment: costumes with their enchant stones, and the Taming Ring</div>
-      <div class="form cfill" id="stoneRow"></div>
+      <details class="fold" id="specialFold" open>
+        <summary title="The Special Equipment tab: a costume per costume slot with one enchant stone on it (Costume Enchanter, Prontera Cash Room; stones that complete a set add its bonus too) and the Taming Ring with the pet egg sealed in it">Special equipment <span class="note">costumes with their enchant stones, the Guild shield, the Taming Ring and others</span></summary>
+        <div class="scroll"><table id="specialTable"><thead><tr><th>Slot</th><th>Item</th><th>Enchant</th><th>Affixes</th></tr></thead><tbody id="stoneRow"></tbody><tbody id="specialOwn"></tbody></table></div>
+        <div class="bar"><button type="button" class="small" id="specialAdd">+ Add other special equipment</button><span class="note hint">Special equipment the rows above don't have: name it and pick its effects from the affix list. Untick a row to take it off</span></div>
+      </details>
       <div id="costumeLists"></div>
-      <div id="specialOwn" class="eqlist"></div>
-      <div class="bar"><button type="button" class="small" id="specialAdd">+ Add other special equipment</button><span class="note hint">Special equipment the lists above don't have: name it and pick its effects from the affix list</span></div>
       <details class="note">
         <summary>Check against the game</summary>
         <div class="mt">Type totals from your status window (ATK/DEF: both parts added; FLEE without "+N"). ✓ = match; a number = how far off. Max HP/SP here replace the computed ones.</div>
