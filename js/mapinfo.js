@@ -13,10 +13,9 @@ function renderMapInfo(){
   const v=typeof MINIMAPS!=="undefined"&&MINIMAPS[mp],wi=worldOf(mp),lv=mapInfoLv(mp),mobs=mapInfoMobs(mp);
   $("mapInfoSel").innerHTML=`<div class="bar"><h3 class="grow">${esc(mapName(mp)||mapCode(mp))} <span class="note mono">${esc(mapCode(mp))}</span></h3>
     <button type="button" class="primary small" data-planmap="${esc(mp)}">Plan this map</button></div>
-    <div class="mapInfoTop"><div class="mapInfoTxt">
+    ${v?`<a class="mapPic" href="img/maps/${esc(mp)}.png?v=${v}" target="_blank" rel="noopener" title="The map from the game client's map window. Click for full size"><img src="img/maps/${esc(mp)}.png?v=${v}" alt="Map of ${esc(mapName(mp)||mapCode(mp))}" width="512" height="512"></a>`:`<div class="note">The game client has no picture of this map.</div>`}
     <div class="note">${esc(mapInfoOpenTxt(mp))} · ${wi>=0?`on the ${esc(WORLDMAPS[wi].name)} map`:"not on the game's world map yet"}${lv?` · monsters Lv ${lv[0]}${lv[1]>lv[0]?`–${lv[1]}`:""}`:""}${isRoomMap(mp)?" · room dungeon":""}</div>
-    <div class="infoList mt">${mobs.map(({m,n})=>`<div>${mobIcon(m.id,1,"il")}${infoLink("mob",m.id,m.name)}${BOSS_PILL(m)} <span class="note">Lv ${m.lv} · ≈${spN(n)}${m.boss?"":` · ${fmtExp(m)} EXP`}</span></div>`).join("")||'<div class="note">No monsters listed.</div>'}</div></div>
-    ${v?`<a class="mapPic" href="img/maps/${esc(mp)}.png?v=${v}" target="_blank" rel="noopener" title="The map from the game client's map window. Click for full size"><img src="img/maps/${esc(mp)}.png?v=${v}" alt="Map of ${esc(mapName(mp)||mapCode(mp))}" width="512" height="512"></a>`:`<div class="note">The game client has no picture of this map.</div>`}</div>`;
+    <div class="infoList mt">${mobs.map(({m,n})=>`<div>${mobIcon(m.id,1,"il")}${infoLink("mob",m.id,m.name)}${BOSS_PILL(m)} <span class="note">Lv ${m.lv} · ≈${spN(n)}${m.boss?"":` · ${fmtExp(m)} EXP`}</span></div>`).join("")||'<div class="note">No monsters listed.</div>'}</div>`;
   // every map, narrowed by the search (code, name, or a monster on it) and to open maps
   const rows=Object.keys(MAPMOBS).filter(k=>(!onlyOpen||!isClosed(k))&&(!q||[k,mapCode(k),mapName(k),...(MAPNAMES[k]||[]).slice(2),...MAPMOBS[k].map(x=>x.m.name)].some(s=>String(s).toLowerCase().includes(q))))
     .sort((a,b)=>mapCode(a).localeCompare(mapCode(b)));

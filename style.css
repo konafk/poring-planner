@@ -732,11 +732,11 @@ details.more>.form{display:grid}
 .mapInfo{display:grid;grid-template-columns:minmax(0,3fr) minmax(260px,2fr);gap:16px;align-items:start;margin-top:12px}
 @media (max-width:800px){.mapInfo{grid-template-columns:minmax(0,1fr)}}
 .mapInfo h3{margin:0;font-size:1rem}
-.mapInfoTop{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin-top:8px}
-.mapInfoTxt{flex:1 1 150px;min-width:0}
-.mapInfo .mapPic{flex:none;width:min(100%,160px)}
+.mapInfo .mapPic{margin:8px 0}
 .mapPics>.worldMore{flex:1 1 360px;max-width:640px;border-top:0;padding-top:0}
-.mapPics>.mapPic{order:2;width:min(100%,240px)}
+.mapTop{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
+.mapTop>#mapTiles{flex:1 1 360px;min-width:0}
+.mapTop>.mapPic{flex:none;width:min(100%,200px)}
 .wmWorlds{margin-bottom:6px}
 .wmWorlds [aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .wmPic{position:relative}
