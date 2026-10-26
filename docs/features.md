@@ -104,7 +104,7 @@ Open maps, or single monsters, ranked by net zeny/hr. That's the loot value per 
 
 ### Map planner
 
-Per-map averages, kills/hr, EXP/hr and net zeny/hr, under the map's picture from the game client's map window (click it for full size; Ayothaya - Ancient Shrine Maze has none in the client). Its **Farming this map now** button does what Farm here does. The EXP ranking's Zeny / hr column is net the same way.
+Per-map averages, kills/hr, EXP/hr and net zeny/hr, under the map's picture from the game client's map window (click it for full size; Ayothaya - Ancient Shrine Maze has none in the client), beside the game's world map with the map lit. Every spawn map is a box on the world map: click one to plan that map (a dungeon's floors share a box, so click again for the next floor; dashed boxes aren't open yet). Maps whose region isn't out yet aren't on the game's world map. Its **Farming this map now** button does what Farm here does. The EXP ranking's Zeny / hr column is net the same way.
 
 ### Farm without items
 

@@ -15,7 +15,7 @@ The page is plain HTML, CSS and JavaScript with no dependencies. Open `index.htm
 | `build.js` | Build simulator: turns base stats, job level, gear, refine and cards into the status window's ATK/MATK/HIT/FLEE/ASPD/DEF/HP/SP. |
 | `js/` | Calculator and tracker code (see below). |
 | `data/` | Game data tables, one per file (see below). |
-| `img/` | Gear icon, item icon, card picture, monster picture and skill icon sprite sheets, written by `tools/export_icons.py`, and `img/maps/`, each spawn map's picture, written by `tools/export_minimaps.py`. |
+| `img/` | Gear icon, item icon, card picture, monster picture and skill icon sprite sheets, written by `tools/export_icons.py`, and `img/maps/`, each spawn map's picture, and `img/worldmap.jpg`, the game's world map, written by `tools/export_minimaps.py`. |
 | `tools/` | Python scripts that export and cross-check the data, and `stamp.mjs`, which builds the deployed site with each file stamped. |
 | `tests/` | Node tests. |
 
@@ -49,7 +49,7 @@ Each table lives in its own file, so a re-export after a patch only touches that
 | `mobs.js` | Monsters (EXP is `null` where there's no data yet). Names written by `tools/export_mobnames.py`. |
 | `spawn.js` | Spawn maps and counts, normal and PvP channels, all from the client. Maps the client doesn't list yet have `[map, null]`: the monster comes there, count not known. Written by `tools/export_spawns.py`. |
 | `maps.js` | In-game map code and name for each spawn map. Names written by `tools/export_mapnames.py`. |
-| `minimaps.js` | A checksum of each spawn map's picture in `img/maps/` (the client's 512 × 512 minimap, by source map code), for the Map planner. Written by `tools/export_minimaps.py`. |
+| `minimaps.js` | A checksum of each spawn map's picture in `img/maps/` (the client's 512 × 512 minimap, by source map code), and the world map's picture, size and each spawn map's box on it, for the Map planner. Written by `tools/export_minimaps.py`. |
 | `roadmap.js` | Release roadmap: each update's month (or day), level cap, what it adds and the map regions it opens (by map code prefix). Made by hand from the official roadmap. |
 | `mobskills.js` | Monsters that poison you (Poison Attack level, rate, delay) and ones that assist their kind. Written by `tools/export_mobskills.py`. |
 | `loot.js` | Drops (chance `null` where no rate is published yet) |
@@ -84,7 +84,7 @@ All scripts use only the Python standard library. The ones that read the communi
 | --- | --- |
 | `python tools/export_spawns.py [--client PATH]` | Rewrites `data/spawn.js` from `navi_mob.lub` in your installed client's `data.grf` (read-only). Default client path: `C:\Gravity\RagnarokZero`. |
 | `python tools/export_mapnames.py [--client PATH]` | Sets the map names in `data/maps.js` to the names your installed client shows in game (read-only). |
-| `python tools/export_minimaps.py [--client PATH]` | Writes `img/maps/<map>.png` and `data/minimaps.js`: each spawn map in `data/maps.js` as the client's map window draws it (`data\texture\유저인터페이스\map\*.bmp` in `data.grf`, read-only), full size, with the magenta see-through. It decodes the GRF entries stored with the GRF's mixed DES encoding. Run it after `data/maps.js` gets new maps. |
+| `python tools/export_minimaps.py [--client PATH]` | Writes `img/maps/<map>.png` and `data/minimaps.js`: each spawn map in `data/maps.js` as the client's map window draws it (`data\texture\유저인터페이스\map\*.bmp` in `data.grf`, read-only), full size, with the magenta see-through, and `img/worldmap.jpg`: the world map the client's world view opens on (`worldmap_z.jpg`, as it is), with each spawn map's box on it from `worldviewdata_table.lub`. It decodes the GRF entries stored with the GRF's mixed DES encoding. Run it after `data/maps.js` gets new maps. |
 | `python tools/export_mobnames.py [--client PATH]` | Sets the monster names in `data/mobs.js` and the drop lists in `data/iteminfo.js` to the names your installed client shows in game (read-only). A name two monsters would share keeps ours. |
 | `python tools/export_prices.py [--refresh]` | Writes `data/prices.js`, `data/weights.js` and `data/itemtypes.js`, and checks the prices add up to each monster's loot value. |
 | `python tools/export_prontera.py [--refresh]` | Writes the gear, refine and skill data. |

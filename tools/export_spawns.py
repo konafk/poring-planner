@@ -86,6 +86,7 @@ def lua_data(b):
         elif op == 2: reg[A] = bool(B); pc += 1 if C else 0   # LOADBOOL
         elif op == 3: reg.update({j: None for j in range(A, B + 1)})  # LOADNIL
         elif op == 5: reg[A] = G.get(k[Bx])                   # GETGLOBAL
+        elif op == 6: reg[A] = (reg.get(B) or {}).get(rk(C))  # GETTABLE
         elif op == 7: G[k[Bx]] = reg.get(A)                   # SETGLOBAL
         elif op == 9: reg[A][rk(B)] = rk(C)                   # SETTABLE
         elif op == 10: reg[A] = {}                            # NEWTABLE
