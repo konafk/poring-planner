@@ -245,11 +245,11 @@ const hpRegen6=()=>{if(num(C().hpRegen6)>0)return num(C().hpRegen6);const r=Math
 // Vitata Card's +25% counts when ticked, unless build mode already has the card in your gear
 const vitInGear=c=>cardInGear(c,[4053]);
 const vitPct=()=>CRD().vitata&&!vitInGear(C())?num(CRD().spBonus):0;
-// consumables' lines the status window doesn't show (parseCons in build-ui.js): "SP consumption −x%" and HP / SP restored over time
+// consumables' and buffs from others' lines the status window doesn't show (parseCons and PBUFF in build-ui.js): "SP consumption −x%" and HP / SP restored over time
 // (only your own rows make them; summed once per change of those rows, as regen is asked for on every monster)
 let CONS_SUM={k:null,v:{}};
 const consSum=t=>{const c=C(),rows=OWN_LISTS.flatMap(L=>rowsOf(c,L.key)).filter(r=>r.on),k=rows.map(r=>r.eff).join("\n");
-  if(CONS_SUM.k!==k){const v={};rows.forEach(r=>parseCons(r.eff).lines.forEach(([x,,,n])=>v[x]=(v[x]||0)+num(n)));CONS_SUM={k,v}}return CONS_SUM.v[t]||0};
+  if(CONS_SUM.k!==k){const v={};rows.forEach(r=>parseCons(r.eff).lines.forEach(([x,,,n])=>v[x]=(v[x]||0)+num(n)));CONS_SUM={k,v}}return (CONS_SUM.v[t]||0)+pbSum(t)};
 const spCostMul=()=>{const c=C();return Math.max(0,1+(c.bx?num(c.bx.spCost):0)/100+(SKFX?SKFX.spCost:0)/100+vitPct()/100+consSum("sp_cost_percent")/100)};
 // SP / HP per second from consumables such as Small Mana Potion (5% of Max SP every 5 s); like cards it keeps going when you're overweight
 const consSPPerSec=()=>consSum("sp_regen")+consSum("sp_regen_pct")*num(cf("maxSp"))/100;

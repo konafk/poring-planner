@@ -59,7 +59,7 @@ const SK_PASSIVE={"sword-mastery":{w:["Dagger","One-handed sword"]},"two-handed-
   "improve-dodge":{},"flee":{},"faith":{},"soul-drain":{},"meditation":{},"spiritual-thrift":{},"plagiarism":{},"hilt-binding":{}};
 // self-buffs you can switch on; added on top of the status window like consumables
 const SK_BUFF={"two-hand-quicken":{w:["Two-handed sword"]},"spear-quicken":{w:["One-handed spear","Two-handed spear"]},"adrenaline-rush":{w:["One-handed axe","Two-handed axe","One-handed mace","Two-handed mace"]},
-  "power-thrust":{},"improve-concentration":{},"increase-agility":{},"blessing":{},"falcon-eyes":{},"fury":{},"impositio-manus":{},"endow-quake":{},"endow-tsunami":{},
+  "power-thrust":{},"improve-concentration":{},"increase-agility":{},"blessing":{},"angelus":{},"falcon-eyes":{},"fury":{},"impositio-manus":{},"endow-quake":{},"endow-tsunami":{},
   "endow-tornado":{},"endow-blaze":{},"volcano":{},"deluge":{},"whirlwind":{},"battle-theme":{},"lady-luck":{},"focus-ballet":{},"perfect-tablature":{}};
 // ASPD the skill descriptions leave out, from the RO樂園攻速計算機 sheet ("增益"): potion/skill value (× AGI/200 into ASPD1) and ASPD %.
 // Study's "ASPD +x%" is really a potion/skill value: a flat 4 at any level on Zero (the sheet's Book of Evolution, books only).
@@ -83,6 +83,10 @@ function skillFx(desc,c){const d=String(desc||""),o={mastery:0,pct:0,spCost:0,my
   const fl=[...d.matchAll(/FLEE\s*\+(\d+)/gi)].map(x=>+x[1]);if(fl.length)stat("flee",SECOND(state.job)?fl[fl.length-1]:fl[0]);
   if((m=d.match(/\bMHP\s*\+(\d+)(?![\d%])/i)))stat("hp",+m[1]);if((m=d.match(/\bMHP\s*\+(\d+)%/i)))stat("hp_percent",+m[1]);
   if((m=d.match(/(?:Max SP|MSP)\s*\+(\d+)%/i)))stat("sp_percent",+m[1]);
+  // Angelus: "VIT-based Defense +50%, HP +500"; Battle Theme: "DEF +75."
+  if((m=d.match(/VIT-based Defense\s*\+(\d+)%/i)))stat("vit_def_percent",+m[1]);
+  if((m=d.match(/(?:^|,\s*)HP\s*\+(\d+)(?![\d%])/)))stat("hp",+m[1]);
+  if((m=d.match(/\bDEF\s*\+(\d+)(?![\d%])/)))stat("def",+m[1]);
   if((m=d.match(/ASPD:?\s*\+(\d+(?:\.\d+)?)%/i)))stat("aspd_percent",+m[1]);if((m=d.match(/After Attack Delay\s*-(\d+)%/i)))stat("aspd_percent",+m[1]);
   if((m=d.match(/Critical Damage\s*\+(\d+)%/i)))stat("crit_damage_percent",+m[1]);
   if((m=d.match(/SP Consumption\s*-(\d+)%/i)))o.spCost-=+m[1];
@@ -118,7 +122,7 @@ function renderSkills(){const c=C(),L=learned(c),S=skOf(state.job),trees=treesOf
         <div class="lv"><button type="button" data-act="dn" aria-label="Lower">−</button><span class="mono">${num(lv)}/${s.max}</span><button type="button" data-act="up" aria-label="Raise">+</button></div></div>`}).join("");
     return `<div class="tree"><div class="bar"><b>${esc(t.job)}</b><span class="note${pts!=null&&used>pts?" bad":""}">${used}${pts!=null?" / "+pts:""} points</span></div><div class="skgrid">${cells}</div></div>`}).join(""):'<div class="note">No skill tree data for this job.</div>';
   const buffs=Object.keys(SK_BUFF).filter(k=>S[k]&&skLv(c,k)>0);
-  $("buffList").innerHTML=buffs.length?`<span class="note">Self-buffs while farming (read your status window with them off):</span> `+buffs.map(k=>`<label class="bar"><input type="checkbox" data-buff="${k}" ${(c.buffs||{})[k]?"checked":""}> ${iconHtml("skill",k,1,"il")}${esc(S[k].name)} <span class="muted">${esc(skRow(S[k],skLv(c,k))[7].replace(/Duration:[^,]*,?\s*/i,""))}</span>${SK_BUFF[k].w&&!SK_BUFF[k].w.includes(c.weapon)?` <span class="warnc">(needs ${esc(SK_BUFF[k].w.join(" / "))})</span>`:""}</label>`).join(""):"";
+  $("buffList").innerHTML=buffs.length?`<span class="note">Self-buffs while farming (read your status window with them off):</span> `+buffs.map(k=>`<label class="bar"><input type="checkbox" data-buff="${k}" ${(c.buffs||{})[k]?"checked":""}> ${iconHtml("skill",k,1,"il")}${esc(S[k].name)} <span class="muted">${esc(skRow(S[k],skLv(c,k))[7].replace(/(?:,\s*)?Duration:?\s*[^,]*,?\s*/i,""))}</span>${SK_BUFF[k].w&&!SK_BUFF[k].w.includes(c.weapon)?` <span class="warnc">(needs ${esc(SK_BUFF[k].w.join(" / "))})</span>`:""}</label>`).join(""):"";
   ROOTQ("#preset option").forEach(o=>{const p=JOBS[state.job].p[+o.value];if(!p)return;const r=levelPreset(p,c);o.textContent=r.s&&(hasTree(c)||r.named)?(r.lv?r.a.name:`${p.name} (not learned)`):p.name})}
 // hover or focus a skill: what it does, and what its learned and next levels give
 let skTip=null;
