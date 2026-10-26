@@ -24,9 +24,9 @@ for (const f of sheets) { assert.ok(assetFiles().includes(f), `${f} isn't deploy
 const mapsSrc = readFileSync(new URL("../data/minimaps.js", import.meta.url), "utf8");
 const minimaps = Object.keys(JSON.parse(mapsSrc.match(/MINIMAPS=(\{.*\});/)[1])).map(k => `img/maps/${k}.png`);
 assert.ok(minimaps.length > 100, `only ${minimaps.length} map pictures`);
-// and the world map
-const world = JSON.parse(mapsSrc.match(/WORLDMAP=(\{.*\});/)[1]);
-assert.ok(Object.keys(world.maps).length > 50, `only ${Object.keys(world.maps).length} maps on the world map`);
-for (const f of [...minimaps, world.file]) assert.ok(assetFiles().includes(f), `${f} isn't deployed`);
+// and the world maps (Midgard, Nordfeld)
+const worlds = JSON.parse(mapsSrc.match(/WORLDMAPS=(\[.*\]);/)[1]);
+assert.ok(worlds.length >= 2 && Object.keys(worlds[0].maps).length > 50, `only ${worlds.length} world maps, ${Object.keys(worlds[0].maps).length} maps on the first`);
+for (const f of [...minimaps, ...worlds.map(w => w.file)]) assert.ok(assetFiles().includes(f), `${f} isn't deployed`);
 console.log(`ok ${local.length} files unstamped in index.html and stamped with their hash on deploy`);
 console.log("1 tests passed");

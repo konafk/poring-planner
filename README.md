@@ -21,6 +21,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 - **Memorial dungeons:** a Jellostone tracker (today's Poring Village fragment, the 3-day craft, when you'll have the stones for the Expedition pieces you want), and the memorial dungeons' rewards and gear enchants.
 - **Stellar weapons:** the ★ Forging Certificates each weapon type needs to take a ★ weapon to ★★, the monster you'd get them from fastest at your kill speed, and what each Activation route costs and does to your refine (it's the Taiwan server's system; Global doesn't have it yet).
 - **Roadmap:** the release roadmap: when each update comes, its level cap, and which maps and monsters are out (the rest open by themselves on their date).
+- **Maps:** the game's world maps (Midgard and Nordfeld) with every spawn map on them, each map's picture from the game client and its monsters, one click to plan it.
 - **Monster info, Item info, Market:** drops, prices, player prices and a sell timer. Item info can list every item in the game client too, costumes included, by category. Monster info has the monster table too. Every item shows its in-game icon, and every monster its sprite.
 - **Equipment, Cards:** every weapon, armor and card, filtered by type, job, level, card slots and ATK / MATK / DEF, with one click to put it in your gear or another gear set.
 - **Recipes:** every forging, brewing, arrow crafting, cooking, Mixture & Counteragent and Dye Making recipe, the Jellostone exchange and the Expedition upgrades, searchable by the item made or its materials, with what the materials are worth.
@@ -30,7 +31,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 ## Docs
 
 - [Character tab](docs/character.md): build mode, damage model, cards, buffs, consumables, skill items and weight
-- [Other tabs](docs/features.md): accounts and Backup, Session, Monsters & maps, Roadmap, Monster info, Item info, Equipment and Cards, Recipes, Market, EXP & formulas, and how tables work
+- [Other tabs](docs/features.md): accounts and Backup, Session, Monsters & maps, Roadmap, Monster info, Maps, Item info, Equipment and Cards, Recipes, Market, EXP & formulas, and how tables work
 - [Development](docs/development.md): project layout, data export tools and tests
 - [Data sources](docs/data-sources.md): where the data and formulas come from
 

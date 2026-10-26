@@ -10,6 +10,7 @@
 - [Stellar weapons](#stellar-weapons): ★ Forging Certificates and Activation
 - [Roadmap](#roadmap)
 - [Monster info](#monster-info)
+- [Maps](#maps)
 - [Item info](#item-info)
 - [Equipment and Cards](#equipment-and-cards)
 - [Recipes](#recipes)
@@ -104,7 +105,7 @@ Open maps, or single monsters, ranked by net zeny/hr. That's the loot value per 
 
 ### Map planner
 
-Per-map averages, kills/hr, EXP/hr and net zeny/hr, under the map's picture from the game client's map window (click it for full size; Ayothaya - Ancient Shrine Maze has none in the client), beside the game's world map with the map lit. Every spawn map is a box on the world map: click one to plan that map (a dungeon's floors share a box, so click again for the next floor; dashed boxes aren't open yet). Maps whose region isn't out yet aren't on the game's world map. Its **Farming this map now** button does what Farm here does. The EXP ranking's Zeny / hr column is net the same way.
+Per-map averages, kills/hr, EXP/hr and net zeny/hr, with the map's picture from the game client's map window beside them (click it for full size; Ayothaya - Ancient Shrine Maze has none in the client), under the game's world map with the map lit (**World map** folds it away; the page remembers). Every spawn map is a box on the world map: click one to plan that map (a dungeon's floors share a box, so click again for the next floor; dashed boxes aren't open yet). **Midgard** and **Nordfeld** switch between the game's two world maps; the map you plan turns it to its own. Maps whose region isn't out yet aren't on the game's world map. Its **Farming this map now** button does what Farm here does. The EXP ranking's Zeny / hr column is net the same way.
 
 ### Farm without items
 
@@ -179,6 +180,10 @@ Its own tab: Ragnarok Zero Global's release roadmap, from August 2026 to July 20
 ## Monster info
 
 One monster's stats, how you do against it, and every map it spawns on. The Element, Race, Size and Boss dropdowns next to the search narrow its suggestions. Its drops list shows the auto-loot group, chance, your chance, NPC and player price, and zeny per kill. The [Monster table](#monster-table) sits under it on this tab as well, so you can browse every monster and click one to open it here (its farming details open beside the table). Clicking a monster in the Monsters table, the Map planner or Where to farm (by zeny) opens it here too. Drops with no published rate yet (the Boulder Dwarves in Nordfeld Cave) show chance `?` and add nothing to zeny or weight figures.
+
+## Maps
+
+Every map monsters spawn on, on the game's world maps (Midgard and Nordfeld, from the game client). Click a box on the world map or a row of the table to see the map's picture from the client's map window, whether it's open (and when it comes), its monsters' levels and each monster with its spawn count and EXP. **Plan this map** opens it in the Map planner. **Find a map** narrows the table by map code, name or a monster on it (pick one from the list to show it), and **Only open maps** leaves out the ones not open yet. The Maps tab's map is its own: picking one here doesn't change the Map planner's until you press Plan this map. Maps whose region isn't out yet aren't on the game's world map, so they're only in the table.
 
 ## Item info
 

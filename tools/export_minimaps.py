@@ -1,5 +1,5 @@
 """Export each spawn map's minimap from your installed Ragnarok Zero client (official Global client, read-only) into img/maps/,
-and the client's world map with where each spawn map is on it, for the Map planner.
+and the client's world maps with where each spawn map is on them, for the Map planner and the Maps tab.
 
     python tools/export_minimaps.py                                  # client in C:\\Gravity\\RagnarokZero
     python tools/export_minimaps.py --client "D:\\Games\\RagnarokZero"
@@ -10,11 +10,12 @@ and source code (and ALIAS), and written full size as img/maps/<source code>.png
 are stored with the GRF's mixed DES encoding (the file table's flag 2, or flag 4 for the first 20 blocks only); they're decoded here
 the way the client does, after rAthena's src/common/grfio.cpp and des.cpp.
 
-The world map is the one the client's world view opens on (worldviewdata_list.lub: Midgard, worldmap_z.jpg, 1280 x 1024), copied as
-it is. worldviewdata_table.lub gives each map's box on it, in its pixels; maps whose region isn't out yet have none.
+The world maps are the worlds of the client's world view (worldviewdata_list.lub: Midgard, worldmap_z.jpg, 1280 x 1024; Nordfeld,
+worldmap_Nordfeld.png, 1602 x 1216, stored in the GRF as it is), copied as they are. worldviewdata_table.lub gives each map's box on
+its world, in the picture's pixels; maps whose region isn't out yet have none.
 
-Writes img/maps/*.png (and removes ones no map uses any more), img/worldmap.jpg and data/minimaps.js: a checksum of each map's
-picture, by source map code, and the world map's file, checksum, size and each spawn map's box [x1, y1, x2, y2]. Maps with no
+Writes img/maps/*.png (and removes ones no map uses any more), img/world-<world>.jpg / .png and data/minimaps.js: a checksum of each
+map's picture, by source map code, and per world its file, checksum, size and each spawn map's box [x1, y1, x2, y2]. Maps with no
 minimap or no box in the client are left out and printed. Standard library only.
 """
 import json, os, struct, sys, zlib
@@ -93,10 +94,13 @@ def grf_decode(buf, flags, csize):
 
 
 class DesGrf(Grf):
-    """export_sprites' GRF reader, reading DES-encoded entries too."""
+    """export_sprites' GRF reader, reading DES-encoded entries too, and entries stored as they are (flag 0, same size packed and
+    unpacked: Nordfeld's world map)."""
     def read(self, name):
-        csize, asize, _, flags, foff = self.ents[name.lower()]
+        csize, asize, rsize, flags, foff = self.ents[name.lower()]
         self.f.seek(foff + 46)
+        if not flags & 1 and csize == rsize:
+            return self.f.read(rsize)
         return zlib.decompress(grf_decode(self.f.read(asize), flags, csize)[:csize])
 
 
@@ -153,27 +157,36 @@ def jpeg_size(b):
     raise ValueError("no JPEG frame header")
 
 
-def world(grf, names):
-    """The world view's first world (Midgard): its picture to img/, and each spawn map's box on it, by source map code."""
-    first = lua_data(grf.read(WORLDVIEW + "worldviewdata_list.lub"))["World_List"][1]  # [name, map table, dungeon table, picture]
-    pic = grf.read(UI + first[4])
-    file = "img/worldmap" + os.path.splitext(first[4])[1].lower()
-    with open(os.path.join(ROOT, file), "wb") as f:
-        f.write(pic)
-    at = {}
-    for r in lua_data(grf.read(WORLDVIEW + "worldviewdata_table.lub"))[first[2]].values():  # [id, "<code>.rsw", x1, y1, x2, y2, ...]
-        at.setdefault(r[2].lower().removesuffix(".rsw"), [r[3], r[4], r[5], r[6]])
-    boxes = {k: next(at[c.lower()] for c in [row[0], *row[2:], k] if c.lower() in at)
-             for k, row in names.items() if any(c.lower() in at for c in [row[0], *row[2:], k])}
-    w, h = jpeg_size(pic)
-    return {"name": first[1], "file": file, "v": f"{zlib.crc32(pic) & 0xFFFFFFFF:08x}", "w": w, "h": h, "maps": boxes}
+def worlds(grf, names):
+    """Each world in the world view (Midgard, Nordfeld): its picture to img/world-<name>.<ext>, and each spawn map's box on it, by
+    source map code (a map on two worlds goes on the first)."""
+    table = lua_data(grf.read(WORLDVIEW + "worldviewdata_table.lub"))
+    out, placed = [], set()
+    for _, wv in sorted(lua_data(grf.read(WORLDVIEW + "worldviewdata_list.lub"))["World_List"].items()):
+        name, maps, picture = wv[1], wv[2], wv[4]  # [name, map table, dungeon table, picture]
+        pic = grf.read(UI + picture)
+        file = f"img/world-{name.lower()}{os.path.splitext(picture)[1].lower()}"
+        with open(os.path.join(ROOT, file), "wb") as f:
+            f.write(pic)
+        at = {}
+        for r in table[maps].values():  # [id, "<code>.rsw", x1, y1, x2, y2, ...]
+            at.setdefault(r[2].lower().removesuffix(".rsw"), [r[3], r[4], r[5], r[6]])
+        codes = lambda k: [c.lower() for c in [names[k][0], *names[k][2:], k, ALIAS.get(k)] if c]
+        boxes = {k: next(at[c] for c in codes(k) if c in at) for k in names if k not in placed and any(c in at for c in codes(k))}
+        placed |= boxes.keys()
+        w, h = struct.unpack(">II", pic[16:24]) if pic[:8] == b"\x89PNG\r\n\x1a\n" else jpeg_size(pic)
+        out.append({"name": name, "file": file, "v": f"{zlib.crc32(pic) & 0xFFFFFFFF:08x}", "w": w, "h": h, "maps": boxes})
+    for f in os.listdir(os.path.join(ROOT, "img")):  # pictures of worlds the client no longer has
+        if f.startswith("world") and f"img/{f}" not in {w["file"] for w in out}:
+            os.remove(os.path.join(ROOT, "img", f))
+    return out
 
 
 def main():
     client = sys.argv[sys.argv.index("--client") + 1] if "--client" in sys.argv else r"C:\Gravity\RagnarokZero"
     grf = DesGrf(os.path.join(client, "data.grf"))
     names = js_object("maps", "MAPNAMES")
-    wm = world(grf, names)
+    wms = worlds(grf, names)
     os.makedirs(OUT, exist_ok=True)
     sums, missing, total = {}, [], 0
     for key, row in names.items():
@@ -193,13 +206,14 @@ def main():
         f.write("// Each spawn map's minimap from the game client (tools/export_minimaps.py): img/maps/<source map code>.png, 512 x 512, and a "
                 "checksum of it, by source map code. Maps with no minimap in the client aren't listed\n")
         f.write("const MINIMAPS=" + json.dumps(sums, separators=(",", ":")) + ";\n")
-        f.write("// The client's world map (its world view's first world): the picture, a checksum of it (v), its size, and each spawn map's box on it "
-                "[x1,y1,x2,y2] in its pixels, by source map code. Maps whose region isn't out yet have no box\n")
-        f.write("const WORLDMAP=" + json.dumps(wm, separators=(",", ":")) + ";\n")
+        f.write("// The client's world maps (its world view's worlds, Midgard first): each one's picture, a checksum of it (v), its size, and each "
+                "spawn map's box on it [x1,y1,x2,y2] in its pixels, by source map code. Maps whose region isn't out yet have no box\n")
+        f.write("const WORLDMAPS=" + json.dumps(wms, separators=(",", ":")) + ";\n")
     print(f"{len(sums)} of {len(names)} maps written to img/maps ({total // 1024} KB)")
     print("no minimap in the client:", " ".join(missing))
-    print(f"world map {wm['name']} ({wm['w']} x {wm['h']}) written to {wm['file']}, {len(wm['maps'])} of {len(names)} maps on it")
-    print("not on the world map:", " ".join(k for k in names if k not in wm["maps"]))
+    for wm in wms:
+        print(f"world map {wm['name']} ({wm['w']} x {wm['h']}) written to {wm['file']}, {len(wm['maps'])} of {len(names)} maps on it")
+    print("on no world map:", " ".join(k for k in names if not any(k in wm["maps"] for wm in wms)))
 
 
 if __name__ == "__main__":

@@ -28,6 +28,7 @@
       <button type="button" role="tab" data-tabbtn="roadmap" title="Roadmap"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Roadmap</span></button>
       <button type="button" role="tab" data-tabbtn="mobinfo" title="Monster info"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a7 7 0 0 0-7 7v10l2.5-2 2.5 2 2-2 2 2 2.5-2 2.5 2V10a7 7 0 0 0-7-7z"/><circle cx="9.5" cy="10.5" r=".8"/><circle cx="14.5" cy="10.5" r=".8"/></svg><span>Monster info</span></button>
       <button type="button" role="tab" data-tabbtn="items" title="Item info"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><span>Item info</span></button>
+      <button type="button" role="tab" data-tabbtn="mapinfo" title="Maps"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Maps</span></button>
       <button type="button" role="tab" data-tabbtn="equip" title="Equipment"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3z"/></svg><span>Equipment</span></button>
       <button type="button" role="tab" data-tabbtn="cards" title="Cards"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>Cards</span></button>
       <button type="button" role="tab" data-tabbtn="recipes" title="Recipes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg><span>Recipes</span></button>
@@ -552,10 +553,12 @@
     <datalist id="mapList"></datalist>
     <div class="note" id="mapName"></div>
     <div class="mapPics">
-      <a id="mapPicLink" class="mapPic" target="_blank" rel="noopener" title="The map from the game client's map window. Click for full size" hidden><img id="mapPic" alt="" width="512" height="512"></a>
-      <div id="worldMap" class="worldMap" hidden><img id="worldPic" alt="" width="1280" height="1024"><div id="worldBoxes"></div><div class="note" id="worldNote"></div></div>
+      <details class="more worldMore" id="worldMore" open><summary>World map <span class="note" id="worldSum"></span></summary><div class="worldMap" id="planWorld"></div></details>
     </div>
-    <div class="calc" id="mapTiles"></div>
+    <div class="mapTop">
+      <div class="calc" id="mapTiles"></div>
+      <a id="mapPicLink" class="mapPic" target="_blank" rel="noopener" title="The map from the game client's map window. Click for full size" hidden><img id="mapPic" alt="" width="512" height="512"></a>
+    </div>
     <div id="mapConv"></div>
     <div class="scroll"><table id="mapTable"><thead><tr><th>Monster</th><th>Count</th><th>Share</th><th>Lv</th><th>Element</th><th title="Element table rate of your attack element (with the map's converter or bolt) against the monster">Element %</th><th>Size</th><th>Your hit %</th><th>Sec / kill</th><th>Base EXP</th><th title="Farm without items against this monster alone: the share of the HP and SP you use that comes back with no HP or SP items. Hover for the breakdown">No items</th></tr></thead><tbody></tbody></table></div>
   </section>
@@ -588,6 +591,20 @@
     <div class="scroll"><table id="roadmapTable"><thead><tr><th>When</th><th>Update</th><th>Level cap</th><th>What's new</th><th>Maps</th></tr></thead><tbody id="regions"></tbody></table></div>
     <label>Other closed maps (comma separated)<input id="closedMaps" placeholder="e.g. gon_dun03, yuno_fild02"></label>
     <div class="note hint">Ragnarok Zero Global's release roadmap (<a href="https://www.mygnjoy.com/en/event/roadmap" target="_blank" rel="noopener">official ↗</a>). A region's maps and monsters open by themselves on its update's day, or once its month is over when the day isn't announced; until then Where to farm and the monster table leave them out, and show when they come. Click a region to mark it open or closed yourself; click it back to follow the roadmap again.</div>
+  </section>
+
+  <section class="card" id="mapInfoCard" data-tab="mapinfo">
+    <div class="bar"><h2 class="grow">Maps</h2><span class="note" id="mapInfoNote"></span></div>
+    <div class="bar">
+      <label class="grow">Find a map<input id="mapInfoIn" list="mapList" placeholder="e.g. gef_dun01, Sphinx or Orc"></label>
+      <label><span>&nbsp;</span><span class="bar"><input type="checkbox" id="mapInfoOpen"> Only open maps</span></label>
+    </div>
+    <div class="mapInfo">
+      <div class="worldMap" id="infoWorld"></div>
+      <div id="mapInfoSel"></div>
+    </div>
+    <div class="scroll mt"><table id="mapInfoTable"><thead><tr><th>Map</th><th>Name</th><th>Monsters</th><th>Levels</th><th>Spawns</th><th>World map</th><th>Open</th></tr></thead><tbody></tbody></table></div>
+    <div class="note hint">Every map monsters spawn on. Click a box on the world map or a row to see the map's picture and its monsters; "Plan this map" opens it in the Map planner. Find a map narrows the table by code, name or monster. The pictures and boxes come from the game client: maps whose region isn't out yet aren't on its world map.</div>
   </section>
 
   <section class="card" id="jelloCard" data-tab="mem">
@@ -728,6 +745,7 @@
     <div class="note hint">Click a row (or Equip) to put a card in a card slot of your gear or one of your other gear sets. The item has to be on and have a free (or replaceable) slot: equip one from the Equipment tab first. Effects are the card's in-game text. Where to get lists the monsters that drop it, MVPs and mini bosses marked; click one the farm tables know to open it in Monster info.</div>
   </section>
 
+
   <section class="card" id="recipeCard" data-tab="recipes">
     <div class="bar"><h2 class="grow">Recipes</h2><span class="note" id="recipeCount"></span></div>
     <div class="bar dbF">
@@ -849,6 +867,7 @@
 <script src="js/info.js"></script>
 <script src="js/memorial.js"></script>
 <script src="js/stellar.js"></script>
+<script src="js/mapinfo.js"></script>
 <script src="js/start.js"></script>
 </body>
 </html>
