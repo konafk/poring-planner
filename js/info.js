@@ -30,13 +30,14 @@ function infoMemorial(id){const j=JELLO.find(x=>x.frag[0]===+id);
   return rows.length?`<div class="infoList">${rows.join("")}</div>`:""}
 const recipeAct=id=>RECIPES_MAKING[id]||RECIPES_USING[id]?'<button type="button" data-infoact="recipes">Recipes</button>':"";
 
-function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobIds.includes(m.id),a=mobArrives(m);
+function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobIds.includes(m.id),a=mobArrives(m),me=charSet();
   const sub=`Lv ${m.lv} · ${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${BOSS_PILL(m)}${m.agg?' <span class="pill">aggressive</span>':""}`;
   const tiles=infoTile("HP",fmtN(m.hp),`DEF ${m.def??"–"} · MDEF ${m.mdef??"–"} · ATK ${m.atkMin??"–"}–${m.atkMax??"–"}`)
-    +infoTile("EXP",fmtExp(m),m.expUnknown?"no EXP data yet":`job ${fmtN(m.job)} · you get ${fmtN(killExp(m))} / ${fmtN(killJobExp(m))}`)
-    +infoTile(`You (${esc(state.job)})`,isFinite(r.sec)?r.sec.toFixed(1)+"s / kill":"can't hurt",`your hit ${Math.round(r.mult)}% · ${Math.round(r.hitc)}% land · you dodge ${r.dodge??"–"}%`)
-    +infoTile("EXP / min",m.expUnknown?"?":r.epm?fmtN(r.epm):"–",r.hpm==null?"":`HP lost ~${fmtN(r.hpm)}/min`)
-    +infoTile("Zeny / kill",hasLoot(m)?fmtN(r.zk):"–",penNote(m)||"no drop level penalty")
+    +infoTile("EXP",fmtExp(m),m.expUnknown?"no EXP data yet":`job ${fmtN(m.job)}${me?` · you get ${fmtN(killExp(m))} / ${fmtN(killJobExp(m))}`:""}`)
+    +(me?infoTile(`You (${esc(state.job)})`,isFinite(r.sec)?r.sec.toFixed(1)+"s / kill":"can't hurt",`your hit ${Math.round(r.mult)}% · ${Math.round(r.hitc)}% land · you dodge ${r.dodge??"–"}%`)
+      +infoTile("EXP / min",m.expUnknown?"?":r.epm?fmtN(r.epm):"–",r.hpm==null?"":`HP lost ~${fmtN(r.hpm)}/min`)
+      +infoTile("Zeny / kill",hasLoot(m)?fmtN(r.zk):"–",penNote(m)||"no drop level penalty")
+      :infoTile("You","–",NO_CHAR_TXT))
     +infoTile("Best map",om.length?mapCode(om[0][0]):"–",om.length?`${esc(mapName(om[0][0]))} ≈${spN(om[0][1])}`:a?`none open · comes with the ${esc(a)}`:"none open");
   const drops=(m.drops||[]).slice().sort((x,y)=>(y[1]??-1)-(x[1]??-1)).map(([id,ch])=>`<div>${itemIcon(id,1,"il")}${infoLink(infoKind(id),id,itemName(id))} <span class="note">${chTxt(ch)}${yourCh(m,ch)!==ch?` (you ${chTxt(yourCh(m,ch))})`:""}${npcSell(id)>0?` · NPC ${fmtN(npcPays(id))} z`:""}${state.prices[id]>0?` · players ${fmtN(state.prices[id])} z`:""}${looted(id)?"":" · not looted"}</span></div>`).join("");
   const maps=(SPAWN[m.id]||[]).slice().sort((x,y)=>y[1]-x[1]).map(([mp,n])=>`<div><a href="#" data-infomap="${esc(mp)}" class="mono">${mapCode(mp)}</a> <span class="note">${esc(mapName(mp))} · ≈${spN(n)}</span>${isClosed(mp)?` <span class="pill down">closed${mapArrives(mp)?` · ${esc(mapArrives(mp).split(", ")[1])}`:""}</span>`:""}</div>`).join("");
