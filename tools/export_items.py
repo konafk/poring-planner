@@ -11,16 +11,16 @@ catalog has it (Consumable, Costume, Enchant Stone, ETC, Material, Package/Box, 
 import json, os, sys, time, urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from export_prices import ROOT, CACHE, SITE, UA  # noqa: E402
+from export_prices import ROOT, CACHE, site, UA  # noqa: E402
 
 
 def catalog(refresh=False):
-    f = os.path.join(CACHE, "rozerodb_catalog.json")
+    f = os.path.join(CACHE, "db_catalog.json")
     if os.path.exists(f) and not refresh:
         return json.load(open(f, encoding="utf-8"))
     out, off = [], 0
     while True:
-        req = urllib.request.Request(f"{SITE}/api/items?limit=200&offset={off}", headers={"User-Agent": UA})
+        req = urllib.request.Request(site(f"/api/items?limit=200&offset={off}"), headers={"User-Agent": UA})
         with urllib.request.urlopen(req, timeout=30) as r:
             d = json.loads(r.read().decode("utf-8"))
         out += d["items"]

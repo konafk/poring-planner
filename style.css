@@ -346,6 +346,8 @@ td .map{cursor:default}
 #starTable tbody tr,#starRulesTable tbody tr,#starNpcTable tbody tr{cursor:default}
 #starNpcTable td:nth-child(3){white-space:normal;min-width:220px}
 #starTable td div{margin:2px 0}
+#starTable td:nth-child(5){white-space:normal;min-width:260px}
+#starNpcTable .navi{user-select:all}
 #gearTable td{vertical-align:middle;font-family:var(--body)}
 #gearTable th{text-align:left}
 #gearTable td:first-child{color:var(--muted);font-size:12px}
