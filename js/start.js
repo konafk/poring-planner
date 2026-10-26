@@ -12,6 +12,7 @@ const TAB_DESC={
   items:"Every drop: who drops it, where they spawn and what it's worth to you.",
   mapinfo:"Every map on the game's world map: its picture, the monsters on it and when it opens.",
   equip:"Every weapon and piece of armor: filter by type, job, level, card slots and stats, and put it in any of your gear sets.",
+  skilltree:"Try any job's skill tree without a character: points per tree, the job level it needs, and what each skill does.",
   cards:"Every card and what it does: filter by the gear it goes in, and slot it into your gear or another gear set.",
   recipes:"What every forge, brew, arrow, cooking, Alchemy Lab and memorial recipe uses up, and what a drop of yours turns into.",
   market:"The prices players pay, and a timer that tells you when to go sell.",
@@ -45,7 +46,7 @@ function showTab(t,local){
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
   // renderAll only draws these while their tab is showing
-  if(t==="maps")renderHunt();if(t==="market")renderPrices();if(t==="mobinfo")renderMobInfo();if(t==="items")renderItems();if(t==="equip")renderEquipDb();if(t==="cards")renderCardDb();if(t==="recipes")renderRecipes();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="mapinfo")renderMapInfo();
+  if(t==="maps")renderHunt();if(t==="market")renderPrices();if(t==="mobinfo")renderMobInfo();if(t==="items")renderItems();if(t==="equip")renderEquipDb();if(t==="cards")renderCardDb();if(t==="recipes")renderRecipes();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="skilltree")renderSkPlan();if(t==="mapinfo")renderMapInfo();
 }
 document.querySelectorAll("[data-tabbtn]").forEach(b=>b.addEventListener("click",()=>{showTab(b.dataset.tabbtn);scrollTo({top:0})}));
 // a link to another tab (data-gotab="roadmap")

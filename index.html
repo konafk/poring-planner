@@ -31,6 +31,7 @@
       <button type="button" role="tab" data-tabbtn="mapinfo" title="Maps"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Maps</span></button>
       <button type="button" role="tab" data-tabbtn="equip" title="Equipment"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3z"/></svg><span>Equipment</span></button>
       <button type="button" role="tab" data-tabbtn="cards" title="Cards"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>Cards</span></button>
+      <button type="button" role="tab" data-tabbtn="skilltree" title="Skill tree"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M12 7v5M12 12l-6 5M12 12l6 5"/></svg><span>Skill tree</span></button>
       <button type="button" role="tab" data-tabbtn="recipes" title="Recipes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg><span>Recipes</span></button>
       <button type="button" role="tab" data-tabbtn="market" title="Market"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="M15.5 9.5A6 6 0 1 1 9.5 15.5"/></svg><span>Market</span></button>
       <button type="button" role="tab" data-tabbtn="ref" title="EXP &amp; formulas"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg><span>EXP &amp; formulas</span></button>
@@ -745,6 +746,18 @@
     <div class="note hint">Click a row (or Equip) to put a card in a card slot of your gear or one of your other gear sets. The item has to be on and have a free (or replaceable) slot: equip one from the Equipment tab first. Effects are the card's in-game text. Where to get lists the monsters that drop it, MVPs and mini bosses marked; click one the farm tables know to open it in Monster info.</div>
   </section>
 
+  <section class="card" id="skpCard" data-tab="skilltree">
+    <div class="bar"><h2 class="grow">Skill tree</h2><button type="button" class="small" id="skpLoad" hidden title="Start from the skills your character of this job has learned"></button><button type="button" class="small" id="skpUse" hidden title="Give your character of this job these learned skills (the Skills card on the Character tab)"></button><button type="button" class="small danger" id="skpReset">Reset</button></div>
+    <div class="bar">
+      <label>Job<select id="skpJob"></select></label>
+      <label id="skpJobLvWrap" title="The 2nd-job tree gets one point a job level after the first: 69 at Job Lv 70, the cap (1st jobs stop at Job Lv 50, 49 points). Blank: Job Lv 70">Job Lv<input class="w-xs" id="skpJobLv" type="number" min="1" max="70" step="1"></label>
+    </div>
+    <div class="note" id="skpSum"></div>
+    <div id="skpTrees" class="trees"></div>
+    <div class="sktip" id="skpTip" role="tooltip" hidden></div>
+    <div class="note bad" id="skpNote"></div>
+    <div class="note hint">Try any job's skill tree without making a character: + and − change a level, the name maxes it (or clears it once maxed), and raising a skill raises what it needs. Hover a skill for what it does and needs. Each job's plan is kept on its own; it only reaches your character when you press Use on my character.</div>
+  </section>
 
   <section class="card" id="recipeCard" data-tab="recipes">
     <div class="bar"><h2 class="grow">Recipes</h2><span class="note" id="recipeCount"></span></div>

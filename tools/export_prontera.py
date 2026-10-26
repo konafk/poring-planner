@@ -23,6 +23,19 @@ CLIENT_FIX = {"falcon-assault": {"cooldown_ms": 500}}
 GLOBAL_PCT = {"sonic-blow": (1200, -100)}
 # skill points per tree that roz.prontera.info gets wrong: a Novice gets one point per job level after the first, so Job Lv 10 = 9 (Basic Skill's 9 levels)
 POINTS_FIX = {"Novice": 9}
+# skill text roz.prontera.info has differently from the official client (skillinfoz/skilldescript_enus.lub): slug -> (old, new) swaps in
+# the description and each level's line, applied while prontera still has the old text
+CLIENT_TEXT = {"cart-boost": [("While Geneticist Cart Boost", "While Cart Boost")], "hindsight": [("Frost Driver", "Frost Diver")],
+               "stone-curse": [("Petrification chance", "Catalyst consumption: On use, Petrification chance", range(1, 6)),
+                               ("Petrification chance", "Catalyst consumption: On success, Petrification chance", range(6, 11))]}
+
+
+def client_text(slug, desc, lv):
+    for old, new, *lvs in CLIENT_TEXT.get(slug, []):
+        if not lvs:
+            desc = desc.replace(old, new)
+        lv = [[*r[:7], r[7].replace(old, new) if (not lvs or i + 1 in lvs[0]) and new not in r[7] else r[7]] for i, r in enumerate(lv)]
+    return desc, lv
 
 
 def global_pct(slug, lv, f):
@@ -279,7 +292,8 @@ def main():
                        L.get("after_cast_delay_ms"), L.get("cooldown_ms") if L.get("cooldown_ms") is not None else CLIENT_FIX.get(sk["slug"], {}).get("cooldown_ms"), L.get("description_text") or ""]
                       for L in sorted(sk["levels"], key=lambda L: L["level"])]
                 lv, f = global_pct(sk["slug"], lv, sk.get("damage_formula_expression"))
-                row = {"slug": sk["slug"], "name": sk["name"], "desc": (sk.get("description") or "").strip(), "max": sk["max_level"], "slot": sk["tree_slot"], "passive": sk["passive"] == "passive",
+                desc, lv = client_text(sk["slug"], (sk.get("description") or "").strip(), lv)
+                row = {"slug": sk["slug"], "name": sk["name"], "desc": desc, "max": sk["max_level"], "slot": sk["tree_slot"], "passive": sk["passive"] == "passive",
                        "el": sk.get("element"), "pre": [[slug_of.get(p["skill_id"], p["skill_id"]), p["level"]] for p in sk.get("prerequisites") or []],
                        "f": f, "lv": lv, "g": groups(sk.get("bonus_groups")), "free": True if sk.get("free") else None,
                        "icon": (sk.get("image") or "").rsplit("/", 1)[-1] or None}
