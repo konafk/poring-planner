@@ -8,6 +8,12 @@ const convOn=()=>!!C().converters&&C().a.el==="W";
 const convFixed=()=>CONV_ELS.includes(C().convEl)?C().convEl:"";
 const convAll=()=>[...new Set([C().wElem,...CONV_ELS])];
 const convLabel=by=>convFixed()?`${convFixed()} converter`:`best converter ${by}`;
+// converters are made by Sages and bought from players, at what players pay for them (state.prices, as on the Market tab). One lasts
+// 20 minutes (the client's text), so 3 an hour while the attack uses one: the element being tried (withEl), else the one you picked;
+// none on your weapon's own element
+const CONV_ID={Fire:12114,Water:12115,Earth:12116,Wind:12117};
+const convPrice=el=>state.prices[CONV_ID[el]]>0?state.prices[CONV_ID[el]]:0;
+const convCostHr=()=>{const el=EL_OVR||convFixed();return convOn()&&CONV_ID[el]&&el!==C().wElem?3*convPrice(el):0};
 const elOptions=()=>C().a.type==="spellfist"?(sfBolts().length?sfBolts():[null]):convOn()?(convFixed()?[convFixed()]:convAll()):[null];
 const withEl=(el,fn)=>{const k=EL_OVR;EL_OVR=el;try{return fn()}finally{EL_OVR=k}};
 const elTag=el=>el&&(convOn()||C().a.type==="spellfist")?` <span class="el ${el}">${el}</span>`:"";
@@ -32,8 +38,8 @@ const discMul=()=>recDisc()?1-DISC_LV10/100:1;
 const potOnlyHr=()=>C().potOn&&num(C().potMin)>0?60/num(C().potMin)*num(C().potPrice)*discMul():0;
 // zeny per hour spent on the ASPD potion (consumables carry no price; Blessing of Yggdrasil's items come from the KP shop)
 const potCostHr=()=>potOnlyHr();
-// zeny per hour that doesn't depend on kills: the ASPD potion and Sage ground buffs (SP items come on top, see huntCostHr)
-const hourCostHr=()=>potCostHr()+fieldCostHr();
+// zeny per hour that doesn't depend on kills: the ASPD potion, Sage ground buffs and the converter (SP items come on top, see huntCostHr)
+const hourCostHr=()=>potCostHr()+fieldCostHr()+convCostHr();
 const atkPerSec=()=>{const a=aspdEff();return 1000/((200-a)*20)};
 // seconds per use: basic attacks follow ASPD; skills take cast + delay but can't beat your attack speed
 // variable cast time factor: 1 − sqrt((2·DEX + INT) / 530), 0 at 530 (uses your DEX if typed)
@@ -523,13 +529,20 @@ const recDisc=()=>!state.recovery||state.recovery.discount!==false;
 const REC_IDS=Object.keys(RECOVERY);
 // HP / SP items restore more with a consumable such as Ale's Blessing (+20%)
 const recMul=()=>1+consSum("rec_item_pct")/100;
-// one item with your changes: avg restored (min and max averaged, × recMul), the price used (Discount or NPC price, else the player price; null = n/a),
-// zeny per HP / SP and HP / SP per weight
-function recItem(id){const b=RECOVERY[id];if(!b)return null;const o=REC().overrides[id]||{},v=k=>o[k]!=null?o[k]:b[k];
-  const min=num(v("min")),max=Math.max(min,num(v("max"))),avg=(min+max)/2*recMul(),w=num(v("w")),npc=v("npc"),disc=v("disc"),player=v("player");
+// an item that can be the HP (kind "hp") or SP item; a "both" item is either
+const recFor=(id,kind)=>!!RECOVERY[id]&&(RECOVERY[id].kind===kind||RECOVERY[id].kind==="both");
+// one item with your changes, as an HP or SP item (kind, for a "both" item): avg restored (min and max averaged, × recMul; a pct item: that % of
+// your Max HP / SP, not raised by recMul, 0 while Max HP / SP isn't known), the price used (Discount or NPC price, else the player price; null = n/a),
+// zeny per HP / SP and HP / SP per weight. The player price is what players pay (state.prices, the same as the Market tab and the details popup),
+// else one typed here before they were shared, else the item's default. sp: the SP side of a "both" item, whose amounts are spMin / spMax
+function recItem(id,kind){const b=RECOVERY[id];if(!b)return null;const o=REC().overrides[id]||{},v=k=>o[k]!=null?o[k]:b[k];
+  const k=b.kind==="both"?(kind==="sp"?"sp":"hp"):b.kind,sp=b.kind==="both"&&k==="sp",pct=b.pct!=null?num(v("pct")):null;
+  const min=pct!=null?Math.floor(num(cf(k==="hp"?"maxHp":"maxSp"))*pct/100):num(v(sp?"spMin":"min")),max=pct!=null?min:Math.max(min,num(v(sp?"spMax":"max")));
+  const avg=pct!=null?min:(min+max)/2*recMul(),w=num(v("w")),npc=v("npc"),disc=v("disc"),player=state.prices[id]>0?state.prices[id]:v("player");
   const src=npc!=null?(recDisc()&&disc!=null?"disc":"npc"):player!=null?"player":null,price=src?{disc,npc,player}[src]:null;
-  return {id,name:b.name,kind:b.kind,min,max,avg,w,wOk:b.wOk!==false,aOk:b.aOk!==false,npc,disc,player,src,price,per:price!=null&&avg>0?price/avg:null,perW:w>0?avg/w:null,edited:Object.keys(o).length>0}}
-const recItems=kind=>REC_IDS.filter(id=>!kind||RECOVERY[id].kind===kind).map(recItem);
+  return {id,name:b.name,kind:k,sp,pct,min,max,avg,w,wOk:b.wOk!==false,aOk:b.aOk!==false,npc,disc,player,src,price,per:price!=null&&avg>0?price/avg:null,perW:w>0?avg/w:null,edited:Object.keys(o).length>0}}
+// a "both" item is listed twice without a kind: as the HP item and as the SP item
+const recItems=kind=>REC_IDS.flatMap(id=>(RECOVERY[id].kind==="both"?["hp","sp"]:[RECOVERY[id].kind]).filter(k=>!kind||k===kind).map(k=>recItem(id,k)));
 // listed in the table and the HP / SP pickers: the popular items, else every item with "show all items" (per account), one you changed or the one picked
 const recAll=()=>!!(state.recovery&&state.recovery.all);
 const recShown=(x,picked)=>recAll()||!RECOVERY[x.id].more||x.edited||x.id===picked;
@@ -538,7 +551,7 @@ const recCheapest=kind=>recItems(kind).filter(x=>x.per!=null).sort((a,b)=>a.per-
 function recPick(kind){const k=REC()[kind==="hp"?"hpItem":"spItem"];if(k==="none")return null;
   if(k==="custom"){const c=C(),hp=kind==="hp",avg=num(hp?c.itemHp:c.itemSp)*recMul(),price=num(hp?c.itemHpPrice:c.itemPrice)*discMul();
     return {id:"custom",name:`Custom ${kind.toUpperCase()} item`,kind,avg,price,per:avg>0?price/avg:null,custom:true}}
-  const it=RECOVERY[k]&&RECOVERY[k].kind===kind?recItem(k):null;if(it&&it.per!=null)return it;const ch=recCheapest(kind);return ch?{...ch,auto:true,want:it}:null}
+  const it=recFor(k,kind)?recItem(k,kind):null;if(it&&it.per!=null)return it;const ch=recCheapest(kind);return ch?{...ch,auto:true,want:it}:null}
 const spItemAmt=()=>{const p=recPick("sp");return p?num(p.avg):0};
 const spItemPrice=()=>{const p=recPick("sp");return p?num(p.price):0};
 // HP items to make up an HP loss per minute: items per hour (n), zeny per hour (z) and the item (p)

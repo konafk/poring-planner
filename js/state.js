@@ -88,7 +88,7 @@ for(const j in state.chars){let c=state.chars[j];if(!c||typeof c!=="object"){del
   if(c.recovery==null&&((c.itemSp!=null&&+c.itemSp!==37)||(c.itemPrice!=null&&+c.itemPrice!==200)))c.recovery={spItem:"custom"};
   if(c.recovery!=null){const r=c.recovery&&typeof c.recovery==="object"&&!Array.isArray(c.recovery)?c.recovery:{},o=r.overrides&&typeof r.overrides==="object"?r.overrides:{},keys=(x,ks)=>Object.fromEntries(Object.entries(numMap(x)).filter(([k,v])=>ks.includes(k)&&v>=0));
     c.recovery={hpItem:typeof r.hpItem==="string"?r.hpItem:"auto",spItem:typeof r.spItem==="string"?r.spItem:"auto",
-      overrides:Object.fromEntries(Object.entries(o).filter(([id])=>Object.hasOwn(RECOVERY,id)).map(([id,x])=>[id,keys(x,["min","max","w","npc","disc","player"])]).filter(([,x])=>Object.keys(x).length))}}}
+      overrides:Object.fromEntries(Object.entries(o).filter(([id])=>Object.hasOwn(RECOVERY,id)).map(([id,x])=>[id,keys(x,["min","max","spMin","spMax","pct","w","npc","disc","player"])]).filter(([,x])=>Object.keys(x).length))}}}
 // market prices you typed for items, and optionally what an NPC pays for them (item id → zeny); numbers only, so a pasted backup can't put anything else in
 state.prices=Object.fromEntries(Object.entries(numMap(state.prices)).filter(([k,v])=>/^\d+$/.test(k)&&v>=0)); // keys are item ids
 state.npcPrices=Object.fromEntries(Object.entries(numMap(state.npcPrices)).filter(([k,v])=>v>=0&&k in state.prices));
