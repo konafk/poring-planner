@@ -528,8 +528,8 @@ table.formulas td.chg{background:var(--accent-soft)}
 
 /* ---- Home tab ---- */
 .homeHero{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:34px 0 10px}
-.homeHero h1{font-size:2.7rem;font-weight:800;letter-spacing:-.04em;line-height:1.02;max-width:18ch}
-.homeHero p{margin:0;max-width:64ch;color:var(--muted);font-size:15px;line-height:1.6;text-wrap:pretty}
+.homeHero h1{font-size:2.7rem;font-weight:800;letter-spacing:-.04em;line-height:1.02;max-width:24ch}
+.homeHero p{margin:0;max-width:80ch;color:var(--muted);font-size:15px;line-height:1.6;text-wrap:pretty}
 .homeHero kbd{font-family:var(--mono);font-size:11px;padding:0 5px;margin-left:4px;border-radius:5px;border:1px solid currentColor;opacity:.6}
 .homeActs{margin-top:4px}
 .homeActs button{padding:8px 16px}
