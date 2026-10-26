@@ -602,7 +602,9 @@ const mobArrives=m=>{const rs=(SPAWN[m.id]||[]).map(([mp])=>regionOf(mp)).filter
   if(!rs.length)return "";const u=rs.reduce((a,r)=>r.up.when<a.when?r.up:a,rs[0].up);return `${u.name} update, ${upWhen(u)}`};
 // map names: SPAWN and saves use source codes (sp_d05); data/maps.js has the in-game code and name (in_sphinx5 · Sphinx B5F) and other codes
 const mapCode=mp=>(MAPNAMES[mp]||[])[0]||mp;
-const mapName=mp=>(MAPNAMES[mp]||[])[1]||"";
+const mapName=mp=>(MAPNAMES[mp]||[])[1]||(isTown(mp)?TOWNS[mp]:"");
+// towns (data/minimaps.js TOWNS, by code): no monsters, only on the Maps tab
+const isTown=mp=>typeof TOWNS!=="undefined"&&Object.hasOwn(TOWNS,mp??"");
 const mapLabel=mp=>mapName(mp)?`${mapCode(mp)} (${mapName(mp)})`:mapCode(mp);
 // any code, or a name only one map has, back to the source code
 const MAPALIAS={};{const byName={};Object.entries(MAPNAMES).forEach(([k,[g,n,...rest]])=>{[k,g,...rest].forEach(a=>MAPALIAS[a.toLowerCase()]=k);const l=n.toLowerCase();byName[l]=l in byName?null:k});

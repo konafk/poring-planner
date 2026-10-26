@@ -747,9 +747,9 @@ function convCheck(mp,w,r){const sf=C().a.type==="spellfist",opts=sf?elOptions()
   <div class="scroll"><table class="convtab"><thead><tr><th>${sf?"Bolt":"Converter"}</th>${mobs.map(x=>`<th>${esc(x.m.name)}<br><span class="el ${x.m.el||"Neutral"}">${x.m.el||"Neutral"} ${x.m.elv||1}</span></th>`).join("")}<th>EXP / min</th></tr></thead><tbody>${rows}</tbody></table></div>${warn}`}
 // ---- the client's world maps (data/minimaps.js WORLDMAPS: Midgard, Nordfeld) with a box on each spawn map and map mp lit, drawn into el
 // (the Map planner's, the Maps tab's). It turns to the world mp is on when mp changes; the buttons over it turn to another. Floors of one
-// dungeon share a box, so clicking a box picks its first map (pick(map)), and clicking it again the next one
+// dungeon share a box, so clicking a box picks its first map (pick(map)), and clicking it again the next one. Towns get a box only with towns
 const worldOf=mp=>typeof WORLDMAPS==="undefined"?-1:WORLDMAPS.findIndex(w=>w.maps[mp]);
-function worldMap(el,mp,pick){
+function worldMap(el,mp,pick,towns){
   if(typeof WORLDMAPS==="undefined"||!WORLDMAPS.length){el.hidden=true;return}
   if(!el.firstChild){el.innerHTML=`<div class="bar wmWorlds">${WORLDMAPS.map((w,i)=>`<button type="button" class="small" data-wmw="${i}">${esc(w.name)}</button>`).join("")}</div><div class="wmPic"><img alt=""><div class="wmBoxes"></div></div><div class="note wmNote"></div>`;
     el.addEventListener("click",e=>{const t=e.target.closest("[data-wmw],[data-wm]");if(!t)return;
@@ -759,9 +759,9 @@ function worldMap(el,mp,pick){
   el._mp=mp;el._pick=pick;
   const W=WORLDMAPS[+el.dataset.w],img=el.querySelector("img"),bx=el.querySelector(".wmBoxes");
   if(el.dataset.drawn!==el.dataset.w){el.dataset.drawn=el.dataset.w;Object.assign(img,{src:`${W.file}?v=${W.v}`,alt:`World map of ${W.name}`,width:W.w,height:W.h});
-    const at={};Object.entries(W.maps).forEach(([k,r])=>(at[r.join()]=at[r.join()]||[]).push(k));
+    const at={};Object.entries(W.maps).forEach(([k,r])=>{if(towns||!isTown(k))(at[r.join()]=at[r.join()]||[]).push(k)});
     bx.innerHTML=Object.values(at).map(ks=>{const [x1,y1,x2,y2]=W.maps[ks[0]],p=(v,n)=>(v/n*100).toFixed(2)+"%";
-      return `<button type="button" class="wmBox" data-wm="${esc(ks.join())}" style="left:${p(x1,W.w)};top:${p(y1,W.h)};width:${p(x2-x1,W.w)};height:${p(y2-y1,W.h)}" title="${esc(ks.map(k=>`${mapCode(k)} ${mapName(k)}`).join("\n"))}"></button>`}).join("")}
+      return `<button type="button" class="wmBox${ks.every(isTown)?" town":""}" data-wm="${esc(ks.join())}" style="left:${p(x1,W.w)};top:${p(y1,W.h)};width:${p(x2-x1,W.w)};height:${p(y2-y1,W.h)}" title="${esc(ks.map(k=>`${mapCode(k)} ${mapName(k)}`).join("\n"))}"></button>`}).join("")}
   el.querySelectorAll("[data-wmw]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.wmw===el.dataset.w)));
   bx.querySelectorAll("[data-wm]").forEach(b=>{const ks=b.dataset.wm.split(",");b.classList.toggle("on",ks.includes(mp));b.classList.toggle("closed",ks.every(isClosed))});
   const nm=mp&&(mapName(mp)||mapCode(mp)),wi=worldOf(mp);

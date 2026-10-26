@@ -183,7 +183,7 @@ One monster's stats, how you do against it, and every map it spawns on. The Elem
 
 ## Maps
 
-Every map monsters spawn on, on the game's world maps (Midgard and Nordfeld, from the game client). Click a box on the world map or a row of the table to see the map's picture from the client's map window, whether it's open (and when it comes), its monsters' levels and each monster with its spawn count and EXP. **Plan this map** opens it in the Map planner. **Find a map** narrows the table by map code, name or a monster on it (pick one from the list to show it), and **Only open maps** leaves out the ones not open yet. The Maps tab's map is its own: picking one here doesn't change the Map planner's until you press Plan this map. Maps whose region isn't out yet aren't on the game's world map, so they're only in the table.
+Every map monsters spawn on, and the towns (Prontera, Geffen, Nordfeld, ...: the client's town guide), on the game's world maps (Midgard and Nordfeld, from the game client); towns have yellow boxes. Click a box on the world map or a row of the table to see the map's picture from the client's map window, whether it's open (and when it comes), its monsters' levels and each monster with its spawn count and EXP. **Plan this map** opens it in the Map planner. **Find a map** narrows the table by map code, name, a monster on it or "town" (pick one from the list to show it), and **Only open maps** leaves out the ones not open yet. The Maps tab's map is its own: picking one here doesn't change the Map planner's until you press Plan this map. Maps whose region isn't out yet aren't on the game's world map, so they're only in the table.
 
 ## Item info
 

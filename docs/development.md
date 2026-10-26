@@ -15,7 +15,7 @@ The page is plain HTML, CSS and JavaScript with no dependencies. Open `index.htm
 | `build.js` | Build simulator: turns base stats, job level, gear, refine and cards into the status window's ATK/MATK/HIT/FLEE/ASPD/DEF/HP/SP. |
 | `js/` | Calculator and tracker code (see below). |
 | `data/` | Game data tables, one per file (see below). |
-| `img/` | Gear icon, item icon, card picture, monster picture and skill icon sprite sheets, written by `tools/export_icons.py`, and `img/maps/`, each spawn map's picture, and `img/world-midgard.jpg` / `img/world-nordfeld.png`, the game's world maps, written by `tools/export_minimaps.py`. |
+| `img/` | Gear icon, item icon, card picture, monster picture and skill icon sprite sheets, written by `tools/export_icons.py`, and `img/maps/`, each spawn map's and town's picture, and `img/world-midgard.jpg` / `img/world-nordfeld.png`, the game's world maps, written by `tools/export_minimaps.py`. |
 | `tools/` | Python scripts that export and cross-check the data, and `stamp.mjs`, which builds the deployed site with each file stamped. |
 | `tests/` | Node tests. |
 
@@ -37,7 +37,7 @@ Plain scripts that `index.html` loads in this order. They share one global scope
 | `recipes.js` | The Recipes tab (with the Jellostones and Expedition upgrades from `data/memorial.js`), and the recipes that make or use each item (the details popup lists them). |
 | `info.js` | The details popup for a monster, item, piece of gear or card, opened from any name with `data-info="mob:<id>"` or `"item:<id>"`. |
 | `memorial.js` | The Memorial dungeons tab: the Jellostone tracker and its estimate, the Expedition upgrades, the memorial dungeons and their gear's enchants. |
-| `mapinfo.js` | The Maps tab: every spawn map on the game's world map (`worldMap` in `render.js`, which the Map planner's world map uses too), its picture and monsters, and a table of every map. |
+| `mapinfo.js` | The Maps tab: every spawn map and town on the game's world map (`worldMap` in `render.js`, which the Map planner's world map uses too), its picture and monsters, and a table of every map. |
 | `stellar.js` | The Stellar weapons tab: the ★ weapons by weapon type, the certificates each still needs and the monster that gets you them fastest, and the Activation routes. |
 | `start.js` | Tabs and their headings, collapsible cards, the Character tab's section links, the get started card's buttons, the search (Ctrl+K), the sidebar's Compact button and its Settings menu (Hints / Theme / Full width), and the first render. |
 
@@ -50,7 +50,7 @@ Each table lives in its own file, so a re-export after a patch only touches that
 | `mobs.js` | Monsters (EXP is `null` where there's no data yet). Names written by `tools/export_mobnames.py`. |
 | `spawn.js` | Spawn maps and counts, normal and PvP channels, all from the client. Maps the client doesn't list yet have `[map, null]`: the monster comes there, count not known. Written by `tools/export_spawns.py`. |
 | `maps.js` | In-game map code and name for each spawn map. Names written by `tools/export_mapnames.py`. |
-| `minimaps.js` | A checksum of each spawn map's picture in `img/maps/` (the client's 512 × 512 minimap, by source map code), and each world map's picture, size and each spawn map's box on it (`WORLDMAPS`: Midgard, Nordfeld), for the Map planner and the Maps tab. Written by `tools/export_minimaps.py`. |
+| `minimaps.js` | A checksum of each spawn map's and town's picture in `img/maps/` (the client's 512 × 512 minimap, by source map code), the towns' names (`TOWNS`), and each world map's picture, size and each map's box on it (`WORLDMAPS`: Midgard, Nordfeld), for the Map planner and the Maps tab. Written by `tools/export_minimaps.py`. |
 | `roadmap.js` | Release roadmap: each update's month (or day), level cap, what it adds and the map regions it opens (by map code prefix). Made by hand from the official roadmap. |
 | `mobskills.js` | Monsters that poison you (Poison Attack level, rate, delay) and ones that assist their kind. Written by `tools/export_mobskills.py`. |
 | `loot.js` | Drops (chance `null` where no rate is published yet) |
@@ -85,7 +85,7 @@ All scripts use only the Python standard library. The ones that read the communi
 | --- | --- |
 | `python tools/export_spawns.py [--client PATH]` | Rewrites `data/spawn.js` from `navi_mob.lub` in your installed client's `data.grf` (read-only). Default client path: `C:\Gravity\RagnarokZero`. |
 | `python tools/export_mapnames.py [--client PATH]` | Sets the map names in `data/maps.js` to the names your installed client shows in game (read-only). |
-| `python tools/export_minimaps.py [--client PATH]` | Writes `img/maps/<map>.png` and `data/minimaps.js`: each spawn map in `data/maps.js` as the client's map window draws it (`data\texture\유저인터페이스\map\*.bmp` in `data.grf`, read-only), full size, with the magenta see-through, and `img/world-<world>.jpg` / `.png`: each world of the client's world view (`worldviewdata_list.lub`: Midgard's `worldmap_z.jpg`, Nordfeld's `worldmap_Nordfeld.png`, as they are), with each spawn map's box on it from `worldviewdata_table.lub`. It decodes the GRF entries stored with the GRF's mixed DES encoding. Run it after `data/maps.js` gets new maps. |
+| `python tools/export_minimaps.py [--client PATH]` | Writes `img/maps/<map>.png` and `data/minimaps.js`: each spawn map in `data/maps.js`, and each town (the maps of the client's `System\Towninfo_enUS.lub` with no monsters, on a world map), as the client's map window draws it (`data\texture\유저인터페이스\map\*.bmp` in `data.grf`, read-only), full size, with the magenta see-through, and `img/world-<world>.jpg` / `.png`: each world of the client's world view (`worldviewdata_list.lub`: Midgard's `worldmap_z.jpg`, Nordfeld's `worldmap_Nordfeld.png`, as they are), with each spawn map's box on it from `worldviewdata_table.lub`. It decodes the GRF entries stored with the GRF's mixed DES encoding. Run it after `data/maps.js` gets new maps. |
 | `python tools/export_mobnames.py [--client PATH]` | Sets the monster names in `data/mobs.js` and the drop lists in `data/iteminfo.js` to the names your installed client shows in game (read-only). A name two monsters would share keeps ours. |
 | `python tools/export_prices.py [--refresh]` | Writes `data/prices.js`, `data/weights.js` and `data/itemtypes.js`, and checks the prices add up to each monster's loot value. |
 | `python tools/export_prontera.py [--refresh]` | Writes the gear, refine and skill data. |
