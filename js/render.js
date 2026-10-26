@@ -745,25 +745,39 @@ function convCheck(mp,w,r){const sf=C().a.type==="spellfist",opts=sf?elOptions()
   const warn=bad.length?`<div class="warnc">With ${el}: ${bad.map(x=>{const v=elemMult(x.m,el);return `${esc(x.m.name)} (${x.m.el} ${x.m.elv}) ${v}%`}).join(" · ")}</div>`:"";
   return `<div class="note mt"><b>${sf?"Spell Fist bolts":"Converters"} vs these monsters</b> · element table rate (Reference tab): <span class="good">above 100%</span>, <span class="warnc">below</span>, <span class="bad">0% ✕ none</span>${sf||isMagicAtk()?"":"; it applies to your weapon ATK, status ATK always hits as Neutral"}</div>
   <div class="scroll"><table class="convtab"><thead><tr><th>${sf?"Bolt":"Converter"}</th>${mobs.map(x=>`<th>${esc(x.m.name)}<br><span class="el ${x.m.el||"Neutral"}">${x.m.el||"Neutral"} ${x.m.elv||1}</span></th>`).join("")}<th>EXP / min</th></tr></thead><tbody>${rows}</tbody></table></div>${warn}`}
-// the client's world map (data/minimaps.js WORLDMAP) with a box on each spawn map, the planner's map lit. Floors of one dungeon share a
-// box, so clicking a box picks its first map, and clicking it again the next one
-function renderWorldMap(mp){
-  const W=typeof WORLDMAP!=="undefined"&&WORLDMAP,el=$("worldMap");el.hidden=!W;if(!W)return;
-  const pic=$("worldPic"),bx=$("worldBoxes");
-  if(!pic.getAttribute("src")){pic.src=`${W.file}?v=${W.v}`;pic.alt=`World map of ${W.name}`;bx.style.aspectRatio=`${W.w}/${W.h}`;
+// ---- the client's world maps (data/minimaps.js WORLDMAPS: Midgard, Nordfeld) with a box on each spawn map and map mp lit, drawn into el
+// (the Map planner's, the Maps tab's). It turns to the world mp is on when mp changes; the buttons over it turn to another. Floors of one
+// dungeon share a box, so clicking a box picks its first map (pick(map)), and clicking it again the next one
+const worldOf=mp=>typeof WORLDMAPS==="undefined"?-1:WORLDMAPS.findIndex(w=>w.maps[mp]);
+function worldMap(el,mp,pick){
+  if(typeof WORLDMAPS==="undefined"||!WORLDMAPS.length){el.hidden=true;return}
+  if(!el.firstChild){el.innerHTML=`<div class="bar wmWorlds">${WORLDMAPS.map((w,i)=>`<button type="button" class="small" data-wmw="${i}">${esc(w.name)}</button>`).join("")}</div><div class="wmPic"><img alt=""><div class="wmBoxes"></div></div><div class="note wmNote"></div>`;
+    el.addEventListener("click",e=>{const t=e.target.closest("[data-wmw],[data-wm]");if(!t)return;
+      if(t.dataset.wmw!=null){el.dataset.w=t.dataset.wmw;worldMap(el,el._mp,el._pick);return}
+      const ks=t.dataset.wm.split(",");el._pick(ks[(ks.indexOf(el._mp)+1)%ks.length])})}
+  if(mp!==el._mp&&worldOf(mp)>=0||el.dataset.w==null)el.dataset.w=Math.max(0,worldOf(mp));
+  el._mp=mp;el._pick=pick;
+  const W=WORLDMAPS[+el.dataset.w],img=el.querySelector("img"),bx=el.querySelector(".wmBoxes");
+  if(el.dataset.drawn!==el.dataset.w){el.dataset.drawn=el.dataset.w;Object.assign(img,{src:`${W.file}?v=${W.v}`,alt:`World map of ${W.name}`,width:W.w,height:W.h});
     const at={};Object.entries(W.maps).forEach(([k,r])=>(at[r.join()]=at[r.join()]||[]).push(k));
     bx.innerHTML=Object.values(at).map(ks=>{const [x1,y1,x2,y2]=W.maps[ks[0]],p=(v,n)=>(v/n*100).toFixed(2)+"%";
-      return `<button type="button" class="wmBox" data-wm="${esc(ks.join())}" style="left:${p(x1,W.w)};top:${p(y1,W.h)};width:${p(x2-x1,W.w)};height:${p(y2-y1,W.h)}" title="${esc(ks.map(k=>`${mapCode(k)} ${mapName(k)}`).join("\n"))}"></button>`}).join("");
-    bx.addEventListener("click",e=>{const b=e.target.closest("[data-wm]");if(!b)return;const ks=b.dataset.wm.split(",");state.map=ks[(ks.indexOf(mapKey(state.map))+1)%ks.length];save();renderMap()})}
+      return `<button type="button" class="wmBox" data-wm="${esc(ks.join())}" style="left:${p(x1,W.w)};top:${p(y1,W.h)};width:${p(x2-x1,W.w)};height:${p(y2-y1,W.h)}" title="${esc(ks.map(k=>`${mapCode(k)} ${mapName(k)}`).join("\n"))}"></button>`}).join("")}
+  el.querySelectorAll("[data-wmw]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.wmw===el.dataset.w)));
   bx.querySelectorAll("[data-wm]").forEach(b=>{const ks=b.dataset.wm.split(",");b.classList.toggle("on",ks.includes(mp));b.classList.toggle("closed",ks.every(isClosed))});
-  $("worldNote").textContent=!mp?"":W.maps[mp]?`${mapName(mp)||mapCode(mp)} is lit. Click a box to plan that map`:`${mapName(mp)||mapCode(mp)} isn't on the game's world map yet`}
+  const nm=mp&&(mapName(mp)||mapCode(mp)),wi=worldOf(mp);
+  el.querySelector(".wmNote").textContent=!mp?"Click a box to pick that map":wi===+el.dataset.w?`${nm} is lit. Click a box to pick that map`:wi>=0?`${nm} is on the ${WORLDMAPS[wi].name} map`:`${nm} isn't on the game's world map yet`}
+// the Map planner's world map: folds, remembered like a card (state.collapsed)
+const WORLD_FOLD="Map planner: world map";
+{const d=$("worldMore");if(d){d.open=!(state.collapsed||{})[WORLD_FOLD];
+  d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[WORLD_FOLD])return;if(d.open)delete c[WORLD_FOLD];else c[WORLD_FOLD]=true;save()})}}
+const planPick=k=>{state.map=k;save();renderMap()};
 function renderMap(){
   let mp=mapKey(state.map);const mob=calcMob();
   if(!mp)mp=mobMap(mob);
   $("mapInput").value=mp?mapCode(mp):"";$("mapName").textContent=mapName(mp)+(isRoomMap(mp)?` · room dungeon: one map cut into small rooms, so monsters crowd into yours (a possible rampage of ${ROOM_CROWD} unless you change it)`:"");
   // the map's picture from the client (data/minimaps.js, tools/export_minimaps.py), asked for with its checksum so a new one isn't read from an old cache
   {const a=$("mapPicLink"),v=typeof MINIMAPS!=="undefined"&&mp&&MINIMAPS[mp];a.hidden=!v;if(v){const u=`img/maps/${mp}.png?v=${v}`;if(a.getAttribute("href")!==u){a.href=u;$("mapPic").src=u;$("mapPic").alt=`Map of ${mapName(mp)||mapCode(mp)}`}}}
-  renderWorldMap(mp);
+  worldMap($("planWorld"),mp,planPick);{const wi=worldOf(mp);$("worldSum").textContent=!mp?"":wi>=0?`${WORLDMAPS[wi].name}, ${mapName(mp)||mapCode(mp)} lit`:"not on it yet"}
   {const b=$("mobbedIn");b.disabled=!MAPMOBS[mp];b.placeholder=MAPMOBS[mp]?(mobbedDef(mp)?`${mobbedDef(mp)} (room dungeon)`:"Character tab's number"):"";if(document.activeElement!==b)b.value=MAPMOBS[mp]&&(state.mobbed||{})[mp]!=null?state.mobbed[mp]:""}
   {const b=$("mapToSess"),s=cur(),here=!!MAPMOBS[mp]&&sessMap(s)===mp,ids=MAPMOBS[mp]?mapHuntIds(mp):[],same=here&&ids.length===s.mobIds.length&&ids.every(id=>s.mobIds.includes(id));
     b.dataset.map=mp||"";b.disabled=!MAPMOBS[mp]||same;b.textContent=same?"✓ Farming this map":here?"Farming here: hunt all its monsters":"Farming this map now";
@@ -781,5 +795,5 @@ function renderMap(){
   $("mapTable").querySelector("tbody").innerHTML=withMobbed(mp,()=>MAPMOBS[mp].slice().sort((a,b)=>b.n-a.n).map(({m,n})=>{const x=r&&r.el2?withEl(r.el2,()=>mobRow0(m,w)):mobRow(m,w);
     return `<tr data-id="${m.id}" class="${cur().mobIds.includes(m.id)?"sel":""}" style="${isSkipped(m)?"opacity:.55":""}"><td class="name">${mobIcon(m.id,1,"il")}<a href="#" data-info="mob:${m.id}">${esc(m.name)}</a> <button type="button" class="small" data-sessmob="${m.id}">${cur().mobIds.includes(m.id)?"− Session":"+ Session"}</button>${BOSS_PILL(m)}${m.boss?"":` <button type="button" class="small" data-skip="${m.id}">${isSkipped(m)?"Unskip":"Skip"}</button>`}</td><td>≈${spN(n)}</td><td>${m.boss?"–":isSkipped(m)?"skipped":Math.round(n/tot*100)+"%"}</td><td>${m.lv}</td><td>${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"–"}</td><td>${(el=>elRateHtml(el,elemMult(m,el)))((r&&r.el2)||x.el2||atkEl())}</td><td>${m.size||"–"}</td><td class="${x.mult>100?"good":x.mult<=0?"bad":""}">${x.mult<=0?"can't hurt":Math.round(x.mult)+"%"}</td><td>${isFinite(x.sec)?x.sec.toFixed(1)+"s":"–"}</td><td>${fmtExp(m)}</td><td>${m.boss?"–":susCell(withEl((r&&r.el2)||x.el2,()=>susMob(m,w)))}</td></tr>`}).join(""));
 }
-function renderAll(){SKFX=skillEffects(C());const sgTree=sageFromTree(C());ROOTQ('[data-sg="sfLv"],[data-sg="boltLv"],[data-sg="hsLv"],[data-sg="dbLv"]').forEach(i=>{i.disabled=sgTree;i.title=sgTree?"Set by the Skills card":""});ROOTQ("[data-sgbolt]").forEach(i=>i.disabled=sgTree&&!skLv(C(),SG_BOLT[i.dataset.sgbolt]));applyBuild();applyConsumables();renderBuild();hsCompare();renderSessions();renderChar();renderTracker();renderMobs();renderBest();renderRecovery();if(state.tab==="maps")renderHunt();if(state.tab==="market")renderPrices();if(state.tab==="mobinfo")renderMobInfo();if(state.tab==="items")renderItems();if(state.tab==="equip"&&typeof renderEquipDb==="function")renderEquipDb();if(state.tab==="cards"&&typeof renderCardDb==="function")renderCardDb();renderMap();renderRef();snapEst()}
+function renderAll(){SKFX=skillEffects(C());const sgTree=sageFromTree(C());ROOTQ('[data-sg="sfLv"],[data-sg="boltLv"],[data-sg="hsLv"],[data-sg="dbLv"]').forEach(i=>{i.disabled=sgTree;i.title=sgTree?"Set by the Skills card":""});ROOTQ("[data-sgbolt]").forEach(i=>i.disabled=sgTree&&!skLv(C(),SG_BOLT[i.dataset.sgbolt]));applyBuild();applyConsumables();renderBuild();hsCompare();renderSessions();renderChar();renderTracker();renderMobs();renderBest();renderRecovery();if(state.tab==="maps")renderHunt();if(state.tab==="market")renderPrices();if(state.tab==="mobinfo")renderMobInfo();if(state.tab==="items")renderItems();if(state.tab==="equip"&&typeof renderEquipDb==="function")renderEquipDb();if(state.tab==="cards"&&typeof renderCardDb==="function")renderCardDb();if(state.tab==="mapinfo"&&typeof renderMapInfo==="function")renderMapInfo();renderMap();renderRef();snapEst()}
 

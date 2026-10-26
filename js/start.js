@@ -10,6 +10,7 @@ const TAB_DESC={
   roadmap:"Ragnarok Zero Global's release roadmap: when each update comes, its level cap, and which maps and monsters are open now.",
   mobinfo:"Drops, spawn maps and your numbers against any monster.",
   items:"Every drop: who drops it, where they spawn and what it's worth to you.",
+  mapinfo:"Every map on the game's world map: its picture, the monsters on it and when it opens.",
   equip:"Every weapon and piece of armor: filter by type, job, level, card slots and stats, and put it in any of your gear sets.",
   cards:"Every card and what it does: filter by the gear it goes in, and slot it into your gear or another gear set.",
   recipes:"What every forge, brew, arrow, cooking, Alchemy Lab and memorial recipe uses up, and what a drop of yours turns into.",
@@ -22,10 +23,11 @@ function showHero(t){
   let g=b.previousElementSibling;while(g&&!g.classList.contains("navGrp"))g=g.previousElementSibling;
   $("heroGrp").textContent=g?g.textContent:"";$("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
 }
-// a link to a tab: #Memorial-dungeons (its name, any case) or #mem (its key); the address bar always shows the open tab's link
+// a link to a tab: #Memorial-dungeons (its name, any case) or #mem (its key); the address bar always shows the open tab's link. A name
+// goes before a key: #Maps is the Maps tab, not Monsters & maps (key maps)
 const tabSlug=t=>document.querySelector(`[data-tabbtn="${t}"] span`).textContent.replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"");
 function hashTab(){let h="";try{h=decodeURIComponent(location.hash.slice(1)).toLowerCase()}catch(e){}if(!h)return null;
-  const b=[...document.querySelectorAll("[data-tabbtn]")].find(b=>b.dataset.tabbtn===h||tabSlug(b.dataset.tabbtn).toLowerCase()===h);
+  const bs=[...document.querySelectorAll("[data-tabbtn]")],b=bs.find(b=>tabSlug(b.dataset.tabbtn).toLowerCase()===h)||bs.find(b=>b.dataset.tabbtn===h);
   return b?b.dataset.tabbtn:null}
 function showTab(t,local){
   if(t==="data")t="acct";// the old Data tab is the Account tab
@@ -43,7 +45,7 @@ function showTab(t,local){
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
   // renderAll only draws these while their tab is showing
-  if(t==="maps")renderHunt();if(t==="market")renderPrices();if(t==="mobinfo")renderMobInfo();if(t==="items")renderItems();if(t==="equip")renderEquipDb();if(t==="cards")renderCardDb();if(t==="recipes")renderRecipes();if(t==="mem")renderMem();if(t==="star")renderStar();
+  if(t==="maps")renderHunt();if(t==="market")renderPrices();if(t==="mobinfo")renderMobInfo();if(t==="items")renderItems();if(t==="equip")renderEquipDb();if(t==="cards")renderCardDb();if(t==="recipes")renderRecipes();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="mapinfo")renderMapInfo();
 }
 document.querySelectorAll("[data-tabbtn]").forEach(b=>b.addEventListener("click",()=>{showTab(b.dataset.tabbtn);scrollTo({top:0})}));
 // a link to another tab (data-gotab="roadmap")
