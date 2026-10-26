@@ -20,7 +20,7 @@
 
 ## Page layout
 
-The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Monsters & maps), Look up (Roadmap, Monster info, Item info, Equipment, Cards, Recipes, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
+The tabs sit in a sidebar on the left: Home at the top, then grouped into Plan (Character, Session, Monsters & maps, Memorial dungeons, Stellar weapons), Game data (Monster info, Item info, Maps, Equipment, Cards, Skill tree, Recipes), Reference (Roadmap, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
 
 **Log EXP from any tab:** type in the Log EXP box on the right of the top bar, or press **L** on any tab to jump to it. It takes a line like the paste box does: `17.9` (EXP %), `17.9 63` (with job %), `15:05 17.9 63` (at that time), and `died` on the line for EXP after a death. The entry goes in at the level of your last one, and a level-up is picked up the same way as in the Log EXP card. On a phone the box opens as a sheet from the round **+** button. At the max base level (70) base EXP no longer counts, so the box, the + button and **L** go away.
 
@@ -34,7 +34,9 @@ The tabs sit in a sidebar on the left, grouped into Plan (Character, Session, Mo
 - **Card:** its picture, the gear it goes in, the name it gives that gear, its effects, the in-game text and where to get it. Buttons: Equip and Cards tab.
 - Names inside the popup open theirs (a drop from a monster, a monster from an item); **←** goes back. A map opens in the Map planner.
 
-**Get started:** a new player sees three steps over the Character, Session and Monsters & maps tabs: set up your character (type all six stats, or use build mode), pick where to farm (Farm here on one of the best spots), and log your EXP twice. Each one ticks off as you do it, and the card goes away for good once all three are done, or when you close it.
+**Home:** the page a new player lands on (after that, the page opens on the tab you had open last, and Home is the first button in the sidebar). It says what the planner does, shows the level cap now and the next update on the roadmap (click it for the Roadmap tab), and counts the monsters, spawn maps, items, cards and recipes it knows. Once your character is set up or you've logged EXP, **Pick up where you left off** shows your job and levels, the session's last entry, its EXP/hr and time to the next level (each opens its tab), and the three best maps for EXP right now with **Farm here**. Below that, **Everything in the planner** has a card for every tab with what it's for.
+
+**Get started:** a new player sees three steps over the Home, Character, Session and Monsters & maps tabs: set up your character (type all six stats, or use build mode), pick where to farm (Farm here on one of the best spots), and log your EXP twice. Each one ticks off as you do it, and the card goes away for good once all three are done, or when you close it.
 
 At the bottom of the sidebar, **Compact sidebar** shrinks it to its icons (hover an icon to see its tab's name), and **Settings** opens a menu that changes how the page looks. It stays open while you switch things, and Esc or a click elsewhere closes it:
 

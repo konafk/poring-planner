@@ -15,6 +15,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 
 ## What it does
 
+- **Home:** what the planner does, the next roadmap update, where you left off (your character, session, EXP/hr and the best maps for you right now) and a card for every tab.
 - **Character:** every 2nd job with Zero skill data, a build simulator that matches the status window, and a damage model covering elements, sizes, DEF, crits, dual wield, auto-casts, cards, buffs, consumables (HP / SP items included), skill items and weight. Up to 10 **other gear sets** (add or remove them as you need) are worked out next to your gear, so you can compare weapons or cards before you switch. Gear you take off keeps its refine, cards and affixes for when you put it back on, and whole setups can be saved as named **loadouts** to swap between.
 - **Session:** an EXP tracker with EXP/hr, time to level, a progress chart and level goals.
 - **Monsters & maps:** Where to farm (the best spots and one map ranking by EXP or zeny, with Farm here), a Map planner, a monster table, and a green / yellow / red check of whether you can farm a map with no HP or SP items.

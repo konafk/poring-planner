@@ -18,14 +18,14 @@
     <div class="brand"><svg class="logo" viewBox="0 3 58 54" aria-hidden="true"><defs><linearGradient id="logoBody" x1=".3" y1="0" x2=".6" y2="1"><stop offset="0" stop-color="#ffc4d3"/><stop offset=".55" stop-color="#ff98b3"/><stop offset="1" stop-color="#ee6f93"/></linearGradient></defs><path d="M8 50C2.2 47 2 37.5 6.8 31 11.6 24.4 18.6 20.4 24.6 18c1.7-.7 2.3-2.2 1.8-4.1 2.3.2 4.4 1.5 5.4 3 8.8.9 17.6 6.3 21.4 14.1 3.8 7.9 2.2 15.7-2.9 18.3C45.7 51.9 38.7 52.6 30.3 52.6 20.3 52.6 12.3 52 8 50z" fill="url(#logoBody)" stroke="#b9476b" stroke-width="1.3" stroke-linejoin="round"/><ellipse cx="13.5" cy="31.5" rx="4.4" ry="2.4" fill="#fff" opacity=".75" transform="rotate(-35 13.5 31.5)"/><circle cx="19.6" cy="26.4" r="1.1" fill="#fff" opacity=".7"/><ellipse cx="22.5" cy="40" rx="2.5" ry="3" fill="#2b1420"/><ellipse cx="38.5" cy="40" rx="2.5" ry="3" fill="#2b1420"/><circle cx="23.3" cy="38.9" r=".95" fill="#fff"/><circle cx="39.3" cy="38.9" r=".95" fill="#fff"/><ellipse cx="17.6" cy="44.6" rx="2.2" ry="1.1" fill="#fff" opacity=".6"/><ellipse cx="43.6" cy="44.6" rx="2.2" ry="1.1" fill="#fff" opacity=".6"/><path d="M27.6 44.4q1.5 1.9 2.9 0q1.4 1.9 2.9 0" fill="none" stroke="#2b1420" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="45.5" cy="13" r="3.4" fill="#ff9db8" stroke="#b9476b" stroke-width="1"/><circle cx="44.4" cy="11.9" r="1" fill="#fff" opacity=".85"/><circle cx="52" cy="9" r="2.5" fill="#ff9db8" stroke="#b9476b" stroke-width="1"/><circle cx="51.2" cy="8.2" r=".7" fill="#fff" opacity=".85"/></svg><span class="brandTxt"><b>Farm Planner</b><span>Ragnarok Zero</span></span></div>
     <button type="button" class="searchBtn" id="searchBtn" title="Search monsters, items, maps and tabs (Ctrl+K or /)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
     <nav class="tabs" role="tablist" aria-label="Sections">
+      <button type="button" role="tab" data-tabbtn="home" title="Home"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h5v-6h4v6h5V9"/></svg><span>Home</span></button>
       <span class="navGrp" role="presentation">Plan</span>
       <button type="button" role="tab" data-tabbtn="char" title="Character"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg><span>Character</span></button>
       <button type="button" role="tab" data-tabbtn="track" title="Session"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Session</span></button>
       <button type="button" role="tab" data-tabbtn="maps" title="Monsters &amp; maps"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Monsters &amp; maps</span></button>
       <button type="button" role="tab" data-tabbtn="mem" title="Memorial dungeons"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21 8 9l4-6 4 6z"/></svg><span>Memorial dungeons</span></button>
       <button type="button" role="tab" data-tabbtn="star" title="Stellar weapons"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Stellar weapons</span></button>
-      <span class="navGrp" role="presentation">Look up</span>
-      <button type="button" role="tab" data-tabbtn="roadmap" title="Roadmap"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Roadmap</span></button>
+      <span class="navGrp" role="presentation">Game data</span>
       <button type="button" role="tab" data-tabbtn="mobinfo" title="Monster info"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a7 7 0 0 0-7 7v10l2.5-2 2.5 2 2-2 2 2 2.5-2 2.5 2V10a7 7 0 0 0-7-7z"/><circle cx="9.5" cy="10.5" r=".8"/><circle cx="14.5" cy="10.5" r=".8"/></svg><span>Monster info</span></button>
       <button type="button" role="tab" data-tabbtn="items" title="Item info"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><span>Item info</span></button>
       <button type="button" role="tab" data-tabbtn="mapinfo" title="Maps"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Maps</span></button>
@@ -33,6 +33,8 @@
       <button type="button" role="tab" data-tabbtn="cards" title="Cards"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>Cards</span></button>
       <button type="button" role="tab" data-tabbtn="skilltree" title="Skill tree"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M12 7v5M12 12l-6 5M12 12l6 5"/></svg><span>Skill tree</span></button>
       <button type="button" role="tab" data-tabbtn="recipes" title="Recipes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg><span>Recipes</span></button>
+      <span class="navGrp" role="presentation">Reference</span>
+      <button type="button" role="tab" data-tabbtn="roadmap" title="Roadmap"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Roadmap</span></button>
       <button type="button" role="tab" data-tabbtn="market" title="Market"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="M15.5 9.5A6 6 0 1 1 9.5 15.5"/></svg><span>Market</span></button>
       <button type="button" role="tab" data-tabbtn="ref" title="EXP &amp; formulas"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg><span>EXP &amp; formulas</span></button>
       <span class="navGrp" role="presentation">Data</span>
@@ -67,6 +69,13 @@
   <header class="pageHead">
     <div class="eyebrow" id="heroGrp"></div><h1 id="heroTitle"></h1><p id="heroDesc"></p>
   </header>
+  <section class="homeHero" data-tab="home" aria-labelledby="homeTitle">
+    <a href="#Roadmap" class="homeNext" id="homeNext" data-gotab="roadmap"></a>
+    <h1 id="homeTitle">Know where to farm before you go</h1>
+    <p>Enter your character once and the planner works out your damage, kill speed, EXP/hr and zeny/hr against every monster, ranks the open maps for you, then tracks your real EXP while you farm. It all runs in this browser: no login, and your data stays here.</p>
+    <div class="bar homeActs"><button type="button" class="primary" data-gotab="char" id="homeCharBtn">Set up your character</button><button type="button" data-gotab="maps">Find where to farm</button><button type="button" id="homeSearch">Search <kbd>/</kbd></button></div>
+    <div class="homeCounts" id="homeCounts"></div>
+  </section>
   <section class="startCard" id="startCard" hidden aria-labelledby="startTitle">
     <div class="startHead"><div><div class="eyebrow">Get started</div><h2 id="startTitle">Three steps to your real EXP/hr</h2></div><button type="button" class="iconX" id="startHide" aria-label="Hide get started" title="Hide this">×</button></div>
     <ol class="steps">
@@ -74,6 +83,15 @@
       <li data-step="mob"><span class="stepN" aria-hidden="true">2</span><div class="stepTxt"><b>Pick where to farm</b><span>Press "Farm here" on one of the best spots for your character.</span></div><button type="button" class="small" data-go="maps">Find a spot</button></li>
       <li data-step="log"><span class="stepN" aria-hidden="true">3</span><div class="stepTxt"><b>Log your EXP twice</b><span id="startLogTxt">Type your EXP % now, and again in a few minutes: two entries give your EXP/hr.</span></div><button type="button" class="small primary" data-go="log">Log EXP</button></li>
     </ol>
+  </section>
+  <section class="card" id="homeNowCard" data-tab="home">
+    <div class="bar"><h2 class="grow">Pick up where you left off</h2><span class="note" id="homeNowNote"></span></div>
+    <div class="tiles homeTiles" id="homeTiles"></div>
+    <div class="spotCol" id="homeSpots"></div>
+  </section>
+  <section class="card" id="homeToolsCard" data-tab="home">
+    <h2>Everything in the planner</h2>
+    <div class="homeTools" id="homeTools"></div>
   </section>
   <section class="card" data-tab="acct">
     <div class="bar"><h2 class="grow">Backup</h2><span class="note hint">Saved only in this browser. Copy backup copies every account. Copy share link makes a link to this account that anyone can open.</span></div>
