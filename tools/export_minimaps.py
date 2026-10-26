@@ -1,5 +1,5 @@
-"""Export each spawn map's minimap from your installed Ragnarok Zero client (official Global client, read-only) into img/maps/,
-and the client's world maps with where each spawn map is on them, for the Map planner and the Maps tab.
+"""Export each spawn map's and town's minimap from your installed Ragnarok Zero client (official Global client, read-only) into
+img/maps/, and the client's world maps with where each map is on them, for the Map planner and the Maps tab.
 
     python tools/export_minimaps.py                                  # client in C:\\Gravity\\RagnarokZero
     python tools/export_minimaps.py --client "D:\\Games\\RagnarokZero"
@@ -14,8 +14,12 @@ The world maps are the worlds of the client's world view (worldviewdata_list.lub
 worldmap_Nordfeld.png, 1602 x 1216, stored in the GRF as it is), copied as they are. worldviewdata_table.lub gives each map's box on
 its world, in the picture's pixels; maps whose region isn't out yet have none.
 
+The towns are the maps of the client's town guide (System\\Towninfo_enUS.lub: Prontera, Geffen, Nordfeld, ...) that no monster spawns
+on and that are on a world map, named as the client's map window names them (System\\mapInfo_enUS.lub); a town's copies under
+another code with the same name (prt_mk_g1 for prt_mk) are left out.
+
 Writes img/maps/*.png (and removes ones no map uses any more), img/world-<world>.jpg / .png and data/minimaps.js: a checksum of each
-map's picture, by source map code, and per world its file, checksum, size and each spawn map's box [x1, y1, x2, y2]. Maps with no
+map's picture, by source map code, the towns' names, and per world its file, checksum, size and each map's box [x1, y1, x2, y2]. Maps with no
 minimap or no box in the client are left out and printed. Standard library only.
 """
 import json, os, struct, sys, zlib
@@ -158,7 +162,7 @@ def jpeg_size(b):
 
 
 def worlds(grf, names):
-    """Each world in the world view (Midgard, Nordfeld): its picture to img/world-<name>.<ext>, and each spawn map's box on it, by
+    """Each world in the world view (Midgard, Nordfeld): its picture to img/world-<name>.<ext>, and each map's box on it, by
     source map code (a map on two worlds goes on the first)."""
     table = lua_data(grf.read(WORLDVIEW + "worldviewdata_table.lub"))
     out, placed = [], set()
@@ -182,10 +186,31 @@ def worlds(grf, names):
     return out
 
 
+def towns(client, grf, names):
+    """The town guide's maps no monster spawns on, with a minimap and a world map box: {code: [code, name]}, in the guide's order."""
+    guide = lua_data(open(os.path.join(client, "System", "Towninfo_enUS.lub"), "rb").read())["mapNPCInfoTable_string"]
+    shown = {str(k).lower().removesuffix(".rsw"): v.get("displayName", "").strip()
+             for k, v in lua_data(open(os.path.join(client, "System", "mapInfo_enUS.lub"), "rb").read())["mapTbl_string"].items()
+             if isinstance(v, dict)}
+    spawn = {c.lower() for k, r in names.items() for c in [r[0], *r[2:], k, ALIAS.get(k)] if c}
+    boxed = {r[2].lower().removesuffix(".rsw") for t in lua_data(grf.read(WORLDVIEW + "worldviewdata_table.lub")).values()
+             for r in t.values() if isinstance(r, dict) and isinstance(r.get(2), str)}
+    out, seen = {}, set()
+    for code in (k.lower() for k in guide if isinstance(k, str)):
+        name = shown.get(code) or code
+        if code in spawn or code not in boxed or name in seen or not grf.has(MAPDIR + code + ".bmp"):
+            continue
+        seen.add(name)
+        out[code] = [code, name]
+    return out
+
+
 def main():
     client = sys.argv[sys.argv.index("--client") + 1] if "--client" in sys.argv else r"C:\Gravity\RagnarokZero"
     grf = DesGrf(os.path.join(client, "data.grf"))
-    names = js_object("maps", "MAPNAMES")
+    spawns = js_object("maps", "MAPNAMES")
+    town = towns(client, grf, spawns)
+    names = {**spawns, **town}
     wms = worlds(grf, names)
     os.makedirs(OUT, exist_ok=True)
     sums, missing, total = {}, [], 0
@@ -203,13 +228,15 @@ def main():
         if f.endswith(".png") and f[:-4] not in sums:
             os.remove(os.path.join(OUT, f))
     with open(os.path.join(DATA, "minimaps.js"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("// Each spawn map's minimap from the game client (tools/export_minimaps.py): img/maps/<source map code>.png, 512 x 512, and a "
-                "checksum of it, by source map code. Maps with no minimap in the client aren't listed\n")
+        f.write("// Each spawn map's and town's minimap from the game client (tools/export_minimaps.py): img/maps/<source map code>.png, 512 x 512, "
+                "and a checksum of it, by source map code. Maps with no minimap in the client aren't listed\n")
         f.write("const MINIMAPS=" + json.dumps(sums, separators=(",", ":")) + ";\n")
+        f.write("// The towns (the client's town guide's maps no monster spawns on, on a world map): their names as the client shows them, by map code\n")
+        f.write("const TOWNS=" + json.dumps({k: v[1] for k, v in town.items()}, separators=(",", ":"), ensure_ascii=False) + ";\n")
         f.write("// The client's world maps (its world view's worlds, Midgard first): each one's picture, a checksum of it (v), its size, and each "
-                "spawn map's box on it [x1,y1,x2,y2] in its pixels, by source map code. Maps whose region isn't out yet have no box\n")
+                "map's box on it [x1,y1,x2,y2] in its pixels, by source map code. Maps whose region isn't out yet have no box\n")
         f.write("const WORLDMAPS=" + json.dumps(wms, separators=(",", ":")) + ";\n")
-    print(f"{len(sums)} of {len(names)} maps written to img/maps ({total // 1024} KB)")
+    print(f"{len(sums)} of {len(names)} maps written to img/maps ({total // 1024} KB), towns:", " ".join(town))
     print("no minimap in the client:", " ".join(missing))
     for wm in wms:
         print(f"world map {wm['name']} ({wm['w']} x {wm['h']}) written to {wm['file']}, {len(wm['maps'])} of {len(names)} maps on it")
