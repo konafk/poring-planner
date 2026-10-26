@@ -134,9 +134,12 @@ function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp
 function renderSessions(){$("sessionSel").innerHTML=state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===state.current?"selected":""}>${esc(s.name)}</option>`).join("")}
 // ---- get started: three steps shown over every tab until they're done (or hidden), each ticked off as you do it ----
 const KEY_START="rozero-farm-planner-start-hidden";
+// the character is set up: built from gear, or all six stats typed. Until then a monster's details leave out your numbers against it
+const charSet=(c=C())=>c.mode==="build"||STATS.every(k=>statVal(c,k)!=null);
+const NO_CHAR_TXT="Set up your character on the Character tab to see your kill time, EXP / min and zeny a kill";
 function renderStart(){const box=$("startCard"),c=C(),s=cur(),n=s.entries.length;
   // any session counts, so a new, empty session doesn't bring the card back; once all three are done it stays away
-  const done={char:c.mode==="build"||STATS.every(k=>statVal(c,k)!=null),mob:state.sessions.some(x=>(x.mobIds||[]).length),log:atMaxLv()||state.sessions.some(x=>(x.entries||[]).length>=2)};
+  const done={char:charSet(c),mob:state.sessions.some(x=>(x.mobIds||[]).length),log:atMaxLv()||state.sessions.some(x=>(x.entries||[]).length>=2)};
   let off=false;try{off=localStorage.getItem(KEY_START)==="1";if(!off&&Object.values(done).every(Boolean)){localStorage.setItem(KEY_START,"1");off=true}}catch(e){}
   box.hidden=off||Object.values(done).every(Boolean);
   box.querySelectorAll("[data-step]").forEach(li=>li.classList.toggle("done",!!done[li.dataset.step]));
@@ -290,6 +293,9 @@ function fmtP(v){return Number.isInteger(v)?String(v):v.toFixed(1)}
 const fmtAway=p=>{const m=Math.round(((p.to??Date.now())-p.from)/6e4);return m>=60?`${Math.floor(m/60)}h${m%60?` ${m%60}m`:""}`:`${m}m`};
 // a time as a datetime-local input value, in local time
 const dtLocal=t=>{const d=new Date(t),p=x=>String(x).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`};
+// a place ("prontera 272 264") as the game's Navigation command, /navi prontera 272/264, to select and paste in the game's chat
+const naviCmd=at=>{const [mp,x,y]=at.split(" ");return y?`/navi ${mp} ${x}/${y}`:`/navi ${mp}`};
+const naviTag=at=>`<span class="navi mono" title="Type it in the game's chat: the Navigation shows you the way">${esc(naviCmd(at))}</span>`;
 // the row being edited in the entries table: {sid, t} for an entry, {sid, p: index in s.pauses} for a pause
 let LOG_EDIT=null;
 // entries and pauses, newest first: a pause is a row of its own at the time it started; ✎ turns a row into inputs
@@ -449,7 +455,7 @@ function renderMobs(){
   document.querySelectorAll("#mobTable th").forEach(th=>th.classList.toggle("on",th.dataset.k===k));
   const sel=(calcMob()||{}).id;
   $("mobNote").textContent=`${rows.length} monsters · ${state.job} · ${isMagicAtk()?"MATK":"ATK"} ${fmtN(sumStat(isMagicAtk()?C().matkTxt:C().atkTxt))} · ${convOn()?convLabel("per monster"):atkEl()}`;
-  $("mobTable").querySelector("tbody").innerHTML=rows.slice(0,400).map(m=>`<tr data-id="${m.id}" class="${m.id===sel?"sel":""}"><td class="name">${mobIcon(m.id,1,"il")}${esc(m.name)}${BOSS_PILL(m)}${isSkipped(m)?' <span class="pill down">skipped</span>':""}</td><td>${m.lv}</td><td>${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"–"}</td><td>${m.size||"–"}</td><td class="name">${m.race||"–"}</td><td>${fmtN(m.hp)}</td><td>${fmtExp(m)}</td><td>${m.expUnknown?"?":m.ratio.toFixed(2)}</td>
+  $("mobTable").querySelector("tbody").innerHTML=rows.slice(0,400).map(m=>`<tr data-id="${m.id}" class="${m.id===sel?"sel":""}"><td class="name"><a href="#" data-info="mob:${m.id}" aria-label="${esc(m.name)} details">${mobIcon(m.id,1,"il")}</a><a href="#" data-info="mob:${m.id}">${esc(m.name)}</a>${BOSS_PILL(m)}${isSkipped(m)?' <span class="pill down">skipped</span>':""}</td><td>${m.lv}</td><td>${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"–"}</td><td>${m.size||"–"}</td><td class="name">${m.race||"–"}</td><td>${fmtN(m.hp)}</td><td>${fmtExp(m)}</td><td>${m.expUnknown?"?":m.ratio.toFixed(2)}</td>
     <td class="${m.mult>100?"good":m.mult<=0?"bad":""}">${m.mult<=0?"can't hurt":Math.round(m.mult)+"%"}${elTag(m.el2)}</td><td class="${m.hitc>=95?"good":m.hitc>=70?"warnc":"bad"}">${Math.round(m.hitc)}%</td><td>${isFinite(m.uses)?m.uses.toFixed(1):"–"}</td>
     <td class="${m.sec<=3?"good":m.sec<=8?"warnc":"bad"}">${isFinite(m.sec)?m.sec.toFixed(1)+"s":"–"}</td><td><b>${m.epm?fmtN(m.epm):"–"}</b></td>
     <td class="${m.dodge==null?"":m.dodge>=70?"good":m.dodge>=40?"warnc":"bad"}">${m.dodge==null?"–":m.dodge+"%"}</td><td>${m.hpm==null?"–":fmtN(m.hpm)}</td><td>${hasLoot(m)?fmtN(m.zk):"–"}</td><td>${hasLoot(m)&&isFinite(m.sec)?fmtN(m.zph):"–"}</td>
@@ -640,13 +646,14 @@ const infoMob=()=>MOBS.find(m=>m.id===state.infoMobId)||calcMob()||MOBS.find(m=>
 function renderMobInfo(){
   const m=infoMob();if(!m)return;
   if(document.activeElement!==$("mobInfoInput"))$("mobInfoInput").value=m.name;
-  const r=mobRow(m,walkSec());
+  const r=mobRow(m,walkSec()),me=charSet();
   $("mobInfoTiles").innerHTML=`<div class="tile now"><div class="k">${mobIcon(m.id,1,"il")}${esc(m.name)} · Lv ${m.lv}</div><div class="v mono">${fmtN(m.hp)} HP</div><div class="s">${m.el?`${m.el} ${m.elv}`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${m.mvp?" · MVP":""}${m.mini?" · mini boss":""}${m.boss?" · Boss class":""}${m.agg?" · aggressive":""}</div></div>
-   <div class="tile"><div class="k">EXP</div><div class="v mono">${fmtExp(m)}</div><div class="s">${m.expUnknown?"no EXP data for it yet":`job ${fmtN(m.job)} · you get ${fmtN(killExp(m))} / ${fmtN(killJobExp(m))} job a kill`}</div></div>
+   <div class="tile"><div class="k">EXP</div><div class="v mono">${fmtExp(m)}</div><div class="s">${m.expUnknown?"no EXP data for it yet":`job ${fmtN(m.job)}${me?` · you get ${fmtN(killExp(m))} / ${fmtN(killJobExp(m))} job a kill`:""}`}</div></div>
    <div class="tile"><div class="k">Stats</div><div class="v mono">DEF ${m.def??"–"} · MDEF ${m.mdef??"–"}</div><div class="s">ATK ${m.atkMin??"–"}–${m.atkMax??"–"} · VIT ${m.vit??"–"} · INT ${m.int??"–"}${m.hit100?` · 100% hit at ${m.hit100} HIT`:""}${m.flee95?` · 95% flee at ${m.flee95} FLEE`:""}</div></div>
-   <div class="tile"><div class="k">You vs it (${esc(state.job)})</div><div class="v mono">${isFinite(r.sec)?r.sec.toFixed(1)+"s / kill":"can't hurt"}</div><div class="s">your hit ${Math.round(r.mult)}%${elTag(r.el2)} · ${Math.round(r.hitc)}% land · you dodge ${r.dodge??"–"}%${r.hpm==null?"":` · HP lost ~${fmtN(r.hpm)}/min`}</div></div>
+   ${me?`<div class="tile"><div class="k">You vs it (${esc(state.job)})</div><div class="v mono">${isFinite(r.sec)?r.sec.toFixed(1)+"s / kill":"can't hurt"}</div><div class="s">your hit ${Math.round(r.mult)}%${elTag(r.el2)} · ${Math.round(r.hitc)}% land · you dodge ${r.dodge??"–"}%${r.hpm==null?"":` · HP lost ~${fmtN(r.hpm)}/min`}</div></div>
    <div class="tile"><div class="k">EXP / min</div><div class="v mono">${m.expUnknown?"?":r.epm?fmtN(r.epm):"–"}</div><div class="s">${m.expUnknown?"":`job ${r.jpm?fmtN(r.jpm):"–"} / min · `}fight + ${walkSec().toFixed(1)}s walking per kill</div></div>
-   <div class="tile"><div class="k">Zeny / kill</div><div class="v mono">${hasLoot(m)?fmtN(r.zk):"–"}</div><div class="s">${m.drops.length&&m.drops.every(([,ch])=>ch==null)?"no published drop rates yet · ":""}${penNote(m)||"no drop level penalty"}${num(state.dropBonus)?` · drop rate +${num(state.dropBonus)}%`:""}</div></div>`;
+   <div class="tile"><div class="k">Zeny / kill</div><div class="v mono">${hasLoot(m)?fmtN(r.zk):"–"}</div><div class="s">${m.drops.length&&m.drops.every(([,ch])=>ch==null)?"no published drop rates yet · ":""}${penNote(m)||"no drop level penalty"}${num(state.dropBonus)?` · drop rate +${num(state.dropBonus)}%`:""}</div></div>`
+   :`<div class="tile"><div class="k">You vs it</div><div class="v mono">–</div><div class="s">${NO_CHAR_TXT}. <a href="#" data-gotab="char">Open Character</a></div></div>`}`;
   const drops=(m.drops||[]).map(([id,ch])=>({id,ch,your:yourCh(m,ch),npc:NPCSELL[id]==null?null:npcPays(id),pl:state.prices[id]>0?state.prices[id]:null,z:looted(id)?dropZ(m,id,ch):0})).sort((a,b)=>b.ch-a.ch);
   $("mobInfoDrops").tBodies[0].innerHTML=tableRows("mobInfoDrops",drops).map(d=>`<tr class="${looted(d.id)?"":"muted"}"><td class="name">${itemIcon(d.id,1,"il")}<a href="#" data-info="item:${esc(d.id)}" title="click for details and its price">${esc(itemName(d.id))}</a> <span class="note">#${esc(d.id)}</span></td><td class="name">${GROUP_NAME[groupOf(d.id)]}${looted(d.id)?"":" (not looted)"}</td><td>${chTxt(d.ch)}</td><td>${chTxt(d.your)}</td><td>${d.npc==null?"–":fmtN(d.npc)}</td><td>${d.pl==null?"–":fmtN(d.pl)}</td><td>${looted(d.id)?dropZTxt(d.z):"0"}</td></tr>`).join("")
     ||`<tr><td colspan="7" class="name muted">${drops.length?"No drops match these filters.":"No known drops."}</td></tr>`;
@@ -681,7 +688,7 @@ function renderItems(){
     return {id,b:d?d[0]:null,npc:NPCSELL[id]==null?null:npcPays(id),pl:state.prices[id]>0?state.prices[id]:null,nz:d?bestNpcZ(id):null,sp:d?mostSpawns(id):null,cnt:d?d.length:0}}));
   $("itemCount").textContent=`${fmtN(hit.length)} item${hit.length===1?"":"s"}`;
   const sel=state.infoItem&&ITEM_DROPS[state.infoItem]?String(state.infoItem):null;
-  $("itemTable").tBodies[0].innerHTML=hit.slice(0,300).map(({id,b,npc,pl,nz,sp,cnt})=>`<tr data-item="${esc(id)}" class="${id===sel?"sel":""}"><td class="name">${itemIcon(id,1,"il")}${esc(itemName(id))} <span class="note">#${esc(id)}</span></td><td class="name">${ITEM_DROPS[id]?`${GROUP_NAME[groupOf(id)]}${looted(id)?"":' <span class="note">not looted</span>'}`:esc(clientCat(id)||"–")}</td><td>${npc==null?"–":fmtN(npc)}</td><td>${pl!=null?fmtN(pl):`<a href="#" data-pitem="${esc(id)}">set</a>`}</td><td class="name">${b?`${esc(b.m.name)} <span class="note">${chTxt(b.ch)}</span>`:'<span class="note">no monster</span>'}</td><td>${nz==null?"–":dropZTxt(nz)}</td><td class="name" title="${sp?esc(`${sp.m.name} on ${mapLabel(sp.mp)}`):""}">${sp?`≈${spN(sp.n)} <span class="note">${esc(sp.m.name)} · ${mapCode(sp.mp)}</span>`:cnt?'<span class="note">none open</span>':"–"}</td><td>${cnt||"–"}</td></tr>`).join("")
+  $("itemTable").tBodies[0].innerHTML=hit.slice(0,300).map(({id,b,npc,pl,nz,sp,cnt})=>`<tr data-item="${esc(id)}" class="${id===sel?"sel":""}"><td class="name"><a href="#" data-info="item:${esc(id)}" aria-label="${esc(itemName(id))} details">${itemIcon(id,1,"il")}</a><a href="#" data-info="item:${esc(id)}">${esc(itemName(id))}</a> <span class="note">#${esc(id)}</span></td><td class="name">${ITEM_DROPS[id]?`${GROUP_NAME[groupOf(id)]}${looted(id)?"":' <span class="note">not looted</span>'}`:esc(clientCat(id)||"–")}</td><td>${npc==null?"–":fmtN(npc)}</td><td>${pl!=null?fmtN(pl):`<a href="#" data-pitem="${esc(id)}">set</a>`}</td><td class="name">${b?`${esc(b.m.name)} <span class="note">${chTxt(b.ch)}</span>`:'<span class="note">no monster</span>'}</td><td>${nz==null?"–":dropZTxt(nz)}</td><td class="name" title="${sp?esc(`${sp.m.name} on ${mapLabel(sp.mp)}`):""}">${sp?`≈${spN(sp.n)} <span class="note">${esc(sp.m.name)} · ${mapCode(sp.mp)}</span>`:cnt?'<span class="note">none open</span>':"–"}</td><td>${cnt||"–"}</td></tr>`).join("")
     +(hit.length>300?`<tr><td colspan="8" class="name muted">${hit.length-300} more: narrow the search</td></tr>`:"")
     ||'<tr><td colspan="8" class="name muted">No items match.</td></tr>';
   $("itemDroppers").hidden=!sel;
