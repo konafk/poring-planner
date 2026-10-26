@@ -40,7 +40,7 @@ function renderJello(){const J=jello(),now=Date.now(),wd=new Date(now).getDay(),
   $("jelloCraft").innerHTML=cs?`Crafting <b>${esc(cs.stone[1])}</b>: ${c.due<=now?'<span class="pill up">ready</span>':`ready in ${durTxt(c.due-now)}`}
       <label class="bar">ready at <input type="datetime-local" data-jdue value="${dtLocal(c.due)}" title="Set it to the time the game shows, if you started earlier"></label>
       <button type="button" class="small primary" data-jcollect>Collect</button> <button type="button" class="small danger" data-jcancel title="Give the ${JELLO_PER_STONE} fragments back">Cancel</button>`
-    :`No stone crafting. One at a time, ${JELLO_CRAFT_DAYS} days each, at the Memory Craftsman's Workshop (prontera 48 227).`;
+    :`No stone crafting. One at a time, ${JELLO_CRAFT_DAYS} days each, at the Memory Craftsman's Workshop.`;
   const need=Object.values(jelloNeed()).reduce((a,b)=>a+b,0),miss=short.reduce((a,x)=>a+x.stones,0),fr=short.reduce((a,x)=>a+x.frags,0),rd=jelloReady(now);
   const nPieces=J.want.length,cry=EXPEDITION_CRYSTALS[2]*nPieces;
   $("jelloTiles").innerHTML=`<div class="tile"><div class="k">Jellostones short</div><div class="v mono">${nPieces?miss:"–"}</div><div class="s">${nPieces?`of ${need} for ${nPieces} piece${nPieces>1?"s":""}`:"tick the pieces you want below"}</div></div>
@@ -48,7 +48,7 @@ function renderJello(){const J=jello(),now=Date.now(),wd=new Date(now).getDay(),
     <div class="tile now"><div class="k">All stones by</div><div class="v mono">${rd==null?(nPieces?"now":"–"):rd===Infinity?"> 2 years":fmtD(rd)}</div><div class="s">${rd==null||rd===Infinity?"":`~${Math.ceil((rd-now)/DAY_MS)} days, a run a day from tomorrow`}</div></div>`;
   $("expRows").innerHTML=EXPEDITION.map(x=>`<tr${J.want.includes(x.id)?' class="sel"':""}><td><input type="checkbox" data-jwant="${x.id}"${J.want.includes(x.id)?" checked":""} aria-label="Want ${esc(x.name)}"></td>
     <td class="name">${memName([x.id,x.name])}</td><td class="name">${memName(x.from)}</td>
-    <td class="name">${Object.entries(x.stones).map(([id,k])=>`<div>${k} × ${memName(JELLO.find(j=>j.stone[0]===+id).stone)}</div>`).join("")}</td></tr>`).join("");
+    <td class="name"><div>${EXPEDITION_CRYSTALS[2]} × ${memName(EXPEDITION_CRYSTALS)}</div>${Object.entries(x.stones).map(([id,k])=>`<div>${k} × ${memName(JELLO.find(j=>j.stone[0]===+id).stone)}</div>`).join("")}</td></tr>`).join("");
   $("expCrystals").value=J.crystals||"";
   $("expCryNote").textContent=nPieces?`${fmtN(cry)} ${EXPEDITION_CRYSTALS[1]} for them (${EXPEDITION_CRYSTALS[2]} each)${cry>(J.crystals||0)?`: ${fmtN(cry-(J.crystals||0))} to go`:": you have them"}.`:"";
   renderEnchants()}
@@ -57,8 +57,10 @@ const memName=([id,name])=>id?`${itemIcon(id,1,"il")}${infoLink(infoKind(id),id,
 // an item in a reward list, with how many
 const memItem=([id,name,n])=>`${memName([id,name])}${n?` <span class="note">${esc(n)}</span>`:""}`;
 function renderMemorials(){
-  $("memRows").innerHTML=MEMORIALS.map(m=>`<tr><td class="name"><b>${esc(m.name)}</b></td><td>${m.lv}</td><td class="name">${esc(m.npc)}<div class="note mono">${esc(m.at)}</div></td>
-    <td class="name">${m.normal.map(x=>`<div>${memItem(x)}</div>`).join("")}</td><td class="name">${m.hard?m.hard.map(x=>`<div>${memItem(x)}</div>`).join(""):"–"}</td></tr>`).join("")}
+  $("memRows").innerHTML=MEMORIALS.map(m=>`<tr><td class="name"><b>${esc(m.name)}</b></td><td>${m.lv}</td><td class="name">${esc(m.npc)}<div>${naviTag(m.at)}</div></td>
+    <td class="name">${m.normal.map(x=>`<div>${memItem(x)}</div>`).join("")}</td><td class="name">${m.hard?m.hard.map(x=>`<div>${memItem(x)}</div>`).join(""):"–"}</td></tr>`).join("");
+  $("memNpcs").innerHTML=MEM_NPCS.map(([n,at,what])=>`<tr><td class="name"><b>${esc(n)}</b></td>
+    <td>${[].concat(at).map(a=>`<div>${naviTag(a)}</div>`).join("")}</td><td class="name">${esc(what)}</td></tr>`).join("")}
 function renderEnchants(){const g=$("enchGear").value||"subjugation",p=$("enchPool").value||"low",rows=MEM_ENCHANT[g][p];
   $("enchRows").innerHTML=rows.map(([l,v])=>`<tr><td class="name">${l==="spirit"?"A job spirit (below)":esc(l)}</td><td>${v}%</td></tr>`).join("");
   $("enchSpirits").innerHTML=p==="armor"?MEM_SPIRITS[g].map(s=>`<div>${esc(s)}</div>`).join(""):""}

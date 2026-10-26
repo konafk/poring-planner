@@ -607,29 +607,35 @@
     <div class="scroll mt"><table id="jelloTable"><thead><tr><th>Day</th><th>Fragment</th><th>You have</th><th>Jellostone</th><th>You have</th><th>Need</th><th>Short</th><th></th></tr></thead><tbody id="jelloRows"></tbody></table></div>
     <div class="bar note mt" id="jelloCraft"></div>
     <div class="tiles mt" id="jelloTiles"></div>
-    <div class="note hint">Poring Village (base Lv 30) gives one Jello Fragment a run: Monday's is Poring, Tuesday's Poporing, Wednesday's Drops, Thursday's Deviling and Friday's Angeling, and at the weekend a Jellopy Fragment Box (Ant Hell's reward has one too). 5 fragments make that fragment's Jellostone at the Memory Craftsman's Workshop (prontera 48 227) after a 3-day wait; the wait is one quest for all five, so one stone at a time. A stone you have spare turns into the one you need with a Zelstar (KP shop) at the Stone Transmuter (prt_in 118 28). Craft starts the wait here and takes the fragments; Collect adds the stone. The estimate counts a weekend box as a fifth of each fragment and no swaps. Saved per account.</div>
+    <div class="note hint">Poring Village (base Lv 30) gives one Jello Fragment a run: Monday's is Poring, Tuesday's Poporing, Wednesday's Drops, Thursday's Deviling and Friday's Angeling, and at the weekend a Jellopy Fragment Box (Ant Hell's reward has one too). 5 fragments make that fragment's Jellostone at the Memory Craftsman's Workshop after a 3-day wait; the wait is one quest for all five, so one stone at a time. A stone you have spare turns into the one you need with a Zelstar (KP shop) at the Stone Transmuter. Craft starts the wait here and takes the fragments; Collect adds the stone. The estimate counts a weekend box as a fifth of each fragment and no swaps. Saved per account.</div>
   </section>
 
   <section class="card" id="expCard" data-tab="mem">
     <div class="bar"><h2 class="grow">Expedition upgrades</h2><label class="bar note">Faintly Glowing Crystals you have <input class="w-md" id="expCrystals" type="number" min="0" step="1" placeholder="0"></label></div>
-    <div class="scroll"><table id="expTable"><thead><tr><th>Want</th><th>Expedition piece</th><th>Made from</th><th>Jellostones</th></tr></thead><tbody id="expRows"></tbody></table></div>
+    <div class="scroll"><table id="expTable"><thead><tr><th>Want</th><th>Expedition piece</th><th>Made from</th><th>Uses</th></tr></thead><tbody id="expRows"></tbody></table></div>
     <div class="note mt" id="expCryNote"></div>
-    <div class="note hint">The Upgrader (prt_in 118 34, Ant Hell memorial) makes each Expedition piece from a Subjugation Team piece, 50 Faintly Glowing Crystal and the Jellostones listed. Tick the ones you want and the Jellostones card counts what they still need. A set's bonus needs all four of its pieces: Manteau, Armor, Ring and Boots for ATK, Muffler, Robe, Magic Ring and Shoes for MATK.</div>
+    <div class="note hint">The Upgrader (Ant Hell memorial) makes each Expedition piece from its Subjugation Team piece and the crystals and Jellostones listed. Tick the ones you want and the Jellostones card counts what they still need. A set's bonus needs all four of its pieces: Manteau, Armor, Ring and Boots for ATK, Muffler, Robe, Magic Ring and Shoes for MATK.</div>
   </section>
 
   <section class="card" id="memCard" data-tab="mem">
     <div class="bar"><h2 class="grow">Memorial dungeons</h2></div>
     <div class="scroll"><table id="memTable"><thead><tr><th>Dungeon</th><th>Base Lv</th><th>Way in</th><th>Reward box</th><th>Hard mode box</th></tr></thead><tbody id="memRows"></tbody></table></div>
-    <div class="note hint">The Roadmap tab has when each comes. A party of 7 or more gets more from Orc's Memory, Prontera Culvert and Ant Hell. Mithril Ore turns into Mithril 10 to 1 at Thor's Flame (alberta_in 18 58, prt_in 64 68, morocc_in 74 35, payon 143 169, geffen_in 102 176, aldeba_in 33 50); the Suspicious Craftsman (morocc_in 76 167) makes the Oath rings and the earrings from 15 of their gem and 10 Mithril, in a week or at once for 10 more Mithril.</div>
+    <div class="note hint">The Roadmap tab has when each comes. A party of 7 or more gets more from Orc's Memory, Prontera Culvert and Ant Hell. Mithril Ore turns into Mithril 10 to 1 at Thor's Flame; the Suspicious Craftsman makes the Oath rings and the earrings from 15 of their gem and 10 Mithril, in a week or at once for 10 more Mithril.</div>
   </section>
 
   <section class="card" id="enchCard" data-tab="mem">
     <div class="bar"><h2 class="grow">Memorial gear enchants</h2>
-      <label>Gear<select id="enchGear"><option value="subjugation">Subjugation Team (prt_in 135 35)</option><option value="expedition">Expedition (prt_in 135 28)</option></select></label>
+      <label>Gear<select id="enchGear"><option value="subjugation">Subjugation Team</option><option value="expedition">Expedition</option></select></label>
       <label>Refine and part<select id="enchPool"><option value="low">+0 to +8, any part</option><option value="garment">+9 or more, garment</option><option value="shoes">+9 or more, shoes</option><option value="armor">+9 or more, armor</option></select></label></div>
     <div class="scroll"><table id="enchTable"><thead><tr><th>Enchant</th><th>Chance</th></tr></thead><tbody id="enchRows"></tbody></table></div>
     <div class="note mt" id="enchSpirits"></div>
     <div class="note hint">The armor, garment and shoes take one enchant in card slot 4: 100,000 zeny for one line at random, from the pool for the gear's refine and part. Reset it for 10,000,000 zeny (works 70% of the time) or a Zelstar (KP shop; always). Put the line you get in the item's random options on the Character tab and it counts.</div>
+  </section>
+
+  <section class="card" id="memNpcCard" data-tab="mem">
+    <div class="bar"><h2 class="grow">NPCs</h2></div>
+    <div class="scroll"><table id="memNpcTable"><thead><tr><th>NPC</th><th>Where</th><th>What for</th></tr></thead><tbody id="memNpcs"></tbody></table></div>
+    <div class="note hint">Everyone the memorials, Jellostones, upgrades, crafts and enchants above need. Type a Where line in the game's chat and the Navigation shows you the way; Thor's Flame is in six towns.</div>
   </section>
 
   <section class="card" id="starCard" data-tab="star">

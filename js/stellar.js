@@ -19,8 +19,6 @@ function starBest(s,w=walkSec()){let best=null;
   starMobs(s).forEach(o=>{if(!(o.per>0)||!starFarm(o))return;const r=mobRow(o.m,w);if(!r||!isFinite(r.tot)||!(r.tot>0))return;
     const ph=o.per*3600/r.tot;if(!best||ph>best.ph)best={...o,ph,kph:3600/r.tot}});
   return best}
-// a place ("prontera 272 264") as the game's Navigation command: /navi prontera 272/264
-const starNavi=at=>{const [mp,x,y]=at.split(" ");return y?`/navi ${mp} ${x}/${y}`:`/navi ${mp}`};
 const starLeft=s=>Math.max(0,STAR_CERTS-(state.stellar.have[s.id]||0));
 const starDur=h=>h>0?fmtDur(h).split("\n")[0]:"done";
 const starMob=o=>`${o.m?mobIcon(o.id,1,"il")+infoLink("mob",o.id,o.name):esc(o.name)}`;
@@ -43,7 +41,7 @@ function renderStar(){const S=state.stellar,w=walkSec();
   $("starRefine").value=S.refine||"";
   $("starRoutes").innerHTML=STAR_ROUTES.map(r=>`<tr><td class="name">${esc(r.name)}${r.tw?' <span class="pill">Taiwan</span>':""}</td><td>−${r.refine}</td>
     <td class="name">${r.cert[0]} ${esc(r.cert[1])}</td><td>${r.frag}</td><td class="mono">${S.refine?`+${S.refine} → +${Math.max(0,S.refine-r.refine)}`:"–"}</td></tr>`).join("");
-  $("starNpcs").innerHTML=STAR_NPCS.map(([n,at,what])=>`<tr><td class="name"><b>${esc(n)}</b></td><td class="mono"><span class="navi" title="Type it in the game's chat: the Navigation shows you the way">${esc(starNavi(at))}</span></td><td class="name">${esc(what)}</td></tr>`).join("")}
+  $("starNpcs").innerHTML=STAR_NPCS.map(([n,at,what])=>`<tr><td class="name"><b>${esc(n)}</b></td><td>${naviTag(at)}</td><td class="name">${esc(what)}</td></tr>`).join("")}
 $("starCard").addEventListener("input",e=>{const t=e.target.dataset.starhave;if(t==null)return;
   const v=Math.max(0,Math.round(num(e.target.value)));if(v)state.stellar.have[t]=v;else delete state.stellar.have[t];save()});
 $("starCard").addEventListener("change",e=>{if(e.target.dataset.starhave!=null)renderStar()});
