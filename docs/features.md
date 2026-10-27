@@ -206,6 +206,18 @@ Every piece of gear and every card the build simulator knows. Gear shows its inv
 
 ## Recipes
 
+### Brewing simulator
+
+Prepare Potion's chance for every potion, from your character's Job Lv, INT, DEX and LUK and its Prepare Potion and Potion Research levels (an Alchemist's skill tree; 10 for other jobs). Type over any of them, or a Vanilmirth's Change Instruction level; **Use my character** empties the boxes again. The server adds a random amount to the chance on every try (Red, Yellow and White Potions +20% and 0.1–10%, Alcohol +10% and 0.1–10%, the four bottles 0.1–10%, Yellow Slim Potion −0.1 to −5%, White Slim Potion and Glistening Coat −0.1 to −10%), so **Success** is the average with the worst and best. Each row says which guide the potion needs, how many tries a potion takes, what a try uses up (the materials and a Medicine Bowl, success or not) and what a potion costs you, at your Market prices else what an NPC pays. **Brew** rolls that many tries and says how many worked, against the average, and what they came to.
+
+### Cooking simulator
+
+Every dish's chance with each of Global's three cooking kits (Outdoor, Home, Professional), from your Base Lv, DEX and LUK, the dish's level and how many ingredients it has. Pick the kit you cook with for the cost columns and **Cook**. **Cook mastery** is a hidden number that starts at 0 and rises with each dish you make (falls with each you burn), up to 1999; it makes the random part of the chance higher and steadier. Cook rolls the tries with mastery changing as it goes, and says where it ends up.
+
+Both use rAthena's formulas (roz.prontera.info's Crafting Calculator has the same brewing one); neither has been measured on Zero Global. Saved per account.
+
+### Recipe list
+
 Every crafting recipe: 343 of them under **Forging** (weapons, with the weapon's level, and ores refined into Iron, Steel and elemental stones), **Brewing** (potions), **Arrows** (Arrow Crafting: one item makes a stack, such as 700 Arrows from a Wooden Mail), **Cooking**, **Misc** (Holy Water, elemental converters, Poison Bottle), and the two that NPCs make for a zeny fee: **Mixture & Counteragent** (Morgenstein in Geffen, once Merchant Louitz in Alberta and Aure Dupon in Geffen have sent you to him) and **Dye Making** (the eight Dyestuffs, JavaDullihan in Morroc). **Memorial** has the five Jellostones (5 of their Jello Fragment at the Memory Craftsman's Workshop, then a 3-day wait), the eight Expedition upgrades (the Upgrader: a Subjugation Team piece, 50 Faintly Glowing Crystal and Jellostones), Mithril (10 Mithril Ore at Thor's Flame) and the Oath rings and earrings (15 of their gem and 10 Mithril at the Suspicious Craftsman), from the [Memorial dungeons](#memorial-dungeons) tab's data. The NPC and where they stand show under the category. The category buttons show how many recipes each has for your search. **Search** matches the item made, its number, the materials and the NPC, so typing a drop (`jellopy`) finds everything it turns into. Each row lists the materials with their icons and amounts, and **Materials worth**: each material at your Market price, else what an NPC pays, `+?` when one has neither, plus an NPC's fee, and per arrow or item when a craft makes more than one. Click a header to sort, and any item to open its details, which show who drops it and every recipe that makes or uses it.
 
 ## Market
