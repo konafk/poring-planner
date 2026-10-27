@@ -60,6 +60,10 @@ const cardPart=c=>{const s=(c.slot||[])[0]||"";return s.startsWith("head")?"head
 // it [[id, name, level, "mvp" | "mini" | "normal", drop %]] best rate first, q the quests that give it
 const itemInfo=id=>typeof ITEM_INFO!=="undefined"&&ITEM_INFO[id]||{};
 const itemText=id=>itemInfo(id).t||"";
+// cards the Global client has no item for yet (data/itemtext.js, tools/export_itemtext.py): regions not out, marked "not in game yet"
+const NOT_IN_GAME=new Set(typeof CARDS_NOT_IN_CLIENT!=="undefined"?CARDS_NOT_IN_CLIENT:[]);
+const notInGame=id=>NOT_IN_GAME.has(+id);
+const notInGamePill=id=>notInGame(id)?` <span class="pill" title="The game client doesn't have this card yet">not in game yet</span>`:"";
 const FROM_TAG={mvp:"MVP",mini:"mini boss"};
 const fromTxt=id=>[...(itemInfo(id).d||[]).map(([,n,lv,k,ch])=>`${n} Lv ${lv}${FROM_TAG[k]?` (${FROM_TAG[k]})`:""}${ch!=null?` ${ch}%`:""}`),
   ...(itemInfo(id).q||[]).map(q=>`Quest: ${q}`)].join(", ");
@@ -143,7 +147,7 @@ function renderCardDb(){const c=C(),f=cardDbF(),all=typeof CARDS!=="undefined"?C
   ROOTQ("[data-cdf]").forEach(x=>{if(document.activeElement!==x)x.value=f[x.dataset.cdf]??""});
   const rows=tableRows("cardTable",all.filter(x=>cardDbOk(x,f)).map(x=>({c:x,fx:fxOf(x)})));
   $("cardDbCount").textContent=`${rows.length} of ${all.length} cards`;
-  $("cardTable").tBodies[0].innerHTML=rows.map(({c:x,fx})=>`<tr data-cdrow="${x.id}"><td class="name"><div class="dbName"><a href="#" data-info="item:${x.id}" aria-label="${esc(x.name)} details">${iconHtml("card",x.id)}</a><div>${eqBtn("card",x.id,!!cardPart(x),"Not a card that goes in gear")} <a href="#" data-info="item:${x.id}">${esc(x.name)}</a> <span class="note">#${x.id}</span>${wornPills(c,x.id,true)}</div></div></td>
+  $("cardTable").tBodies[0].innerHTML=rows.map(({c:x,fx})=>`<tr data-cdrow="${x.id}"><td class="name"><div class="dbName"><a href="#" data-info="item:${x.id}" aria-label="${esc(x.name)} details">${iconHtml("card",x.id)}</a><div>${eqBtn("card",x.id,!!cardPart(x),"Not a card that goes in gear")} <a href="#" data-info="item:${x.id}">${esc(x.name)}</a> <span class="note">#${x.id}</span>${notInGamePill(x.id)}${wornPills(c,x.id,true)}</div></div></td>
       <td class="name l">${CARD_PART[cardPart(x)]||"–"}</td><td class="name l">${esc(cardName(x))||"–"}</td>
       <td class="name l from">${fromHtml(x.id)}</td><td class="name fx">${itemText(x.id)?esc(itemText(x.id)):fx.map(esc).join("<br>")||'<span class="muted">–</span>'}</td></tr>`).join("")
     ||'<tr><td colspan="5" class="name muted">No cards match these filters.</td></tr>'}

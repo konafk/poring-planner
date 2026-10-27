@@ -95,8 +95,10 @@ const targets=()=>Math.max(1,num(C().a.targets,1));
 // magic: true for magic damage (spells, Spell Fist, Shadow Spell auto-casts). Each race / size / element / name bonus is
 // physical-only, magic-only or both (race / size / element default to both, as before the setting existed)
 // In build mode gear adds per-race / size / element / boss-normal maps (build.js); the manual boxes add into the same category
-// monster groups ("against Boulder Dwarves +30%"): each group counts once against monsters whose name contains it
-const groupMul=(B,m)=>Object.entries(B.group||{}).reduce((k,[g,v])=>String(m.name||"").toLowerCase().includes(g.toLowerCase())?k*(1+v/100):k,1);
+// monster groups ("against Boulder Dwarves +30%", Crab Card's "Aster +30%"): each group counts once against monsters whose name has
+// it as whole words (Aster, not Mastering)
+const nameWords=s=>` ${String(s||"").toLowerCase().replace(/[^a-z0-9]+/g," ")} `;
+const groupMul=(B,m)=>Object.entries(B.group||{}).reduce((k,[g,v])=>nameWords(m.name).includes(nameWords(g))?k*(1+v/100):k,1);
 // damage bonuses in two groups. post: race, size, monster element, boss / normal, monster name, "all" and your attack element %, which on a
 // physical hit only scale weapon + equipment ATK (each its own multiplier); full: the extra damage %, consumables' ranged / magic %
 // and skill passives' damage % (Power Thrust, Advanced Katar Mastery), on the whole hit. Spells take both on the whole hit

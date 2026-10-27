@@ -69,7 +69,7 @@ function popGear(id){const it=BUILD.item(id),fx=fxOf(it),c=C(),txt=itemText(id),
     acts:`<button type="button" class="primary" data-infoact="equip"${ok?"":` disabled title="${esc(eqPlaces(it,state.job).length?`A ${state.job} can't wear it`:"Not something you wear")}"`}>Equip</button><button type="button" data-infoact="equiptab">Equipment tab</button>${recipeAct(id)}`}}
 
 function popCard(id){const x=BUILD.item(id),fx=fxOf(x),c=C(),txt=itemText(id),worn=wornIn(c,x.id,true);
-  return {ico:iconHtml("card",id),title:x.name,sub:`${CARD_PART[cardPart(x)]||"–"} card · #${id}${cardName(x)?` · names gear "${esc(cardName(x))}"`:""}${worn.map(w=>` <span class="pill up">${w}</span>`).join("")}`,
+  return {ico:iconHtml("card",id),title:x.name,sub:`${CARD_PART[cardPart(x)]||"–"} card · #${id}${cardName(x)?` · names gear "${esc(cardName(x))}"`:""}${notInGamePill(id)}${worn.map(w=>` <span class="pill up">${w}</span>`).join("")}`,
     body:`${infoSec("Effects",fx.length?`<div class="infoList">${fx.map(l=>`<div>${esc(l)}</div>`).join("")}</div>`:"")}${infoSec("In-game text",txt&&`<div class="infoText">${esc(txt)}</div>`)}
       ${infoSec("Where to get",`<div class="infoFrom">${fromHtml(id)}</div>`)}${ITEM_DROPS[id]?infoPrice(id):""}`,
     acts:`<button type="button" class="primary" data-infoact="equip"${cardPart(x)?"":' disabled title="Not a card that goes in gear"'}>Equip</button><button type="button" data-infoact="cardtab">Cards tab</button>`}}

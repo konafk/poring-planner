@@ -63,6 +63,24 @@ def mob_name(m):
     return f"{CHAMPION[c.group(1)]} {c.group(2).replace('_', ' ').title()}" if c else n
 
 
+# descriptions roz.prontera.info has short or missing, as the Global client's System/iteminfo_enUS.lub gives them (lines joined
+# with spaces, like prontera's); used in place of prontera's text
+DESC = {27273: "While using a blunt weapon, increases CRIT by 1 per weapon refine, and at +10 increases Critical Damage by 10%. While using "
+               "a knuckle, reduces After Attack Delay by 1% per refine, and at +10 increases ASPD by 2. When equipped together with High "
+               "Orc Card, grants ASPD +2 and ATK +25.",  # Orc General Card
+        4240: "DEF +2 and MDEF +3 when refine level is 5 or lower.",  # Arclouse Card
+        4288: "INT +2. If refine level ≥ 9, MSP +150.",  # Carat Card
+        4200: "MDEF +7 when refine level is 5 or lower.",  # Megalith Card
+        4226: "DEF +2. When refine level is 9 or higher, MDEF +5.",  # Sting Card
+        27275: "Triggers Meteor Storm Lv.1 as an auto spell at a certain probability when performing physical attacks. When hit by "
+               "close-range physical attacks, has a 10% chance to inflict Stun. When Meteor Storm hits an enemy, inflicts Blind, "
+               "Confusion, or Silence depending on weapon refine level."}  # Bloody Knight Card
+
+
+def desc_fix(i, t):
+    return DESC.get(i, t)
+
+
 def page(slug):
     d = export_prontera.nuxt(export_prontera.fetch(f"/items/{slug}"))
     return d[next(k for k in d if k.startswith("item-") and k.endswith("-en"))]
@@ -73,7 +91,7 @@ def main():
     kinds, out = monsters(refresh), {}
     for x in rows("equipment.js", "EQUIP") + rows("cards.js", "CARDS"):
         p, o = page(x["slug"]), {}
-        t = re.sub(r"\s+", " ", p["item"].get("description") or "").strip()
+        t = desc_fix(x["id"], re.sub(r"\s+", " ", p["item"].get("description") or "").strip())
         if t:
             o["t"] = t
         drops = (item(x["id"], refresh) or {}).get("dropped_by") or []

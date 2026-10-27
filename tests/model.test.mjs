@@ -1091,6 +1091,21 @@ t("gear from the client check: Guild options are GvG-only, race CRIT and damage 
   assert.ok(g(2254).includes('["damage_taken_percent","race","demon",-3]'));   // Angel Wing
   assert.ok(g(4312).includes('"cls":["acolyte"]'));    // Fur Seal Card: Acolyte Class vs Demon/Undead
   assert.equal(g(27270), JSON.stringify([{ b: [["mdef", null, null, 10, 1]] }]));   // Extra Joker Card: MDEF +10 per shield refine, ATK / MATK +70 only in the set's transform
+  assert.ok(!g(27273).includes('"atk"'));   // Orc General Card: ATK +25 only with High Orc Card (the set)
+  assert.ok(run(`ITEM_INFO[27273].t`).includes("While using a knuckle"));
+  assert.ok(!g(4199).includes('"agi"'));   // Merman Card: AGI / DEX +5 / +3 are the five-card set's
+  assert.ok(g(4159).includes('{"r":9,"b":[["flee",null,null,20]]}'));   // Nine Tail Card: FLEE +20 at refine 9+
+  assert.ok(g(4288).includes('["int",null,null,2]'));   // Carat Card: INT +2
+  assert.ok(g(300551).includes('{"r":9,"b":[["hp",null,null,300]'));   // A-Ji & Geffen Card: MHP +300 on a +9 garment
+  assert.ok(g(4153).includes('["physical_damage_percent","monster_group","aster",30]'));   // Crab Card vs Aster
+  assert.ok(run(`SETS.some(s=>s.slug==="crab-shell-fish-aster-card"&&s.pieces.length===3)`));
+  assert.ok(run(`ITEM_INFO[4288].t`).startsWith("INT +2."));   // Carat Card's text, from the client
+  // a monster group counts against whole words of the name: Aster, not Mastering
+  assert.equal(run(`groupMul({group:{Aster:30}},{name:"Mastering"})`), 1);
+  assert.equal(run(`groupMul({group:{Aster:30}},{name:"Aster"})`), 1.3);
+  assert.equal(run(`groupMul({group:{"Boulder Dwarf":30}},{name:"Boulder Dwarf Captain"})`), 1.3);
+  // cards the client doesn't have yet are marked
+  assert.ok(run(`notInGame(4246)&&!notInGame(4247)`));   // Assaulter Card isn't out yet, Aster Card is
 });
 
 t("Spell Fist: each basic attack also lands its physical hit", () => {
