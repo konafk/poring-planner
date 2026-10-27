@@ -2638,4 +2638,54 @@ t("Stellar weapons: each ★ weapon's certificates come from its own weapon, and
   near(b.ph, b.per * b.kph);
 });
 
+t("Brewing simulator: rAthena's Prepare Potion rate and each potion's random term", () => {
+  const v = "({jobLv:50,int:60,dex:60,luk:40,pp:10,pr:10,hom:0})";
+  assert.equal(run(`brewBase(${v})`), 5800);                                        // the numbers roz.prontera.info's calculator starts with
+  const ch = id => JSON.parse(run(`JSON.stringify(brewChance(${v},${id}))`));
+  near(ch(501).lo, 0.781); near(ch(501).hi, 0.88); near(ch(501).avg, 0.8305);      // +20% and 0.1–10%: its 78.10 / 83.05 / 88.00%
+  near(ch(970).avg, 0.7305); near(ch(7136).avg, 0.6305);                            // Alcohol +10%, Acid Bottle none
+  assert.deepEqual(ch(505), { lo: 0.58, hi: 0.58, avg: 0.58 });                     // Blue Potion: no random term
+  near(ch(546).lo, 0.53); near(ch(546).avg, 0.5545); near(ch(547).avg, 0.5295); near(ch(7139).avg, 0.5295);
+  assert.equal(run(`brewChance({jobLv:70,int:999,dex:999,luk:999,pp:10,pr:10,hom:5},501).avg`), 1);   // never over 100%
+  assert.equal(run(`brewChance({jobLv:1,int:1,dex:1,luk:1,pp:0,pr:0,hom:0},547).lo`), 0.0001);       // nor under 0.01%
+  assert.ok(run(`BREW_RECIPES.every(r=>BREW_MANUAL[r.id])`));                       // every potion has its guide
+  // a run of tries lands near the average
+  const r = JSON.parse(run(`(()=>{let s=1;const rnd=()=>(s=(s*16807)%2147483647)/2147483647;return JSON.stringify(brewRoll(${v},501,20000,rnd))})()`));
+  assert.equal(r.ok + r.fail, 20000);
+  assert.ok(Math.abs(r.ok / 20000 - 0.8305) < 0.02, JSON.stringify(r));
+});
+
+t("Cooking simulator: dish levels, kits, cook mastery", () => {
+  assert.deepEqual(JSON.parse(run(`JSON.stringify([12041,12045,12046,12068,12070].map(dishLv))`)), [1, 5, 1, 3, 5]);
+  assert.equal(run(`dishFx(12068)`), "LUK +3");
+  assert.ok(run(`COOK_RECIPES.every(r=>dishFx(r.id)===dishFx(r.id).slice(0,3)+" +"+dishLv(r.id))`));   // the text's +N is the dish's level
+  // Fried Grasshopper Legs (Lv 1, 3 ingredients), Outdoor kit, Base Lv 50, DEX 50, LUK 30, mastery 0:
+  // 1200 + 1020 + 1020 − 400 − 710 − 1000 = 1130, plus 600–2900 and minus 100–400
+  const v = "({baseLv:50,dex:50,luk:30,mastery:0,kit:11})", r = "RECIPES.find(x=>x.id===12041)";
+  const c = JSON.parse(run(`JSON.stringify(cookChance(${v},${r}))`));
+  near(c.lo, 0.133); near(c.hi, 0.393); near(c.avg, (1130 + 1750 - 250) / 10000);
+  near(run(`cookChance(${v},${r},13).avg`), (1130 + 2400 + 1750 - 250) / 10000);   // Professional: two kit levels more
+  assert.equal(run(`cookChance(${v},${r},15).avg`), 1);                            // rAthena's Fantastic kit always works
+  near(run(`cookChance({...${v},mastery:1999},${r}).avg`), (1130 + 3950 - 250) / 10000);   // 30–49% at full mastery
+  assert.equal(run(`cookMastery(0,${r},true)`), 5);
+  assert.equal(run(`cookMastery(0,${r},false)`), 0);                               // never under 0
+  assert.equal(run(`cookMastery(100,RECIPES.find(x=>x.id===12045),true)`), 120);   // Lv 5: 20 a dish
+  assert.equal(run(`cookMastery(100,RECIPES.find(x=>x.id===12045),false)`), 90);   // and 4 + 2×3 off
+  assert.equal(run(`cookMastery(1995,${r},true)`), 1999);
+  const roll = JSON.parse(run(`(()=>{let s=7;const rnd=()=>(s=(s*16807)%2147483647)/2147483647;return JSON.stringify(cookRoll(${v},${r},500,rnd))})()`));
+  assert.equal(roll.ok + roll.fail, 500);
+  assert.ok(roll.ok > 0 && roll.mastery > 0 && roll.mastery <= 1999, JSON.stringify(roll));   // mastery climbs as dishes work
+});
+
+t("Brewing and Cooking simulators: typed numbers over the character's, saved per account", () => {
+  setup("Alchemist", { jobLv: 40, baseLv: 60, st: { dex: "50+5", luk: "20" }, intTxt: "30", skills: { "potion-research": 5, "prepare-potion": 7 } });
+  assert.equal(run(`JSON.stringify(brewVals())`), JSON.stringify({ jobLv: 40, int: 30, dex: 55, luk: 20, pp: 7, pr: 5, hom: 0 }));
+  run(`state.craftSim.brew={dex:90,hom:3}`);
+  assert.equal(run(`brewVals().dex`), 90); assert.equal(run(`brewVals().hom`), 3); assert.equal(run(`brewVals().luk`), 20);
+  assert.equal(run(`JSON.stringify(cookVals())`), JSON.stringify({ baseLv: 60, dex: 55, luk: 20, mastery: 0, kit: 11 }));
+  // a save's simulator settings are cleaned up when it loads
+  const run2 = load({ craftSim: { brew: { dex: "70", pp: 40, junk: 1 }, cook: { kit: 20, mastery: -5, luk: "x" } } });
+  assert.deepEqual(JSON.parse(run2(`JSON.stringify(state.craftSim)`)), { brew: { dex: 70, pp: 10 }, cook: { mastery: 0, kit: 13 } });
+});
+
 console.log(`${n} tests passed`);

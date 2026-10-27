@@ -127,6 +127,11 @@ state.recovery={discount:!(state.recovery&&state.recovery.discount===false),all:
 // the Stellar tab (stellar.js): certificates you have by ★ weapon id (whole counts above 0) and your weapon's refine (0 to 20)
 {const t=objOr(state.stellar),r=Math.round(+t.refine);
   state.stellar={have:Object.fromEntries(Object.entries(numMap(t.have)).filter(([k,v])=>/^\d+$/.test(k)&&v>=1).map(([k,v])=>[k,Math.round(v)])),refine:Number.isFinite(r)?Math.min(20,Math.max(0,r)):0}}
+// the Recipes tab's Brewing and Cooking simulators (craftsim.js): the numbers you typed over your character's (whole numbers in range),
+// the recipe picked to roll (id) and how many tries (n); cooking's kit is the level it cooks at (11 to 13)
+{const t=objOr(state.craftSim),keep=(o,keys)=>Object.fromEntries(Object.entries(numMap(o)).filter(([k])=>keys[k]).map(([k,v])=>[k,Math.min(keys[k][1],Math.max(keys[k][0],Math.round(v)))]));
+  state.craftSim={brew:keep(t.brew,{jobLv:[1,70],int:[1,999],dex:[1,999],luk:[1,999],pp:[0,10],pr:[0,10],hom:[0,5],id:[0,1e6],n:[1,10000]}),
+    cook:keep(t.cook,{baseLv:[1,99],dex:[1,999],luk:[1,999],mastery:[0,1999],kit:[11,13],id:[0,1e6],n:[1,10000]})}}
 delete state.flyPrice;
 // per account: how the character looks in the equipment window (Build from gear): gender m/f, hair style number, hair colour number
 // (0 the default), clothes dye number (0 undyed) and whether a 2nd job wears its transcendent look

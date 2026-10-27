@@ -823,3 +823,4 @@ details.more>.form{display:grid}
 /* the details popup: recipes that make or use an item */
 .infoList .recipe{display:flex;flex-wrap:wrap;gap:0 10px;align-items:baseline}
 .infoList .recipe .mat{white-space:nowrap}
+#cookTable :is(th,td).sel{background:var(--accent-soft)}

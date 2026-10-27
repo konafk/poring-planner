@@ -22,6 +22,7 @@ The numbers are estimates. Skill values and formulas follow the sources below an
 - Map names: the official client (`System/mapInfo_enUS.lub`)
 - Spawn, drop and item name cross-check, in-game map codes: [ragnarokzero.net](https://ragnarokzero.net/database/maps)
 - Monster race and HP cross-check: [einh-guild.de](https://einh-guild.de)
+- Brewing and cooking chances (Recipes tab): rAthena's pre-renewal `skill_produce_mix` and `produce_db.txt` (each potion's guide, each dish's level), the brewing one as [roz.prontera.info's Crafting Calculator](https://roz.prontera.info/crafting) has it. Not measured on Zero Global
 - Formulas: [roz.prontera.info/mechanics](https://roz.prontera.info/mechanics), [iRO Wiki](https://irowiki.org/wiki/Stats)
 - Skill damage %, cast times, cooldowns and after-cast delays: the in-game skill table from [roz.prontera.info](https://roz.prontera.info) (`data/skills.js`)
 - Skill stat add-ons and base-level scaling: Zero skill data with the Zero Global ratios, checked against the in-game skill text
