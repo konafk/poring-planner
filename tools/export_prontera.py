@@ -27,6 +27,9 @@ POINTS_FIX = {"Novice": 9}
 # Create Deadly Poison is an Assassin skill learned with points (it needs Envenom, Detoxify and Enchant Poison)
 QUEST_FIX = {"create-deadly-poison": False, "venom-knife": True, "sonic-acceleration": True, "dubious-salesmanship": True, "spiritual-bestowment": True,
              "excruciating-palm": True, "bioethics": True}
+# prerequisites roz.prontera.info has differently from the official client (skillinfoz/skillinfolist.lub): (tree, slug) -> [[skill slug, level]].
+# A Rogue's Vulture's Eye needs nothing (prontera points at the Archer's Owl's Eye); Cart Boost also needs Cart Revolution and Change Cart
+PRE_FIX = {("Rogue", "vultures-eye"): [], ("Merchant", "cart-boost"): [["pushcart", 5], ["cart-revolution", 1], ["change-cart", 1]]}
 # skills the game gives at the job change that roz.prontera.info doesn't mark as given (is_default): since 2024-12-04 the 2nd-job quest skills
 # come with the job change, all but the Elemental Changes, which still take a quest (criatura-academy.com/skills/1014-redemptio/ and the others' pages)
 GIVEN_FIX = {"charge-attack", "shrink", "sight-blaster", "create-elemental-converter", "phantasmic-arrow", "pang-voice", "charming-wink", "redemptio",
@@ -342,7 +345,7 @@ def main():
                 lv, f = global_pct(sk["slug"], lv, sk.get("damage_formula_expression"))
                 desc, lv = client_text(sk["slug"], (sk.get("description") or "").strip(), lv)
                 row = {"slug": sk["slug"], "name": sk["name"], "desc": desc, "max": sk["max_level"], "slot": sk["tree_slot"], "passive": sk["passive"] == "passive",
-                       "el": sk.get("element"), "pre": [[slug_of.get(p["skill_id"], p["skill_id"]), p["level"]] for p in sk.get("prerequisites") or []],
+                       "el": sk.get("element"), "pre": PRE_FIX.get((t["job_class"]["name"], sk["slug"]), [[slug_of.get(p["skill_id"], p["skill_id"]), p["level"]] for p in sk.get("prerequisites") or []]),
                        "f": f, "lv": lv, "g": groups(sk.get("bonus_groups")), "free": True if QUEST_FIX.get(sk["slug"], sk.get("free")) else None,
                        "def": True if sk.get("is_default") or sk["slug"] in GIVEN_FIX else None,
                        "icon": (sk.get("image") or "").rsplit("/", 1)[-1] or None}
