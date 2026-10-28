@@ -17,7 +17,7 @@ const TAB_DESC={
   cards:"Every card and what it does: filter by the gear it goes in, and slot it into your gear or another gear set.",
   brew:"Prepare Potion's chance for every potion with your stats, what a potion costs counting the failures, and a run of tries rolled the server's way.",
   cook:"Every dish's chance with each cooking kit for your stats, cook mastery, and a run of tries rolled the server's way.",
-  recipes:"What every forge, brew, arrow, cooking, Alchemy Lab and memorial recipe uses up.",
+  recipes:"What every forge, brew, arrow, cooking, NPC and memorial recipe uses up.",
   market:"The prices players pay, and a timer that tells you when to go sell.",
   ref:"EXP tables, party share, the element and size tables, and every formula with your numbers in it.",
   acct:"Back up every account, restore one, or share it as a link. Everything is saved in this browser only.",
