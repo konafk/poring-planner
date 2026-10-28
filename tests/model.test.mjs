@@ -2458,10 +2458,11 @@ t("Skill tree: the job change gives the quest skills but the Elemental Changes, 
     ["elemental-change-water", "elemental-change-wind", "elemental-change-ground", "elemental-change-fire"]);
   for (const [job, slug] of [["Wizard", "energy-coat"], ["Knight", "charge-attack"], ["Sage", "create-elemental-converter"], ["Rogue", "close-confine"]])
     assert.equal(run(`skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].def`), true, slug);
-  // the client's quest skills: Create Deadly Poison isn't one (it costs points), Venom Knife and Sonic Acceleration are
+  // the client's quest skills: Create Deadly Poison isn't one (it costs points), Venom Knife is; Sonic Acceleration isn't in its Assassin tree
   assert.equal(run(`skOf("Assassin")["create-deadly-poison"].free`), undefined);
-  assert.equal(run(`treeUsed(treesOf("Assassin").at(-1),{"create-deadly-poison":1,"venom-knife":1,"sonic-acceleration":1})`), 1);
-  for (const [job, slug] of [["Assassin", "venom-knife"], ["Assassin", "sonic-acceleration"], ["Blacksmith", "dubious-salesmanship"], ["Monk", "spiritual-bestowment"],
+  assert.equal(run(`treeUsed(treesOf("Assassin").at(-1),{"create-deadly-poison":1,"venom-knife":1})`), 1);
+  assert.equal(run(`skOf("Assassin")["sonic-acceleration"]`), undefined);
+  for (const [job, slug] of [["Assassin", "venom-knife"], ["Blacksmith", "dubious-salesmanship"], ["Monk", "spiritual-bestowment"],
     ["Monk", "excruciating-palm"], ["Alchemist", "bioethics"]])
     assert.equal(run(`skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].free&&skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].def`), true, slug);
   // Basic Skill comes from the Novice days: no Novice tree past Novice

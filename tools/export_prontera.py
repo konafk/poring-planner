@@ -25,15 +25,18 @@ GLOBAL_PCT = {"sonic-blow": (1200, -100)}
 POINTS_FIX = {"Novice": 9}
 # quest skills (no skill points) roz.prontera.info has wrong, from the official client (skillinfoz/skillinfolist.lub, Type = "Quest"): slug -> quest or not.
 # Create Deadly Poison is an Assassin skill learned with points (it needs Envenom, Detoxify and Enchant Poison)
-QUEST_FIX = {"create-deadly-poison": False, "venom-knife": True, "sonic-acceleration": True, "dubious-salesmanship": True, "spiritual-bestowment": True,
+QUEST_FIX = {"create-deadly-poison": False, "venom-knife": True, "dubious-salesmanship": True, "spiritual-bestowment": True,
              "excruciating-palm": True, "bioethics": True}
 # prerequisites roz.prontera.info has differently from the official client (skillinfoz/skillinfolist.lub): (tree, slug) -> [[skill slug, level]].
 # A Rogue's Vulture's Eye needs nothing (prontera points at the Archer's Owl's Eye); Cart Boost also needs Cart Revolution and Change Cart
 PRE_FIX = {("Rogue", "vultures-eye"): [], ("Merchant", "cart-boost"): [["pushcart", 5], ["cart-revolution", 1], ["change-cart", 1]]}
+# skills roz.prontera.info has that the official client's skill tree (skillinfoz/skilltreeview.lub) doesn't: (tree, slug), left out.
+# Sonic Acceleration is kRO Zero's; the client has no place for it in the Assassin tree
+NOT_IN_CLIENT = {("Assassin", "sonic-acceleration")}
 # skills the game gives at the job change that roz.prontera.info doesn't mark as given (is_default): since 2024-12-04 the 2nd-job quest skills
 # come with the job change, all but the Elemental Changes, which still take a quest (criatura-academy.com/skills/1014-redemptio/ and the others' pages)
 GIVEN_FIX = {"charge-attack", "shrink", "sight-blaster", "create-elemental-converter", "phantasmic-arrow", "pang-voice", "charming-wink", "redemptio",
-             "close-confine", "venom-knife", "sonic-acceleration", "dubious-salesmanship", "spiritual-bestowment", "excruciating-palm", "bioethics"}
+             "close-confine", "venom-knife", "dubious-salesmanship", "spiritual-bestowment", "excruciating-palm", "bioethics"}
 # skill text roz.prontera.info has differently from the official client (skillinfoz/skilldescript_enus.lub): slug -> (old, new) swaps in
 # the description and each level's line, applied while prontera still has the old text
 CLIENT_TEXT = {"cart-boost": [("While Geneticist Cart Boost", "While Cart Boost")], "hindsight": [("Frost Driver", "Frost Diver")],
@@ -339,6 +342,8 @@ def main():
         for t in v:
             rows = []
             for sk in t["skills"]:
+                if (t["job_class"]["name"], sk["slug"]) in NOT_IN_CLIENT:
+                    continue
                 lv = [[L.get("sp_cost") or 0, L.get("damage_ratio_percent"), L.get("hit_count"), L.get("cast_variable_ms"), L.get("cast_fixed_ms"),
                        L.get("after_cast_delay_ms"), L.get("cooldown_ms") if L.get("cooldown_ms") is not None else CLIENT_FIX.get(sk["slug"], {}).get("cooldown_ms"), L.get("description_text") or ""]
                       for L in sorted(sk["levels"], key=lambda L: L["level"])]
