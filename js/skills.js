@@ -112,17 +112,16 @@ function sageFromTree(c){if(state.job!=="Sage"||!hasTree(c))return false;const g
   const lv=Object.keys(SG_BOLT).filter(el=>g.bolts[el]&&skLv(c,SG_BOLT[el])).map(el=>skLv(c,SG_BOLT[el]));g.boltLv=lv.length?Math.min(...lv):1;return true}
 let SKFX=null; // skillEffects(C()) for this render
 const masteryFor=m=>num(C().mastery)+(SKFX?SKFX.mastery.filter(x=>!x.races||x.races.includes(m.race)).reduce((a,x)=>a+x.v,0):0);
-// quest skills cost no points; the data marks most ("free"), these it misses
-const SK_QUEST=["create-elemental-converter"];
 // the trees of a job with learned levels L (Skills card and Skill tree tab); jobLv lifts the 2nd-job tree's points past the data's Job Lv 60,
 // up to the 2nd-job cap of Job Lv 70 (69 points; 1st jobs stop at Job Lv 50, the data's 49 points)
 const JOB_MAX2=70;
 const treePts=(job,t,ti,jobLv)=>t.points!=null&&ti===treesOf(job).length-1&&SECOND(job)?Math.max(t.points,Math.min(JOB_MAX2,num(jobLv))-1):t.points;
-const treeUsed=(t,L)=>t.skills.reduce((a,s)=>a+(s.free||SK_QUEST.includes(s.slug)?0:L[s.slug]||0),0);
+// quest skills ("free" in the data) cost no points
+const treeUsed=(t,L)=>t.skills.reduce((a,s)=>a+(s.free?0:L[s.slug]||0),0);
 function treesHtml(job,L,jobLv){const trees=treesOf(job);
   return trees.length?trees.map((t,ti)=>{const used=treeUsed(t,L),pts=treePts(job,t,ti,jobLv),rows=Math.ceil((Math.max(0,...t.skills.map(s=>s.slot))+1)/7);
     const cells=Array.from({length:rows*7},(_,i)=>{const s=t.skills.find(x=>x.slot===i);if(!s)return '<div class="sk empty"></div>';const lv=L[s.slug]||0;
-      return `<div class="sk${lv?" on":""}${s.passive?" pas":""}" data-sk="${s.slug}">${iconHtml("skill",s.slug)}<button type="button" class="nm" data-act="max">${esc(s.name)}</button>
+      return `<div class="sk${lv?" on":""}${s.passive?" pas":""}${s.free?" quest":""}" data-sk="${s.slug}">${s.free?'<span class="qtag" title="Quest skill: no skill points">Quest</span>':""}${iconHtml("skill",s.slug)}<button type="button" class="nm" data-act="max">${esc(s.name)}</button>
         <div class="lv"><button type="button" data-act="dn" aria-label="Lower">−</button><span class="mono">${num(lv)}/${s.max}</span><button type="button" data-act="up" aria-label="Raise">+</button></div></div>`}).join("");
     return `<div class="tree"><div class="bar"><b>${esc(t.job)}</b><span class="note${pts!=null&&used>pts?" bad":""}">${used}${pts!=null?" / "+pts:""} points</span></div><div class="skgrid">${cells}</div></div>`}).join(""):'<div class="note">No skill tree data for this job.</div>'}
 function renderSkills(){const c=C(),L=learned(c),S=skOf(state.job);
@@ -135,7 +134,7 @@ function renderSkills(){const c=C(),L=learned(c),S=skOf(state.job);
 function showSkTipIn(tip,card,job,L,cell){const t=$(tip.id),s=cell&&skOf(job)[cell.dataset.sk];tip.slug=s?s.slug:null;if(!s){t.hidden=true;return}
   const S=skOf(job),lv=L[s.slug]||0,fx=l=>skRow(s,l)[7],line=l=>fx(l)?`<div><span class="note">Lv ${l}${l>lv?" (next)":""}:</span> ${esc(fx(l))}</div>`:"",
     pre=(s.pre||[]).filter(([p])=>S[p]).map(([p,n])=>`<span class="${(L[p]||0)>=n?"":"warnc"}">${esc(S[p].name)} Lv ${n}</span>`);
-  t.innerHTML=`<div class="bar">${iconHtml("skill",s.slug)}<b>${esc(s.name)}</b><span class="note">${s.passive?"Passive":"Active"} · Lv ${lv}/${s.max}</span></div>`+
+  t.innerHTML=`<div class="bar">${iconHtml("skill",s.slug)}<b>${esc(s.name)}</b><span class="note">${s.passive?"Passive":"Active"}${s.free?" · Quest skill, no points":""} · Lv ${lv}/${s.max}</span></div>`+
     (s.desc?`<p>${esc(s.desc)}</p>`:"")+(pre.length?`<div><span class="note">Needs:</span> ${pre.join(", ")}</div>`:"")+(lv?line(lv):"")+(lv<s.max?line(lv+1):"");
   t.hidden=false;const box=$(card).getBoundingClientRect(),r=cell.getBoundingClientRect(),h=t.offsetHeight,
     up=r.bottom+h+8>innerHeight&&r.top-h-8>0;
