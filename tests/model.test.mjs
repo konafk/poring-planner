@@ -365,7 +365,7 @@ t("a restored save is cleaned up before anything uses it", () => {
       pauses: [{ from: bad, to: 1e12 + 1e6 }, { from: 1e12 + 1e5, to: bad }, { from: 1e12 + 2e5, to: 1e12 + 3e5 }, { from: 1e12 + 4e5 }] }],
     chars: { Sage: { skills: { "spell-fist": bad, "fire-bolt": "7", hindsight: 3.6, "cold-bolt": -2 }, build: { check: { atk: bad, hit: "250", sp: "" } } }, Knight: "junk" } });
   assert.deepEqual(app("JSON.stringify(cur().pauses)"), JSON.stringify([{ from: 1e12 + 2e5, to: 1e12 + 3e5 }, { from: 1e12 + 4e5 }]));
-  assert.deepEqual(app("JSON.stringify(state.chars.Sage.skills)"), JSON.stringify({ "fire-bolt": 7, hindsight: 4 }));
+  assert.deepEqual(app("JSON.stringify(state.chars.Sage.skills)"), JSON.stringify({ "fire-bolt": 7, hindsight: 4, "energy-coat": 1, "create-elemental-converter": 1 }));   // the job change gives these two
   assert.deepEqual(app("JSON.stringify(state.chars.Sage.build.check)"), JSON.stringify({ hit: 250 }));
   assert.equal(app("'Knight' in state.chars"), false);
   assert.deepEqual(app("JSON.stringify(state.prices)"), JSON.stringify({ "904": 3000 }));   // item ids only, numbers only
@@ -2445,11 +2445,43 @@ t("Skill tree: quest skills cost no points and are tagged", () => {
   assert.deepEqual(JSON.parse(run(`JSON.stringify(treesOf("Sage").at(-1).skills.filter(s=>s.free).map(s=>s.slug))`)),
     ["elemental-change-water", "elemental-change-wind", "elemental-change-ground", "elemental-change-fire", "create-elemental-converter"]);
   assert.equal(run(`treeUsed(treesOf("Sage").at(-1),{"create-elemental-converter":1,"elemental-change-fire":1,"study":5})`), 5);
-  for (const [job, slug] of [["Knight", "charge-attack"], ["Priest", "redemptio"], ["Assassin", "create-deadly-poison"], ["Rogue", "close-confine"]])
+  for (const [job, slug] of [["Knight", "charge-attack"], ["Priest", "redemptio"], ["Assassin", "venom-knife"], ["Rogue", "close-confine"]])
     assert.equal(run(`skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].free`), true, slug);
   const html = run(`treesHtml("Knight",{},70)`);
   assert.match(html, /class="sk quest" data-sk="charge-attack"><span class="qtag"/);
   assert.doesNotMatch(html, /data-sk="bash"><span class="qtag"/);
+});
+
+t("Skill tree: the job change gives the quest skills but the Elemental Changes, and 1st and 2nd jobs have no Novice tree", () => {
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(Object.values(skOf("Priest")).filter(s=>s.def).map(s=>s.slug))`)), ["holy-light", "redemptio"]);
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(Object.values(skOf("Sage")).filter(s=>s.free&&!s.def).map(s=>s.slug))`)),
+    ["elemental-change-water", "elemental-change-wind", "elemental-change-ground", "elemental-change-fire"]);
+  for (const [job, slug] of [["Wizard", "energy-coat"], ["Knight", "charge-attack"], ["Sage", "create-elemental-converter"], ["Rogue", "close-confine"]])
+    assert.equal(run(`skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].def`), true, slug);
+  // the client's quest skills: Create Deadly Poison isn't one (it costs points), Venom Knife is; Sonic Acceleration isn't in its Assassin tree
+  assert.equal(run(`skOf("Assassin")["create-deadly-poison"].free`), undefined);
+  assert.equal(run(`treeUsed(treesOf("Assassin").at(-1),{"create-deadly-poison":1,"venom-knife":1})`), 1);
+  assert.equal(run(`skOf("Assassin")["sonic-acceleration"]`), undefined);
+  for (const [job, slug] of [["Assassin", "venom-knife"], ["Blacksmith", "dubious-salesmanship"], ["Monk", "spiritual-bestowment"],
+    ["Monk", "excruciating-palm"], ["Alchemist", "bioethics"]])
+    assert.equal(run(`skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].free&&skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].def`), true, slug);
+  // Basic Skill comes from the Novice days: no Novice tree past Novice
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(["Novice","Mage","Wizard"].map(j=>treesOf(j).map(t=>t.job)))`)), [["Novice"], ["Mage"], ["Mage", "Wizard"]]);
+  assert.equal(run(`skOf("Mage")["basic-skill"]`), undefined);
+  // given skills are learned without a click, can't be lowered, and don't count as a tree you set
+  run(`state.job="Priest";state.chars={}`);
+  assert.equal(run(`skLv(C(),"redemptio")`), 1);
+  assert.equal(run(`hasTree(C())`), false);
+  assert.equal(run(`learned(C())["holy-light"]`), 1);
+  assert.match(run(`stepSkill(C(),"redemptio","dn","Priest").join()`), /comes with the job change/);
+  assert.equal(run(`skLv(C(),"redemptio")`), 1);
+  run(`raiseSkill(C(),"heal",3)`);
+  assert.equal(run(`hasTree(C())`), true);
+  const html = run(`treesHtml("Priest",learned(C()),70)`);
+  assert.match(html, /class="sk on quest" data-sk="redemptio"><span class="qtag" title="Given at the job change: no skill points">Job<\/span>/);
+  assert.match(html, /data-sk="redemptio">[\s\S]*?data-act="dn" aria-label="Lower" disabled>/);
+  // the Skill tree tab's plan gets them too
+  assert.equal(run(`state.skPlan={job:"Wizard"};planOf().skills["energy-coat"]`), 1);
 });
 
 t("Equipment and Cards tabs: in-game text, where to get it and the Where to get filter", () => {

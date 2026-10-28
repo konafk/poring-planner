@@ -23,6 +23,20 @@ CLIENT_FIX = {"falcon-assault": {"cooldown_ms": 500}}
 GLOBAL_PCT = {"sonic-blow": (1200, -100)}
 # skill points per tree that roz.prontera.info gets wrong: a Novice gets one point per job level after the first, so Job Lv 10 = 9 (Basic Skill's 9 levels)
 POINTS_FIX = {"Novice": 9}
+# quest skills (no skill points) roz.prontera.info has wrong, from the official client (skillinfoz/skillinfolist.lub, Type = "Quest"): slug -> quest or not.
+# Create Deadly Poison is an Assassin skill learned with points (it needs Envenom, Detoxify and Enchant Poison)
+QUEST_FIX = {"create-deadly-poison": False, "venom-knife": True, "dubious-salesmanship": True, "spiritual-bestowment": True,
+             "excruciating-palm": True, "bioethics": True}
+# prerequisites roz.prontera.info has differently from the official client (skillinfoz/skillinfolist.lub): (tree, slug) -> [[skill slug, level]].
+# A Rogue's Vulture's Eye needs nothing (prontera points at the Archer's Owl's Eye); Cart Boost also needs Cart Revolution and Change Cart
+PRE_FIX = {("Rogue", "vultures-eye"): [], ("Merchant", "cart-boost"): [["pushcart", 5], ["cart-revolution", 1], ["change-cart", 1]]}
+# skills roz.prontera.info has that the official client's skill tree (skillinfoz/skilltreeview.lub) doesn't: (tree, slug), left out.
+# Sonic Acceleration is kRO Zero's; the client has no place for it in the Assassin tree
+NOT_IN_CLIENT = {("Assassin", "sonic-acceleration")}
+# skills the game gives at the job change that roz.prontera.info doesn't mark as given (is_default): since 2024-12-04 the 2nd-job quest skills
+# come with the job change, all but the Elemental Changes, which still take a quest (criatura-academy.com/skills/1014-redemptio/ and the others' pages)
+GIVEN_FIX = {"charge-attack", "shrink", "sight-blaster", "create-elemental-converter", "phantasmic-arrow", "pang-voice", "charming-wink", "redemptio",
+             "close-confine", "venom-knife", "dubious-salesmanship", "spiritual-bestowment", "excruciating-palm", "bioethics"}
 # skill text roz.prontera.info has differently from the official client (skillinfoz/skilldescript_enus.lub): slug -> (old, new) swaps in
 # the description and each level's line, applied while prontera still has the old text
 CLIENT_TEXT = {"cart-boost": [("While Geneticist Cart Boost", "While Cart Boost")], "hindsight": [("Frost Driver", "Frost Diver")],
@@ -328,20 +342,23 @@ def main():
         for t in v:
             rows = []
             for sk in t["skills"]:
+                if (t["job_class"]["name"], sk["slug"]) in NOT_IN_CLIENT:
+                    continue
                 lv = [[L.get("sp_cost") or 0, L.get("damage_ratio_percent"), L.get("hit_count"), L.get("cast_variable_ms"), L.get("cast_fixed_ms"),
                        L.get("after_cast_delay_ms"), L.get("cooldown_ms") if L.get("cooldown_ms") is not None else CLIENT_FIX.get(sk["slug"], {}).get("cooldown_ms"), L.get("description_text") or ""]
                       for L in sorted(sk["levels"], key=lambda L: L["level"])]
                 lv, f = global_pct(sk["slug"], lv, sk.get("damage_formula_expression"))
                 desc, lv = client_text(sk["slug"], (sk.get("description") or "").strip(), lv)
                 row = {"slug": sk["slug"], "name": sk["name"], "desc": desc, "max": sk["max_level"], "slot": sk["tree_slot"], "passive": sk["passive"] == "passive",
-                       "el": sk.get("element"), "pre": [[slug_of.get(p["skill_id"], p["skill_id"]), p["level"]] for p in sk.get("prerequisites") or []],
-                       "f": f, "lv": lv, "g": groups(sk.get("bonus_groups")), "free": True if sk.get("free") else None,
+                       "el": sk.get("element"), "pre": PRE_FIX.get((t["job_class"]["name"], sk["slug"]), [[slug_of.get(p["skill_id"], p["skill_id"]), p["level"]] for p in sk.get("prerequisites") or []]),
+                       "f": f, "lv": lv, "g": groups(sk.get("bonus_groups")), "free": True if QUEST_FIX.get(sk["slug"], sk.get("free")) else None,
+                       "def": True if sk.get("is_default") or sk["slug"] in GIVEN_FIX else None,
                        "icon": (sk.get("image") or "").rsplit("/", 1)[-1] or None}
                 rows.append({k: x for k, x in row.items() if x not in (None, [], "")})
             trees.append({"job": t["job_class"]["name"], "points": POINTS_FIX.get(t["job_class"]["name"], t.get("skill_points")), "skills": rows})
         skills[j] = trees
     write("skills.js", f"// Skill trees per job: Novice, 1st and 2nd job trees with points, and per skill slug, name, desc (what the skill does), max level, slot (grid position),\n"
-          f"// passive, free (quest skill, no points), el, pre: [[skill slug, level]], f: damage formula, lv: per level [SP, damage %, hits, variable cast ms, fixed cast ms,\n"
+          f"// passive, free (quest skill, no points), def (given at the job change), el, pre: [[skill slug, level]], f: damage formula, lv: per level [SP, damage %, hits, variable cast ms, fixed cast ms,\n"
           f"// after-cast delay ms, cooldown ms, description], g: bonus groups, icon: the skill's icon ({SITE}/assets/<icon>, fetched by tools/export_icons.py) ({src})", f"const SKILLS={js(skills)};")
     print(f"wrote {len(equip)} equipment, {len(card_rows)} cards, {len(sets)} sets, {len(refine)} refine schedules", flush=True)
     if skipped:  # these are missing from the data files; rerun to retry them
