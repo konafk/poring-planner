@@ -17,6 +17,9 @@ function infoPrice(id){const npc=NPCSELL[id]!=null||state.npcPrices[id]!=null?np
 function infoDroppers(id){const ds=ITEM_DROPS[id]||[];if(!ds.length)return "";
   return `<div class="infoList">${ds.slice(0,12).map(({m,ch})=>{const om=openMaps(m),a=mobArrives(m);
     return `<div>${mobIcon(m.id,1,"il")}${infoLink("mob",m.id,m.name)}${BOSS_PILL(m)} <span class="note">Lv ${m.lv} · ${chTxt(ch)}${yourCh(m,ch)!==ch?` (you ${chTxt(yourCh(m,ch))})`:""} · ${om.length?`${esc(mapLabel(om[0][0]))} ≈${spN(om[0][1])}`:a?`none open · ${esc(a)}`:"no open map"}</span></div>`}).join("")}${ds.length>12?`<div class="note">and ${ds.length-12} more in Item info</div>`:""}</div>`}
+// the NPC shops that sell it (data/shops.js): price and every place it stands
+function infoShops(id){const ss=SHOPS_OF[id]||[];if(!ss.length)return "";
+  return `<div class="infoList">${ss.map(([name,at,z])=>`<div><b>${esc(name)}</b> <span class="note">${fmtN(z)} z · ${esc(at.map(([mp,x,y])=>`${mapName(mp)||mp} ${x},${y}`).join("; "))}</span></div>`).join("")}</div>`}
 // the recipes that make it and the ones that use it (js/recipes.js), each with its materials
 const infoRecipe=r=>`<div class="recipe"><span>${infoLink("item",r.id,recipeMade(r))} <span class="note">${esc(r.cat)}${r.lv?` Lv ${r.lv}`:""}${r.npc?` · ${esc(r.npc[0])}${r.fee?`, ${fmtN(r.fee)} z`:""}`:""}</span></span>${recipeMats(r)}</div>`;
 function infoRecipes(id){const mk=RECIPES_MAKING[id]||[],us=RECIPES_USING[id]||[];
@@ -55,7 +58,7 @@ function infoHeal(id){if(!RECOVERY[id])return "";
 function popItem(id){const name=itemName(id);
   return {ico:itemIcon(id,1.5),title:name,sub:`#${id} · ${ITEM_DROPS[id]||!clientCat(id)?`${GROUP_NAME[groupOf(id)]}${looted(id)?"":" (not looted)"}`:esc(clientCat(id))}`,
     body:infoSec("Heals",infoHeal(id))+infoSec("In-game text",typeof ITEM_TEXT!=="undefined"&&ITEM_TEXT[id]&&`<div class="infoText">${esc(ITEM_TEXT[id])}</div>`)
-      +infoPrice(id)+infoSec("Dropped by",infoDroppers(id))+infoSec("Memorial dungeons",infoMemorial(id))
+      +infoPrice(id)+infoSec("Sold by",infoShops(id))+infoSec("Dropped by",infoDroppers(id))+infoSec("Memorial dungeons",infoMemorial(id))
       +(ITEM_DROPS[id]||infoMemorial(id)?"":'<div class="note">No monster the farm tables know drops it.</div>')+infoRecipes(id),
     acts:(ITEM_DROPS[id]?'<button type="button" data-infoact="items">Item info</button>':"")+recipeAct(id)}}
 

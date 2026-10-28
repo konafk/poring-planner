@@ -7,7 +7,8 @@ data/cards.js the client has no item for yet (regions not out on Global), which 
 
 The client's English item descriptions are in System\\iteminfo_enUS.lub (compiled Lua 5.1, table tbl_string: item id ->
 identifiedDescriptionName, one string per line, with ^RRGGBB colour codes). Items are the ones data/clientitems.js lists as
-Consumable. The colour codes, the blank spacer line (^FFFFFF_) and the ---- rules are left out; the lines are joined with newlines.
+Consumable, plus the Lv.1–10 Cookbooks (ETC items the Cooking tab links to). The colour codes, the blank spacer line (^FFFFFF_) and the ---- rules are left out; the lines are joined with newlines; the
+character the client's text can't decode (a dash in its other encoding) is written as a dash.
 Consumables the client has no text for are left out and counted at the end.
 """
 import json, os, re, sys
@@ -16,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from export_spawns import DATA, lua_data  # noqa: E402
 
 ITEMINFO = os.path.join("System", "iteminfo_enUS.lub")
+COOKBOOKS = list(range(7472, 7482))  # Lv.1 Cookbook … Lv.10 Cookbook
 
 
 def consumables():
@@ -33,6 +35,7 @@ def clean(lines):
     out = []
     for line in lines:
         t = re.sub(r"\^[0-9A-Fa-f]{6}", "", line or "").strip()
+        t = t.replace("�", "—")
         if t and t != "_" and not re.fullmatch(r"-+", t):
             out.append(t)
     return "\n".join(out)
@@ -43,7 +46,7 @@ def main():
     info = lua_data(open(os.path.join(client, ITEMINFO), "rb").read(), "utf-8")["tbl_string"]
     text, missing = {}, 0
     nc = sorted(i for i in card_ids() if i not in info)
-    for i in consumables():
+    for i in consumables() + COOKBOOKS:
         d = (info.get(i) or {}).get("identifiedDescriptionName") or {}
         t = clean(d[k] for k in sorted(d))
         if t:
@@ -51,7 +54,7 @@ def main():
         else:
             missing += 1
     with open(os.path.join(DATA, "itemtext.js"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("// Consumables' in-game text by item id, from the client's System\\iteminfo_enUS.lub (colour codes and rules left out, lines\n"
+        f.write("// Consumables' and cookbooks' in-game text by item id, from the client's System\\iteminfo_enUS.lub (colour codes and rules left out, lines\n"
                 "// joined with newlines); written by tools/export_itemtext.py\n")
         f.write("const ITEM_TEXT=" + json.dumps({str(k): v for k, v in text.items()}, ensure_ascii=False, separators=(",", ":")) + ";\n")
         f.write("// cards in data/cards.js the client has no item for yet (not out on Global)\n")

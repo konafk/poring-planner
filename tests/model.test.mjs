@@ -2541,7 +2541,12 @@ t("equipment window: gear named as the game shows it, and the job's look (Bards 
 });
 
 t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {
-  assert.equal(run(`RECIPES.length+18`), run(`RECIPE_LIST.length`));                                    // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts
+  // Cooking from the client's cookbooks (60 dishes, Lv 1–10) in place of the database's 29, and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts
+  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length+60+18`), run(`RECIPE_LIST.length`));
+  assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Cooking"&&r.lv===3).length`), 6);
+  assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===12048).mats)`), "[[518,2],[509,10],[7452,1]]");   // Honey Herbal Tea: the book's 2 Honey
+  assert.ok(run(`RECIPE_LIST.filter(r=>r.cat==="Cooking").every(r=>r.mats.every(([id])=>!/^#|Unknown/.test(itemName(id))&&!/ none"/.test(itemIcon(id))))`), "every ingredient has a name and an icon");
+  assert.equal(run(`shopPrice(7472)`), 750); assert.equal(run(`shopPrice(12127)`), 2000);              // the Cooking Ingredient Trader
   assert.ok(run(`RECIPES.every(r=>RECIPE_CATS.includes(r.cat)&&r.mats.length&&r.mats.every(([id,n])=>RECIPE_ITEMN[id]&&n>0))`));
   assert.equal(run(`itemName(1301)`), "Axe");                                                          // a recipe's name for an item no monster drops
   const ok = (q, cat) => run(`RECIPES.filter(r=>recipeOk(r,{q:${JSON.stringify(q)},cat:${JSON.stringify(cat || "")}})).map(r=>r.id)`);

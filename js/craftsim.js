@@ -1,4 +1,4 @@
-// ---- the Recipes tab's Brewing and Cooking simulators: the chance each Brewing / Cooking recipe (data/recipes.js) works for your
+// ---- the Recipes tab's Brewing and Cooking simulators: the chance each Brewing recipe (data/recipes.js) / Cooking recipe (data/cookbooks.js) works for your
 // stats, what a potion or dish costs you counting the failures, and a run of tries rolled the server's way. Formulas: rAthena's
 // skill_produce_mix (pre-renewal), which roz.prontera.info's Crafting Calculator uses for brewing too; not measured on Zero Global.
 // Both add a random term to the rate itself on every try, so a recipe has a worst, an average and a best chance.
@@ -58,13 +58,16 @@ function brewRoll(v,id,n,rnd=Math.random){const rs=brewRates(v,id);let ok=0;for(
 function cookRoll(v,r,n,rnd=Math.random){let m=v.mastery,ok=0;
   for(let i=0;i<n;i++){const w=Math.floor(rnd()*10000)<rateCap(pick(cookRates({...v,mastery:m},r),rnd));if(w)ok++;m=cookMastery(m,r,w)}
   return {ok,fail:n-ok,mastery:m}}
-// what a try uses up: the materials and the Medicine Bowl or cooking kit; {z, unknown} as recipeWorth
-const tryCost=(r,extra)=>{const w=recipeWorth({...r,mats:[...r.mats,[extra,1]]});return {...w,none:w.unknown===r.mats.length+1}};
+// what a try uses up: the materials and the Medicine Bowl or cooking kit, each at buyPrice; {z, unknown} as recipeWorth
+const tryCost=(r,extra)=>{const ms=[...r.mats,[extra,1]],w=ms.reduce((a,[id,n])=>{const p=buyPrice(id);if(p==null)a.unknown++;else a.z+=p*n;return a},{z:r.fee||0,unknown:0});
+  return {...w,none:w.unknown===ms.length}};
 const zTxt=(w,mul=1)=>w.none?"–":fmtN(w.z*mul)+(w.unknown?"+?":"");
 const craftChTxt=c=>c.lo===c.hi?pct(c.avg*100,1):`${pct(c.avg*100,1)}<div class="note">${pct(c.lo*100,1)}–${pct(c.hi*100,1)}</div>`;
 // one row's money: a try's cost, a made item's cost (tries per success × a try), and what the item's worth
 function craftMoney(r,extra,c){const w=tryCost(r,extra),p=matPrice(r.id),unkTip=w.unknown?` title="${w.unknown} item${w.unknown>1?"s have":" has"} no price: set one on the Market tab"`:"";
   return `<td${unkTip}>${zTxt(w)}</td><td${unkTip}>${c.avg>0?zTxt(w,1/c.avg):"–"}</td><td>${p!=null?fmtN(p):"–"}</td>`}
+// an NPC shop: its name, price and the towns it stands in (the first few, all of them on hover)
+const shopTxt=(name,at,z)=>`<span title="${esc(at.map(([mp,x,y])=>`${mapLabel(mp)} ${x},${y}`).join(" · "))}">${esc(name)}</span> <span class="note">${fmtN(z)} z · ${esc(at.slice(0,3).map(a=>(mapName(a[0])||a[0]).split(",")[0]).join(", "))}${at.length>3?` +${at.length-3} more`:""}</span>`;
 const itemCell=(id,sub)=>`<td class="name"><div class="dbName">${itemIcon(id)}<div>${infoLink("item",id,itemName(id))}${sub?`<div class="note">${sub}</div>`:""}</div></div></td>`;
 const craftInput=(kind,k,v,mine,label,title)=>`<label title="${esc(title||"")}">${label}<input class="w-xs" type="number" min="${(kind==="brew"?BREW_KEYS:COOK_KEYS)[k][0]}" max="${(kind==="brew"?BREW_KEYS:COOK_KEYS)[k][1]}" step="1" data-csim="${kind}.${k}" value="${state.craftSim[kind][k]??""}" placeholder="${mine[k]}"></label>`;
 function renderBrew(){const v=brewVals(),m=craftMine(),S=state.craftSim.brew;
@@ -78,13 +81,18 @@ function renderCook(){const v=cookVals(),m=craftMine(),S=state.craftSim.cook;
   $("cookIn").innerHTML=[["baseLv","Base Lv"],["dex","DEX"],["luk","LUK"]].map(([k,l])=>craftInput("cook",k,v,m,l,"your total, gear and buffs included")).join("")
     +craftInput("cook","mastery",v,{mastery:0},"Cook mastery","hidden: 0 for a new cook, up to 1999. Each dish you make raises it and each you burn lowers it")
     +`<label>Kit<select data-csim="cook.kit">${COOK_KITS.map(([id,lv])=>`<option value="${lv}"${lv===v.kit?" selected":""}>${esc(itemName(id))}</option>`).join("")}</select></label>`;
-  $("cookHead").innerHTML=`<th>Dish</th><th class="l">Ingredients</th>${COOK_KITS.map(([id,lv])=>`<th${lv===v.kit?' class="sel"':""} title="the chance with ${esc(itemName(id))}">${esc(itemName(id).replace(/ Cooking Kit$/,""))}</th>`).join("")}<th title="tries a dish takes with your kit">Tries / dish</th><th title="the ingredients and one kit, at your Market price, else what an NPC pays">Cost / try</th><th title="Cost / try × tries a dish takes">Cost / dish</th><th title="your Market price, else what an NPC pays">Worth</th>`;
+  $("cookHead").innerHTML=`<th>Dish</th><th class="l">Ingredients</th>${COOK_KITS.map(([id,lv])=>`<th${lv===v.kit?' class="sel"':""} title="the chance with ${esc(itemName(id))}">${esc(itemName(id).replace(/ Cooking Kit$/,""))}</th>`).join("")}<th title="tries a dish takes with your kit">Tries / dish</th><th title="the ingredients and one kit, at your Market price, else the Cooking Ingredient Trader's, else what an NPC pays">Cost / try</th><th title="Cost / try × tries a dish takes">Cost / dish</th><th title="your Market price, else what an NPC pays">Worth</th>`;
   const kitId=COOK_KITS.find(k=>k[1]===v.kit)[0];
   $("cookRows").innerHTML=COOK_RECIPES.map(r=>{const c=cookChance(v,r);
     return `<tr${r.id===S.id?' class="sel"':""}>${itemCell(r.id,`${esc(dishFx(r.id))} · Lv ${dishLv(r.id)} · needs ${esc(itemName(COOKBOOK(dishLv(r.id))))}`)}<td class="name l mats">${recipeMats(r)}</td>
       ${COOK_KITS.map(([,lv])=>`<td${lv===v.kit?' class="sel"':""}>${craftChTxt(cookChance(v,r,lv))}</td>`).join("")}<td class="mono">${c.avg>0?(1/c.avg).toFixed(2):"–"}</td>${craftMoney(r,kitId,c)}</tr>`}).join("");
   const id=S.id||COOK_RECIPES[0].id;$("cookPick").innerHTML=COOK_RECIPES.map(r=>`<option value="${r.id}"${r.id===id?" selected":""}>${esc(itemName(r.id))} (Lv ${dishLv(r.id)})</option>`).join("");
-  $("cookN").value=S.n||100}
+  $("cookN").value=S.n||100;
+  $("cookBooks").innerHTML=[1,2,3,4,5,6,7,8,9,10].map(lv=>{const id=COOKBOOK(lv),ds=COOK_RECIPES.filter(r=>dishLv(r.id)===lv),dr=ITEM_DROPS[id]||[];
+    const from=[...(SHOPS_OF[id]||[]).map(([name,at,z])=>shopTxt(name,at,z)),
+      ...dr.slice(0,3).map(({m,ch})=>`${infoLink("mob",m.id,m.name)} <span class="note">${chTxt(ch)}</span>`)].filter(Boolean);
+    return `<tr>${itemCell(id,ds.length?`${ds.length} dish${ds.length>1?"es":""}`:"")}<td class="name fx">${ds.length?ds.map(r=>infoLink("item",r.id,itemName(r.id))).join(", "):'<span class="note">none in the recipe list</span>'}</td>
+      <td class="name from">${from.length?from.join(", ")+(dr.length>3?` <span class="note">and ${dr.length-3} more</span>`:""):'<span class="note">no source known yet</span>'}</td><td class="mono">${npcSell(id)>0?`${fmtN(npcPays(id))} z`:"–"}</td></tr>`}).join("")}
 // a run's result line: made / failed, against the average, and the zeny it came to when the prices are known
 function craftRunTxt(r,extra,n,res,c,more=""){const w=tryCost(r,extra),p=matPrice(r.id),net=p!=null&&!w.none&&!w.unknown?res.ok*p-n*w.z:null;
   return `<b>${fmtN(res.ok)}</b> ${esc(itemName(r.id))} from ${fmtN(n)} tries, ${fmtN(res.fail)} failed <span class="note">(${fmtN(c.avg*n)} on average)</span>${more}`

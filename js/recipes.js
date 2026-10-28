@@ -10,7 +10,10 @@ const MEMORIAL_RECIPES=typeof JELLO==="undefined"?[]:[
   ...EXPEDITION.map(x=>({cat:"Memorial",type:"npc",id:x.id,n:1,lv:null,
     mats:[[x.from[0],1],[EXPEDITION_CRYSTALS[0],EXPEDITION_CRYSTALS[2]],...Object.entries(x.stones).map(([id,k])=>[+id,k])],npc:EXPEDITION_NPC})),
   ...MEM_CRAFTS.map(x=>({cat:"Memorial",type:"npc",id:x.id,n:1,lv:null,mats:x.mats.map(([id,,k])=>[id,k]),npc:x.npc}))];
-const RECIPE_LIST=[...(typeof RECIPES!=="undefined"?RECIPES:[]),...MEMORIAL_RECIPES];
+// Cooking from the client's cookbooks (data/cookbooks.js: every dish Lv 1–10, lv the cookbook's level) in place of the community
+// database's, which lacks Fried Sweet Potato and Lv 6–10 and has Honey Herbal Tea at 10 Honey (the book: 2)
+const COOKBOOK_RECIPES=typeof COOKBOOKS==="undefined"?[]:Object.entries(COOKBOOKS).flatMap(([b,ds])=>ds.map(([id,mats])=>({cat:"Cooking",type:"cook",id,n:1,lv:b-7471,mats})));
+const RECIPE_LIST=[...(typeof RECIPES!=="undefined"?RECIPES:[]).filter(r=>!COOKBOOK_RECIPES.length||r.cat!=="Cooking"),...COOKBOOK_RECIPES,...MEMORIAL_RECIPES];
 const RECIPE_CATS=["Forging","Brewing","Arrows","Cooking","Misc","Mixture & Counteragent","Dye Making","Memorial"];
 // by item id: the recipes that make it, and the ones it's a material of
 const RECIPES_MAKING={},RECIPES_USING={};
@@ -20,6 +23,11 @@ RECIPE_LIST.forEach(r=>{(RECIPES_MAKING[r.id]=RECIPES_MAKING[r.id]||[]).push(r);
 const matPrice=id=>state.prices[id]>0?state.prices[id]:NPCSELL[id]!=null||state.npcPrices[id]!=null?npcPays(id):null;
 // a recipe's materials' worth plus an NPC's fee: {z, unknown (how many materials have no price)}; none: nothing in it has a price
 const recipeWorth=r=>r.mats.reduce((a,[id,n])=>{const p=matPrice(id);if(p==null)a.unknown++;else a.z+=p*n;return a},{z:r.fee||0,unknown:0});
+// the NPC shops that sell it (data/shops.js): [[shop name, [[map, x, y], ...], price], ...], and the cheapest one's price
+const SHOPS_OF={};(typeof NPC_SHOPS!=="undefined"?NPC_SHOPS:[]).forEach(([name,at,items])=>items.forEach(([id,z])=>(SHOPS_OF[id]=SHOPS_OF[id]||[]).push([name,at,z])));
+const shopPrice=id=>SHOPS_OF[id]?Math.min(...SHOPS_OF[id].map(s=>s[2])):null;
+// what a material costs you to get: your Market price, else an NPC shop's, else what an NPC pays (the simulators' cost of a try)
+const buyPrice=id=>state.prices[id]>0?state.prices[id]:shopPrice(id)??matPrice(id);
 const worthNone=(r,w)=>w.unknown===r.mats.length&&!r.fee;
 // who makes it, for the recipes an NPC makes: "JavaDullihan · morocc_in 146,99"
 const recipeNpc=r=>r.npc?`${r.npc[0]} · ${r.npc[1]}`:"";
