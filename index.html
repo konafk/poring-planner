@@ -589,12 +589,13 @@
     <div class="bar"><button type="button" class="primary" id="mapToSess" title="Makes this the current session's map, and its monsters the ones you hunt here (not bosses or skipped ones), weighted by their spawns like this planner">Farming this map now</button><span class="note" id="mapSessNote"></span></div>
     <datalist id="mapList"></datalist>
     <div class="note" id="mapName"></div>
+    <div id="mapRoute"></div>
     <div class="mapPics">
       <details class="more worldMore" id="worldMore" open><summary>World map <span class="note" id="worldSum"></span></summary><div class="worldMap" id="planWorld"></div></details>
     </div>
     <div class="mapTop">
       <div class="calc" id="mapTiles"></div>
-      <a id="mapPicLink" class="mapPic" target="_blank" rel="noopener" title="The map from the game client's map window. Click for full size" hidden><img id="mapPic" alt="" width="512" height="512"></a>
+      <div class="naviPic" id="mapPicWrap" hidden><a id="mapPicLink" class="mapPic" target="_blank" rel="noopener" title="The map from the game client's map window. Click for full size"><img id="mapPic" alt="" width="512" height="512"></a><div id="mapMarks"></div></div>
     </div>
     <div id="mapConv"></div>
     <div class="scroll"><table id="mapTable"><thead><tr><th>Monster</th><th>Count</th><th>Share</th><th>Lv</th><th>Element</th><th title="Element table rate of your attack element (with the map's converter or bolt) against the monster">Element %</th><th>Size</th><th>Your hit %</th><th>Sec / kill</th><th>Base EXP</th><th title="Farm without items against this monster alone: the share of the HP and SP you use that comes back with no HP or SP items. Hover for the breakdown">No items</th></tr></thead><tbody></tbody></table></div>
@@ -884,6 +885,7 @@
 <script src="data/spawn.js"></script>
 <script src="data/maps.js"></script>
 <script src="data/minimaps.js"></script>
+<script src="data/navi.js"></script>
 <script src="data/roadmap.js"></script>
 <script src="data/loot.js"></script>
 <script src="data/items.js"></script>
@@ -948,6 +950,7 @@
 <script src="js/info.js"></script>
 <script src="js/memorial.js"></script>
 <script src="js/stellar.js"></script>
+<script src="js/navi.js"></script>
 <script src="js/mapinfo.js"></script>
 <script src="js/start.js"></script>
 </body>

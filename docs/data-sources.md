@@ -20,6 +20,7 @@ The numbers are estimates. Skill values and formulas follow the sources below an
 - Stellar weapons and the Activation System (`data/stellar.js`): the Taiwan server's Activation System; the ★ weapons from the official client
 - Spawn counts: the official Ragnarok Zero Global client (navigation table)
 - Map names: the official client (`System/mapInfo_enUS.lub`)
+- NPCs, ways out of each map, Kafra teleports and walking routes: the official client's Navigation tables (`navigation/navi_*.lub` in `data.grf`), NPC names from its translation tables
 - Spawn, drop and item name cross-check, in-game map codes: [ragnarokzero.net](https://ragnarokzero.net/database/maps)
 - Monster race and HP cross-check: [einh-guild.de](https://einh-guild.de)
 - Brewing and cooking chances (Brewing and Cooking tabs): rAthena's pre-renewal `skill_produce_mix` and `produce_db.txt` (each potion's guide, each dish's level), the brewing one as [roz.prontera.info's Crafting Calculator](https://roz.prontera.info/crafting) has it. Not measured on Zero Global

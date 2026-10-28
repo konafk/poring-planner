@@ -802,7 +802,30 @@ details.more>.form{display:grid}
 .mapPics>.worldMore{flex:1 1 360px;max-width:640px;border-top:0;padding-top:0}
 .mapTop{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
 .mapTop>#mapTiles{flex:1 1 360px;min-width:0}
-.mapTop>.mapPic{flex:none;width:min(100%,200px)}
+.mapTop>.mapPic,.mapTop>.naviPic{flex:none;width:min(100%,200px)}
+/* the Navigation (js/navi.js): markers over a map's picture, the way there, the NPC list */
+.naviPic{position:relative;width:min(100%,320px)}
+.naviPic[hidden]{display:none}
+.naviPic>.mapPic{width:100%}
+.mapInfo .naviPic{margin:8px 0}
+.mapInfo .naviPic>.mapPic{margin:0}
+.naviMarks{position:absolute;inset:0;pointer-events:none}
+.naviMark{position:absolute;width:9px;height:9px;min-width:0;padding:0;margin:0;border-radius:50%;transform:translate(-50%,-50%);border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.45);pointer-events:auto;background:#8e8ba0}
+.naviMark.warp{width:11px;height:11px;border-radius:2px;background:#ff3b30}
+.naviMark.warp.minor{width:7px;height:7px;border-width:1px;opacity:.6}
+button.naviMark.warp{cursor:pointer}
+button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
+.naviMark.npc.k,.naviDot.npc.k{background:#0a84ff}
+.naviMark.npc.s,.naviDot.npc.s{background:#30d158}
+.naviMark.npc.w,.naviDot.npc.w{background:#ffd60a}
+.naviDot{display:inline-block;width:8px;height:8px;margin-right:5px;border-radius:50%;background:#8e8ba0;vertical-align:baseline}
+.naviDot.warp{border-radius:2px;background:#ff3b30}
+.naviRoute{margin-top:8px}
+.naviRoute .naviFrom select{width:auto}
+.naviSteps{display:flex;flex-wrap:wrap;gap:4px 6px;list-style:none;margin:4px 0 0;padding:0}
+.naviSteps>li:not(:last-child)::after{content:"→";margin-left:6px;color:var(--muted)}
+.naviList{list-style:none;margin:6px 0 0;padding:0;columns:2 220px;column-gap:16px}
+.naviList>li{break-inside:avoid;margin:2px 0}
 .wmWorlds{margin-bottom:6px}
 .wmWorlds [aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
 .wmPic{position:relative}
