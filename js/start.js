@@ -55,6 +55,8 @@ function showTab(t,local){
 document.querySelectorAll("[data-tabbtn]").forEach(b=>b.addEventListener("click",()=>{showTab(b.dataset.tabbtn);scrollTo({top:0})}));
 // a link to another tab (data-gotab="roadmap")
 document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("[data-gotab]");if(!a)return;e.preventDefault();showTab(a.dataset.gotab);scrollTo({top:0})});
+// a popup link (#mob/1002) opens over the tab you were on once the page is drawn (showTab puts the tab's link in the address bar first)
+const INFO_AT=hashInfo(location.hash);
 {const h=hashTab();showTab(h||VIEW&&VIEW.tab||state.tab||"home",!h&&!!VIEW)}
 addEventListener("hashchange",()=>{const t=hashTab();if(t){showTab(t);scrollTo({top:0})}});
 // ---- Home tab: the hero's numbers and next update, where you left off, and a card for every other tab (from the sidebar, so it
@@ -235,3 +237,4 @@ if(VIEW){if(VIEW.drafts)for(const id in VIEW.drafts)if(["fPct","fJob","pasteBox"
 if(VIEW&&VIEW.toast)showToast(String(VIEW.toast));
 (function tripLoop(){tickTrip();setTimeout(tripLoop,1000)})();
 loadShareLink();addEventListener("hashchange",loadShareLink);
+if(INFO_AT)openInfo(...INFO_AT);

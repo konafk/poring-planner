@@ -125,7 +125,7 @@ node tests/model.test.mjs    # damage and tracker maths, loaded with a stand-in 
 node tests/stamp.test.mjs    # index.html carries no ?v= stamps, and the deploy stamps every file
 ```
 
-`tests/browser/smoke.mjs` opens the real page in Chromium: every tab shows only its own panels, Ctrl+K search opens a monster's details, the theme in the Settings menu cycles and the sidebar follows it, the account and session pickers sit on the Character and Session tabs with their + New buttons, and no tab scrolls sideways at phone width. It fails on any script error. It needs Playwright, so it isn't a `*.test.mjs` file:
+`tests/browser/smoke.mjs` opens the real page in Chromium: every tab shows only its own panels, Ctrl+K search opens a monster's details, a details link (`#item/909`) opens its popup, the theme in the Settings menu cycles and the sidebar follows it, the account and session pickers sit on the Character and Session tabs with their + New buttons, and no tab scrolls sideways at phone width. It fails on any script error. It needs Playwright, so it isn't a `*.test.mjs` file:
 
 ```sh
 npm i --no-save playwright && npx playwright install chromium && node tests/browser/smoke.mjs

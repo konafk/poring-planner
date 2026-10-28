@@ -49,6 +49,19 @@ try {
     await page.close();
   });
 
+  await t("a details link (#item/909) opens its popup, and closing it puts the tab's link back", async () => {
+    const page = await browser.newPage(), errs = [];
+    page.on("pageerror", e => errs.push(e.message));
+    await page.goto(page_url + "#item/909");
+    await page.waitForSelector("#infoDlg[open]");
+    assert.equal(await page.textContent("#infoDlgTitle"), "Jellopy");
+    assert.match(await page.getAttribute("#infoShare", "href"), /#item\/909$/);
+    await page.click("#infoDlgClose");
+    await page.waitForFunction(() => location.hash === "#Home");
+    assert.deepEqual(errs, []);
+    await page.close();
+  });
+
   await t("Settings: the theme cycles auto → light → dark, the sidebar follows, and the menu stays open", async () => {
     const { page, errs } = await open({ colorScheme: "light" });
     // the sidebar's background brightness, 0 (black) to 255 (white)
