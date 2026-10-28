@@ -25,6 +25,8 @@ const COOK_KEYS={baseLv:[1,99],dex:[1,999],luk:[1,999],mastery:[0,1999]};
 // the cooking kits Global's client has, by the level they cook at (rAthena's 14 and 15, Royal and Fantastic, aren't in it)
 const COOK_KITS=[[12125,11],[12126,12],[12127,13]];
 const COOKBOOK=lv=>7471+lv; // Lv.1 Cookbook (7472) … Lv.10 Cookbook (7481)
+// Lv 1–5 cookbooks come from an NPC shop on Zero (which NPC and its price aren't in the data yet); 6–10 only drop
+const COOKBOOK_SHOP=lv=>lv<=5;
 // what a dish does, from its in-game text ("STR +1")
 const dishFx=id=>((typeof ITEM_TEXT!=="undefined"&&ITEM_TEXT[id]||"").match(/\b(STR|AGI|VIT|INT|DEX|LUK) \+\d+/)||[""])[0];
 // your character's numbers for the empty boxes: Prepare Potion and Potion Research from an Alchemist's skill tree, else maxed
@@ -84,7 +86,12 @@ function renderCook(){const v=cookVals(),m=craftMine(),S=state.craftSim.cook;
     return `<tr${r.id===S.id?' class="sel"':""}>${itemCell(r.id,`${esc(dishFx(r.id))} · Lv ${dishLv(r.id)} · needs ${esc(itemName(COOKBOOK(dishLv(r.id))))}`)}<td class="name l mats">${recipeMats(r)}</td>
       ${COOK_KITS.map(([,lv])=>`<td${lv===v.kit?' class="sel"':""}>${craftChTxt(cookChance(v,r,lv))}</td>`).join("")}<td class="mono">${c.avg>0?(1/c.avg).toFixed(2):"–"}</td>${craftMoney(r,kitId,c)}</tr>`}).join("");
   const id=S.id||COOK_RECIPES[0].id;$("cookPick").innerHTML=COOK_RECIPES.map(r=>`<option value="${r.id}"${r.id===id?" selected":""}>${esc(itemName(r.id))} (Lv ${dishLv(r.id)})</option>`).join("");
-  $("cookN").value=S.n||100}
+  $("cookN").value=S.n||100;
+  $("cookBooks").innerHTML=[1,2,3,4,5,6,7,8,9,10].map(lv=>{const id=COOKBOOK(lv),ds=COOK_RECIPES.filter(r=>dishLv(r.id)===lv),dr=ITEM_DROPS[id]||[];
+    const from=[COOKBOOK_SHOP(lv)?'Sold by an NPC <span class="note">(price not known yet)</span>':"",
+      ...dr.slice(0,3).map(({m,ch})=>`${infoLink("mob",m.id,m.name)} <span class="note">${chTxt(ch)}</span>`)].filter(Boolean);
+    return `<tr>${itemCell(id,ds.length?`${ds.length} dish${ds.length>1?"es":""}`:"")}<td class="name fx">${ds.length?ds.map(r=>infoLink("item",r.id,itemName(r.id))).join(", "):'<span class="note">none in the recipe list</span>'}</td>
+      <td class="name from">${from.length?from.join(", ")+(dr.length>3?` <span class="note">and ${dr.length-3} more</span>`:""):'<span class="note">no source known yet</span>'}</td><td class="mono">${npcSell(id)>0?`${fmtN(npcPays(id))} z`:"–"}</td></tr>`}).join("")}
 // a run's result line: made / failed, against the average, and the zeny it came to when the prices are known
 function craftRunTxt(r,extra,n,res,c,more=""){const w=tryCost(r,extra),p=matPrice(r.id),net=p!=null&&!w.none&&!w.unknown?res.ok*p-n*w.z:null;
   return `<b>${fmtN(res.ok)}</b> ${esc(itemName(r.id))} from ${fmtN(n)} tries, ${fmtN(res.fail)} failed <span class="note">(${fmtN(c.avg*n)} on average)</span>${more}`

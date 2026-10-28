@@ -48,7 +48,12 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
 .brandTxt b{font-family:var(--display);font-size:16px;font-weight:700;letter-spacing:-.02em;color:var(--side-strong)}
 .brandTxt span{font-size:11px;color:var(--side-muted);letter-spacing:.02em}
 .tabs{display:flex;flex-direction:column;gap:2px}
-.navGrp{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--side-muted);padding:16px 12px 6px}
+.tabs .navGrp{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--side-muted);padding:16px 12px 6px;opacity:1;justify-content:space-between;border-radius:9px}
+.tabs .navGrp:hover{color:var(--side-fg);background:none}
+/* a sidebar group's heading folds its tabs away (saved per device); the open tab stays showing */
+.navChev{width:13px;height:13px;transition:transform .15s}
+.navGrp[aria-expanded="false"] .navChev{transform:rotate(-90deg)}
+@media (min-width:1024px){:root:not(.compact) .tabs button.navHid:not([aria-selected="true"]){display:none}}
 .tabs button{position:relative;display:flex;align-items:center;gap:11px;width:100%;border:0;background:none;border-radius:9px;padding:8px 12px;color:var(--side-fg);opacity:.78;font-weight:500;text-align:left;white-space:nowrap;transition:background .15s,opacity .15s,color .15s}
 .tabs button:hover{opacity:1;background:var(--side-hover)}
 .tabs button[aria-selected="true"]{opacity:1;color:var(--side-strong);background:var(--side-on);font-weight:600}
@@ -93,7 +98,8 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
   .compact .brand{padding:2px 0 10px}
   .compact .brandTxt,.compact .tabs button span,.compact .iconBtn span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
   .compact .tabs{width:100%}
-  .compact .navGrp{font-size:0;padding:0;margin:8px 10px;height:1px;background:var(--side-line)}
+  .compact .tabs .navGrp{font-size:0;padding:0;margin:8px 10px;height:1px;width:auto;background:var(--side-line);pointer-events:none}
+  .compact .navGrp>*{display:none}
   .compact .tabs button,.compact .iconBtn{justify-content:center;padding:10px 0;width:100%}
   .compact .sideFoot{width:100%}
   /* fixed: the sidebar scrolls (overflow), which would clip a menu beside it. .side's z-index keeps it over the sticky cards */
@@ -121,7 +127,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
   .ctxIn{padding:10px 16px 0}
   .ctxSub{flex-basis:100%;padding-left:18px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.ctxSub::before{display:none}
   .pageHead{padding-top:14px}.pageHead h1{font-size:1.85rem}
-  .navGrp{display:none}
+  .tabs .navGrp{display:none}
   .main{grid-column:1/-1}
   .wrap{padding:0 16px 48px;gap:16px}
 }

@@ -192,6 +192,15 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
   set(document.documentElement.classList.contains("compact"));
   btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.setItem(KEY_COMPACT,"1"):localStorage.removeItem(KEY_COMPACT)}catch(e){}});
 })();
+// ---- sidebar groups: a group's heading folds its tabs away (the open tab stays showing; style.css), per device like full width ----
+(function setupNavFold(){
+  const KEY_FOLD="rozero-farm-planner-navfold",grps=[...document.querySelectorAll(".tabs .navGrp")];
+  let shut=[];try{shut=JSON.parse(localStorage.getItem(KEY_FOLD))||[]}catch(e){}
+  const set=(g,open)=>{g.setAttribute("aria-expanded",String(open));
+    for(let b=g.nextElementSibling;b&&!b.classList.contains("navGrp");b=b.nextElementSibling)b.classList.toggle("navHid",!open)};
+  grps.forEach(g=>{set(g,!shut.includes(g.textContent));g.addEventListener("click",()=>{set(g,g.getAttribute("aria-expanded")!=="true");
+    try{localStorage.setItem(KEY_FOLD,JSON.stringify(grps.filter(x=>x.getAttribute("aria-expanded")==="false").map(x=>x.textContent)))}catch(e){}})});
+})();
 // ---- hints: the help text under the cards, on by default, per device like full width ----
 (function setupHints(){
   const KEY_HINTS="rozero-farm-planner-hints",btn=$("hintBtn");
