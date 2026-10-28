@@ -405,6 +405,9 @@ table.cstats tbody tr,table.cmptab tbody tr{cursor:default}
 .sk .lv{display:flex;align-items:center;justify-content:center;gap:2px;font-size:11px}
 .sk .lv button{border:0;background:none;padding:0 4px;color:var(--muted)}
 .sk .lv button:hover{color:var(--accent)}
+/* skills the job change gives: the name reads as usual, and there's no − / + */
+.sk .nm:disabled{opacity:1}
+.sk .lv button:disabled{visibility:hidden}
 #skillCard,#skpCard{position:relative}
 .sktip{position:absolute;z-index:3;pointer-events:none;width:max-content;max-width:min(360px,calc(100% - 16px));background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;box-shadow:var(--shadow-pop);display:flex;flex-direction:column;gap:4px}
 .sktip[hidden]{display:none}

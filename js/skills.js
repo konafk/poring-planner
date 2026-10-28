@@ -1,15 +1,21 @@
 // ---- skill tree: learned levels per character in c.skills = {slug: level}, from data/skills.js (roz.prontera.info planner) ----
-const treesOf=job=>(typeof SKILLS!=="undefined"&&SKILLS[job])||[];
+// a 1st or 2nd job has Basic Skill Lv 9 from its Novice days, so its Novice tree is left out
+const treesOf=job=>{const t=(typeof SKILLS!=="undefined"&&SKILLS[job])||[];return job==="Novice"?t:t.filter(x=>x.job!=="Novice")};
 const SK_CACHE={};
-// every skill a job can learn, by slug (Novice and 1st-job trees included); tier = which tree it sits in
+// every skill a job can learn, by slug (1st-job tree included); tier = which tree it sits in
 const skOf=job=>SK_CACHE[job]||(SK_CACHE[job]=(()=>{const m={};treesOf(job).forEach((t,ti)=>t.skills.forEach(s=>{if(!m[s.slug])m[s.slug]={...s,tier:ti}}));return m})());
-const learned=c=>{if(!c.skills||typeof c.skills!=="object")c.skills={};return c.skills};
-const hasTree=c=>Object.values(c.skills||{}).some(v=>v>0);
-const skLv=(c,slug)=>(c.skills||{})[slug]||0;
+// skills the job change gives ("def" in the data: the 1st-job quest skills, Redemptio) are always learned, at their max level
+const SK_GIVEN={};
+const givenOf=job=>SK_GIVEN[job]||(SK_GIVEN[job]=Object.values(skOf(job)).filter(s=>s.def));
+const grantSkills=(L,job)=>{for(const s of givenOf(job))if((L[s.slug]||0)<s.max)L[s.slug]=s.max;return L};
+const learned=(c,job=state.job)=>{if(!c.skills||typeof c.skills!=="object")c.skills={};return grantSkills(c.skills,job)};
+// a tree is set once you learn a skill of the job that it doesn't simply get
+const hasTree=(c,job=state.job)=>{const S=skOf(job);return Object.entries(c.skills||{}).some(([k,v])=>v>0&&S[k]&&!S[k].def)};
+const skLv=(c,slug,job=state.job)=>{const s=skOf(job)[slug];return s&&s.def?s.max:(c.skills||{})[slug]||0};
 // raising a skill raises what it needs; lowering is refused while a learned skill still needs the old level
 // (job: the tree to use, your character's by default; the Skill tree tab passes the job it plans)
-function raiseSkill(c,slug,lv,job=state.job){const s=skOf(job)[slug];if(!s)return;lv=Math.max(0,Math.min(s.max,lv));const L=learned(c);if((L[slug]||0)>=lv)return;L[slug]=lv;(s.pre||[]).forEach(([p,n])=>raiseSkill(c,p,n,job))}
-function lowerSkill(c,slug,lv,job=state.job){const S=skOf(job),L=learned(c);
+function raiseSkill(c,slug,lv,job=state.job){const s=skOf(job)[slug];if(!s)return;lv=Math.max(0,Math.min(s.max,lv));const L=learned(c,job);if((L[slug]||0)>=lv)return;L[slug]=lv;(s.pre||[]).forEach(([p,n])=>raiseSkill(c,p,n,job))}
+function lowerSkill(c,slug,lv,job=state.job){const S=skOf(job),L=learned(c,job);if(S[slug]&&S[slug].def&&lv<S[slug].max)return [`${S[slug].name} comes with the job change`];
   const why=Object.keys(L).filter(k=>L[k]>0&&S[k]).flatMap(k=>(S[k].pre||[]).filter(([p,n])=>p===slug&&n>lv).map(([,n])=>`${S[k].name} needs ${S[slug].name} Lv ${n}`));
   if(why.length)return why;if(lv<=0)delete L[slug];else L[slug]=lv;return null}
 // level rows: [SP, damage %, hits, variable cast ms, fixed cast ms, after-cast delay ms, cooldown ms, description]
@@ -116,13 +122,13 @@ const masteryFor=m=>num(C().mastery)+(SKFX?SKFX.mastery.filter(x=>!x.races||x.ra
 // up to the 2nd-job cap of Job Lv 70 (69 points; 1st jobs stop at Job Lv 50, the data's 49 points)
 const JOB_MAX2=70;
 const treePts=(job,t,ti,jobLv)=>t.points!=null&&ti===treesOf(job).length-1&&SECOND(job)?Math.max(t.points,Math.min(JOB_MAX2,num(jobLv))-1):t.points;
-// quest skills ("free" in the data) cost no points
+// quest skills ("free" in the data) cost no points; the ones the job change gives can't be lowered
 const treeUsed=(t,L)=>t.skills.reduce((a,s)=>a+(s.free?0:L[s.slug]||0),0);
 function treesHtml(job,L,jobLv){const trees=treesOf(job);
   return trees.length?trees.map((t,ti)=>{const used=treeUsed(t,L),pts=treePts(job,t,ti,jobLv),rows=Math.ceil((Math.max(0,...t.skills.map(s=>s.slot))+1)/7);
     const cells=Array.from({length:rows*7},(_,i)=>{const s=t.skills.find(x=>x.slot===i);if(!s)return '<div class="sk empty"></div>';const lv=L[s.slug]||0;
-      return `<div class="sk${lv?" on":""}${s.passive?" pas":""}${s.free?" quest":""}" data-sk="${s.slug}">${s.free?'<span class="qtag" title="Quest skill: no skill points">Quest</span>':""}${iconHtml("skill",s.slug)}<button type="button" class="nm" data-act="max">${esc(s.name)}</button>
-        <div class="lv"><button type="button" data-act="dn" aria-label="Lower">−</button><span class="mono">${num(lv)}/${s.max}</span><button type="button" data-act="up" aria-label="Raise">+</button></div></div>`}).join("");
+      return `<div class="sk${lv?" on":""}${s.passive?" pas":""}${s.free?" quest":""}" data-sk="${s.slug}">${s.def?'<span class="qtag" title="Given at the job change: no skill points">Job</span>':s.free?'<span class="qtag" title="Quest skill: no skill points">Quest</span>':""}${iconHtml("skill",s.slug)}<button type="button" class="nm" data-act="max"${s.def?" disabled":""}>${esc(s.name)}</button>
+        <div class="lv"><button type="button" data-act="dn" aria-label="Lower"${s.def?" disabled":""}>−</button><span class="mono">${num(lv)}/${s.max}</span><button type="button" data-act="up" aria-label="Raise"${s.def?" disabled":""}>+</button></div></div>`}).join("");
     return `<div class="tree"><div class="bar"><b>${esc(t.job)}</b><span class="note${pts!=null&&used>pts?" bad":""}">${used}${pts!=null?" / "+pts:""} points</span></div><div class="skgrid">${cells}</div></div>`}).join(""):'<div class="note">No skill tree data for this job.</div>'}
 function renderSkills(){const c=C(),L=learned(c),S=skOf(state.job);
   $("skillTrees").innerHTML=treesHtml(state.job,L,c.jobLv);
@@ -134,7 +140,7 @@ function renderSkills(){const c=C(),L=learned(c),S=skOf(state.job);
 function showSkTipIn(tip,card,job,L,cell){const t=$(tip.id),s=cell&&skOf(job)[cell.dataset.sk];tip.slug=s?s.slug:null;if(!s){t.hidden=true;return}
   const S=skOf(job),lv=L[s.slug]||0,fx=l=>skRow(s,l)[7],line=l=>fx(l)?`<div><span class="note">Lv ${l}${l>lv?" (next)":""}:</span> ${esc(fx(l))}</div>`:"",
     pre=(s.pre||[]).filter(([p])=>S[p]).map(([p,n])=>`<span class="${(L[p]||0)>=n?"":"warnc"}">${esc(S[p].name)} Lv ${n}</span>`);
-  t.innerHTML=`<div class="bar">${iconHtml("skill",s.slug)}<b>${esc(s.name)}</b><span class="note">${s.passive?"Passive":"Active"}${s.free?" · Quest skill, no points":""} · Lv ${lv}/${s.max}</span></div>`+
+  t.innerHTML=`<div class="bar">${iconHtml("skill",s.slug)}<b>${esc(s.name)}</b><span class="note">${s.passive?"Passive":"Active"}${s.def?" · Given at the job change":s.free?" · Quest skill, no points":""} · Lv ${lv}/${s.max}</span></div>`+
     (s.desc?`<p>${esc(s.desc)}</p>`:"")+(pre.length?`<div><span class="note">Needs:</span> ${pre.join(", ")}</div>`:"")+(lv?line(lv):"")+(lv<s.max?line(lv+1):"");
   t.hidden=false;const box=$(card).getBoundingClientRect(),r=cell.getBoundingClientRect(),h=t.offsetHeight,
     up=r.bottom+h+8>innerHeight&&r.top-h-8>0;
@@ -147,7 +153,7 @@ function wireTree(gridId,tip,card,job,L,act){const g=$(gridId),show=cell=>showSk
   g.addEventListener("focusout",e=>{if(!g.contains(e.relatedTarget))show(null)});
   g.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const slug=b.closest("[data-sk]").dataset.sk;act(slug,b.dataset.act);show(g.querySelector(`[data-sk="${slug}"]`))})}
 // − / + / name: one level down or up; the name maxes it, or clears it when it's maxed
-function stepSkill(c,slug,act,job){const s=skOf(job)[slug],lv=skLv(c,slug);
+function stepSkill(c,slug,act,job){const s=skOf(job)[slug],lv=skLv(c,slug,job);
   if(act==="up")raiseSkill(c,slug,lv+1,job);else if(act==="dn")return lowerSkill(c,slug,lv-1,job);else if(lv<s.max)raiseSkill(c,slug,s.max,job);else return lowerSkill(c,slug,0,job);return null}
 const SK_TIP={id:"skTip",slug:null};
 wireTree("skillTrees",SK_TIP,"skillCard",()=>state.job,()=>learned(C()),(slug,act)=>{const c=C(),why=stepSkill(c,slug,act,state.job);
@@ -161,7 +167,7 @@ $("buffList").addEventListener("change",e=>{const k=e.target.dataset.buff;if(!k)
 const SKP_OK=new WeakSet();
 const skPlan=()=>{if(SKP_OK.has(state.skPlan))return state.skPlan;const p=state.skPlan=objOr(state.skPlan);SKP_OK.add(p);if(!SKILLS[p.job])p.job=SKILLS[state.job]?state.job:"Novice";p.jobLv=objOr(p.jobLv);p.skills=objOr(p.skills);
   p.skills=Object.fromEntries(Object.entries(p.skills).filter(([j])=>SKILLS[j]).map(([j,L])=>[j,Object.fromEntries(Object.entries(objOr(L)).filter(([k,v])=>skOf(j)[k]&&+v>0).map(([k,v])=>[k,Math.min(skOf(j)[k].max,Math.round(+v))]))]));return p};
-const planOf=()=>{const p=skPlan();return {skills:p.skills[p.job]||(p.skills[p.job]={})}};
+const planOf=()=>{const p=skPlan();return {skills:grantSkills(p.skills[p.job]||(p.skills[p.job]={}),p.job)}};
 const SKP_TIP={id:"skpTip",slug:null};
 $("skpJob").innerHTML=[["Novice & 1st jobs",j=>!SECOND(j)],["2nd jobs",SECOND]].map(([g,f])=>`<optgroup label="${g}">${Object.keys(SKILLS).filter(f).map(j=>`<option>${esc(j)}</option>`).join("")}</optgroup>`).join("");
 function renderSkPlan(){const p=skPlan(),job=p.job,L=planOf().skills,trees=treesOf(job),mine=state.chars[job],second=SECOND(job),jl=p.jobLv[job]||JOB_MAX2;
@@ -171,7 +177,7 @@ function renderSkPlan(){const p=skPlan(),job=p.job,L=planOf().skills,trees=trees
   const parts=trees.map((t,ti)=>{const used=treeUsed(t,L),pts=treePts(job,t,ti,jl);if(pts==null)return "";
     const left=pts-used;return `<span class="${left<0?"bad":""}"><b>${esc(t.job)}</b> ${used} / ${pts}${left<0?` (${-left} over)`:left?` · ${left} left`:" · full"}${used?` · Job Lv ${used+1}`:""}</span>`}).filter(Boolean);
   $("skpSum").innerHTML=parts.join(" <span class=\"muted\">·</span> ");
-  $("skpLoad").hidden=!(mine&&hasTree(mine));$("skpUse").hidden=!mine;$("skpUse").textContent=`Use on my ${job}`;$("skpLoad").textContent=`Load my ${job}'s`}
+  $("skpLoad").hidden=!(mine&&hasTree(mine,job));$("skpUse").hidden=!mine;$("skpUse").textContent=`Use on my ${job}`;$("skpLoad").textContent=`Load my ${job}'s`}
 wireTree("skpTrees",SKP_TIP,"skpCard",()=>skPlan().job,()=>planOf().skills,(slug,act)=>{const why=stepSkill(planOf(),slug,act,skPlan().job);
   $("skpNote").textContent=why?why.join(" · "):"";save();renderSkPlan()});
 $("skpJob").addEventListener("change",e=>{skPlan().job=e.target.value;$("skpNote").textContent="";save();renderSkPlan()});
@@ -180,7 +186,7 @@ $("skpReset").addEventListener("click",()=>{const p=skPlan();p.skills[p.job]={};
 $("skpLoad").addEventListener("click",()=>{const p=skPlan(),c=state.chars[p.job];if(!c)return;p.skills[p.job]={...(c.skills||{})};if(c.jobLv)p.jobLv[p.job]=num(c.jobLv);$("skpNote").textContent="";save();renderSkPlan()});
 // copy the plan to your character of this job (the one the Character tab keeps for it); its switched-on buffs that aren't learned any more go off
 $("skpUse").addEventListener("click",()=>{const p=skPlan(),job=p.job,c=state.chars[job];if(!c)return;const L=planOf().skills;
-  if(hasTree(c)&&JSON.stringify(c.skills)!==JSON.stringify(L)&&!confirm(`Replace your ${job}'s learned skills with this tree?`))return;
+  if(hasTree(c,job)&&JSON.stringify(c.skills)!==JSON.stringify(L)&&!confirm(`Replace your ${job}'s learned skills with this tree?`))return;
   c.skills={...L};c.buffs=Object.fromEntries(Object.entries(c.buffs||{}).filter(([k,v])=>v&&L[k]>0));
   const cur=state.job;state.job=job;refreshPreset(c);state.job=cur;save();if(job===state.job){renderSkills();syncChar();renderAll()}renderSkPlan();
   showToast(`Your ${job} now has this skill tree`)});
