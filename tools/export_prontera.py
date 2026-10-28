@@ -75,7 +75,45 @@ GEAR_G = {
     28571: [{"b": [["luk", None, None, 2], ["agi", None, None, 2]]}, {"r": 7, "b": [["agi", None, None, 2], ["luk", None, None, 2]]}],  # Red Oath Ring
     # Extra Joker Card: prontera has ATK / MATK +70, MDEF +10 flat. Client: "Each refine on Shield grants MDEF +10. When equipped
     # with Joker Card, ... transform you into Joker for 7 seconds. During transformation: ATK +70, MATK +70" (the set's proc, not counted)
-    27270: [{"b": [["mdef", None, None, 10, 1]]}]}
+    27270: [{"b": [["mdef", None, None, 10, 1]]}],
+    # Orc General Card: prontera has ATK +25 flat. Client: ATK +25 (and ASPD +2) only "When equipped together with High Orc Card"
+    # (the set, in SETS); its own lines depend on the weapon type, not counted
+    27273: [{"text": "While using a blunt weapon, increases CRIT by 1 per weapon refine, and at +10 increases Critical Damage by 10%."},
+            {"text": "While using a knuckle, reduces After Attack Delay by 1% per refine, and at +10 increases ASPD by 2."}],
+    # cards checked against the client's text: prontera counts set lines as the card's own (Merman: AGI / DEX and the Archer line
+    # belong to the Merman, Cruiser, Anolian, Alligator & Dragon Tail set), refine conditions as always on, or leaves lines out
+    4199: [{"b": [["hp_recovery_percent", None, None, 10], ["sp_recovery_percent", None, None, 10]]}],  # Merman Card
+    4159: [{"b": [["agi", None, None, 2]]}, {"r": 9, "b": [["flee", None, None, 20]]}],  # Nine Tail Card: "refinement level is 9 or higher, FLEE +20"
+    4288: [{"b": [["int", None, None, 2]]}, {"r": 9, "b": [["sp", None, None, 150]]}],  # Carat Card: "INT +2. If refine level >= 9, MSP +150"
+    # "When equipped with a Garment refined to +9 or higher, MHP +300 and an additional ... Damage Taken from Neutral Enemies -10%"
+    300551: [{"b": [["magic_damage_taken_percent", "element", "neutral", -5]]},  # A-Ji & Geffen Card
+             {"r": 9, "b": [["hp", None, None, 300], ["magic_damage_taken_percent", "element", "neutral", -10]]}],
+    300547: [{"b": [["damage_taken_percent", "element", "neutral", -5]]},  # Luke & Alberta Card
+             {"r": 9, "b": [["hp", None, None, 300], ["damage_taken_percent", "element", "neutral", -10]]}],
+    # "Physical Damage to Shellfish / Aster +30%" (the client says Shellfish for the Shell Fish Card too)
+    4247: [{"b": [["atk", None, None, 5], ["physical_damage_percent", "monster_group", "shellfish", 30]]}],  # Aster Card
+    4273: [{"b": [["atk", None, None, 5], ["physical_damage_percent", "monster_group", "shellfish", 30]]}],  # Shell Fish Card
+    4153: [{"b": [["atk", None, None, 5], ["physical_damage_percent", "monster_group", "aster", 30]]}],  # Crab Card
+    # lines prontera leaves out, not counted
+    27153: [{"b": [["mdef", None, None, 250]]}, {"text": "Physical Defense -90%."}],  # Golden Thief Bug Card
+    4302: [{"b": [["hp_percent", None, None, 50]]}, {"text": "User's physical and magical defense is fixed at half."}],  # Tao Gunka Card
+    4322: [{"b": [["def", None, None, 1]]}, {"text": "Reflects 5% of melee physical damage received."}],  # High Orc Card
+    4053: [{"b": [["sp_cost_percent", None, None, 25]]}, {"text": "[Heal] Lv 1 can be used."}],  # Vitata Card
+    4212: [{"proc": "Chance to autocast Bash Lv 1 when dealing physical damage. Using Bash pushes enemies back by 5 cells.",  # Bongun Card
+            "text": "Chance to autocast Bash Lv 1 when dealing physical damage. Using Bash pushes enemies back by 5 cells."},
+           {"text": "Physical damage taken from Munak +100%."}],
+    27275: [{"proc": "Triggers Meteor Storm Lv 1 as an auto spell at a certain probability when performing physical attacks. When Meteor "  # Bloody Knight Card
+                     "Storm hits an enemy, inflicts Blind, Confusion, or Silence depending on weapon refine level.",
+             "text": "Triggers Meteor Storm Lv 1 as an auto spell at a certain probability when performing physical attacks. When Meteor "
+                     "Storm hits an enemy, inflicts Blind, Confusion, or Silence depending on weapon refine level."},
+            {"proc": "When hit by close-range physical attacks, has a 10% chance to inflict Stun.",
+             "text": "When hit by close-range physical attacks, has a 10% chance to inflict Stun."}]}
+# card sets prontera doesn't have, as the client's card text gives them (Crab Card: "When equipped together with Crab, Shellfish, and
+# Aster Card, Fish monsters have a chance to drop Sashimi when hunted, and Physical Damage to Water-property Monsters +30%")
+EXTRA_SETS = [{"slug": "crab-shell-fish-aster-card", "name": "Crab, Shell Fish & Aster Card",
+               "pieces": ["crab-card-4153", "shell-fish-card-4273", "aster-card-4247"],
+               "g": [{"b": [["damage_percent", "element", "water", 30]]},
+                     {"text": "Fish monsters have a chance to drop Sashimi when hunted."}]}]
 # card sets whose lines are "per refine" of one item (client text): the piece that is or sits in that item, by set slug
 SET_REF = {"sieglouse-arclouse-card": "arclouse-card-4240",  # FLEE +2 per shield refine
            "erzsebet-bathory-card": "bathory-card-4119",  # INT +1 per armor refine
@@ -254,6 +292,8 @@ def main():
             sets[x["slug"]] = x
         if i % 100 == 0:
             print(f"  {i}/{len(slugs) + len(cards)}", flush=True)
+    for x in EXTRA_SETS:
+        sets.setdefault(x["slug"], x)
 
     src = "Exported by tools/export_prontera.py from roz.prontera.info"
     fields = ("// fields: id, slug, name, slot (every slot it takes), type (weapon type), el, slots, lv (required), wlv (weapon level), w (weapon and shield weight, as in game; none = weightless), refine (schedule),\n"
