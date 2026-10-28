@@ -365,7 +365,7 @@ t("a restored save is cleaned up before anything uses it", () => {
       pauses: [{ from: bad, to: 1e12 + 1e6 }, { from: 1e12 + 1e5, to: bad }, { from: 1e12 + 2e5, to: 1e12 + 3e5 }, { from: 1e12 + 4e5 }] }],
     chars: { Sage: { skills: { "spell-fist": bad, "fire-bolt": "7", hindsight: 3.6, "cold-bolt": -2 }, build: { check: { atk: bad, hit: "250", sp: "" } } }, Knight: "junk" } });
   assert.deepEqual(app("JSON.stringify(cur().pauses)"), JSON.stringify([{ from: 1e12 + 2e5, to: 1e12 + 3e5 }, { from: 1e12 + 4e5 }]));
-  assert.deepEqual(app("JSON.stringify(state.chars.Sage.skills)"), JSON.stringify({ "fire-bolt": 7, hindsight: 4, "energy-coat": 1 }));   // Energy Coat: the job change gives it
+  assert.deepEqual(app("JSON.stringify(state.chars.Sage.skills)"), JSON.stringify({ "fire-bolt": 7, hindsight: 4, "energy-coat": 1, "create-elemental-converter": 1 }));   // the job change gives these two
   assert.deepEqual(app("JSON.stringify(state.chars.Sage.build.check)"), JSON.stringify({ hit: 250 }));
   assert.equal(app("'Knight' in state.chars"), false);
   assert.deepEqual(app("JSON.stringify(state.prices)"), JSON.stringify({ "904": 3000 }));   // item ids only, numbers only
@@ -2452,10 +2452,13 @@ t("Skill tree: quest skills cost no points and are tagged", () => {
   assert.doesNotMatch(html, /data-sk="bash"><span class="qtag"/);
 });
 
-t("Skill tree: the job change gives the 1st-job quest skills and Redemptio, and 1st and 2nd jobs have no Novice tree", () => {
+t("Skill tree: the job change gives the quest skills but the Elemental Changes (and Create Deadly Poison), and 1st and 2nd jobs have no Novice tree", () => {
   assert.deepEqual(JSON.parse(run(`JSON.stringify(Object.values(skOf("Priest")).filter(s=>s.def).map(s=>s.slug))`)), ["holy-light", "redemptio"]);
-  assert.equal(run(`skOf("Wizard")["energy-coat"].def`), true);
-  assert.equal(run(`skOf("Knight")["charge-attack"].def`), undefined);
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(Object.values(skOf("Sage")).filter(s=>s.free&&!s.def).map(s=>s.slug))`)),
+    ["elemental-change-water", "elemental-change-wind", "elemental-change-ground", "elemental-change-fire"]);
+  for (const [job, slug] of [["Wizard", "energy-coat"], ["Knight", "charge-attack"], ["Sage", "create-elemental-converter"], ["Rogue", "close-confine"]])
+    assert.equal(run(`skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].def`), true, slug);
+  assert.equal(run(`skOf("Assassin")["create-deadly-poison"].def`), undefined);
   // Basic Skill comes from the Novice days: no Novice tree past Novice
   assert.deepEqual(JSON.parse(run(`JSON.stringify(["Novice","Mage","Wizard"].map(j=>treesOf(j).map(t=>t.job)))`)), [["Novice"], ["Mage"], ["Mage", "Wizard"]]);
   assert.equal(run(`skOf("Mage")["basic-skill"]`), undefined);
