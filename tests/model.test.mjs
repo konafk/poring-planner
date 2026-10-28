@@ -2441,6 +2441,17 @@ t("Skill tree: each skill's icon cell, by slug", () => {
   assert.ok(run(`iconHtml("skill","bash")`).includes(`class="ico ico-skill" aria-hidden="true" style="background-position:-${i % S.cols * S.w}px -${Math.floor(i / S.cols) * S.h}px"`));
 });
 
+t("Skill tree: quest skills cost no points and are tagged", () => {
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(treesOf("Sage").at(-1).skills.filter(s=>s.free).map(s=>s.slug))`)),
+    ["elemental-change-water", "elemental-change-wind", "elemental-change-ground", "elemental-change-fire", "create-elemental-converter"]);
+  assert.equal(run(`treeUsed(treesOf("Sage").at(-1),{"create-elemental-converter":1,"elemental-change-fire":1,"study":5})`), 5);
+  for (const [job, slug] of [["Knight", "charge-attack"], ["Priest", "redemptio"], ["Assassin", "create-deadly-poison"], ["Rogue", "close-confine"]])
+    assert.equal(run(`skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].free`), true, slug);
+  const html = run(`treesHtml("Knight",{},70)`);
+  assert.match(html, /class="sk quest" data-sk="charge-attack"><span class="qtag"/);
+  assert.doesNotMatch(html, /data-sk="bash"><span class="qtag"/);
+});
+
 t("Equipment and Cards tabs: in-game text, where to get it and the Where to get filter", () => {
   // Eddga Card: its bonus line is only MaxHP -25%; Endure is in the in-game text, which the search and the card's effects use
   assert.match(run(`itemText(4123)`), /Endure/);
