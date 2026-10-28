@@ -13,6 +13,7 @@
 - [Maps](#maps)
 - [Item info](#item-info)
 - [Equipment and Cards](#equipment-and-cards)
+- [Brewing and Cooking simulators](#brewing-and-cooking-simulators)
 - [Recipes](#recipes)
 - [Market](#market)
 - [EXP & formulas](#exp--formulas)
@@ -20,7 +21,7 @@
 
 ## Page layout
 
-The tabs sit in a sidebar on the left: Home at the top, then grouped into Plan (Character, Session, Monsters & maps, Memorial dungeons, Stellar weapons), Game data (Monster info, Item info, Maps, Equipment, Cards, Skill tree, Recipes), Reference (Roadmap, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
+The tabs sit in a sidebar on the left: Home at the top, then grouped into Plan (Character, Session, Monsters & maps, Memorial dungeons, Stellar weapons), Simulators (Brewing, Cooking), Game data (Monster info, Item info, Maps, Equipment, Cards, Skill tree, Recipes), Reference (Roadmap, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
 
 **Log EXP from any tab:** type in the Log EXP box on the right of the top bar, or press **L** on any tab to jump to it. It takes a line like the paste box does: `17.9` (EXP %), `17.9 63` (with job %), `15:05 17.9 63` (at that time), and `died` on the line for EXP after a death. The entry goes in at the level of your last one, and a level-up is picked up the same way as in the Log EXP card. On a phone the box opens as a sheet from the round **+** button. At the max base level (70) base EXP no longer counts, so the box, the + button and **L** go away.
 
@@ -204,7 +205,9 @@ Every piece of gear and every card the build simulator knows. Gear shows its inv
 - **Cards:** search by name, item number, the name it gives its gear in game (`healing` finds Vitata Card), effect or monster, and filter by the **Equipment slot** it goes in and **Where to get** it: MVP, mini boss or normal monster cards. Effects are the card's in-game text, which has everything the card does (Eddga Card's Endure, Baphomet Card's splash), and Where to get lists the monsters that drop it.
 - **Equip:** click a row (or its Equip button) and pick which gear set it goes in: **My gear**, any of your other gear sets, or a **New set** with only it on. An accessory asks which accessory slot, and an Assassin's dagger, one-handed sword or one-handed axe which hand. A headgear that covers more than one row (Coif: upper and middle) fills them all, and takes off whatever was there. Gear you take off keeps its refine, cards and affixes for when you put it back on. A card asks for the set, the item and the card slot, from the gear in each set that takes it; a set with no slotted item for it links to the Equipment tab with the matching filter. Items your job can't wear can't be equipped. If the Character tab is on typed status window values, equipping switches it to Build from gear (switching back brings your typed values back). Rows mark the sets each item or card is in now.
 
-## Recipes
+## Brewing and Cooking simulators
+
+The Simulators group in the sidebar has a tab for each.
 
 ### Brewing simulator
 
@@ -216,7 +219,7 @@ Every dish's chance with each of Global's three cooking kits (Outdoor, Home, Pro
 
 Both use rAthena's formulas (roz.prontera.info's Crafting Calculator has the same brewing one); neither has been measured on Zero Global. Saved per account.
 
-### Recipe list
+## Recipes
 
 Every crafting recipe: 343 of them under **Forging** (weapons, with the weapon's level, and ores refined into Iron, Steel and elemental stones), **Brewing** (potions), **Arrows** (Arrow Crafting: one item makes a stack, such as 700 Arrows from a Wooden Mail), **Cooking**, **Misc** (Holy Water, elemental converters, Poison Bottle), and the two that NPCs make for a zeny fee: **Mixture & Counteragent** (Morgenstein in Geffen, once Merchant Louitz in Alberta and Aure Dupon in Geffen have sent you to him) and **Dye Making** (the eight Dyestuffs, JavaDullihan in Morroc). **Memorial** has the five Jellostones (5 of their Jello Fragment at the Memory Craftsman's Workshop, then a 3-day wait), the eight Expedition upgrades (the Upgrader: a Subjugation Team piece, 50 Faintly Glowing Crystal and Jellostones), Mithril (10 Mithril Ore at Thor's Flame) and the Oath rings and earrings (15 of their gem and 10 Mithril at the Suspicious Craftsman), from the [Memorial dungeons](#memorial-dungeons) tab's data. The NPC and where they stand show under the category. The category buttons show how many recipes each has for your search. **Search** matches the item made, its number, the materials and the NPC, so typing a drop (`jellopy`) finds everything it turns into. Each row lists the materials with their icons and amounts, and **Materials worth**: each material at your Market price, else what an NPC pays, `+?` when one has neither, plus an NPC's fee, and per arrow or item when a craft makes more than one. Click a header to sort, and any item to open its details, which show who drops it and every recipe that makes or uses it.
 
