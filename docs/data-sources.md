@@ -11,7 +11,7 @@ The numbers are estimates. Skill values and formulas follow the sources below an
 - Gear and card descriptions (in-game text) and quests: [roz.prontera.info](https://roz.prontera.info); which monsters drop them, drop rates and MVP / mini boss: the same community database
 - Item icons, card pictures and monster pictures: the game client's images, as [divine-pride.net](https://www.divine-pride.net) serves them per item or monster id
 - Skill icons: the game client's skill icons, as [roz.prontera.info](https://roz.prontera.info) serves them for each skill in its skill planner
-- Crafting recipes (Recipes tab): the community database's recipe list and its Alchemy Lab guide (Mixture, Counteragent, Dyestuffs)
+- Crafting recipes (Recipes tab): the community database's recipe list and its Alchemy Lab guide (Mixture, Counteragent, Dyestuffs); the Old Pharmacist's potions and Marienne's fruit juices from the official client's Tip Box (`System/tipbox_enUS.lub`, Item Creation)
 - Random options (affixes) per gear type, pool and slot, with their min–max: the community database's affix simulator
 - Costume enchant stones and their sets: the stones' item descriptions (Global client text)
 - Taming Ring pet egg enchants: the eggs' item descriptions (Global client text)

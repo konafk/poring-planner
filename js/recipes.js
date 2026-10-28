@@ -1,6 +1,7 @@
 // ---- the Recipes tab: what each craft (forging, brewing, arrow crafting, cooking) uses up, from the exported recipe list, what the
-// Alchemy Lab NPCs make for a fee (Mixture, Counteragent, Dyestuffs) from its Alchemy Lab guide (data/recipes.js), and the memorial
-// crafts (Jellostones, Expedition upgrades, Mithril and the Oath accessories).
+// Alchemy Lab NPCs make for a fee (Mixture, Counteragent, Dyestuffs) from its Alchemy Lab guide (data/recipes.js), the NPC potions and
+// fruit juices from the client's Tip Box (data/tipbox.js), and the memorial crafts (Jellostones, Expedition upgrades, Mithril and the
+// Oath accessories).
 // Search also matches the materials, so a drop finds what it turns into. Every item opens its details (js/info.js), which list the
 // recipes that make it and the ones that use it. The Memorial category comes from data/memorial.js: 5 Jello Fragments into their
 // Jellostone at the Memory Craftsman's Workshop, the Upgrader's Expedition pieces from a Subjugation Team piece, Faintly Glowing
@@ -13,8 +14,11 @@ const MEMORIAL_RECIPES=typeof JELLO==="undefined"?[]:[
 // Cooking from the client's cookbooks (data/cookbooks.js: every dish Lv 1–10, lv the cookbook's level) in place of the community
 // database's, which lacks Fried Sweet Potato and Lv 6–10 and has Honey Herbal Tea at 10 Honey (the book: 2)
 const COOKBOOK_RECIPES=typeof COOKBOOKS==="undefined"?[]:Object.entries(COOKBOOKS).flatMap(([b,ds])=>ds.map(([id,mats])=>({cat:"Cooking",type:"cook",id,n:1,lv:b-7471,mats})));
-const RECIPE_LIST=[...(typeof RECIPES!=="undefined"?RECIPES:[]).filter(r=>!COOKBOOK_RECIPES.length||r.cat!=="Cooking"),...COOKBOOK_RECIPES,...MEMORIAL_RECIPES];
-const RECIPE_CATS=["Forging","Brewing","Arrows","Cooking","Misc","Mixture & Counteragent","Dye Making","Memorial"];
+// The Tip Box's Item Creation guides (data/tipbox.js) for the NPC crafts the database lacks: the Old Pharmacist's potions and
+// Marienne's fruit juices. Its dyes and Mixture & Counteragent are the database's too, with the same materials and fees
+const TIPBOX_ONLY=typeof TIPBOX_RECIPES==="undefined"?[]:TIPBOX_RECIPES.filter(r=>typeof RECIPES==="undefined"||!RECIPES.some(x=>x.cat===r.cat));
+const RECIPE_LIST=[...(typeof RECIPES!=="undefined"?RECIPES:[]).filter(r=>!COOKBOOK_RECIPES.length||r.cat!=="Cooking"),...COOKBOOK_RECIPES,...TIPBOX_ONLY,...MEMORIAL_RECIPES];
+const RECIPE_CATS=["Forging","Brewing","Arrows","Cooking","Misc","Mixture & Counteragent","Dye Making","Potions","Fruit Juice","Memorial"];
 // by item id: the recipes that make it, and the ones it's a material of
 const RECIPES_MAKING={},RECIPES_USING={};
 RECIPE_LIST.forEach(r=>{(RECIPES_MAKING[r.id]=RECIPES_MAKING[r.id]||[]).push(r);
@@ -29,8 +33,8 @@ const shopPrice=id=>SHOPS_OF[id]?Math.min(...SHOPS_OF[id].map(s=>s[2])):null;
 // what a material costs you to get: your Market price, else an NPC shop's, else what an NPC pays (the simulators' cost of a try)
 const buyPrice=id=>state.prices[id]>0?state.prices[id]:shopPrice(id)??matPrice(id);
 const worthNone=(r,w)=>w.unknown===r.mats.length&&!r.fee;
-// who makes it, for the recipes an NPC makes: "JavaDullihan · morocc_in 146,99"
-const recipeNpc=r=>r.npc?`${r.npc[0]} · ${r.npc[1]}`:"";
+// who makes it, for the recipes an NPC makes: "JavaDullihan · morocc_in 146,99", "Marienne (quest) · prt_in 49,172" when her quest unlocks them
+const recipeNpc=r=>r.npc?`${r.npc[0]}${r.quest?" (quest)":""} · ${r.npc[1]}`:"";
 const recipeMade=r=>`${itemName(r.id)}${r.n>1?` ×${fmtN(r.n)}`:""}`;
 // "10 × Iron, 1 × Steel" with icons, each opening its details
 const recipeMats=r=>r.mats.map(([id,n])=>`<span class="mat">${itemIcon(id,1,"il")}<span class="mono">${fmtN(n)}×</span> <a href="#" data-info="item:${id}">${esc(itemName(id))}</a></span>`).join("");
