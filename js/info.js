@@ -31,6 +31,13 @@ function infoMemorial(id){const j=JELLO.find(x=>x.frag[0]===+id);
     .map(x=>`<div><b>${esc(m.name)}</b>${h} <span class="note">${x[2]?`${esc(x[2])} · `:""}base Lv ${m.lv}</span></div>`)));
   if(j)rows.unshift(`<div><b>Poring Village</b> on ${WEEKDAY[j.day]} <span class="note">1 · base Lv 30, or from a ${esc(JELLO_BOX[1])} at the weekend</span></div>`);
   return rows.length?`<div class="infoList">${rows.join("")}</div>`:""}
+// a link that opens the popup: #mob/1002, #item/909, #gear/1201 or #card/4001 (any item works as #item/, the popup tells gear and cards
+// apart). The address bar shows the one that's open, and the page opened at one opens it over the tab you were on
+const infoHash=(kind,id)=>`#${kind}/${id}`;
+function hashInfo(h){const m=/^#(mob|item|gear|card)\/(\d+)$/i.exec(h||"");if(!m)return null;const kind=m[1].toLowerCase(),id=m[2];
+  if(kind==="mob")return MOB_BY_ID.has(+id)?["mob",id]:null;
+  return itemName(id)!=="#"+id||BUILD.item(+id)?[kind,id]:null}
+const infoUrl=()=>{const [kind,id]=INFO[INFO.length-1];return location.origin+location.pathname+location.search+infoHash(kind,id)};
 const recipeAct=id=>RECIPES_MAKING[id]||RECIPES_USING[id]?'<button type="button" data-infoact="recipes">Recipes</button>':"";
 
 function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobIds.includes(m.id),a=mobArrives(m),me=charSet();
@@ -82,7 +89,8 @@ function drawInfo(){const [kind,id]=INFO[INFO.length-1],m=kind==="mob"&&MOB_BY_I
   if(!v){INFO.pop();return}
   $("infoDlgIco").innerHTML=v.ico;$("infoDlgTitle").textContent=v.title;$("infoDlgSub").innerHTML=v.sub;
   $("infoDlgBody").innerHTML=v.body;$("infoDlgActs").innerHTML=v.acts;$("infoBack").hidden=INFO.length<2;
-  $("infoDlgBody").scrollTop=0}
+  $("infoDlgBody").scrollTop=0;$("infoShare").href=infoUrl();
+  try{history.replaceState(null,"",infoHash(kind,id))}catch(e){}}
 // kind "mob" or "item" (an item that's gear or a card shows as one)
 function openInfo(kind,id){if(kind!=="mob")kind=infoKind(id);
   const d=$("infoDlg");if(!d.open)INFO=[];const top=INFO[INFO.length-1];if(!top||top[0]!==kind||String(top[1])!==String(id))INFO.push([kind,id]);
@@ -107,4 +115,13 @@ function infoAct(a){const [kind,id]=INFO[INFO.length-1],d=$("infoDlg");
     if(v>0)state.prices[id]=v;else delete state.prices[id];save();renderAll()});
   $("infoBack").addEventListener("click",()=>{INFO.pop();drawInfo()});
   $("infoDlgClose").addEventListener("click",()=>d.close());
+  // closed: the address bar goes back to the tab's link
+  d.addEventListener("close",()=>{if(d.open||!hashInfo(location.hash))return;const b=document.querySelector('[data-tabbtn][aria-selected="true"]');
+    try{history.replaceState(null,"",location.pathname+location.search+(b?"#"+tabSlug(b.dataset.tabbtn):""))}catch(e){}});
+  // Share: the phone's share sheet, else the link is copied (a plain click on the link; it can also be opened in a new tab)
+  $("infoShare").addEventListener("click",async e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button)return;e.preventDefault();
+    const url=infoUrl(),lbl=$("infoShare").querySelector("span"),say=t=>{lbl.textContent=t;clearTimeout(lbl._t);lbl._t=setTimeout(()=>{lbl.textContent="Share"},2000)};
+    if(navigator.share&&matchMedia("(pointer:coarse)").matches){try{await navigator.share({title:$("infoDlgTitle").textContent+" · RO Zero Farm Planner",url});return}catch(err){if(err&&err.name==="AbortError")return}}
+    try{await navigator.clipboard.writeText(url);say("Link copied")}catch(err){prompt("Copy this link:",url)}});
+  addEventListener("hashchange",()=>{const x=hashInfo(location.hash);if(x)openInfo(...x)});
 })();
