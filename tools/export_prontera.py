@@ -23,11 +23,14 @@ CLIENT_FIX = {"falcon-assault": {"cooldown_ms": 500}}
 GLOBAL_PCT = {"sonic-blow": (1200, -100)}
 # skill points per tree that roz.prontera.info gets wrong: a Novice gets one point per job level after the first, so Job Lv 10 = 9 (Basic Skill's 9 levels)
 POINTS_FIX = {"Novice": 9}
+# quest skills (no skill points) roz.prontera.info has wrong, from the official client (skillinfoz/skillinfolist.lub, Type = "Quest"): slug -> quest or not.
+# Create Deadly Poison is an Assassin skill learned with points (it needs Envenom, Detoxify and Enchant Poison)
+QUEST_FIX = {"create-deadly-poison": False, "venom-knife": True, "sonic-acceleration": True, "dubious-salesmanship": True, "spiritual-bestowment": True,
+             "excruciating-palm": True, "bioethics": True}
 # skills the game gives at the job change that roz.prontera.info doesn't mark as given (is_default): since 2024-12-04 the 2nd-job quest skills
-# come with the job change, all but the Elemental Changes, which still take a quest (criatura-academy.com/skills/1014-redemptio/ and the others'
-# pages). Create Deadly Poison isn't on its Assassin list, so it stays a quest skill
+# come with the job change, all but the Elemental Changes, which still take a quest (criatura-academy.com/skills/1014-redemptio/ and the others' pages)
 GIVEN_FIX = {"charge-attack", "shrink", "sight-blaster", "create-elemental-converter", "phantasmic-arrow", "pang-voice", "charming-wink", "redemptio",
-             "close-confine"}
+             "close-confine", "venom-knife", "sonic-acceleration", "dubious-salesmanship", "spiritual-bestowment", "excruciating-palm", "bioethics"}
 # skill text roz.prontera.info has differently from the official client (skillinfoz/skilldescript_enus.lub): slug -> (old, new) swaps in
 # the description and each level's line, applied while prontera still has the old text
 CLIENT_TEXT = {"cart-boost": [("While Geneticist Cart Boost", "While Cart Boost")], "hindsight": [("Frost Driver", "Frost Diver")],
@@ -340,7 +343,7 @@ def main():
                 desc, lv = client_text(sk["slug"], (sk.get("description") or "").strip(), lv)
                 row = {"slug": sk["slug"], "name": sk["name"], "desc": desc, "max": sk["max_level"], "slot": sk["tree_slot"], "passive": sk["passive"] == "passive",
                        "el": sk.get("element"), "pre": [[slug_of.get(p["skill_id"], p["skill_id"]), p["level"]] for p in sk.get("prerequisites") or []],
-                       "f": f, "lv": lv, "g": groups(sk.get("bonus_groups")), "free": True if sk.get("free") else None,
+                       "f": f, "lv": lv, "g": groups(sk.get("bonus_groups")), "free": True if QUEST_FIX.get(sk["slug"], sk.get("free")) else None,
                        "def": True if sk.get("is_default") or sk["slug"] in GIVEN_FIX else None,
                        "icon": (sk.get("image") or "").rsplit("/", 1)[-1] or None}
                 rows.append({k: x for k, x in row.items() if x not in (None, [], "")})

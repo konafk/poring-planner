@@ -2445,20 +2445,25 @@ t("Skill tree: quest skills cost no points and are tagged", () => {
   assert.deepEqual(JSON.parse(run(`JSON.stringify(treesOf("Sage").at(-1).skills.filter(s=>s.free).map(s=>s.slug))`)),
     ["elemental-change-water", "elemental-change-wind", "elemental-change-ground", "elemental-change-fire", "create-elemental-converter"]);
   assert.equal(run(`treeUsed(treesOf("Sage").at(-1),{"create-elemental-converter":1,"elemental-change-fire":1,"study":5})`), 5);
-  for (const [job, slug] of [["Knight", "charge-attack"], ["Priest", "redemptio"], ["Assassin", "create-deadly-poison"], ["Rogue", "close-confine"]])
+  for (const [job, slug] of [["Knight", "charge-attack"], ["Priest", "redemptio"], ["Assassin", "venom-knife"], ["Rogue", "close-confine"]])
     assert.equal(run(`skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].free`), true, slug);
   const html = run(`treesHtml("Knight",{},70)`);
   assert.match(html, /class="sk quest" data-sk="charge-attack"><span class="qtag"/);
   assert.doesNotMatch(html, /data-sk="bash"><span class="qtag"/);
 });
 
-t("Skill tree: the job change gives the quest skills but the Elemental Changes (and Create Deadly Poison), and 1st and 2nd jobs have no Novice tree", () => {
+t("Skill tree: the job change gives the quest skills but the Elemental Changes, and 1st and 2nd jobs have no Novice tree", () => {
   assert.deepEqual(JSON.parse(run(`JSON.stringify(Object.values(skOf("Priest")).filter(s=>s.def).map(s=>s.slug))`)), ["holy-light", "redemptio"]);
   assert.deepEqual(JSON.parse(run(`JSON.stringify(Object.values(skOf("Sage")).filter(s=>s.free&&!s.def).map(s=>s.slug))`)),
     ["elemental-change-water", "elemental-change-wind", "elemental-change-ground", "elemental-change-fire"]);
   for (const [job, slug] of [["Wizard", "energy-coat"], ["Knight", "charge-attack"], ["Sage", "create-elemental-converter"], ["Rogue", "close-confine"]])
     assert.equal(run(`skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].def`), true, slug);
-  assert.equal(run(`skOf("Assassin")["create-deadly-poison"].def`), undefined);
+  // the client's quest skills: Create Deadly Poison isn't one (it costs points), Venom Knife and Sonic Acceleration are
+  assert.equal(run(`skOf("Assassin")["create-deadly-poison"].free`), undefined);
+  assert.equal(run(`treeUsed(treesOf("Assassin").at(-1),{"create-deadly-poison":1,"venom-knife":1,"sonic-acceleration":1})`), 1);
+  for (const [job, slug] of [["Assassin", "venom-knife"], ["Assassin", "sonic-acceleration"], ["Blacksmith", "dubious-salesmanship"], ["Monk", "spiritual-bestowment"],
+    ["Monk", "excruciating-palm"], ["Alchemist", "bioethics"]])
+    assert.equal(run(`skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].free&&skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].def`), true, slug);
   // Basic Skill comes from the Novice days: no Novice tree past Novice
   assert.deepEqual(JSON.parse(run(`JSON.stringify(["Novice","Mage","Wizard"].map(j=>treesOf(j).map(t=>t.job)))`)), [["Novice"], ["Mage"], ["Mage", "Wizard"]]);
   assert.equal(run(`skOf("Mage")["basic-skill"]`), undefined);
