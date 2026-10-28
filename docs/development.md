@@ -37,7 +37,7 @@ Plain scripts that `index.html` loads in this order. They share one global scope
 | `recipes.js` | The Recipes tab (with the Jellostones and Expedition upgrades from `data/memorial.js`), and the recipes that make or use each item (the details popup lists them). |
 | `info.js` | The details popup for a monster, item, piece of gear or card, opened from any name with `data-info="mob:<id>"` or `"item:<id>"`. |
 | `memorial.js` | The Memorial dungeons tab: the Jellostone tracker and its estimate, the Expedition upgrades, the memorial dungeons and their gear's enchants. |
-| `navi.js` | The game's Navigation (`data/navi.js`): the marks on a map's picture (ways out, NPCs), Getting there from your save town (`state.saveTown`, with a Kafra teleport in front when that's quicker), and the Kafra, ways out and NPC lists, for the Maps tab and the Map planner. |
+| `navi.js` | The game's Navigation (`data/navi.js`): the marks on a map's picture (ways out, NPCs), Getting there from the nearest town (with a Kafra teleport in front when that's quicker), and the Kafra, ways out and NPC lists, for the Maps tab and the Map planner. |
 | `mapinfo.js` | The Maps tab: every spawn map and town on the game's world map (`worldMap` in `render.js`, which the Map planner's world map uses too), its picture and monsters, and a table of every map. |
 | `stellar.js` | The Stellar weapons tab: the ★ weapons by weapon type, the certificates each still needs and the monster that gets you them fastest, and the Activation routes. |
 | `start.js` | Tabs and their headings, collapsible cards, the Character tab's section links, the get started card's buttons, the search (Ctrl+K), the sidebar's Compact button and its Settings menu (Hints / Theme / Full width), and the first render. |

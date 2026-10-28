@@ -2759,32 +2759,26 @@ t("Brewing and Cooking simulators: typed numbers over the character's, saved per
   assert.deepEqual(JSON.parse(run2(`JSON.stringify(state.craftSim)`)), { brew: { dex: 70, pp: 10 }, cook: { mastery: 0, kit: 13 } });
 });
 
-t("Navigation: routes from your save town, the Kafra teleport in front, and where a cell is on a map's picture", () => {
+t("Navigation: routes from the nearest town, the Kafra teleport in front, and where a cell is on a map's picture", () => {
   // every spawn map a route reaches is one the page has, and every route starts in a town or where a town's Kafra teleports you
   const bad = JSON.parse(run(`JSON.stringify(Object.entries(NAVI_ROUTES).filter(([k,rs])=>!MAPMOBS[k]||!rs.every(([s,c,st])=>(isTown(s)||naviKafraFrom(s).length)&&c>=0&&Array.isArray(st))).map(([k])=>k))`));
   assert.deepEqual(bad, []);
-  // Orc Dungeon 1F from Geffen: its Kafra teleports you to the Orc Village field, a short walk away; from Prontera too
-  const g = JSON.parse(run(`JSON.stringify(naviRoute("orc_d01","geffen"))`));
-  assert.equal(g.kafra, "geffen"); assert.equal(g.start, "gef_f10"); assert.equal(g.from, "geffen");
+  // Orc Dungeon 1F: Geffen's Kafra teleports you to the Orc Village field, a short walk away
+  const g = JSON.parse(run(`JSON.stringify(naviRoute("orc_d01"))`));
+  assert.equal(g.start, "gef_f10"); assert.ok(g.kafra.includes("geffen"), g.kafra.join());
+  assert.ok(g.kafra.every(k => run(`isTown(${JSON.stringify(k)})`)));
   assert.ok(g.cells < 200, `${g.cells} cells`);
   assert.equal(g.steps[g.steps.length - 1][0], "in_orcs01");   // the last way out is the one into the dungeon
-  assert.equal(JSON.parse(run(`JSON.stringify(naviRoute("orc_d01","prontera"))`)).start, "gef_f10");
-  // no save town: the nearest start, said as the town whose Kafra goes there
-  const n0 = JSON.parse(run(`JSON.stringify(naviRoute("orc_d01",undefined))`));
-  assert.equal(n0.from, null); assert.ok(run(`isTown(${JSON.stringify(n0.kafra)})`));
-  // a map on foot from its own town: no Kafra
-  const p = JSON.parse(run(`JSON.stringify(naviRoute("pay_d00","payon"))`));
-  assert.equal(p.kafra, null); assert.equal(p.start, "payon");
+  // Payon Cave 1F: on foot from Archer Village next door, no Kafra
+  const p = JSON.parse(run(`JSON.stringify(naviRoute("pay_d00"))`));
+  assert.deepEqual(p.kafra, []); assert.equal(p.start, "pay_arche");
   // a map the Navigation has no way into, and one it doesn't have at all
-  assert.equal(run(`naviRoute("nrd_dun02","prontera")`), null);
-  assert.equal(run(`naviRoute("gl_chu","prontera")`), null);
+  assert.equal(run(`naviRoute("nrd_dun02")`), null);
+  assert.equal(run(`naviRoute("gl_chu")`), null);
   // a 280 x 400 field sits in the middle of its square picture, north up
   assert.deepEqual(JSON.parse(run(`JSON.stringify(NAVI_SIZE.pay_f08)`)), [280, 400]);
   assert.deepEqual(JSON.parse(run(`JSON.stringify(naviAt("pay_f08",0,400))`)), [15, 0]);
   assert.deepEqual(JSON.parse(run(`JSON.stringify(naviAt("pay_f08",280,0))`)), [85, 100]);
-  // a save town that's no town is dropped when the save loads
-  assert.equal(load({ saveTown: "prt_fild08" })(`state.saveTown`), undefined);
-  assert.equal(load({ saveTown: "payon" })(`state.saveTown`), "payon");
 });
 
 console.log(`${n} tests passed`);

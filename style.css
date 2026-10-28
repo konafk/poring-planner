@@ -821,7 +821,6 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 .naviDot{display:inline-block;width:8px;height:8px;margin-right:5px;border-radius:50%;background:#8e8ba0;vertical-align:baseline}
 .naviDot.warp{border-radius:2px;background:#ff3b30}
 .naviRoute{margin-top:8px}
-.naviRoute .naviFrom select{width:auto}
 .naviSteps{display:flex;flex-wrap:wrap;gap:4px 6px;list-style:none;margin:4px 0 0;padding:0}
 .naviSteps>li:not(:last-child)::after{content:"→";margin-left:6px;color:var(--muted)}
 .naviList{list-style:none;margin:6px 0 0;padding:0;columns:2 220px;column-gap:16px}

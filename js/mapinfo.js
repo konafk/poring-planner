@@ -1,5 +1,5 @@
 // ---- the Maps tab: every spawn map and town on the game's world map (render.js worldMap), its picture with its NPCs and ways out, the way
-// there from your save town (navi.js), its monsters, and a table of them all ----
+// there from the nearest town (navi.js), its monsters, and a table of them all ----
 // The map picked here is state.mapInfo (by source map code), apart from the Map planner's state.map; "Plan this map" hands a spawn map over
 const mapInfoMaps=()=>[...Object.keys(MAPMOBS),...(typeof TOWNS==="undefined"?[]:Object.keys(TOWNS))];
 const mapInfoKey=()=>{const k=mapKey(state.mapInfo);return MAPMOBS[k]||isTown(k)?k:mapKey(state.map)||Object.keys(MAPMOBS).sort((a,b)=>mapCode(a).localeCompare(mapCode(b)))[0]};
