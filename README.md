@@ -25,14 +25,15 @@ It's a single page that runs entirely in your browser. There's no server, no log
 - **Maps:** the game's world maps (Midgard and Nordfeld) with every spawn map on them, each map's picture from the game client and its monsters, one click to plan it.
 - **Monster info, Item info, Market:** drops, prices, player prices and a sell timer. Item info can list every item in the game client too, costumes included, by category. Monster info has the monster table too. Every item shows its in-game icon, and every monster its sprite.
 - **Equipment, Cards:** every weapon, armor and card, filtered by type, job, level, card slots and ATK / MATK / DEF, with one click to put it in your gear or another gear set.
-- **Recipes:** a **Brewing simulator** and a **Cooking simulator** (each potion's or dish's chance for your stats and kit, what one costs you counting the failures, and a run of tries rolled the server's way), then every forging, brewing, arrow crafting, cooking, Mixture & Counteragent and Dye Making recipe, the Jellostone exchange and the Expedition upgrades, searchable by the item made or its materials, with what the materials are worth.
+- **Brewing** and **Cooking** (Simulators): each potion's or dish's chance for your stats and kit, what one costs you counting the failures, and a run of tries rolled the server's way.
+- **Recipes:** every forging, brewing, arrow crafting, cooking, Mixture & Counteragent and Dye Making recipe, the Jellostone exchange and the Expedition upgrades, searchable by the item made or its materials, with what the materials are worth.
 - **EXP & formulas:** EXP tables, party share and every formula with your numbers.
 - **Accounts:** separate characters per account, text backups and share links.
 
 ## Docs
 
 - [Character tab](docs/character.md): build mode, damage model, cards, buffs, consumables, skill items and weight
-- [Other tabs](docs/features.md): accounts and Backup, Session, Monsters & maps, Roadmap, Monster info, Maps, Item info, Equipment and Cards, Recipes, Market, EXP & formulas, and how tables work
+- [Other tabs](docs/features.md): accounts and Backup, Session, Monsters & maps, Roadmap, Monster info, Maps, Item info, Equipment and Cards, Brewing and Cooking simulators, Recipes, Market, EXP & formulas, and how tables work
 - [Development](docs/development.md): project layout, data export tools and tests
 - [Data sources](docs/data-sources.md): where the data and formulas come from
 

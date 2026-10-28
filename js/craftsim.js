@@ -85,7 +85,6 @@ function renderCook(){const v=cookVals(),m=craftMine(),S=state.craftSim.cook;
       ${COOK_KITS.map(([,lv])=>`<td${lv===v.kit?' class="sel"':""}>${craftChTxt(cookChance(v,r,lv))}</td>`).join("")}<td class="mono">${c.avg>0?(1/c.avg).toFixed(2):"–"}</td>${craftMoney(r,kitId,c)}</tr>`}).join("");
   const id=S.id||COOK_RECIPES[0].id;$("cookPick").innerHTML=COOK_RECIPES.map(r=>`<option value="${r.id}"${r.id===id?" selected":""}>${esc(itemName(r.id))} (Lv ${dishLv(r.id)})</option>`).join("");
   $("cookN").value=S.n||100}
-function renderCraftSim(){if(!$("brewCard"))return;renderBrew();renderCook()}
 // a run's result line: made / failed, against the average, and the zeny it came to when the prices are known
 function craftRunTxt(r,extra,n,res,c,more=""){const w=tryCost(r,extra),p=matPrice(r.id),net=p!=null&&!w.none&&!w.unknown?res.ok*p-n*w.z:null;
   return `<b>${fmtN(res.ok)}</b> ${esc(itemName(r.id))} from ${fmtN(n)} tries, ${fmtN(res.fail)} failed <span class="note">(${fmtN(c.avg*n)} on average)</span>${more}`
