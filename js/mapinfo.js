@@ -1,4 +1,5 @@
-// ---- the Maps tab: every spawn map and town on the game's world map (render.js worldMap), its picture, its monsters, and a table of them all ----
+// ---- the Maps tab: every spawn map and town on the game's world map (render.js worldMap), its picture with its NPCs and ways out, the way
+// there from your save town (navi.js), its monsters, and a table of them all ----
 // The map picked here is state.mapInfo (by source map code), apart from the Map planner's state.map; "Plan this map" hands a spawn map over
 const mapInfoMaps=()=>[...Object.keys(MAPMOBS),...(typeof TOWNS==="undefined"?[]:Object.keys(TOWNS))];
 const mapInfoKey=()=>{const k=mapKey(state.mapInfo);return MAPMOBS[k]||isTown(k)?k:mapKey(state.map)||Object.keys(MAPMOBS).sort((a,b)=>mapCode(a).localeCompare(mapCode(b)))[0]};
@@ -14,8 +15,9 @@ function renderMapInfo(){
   const v=typeof MINIMAPS!=="undefined"&&MINIMAPS[mp],wi=worldOf(mp),lv=mapInfoLv(mp),mobs=mapInfoMobs(mp);
   $("mapInfoSel").innerHTML=`<div class="bar"><h3 class="grow">${esc(mapName(mp)||mapCode(mp))} <span class="note mono">${esc(mapCode(mp))}</span></h3>
     ${isTown(mp)?"":`<button type="button" class="primary small" data-planmap="${esc(mp)}">Plan this map</button>`}</div>
-    ${v?`<a class="mapPic" href="img/maps/${esc(mp)}.png?v=${v}" target="_blank" rel="noopener" title="The map from the game client's map window. Click for full size"><img src="img/maps/${esc(mp)}.png?v=${v}" alt="Map of ${esc(mapName(mp)||mapCode(mp))}" width="512" height="512"></a>`:`<div class="note">The game client has no picture of this map.</div>`}
+    ${v?naviPic(mp,v):`<div class="note">The game client has no picture of this map.</div>`}
     <div class="note">${isTown(mp)?"town":esc(mapInfoOpenTxt(mp))} · ${wi>=0?`on the ${esc(WORLDMAPS[wi].name)} map`:"not on the game's world map yet"}${lv?` · monsters Lv ${lv[0]}${lv[1]>lv[0]?`–${lv[1]}`:""}`:""}${isRoomMap(mp)?" · room dungeon":""}</div>
+    ${naviRouteHtml(mp)}${naviLists(mp)}
     <div class="infoList mt">${mobs.map(({m,n})=>`<div>${mobIcon(m.id,1,"il")}${infoLink("mob",m.id,m.name)}${BOSS_PILL(m)} <span class="note">Lv ${m.lv} · ≈${spN(n)}${m.boss?"":` · ${fmtExp(m)} EXP`}</span></div>`).join("")||`<div class="note">${isTown(mp)?"A town: no monsters.":"No monsters listed."}</div>`}</div>`;
   // every map, narrowed by the search (code, name, a monster on it, or "town") and to open maps
   const all=mapInfoMaps(),rows=all.filter(k=>(!onlyOpen||!isClosed(k))&&(!q||[k,mapCode(k),mapName(k),...(MAPNAMES[k]||[]).slice(2),...(MAPMOBS[k]||[]).map(x=>x.m.name),isTown(k)?"town":""].some(s=>String(s).toLowerCase().includes(q))))
