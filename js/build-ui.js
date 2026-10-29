@@ -483,7 +483,7 @@ function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),
   if(renderEquipWin.html===html)return;renderEquipWin.html=html;el.innerHTML=html;drawLook(el);if(f)el.querySelector(f)?.focus()}
 // a hair style on its own (the Stylist's hair grids), drawn k times its size, painted by drawLook like a look's canvas
 function headCanvas(sex,hair,color,k=1){const h=typeof JOB_SPRITES!=="undefined"&&(JOB_SPRITES.head[sex]||{})[hair];if(!h)return "";
-  return `<canvas class="ewPic ewHead" width="${h[2]}" height="${h[3]}" style="width:${h[2]*k}px;height:${h[3]*k}px" data-head="${[...h.slice(0,4),0,0].join(",")}" data-hair="${sex},${hair},${color}"></canvas>`}
+  return `<canvas class="ewPic lookHead" width="${h[2]}" height="${h[3]}" style="width:${h[2]*k}px;height:${h[3]*k}px" data-head="${[...h.slice(0,4),0,0].join(",")}" data-hair="${sex},${hair},${color}"></canvas>`}
 // each look's canvas in root (lookCanvas, headCanvas): the body [x,y,w,h on the sheet, x,y in the canvas] from the job sheet, each index
 // coloured with the clothes colour's palette, then the head the same from the hair sheet with the hair colour's; once both sheets have loaded
 function drawLook(root){const bp=ewPx(EW_SHEET),hp=ewPx(EW_HAIR);if(!bp||!hp)return;
