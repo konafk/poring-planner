@@ -15,7 +15,10 @@ Writes data/sprites.js: the body sheet and the hair sheet (each sprite cropped t
 URLs, since the page reads their pixels to colour them, which a browser only allows for an image from the page's own site and never
 for a file opened from disk; per job and gender the body's place on the sheet, where it draws from the feet, its head anchor and its
 clothes colours (body, and trans for the transcendent look); per gender and hair style the head's place, where it draws from the
-anchor and its hair colours. Standard library only.
+anchor and its hair colours.
+
+Also writes img/job-icons.png, each job's icon from the client (data\\texture\\유저인터페이스\\uirenewal\\jobicon\\big\\icon_job_<job id>.bmp,
+52 x 52, magenta see-through), a sheet like tools/export_icons.py's that data/sprites.js's icons names. Standard library only.
 """
 import base64, json, os, struct, sys, zlib
 
@@ -31,6 +34,12 @@ ONE_SEX = {"Bard": "m", "Dancer": "f"}
 TRANS = {"Knight": "로드나이트", "Crusader": "팔라딘", "Wizard": "하이위저드", "Sage": "프로페서", "Hunter": "스나이퍼", "Bard": "클라운",
          "Dancer": "집시", "Priest": "하이프리", "Monk": "챔피온", "Blacksmith": "화이트스미스", "Alchemist": "크리에이터",
          "Assassin": "어쌔신크로스", "Rogue": "스토커"}
+# the client's job id for each, which names its job icon
+JOB_ID = {"Novice": 0, "Swordsman": 1, "Mage": 2, "Archer": 3, "Acolyte": 4, "Merchant": 5, "Thief": 6, "Knight": 7, "Priest": 8, "Wizard": 9,
+          "Blacksmith": 10, "Hunter": 11, "Assassin": 12, "Crusader": 14, "Monk": 15, "Sage": 16, "Rogue": 17, "Alchemist": 18, "Bard": 19,
+          "Dancer": 20}
+ICON = "data\\texture\\유저인터페이스\\uirenewal\\jobicon\\big\\icon_job_{}.bmp"
+ICON_W, ICON_COLS = 52, 10
 # bodies whose clothes palettes go by another name: the Clown's are the Gypsy's male ones
 PAL_NAME = {"클라운": "집시"}
 SHEET_W = 512
@@ -290,6 +299,14 @@ def main():
            "head": {s: {n: [*hat[i], *hair_images[i][:2], hair_images[i][3] - (a or (0, 0))[0], hair_images[i][4] - (a or (0, 0))[1]]
                         for n, (i, a) in g.items()} for s, g in heads.items()},
            "hairPal": hair_pal}
+    # the job icons, drawn at half their size (hd) so they're sharp on high-DPI screens; ids are the page's job names
+    from export_minimaps import bmp_rgba
+    from export_icons import sheet
+    icons = [j for j in JOBS if grf.has(ICON.format(JOB_ID[j]))]
+    missing += [ICON.format(JOB_ID[j]) for j in JOBS if j not in icons]
+    pics = [(w, h, bytearray(x for r in rows for p in r for x in p)) for w, h, rows in (bmp_rgba(grf.read(ICON.format(JOB_ID[j]))) for j in icons)]
+    out["icons"] = {"file": "img/job-icons.png", "v": sheet(pics, ICON_W, ICON_W, ICON_COLS, os.path.join(ROOT, "img", "job-icons.png")),
+                    "w": ICON_W // 2, "h": ICON_W // 2, "hd": 2, "cols": ICON_COLS, "ids": icons}
     with open(os.path.join(ROOT, "data", "sprites.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// Job looks for the equipment window (tools/export_sprites.py, from the game client): the body and hair sheets as data:\n"
                 "// URLs, so the page can read their pixels even opened from disk (jobData, hairData); per job and gender (m/f) the body\n"
@@ -301,7 +318,7 @@ def main():
         f.write("const JOB_SPRITES=" + json.dumps(out, separators=(",", ":"), ensure_ascii=False) + ";\n")
     print(f"{sum(len(g) for g in bodies.values())} bodies, {sum(len(g) for g in trans.values())} transcendent "
           f"({sum(len(p['c']) for d in (body_pal, trans_pal) for g in d.values() for p in g.values())} clothes colours), {sum(len(g) for g in heads.values())} hair styles "
-          f"({sum(len(p['c']) for g in hair_pal.values() for p in g.values())} colours), sheets {SHEET_W} x {H} ({len(data)} bytes) and {SHEET_W} x {HH} ({len(hdata)} bytes)")
+          f"({sum(len(p['c']) for g in hair_pal.values() for p in g.values())} colours), sheets {SHEET_W} x {H} ({len(data)} bytes) and {SHEET_W} x {HH} ({len(hdata)} bytes), {len(icons)} job icons")
     if missing:
         print("not in the client: " + ", ".join(missing))
 

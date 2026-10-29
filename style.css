@@ -771,6 +771,25 @@ details.more>.form{display:grid}
 .ewAmmo{grid-column:1/-1;display:flex;justify-content:center}
 .ewAmmo .ewSlot{width:min(100%,260px)}
 @media (max-width:520px){.equipWin{--ew-z:1.5}.ewBody{padding:6px;gap:4px}.ewSlot{padding:3px 5px;gap:4px;font-size:11px}.ewLook button{padding:1px 4px}.ewHairW{display:none}}
+/* the class picker (the Skill tree's Job): a button with the job's look, client icon and name that opens every job's as a grid. The
+   looks are the equipment window's (.ewStage / .ewFeet), at their own size */
+.ico-job{width:26px;height:26px;background-image:var(--ico-job)}
+.classPick{position:relative;--ew-z:1}
+.cpBtn{display:flex;align-items:center;gap:8px;padding:0 12px 0 0;overflow:hidden;text-align:left}
+.cpBtn .ewStage{flex:none;width:48px;height:58px;min-height:0;overflow:hidden}
+.cpBtn .ewStage::before{bottom:2px}.cpBtn .ewFeet{bottom:5px;transform:scale(.72)}
+.cpName{display:flex;flex-direction:column;line-height:1.2}
+.cpLbl{font-size:11px;font-weight:500;color:var(--muted)}
+.cpChev{width:16px;height:16px;margin-left:2px;color:var(--muted);transition:transform .15s}
+.cpBtn[aria-expanded="true"] .cpChev{transform:rotate(180deg)}
+.cpPop{position:absolute;z-index:5;top:calc(100% + 6px);left:0;width:min(650px,calc(100vw - 40px));max-height:min(70vh,560px);overflow:auto;padding:4px 10px 10px;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-pop)}
+.cpGrp{margin:8px 2px 6px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.cpGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:6px}
+.cpOpt{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px 6px;border-color:var(--line);background:var(--raised);font-size:12px;font-weight:550;line-height:1.2}
+.cpOpt .ewStage{flex:none;height:92px;min-height:0;overflow:hidden}
+.cpOpt>.ico{position:absolute;top:4px;left:4px}
+.cpOpt[aria-selected="true"]{border-color:var(--accent);background:var(--accent-soft)}
 /* Build from gear: the status window, drawn like the game's: base stat with − / +, what job and gear add, the next point's cost */
 .statWin{max-width:560px;margin:10px 0;border:1px solid var(--ew-line);border-radius:7px;background:var(--ew-bg);box-shadow:var(--shadow);font-size:12.5px;overflow:hidden}
 .swBody{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;padding:8px 10px}
