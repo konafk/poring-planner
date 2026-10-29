@@ -446,6 +446,8 @@ table.formulas td.chg{background:var(--accent-soft)}
 .wrap>[data-tab]:not([hidden])~[data-tab]:not([hidden]){animation-delay:.04s}
 .pageHead>*{animation:rise .3s cubic-bezier(.2,.7,.2,1) backwards}
 @media (prefers-reduced-motion:reduce){.wrap>[data-tab],.pageHead>*{animation:none!important}}
+/* Where to farm while it's worked out again just after its tab opens (farmLater in start.js) */
+.stale>*{opacity:.5;pointer-events:none;transition:opacity .15s}
 ::selection{background:color-mix(in srgb,var(--accent) 28%,transparent)}
 
 /* ---- Character tab: section links and your numbers beside the cards (pinned bar and bottom dock on narrower screens) ---- */

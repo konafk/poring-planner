@@ -146,7 +146,9 @@ if(!state.current||!state.sessions.some(s=>s.id===state.current))state.current=s
 ["mobF","infoF"].forEach(k=>{if(state[k]!=null)state[k]=Object.fromEntries(Object.entries(objOr(state[k])).filter(([,x])=>typeof x==="string"))});
 const D={bonus:0,jobBonus:0,minLv:1,maxLv:99,hideClosed:true,filters:{},mobF:{boss:"noboss"},infoF:{},sort:"epm",dir:-1,regions:{},closed:[],maxSec:60};
 for(const k in D)if(state[k]==null)state[k]=JSON.parse(JSON.stringify(D[k]));
-const save=()=>store.set(state);
+// GEN counts the saves: a card drawn since the last one is up to date (redraw in render.js)
+let GEN=0;
+const save=()=>{GEN++;store.set(state)};
 const C=()=>{if(!state.chars[state.job])state.chars[state.job]=charDefault(state.job);const c=state.chars[state.job];
   {const p=c.preset>=0&&JOBS[state.job]&&JOBS[state.job].p[c.preset];if(p&&c.a){if(p.zeny!=null&&c.a.zeny==null)c.a.zeny=p.zeny;if(p.cart!=null&&c.a.cart==null)c.a.cart=p.cart;if(p.consumes&&c.a.consumes==null)c.a.consumes=p.consumes;if(p.arrows!=null&&c.a.arrows==null)c.a.arrows=p.arrows;if(p.blvBug&&c.a.blvBug==null)c.a.blvBug=p.blvBug;if(p.shw&&c.a.shw==null)c.a.shw=p.shw}}const d=charDefault(state.job);for(const k in d)if(c[k]==null)c[k]=d[k];if(!c.a)c.a={...d.a};return c};
 // with no session yet, reading one gets an empty stand-in (not saved); logging EXP, Farm here and the like start a real one (sessNow)

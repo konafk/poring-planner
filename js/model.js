@@ -806,7 +806,16 @@ function tripTot(m,tot,w){if(!wOn()||!isFinite(tot))return tot;const wk=weightKi
 // one trip on this monster alone: kills, minutes farming, and whether a sell point past 70% fell back to 70%
 function tripInfo(m,w){const k=SG_MOB;SG_MOB=m;try{if(!wOn())return null;const wk=weightKill(m),tot=fightSec(m)+w;if(!(wk>0)||!isFinite(tot))return {wk,kills:Infinity};
   const {rA,rB,totB}=tripParts(m,tot,w);return {wk,kills:(rA+rB)/wk,min:(rA*tot+(rB?rB*totB:0))/wk/60,fell:sellFell(rA,rB)}}finally{SG_MOB=k}}
-function mobRow0(m,w){const kSG=SG_MOB;SG_MOB=m;try{return mobRow00(m,w)}finally{SG_MOB=kSG}}
+// mobRow0 kept for one pass (rowPass: a renderAll or a tab opening): Where to farm, the Zeny Hunter and the Monsters table work out
+// the same monsters many times over (a monster on several maps, each converter). Keyed by the monster and everything the model swaps
+// for a while (withEl, withMobbed, Hindsight, NO_ITEMS, REGEN_OFF, withSnap's character), and dropped when the pass ends
+let ROW_MEMO=null;
+const oid=(()=>{const ids=new WeakMap();let n=0;return o=>o==null?"-":ids.get(o)||(ids.set(o,++n),n)})();
+function rowPass(fn){if(ROW_MEMO)return fn();ROW_MEMO=new WeakMap();try{return fn()}finally{ROW_MEMO=null}}
+function mobRow0(m,w){if(!ROW_MEMO)return mobRow0x(m,w);
+  const k=[w,EL_OVR,MOBBED,HS_OVR,NO_ITEMS,REGEN_OFF,state.job,oid(C()),oid(SKFX),oid(EFF),oid(BUILD_LAST)].join("|");
+  let mm=ROW_MEMO.get(m);if(!mm)ROW_MEMO.set(m,mm=new Map());let r=mm.get(k);if(!r)mm.set(k,r=mobRow0x(m,w));return r}
+function mobRow0x(m,w){const kSG=SG_MOB;SG_MOB=m;try{return mobRow00(m,w)}finally{SG_MOB=kSG}}
 function mobRow00(m,w){
   const raw=rawFight(m),sec=fightSec(m,raw),def=defense(m),tot=tripTot(m,sec+w,w),epk=killExp(m),jpk=killJobExp(m),ok=isFinite(tot)&&tot>0;
   // zk: zeny per kill after what the skills use up; hc: SP items, ASPD potion and ground buffs per hour; zph: net zeny per hour
