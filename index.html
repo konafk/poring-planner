@@ -48,6 +48,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
       <button type="button" role="tab" data-tabbtn="brew" title="Brewing simulator"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v5.3a6.5 6.5 0 1 0 4 0V3"/><path d="M6 15.5h12"/></svg><span>Brewing</span></button>
       <button type="button" role="tab" data-tabbtn="cook" title="Cooking simulator"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M2 10h2M20 10h2M9.5 3.5c-.8.8-.8 1.7 0 2.5M14.5 3.5c-.8.8-.8 1.7 0 2.5"/></svg><span>Cooking</span></button>
       <button type="button" role="tab" data-tabbtn="skilltree" title="Skill tree"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M12 7v5M12 12l-6 5M12 12l6 5"/></svg><span>Skill tree</span></button>
+      <button type="button" role="tab" data-tabbtn="stylist" title="Stylist: every job's clothes colours, hair styles and hair colours"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg><span>Stylist</span></button>
       <button type="button" class="navGrp" aria-expanded="true" title="Show or hide the Data tabs"><span>Data</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
       <button type="button" role="tab" data-tabbtn="acct" title="Account"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Account</span></button>
     </nav>
@@ -832,6 +833,25 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="note hint">Try any job's skill tree without making a character: + and − change a level, the name maxes it (or clears it once maxed), and raising a skill raises what it needs. Hover a skill for what it does and needs. Each job's plan is kept on its own; it only reaches your character when you press Use on my character.</div>
   </section>
 
+  <section class="card" id="styCard" data-tab="stylist">
+    <div class="bar"><h2 class="grow">Stylist</h2><button type="button" class="small" id="styMine" title="Start from your job and your character's look in the equipment window">Start from my look</button><button type="button" class="small primary" id="styUse" title="Give your character this gender, hair style, hair colour, clothes colour and transcendent look in the equipment window (Character tab). A clothes colour number is the same dye on every job, but it can look different on yours">Use as my look</button></div>
+    <div class="styTop">
+      <div class="styPreview" id="styPreview"></div>
+      <div class="styCtl">
+        <div id="styJob"></div>
+        <div class="bar styOpts" id="stySex"></div>
+        <div class="note" id="stySum"></div>
+      </div>
+    </div>
+    <h3>Clothes colours <span class="note" id="styDyeN"></span></h3>
+    <div class="styGrid styLooks" id="styDyes"></div>
+    <h3>Hair styles <span class="note" id="styHairN"></span></h3>
+    <div class="styGrid styHeads" id="styHairs"></div>
+    <h3>Hair colours <span class="note" id="styColorN"></span></h3>
+    <div class="styGrid styHeads" id="styColors"></div>
+    <div class="note hint">Every look the game client has for a job: its clothes colours (0 is undyed; a Clothing Dye Coupon or Clothing Dye Coupon II from the KP shop changes it in game), and every hair style and hair colour (after character creation a paid KP shop item, such as a New Style Coupon, changes them). Click one to try it; Use as my look puts it on your character in the Character tab's equipment window.</div>
+  </section>
+
   <section class="card" id="brewCard" data-tab="brew">
     <div class="bar"><h2 class="grow">Brewing simulator</h2><span class="pill" title="rAthena's Prepare Potion formula, as roz.prontera.info's Crafting Calculator has it; not measured on Zero Global">Not measured in game</span><button type="button" id="brewMine" title="Empty every box, so they take your character's numbers again">Use my character</button></div>
     <div class="bar dbF" id="brewIn"></div>
@@ -985,6 +1005,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 <script src="js/navi.js"></script>
 <script src="js/mapinfo.js"></script>
 <script src="js/news.js"></script>
+<script src="js/stylist.js"></script>
 <script src="js/start.js"></script>
 </body>
 </html>

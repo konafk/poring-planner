@@ -15,6 +15,7 @@ const TAB_DESC={
   mapinfo:"Every map on the game's world map: its picture, the monsters on it and when it opens.",
   equip:"Every weapon and piece of armor: filter by type, job, level, card slots and stats, and put it in any of your gear sets.",
   skilltree:"Try any job's skill tree without a character: points per tree, the job level it needs, and what each skill does.",
+  stylist:"Every job's clothes colours, hair styles and hair colours from the game client: try a look, then put it on your character.",
   cards:"Every card and what it does: filter by the gear it goes in, and slot it into your gear or another gear set.",
   brew:"Prepare Potion's chance for every potion with your stats, what a potion costs counting the failures, and a run of tries rolled the server's way.",
   cook:"Every dish's chance with each cooking kit for your stats, cook mastery, and a run of tries rolled the server's way.",
@@ -57,7 +58,7 @@ function showTab0(t,local){
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
   // renderAll only draws these while their tab is showing; the big ones again only when something was saved since
-  if(t==="market")renderPrices();if(t==="mobinfo")redraw("mobinfo",renderMobInfo);if(t==="items")redraw("items",renderItems);if(t==="equip")redraw("equip",renderEquipDb);if(t==="cards")redraw("cards",renderCardDb);if(t==="recipes")redraw("recipes",renderRecipes);if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="skilltree")renderSkPlan(true);if(t==="mapinfo")renderMapInfo();
+  if(t==="market")renderPrices();if(t==="mobinfo")redraw("mobinfo",renderMobInfo);if(t==="items")redraw("items",renderItems);if(t==="equip")redraw("equip",renderEquipDb);if(t==="cards")redraw("cards",renderCardDb);if(t==="recipes")redraw("recipes",renderRecipes);if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="skilltree")renderSkPlan(true);if(t==="stylist")renderStylist();if(t==="mapinfo")renderMapInfo();
 }
 // opening Home or Monsters & maps after a change: pricing every map for Where to farm takes a few hundred ms, so the tab shows first
 // with the cards as they were (dimmed), and they're redrawn just after that paint (or after 300 ms where no frame comes, as in a

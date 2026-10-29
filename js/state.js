@@ -140,6 +140,10 @@ delete state.flyPrice;
 // (0 the default), clothes dye number (0 undyed) and whether a 2nd job wears its transcendent look
 state.look={sex:state.look&&state.look.sex==="f"?"f":"m",hair:Math.max(1,Math.round(+(state.look&&state.look.hair))||1),
   color:Math.max(0,Math.round(+(state.look&&state.look.color))||0),dye:Math.max(0,Math.round(+(state.look&&state.look.dye))||0),trans:!!(state.look&&state.look.trans)};
+// the Stylist tab (stylist.js): the job, gender, hair style, hair colour, clothes colour and transcendent look being tried (a job it
+// has no look for falls back when drawn)
+{const t=objOr(state.stylist),n=(v,lo)=>Math.max(lo,Math.round(+v)||lo);
+  state.stylist={job:typeof t.job==="string"?t.job:"",sex:t.sex==="f"?"f":"m",hair:n(t.hair,1),color:n(t.color,0),dye:n(t.dye,0),trans:!!t.trans}}
 ["teleSec","tripEarly","tripMin"].forEach(k=>{if(state[k]!=null&&!(Number.isFinite(+state[k])&&+state[k]>=0))delete state[k]});
 if(!state.current||!state.sessions.some(s=>s.id===state.current))state.current=state.sessions.length?state.sessions[0].id:null;
 // Element / Race / Size / Boss dropdowns: the Monsters card's (mobF) and Monster info's (infoF), {key: value}
