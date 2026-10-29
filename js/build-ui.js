@@ -505,24 +505,27 @@ $("equipWin").addEventListener("click",e=>{const t=e.target.closest("button");if
     :$("gearTable").querySelector(`tr[data-slot="${k}"] input.item`);
   if(to){const d=to.closest("details");if(d)d.open=true;to.scrollIntoView({block:"center",behavior:"smooth"});to.focus({preventScroll:true})}});
 // ---- class picker (the Skill tree's Job): a button with the job's look, icon and name that opens every job's in groups, like a list
-// of classes to pick from. Each look is undyed, in your equipment window's gender (a Bard's male, a Dancer's female) with a random hair
-// style and colour, new each time the list opens; the button keeps the one you picked. groups: [[heading, [job…]]…]; onPick(job) when
-// another job is picked. Returns set(job), which shows that job on the button ----
+// of classes to pick from. Each job shows its male and female look side by side (a Bard only male, a Dancer only female), undyed, each
+// with a random hair style and colour, new each time the list opens; the button keeps the pair you picked. groups: [[heading, [job…]]…];
+// onPick(job) when another job is picked. Returns set(job), which shows that job on the button ----
 function classPicker(el,groups,onPick){let cur=null,shown="",mine=null,looks={};
-  const rnd=j=>{const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES,bj=S&&(S.body[j]||S.body.Novice);if(!bj)return {job:j,...state.look,dye:0};
-    const sex=bj[state.look.sex]?state.look.sex:Object.keys(bj)[0],hair=1+Math.floor(Math.random()*Math.max(1,ewHairs(sex)));
-    return {job:j,sex,hair,color:Math.floor(Math.random()*ewColors(sex,hair)),dye:0}};
-  const look=L=>`<span class="ewStage"><span class="ewFeet">${lookCanvas(L.job,L)}</span></span>`;
+  const rnd=j=>{const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES,bj=S&&(S.body[j]||S.body.Novice);if(!bj)return [];
+    return ["m","f"].filter(s=>bj[s]).map(sex=>{const hair=1+Math.floor(Math.random()*Math.max(1,ewHairs(sex)));
+      return {sex,hair,color:Math.floor(Math.random()*ewColors(sex,hair)),dye:0}})};
+  // the pair stands a little apart, from the feet: male on the left
+  const look=(j,Ls)=>`<span class="ewStage cpPair">${Ls.map((L,i)=>`<span class="ewFeet" style="left:${Ls.length<2?50:i?66:34}%">${lookCanvas(j,L)}</span>`).join("")}</span>`;
   el.classList.add("classPick");
   el.innerHTML=`<button type="button" class="cpBtn" aria-haspopup="listbox" aria-expanded="false"></button><div class="cpPop" role="listbox" aria-label="Job" hidden></div>`;
   const btn=el.firstChild,pop=el.lastChild;
   const close=focus=>{if(pop.hidden)return;pop.hidden=true;btn.setAttribute("aria-expanded","false");if(focus)btn.focus()};
-  // drawn as it opens, with new hair and in the gender you have now
+  // drawn as it opens, with new hair
   const open=()=>{looks={};pop.innerHTML=groups.map(([g,js])=>`<div class="cpGrp">${esc(g)}</div><div class="cpGrid">${js.map(j=>
-      `<button type="button" role="option" class="cpOpt" data-job="${esc(j)}" aria-selected="${j===cur}">${look(looks[j]=rnd(j))}${iconHtml("job",j,.8)}<span class="cpName">${esc(j)}</span></button>`).join("")}</div>`).join("");
+      `<button type="button" role="option" class="cpOpt" data-job="${esc(j)}" aria-selected="${j===cur}">${look(j,looks[j]=rnd(j))}${iconHtml("job",j,.8)}<span class="cpName">${esc(j)}</span></button>`).join("")}</div>`).join("");
+    // as wide as fits between the picker and the window's right edge
+    pop.style.width=Math.max(220,Math.min(760,innerWidth-el.getBoundingClientRect().left-16))+"px";
     pop.hidden=false;btn.setAttribute("aria-expanded","true");drawLook(pop);(pop.querySelector('[aria-selected="true"]')||pop.querySelector(".cpOpt")).focus()};
   btn.addEventListener("click",()=>pop.hidden?open():close());
-  pop.addEventListener("click",e=>{const o=e.target.closest(".cpOpt");if(!o)return;close(true);if(o.dataset.job!==cur){mine=looks[o.dataset.job];onPick(o.dataset.job)}});
+  pop.addEventListener("click",e=>{const o=e.target.closest(".cpOpt");if(!o)return;close(true);if(o.dataset.job!==cur){mine={job:o.dataset.job,looks:looks[o.dataset.job]};onPick(o.dataset.job)}});
   // arrows move through the jobs as they're laid out (up and down to the nearest in the row above or below), Home / End to the first
   // and last; Escape closes
   pop.addEventListener("keydown",e=>{if(e.key==="Escape"){e.preventDefault();close(true);return}
@@ -536,7 +539,7 @@ function classPicker(el,groups,onPick){let cur=null,shown="",mine=null,looks={};
     e.preventDefault();if(os[n])os[n].focus()});
   document.addEventListener("click",e=>{if(!el.contains(e.target))close()});
   el.addEventListener("focusout",e=>{if(e.relatedTarget&&!el.contains(e.relatedTarget))close()});
-  return job=>{if(!mine||mine.job!==job||mine.sex!==rnd(job).sex)mine=rnd(job);const html=`${look(mine)}${iconHtml("job",job)}<span class="cpName"><span class="cpLbl">Job</span>${esc(job)}</span><svg class="ic cpChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+  return job=>{if(!mine||mine.job!==job)mine={job,looks:rnd(job)};const html=`${look(job,mine.looks)}${iconHtml("job",job)}<span class="cpName"><span class="cpLbl">Job</span>${esc(job)}</span><svg class="ic cpChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
     cur=job;btn.setAttribute("aria-label",`Job: ${job}`);if(shown===html)return;shown=html;btn.innerHTML=html;drawLook(btn)}}
 // Build from gear's Status, Gear, Equipment and Special equipment panels fold away, remembered like a card (state.collapsed)
 [["buildStatFold","Build from gear: status"],["gsetFold","Build from gear: gear sets"],["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];

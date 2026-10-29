@@ -365,7 +365,7 @@ t("a restored save is cleaned up before anything uses it", () => {
       pauses: [{ from: bad, to: 1e12 + 1e6 }, { from: 1e12 + 1e5, to: bad }, { from: 1e12 + 2e5, to: 1e12 + 3e5 }, { from: 1e12 + 4e5 }] }],
     chars: { Sage: { skills: { "spell-fist": bad, "fire-bolt": "7", hindsight: 3.6, "cold-bolt": -2 }, build: { check: { atk: bad, hit: "250", sp: "" } } }, Knight: "junk" } });
   assert.deepEqual(app("JSON.stringify(cur().pauses)"), JSON.stringify([{ from: 1e12 + 2e5, to: 1e12 + 3e5 }, { from: 1e12 + 4e5 }]));
-  assert.deepEqual(app("JSON.stringify(state.chars.Sage.skills)"), JSON.stringify({ "fire-bolt": 7, hindsight: 4, "energy-coat": 1, "create-elemental-converter": 1 }));   // the job change gives these two
+  assert.deepEqual(app("JSON.stringify(state.chars.Sage.skills)"), JSON.stringify({ "fire-bolt": 7, hindsight: 4, "basic-skill": 9, "energy-coat": 1, "create-elemental-converter": 1 }));   // the Novice days and the job change give these three
   assert.deepEqual(app("JSON.stringify(state.chars.Sage.build.check)"), JSON.stringify({ hit: 250 }));
   assert.equal(app("'Knight' in state.chars"), false);
   assert.deepEqual(app("JSON.stringify(state.prices)"), JSON.stringify({ "904": 3000 }));   // item ids only, numbers only
@@ -2452,9 +2452,9 @@ t("Skill tree: quest skills cost no points and are tagged", () => {
   assert.doesNotMatch(html, /data-sk="bash"><span class="qtag"/);
 });
 
-t("Skill tree: the job change gives the quest skills but the Elemental Changes, and 1st and 2nd jobs have no Novice tree", () => {
-  assert.deepEqual(JSON.parse(run(`JSON.stringify(Object.values(skOf("Priest")).filter(s=>s.def).map(s=>s.slug))`)), ["holy-light", "redemptio"]);
-  assert.deepEqual(JSON.parse(run(`JSON.stringify(Object.values(skOf("Sage")).filter(s=>s.free&&!s.def).map(s=>s.slug))`)),
+t("Skill tree: the job change gives the quest skills but the Elemental Changes, and 1st and 2nd jobs have the Novice skills in their 1st-job tree", () => {
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(Object.values(skOf("Priest")).filter(s=>s.def&&!s.nov).map(s=>s.slug))`)), ["holy-light", "redemptio"]);
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(Object.values(skOf("Sage")).filter(s=>s.free&&!s.def&&!s.nov).map(s=>s.slug))`)),
     ["elemental-change-water", "elemental-change-wind", "elemental-change-ground", "elemental-change-fire"]);
   for (const [job, slug] of [["Wizard", "energy-coat"], ["Knight", "charge-attack"], ["Sage", "create-elemental-converter"], ["Rogue", "close-confine"]])
     assert.equal(run(`skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].def`), true, slug);
@@ -2465,9 +2465,16 @@ t("Skill tree: the job change gives the quest skills but the Elemental Changes, 
   for (const [job, slug] of [["Assassin", "venom-knife"], ["Blacksmith", "dubious-salesmanship"], ["Monk", "spiritual-bestowment"],
     ["Monk", "excruciating-palm"], ["Alchemist", "bioethics"]])
     assert.equal(run(`skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].free&&skOf(${JSON.stringify(job)})[${JSON.stringify(slug)}].def`), true, slug);
-  // Basic Skill comes from the Novice days: no Novice tree past Novice
+  // the Novice skills sit in the 1st-job tree's first column, as in the game's skill window: Basic Skill Lv 9 from the Novice days (can't
+  // be lowered), First Aid and Play Dead the quest skills; none take the 1st job's points
   assert.deepEqual(JSON.parse(run(`JSON.stringify(["Novice","Mage","Wizard"].map(j=>treesOf(j).map(t=>t.job)))`)), [["Novice"], ["Mage"], ["Mage", "Wizard"]]);
-  assert.equal(run(`skOf("Mage")["basic-skill"]`), undefined);
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(treesOf("Wizard")[0].skills.filter(s=>s.nov).map(s=>[s.slug,s.slot,!!s.def]))`)),
+    [["basic-skill", 0, true], ["first-aid", 7, false], ["play-dead", 14, false]]);
+  assert.equal(run(`new Set(treesOf("Knight")[0].skills.map(s=>s.slot)).size`), run(`treesOf("Knight")[0].skills.length`));
+  assert.equal(run(`state.job="Mage";state.chars={};skLv(C(),"basic-skill")`), 9);
+  assert.match(run(`stepSkill(C(),"basic-skill","dn","Mage").join()`), /is learned as a Novice/);
+  assert.equal(run(`treeUsed(treesOf("Mage")[0],{"basic-skill":9,"first-aid":1,"cold-bolt":10})`), 10);
+  assert.match(run(`treesHtml("Mage",learned(C()),50)`), /data-sk="basic-skill"><span class="qtag" title="Learned as a Novice/);
   // given skills are learned without a click, can't be lowered, and don't count as a tree you set
   run(`state.job="Priest";state.chars={}`);
   assert.equal(run(`skLv(C(),"redemptio")`), 1);
@@ -2482,6 +2489,24 @@ t("Skill tree: the job change gives the quest skills but the Elemental Changes, 
   assert.match(html, /data-sk="redemptio">[\s\S]*?data-act="dn" aria-label="Lower" disabled>/);
   // the Skill tree tab's plan gets them too
   assert.equal(run(`state.skPlan={job:"Wizard"};planOf().skills["energy-coat"]`), 1);
+});
+
+t("Skill tree: a 2nd job's points can go on its 1st-job skills", () => {
+  // a Sage at Job Lv 70 (69 points) with 68 in the Sage tree and Increase SP Recovery Lv 1 past the Mage's 49: full, nothing over
+  const L = `{...Object.fromEntries(treesOf("Mage")[0].skills.filter(s=>!s.free&&!s.nov).map(s=>[s.slug,0])),"cold-bolt":10,"lightning-bolt":10,"fire-bolt":10,"napalm-beat":7,"soul-strike":5,"safety-wall":5,"stone-curse":1,"earth-spike":1,"increase-sp-recovery":1}`;
+  // the Sage from the game's skill window
+  const SAGE = { study: 5, "cast-cancel": 1, "magic-rod": 1, "endow-tsunami": 2, "endow-tornado": 2, "endow-blaze": 2, "heavens-drive": 5, "free-cast": 4,
+    "spell-breaker": 3, deluge: 3, whirlwind: 3, volcano: 3, hindsight: 10, dispell: 5, "blinding-mist": 1, "land-protector": 3, "double-bolt": 5, "spell-fist": 10 };
+  const tally = sage => JSON.parse(run(`JSON.stringify(treeTally("Sage",{...${L},...${JSON.stringify(sage)}},70).map(({used,pts,from,spill,n,over})=>({used,pts,from,spill,n,over})))`));
+  const T = tally(SAGE);
+  assert.equal(T[0].used, 50); assert.equal(T[1].used, 68);
+  assert.deepEqual(T.map(x => [x.from, x.spill, x.n, x.over]), [[1, 0, 49, 0], [0, 1, 69, 0]]);
+  assert.match(run(`tallyTxt(${JSON.stringify(T[1])},treesOf("Sage"),1)`), /^68 \+ 1 in Mage = 69 \/ 69$/);
+  // one more point is over, on both trees
+  const U = tally({ ...SAGE, "free-cast": 5 });
+  assert.deepEqual(U.map(x => x.over), [1, 1]);
+  // a 1st job has no 2nd-job points to borrow
+  assert.equal(run(`treeTally("Mage",${L},50)[0].over`), 1);
 });
 
 t("Equipment and Cards tabs: in-game text, where to get it and the Where to get filter", () => {
