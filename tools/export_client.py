@@ -50,6 +50,7 @@ CLIENT_MOBS = {20175, 20176, 20177, 20178, 20179}  # Extra Joker, Erzsebet, Jeni
 ELEMENTS = ["Neutral", "Water", "Earth", "Fire", "Wind", "Poison", "Holy", "Shadow", "Ghost", "Undead"]
 RACES = ["Formless", "Undead", "Brute", "Plant", "Insect", "Fish", "Demon", "Demi-Human", "Angel", "Dragon"]
 MOB_SPR = "data\\sprite\\몬스터\\"
+HD = 2  # card and monster pictures are stored at twice the size the page shows them; the sheet's hd says so (js/build-ui.js iconHtml)
 
 
 def rows(name, const):
@@ -134,6 +135,19 @@ def category(name, d, st):
     if name.endswith(" Egg"):
         return "Pet Egg"
     return "Package/Box" if re.search(r"\b(Package|Box|Pack|Bundle|Pouch)\b", name) else "ETC"
+
+
+def scaled(img, W, H):
+    """img at W x H: area-averaged down, or each pixel repeated up (a small sprite is pixel art, so it stays crisp)."""
+    w, h, px = img
+    if W <= w and H <= h:
+        return shrink(img, W, H)
+    out = bytearray(W * H * 4)
+    for y in range(H):
+        for x in range(W):
+            s = ((y * h // H) * w + x * w // W) * 4; o = (y * W + x) * 4
+            out[o:o + 4] = px[s:s + 4]
+    return W, H, out
 
 
 def card_names(grf):
@@ -235,7 +249,8 @@ def main():
     other = sorted(({i for f, c in [("items.js", "ITEMN"), ("recipes.js", "RECIPE_ITEMN"), ("consumables.js", "CONSUM"), ("recovery.js", "RECOVERY"),
                                     ("clientitems.js", "CLIENT_ITEMS")] for i in keys(f, c)} | set(pairs("memorial.js")) | set(items))
                    - set(card_ids) - set(gear_ids))
-    # card pictures shrunk to their cell; icons as they are (24 x 24), and only when they're icon-sized
+    # card pictures shrunk to their cell, at HD times the size the page shows them (sharp on high-DPI screens); icons as they are
+    # (24 x 24, the client has none bigger), and only when they're icon-sized
     for kind, want, names, folder, (W, H, cols), card in (
             # cards the database doesn't have yet (the Gatchaman event cards) get their picture too
             ("card", card_ids + [i for i, x in items.items() if x[1] == "Card"], card_names(grf), "cardbmp", (CARD_W, CARD_H, CARD_COLS), True),
@@ -243,9 +258,9 @@ def main():
             ("item", other, res, "item", (GEAR_W, GEAR_H, ITEM_COLS), False)):
         pics = pictures(grf, {i: names.get(i) for i in want}, folder, opaque=card)
         got = [i for i in want if i in pics and (card or pics[i][0] <= 32 and pics[i][1] <= 32)]
-        file = f"img/{kind}-client.png"
-        v = sheet([shrink(pics[i], W, H) if card else pics[i] for i in got], W, H, cols, os.path.join(ROOT, "img", f"{kind}-client.png"))
-        art[kind] = {"file": file, "v": v, "w": W, "h": H, "cols": cols, "ids": got}
+        file, k = f"img/{kind}-client.png", HD if card else 1
+        v = sheet([shrink(pics[i], W * k, H * k) if card else pics[i] for i in got], W * k, H * k, cols, os.path.join(ROOT, "img", f"{kind}-client.png"))
+        art[kind] = {"file": file, "v": v, "w": W, "h": H, "cols": cols, "ids": got, **({"hd": k} if k > 1 else {})}
         wanted[kind] = len(want)
     # a new item with no icon in the client isn't out on Global yet (Fei-Chai Egg, Tai-zi Egg): left out
     unreleased = [items.pop(i)[0] for i in list(items) if i not in art["item"]["ids"]]
@@ -266,9 +281,11 @@ def main():
             img, _ = draw(grf.read(base + ".spr"), grf.read(base + ".act"))
             if img:
                 w, h, px, _, _ = crop(img)
-                pics.append(fit((w, h, px), MOB_W, MOB_H)); got.append(i)
-    art["mob"] = {"file": "img/mob-client.png", "v": sheet(pics, MOB_W, MOB_H, MOB_COLS, os.path.join(ROOT, "img", "mob-client.png")),
-                  "w": MOB_W, "h": MOB_H, "cols": MOB_COLS, "ids": got}
+                # the size the page shows it (fitted to MOB_W x MOB_H, never enlarged), drawn at HD times that
+                k = min(1, MOB_W / w, MOB_H / h)
+                pics.append(scaled((w, h, px), max(1, round(w * k * HD)), max(1, round(h * k * HD)))); got.append(i)
+    art["mob"] = {"file": "img/mob-client.png", "v": sheet(pics, MOB_W * HD, MOB_H * HD, MOB_COLS, os.path.join(ROOT, "img", "mob-client.png")),
+                  "w": MOB_W, "h": MOB_H, "cols": MOB_COLS, "ids": got, "hd": HD}
     wanted["mob"] = len(ours) + len(mobs)
     out = {"text": text, "fix": fix, "gear": gear, "items": items, "mobs": mobs, "art": art}
     with open(os.path.join(DATA, "client.js"), "w", encoding="utf-8", newline="\n") as f:
