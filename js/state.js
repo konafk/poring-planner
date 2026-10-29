@@ -41,8 +41,11 @@ function mergeNewer(v,raw){STALE=true;let o=null;try{o=JSON.parse(raw)}catch(e){
 const store={get(){LAST_RAW=readRaw();let v=null;try{v=JSON.parse(LAST_RAW)}catch(e){}return v},
   set(v){if(STALE)return;const raw=readRaw();if(raw!==LAST_RAW){mergeNewer(v,raw);return}
     v.rev=revOf(v)+1;const txt=JSON.stringify(v);try{localStorage.setItem(acctKey(accts.active),txt);LAST_RAW=txt;KNOWN=knownOf(v)}catch(e){}}};
-let state=store.get()||{};
-if(!Array.isArray(state.sessions)||!state.sessions.length)state.sessions=[{id:"s"+Date.now(),name:"New session",mobIds:[],entries:[]}];
+let state=store.get();
+// a new visitor (or a new account) starts with no session and no job picked: noJob until they pick one (the calculators use a Novice meanwhile)
+if(!state||typeof state!=="object")state={noJob:true};
+if(state.noJob!==true)delete state.noJob;
+if(!Array.isArray(state.sessions))state.sessions=[];
 // sessions hold a list of monsters (one map, plus the aggressive ones you end up killing); older saves had a single mobId
 state.sessions.forEach(s=>{if(!Array.isArray(s.mobIds))s.mobIds=s.mobId!=null?[s.mobId]:[];delete s.mobId});
 // saves can come from a pasted backup: keep ids and names as text and log entries as numbers, dropping entries that aren't
@@ -140,7 +143,7 @@ state.look={sex:state.look&&state.look.sex==="f"?"f":"m",hair:Math.max(1,Math.ro
 // the Navigation's save town (navi.js): a town in data/minimaps.js TOWNS
 if(state.saveTown!=null&&!(typeof TOWNS!=="undefined"&&Object.hasOwn(TOWNS,state.saveTown)))delete state.saveTown;
 ["teleSec","tripEarly","tripMin"].forEach(k=>{if(state[k]!=null&&!(Number.isFinite(+state[k])&&+state[k]>=0))delete state[k]});
-if(!state.current||!state.sessions.some(s=>s.id===state.current))state.current=state.sessions[0].id;
+if(!state.current||!state.sessions.some(s=>s.id===state.current))state.current=state.sessions.length?state.sessions[0].id:null;
 // Element / Race / Size / Boss dropdowns: the Monsters card's (mobF) and Monster info's (infoF), {key: value}
 ["mobF","infoF"].forEach(k=>{if(state[k]!=null)state[k]=Object.fromEntries(Object.entries(objOr(state[k])).filter(([,x])=>typeof x==="string"))});
 const D={bonus:0,jobBonus:0,minLv:1,maxLv:99,hideClosed:true,filters:{},mobF:{boss:"noboss"},infoF:{},sort:"epm",dir:-1,regions:{},closed:[],maxSec:60};
@@ -148,7 +151,11 @@ for(const k in D)if(state[k]==null)state[k]=JSON.parse(JSON.stringify(D[k]));
 const save=()=>store.set(state);
 const C=()=>{if(!state.chars[state.job])state.chars[state.job]=charDefault(state.job);const c=state.chars[state.job];
   {const p=c.preset>=0&&JOBS[state.job]&&JOBS[state.job].p[c.preset];if(p&&c.a){if(p.zeny!=null&&c.a.zeny==null)c.a.zeny=p.zeny;if(p.cart!=null&&c.a.cart==null)c.a.cart=p.cart;if(p.consumes&&c.a.consumes==null)c.a.consumes=p.consumes;if(p.arrows!=null&&c.a.arrows==null)c.a.arrows=p.arrows;if(p.blvBug&&c.a.blvBug==null)c.a.blvBug=p.blvBug;if(p.shw&&c.a.shw==null)c.a.shw=p.shw}}const d=charDefault(state.job);for(const k in d)if(c[k]==null)c[k]=d[k];if(!c.a)c.a={...d.a};return c};
-const cur=()=>state.sessions.find(s=>s.id===state.current)||state.sessions[0];
+// with no session yet, reading one gets an empty stand-in (not saved); logging EXP, Farm here and the like start a real one (sessNow)
+const NO_SESS=Object.freeze({id:"",name:"No session",mobIds:Object.freeze([]),entries:Object.freeze([])});
+const cur=()=>state.sessions.find(s=>s.id===state.current)||state.sessions[0]||NO_SESS;
+const newSess=()=>{const s={id:"s"+Date.now(),name:"New session",mobIds:[],entries:[]};state.sessions.push(s);state.current=s.id;return s};
+const sessNow=()=>cur()===NO_SESS?newSess():cur();
 
 // skills v2: presets now come from the data; reset each saved job to its first preset
 (function weaponsV2(){if(state.weaponsV2)return;state.weaponsV2=true;for(const j in state.chars){const c=state.chars[j];if(c&&WREN[c.weapon])c.weapon=WREN[c.weapon]}save()})();

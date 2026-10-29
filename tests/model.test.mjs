@@ -2787,4 +2787,23 @@ t("Navigation: routes from your save town, the Kafra teleport in front, and wher
   assert.equal(load({ saveTown: "payon" })(`state.saveTown`), "payon");
 });
 
+t("a new visitor starts with no session and no job picked", () => {
+  const app = load();
+  assert.equal(app("state.sessions.length"), 0);
+  assert.equal(app("state.current"), null);
+  assert.equal(app("state.noJob"), true);
+  assert.equal(app("noChar()"), true);
+  assert.equal(app("cur()===NO_SESS&&stats(cur())===null&&sessMap(cur())===null"), true);
+  app("renderAll();renderHome()");                                          // every tab draws without a session
+  assert.equal(app("state.sessions.length"), 0);                           // and reading doesn't make one
+  app("sessNow().entries.push({t:1,lv:5,pct:1})");                          // logging EXP (Farm here, New session…) starts one
+  assert.equal(app("state.sessions.length+' '+(state.current===state.sessions[0].id)+' '+cur().entries.length"), "1 true 1");
+  app("save()");
+  const again = load(JSON.parse(app("JSON.stringify(state)")));
+  assert.equal(again("state.sessions.length+' '+state.noJob"), "1 true");   // still no job until one is picked or set up
+  assert.equal(load({ sessions: [], job: "Mage" })("state.sessions.length+' '+state.noJob+' '+state.current"), "0 undefined null");
+  assert.equal(load({ job: "Mage", noJob: "yes" })("state.noJob"), undefined);
+  assert.equal(app("C().mode='build';noChar()"), false);                     // a character built from gear counts as set up
+});
+
 console.log(`${n} tests passed`);

@@ -2,7 +2,7 @@
 // card tick boxes: a card's numbers only show while it's ticked
 const syncCardOpts=()=>ROOTQ(".cdItem").forEach(r=>{const b=r.querySelector('input[type="checkbox"][data-cd]'),o=r.querySelector(".cdOpts");if(b&&o)o.hidden=!b.checked});
 const syncChar=()=>{
-  const c=C();$("job").value=state.job;renderEq();renderCons();
+  const c=C();$("job").value=noChar()?"":state.job;renderEq();renderCons();
   $("preset").innerHTML=JOBS[state.job].p.map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join("")+'<option value="-1">Custom</option>';
   $("preset").value=String(c.preset??0);renderSkills();
   ["baseLv","jobLv","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","fctSec","normalPct","myElPct","ignDef","ignMdef","mastery","rangePct","skillPct","crit","critDmg","fixedShare","vctPct","fctPct","acdPct","dmgBonus","atkPct","nameSel","namePct","itemSp","itemPrice","itemHp","itemHpPrice","mobInterval","hitScale"].forEach(k=>$(k).value=c[k]??"");["curW","maxW","gymLv"].forEach(k=>$(k).value=num(c[k])>0?c[k]:"");$("townMin").value=c.townMin??3;$("sellAt").value=num(c.sellAt)>0?c.sellAt:"";$("wAtk").value=num(c.wAtk)>0?c.wAtk:"";
@@ -139,11 +139,16 @@ function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp
       <td class="nowrap">${x.perW==null?"–":fmtSig(x.perW)} <span class="note">per ${inp(x,"w",x.w,52)}${x.wOk?"":' <span title="weight not checked in game yet">?</span>'}</span></td>
       <td>${fmtQty(x.uph)}</td><td>${x.per==null?"n/a":x.zph==null?"–":fmtN(x.zph)}</td><td>${fmtQty(x.wph)}</td></tr>`}).join("")}
 // ---- render: tracker ----
-function renderSessions(){$("sessionSel").innerHTML=state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===state.current?"selected":""}>${esc(s.name)}</option>`).join("")}
+function renderSessions(){const none=!state.sessions.length;
+  $("sessionSel").innerHTML=none?'<option value="">No session yet</option>':state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===state.current?"selected":""}>${esc(s.name)}</option>`).join("");
+  // nothing to rename or delete until logging EXP, Farm here or New session starts one
+  ["sessionSel","editSession","renameSession","delSession"].forEach(id=>$(id).disabled=none)}
 // ---- get started: three steps shown over every tab until they're done (or hidden), each ticked off as you do it ----
 const KEY_START="rozero-farm-planner-start-hidden";
 // the character is set up: built from gear, or all six stats typed. Until then a monster's details leave out your numbers against it
 const charSet=(c=C())=>c.mode==="build"||STATS.every(k=>statVal(c,k)!=null);
+// no character yet: a new visitor who hasn't picked a job (state.noJob) or set one up; the calculators use a Novice meanwhile
+const noChar=()=>!!state.noJob&&!charSet();
 const NO_CHAR_TXT="Set up your character on the Character tab to see your kill time, EXP / min and zeny a kill";
 function renderStart(){const box=$("startCard"),c=C(),s=cur(),n=s.entries.length;
   // any session counts, so a new, empty session doesn't bring the card back; once both are done it stays away
@@ -166,7 +171,7 @@ function renderTracker(){renderStart();
   const s=cur(),st=stats(s);renderSpark(s,st);
   if(document.activeElement!==$("partyN"))$("partyN").value=partyN(s);$("partyBonus").value=partyBonus(s);
   $("partyNote").textContent=partyN(s)>1?`Each kill gives you ${partyPct(s)}% of its EXP (party of ${partyN(s)}). Even Share only works within 15 base levels.`:"";
-  $("title").textContent=`${s.name} · ${state.job}`;
+  $("title").textContent=`${s.name} · ${noChar()?"No character":state.job}`;
   const pz=openPause(s);$("pauseBtn").textContent=pz?"Resume":"Pause";$("pauseBtn").classList.toggle("primary",!!pz);$("pauseNote").hidden=!pz;
   if(pz)$("pauseNote").textContent=`Paused since ${fmtT(pz.from)}; time away isn't counted. Resume or log an entry when back.`;
   const ms=sessMobs(s),mob=ms.length===1?ms[0]:null,maps=sessMaps(s),auto=sessMapAuto(s),smp=sessMap(s);
