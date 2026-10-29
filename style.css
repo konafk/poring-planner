@@ -778,13 +778,13 @@ details.more>.form{display:grid}
 .ico-job{width:26px;height:26px;background-image:var(--ico-job)}
 .classPick{position:relative;--ew-z:1}
 .cpBtn{display:flex;align-items:center;gap:8px;padding:0 12px 0 0;overflow:hidden;text-align:left}
-.cpBtn .ewStage{flex:none;width:64px;height:58px;min-height:0;overflow:hidden}
-.cpBtn .ewStage::before{bottom:2px}.cpBtn .ewFeet{bottom:5px;transform:scale(.72)}
+.cpBtn .ewStage{flex:none;width:68px;height:74px;min-height:0;overflow:hidden}
+.cpBtn .ewStage::before{bottom:2px}.cpBtn .ewFeet{bottom:5px;transform:scale(.75)}
 .cpName{display:flex;flex-direction:column;line-height:1.2}
 .cpLbl{font-size:11px;font-weight:500;color:var(--muted)}
 .cpChev{width:16px;height:16px;margin-left:2px;color:var(--muted);transition:transform .15s}
 .cpBtn[aria-expanded="true"] .cpChev{transform:rotate(180deg)}
-.cpPop{position:absolute;z-index:5;top:calc(100% + 6px);left:0;max-height:min(70vh,560px);overflow:auto;padding:4px 10px 10px;
+.cpPop{position:absolute;z-index:5;top:calc(100% + 6px);left:0;padding:4px 10px 10px;
   background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-pop)}
 .cpGrp{margin:8px 2px 6px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .cpGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
