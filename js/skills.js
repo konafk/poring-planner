@@ -187,6 +187,8 @@ let skpPick=null;
 function renderSkPlan(fresh){const p=skPlan(),job=p.job,L=planOf().skills,trees=treesOf(job),mine=state.chars[job],second=SECOND(job),jl=p.jobLv[job]||JOB_MAX2;
   (skpPick=skpPick||classPicker($("skpJob"),[["Novice & 1st jobs",j=>!SECOND(j)],["2nd jobs",SECOND]].map(([g,f])=>[g,Object.keys(SKILLS).filter(f)]),
     j=>{skPlan().job=j;$("skpNote").textContent="";save();renderSkPlan()}))(job,fresh);$("skpJobLvWrap").hidden=!second;$("skpJobLv").value=p.jobLv[job]||"";$("skpJobLv").placeholder=String(JOB_MAX2);
+  // a 2nd job: who changes you to it and where (data/jobmasters.js)
+  const jm=JOB_MASTERS[job];$("skpMaster").hidden=!jm;$("skpMaster").innerHTML=jm?`Job change: <b>${esc(jm[0])}</b>, ${esc(jm[1])} ${naviTag(jm[2])}`:"";
   $("skpTrees").innerHTML=treesHtml(job,L,jl);$("skpTip").hidden=true;SKP_TIP.slug=null;
   // what the plan takes: points per tree and the job level each tree needs (one point a job level after the first)
   // a 1st-job tree that borrows the 2nd job's points is full, and the 2nd job's job level counts what it lent
