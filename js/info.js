@@ -42,7 +42,7 @@ const recipeAct=id=>RECIPES_MAKING[id]||RECIPES_USING[id]?'<button type="button"
 
 function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobIds.includes(m.id),a=mobArrives(m),me=charSet();
   const sub=`Lv ${m.lv} · ${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${BOSS_PILL(m)}${m.agg?' <span class="pill">aggressive</span>':""}`;
-  const tiles=infoTile("HP",fmtN(m.hp),`DEF ${m.def??"–"} · MDEF ${m.mdef??"–"} · ATK ${m.atkMin??"–"}–${m.atkMax??"–"}`)
+  const tiles=infoTile("HP",m.hp==null?"?":fmtN(m.hp),`DEF ${m.def??"–"} · MDEF ${m.mdef??"–"} · ATK ${m.atkMin??"–"}–${m.atkMax??"–"}`)
     +infoTile("EXP",fmtExp(m),m.expUnknown?"no EXP data yet":`job ${fmtN(m.job)}${me?` · you get ${fmtN(killExp(m))} / ${fmtN(killJobExp(m))}`:""}`)
     +(me?infoTile(`You (${esc(state.job)})`,isFinite(r.sec)?r.sec.toFixed(1)+"s / kill":"can't hurt",`your hit ${Math.round(r.mult)}% · ${Math.round(r.hitc)}% land · you dodge ${r.dodge??"–"}%`)
       +infoTile("EXP / min",m.expUnknown?"?":r.epm?fmtN(r.epm):"–",r.hpm==null?"":`HP lost ~${fmtN(r.hpm)}/min`)

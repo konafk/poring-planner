@@ -731,7 +731,8 @@ details.more>.form{display:grid}
 .ico-card,.ico-cardDb{width:36px;height:48px;background-image:var(--ico-card);border-radius:3px}
 .ico-cardDb{background-image:var(--ico-cardDb)}
 .ico-gearDb,.ico-itemDb{width:24px;height:24px}.ico-gearDb{background-image:var(--ico-gearDb)}.ico-itemDb{background-image:var(--ico-itemDb)}
-.ico-mob{width:48px;height:48px;background-image:var(--ico-mob)}
+.ico-mob,.ico-mobDb{width:48px;height:48px;background-image:var(--ico-mob)}
+.ico-mobDb{background-image:var(--ico-mobDb)}
 .ico.none{background:none}
 .dbName{display:flex;align-items:center;gap:8px}
 .eqDlgHead :is(.ico-card,.ico-cardDb){margin-top:-2px}
@@ -888,6 +889,7 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 .newsBosses{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 .newsBoss{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,transparent);background:color-mix(in srgb,var(--warn) 8%,transparent);font-weight:600}
 .newsBoss .mono{font-weight:400;opacity:.85}
+a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a.newsBoss[data-info]:hover{border-color:var(--warn)}
 .newsGround{display:flex;align-items:baseline;gap:10px;padding:8px 14px;background:var(--raised);border-top:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong)}
 .newsGround a{font-weight:600}
 .newsGround span{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
