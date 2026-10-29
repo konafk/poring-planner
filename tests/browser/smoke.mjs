@@ -49,6 +49,19 @@ try {
     await page.close();
   });
 
+  await t("a details link (#item/909) opens its popup, and closing it puts the tab's link back", async () => {
+    const page = await browser.newPage(), errs = [];
+    page.on("pageerror", e => errs.push(e.message));
+    await page.goto(page_url + "#item/909");
+    await page.waitForSelector("#infoDlg[open]");
+    assert.equal(await page.textContent("#infoDlgTitle"), "Jellopy");
+    assert.match(await page.getAttribute("#infoShare", "href"), /#item\/909$/);
+    await page.click("#infoDlgClose");
+    await page.waitForFunction(() => location.hash === "#home");
+    assert.deepEqual(errs, []);
+    await page.close();
+  });
+
   await t("Settings: the theme cycles auto → light → dark, the sidebar follows, and the menu stays open", async () => {
     const { page, errs } = await open({ colorScheme: "light" });
     // the sidebar's background brightness, 0 (black) to 255 (white)
@@ -81,9 +94,11 @@ try {
     assert.ok(!await page.isVisible("#sessionSel"));
     await page.click('[data-tabbtn="track"]');
     assert.ok(await page.isVisible("#sessionSel") && !await page.isVisible("#acctSel"));
-    const n = await page.$$eval("#sessionSel option", o => o.length);
+    assert.equal(await page.textContent("#sessionSel"), "No session yet");     // a new player has no session until they start one
+    assert.ok(await page.isDisabled("#editSession"));
     await page.click("#newSession");                                   // a new session, then off to pick its monster
-    assert.equal(await page.$$eval("#sessionSel option", o => o.length), n + 1);
+    assert.equal(await page.evaluate("state.sessions.length"), 1);
+    assert.equal(await page.textContent("#sessionSel"), "New session");
     assert.equal(await page.getAttribute('[data-tabbtn="maps"]', "aria-selected"), "true");
     assert.deepEqual(errs, []);
     await page.close();

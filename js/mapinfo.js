@@ -24,9 +24,13 @@ function renderMapInfo(){
     .sort((a,b)=>mapCode(a).localeCompare(mapCode(b)));
   $("mapInfoTable").querySelector("tbody").innerHTML=rows.map(k=>{const l=mapInfoLv(k),ns=(MAPMOBS[k]||[]).map(x=>x.n),w=worldOf(k);
     return `<tr data-mapinfo="${esc(k)}" class="${k===mp?"sel":""}" style="cursor:pointer"><td class="mono">${esc(mapCode(k))}</td><td>${esc(mapName(k))}</td><td>${isTown(k)?"town":ns.length}</td><td>${l?`${l[0]}${l[1]>l[0]?`–${l[1]}`:""}`:"–"}</td><td>${!ns.length?"–":ns.some(n=>n==null)?"?":"≈"+ns.reduce((a,n)=>a+n,0)}</td><td>${w>=0?esc(WORLDMAPS[w].name):"–"}</td><td>${isClosed(k)?`<span class="pill down">not open yet</span>`:"open"}</td></tr>`}).join("");
-  $("mapInfoNote").textContent=`${rows.length} of ${all.length} maps`}
-// typing narrows the table; picking a map from the list (or typing its code or name in full) shows it
-$("mapInfoIn").addEventListener("input",e=>{const k=mapKey(e.target.value);if(k&&(MAPMOBS[k]||isTown(k))&&k!==state.mapInfo){state.mapInfo=k;save()}renderMapInfo()});
+  $("mapInfoNote").textContent=`${rows.length} of ${all.length} maps`;
+  // the Monsters card under this one keeps to the picked map
+  renderMobs()}
+// typing narrows the table (opening the Map list, hidden at first, so the narrowing shows); picking a map from the list (or typing its code
+// or name in full) shows it
+$("mapInfoIn").addEventListener("input",e=>{const k=mapKey(e.target.value),hit=k&&(MAPMOBS[k]||isTown(k));if(hit&&k!==state.mapInfo){state.mapInfo=k;save()}
+  if(e.target.value.trim()&&!hit)$("mapInfoMore").open=true;renderMapInfo()});
 $("mapInfoOpen").addEventListener("change",e=>{state.mapInfoOpen=e.target.checked;save();renderMapInfo()});
 $("mapInfoCard").addEventListener("click",e=>{
   const r=e.target.closest("[data-mapinfo]");if(r&&!e.target.closest("a,button")){mapInfoPick(r.dataset.mapinfo);return}

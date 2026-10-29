@@ -23,7 +23,7 @@ CACHE = os.path.join(ROOT, "tools", "cache")
 # the community database's address comes from the DB_SITE environment variable (the Refresh data workflow sets it from the
 # repository variable of the same name), so no script names the site. site() stops with a message when it isn't set
 SITE = os.environ.get("DB_SITE", "").strip().rstrip("/")
-UA = "RO-Zero-farmer-calculator data export"
+UA = "poring-planner data export"
 
 
 def site(path=""):
@@ -91,6 +91,11 @@ def loot_type(rec):
         return "w"
     return LOOT_TYPE.get(cat, "e")
 
+# items the database prices that Zero's NPCs won't buy: written as null. The elemental stones (Red Blood, Crystal Blue,
+# Wind of Verdure, Green Live) are 500 there, from a 1000 buy price no shop sells them at. data/loot.js's loot values
+# were lowered to match, so the check below still adds up
+NO_NPC = {"990", "991", "992", "993"}
+
 
 def main():
     refresh = "--refresh" in sys.argv
@@ -99,7 +104,7 @@ def main():
     sell, weight, kind, missing = {}, {}, {}, []
     for n, i in enumerate(ids):
         rec = item(i, refresh)
-        sell[i] = rec.get("sell_price") if rec else None
+        sell[i] = rec.get("sell_price") if rec and i not in NO_NPC else None
         weight[i] = rec.get("weight") if rec else None
         kind[i] = loot_type(rec)
         if sell[i] is None:

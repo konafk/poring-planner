@@ -16,7 +16,7 @@ import json, os, sys, urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = os.path.join(ROOT, "tools", "cache")
 RATHENA = "https://raw.githubusercontent.com/rathena/rathena/master/db/pre-re/"
-UA = "RO-Zero-farmer-calculator data export"
+UA = "poring-planner data export"
 MAX_LV = 99
 STATS = ["str", "agi", "vit", "int", "dex", "luk"]
 # our job name -> rAthena name for HP / SP, and the rAthena class whose job bonus table Zero uses

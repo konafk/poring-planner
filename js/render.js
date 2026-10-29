@@ -2,7 +2,7 @@
 // card tick boxes: a card's numbers only show while it's ticked
 const syncCardOpts=()=>ROOTQ(".cdItem").forEach(r=>{const b=r.querySelector('input[type="checkbox"][data-cd]'),o=r.querySelector(".cdOpts");if(b&&o)o.hidden=!b.checked});
 const syncChar=()=>{
-  const c=C();$("job").value=state.job;renderEq();renderCons();
+  const c=C();$("job").value=noChar()?"":state.job;renderEq();renderCons();
   $("preset").innerHTML=JOBS[state.job].p.map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join("")+'<option value="-1">Custom</option>';
   $("preset").value=String(c.preset??0);renderSkills();
   ["baseLv","jobLv","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","fctSec","normalPct","myElPct","ignDef","ignMdef","mastery","rangePct","skillPct","crit","critDmg","fixedShare","vctPct","fctPct","acdPct","dmgBonus","atkPct","nameSel","namePct","itemSp","itemPrice","itemHp","itemHpPrice","mobInterval","hitScale"].forEach(k=>$(k).value=c[k]??"");["curW","maxW","gymLv"].forEach(k=>$(k).value=num(c[k])>0?c[k]:"");$("townMin").value=c.townMin??3;$("sellAt").value=num(c.sellAt)>0?c.sellAt:"";$("wAtk").value=num(c.wAtk)>0?c.wAtk:"";
@@ -139,19 +139,23 @@ function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp
       <td class="nowrap">${x.perW==null?"–":fmtSig(x.perW)} <span class="note">per ${inp(x,"w",x.w,52)}${x.wOk?"":' <span title="weight not checked in game yet">?</span>'}</span></td>
       <td>${fmtQty(x.uph)}</td><td>${x.per==null?"n/a":x.zph==null?"–":fmtN(x.zph)}</td><td>${fmtQty(x.wph)}</td></tr>`}).join("")}
 // ---- render: tracker ----
-function renderSessions(){$("sessionSel").innerHTML=state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===state.current?"selected":""}>${esc(s.name)}</option>`).join("")}
+function renderSessions(){const none=!state.sessions.length;
+  $("sessionSel").innerHTML=none?'<option value="">No session yet</option>':state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===state.current?"selected":""}>${esc(s.name)}</option>`).join("");
+  // nothing to rename or delete until logging EXP, Farm here or New session starts one
+  ["sessionSel","editSession","renameSession","delSession"].forEach(id=>$(id).disabled=none)}
 // ---- get started: three steps shown over every tab until they're done (or hidden), each ticked off as you do it ----
 const KEY_START="rozero-farm-planner-start-hidden";
 // the character is set up: built from gear, or all six stats typed. Until then a monster's details leave out your numbers against it
 const charSet=(c=C())=>c.mode==="build"||STATS.every(k=>statVal(c,k)!=null);
+// no character yet: a new visitor who hasn't picked a job (state.noJob) or set one up; the calculators use a Novice meanwhile
+const noChar=()=>!!state.noJob&&!charSet();
 const NO_CHAR_TXT="Set up your character on the Character tab to see your kill time, EXP / min and zeny a kill";
 function renderStart(){const box=$("startCard"),c=C(),s=cur(),n=s.entries.length;
-  // any session counts, so a new, empty session doesn't bring the card back; once all three are done it stays away
-  const done={char:charSet(c),mob:state.sessions.some(x=>(x.mobIds||[]).length),log:atMaxLv()||state.sessions.some(x=>(x.entries||[]).length>=2)};
+  // any session counts, so a new, empty session doesn't bring the card back; once both are done it stays away
+  const done={char:charSet(c),mob:state.sessions.some(x=>(x.mobIds||[]).length)};
   let off=false;try{off=localStorage.getItem(KEY_START)==="1";if(!off&&Object.values(done).every(Boolean)){localStorage.setItem(KEY_START,"1");off=true}}catch(e){}
   box.hidden=off||Object.values(done).every(Boolean);
   box.querySelectorAll("[data-step]").forEach(li=>li.classList.toggle("done",!!done[li.dataset.step]));
-  $("startLogTxt").textContent=n===1?"One entry in: log again in a few minutes for your EXP/hr.":"Type your EXP % now, and again in a few minutes: two entries give your EXP/hr.";
   // the Session tab's tiles wait for the first entry instead of showing nine dashes
   $("tCurLv").closest(".tiles").classList.toggle("noData",!n)}
 // ---- top bar trend: EXP %/hr between this session's entries (paused time left out), and its average ----
@@ -167,7 +171,7 @@ function renderTracker(){renderStart();
   const s=cur(),st=stats(s);renderSpark(s,st);
   if(document.activeElement!==$("partyN"))$("partyN").value=partyN(s);$("partyBonus").value=partyBonus(s);
   $("partyNote").textContent=partyN(s)>1?`Each kill gives you ${partyPct(s)}% of its EXP (party of ${partyN(s)}). Even Share only works within 15 base levels.`:"";
-  $("title").textContent=`${s.name} · ${state.job}`;
+  $("title").textContent=`${s.name} · ${noChar()?"No character":state.job}`;
   const pz=openPause(s);$("pauseBtn").textContent=pz?"Resume":"Pause";$("pauseBtn").classList.toggle("primary",!!pz);$("pauseNote").hidden=!pz;
   if(pz)$("pauseNote").textContent=`Paused since ${fmtT(pz.from)}; time away isn't counted. Resume or log an entry when back.`;
   const ms=sessMobs(s),mob=ms.length===1?ms[0]:null,maps=sessMaps(s),auto=sessMapAuto(s),smp=sessMap(s);
@@ -207,7 +211,7 @@ function renderTracker(){renderStart();
 }
 // ---- sell timer: counts down to the session's sell point and rings (sound, notification, tab title); ticked every second by start.js ----
 const fmtClock=ms=>{const t=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(t/3600),m=Math.floor(t/60)%60,x=String(t%60).padStart(2,"0");return h?`${h}:${String(m).padStart(2,"0")}:${x}`:`${m}:${x}`};
-const BASE_TITLE=String(document.title||"Rozero Farm Planner");
+const BASE_TITLE=String(document.title||"Poring Planner");
 const tripPhase=(s,now=Date.now())=>!s.trip?"none":openPause(s)?"paused":now>=tripDue(s)-tripEarly()?"due":"run";
 function renderTrip(s=cur()){const c=C(),act=document.activeElement;
   [["tripW","curW"],["tripMax","maxW"]].forEach(([id,k])=>{if(act!==$(id))$(id).value=num(c[k])>0?c[k]:""});
@@ -454,21 +458,23 @@ const mobOpt=m=>`<option value="${esc(m.name)}">Lv ${m.lv} · ${fmtExp(m)} EXP${
 // a monster search's suggestions: the monsters that pass its dropdowns
 const fillMobList=(id,f)=>{$(id).innerHTML=MOBS.filter(m=>mobFOk(m,f)).map(mobOpt).join("")};
 const isMagicAtk=()=>C().a.type==="magic"||C().a.type==="spellfist";
+// on the Maps tab the table keeps to the map picked there (mapinfo.js)
+const mobsOnMap=()=>{if($("mapInfoCard").hidden||typeof mapInfoKey!=="function")return null;const mp=mapInfoKey();return {mp,ids:new Set((MAPMOBS[mp]||[]).map(x=>x.m.id))}};
 function renderMobs(){
-  const w=walkSec();const lvMin=num(state.minLv),lvMax=num(state.maxLv)||999;
-  let rows=MOBS.filter(m=>mobFOk(m,state.mobF)&&m.lv>=lvMin&&m.lv<=lvMax&&!(state.hideClosed&&SPAWN[m.id]&&!openMaps(m).length)).map(m=>{const om=openMaps(m);return {...m,om,topN:om.length?om[0][1]:0,ratio:m.hp>0?m.exp/m.hp:0,...mobRow(m,w)}});
+  const w=walkSec();const lvMin=num(state.minLv),lvMax=num(state.maxLv)||999,on=mobsOnMap();
+  let rows=MOBS.filter(m=>(!on||on.ids.has(m.id))&&mobFOk(m,state.mobF)&&m.lv>=lvMin&&m.lv<=lvMax&&!(state.hideClosed&&SPAWN[m.id]&&!openMaps(m).length)).map(m=>{const om=openMaps(m);return {...m,om,topN:om.length?om[0][1]:0,ratio:m.hp>0?m.exp/m.hp:0,...mobRow(m,w)}});
   const F=state.filters;rows=rows.filter(m=>Object.entries(F).every(([k,v])=>!v||matchF(v,colNum(m,k),colText(m,k))));
   const k=state.sort,d=state.dir;const sv=m=>{const v=k==="name"||k==="el"||k==="size"||k==="race"?colText(m,k):colNum(m,k);return v==null||v===""?null:v};
   rows.sort((a,b)=>{const x=sv(a),y=sv(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return (x>y?1:x<y?-1:0)*d});
   document.querySelectorAll("#mobTable th").forEach(th=>th.classList.toggle("on",th.dataset.k===k));
   const sel=(calcMob()||{}).id;
-  $("mobNote").textContent=`${rows.length} monsters · ${state.job} · ${isMagicAtk()?"MATK":"ATK"} ${fmtN(sumStat(isMagicAtk()?C().matkTxt:C().atkTxt))} · ${convOn()?convLabel("per monster"):atkEl()}`;
-  $("mobTable").querySelector("tbody").innerHTML=rows.slice(0,400).map(m=>`<tr data-id="${m.id}" class="${m.id===sel?"sel":""}"><td class="name"><a href="#" data-info="mob:${m.id}" aria-label="${esc(m.name)} details">${mobIcon(m.id,1,"il")}</a><a href="#" data-info="mob:${m.id}">${esc(m.name)}</a>${BOSS_PILL(m)}${isSkipped(m)?' <span class="pill down">skipped</span>':""}</td><td>${m.lv}</td><td>${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"–"}</td><td>${m.size||"–"}</td><td class="name">${m.race||"–"}</td><td>${fmtN(m.hp)}</td><td>${fmtExp(m)}</td><td>${m.expUnknown?"?":m.ratio.toFixed(2)}</td>
+  $("mobNote").textContent=`${rows.length} monsters${on?` on ${mapName(on.mp)||mapCode(on.mp)}`:""} · ${state.job} · ${isMagicAtk()?"MATK":"ATK"} ${fmtN(sumStat(isMagicAtk()?C().matkTxt:C().atkTxt))} · ${convOn()?convLabel("per monster"):atkEl()}`;
+  $("mobTable").querySelector("tbody").innerHTML=rows.slice(0,400).map(m=>`<tr data-id="${m.id}" class="${m.id===sel?"sel":""}"><td class="name"><a href="#" data-info="mob:${m.id}" aria-label="${esc(m.name)} details">${mobIcon(m.id,1,"il")}</a><a href="#" data-info="mob:${m.id}">${esc(m.name)}</a>${BOSS_PILL(m)}${isSkipped(m)?' <span class="pill down">skipped</span>':""}</td><td>${m.lv}</td><td>${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"–"}</td><td>${m.size||"–"}</td><td class="name">${m.race||"–"}</td><td>${m.hp==null?"?":fmtN(m.hp)}</td><td>${fmtExp(m)}</td><td>${m.expUnknown?"?":m.ratio.toFixed(2)}</td>
     <td class="${m.mult>100?"good":m.mult<=0?"bad":""}">${m.mult<=0?"can't hurt":Math.round(m.mult)+"%"}${elTag(m.el2)}</td><td class="${m.hitc>=95?"good":m.hitc>=70?"warnc":"bad"}">${Math.round(m.hitc)}%</td><td>${isFinite(m.uses)?m.uses.toFixed(1):"–"}</td>
     <td class="${m.sec<=3?"good":m.sec<=8?"warnc":"bad"}">${isFinite(m.sec)?m.sec.toFixed(1)+"s":"–"}</td><td><b>${m.epm?fmtN(m.epm):"–"}</b></td>
     <td class="${m.dodge==null?"":m.dodge>=70?"good":m.dodge>=40?"warnc":"bad"}">${m.dodge==null?"–":m.dodge+"%"}</td><td>${m.hpm==null?"–":fmtN(m.hpm)}</td><td>${hasLoot(m)?fmtN(m.zk):"–"}</td><td>${hasLoot(m)&&isFinite(m.sec)?fmtN(m.zph):"–"}</td>
     <td class="name">${m.om.length?`<span class="map" title="${esc(m.om.map(x=>mapLabel(x[0])+" ≈"+spN(x[1])).join(", "))}"><b>${mapCode(m.om[0][0])}</b><span>≈${spN(m.om[0][1])}</span></span>`:noneOpen(m)}</td><td></td></tr>`).join("")
-    ||'<tr><td colspan="19" class="name muted">No monsters match these filters.</td></tr>';
+    ||`<tr><td colspan="19" class="name muted">${on&&!on.ids.size?`${isTown(on.mp)?"A town: no monsters.":"No monsters listed on this map."}`:"No monsters match these filters."}</td></tr>`;
   renderMobTiles();
 }
 // selling trips spread over each kill (weight); hidden when it rounds to nothing
@@ -655,7 +661,7 @@ function renderMobInfo(){
   const m=infoMob();if(!m)return;
   if(document.activeElement!==$("mobInfoInput"))$("mobInfoInput").value=m.name;
   const r=mobRow(m,walkSec()),me=charSet();
-  $("mobInfoTiles").innerHTML=`<div class="tile now"><div class="k">${mobIcon(m.id,1,"il")}${esc(m.name)} · Lv ${m.lv}</div><div class="v mono">${fmtN(m.hp)} HP</div><div class="s">${m.el?`${m.el} ${m.elv}`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${m.mvp?" · MVP":""}${m.mini?" · mini boss":""}${m.boss?" · Boss class":""}${m.agg?" · aggressive":""}</div></div>
+  $("mobInfoTiles").innerHTML=`<div class="tile now"><div class="k">${mobIcon(m.id,1,"il")}${esc(m.name)} · Lv ${m.lv}</div><div class="v mono">${m.hp==null?"?":fmtN(m.hp)} HP</div><div class="s">${m.el?`${m.el} ${m.elv}`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${m.mvp?" · MVP":""}${m.mini?" · mini boss":""}${m.boss?" · Boss class":""}${m.agg?" · aggressive":""}</div></div>
    <div class="tile"><div class="k">EXP</div><div class="v mono">${fmtExp(m)}</div><div class="s">${m.expUnknown?"no EXP data for it yet":`job ${fmtN(m.job)}${me?` · you get ${fmtN(killExp(m))} / ${fmtN(killJobExp(m))} job a kill`:""}`}</div></div>
    <div class="tile"><div class="k">Stats</div><div class="v mono">DEF ${m.def??"–"} · MDEF ${m.mdef??"–"}</div><div class="s">ATK ${m.atkMin??"–"}–${m.atkMax??"–"} · VIT ${m.vit??"–"} · INT ${m.int??"–"}${m.hit100?` · 100% hit at ${m.hit100} HIT`:""}${m.flee95?` · 95% flee at ${m.flee95} FLEE`:""}</div></div>
    ${me?`<div class="tile"><div class="k">You vs it (${esc(state.job)})</div><div class="v mono">${isFinite(r.sec)?r.sec.toFixed(1)+"s / kill":"can't hurt"}</div><div class="s">your hit ${Math.round(r.mult)}%${elTag(r.el2)} · ${Math.round(r.hitc)}% land · you dodge ${r.dodge??"–"}%${r.hpm==null?"":` · HP lost ~${fmtN(r.hpm)}/min`}</div></div>

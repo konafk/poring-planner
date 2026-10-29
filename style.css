@@ -399,7 +399,7 @@ table.cstats tbody tr,table.cmptab tbody tr{cursor:default}
 .sk.on{border-color:color-mix(in srgb,var(--accent) 55%,transparent);background:var(--accent-soft)}
 .sk.pas .nm{font-style:italic}
 /* quest skills (no skill points): a small tag in the corner */
-.sk.quest{position:relative}
+.sk.quest,.sk:has(>.qtag){position:relative}
 .sk .qtag{position:absolute;top:-6px;right:3px;font-size:9px;line-height:1;padding:2px 4px;border-radius:4px;background:var(--surface);border:1px solid var(--line);color:var(--muted)}
 .sk .nm{order:-1;width:100%;height:2.5em;display:flex;align-items:center;justify-content:center;overflow:hidden;border:0;background:none;padding:0;font-size:11px;font-weight:500;line-height:1.25;text-align:center;overflow-wrap:break-word;hyphens:auto;min-width:0;color:var(--fg)}
 .sk .lv{display:flex;align-items:center;justify-content:center;gap:2px;font-size:11px}
@@ -518,7 +518,7 @@ table.formulas td.chg{background:var(--accent-soft)}
 .startHead h2{font-size:1.25rem;margin-top:4px}
 .iconX{border:0;background:none;font-size:20px;line-height:1;padding:4px 8px;color:var(--muted)}
 .iconX:hover{background:var(--grid);color:var(--fg);border:0}
-.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .steps li{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:14px;background:var(--raised);border:1px solid var(--line)}
 .stepN{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;font-family:var(--display);font-weight:700;font-size:14px;color:var(--accent);background:var(--accent-soft)}
 .stepTxt{display:flex;flex-direction:column;gap:3px;flex:1}
@@ -728,12 +728,15 @@ details.more>.form{display:grid}
 .ico-skill{width:24px;height:24px;background-image:var(--ico-skill)}
 /* an icon in a line of text: it doesn't make the line taller */
 .ico.il{margin:-5px 5px -4px 0}
-.ico-card{width:36px;height:48px;background-image:var(--ico-card);border-radius:3px}
-.ico-mob{width:48px;height:48px;background-image:var(--ico-mob)}
+.ico-card,.ico-cardDb{width:36px;height:48px;background-image:var(--ico-card);border-radius:3px}
+.ico-cardDb{background-image:var(--ico-cardDb)}
+.ico-gearDb,.ico-itemDb{width:24px;height:24px}.ico-gearDb{background-image:var(--ico-gearDb)}.ico-itemDb{background-image:var(--ico-itemDb)}
+.ico-mob,.ico-mobDb{width:48px;height:48px;background-image:var(--ico-mob)}
+.ico-mobDb{background-image:var(--ico-mobDb)}
 .ico.none{background:none}
 .dbName{display:flex;align-items:center;gap:8px}
-.eqDlgHead .ico-card{margin-top:-2px}
-.eqPick .ico-gear{margin:-4px 6px -4px 0}
+.eqDlgHead :is(.ico-card,.ico-cardDb){margin-top:-2px}
+.eqPick :is(.ico-gear,.ico-gearDb){margin:-4px 6px -4px 0}
 /* the Character tab's gear table: the item's icon beside its box, a small picture beside each card box */
 #gearTable .itemBox,#gearTable .cardBox,#specialTable .itemBox{display:flex;align-items:center;gap:6px}
 #specialTable .itemBox input{flex:1}
@@ -768,6 +771,26 @@ details.more>.form{display:grid}
 .ewAmmo{grid-column:1/-1;display:flex;justify-content:center}
 .ewAmmo .ewSlot{width:min(100%,260px)}
 @media (max-width:520px){.equipWin{--ew-z:1.5}.ewBody{padding:6px;gap:4px}.ewSlot{padding:3px 5px;gap:4px;font-size:11px}.ewLook button{padding:1px 4px}.ewHairW{display:none}}
+/* the class picker (the Skill tree's Job): a button with the job's look, client icon and name that opens every job's as a grid. The
+   looks are the equipment window's (.ewStage / .ewFeet), at their own size */
+.ico-job{width:26px;height:26px;background-image:var(--ico-job)}
+.classPick{position:relative;--ew-z:1}
+.cpBtn{display:flex;align-items:center;gap:8px;padding:0 12px 0 0;overflow:hidden;text-align:left}
+.cpBtn .ewStage{flex:none;width:64px;height:58px;min-height:0;overflow:hidden}
+.cpBtn .ewStage::before{bottom:2px}.cpBtn .ewFeet{bottom:5px;transform:scale(.72)}
+.cpName{display:flex;flex-direction:column;line-height:1.2}
+.cpLbl{font-size:11px;font-weight:500;color:var(--muted)}
+.cpChev{width:16px;height:16px;margin-left:2px;color:var(--muted);transition:transform .15s}
+.cpBtn[aria-expanded="true"] .cpChev{transform:rotate(180deg)}
+.cpPop{position:absolute;z-index:5;top:calc(100% + 6px);left:0;max-height:min(70vh,560px);overflow:auto;padding:4px 10px 10px;
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow-pop)}
+.cpGrp{margin:8px 2px 6px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.cpGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
+.cpOpt{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px 6px;border-color:var(--line);background:var(--raised);font-size:12px;font-weight:550;line-height:1.2}
+.cpOpt .ewStage{flex:none;height:92px;min-height:0;overflow:hidden}
+.cpPair::before{width:56px}
+.cpOpt>.ico{position:absolute;top:4px;left:4px}
+.cpOpt[aria-selected="true"]{border-color:var(--accent);background:var(--accent-soft)}
 /* Build from gear: the status window, drawn like the game's: base stat with − / +, what job and gear add, the next point's cost */
 .statWin{max-width:560px;margin:10px 0;border:1px solid var(--ew-line);border-radius:7px;background:var(--ew-bg);box-shadow:var(--shadow);font-size:12.5px;overflow:hidden}
 .swBody{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;padding:8px 10px}
@@ -848,6 +871,9 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 .infoText{font-size:13px;line-height:1.5;color:var(--muted);white-space:pre-line}
 .infoActs{padding:10px 16px;border-top:1px solid var(--line);background:var(--raised);flex-wrap:wrap}
 #infoBack{margin-top:-1px}
+.infoShare{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;font-size:12.5px;border-radius:7px;border:1px solid var(--line);color:inherit;text-decoration:none;white-space:nowrap}
+.infoShare:hover{border-color:var(--accent);color:var(--accent)}
+.infoShare .ic{width:14px;height:14px}
 @media (max-width:680px){.infoDlg .calc{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* Recipes tab: the category buttons wrap on a phone; each material on its own line */
 #recipeCats{flex-wrap:wrap}
@@ -858,3 +884,46 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 .infoList .recipe{display:flex;flex-wrap:wrap;gap:0 10px;align-items:baseline}
 .infoList .recipe .mat{white-space:nowrap}
 #cookTable :is(th,td).sel{background:var(--accent-soft)}
+/* the What's new tab: the update's heading, its floors (one row per monster, bars on one scale), bosses' cards, gear and events */
+.homeLinks{display:flex;flex-wrap:wrap;gap:8px}
+.homeNews .pill{margin-right:2px}
+.newsHeadCard{display:flex;flex-direction:column;gap:8px}
+.newsHeadCard h2{font-family:var(--display);font-size:1.9rem;font-weight:800;letter-spacing:-.03em;line-height:1.05}
+.newsHeadCard p{margin:0;max-width:75ch;color:var(--muted);line-height:1.6;text-wrap:pretty}
+.newsTower{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.newsFloor{display:grid;grid-template-columns:56px minmax(0,1fr);border-top:1px solid var(--line)}
+.newsFloor:first-child{border-top:0}
+.newsTag{padding:12px 0 0 14px;font-weight:600;color:var(--accent)}
+.newsFloor.under .newsTag{color:var(--accent-2)}
+.newsRows{display:flex;flex-direction:column;gap:4px;padding:10px 14px 12px 0;min-width:0}
+.newsMap{font-weight:600;color:var(--fg);text-decoration:none;margin-bottom:2px;width:fit-content}
+.newsMap:hover{color:var(--accent)}
+.newsMap .mono{font-size:11.5px;font-weight:400;color:var(--muted);margin-left:4px}
+.newsMob{display:grid;grid-template-columns:auto minmax(0,10rem) 3.4rem minmax(0,1fr) 2.4rem;align-items:center;gap:0 8px;font-size:13px}
+.newsMob>a{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.newsMob>.mono{text-align:right}
+.newsBar{height:7px;border-radius:4px;background:var(--grid);overflow:hidden}
+.newsBar i{display:block;height:100%;border-radius:4px;background:var(--accent)}
+.newsFloor.under .newsBar i{background:var(--accent-2)}
+.newsBosses{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.newsBoss{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,transparent);background:color-mix(in srgb,var(--warn) 8%,transparent);font-weight:600}
+.newsBoss .mono{font-weight:400;opacity:.85}
+a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a.newsBoss[data-info]:hover{border-color:var(--warn)}
+.newsGround{display:flex;align-items:baseline;gap:10px;padding:8px 14px;background:var(--raised);border-top:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong)}
+.newsGround a{font-weight:600}
+.newsGround span{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.newsCards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.newsCard{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:var(--r);background:var(--raised);border:1px solid var(--line);min-width:0}
+.newsCard>b{font-family:var(--display);font-size:15px}
+.newsCard p{margin:2px 0 0;font-size:12.5px;color:var(--muted);line-height:1.5}
+.newsList{display:flex;flex-direction:column}
+.newsItem{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-top:1px solid var(--line)}
+.newsItem:first-child{border-top:0;padding-top:4px}
+.newsItem>span{font-size:13px;color:var(--muted);line-height:1.5}
+.newsIntro{margin:0 0 4px;max-width:80ch;font-size:13px;line-height:1.55}
+.newsCollab{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px 28px}
+.newsGrp{display:flex;flex-direction:column;min-width:0}
+.newsGrp .secHead{padding:10px 0 2px}
+@media (max-width:600px){.newsMob{grid-template-columns:auto minmax(0,1fr) 2.4rem;gap:2px 8px}.newsMob>.note{display:none}.newsMob>.ico{grid-row:1 / 3}
+  .newsMob>a{grid-column:2;grid-row:1}.newsMob>.mono{grid-column:3;grid-row:1}.newsBar{grid-column:2 / -1;grid-row:2}
+  .newsFloor{grid-template-columns:44px minmax(0,1fr)}.newsTag{padding-left:10px}.newsHeadCard h2{font-size:1.5rem}}

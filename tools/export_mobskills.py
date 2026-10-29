@@ -14,7 +14,7 @@ import os, re, sys, urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = os.path.join(ROOT, "tools", "cache")
 RATHENA = "https://raw.githubusercontent.com/rathena/rathena/master/db/pre-re/"
-UA = "RO-Zero-farmer-calculator data export"
+UA = "poring-planner data export"
 ASSIST_AI = {"03", "07", "13"}
 STATES = {"attack", "angry", "anytarget"}
 

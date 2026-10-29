@@ -362,16 +362,23 @@ const memTxt=m=>[num(m.refine)?`+${num(m.refine)}`:"",...(m.cards||[]).filter(Bo
 // cell of a sprite sheet each, the sheet set once as a CSS variable. scale draws it smaller (the gear table's card boxes); cls adds a
 // class ("il": inline in a line of text). An item with no image gets an empty cell, so the names still line up
 const ICON_AT={};
+// job icons from the game client (data/sprites.js icons, tools/export_sprites.py), by job name
+if(typeof ICON_SHEETS!=="undefined"&&typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES.icons)ICON_SHEETS.job=JOB_SPRITES.icons;
 (typeof ICON_SHEETS!=="undefined"?Object.entries(ICON_SHEETS):[]).forEach(([k,s])=>{ICON_AT[k]={};s.ids.forEach((id,i)=>ICON_AT[k][id]=i);
   document.documentElement.style.setProperty(`--ico-${k}`,`url("${s.file}?v=${s.v}")`)});
-function iconHtml(kind,id,scale=1,cls=""){const s=typeof ICON_SHEETS!=="undefined"&&ICON_SHEETS[kind],i=ICON_AT[kind]&&ICON_AT[kind][id];
+function iconHtml(kind,id,scale=1,cls=""){
+  // what the client has no picture for (data/client.js) has the database's
+  if(ICON_AT[kind+"Db"]&&(ICON_AT[kind]||{})[id]==null&&ICON_AT[kind+"Db"][id]!=null)kind+="Db";
+  const s=typeof ICON_SHEETS!=="undefined"&&ICON_SHEETS[kind],i=ICON_AT[kind]&&ICON_AT[kind][id];
   const size=s&&scale!==1?`width:${s.w*scale}px;height:${s.h*scale}px;`:"",c=`ico ico-${kind}${cls?" "+cls:""}`;
   if(!s||i==null)return `<span class="${c} none" aria-hidden="true"${size?` style="${size}"`:""}></span>`;
-  const rows=Math.ceil(s.ids.length/s.cols),fit=scale!==1?`background-size:${s.cols*s.w*scale}px ${rows*s.h*scale}px;`:"";
+  // an hd sheet (data/client.js) holds each picture at hd times its size: always drawn at the cell size, so it's sharp on high-DPI screens
+  const rows=Math.ceil(s.ids.length/s.cols),fit=scale!==1||s.hd?`background-size:${s.cols*s.w*scale}px ${rows*s.h*scale}px;`:"";
   return `<span class="${c}" aria-hidden="true" style="${size}${fit}background-position:-${i%s.cols*s.w*scale}px -${Math.floor(i/s.cols)*s.h*scale}px"></span>`}
 // any item by id: a card's picture at half size (as tall as an icon), else its gear or item icon
-const itemIcon=(id,scale=1,cls="")=>ICON_AT.card&&ICON_AT.card[id]!=null?iconHtml("card",id,scale/2,cls)
-  :iconHtml(ICON_AT.gear&&ICON_AT.gear[id]!=null?"gear":"item",id,scale,cls);
+const hasIcon=(k,id)=>[k,k+"Db"].some(x=>ICON_AT[x]&&ICON_AT[x][id]!=null);
+const itemIcon=(id,scale=1,cls="")=>hasIcon("card",id)?iconHtml("card",id,scale/2,cls)
+  :iconHtml(hasIcon("gear",id)?"gear":"item",id,scale,cls);
 // a monster by id: its sprite at half size (as tall as an icon); scale 2 draws it full size (48 x 48)
 const mobIcon=(id,scale=1,cls="")=>iconHtml("mob",id,scale/2,cls);
 function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};let lists="";
@@ -392,9 +399,9 @@ function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};l
 const EW_L=["headTop","headLow","weapon","garment","acc1"],EW_R=["headMid","armor","shield","shoes","acc2"];
 let EW_TAB="normal";
 // the sheets of job looks and of hair styles (palette indices, coloured with the clothes or hair colour's palette), drawn into the
-// window's canvas once they load. Both are data: URLs (jobData, hairData), since reading their pixels is refused for an image from a
-// file opened from disk
-const ewImg=k=>typeof JOB_SPRITES!=="undefined"&&typeof Image!=="undefined"&&Object.assign(new Image(),{src:JOB_SPRITES[k+"Data"],onload:()=>drawLook()});
+// window's canvas and the Skill tree's class picker once they load. Both are data: URLs (jobData, hairData), since reading their
+// pixels is refused for an image from a file opened from disk
+const ewImg=k=>typeof JOB_SPRITES!=="undefined"&&typeof Image!=="undefined"&&Object.assign(new Image(),{src:JOB_SPRITES[k+"Data"],onload:()=>drawLook(document)});
 const EW_SHEET=ewImg("job"),EW_HAIR=ewImg("hair"),EW_PX=new Map();
 // a loaded sheet's pixels, read once
 const ewPx=im=>{if(!EW_PX.has(im)&&im&&im.complete&&im.naturalWidth){const c=document.createElement("canvas"),g=c.getContext("2d",{willReadFrequently:true});
@@ -424,21 +431,28 @@ const ewHairs=sex=>Object.keys(((typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES.h
 const EW_TRANS={Knight:"Lord Knight",Crusader:"Paladin",Wizard:"High Wizard",Sage:"Professor",Hunter:"Sniper",Bard:"Clown",Dancer:"Gypsy",
   Priest:"High Priest",Monk:"Champion",Blacksmith:"Whitesmith",Alchemist:"Creator",Assassin:"Assassin Cross",Rogue:"Stalker"};
 const ewTrans=S=>EW_TRANS[state.job]&&S.trans&&S.trans[state.job];
-function lookHtml(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";const tj=ewTrans(S),bj=(state.look.trans&&tj)||S.body[state.job]||S.body.Novice,sex=ewSex(bj),b=bj[sex],hs=S.head[sex]||{},h=hs[state.look.hair]||hs[1];
+// a job's look as a canvas placed from the feet (in an .ewFeet), painted by drawLook once the sheets load: L is a look like state.look
+// ({sex, hair, color, dye}), trans a 2nd job's transcendent look. A job with no look of its own (or no look for the gender) takes the
+// Novice's, or its one gender's
+function lookCanvas(job,L,trans){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";
+  const tj=trans&&EW_TRANS[job]&&S.trans&&S.trans[job],bj=tj||S.body[job]||S.body.Novice,sex=bj[L.sex]?L.sex:Object.keys(bj)[0],b=bj[sex],
+    hs=S.head[sex]||{},hair=hs[L.hair]?L.hair:1,h=hs[hair],pk=tj?"transPal":"bodyPal",pj=tj||S.body[job]?job:"Novice";
   // body and head go into one canvas at the sprites' own size, which the page then scales: as separate boxes each rounded to the
   // screen's pixels on its own, so at some zooms the head sat a pixel off the body
   const parts=[[...b.slice(0,4),b[4],b[5]],...h?[[...h.slice(0,4),b[6]+h[4],b[7]+h[5]]]:[]];
-  const L=Math.min(...parts.map(p=>p[4])),T=Math.min(...parts.map(p=>p[5])),R=Math.max(...parts.map(p=>p[4]+p[2])),B=Math.max(...parts.map(p=>p[5]+p[3]));
+  const l=Math.min(...parts.map(p=>p[4])),t=Math.min(...parts.map(p=>p[5])),r=Math.max(...parts.map(p=>p[4]+p[2])),bt=Math.max(...parts.map(p=>p[5]+p[3]));
+  const at=(p,x,y)=>[...p.slice(0,4),x-l,y-t].join(","),bp=((S[pk]||{})[pj]||{})[sex],dye=bp&&L.dye<bp.c.length?L.dye:0,color=L.color<ewColors(sex,hair)?L.color:0;
+  return `<canvas class="ewPic" width="${r-l}" height="${bt-t}" style="left:${l}px;top:${t}px" data-body="${at(b,b[4],b[5])}" data-pal="${pk},${pj},${sex}" data-dye="${dye}"${h?` data-head="${at(h,b[6]+h[4],b[7]+h[5])}" data-hair="${sex},${hair},${color}"`:""}></canvas>`}
+function lookHtml(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";const tj=ewTrans(S),bj=(state.look.trans&&tj)||S.body[state.job]||S.body.Novice,sex=ewSex(bj),hs=S.head[sex]||{};
   const one=Object.keys(bj).length<2,hair=hs[state.look.hair]?state.look.hair:1,nc=ewColors(sex,hair),color=state.look.color<nc?state.look.color:0;
   const pal=S.hairPal&&S.hairPal[sex]&&S.hairPal[sex][hair],swatch=pal?pal.c[color].substr(pal.k*6,6):"";
   // clothes colour 0 is undyed, 1 and up the client's dyes for this body
   const bp=ewBodyPal(),nd=bp?bp.c.length:0,dye=state.look.dye<nd?state.look.dye:0,dyeSwatch=bp?bp.c[dye].substr(bp.k*6,6):"";
-  const at=(p,l,t)=>[...p.slice(0,4),l-L,t-T].join(",");
   // Ragnarok Zero has no zeny stylist (iRO's): a new style or color after character creation takes a paid KP shop item (New Style
   // Coupon, 7622), and clothes color a Clothing Dye Coupon or Clothing Dye Coupon II (6046, 6047), the transcendent look's too
   const hairTip="changing it after character creation takes a paid KP shop item, such as a New Style Coupon";
   const dyeTip="a Clothing Dye Coupon or Clothing Dye Coupon II (KP shop) changes it, on the transcendent look too. The dye stays through a job change, but can look different on the new job";
-  return `<div class="ewStage"><div class="ewFeet"><canvas class="ewPic" width="${R-L}" height="${B-T}" style="left:${L}px;top:${T}px" data-body="${at(b,b[4],b[5])}" data-dye="${dye}"${h?` data-head="${at(h,b[6]+h[4],b[7]+h[5])}" data-hair="${sex},${hair},${color}"`:""}></canvas></div></div>
+  return `<div class="ewStage"><div class="ewFeet">${lookCanvas(state.job,state.look,state.look.trans)}</div></div>
     <div class="ewLook"><button type="button" class="small" data-ewsex="" ${one?`disabled title="${esc(state.job)}s are ${sex==="f"?"female":"male"} only"`:`title="Gender: ${sex==="f"?"female":"male"}"`} aria-label="Gender">${sex==="f"?"♀":"♂"}</button>
       <button type="button" class="small" data-ewhair="-1" aria-label="Previous hair style" title="Hair style: ${hairTip}">◀</button><span title="Hair style: ${hairTip}"><span class="ewHairW">Hair </span>${hair}</span><button type="button" class="small" data-ewhair="1" aria-label="Next hair style" title="Hair style: ${hairTip}">▶</button></div>
       ${nc>1?`<div class="ewLook"><button type="button" class="small" data-ewcolor="-1" aria-label="Previous hair color" title="Hair color: ${hairTip}">◀</button><span title="Hair color ${color} of 0–${nc-1}: ${hairTip}"><span class="ewSwatch" style="background:#${swatch}"></span><span class="ewHairW">Color </span>${color}</span><button type="button" class="small" data-ewcolor="1" aria-label="Next hair color" title="Hair color: ${hairTip}">▶</button></div>`:""}
@@ -466,11 +480,12 @@ function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),
     <div class="ewBody"><div class="ewCol">${L.join("")}</div><div class="ewChar">${lookHtml()}</div><div class="ewCol">${R.join("")}</div>${ammo}</div>`;
   // the button you pressed keeps focus through the redraw
   const a=document.activeElement,f=a&&el.contains(a)?["ewtab","ewsex","ewhair","ewcolor","ewdye","ewtrans","ewslot"].map(k=>a.dataset[k]!=null?`[data-${k}="${a.dataset[k]}"]`:null).find(Boolean):null;
-  if(renderEquipWin.html===html)return;renderEquipWin.html=html;el.innerHTML=html;drawLook();if(f)el.querySelector(f)?.focus()}
-// the body [x,y,w,h on the sheet, x,y in the canvas] from the job sheet, each index coloured with the clothes colour's palette, then
-// the head the same from the hair sheet with the hair colour's; once both sheets have loaded
-function drawLook(){const c=$("equipWin").querySelector("canvas.ewPic"),bp=ewPx(EW_SHEET),hp=ewPx(EW_HAIR),body=ewBodyPal();if(!c||!bp||!hp||!body)return;
-  const g=c.getContext("2d");g.clearRect(0,0,c.width,c.height);
+  if(renderEquipWin.html===html)return;renderEquipWin.html=html;el.innerHTML=html;drawLook(el);if(f)el.querySelector(f)?.focus()}
+// each look's canvas in root (lookCanvas): the body [x,y,w,h on the sheet, x,y in the canvas] from the job sheet, each index coloured
+// with the clothes colour's palette, then the head the same from the hair sheet with the hair colour's; once both sheets have loaded
+function drawLook(root){const bp=ewPx(EW_SHEET),hp=ewPx(EW_HAIR);if(!bp||!hp)return;
+  root.querySelectorAll("canvas.ewPic").forEach(c=>{const [k,j,s]=c.dataset.pal.split(","),body=((JOB_SPRITES[k]||{})[j]||{})[s];if(body)paintLook(c,bp,hp,body)})}
+function paintLook(c,bp,hp,body){const g=c.getContext("2d");g.clearRect(0,0,c.width,c.height);
   // through a canvas of its own: putImageData would replace the body under the head instead of drawing over it
   const paint=(px,at,pal)=>{const [x,y,w,h,l,t]=at.split(",").map(Number),img=g.createImageData(w,h);
     for(let yy=0;yy<h;yy++)for(let xx=0;xx<w;xx++){const s=((y+yy)*px.width+x+xx)*4,o=(yy*w+xx)*4,rgb=px.data[s+3]&&pal[px.data[s]];
@@ -489,6 +504,43 @@ $("equipWin").addEventListener("click",e=>{const t=e.target.closest("button");if
   const to=EW_TAB==="special"?(k==="ring"?$("stoneRow").querySelector("[data-ringon]"):k==="shield"?$("stoneRow").querySelector("[data-shadow]"):k.startsWith("own")?$("specialOwn").querySelector(`[data-i="${k.slice(3)}"] [data-f=name]`):$("stoneRow").querySelector(`[data-costume="${k}"]`))
     :$("gearTable").querySelector(`tr[data-slot="${k}"] input.item`);
   if(to){const d=to.closest("details");if(d)d.open=true;to.scrollIntoView({block:"center",behavior:"smooth"});to.focus({preventScroll:true})}});
+// ---- class picker (the Skill tree's Job): a button with the job's look, icon and name that opens every job's in groups, like a list
+// of classes to pick from. Each job shows its male and female look side by side (a Bard only male, a Dancer only female), undyed, each
+// with a random hair style and colour, new each time the list opens; the button keeps the pair you picked. groups: [[heading, [job…]]…];
+// onPick(job) when another job is picked. Returns set(job, fresh), which shows that job on the button (fresh: with new random hair) ----
+function classPicker(el,groups,onPick){let cur=null,shown="",mine=null,looks={};
+  const rnd=j=>{const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES,bj=S&&(S.body[j]||S.body.Novice);if(!bj)return [];
+    return ["m","f"].filter(s=>bj[s]).map(sex=>{const hair=1+Math.floor(Math.random()*Math.max(1,ewHairs(sex)));
+      return {sex,hair,color:Math.floor(Math.random()*ewColors(sex,hair)),dye:0}})};
+  // the pair stands a little apart, from the feet: male on the left
+  const look=(j,Ls)=>`<span class="ewStage cpPair">${Ls.map((L,i)=>`<span class="ewFeet" style="left:${Ls.length<2?50:i?66:34}%">${lookCanvas(j,L)}</span>`).join("")}</span>`;
+  el.classList.add("classPick");
+  el.innerHTML=`<button type="button" class="cpBtn" aria-haspopup="listbox" aria-expanded="false"></button><div class="cpPop" role="listbox" aria-label="Job" hidden></div>`;
+  const btn=el.firstChild,pop=el.lastChild;
+  const close=focus=>{if(pop.hidden)return;pop.hidden=true;btn.setAttribute("aria-expanded","false");if(focus)btn.focus()};
+  // drawn as it opens, with new hair
+  const open=()=>{looks={};pop.innerHTML=groups.map(([g,js])=>`<div class="cpGrp">${esc(g)}</div><div class="cpGrid">${js.map(j=>
+      `<button type="button" role="option" class="cpOpt" data-job="${esc(j)}" aria-selected="${j===cur}">${look(j,looks[j]=rnd(j))}${iconHtml("job",j,.8)}<span class="cpName">${esc(j)}</span></button>`).join("")}</div>`).join("");
+    // as wide as fits between the picker and the window's right edge
+    pop.style.width=Math.max(220,Math.min(760,innerWidth-el.getBoundingClientRect().left-16))+"px";
+    pop.hidden=false;btn.setAttribute("aria-expanded","true");drawLook(pop);(pop.querySelector('[aria-selected="true"]')||pop.querySelector(".cpOpt")).focus()};
+  btn.addEventListener("click",()=>pop.hidden?open():close());
+  pop.addEventListener("click",e=>{const o=e.target.closest(".cpOpt");if(!o)return;close(true);if(o.dataset.job!==cur){mine={job:o.dataset.job,looks:looks[o.dataset.job]};onPick(o.dataset.job)}});
+  // arrows move through the jobs as they're laid out (up and down to the nearest in the row above or below), Home / End to the first
+  // and last; Escape closes
+  pop.addEventListener("keydown",e=>{if(e.key==="Escape"){e.preventDefault();close(true);return}
+    const os=[...pop.querySelectorAll(".cpOpt")],i=os.indexOf(document.activeElement);if(i<0)return;
+    const box=o=>o.getBoundingClientRect(),mid=o=>box(o).left+box(o).width/2,r=box(os[i]),dn=e.key==="ArrowDown";let n=-1;
+    if(e.key==="ArrowLeft")n=i-1;else if(e.key==="ArrowRight")n=i+1;else if(e.key==="Home")n=0;else if(e.key==="End")n=os.length-1;
+    else if(dn||e.key==="ArrowUp"){const by=os.filter(o=>dn?box(o).top>=r.bottom-1:box(o).bottom<=r.top+1);if(!by.length){e.preventDefault();return}
+      const y=(dn?Math.min:Math.max)(...by.map(o=>box(o).top)),row=by.filter(o=>Math.abs(box(o).top-y)<2);
+      n=os.indexOf(row.reduce((a,o)=>Math.abs(mid(o)-mid(os[i]))<Math.abs(mid(a)-mid(os[i]))?o:a))}
+    else return;
+    e.preventDefault();if(os[n])os[n].focus()});
+  document.addEventListener("click",e=>{if(!el.contains(e.target))close()});
+  el.addEventListener("focusout",e=>{if(e.relatedTarget&&!el.contains(e.relatedTarget))close()});
+  return (job,fresh)=>{if(fresh||!mine||mine.job!==job)mine={job,looks:rnd(job)};const html=`${look(job,mine.looks)}${iconHtml("job",job)}<span class="cpName"><span class="cpLbl">Job</span>${esc(job)}</span><svg class="ic cpChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+    cur=job;btn.setAttribute("aria-label",`Job: ${job}`);if(shown===html)return;shown=html;btn.innerHTML=html;drawLook(btn)}}
 // Build from gear's Status, Gear, Equipment and Special equipment panels fold away, remembered like a card (state.collapsed)
 [["buildStatFold","Build from gear: status"],["gsetFold","Build from gear: gear sets"],["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
   d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[key])return;if(d.open)delete c[key];else c[key]=true;save()})});

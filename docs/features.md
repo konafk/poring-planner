@@ -8,12 +8,13 @@
 - [Monsters & maps](#monsters--maps): Where to farm, Map planner, Monster table
 - [Memorial dungeons](#memorial-dungeons): Jellostones, Expedition upgrades, memorial dungeons and their gear's enchants
 - [Stellar weapons](#stellar-weapons): ★ Forging Certificates and Activation
+- [What's new](#whats-new)
 - [Roadmap](#roadmap)
 - [Monster info](#monster-info)
 - [Maps](#maps)
 - [Item info](#item-info)
 - [Equipment and Cards](#equipment-and-cards)
-- [Brewing and Cooking simulators](#brewing-and-cooking-simulators)
+- [Simulators](#simulators)
 - [Recipes](#recipes)
 - [Market](#market)
 - [EXP & formulas](#exp--formulas)
@@ -21,7 +22,7 @@
 
 ## Page layout
 
-The tabs sit in a sidebar on the left: Home at the top, then grouped into Plan (Character, Session, Monsters & maps, Memorial dungeons, Stellar weapons), Simulators (Brewing, Cooking), Game data (Monster info, Item info, Maps, Equipment, Cards, Skill tree, Recipes), Reference (Roadmap, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
+The tabs sit in a sidebar on the left: Home at the top, then grouped into Plan (Character, Session, Monsters & maps, Memorial dungeons, Stellar weapons), Simulators (Brewing, Cooking, Skill tree), Game data (Monster info, Item info, Maps, Equipment, Cards, Recipes), Reference (What's new, Roadmap, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
 
 **Log EXP from any tab:** type in the Log EXP box on the right of the top bar, or press **L** on any tab to jump to it. It takes a line like the paste box does: `17.9` (EXP %), `17.9 63` (with job %), `15:05 17.9 63` (at that time), and `died` on the line for EXP after a death. The entry goes in at the level of your last one, and a level-up is picked up the same way as in the Log EXP card. On a phone the box opens as a sheet from the round **+** button. At the max base level (70) base EXP no longer counts, so the box, the + button and **L** go away.
 
@@ -34,6 +35,7 @@ The tabs sit in a sidebar on the left: Home at the top, then grouped into Plan (
 - **Gear:** level, card slots, ATK / MATK / DEF, weapon level, element, weight, the jobs that wear it, its effects, the in-game text, where to get it and, for a weapon a Blacksmith forges, its recipe. Buttons: Equip (the Equip dialog), Equipment tab and Recipes.
 - **Card:** its picture, the gear it goes in, the name it gives that gear, its effects, the in-game text and where to get it. Buttons: Equip and Cards tab.
 - Names inside the popup open theirs (a drop from a monster, a monster from an item); **←** goes back. A map opens in the Map planner.
+- **Share** copies a link to the one that's open (on a phone, it opens the share sheet), such as `#mob/1002` for Poring or `#item/909` for Jellopy (`#gear/…` and `#card/…` too). Opening the link opens the popup over the tab you had open last. The address bar shows the link while the popup is open, so you can copy it from there too.
 
 **Home:** the page a new player lands on (after that, the page opens on the tab you had open last, and Home is the first button in the sidebar). It says what the planner does, shows the level cap now and the next update on the roadmap (click it for the Roadmap tab), and counts the monsters, spawn maps, items, cards and recipes it knows. Once your character is set up or you've logged EXP, **Pick up where you left off** shows your job and levels, the session's last entry, its EXP/hr and time to the next level (each opens its tab), and the three best maps for EXP right now with **Farm here**. Below that, **Everything in the planner** has a card for every tab with what it's for.
 
@@ -173,6 +175,10 @@ Its own tab, for the Activation System. It's marked **Not open in game yet**: it
 - **★ Forging Certificates:** the 17 ★ weapons Global's client has. Each takes 100 ★ Forging Certificates of its own weapon: Workshop Apprentice Nariya (`/navi prontera 272/264`) gives one for each monster-drop copy of it, so ★ Book takes 100 Book. Made from lists those weapons. Type the certificates and copies you have; To go counts down from the 100 a ★ to ★★ activation takes. Fastest for you is the monster (bosses aside, on an open map) that gets you copies quickest: at its drop rate, with your drop bonus and level penalty, at the kill speed and walking Monsters & maps works out. Time is To go over that rate. Monsters whose drop rate isn't published are listed under it, or instead of it when none is, but can't be timed.
 - **Activation:** each route's refine loss, certificates and Goblin Coin Fragments at Grandpa Taotao (`/navi prontera 272/260`): ★ to ★★ (−7, 100 ★ certificates, 8 fragments), ★★ to ★★★ (−3, 3 ★★ certificates, 30), and ★ armor (stable −3 for 100 and 30, aggressive −7 for 10 and 3); the last three came in the Taiwan server's later updates. Type your weapon's refine to see it after each. Cards, enchants and random options stay.
 
+## What's new
+
+Its own tab: the latest game update's highlights, from `data/news.js` (read from the game client after the patch, and its maintenance notice). For the Clock Tower update (29 October 2026) it draws the tower floor by floor, 4F at the top, Al De Baran, then B1F to B4F: each floor's monsters with their level and spawn count from the planner's own spawn data, every bar on one scale, and the floor's field bosses. Below that, the basement bosses with their cards, the new gear, the events that started or ended and what changed in town, and a card for a collaboration event's items (the Gatchaman cards, costumes, cash shop packages, quests and quest items). Monster, card and gear names open the details popup; a floor's name opens it on the Maps tab. For a month after an update, Home shows a "New in game" link to the tab next to the next update.
+
 ## Roadmap
 
 Its own tab: Ragnarok Zero Global's release roadmap, from August 2026 to July 2027: each update's month, the level cap it raises to, what it adds, and the map regions it opens. The heading shows the level cap now and the next update.
@@ -214,9 +220,9 @@ Every piece of gear and every card the build simulator knows. Gear shows its inv
 - **Cards:** search by name, item number, the name it gives its gear in game (`healing` finds Vitata Card), effect or monster, and filter by the **Equipment slot** it goes in and **Where to get** it: MVP, mini boss or normal monster cards. Effects are the card's in-game text, which has everything the card does (Eddga Card's Endure, Baphomet Card's splash), and Where to get lists the monsters that drop it.
 - **Equip:** click a row (or its Equip button) and pick which gear set it goes in: **My gear**, any of your other gear sets, or a **New set** with only it on. An accessory asks which accessory slot, and an Assassin's dagger, one-handed sword or one-handed axe which hand. A headgear that covers more than one row (Coif: upper and middle) fills them all, and takes off whatever was there. Gear you take off keeps its refine, cards and affixes for when you put it back on. A card asks for the set, the item and the card slot, from the gear in each set that takes it; a set with no slotted item for it links to the Equipment tab with the matching filter. Items your job can't wear can't be equipped. If the Character tab is on typed status window values, equipping switches it to Build from gear (switching back brings your typed values back). Rows mark the sets each item or card is in now.
 
-## Brewing and Cooking simulators
+## Simulators
 
-The Simulators group in the sidebar has a tab for each.
+The Simulators group in the sidebar has a tab for each: Brewing, Cooking and Skill tree.
 
 ### Brewing simulator
 
@@ -227,6 +233,10 @@ Prepare Potion's chance for every potion, from your character's Job Lv, INT, DEX
 Every dish's chance with each of Global's three cooking kits (Outdoor, Home, Professional), from your Base Lv, DEX and LUK, the dish's level and how many ingredients it has. Pick the kit you cook with for the cost columns and **Cook**. **Cook mastery** is a hidden number that starts at 0 and rises with each dish you make (falls with each you burn), up to 1999; it makes the random part of the chance higher and steadier. Cook rolls the tries with mastery changing as it goes, and says where it ends up.
 
 Both use rAthena's formulas (roz.prontera.info's Crafting Calculator has the same brewing one); neither has been measured on Zero Global. Saved per account.
+
+### Skill tree
+
+Try any job's skill tree without making a character. **Job** opens every class with its icon from the game client and its look, Novice and 1st jobs then 2nd jobs. Each class shows its male and female look side by side (Bards are male only, Dancers female only), each with a random hair style and colour, new each time the list opens (and on the Job button each time you open the tab); arrow keys move through them. + and − change a skill's level, its name maxes it (or clears it once maxed), and raising a skill raises what it needs. As in the game's skill window, a 1st or 2nd job's 1st-job tree has the Novice skills in its first column: Basic Skill at Lv 9 (learned as a Novice) and the quest skills First Aid and Play Dead, none of them using the job's points. Above the trees: the points each tree uses and has, and the job level it needs. As in game, a 2nd job's points can also go on its 1st-job skills: past the 1st job's own points, they come out of the 2nd job's ("Mage 50 / 49 (1 of Sage's)", "Sage 68 + 1 in Mage = 69 / 69"). Each job's plan is kept on its own; **Use on my <job>** gives it to your character of that job, and **Load my <job>'s** starts from what your character has learned.
 
 ## Recipes
 

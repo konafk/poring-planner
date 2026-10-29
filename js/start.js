@@ -8,6 +8,7 @@ const TAB_DESC={
   maps:"The best maps for your character by EXP or zeny, and one click to farm one. Then the map planner and every monster.",
   star:"Not open in game yet (Taiwan Zero data). The ★ Forging Certificates each ★ weapon needs, where you'd farm its weapon fastest, and what Activation costs.",
   mem:"Jellostones from Poring Village, the Expedition gear they upgrade to, and the memorial dungeons' rewards and enchants.",
+  news:"The latest game update: what spawns on its new maps, its bosses and cards, its gear and its events.",
   roadmap:"Ragnarok Zero Global's release roadmap: when each update comes, its level cap, and which maps and monsters are open now.",
   mobinfo:"Drops, spawn maps and your numbers against any monster.",
   items:"Every drop: who drops it, where they spawn and what it's worth to you.",
@@ -27,34 +28,38 @@ function showHero(t){
   let g=b.previousElementSibling;while(g&&!g.classList.contains("navGrp"))g=g.previousElementSibling;
   $("heroGrp").textContent=g?g.textContent:"";$("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
 }
-// a link to a tab: #Memorial-dungeons (its name, any case) or #mem (its key); the address bar always shows the open tab's link. A name
-// goes before a key: #Maps is the Maps tab, not Monsters & maps (key maps)
-const tabSlug=t=>document.querySelector(`[data-tabbtn="${t}"] span`).textContent.replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"");
+// a link to a tab: #memorial-dungeons (its name, any case) or #mem (its key); the address bar always shows the open tab's link, in
+// lower case. A name goes before a key: #maps is the Maps tab, not Monsters & maps (key maps)
+const tabSlug=t=>document.querySelector(`[data-tabbtn="${t}"] span`).textContent.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 function hashTab(){let h="";try{h=decodeURIComponent(location.hash.slice(1)).toLowerCase()}catch(e){}if(!h)return null;
-  const bs=[...document.querySelectorAll("[data-tabbtn]")],b=bs.find(b=>tabSlug(b.dataset.tabbtn).toLowerCase()===h)||bs.find(b=>b.dataset.tabbtn===h);
+  const bs=[...document.querySelectorAll("[data-tabbtn]")],b=bs.find(b=>tabSlug(b.dataset.tabbtn)===h)||bs.find(b=>b.dataset.tabbtn===h);
   return b?b.dataset.tabbtn:null}
 function showTab(t,local){
   if(t==="data")t="acct";// the old Data tab is the Account tab
   if(![...document.querySelectorAll("[data-tabbtn]")].some(b=>b.dataset.tabbtn===t))t="home";
-  // a card can sit on several tabs (data-tab="maps mobinfo"): the Monsters card goes under Monster info there, and back under the Map planner on Monsters & maps
+  // a card can sit on several tabs (data-tab="maps mobinfo mapinfo"): the Monsters card goes under Monster info there, under the Maps card on Maps, and back under the Map planner on Monsters & maps
   document.querySelectorAll("[data-tab]").forEach(el=>el.hidden=!el.dataset.tab.split(" ").includes(t));
-  if(t==="mobinfo")$("mobInfoCard").after($("mobCard"));else if(t==="maps")$("mapCard").after($("mobCard"));
+  if(t==="mobinfo")$("mobInfoCard").after($("mobCard"));else if(t==="mapinfo")$("mapInfoCard").after($("mobCard"));else if(t==="maps")$("mapCard").after($("mobCard"));
+  // the Monsters card keeps to the Maps tab's map there (renderMapInfo draws it) and has every monster again on the other two
+  if(t==="mobinfo"||t==="maps")renderMobs();
   document.querySelectorAll("[data-tabbtn]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tabbtn===t)));
   // Home has its own heading (the hero) instead of the page heading
   showHero(t);document.querySelector(".pageHead").hidden=t==="home";$("startCard").classList.toggle("offTab",!["home","char","track","maps"].includes(t));
   if(!local&&state.tab!==t){state.tab=t;save()}
   // not over a share link (#s=…) that loadShareLink hasn't read yet
   if(location.hash!=="#"+tabSlug(t)&&!location.hash.startsWith("#s="))try{history.replaceState(null,"",location.pathname+location.search+"#"+tabSlug(t))}catch(e){}
-  if(t==="home")renderHome();if(t==="ref"){renderRef();refScroll()}
+  if(t==="home")renderHome();if(t==="news")renderNews();if(t==="ref"){renderRef();refScroll()}
   if(t==="char")renderGearCmp();
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
   // renderAll only draws these while their tab is showing
-  if(t==="maps")renderHunt();if(t==="market")renderPrices();if(t==="mobinfo")renderMobInfo();if(t==="items")renderItems();if(t==="equip")renderEquipDb();if(t==="cards")renderCardDb();if(t==="recipes")renderRecipes();if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="skilltree")renderSkPlan();if(t==="mapinfo")renderMapInfo();
+  if(t==="maps")renderHunt();if(t==="market")renderPrices();if(t==="mobinfo")renderMobInfo();if(t==="items")renderItems();if(t==="equip")renderEquipDb();if(t==="cards")renderCardDb();if(t==="recipes")renderRecipes();if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="skilltree")renderSkPlan(true);if(t==="mapinfo")renderMapInfo();
 }
 document.querySelectorAll("[data-tabbtn]").forEach(b=>b.addEventListener("click",()=>{showTab(b.dataset.tabbtn);scrollTo({top:0})}));
 // a link to another tab (data-gotab="roadmap")
 document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("[data-gotab]");if(!a)return;e.preventDefault();showTab(a.dataset.gotab);scrollTo({top:0})});
+// a popup link (#mob/1002) opens over the tab you were on once the page is drawn (showTab puts the tab's link in the address bar first)
+const INFO_AT=hashInfo(location.hash);
 {const h=hashTab();showTab(h||VIEW&&VIEW.tab||state.tab||"home",!h&&!!VIEW)}
 addEventListener("hashchange",()=>{const t=hashTab();if(t){showTab(t);scrollTo({top:0})}});
 // ---- Home tab: the hero's numbers and next update, where you left off, and a card for every other tab (from the sidebar, so it
@@ -73,19 +78,22 @@ addEventListener("hashchange",()=>{const t=hashTab();if(t){showTab(t);scrollTo({
 function renderHome(){
   const nx=ROADMAP.find(u=>!upOut(u)),cap=capNow();
   $("homeNext").innerHTML=[cap&&`<b>Level cap ${esc(capTxt(cap))}</b>`,nx&&`Next: ${esc(nx.name)}, ${esc(upWhen(nx))}`].filter(Boolean).join('<span aria-hidden="true">·</span>')+'<span aria-hidden="true">→</span>';
-  const c=C(),set=charSet(c),s=cur(),st=stats(s),last=[...s.entries].sort((a,b)=>a.t-b.t).pop(),ms=sessMobs(s),smp=sessMap(s);
+  newsBanner();
+  const c=C(),set=charSet(c),s=cur(),ms=sessMobs(s),smp=sessMap(s),max=atMaxLv();
   $("homeCharBtn").textContent=set?"Open Character":"Set up your character";
   // a new player has the get started card instead
-  $("homeNowCard").hidden=!set&&!last;if($("homeNowCard").hidden)return;
+  $("homeNowCard").hidden=!set&&!ms.length;if($("homeNowCard").hidden)return;
   const tile=(k,v,sub,tab,now)=>`<button type="button" class="tile${now?" now":""}" data-gotab="${tab}"><div class="k">${k}</div><div class="v">${esc(v)}</div><div class="s">${esc(sub)}</div></button>`;
+  // what the planner works out for your character on the map you're farming, not what you've logged
+  const est=set&&smp?mapStats(smp,walkSec()):null,why=!set?"Set up your character":!smp?"Farm a map for an estimate":"No estimate for this map";
   $("homeTiles").innerHTML=
-    tile("Character",state.job,set?[c.baseLv&&`Base ${c.baseLv}`,c.jobLv&&`Job ${c.jobLv}`,c.a&&c.a.name].filter(Boolean).join(" · "):"Not set up yet","char",true)+
-    tile("Session",last?`Lv ${last.lv} · ${pct(last.pct,1)}`:"–",[s.name,smp?`on ${mapCode(smp)}`:ms.length===1?ms[0].name:ms.length?`${ms.length} monsters`:""].filter(Boolean).join(" · "),"track",true)+
-    tile("Average EXP/hr",st?pct(st.avgPct):"–",st?`over ${st.spanMin} min`:"Log at least two entries","track")+
-    tile(st?`To Lv ${st.last.lv+1}`:"To next level",st?fmtDur(st.nextH):"–",st?`${(100-st.last.pct).toFixed(1)}% left`:"From your EXP/hr","track");
-  $("homeNowNote").textContent=last?`last logged ${fmtD(last.t)} ${fmtT(last.t)}`:"";
+    tile("Character",noChar()?"–":state.job,set?[c.baseLv&&`Base ${c.baseLv}`,c.jobLv&&`Job ${c.jobLv}`,c.a&&c.a.name].filter(Boolean).join(" · "):"Not set up yet","char",true)+
+    tile("Farming",smp?mapCode(smp):ms.length===1?ms[0].name:ms.length?`${ms.length} monsters`:"–",smp?mapName(smp):ms.length?s.name:"Pick a spot below","maps",true)+
+    tile("EXP / min there",max?"Max level":est?fmtN(est.epm):"–",max?"EXP no longer counts":est?"planner estimate":why,"maps")+
+    tile("Zeny / hr there",est?fmtN(est.net):"–",est?"net, planner estimate":why,"maps");
+  $("homeNowNote").textContent="";
   // the best maps for EXP (zeny at the max level) as Where to farm ranks them
-  const max=atMaxLv(),sm=smp;
+  const sm=smp;
   $("homeSpots").innerHTML=set&&SPOT_EXP.length?`<div class="secHead">${max?"Best for zeny":"Best for EXP"} right now</div>`+SPOT_EXP.map(r=>`<div class="spot${r.mp===sm?" on":""}"><span class="spotN">${r.rank}</span>
     <div class="spotTxt"><div><b class="mono">${mapCode(r.mp)}</b> <span class="note">${esc(mapName(r.mp))}</span></div><div class="spotV">${max?`<b>${fmtN(r.net)}</b> z/hr net`:`<b>${fmtN(r.epm)}</b> EXP / min · ${fmtN(r.net)} z/hr net`}</div></div>${farmBtn(r)}</div>`).join(""):"";
 }
@@ -235,3 +243,4 @@ if(VIEW){if(VIEW.drafts)for(const id in VIEW.drafts)if(["fPct","fJob","pasteBox"
 if(VIEW&&VIEW.toast)showToast(String(VIEW.toast));
 (function tripLoop(){tickTrip();setTimeout(tripLoop,1000)})();
 loadShareLink();addEventListener("hashchange",loadShareLink);
+if(INFO_AT)openInfo(...INFO_AT);

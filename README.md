@@ -1,10 +1,10 @@
-# RO Zero Farm Planner
+# Poring Planner
 
 A farming planner and EXP tracker for **Ragnarok Zero: Global**. Enter your character, and it works out your damage, kill speed, EXP/hr and zeny/hr against every monster. Then it ranks the open maps for you and tracks your real EXP while you farm.
 
 It's a single page that runs entirely in your browser. There's no server, no login and no build step, and your data stays in your browser's local storage.
 
-**Live page:** https://kx-lam.github.io/RO-Zero-farmer-calculator/
+**Live page:** https://konafk.github.io/poring-planner/
 
 ## Quick start
 
@@ -26,6 +26,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 - **Monster info, Item info, Market:** drops, prices, player prices and a sell timer. Item info can list every item in the game client too, costumes included, by category. Monster info has the monster table too. Every item shows its in-game icon, and every monster its sprite.
 - **Equipment, Cards:** every weapon, armor and card, filtered by type, job, level, card slots and ATK / MATK / DEF, with one click to put it in your gear or another gear set.
 - **Brewing** and **Cooking** (Simulators): each potion's or dish's chance for your stats and kit, what one costs you counting the failures, and a run of tries rolled the server's way.
+- **Skill tree** (Simulators): any job's skill tree without a character, picked from every class with its icon and look from the game client, with the points and job level it takes.
 - **Recipes:** every forging, brewing, arrow crafting, cooking, Mixture & Counteragent and Dye Making recipe, the Jellostone exchange and the Expedition upgrades, searchable by the item made or its materials, with what the materials are worth.
 - **EXP & formulas:** EXP tables, party share and every formula with your numbers.
 - **Accounts:** separate characters per account, text backups and share links.

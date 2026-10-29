@@ -17,8 +17,10 @@ const COOKBOOK_RECIPES=typeof COOKBOOKS==="undefined"?[]:Object.entries(COOKBOOK
 // The Tip Box's Item Creation guides (data/tipbox.js) for the NPC crafts the database lacks: the Old Pharmacist's potions and
 // Marienne's fruit juices. Its dyes and Mixture & Counteragent are the database's too, with the same materials and fees
 const TIPBOX_ONLY=typeof TIPBOX_RECIPES==="undefined"?[]:TIPBOX_RECIPES.filter(r=>typeof RECIPES==="undefined"||!RECIPES.some(x=>x.cat===r.cat));
-const RECIPE_LIST=[...(typeof RECIPES!=="undefined"?RECIPES:[]).filter(r=>!COOKBOOK_RECIPES.length||r.cat!=="Cooking"),...COOKBOOK_RECIPES,...TIPBOX_ONLY,...MEMORIAL_RECIPES];
-const RECIPE_CATS=["Forging","Brewing","Arrows","Cooking","Misc","Mixture & Counteragent","Dye Making","Potions","Fruit Juice","Memorial"];
+// The headgear NPCs craft, from the client's NPC dialogue and quest log (data/client.js recipes): Februs at Atelier Manus, the Hat Maker
+const CLIENT_RECIPES=typeof CLIENT!=="undefined"&&CLIENT.recipes||[];
+const RECIPE_LIST=[...(typeof RECIPES!=="undefined"?RECIPES:[]).filter(r=>!COOKBOOK_RECIPES.length||r.cat!=="Cooking"),...COOKBOOK_RECIPES,...TIPBOX_ONLY,...MEMORIAL_RECIPES,...CLIENT_RECIPES];
+const RECIPE_CATS=["Forging","Brewing","Arrows","Cooking","Misc","Mixture & Counteragent","Dye Making","Potions","Fruit Juice","Headgear","Memorial"];
 // by item id: the recipes that make it, and the ones it's a material of
 const RECIPES_MAKING={},RECIPES_USING={};
 RECIPE_LIST.forEach(r=>{(RECIPES_MAKING[r.id]=RECIPES_MAKING[r.id]||[]).push(r);
@@ -35,6 +37,14 @@ const buyPrice=id=>state.prices[id]>0?state.prices[id]:shopPrice(id)??matPrice(i
 const worthNone=(r,w)=>w.unknown===r.mats.length&&!r.fee;
 // who makes it, for the recipes an NPC makes: "JavaDullihan · morocc_in 146,99", "Marienne (quest) · prt_in 49,172" when her quest unlocks them
 const recipeNpc=r=>r.npc?`${r.npc[0]}${r.quest?" (quest)":""} · ${r.npc[1]}`:"";
+// the same as HTML, the place as the game's Navigation command (/navi prontera 50/293): a click copies it, to paste in the game's chat
+const recipeNpcHtml=r=>{if(!r.npc)return "";const at=String(r.npc[1]||"").replace(","," "),cmd=at?naviCmd(at):"";
+  return `${esc(r.npc[0])}${r.quest?" (quest)":""}${cmd?` · <a href="#" class="navi mono" data-copynavi="${esc(cmd)}" title="Copy it, then paste it in the game's chat: the Navigation shows you the way">${esc(cmd)}</a>`:""}`};
+document.addEventListener("click",async e=>{const a=e.target.closest&&e.target.closest("[data-copynavi]");if(!a)return;e.preventDefault();const t=a.dataset.copynavi;
+  try{await navigator.clipboard.writeText(t);showToast(`Copied ${t}: paste it in the game's chat.`)}
+  // where the clipboard is refused: select it, try the older copy command, else leave it selected for Ctrl+C
+  catch(err){const s=getSelection(),rg=document.createRange();rg.selectNodeContents(a);s.removeAllRanges();s.addRange(rg);
+    let ok=false;try{ok=document.execCommand("copy")}catch(e2){}showToast(ok?`Copied ${t}: paste it in the game's chat.`:"Press Ctrl+C to copy it.")}});
 const recipeMade=r=>`${itemName(r.id)}${r.n>1?` ×${fmtN(r.n)}`:""}`;
 // "10 × Iron, 1 × Steel" with icons, each opening its details
 const recipeMats=r=>r.mats.map(([id,n])=>`<span class="mat">${itemIcon(id,1,"il")}<span class="mono">${fmtN(n)}×</span> <a href="#" data-info="item:${id}">${esc(itemName(id))}</a></span>`).join("");
@@ -53,7 +63,7 @@ function renderRecipes(){const f=recipeDbF();
   $("recipeCount").textContent=`${rows.length} of ${RECIPE_LIST.length} recipes`;
   $("recipeTable").tBodies[0].innerHTML=rows.map(r=>{const w=recipeWorth(r);
     return `<tr><td class="name"><div class="dbName">${itemIcon(r.id)}<div><a href="#" data-info="item:${r.id}">${esc(itemName(r.id))}</a>${r.n>1?` <b class="mono">×${fmtN(r.n)}</b>`:""} <span class="note">#${r.id}</span></div></div></td>
-      <td class="name l">${esc(r.cat)}${r.npc?`<div class="note">${esc(recipeNpc(r))}</div>`:""}</td><td>${r.lv??"–"}</td><td class="name l mats">${recipeMats(r)}</td>
+      <td class="name l">${esc(r.cat)}${r.npc?`<div class="note">${recipeNpcHtml(r)}</div>`:""}</td><td>${r.lv??"–"}</td><td class="name l mats">${recipeMats(r)}</td>
       <td title="${w.unknown?`${w.unknown} material${w.unknown>1?"s have":" has"} no price: set one on the Market tab`:""}">${worthNone(r,w)?"–":fmtN(w.z)+(w.unknown?"+?":"")}${r.fee?`<div class="note">incl. ${fmtN(r.fee)} z fee</div>`:""}${r.n>1&&!worthNone(r,w)?`<div class="note">${(w.z/r.n).toFixed(w.z/r.n>=10?0:1)} each</div>`:""}</td></tr>`}).join("")
     ||'<tr><td colspan="5" class="name muted">No recipes match.</td></tr>'}
 (function setupRecipes(){if(!$("recipeTable"))return;
