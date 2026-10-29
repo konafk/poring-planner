@@ -15,7 +15,7 @@ import html, json, os, re, sys, time, urllib.error, urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = os.path.join(ROOT, "tools", "cache")
 SITE = "https://www.divine-pride.net"
-UA = "RO-Zero-farmer-calculator data export"
+UA = "poring-planner data export"
 # names divine-pride has only in Korean, as the Global equipment window shows them; other non-English names are left out
 GLOBAL = {300835: "Shark Family",  # "+4 Shark Family Muffler"
           300834: "Baby Shark"}

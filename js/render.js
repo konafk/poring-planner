@@ -207,7 +207,7 @@ function renderTracker(){renderStart();
 }
 // ---- sell timer: counts down to the session's sell point and rings (sound, notification, tab title); ticked every second by start.js ----
 const fmtClock=ms=>{const t=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(t/3600),m=Math.floor(t/60)%60,x=String(t%60).padStart(2,"0");return h?`${h}:${String(m).padStart(2,"0")}:${x}`:`${m}:${x}`};
-const BASE_TITLE=String(document.title||"Rozero Farm Planner");
+const BASE_TITLE=String(document.title||"Poring Planner");
 const tripPhase=(s,now=Date.now())=>!s.trip?"none":openPause(s)?"paused":now>=tripDue(s)-tripEarly()?"due":"run";
 function renderTrip(s=cur()){const c=C(),act=document.activeElement;
   [["tripW","curW"],["tripMax","maxW"]].forEach(([id,k])=>{if(act!==$(id))$(id).value=num(c[k])>0?c[k]:""});

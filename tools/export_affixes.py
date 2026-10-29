@@ -14,7 +14,7 @@ from export_prices import site  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PATH = "/tools/affixes"  # on the community database (DB_SITE)
-UA = "RO-Zero-farmer-calculator data export"
+UA = "poring-planner data export"
 # percentages whose name in the database has no "(%)"
 PCT_NAMES = {"Variable Casting reduction", "Received Healing increase"}
 

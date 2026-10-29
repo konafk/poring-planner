@@ -12,7 +12,7 @@ import json, os, re, sys, time, urllib.request
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = os.path.join(ROOT, "tools", "cache")
 SITE = "https://roz.prontera.info"
-UA = "RO-Zero-farmer-calculator data export"
+UA = "poring-planner data export"
 JOBS = ["Novice", "Swordsman", "Mage", "Archer", "Acolyte", "Merchant", "Thief", "Knight", "Crusader", "Wizard", "Sage",
         "Hunter", "Bard", "Dancer", "Priest", "Monk", "Blacksmith", "Alchemist", "Assassin", "Rogue"]
 sys.setrecursionlimit(10000)
