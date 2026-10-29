@@ -808,7 +808,7 @@ details.more>.form{display:grid}
 .styOpt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .styOpt .ewStage{flex:none;height:96px;min-height:0;overflow:hidden}
 .styHeads .styOpt{min-height:76px}
-.styOpt .ewHead{image-rendering:pixelated}
+.styOpt .lookHead{image-rendering:pixelated}
 /* Build from gear: the status window, drawn like the game's: base stat with − / +, what job and gear add, the next point's cost */
 .statWin{max-width:560px;margin:10px 0;border:1px solid var(--ew-line);border-radius:7px;background:var(--ew-bg);box-shadow:var(--shadow);font-size:12.5px;overflow:hidden}
 .swBody{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 16px;padding:8px 10px}
