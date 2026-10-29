@@ -20,6 +20,8 @@ the client isn't, so what the client says goes in a file of its own that only th
   spawn table (data.grf's navi_mob.lub): name, level, element, size, race and where they spawn. The client has no HP, EXP or drops,
   so those stay unknown and the farm tables leave them out. The other monsters it has and the database doesn't (plants, Knight
   Porings, the Solid / Furious / ... champions, event monsters) stay out, as before.
+- mobLv: every monster the client spawns, [name, level]: the monster list takes the client's level, and the drop lists name each
+  monster as the monster list does (or as the client does, for one the list doesn't have) with its level.
 - art: the client's pictures, as sheets like tools/export_icons.py's (img/<kind>-client.png): card pictures (data.grf's
   data\\num2cardillustnametable.txt gives each card id its picture's name, data\\texture\\유저인터페이스\\cardbmp\\<name>.bmp,
   300 x 400, shrunk), and gear and item icons (System\\itemInfo_data.lub gives each item its identifiedResourceName,
@@ -287,13 +289,17 @@ def main():
     art["mob"] = {"file": "img/mob-client.png", "v": sheet(pics, MOB_W * HD, MOB_H * HD, MOB_COLS, os.path.join(ROOT, "img", "mob-client.png")),
                   "w": MOB_W, "h": MOB_H, "cols": MOB_COLS, "ids": got, "hd": HD}
     wanted["mob"] = len(ours) + len(mobs)
-    out = {"text": text, "fix": fix, "gear": gear, "items": items, "mobs": mobs, "art": art}
+    # every monster the client spawns: [name, level], for the monster list's levels and the drop lists (the database's are often another
+    # server's: Baphomet Lv 105 for the client's 81, Extra Joker 126 for 105)
+    mob_lv = {i: [m["name"], m["lv"]] for i, m in sorted(spawned.items())}
+    out = {"text": text, "fix": fix, "gear": gear, "items": items, "mobs": mobs, "mobLv": mob_lv, "art": art}
     with open(os.path.join(DATA, "client.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// The game client's own item data (tools/export_client.py, from the installed Global client), laid over the community database's\n"
                 "// as the page loads: wherever the client has it, it wins. text: gear's and cards' in-game descriptions; fix: name, card slots, level,\n"
                 "// DEF, ATK, MATK, weapon level where the database's differ; gear: armour the database doesn't have yet, as data/equipment.js rows;\n"
                 "// items: other items no data file has, [name, category, in-game text]; mobs: monsters the database doesn't have yet (no HP or\n"
-                "// EXP in the client); art: the client's card pictures, gear and item icons and monster pictures (sheets like data/icons.js's)\n")
+                "// EXP in the client); art: the client's card pictures, gear and item icons and monster pictures (sheets like data/icons.js's);\n"
+                "// mobLv: every monster the client spawns, [name, level], for the monster list's levels and the drop lists\n")
         f.write("const CLIENT=" + json.dumps(out, ensure_ascii=False, separators=(",", ":")) + ";\n")
         f.write("(function(){const has=new Set(EQUIP.map(e=>e.id));CLIENT.gear.forEach(r=>{if(!has.has(r.id))EQUIP.push(r)});\n"
                 "  const byId=new Map([...EQUIP,...CARDS].map(x=>[x.id,x]));Object.entries(CLIENT.fix).forEach(([id,f])=>{const x=byId.get(+id);if(x)Object.assign(x,f)});\n"
@@ -303,6 +309,10 @@ def main():
                 "  const mob=new Set(MOBS.map(m=>m.id));CLIENT.mobs.forEach(m=>{if(mob.has(m.id))return;\n"
                 "    MOBS.push({id:m.id,name:m.name,lv:m.lv,hp:null,exp:0,job:0,expUnknown:true,boss:false,mini:false,mvp:false});\n"
                 "    ELEM[m.id]=ELEM[m.id]||[m.el,m.elv,null,null];SIZES[m.id]=SIZES[m.id]||[m.size,RACES.indexOf(m.race)];SPAWN[m.id]=SPAWN[m.id]||m.spawn});\n"
+                "  // every monster's level as the client spawns it; the drop lists name a monster as the monster list does, or as the client does\n"
+                "  const byMob=new Map(MOBS.map(m=>[m.id,m]));Object.entries(CLIENT.mobLv).forEach(([id,[n,lv]])=>{const m=byMob.get(+id);if(m)m.lv=lv});\n"
+                "  Object.values(ITEM_INFO).forEach(x=>(x.d||[]).forEach(r=>{const m=byMob.get(r[0]),c=CLIENT.mobLv[r[0]];\n"
+                "    if(m){r[1]=m.name;r[2]=m.lv}else if(c){r[1]=c[0];r[2]=c[1]}}));\n"
                 "  Object.entries(CLIENT.items).forEach(([id,[n,c,t]])=>{if(!CLIENT_ITEMS[id])CLIENT_ITEMS[id]=[n,c];if(t&&!ITEM_TEXT[id])ITEM_TEXT[id]=t});\n"
                 "  // the database's sheets stay as the fallback for what the client has no picture for (js/build-ui.js iconHtml)\n"
                 "  Object.entries(CLIENT.art).forEach(([k,s])=>{if(s.ids.length){ICON_SHEETS[k+\"Db\"]=ICON_SHEETS[k];ICON_SHEETS[k]=s}})})();\n")
