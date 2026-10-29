@@ -84,11 +84,14 @@ function popCard(id){const x=BUILD.item(id),fx=fxOf(x),c=C(),txt=itemText(id),wo
       ${infoSec("Where to get",`<div class="infoFrom">${fromHtml(id)}</div>`)}${ITEM_DROPS[id]?infoPrice(id):""}`,
     acts:`<button type="button" class="primary" data-infoact="equip"${cardPart(x)?"":' disabled title="Not a card that goes in gear"'}>Equip</button><button type="button" data-infoact="cardtab">Cards tab</button>`}}
 
+// a card's or monster's full-size picture from the client (data/client.js big): an image, so it's only fetched when its popup opens
+function infoArt(kind,id){const k=kind==="mob"?"mob":"card",b=typeof CLIENT!=="undefined"&&CLIENT.big&&CLIENT.big[k]&&CLIENT.big[k][id];if(!b)return "";
+  return `<div class="infoArt ${k}Art"><img src="img/${k}s/${id}.png?v=${b[2]}" width="${b[0]}" height="${b[1]}" alt="" decoding="async"></div>`}
 function drawInfo(){const [kind,id]=INFO[INFO.length-1],m=kind==="mob"&&MOB_BY_ID.get(+id);
   const v=kind==="mob"?(m?popMob(m):null):kind==="gear"&&BUILD.item(+id)?popGear(+id):kind==="card"&&BUILD.item(+id)?popCard(+id):popItem(id);
   if(!v){INFO.pop();return}
   $("infoDlgIco").innerHTML=v.ico;$("infoDlgTitle").textContent=v.title;$("infoDlgSub").innerHTML=v.sub;
-  $("infoDlgBody").innerHTML=v.body;$("infoDlgActs").innerHTML=v.acts;$("infoBack").hidden=INFO.length<2;
+  $("infoDlgBody").innerHTML=infoArt(kind,id)+v.body;$("infoDlgActs").innerHTML=v.acts;$("infoBack").hidden=INFO.length<2;
   $("infoDlgBody").scrollTop=0;$("infoShare").href=infoUrl();
   try{history.replaceState(null,"",infoHash(kind,id))}catch(e){}}
 // kind "mob" or "item" (an item that's gear or a card shows as one)

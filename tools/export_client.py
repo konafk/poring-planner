@@ -26,6 +26,8 @@ the client isn't, so what the client says goes in a file of its own that only th
   data\\texture\\유저인터페이스\\item\\<name>.bmp, 24 x 24, magenta see-through), and monster pictures (each spawned monster's
   standing sprite, data\\sprite\\몬스터\\<sprite>.spr / .act with the sprite name from navi_mob.lub, drawn as tools/export_sprites.py
   draws a body and fitted to MOB_W x MOB_H). Anything the client has no picture for keeps the database's.
+- big: each of those card pictures and monster sprites at full size, one file each (img/cards/<id>.png, 300 x 400; img/mobs/<id>.png,
+  the sprite's own size), [w, h, checksum] by id: the details popup shows it, and loads it only when it opens.
 """
 import json, os, re, sys
 
@@ -150,6 +152,21 @@ def scaled(img, W, H):
     return W, H, out
 
 
+def full(folder, i, img):
+    """Write one full-size picture as img/<folder>/<id>.png (a palette of up to 255 colours: a card picture is a quarter the size of
+    RGBA, a monster sprite has no more colours than that anyway); [w, h, checksum] for data/client.js."""
+    import struct, zlib
+    from export_icons import quantize
+    w, h, px = img
+    pal, idx = quantize(px)
+    chunk = lambda t, d: struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
+    raw = b"".join(b"\0" + idx[y * w:(y + 1) * w] for y in range(h))
+    png = (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 3, 0, 0, 0)) + chunk(b"PLTE", pal) + chunk(b"tRNS", b"\0")
+           + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
+    open(os.path.join(ROOT, "img", folder, f"{i}.png"), "wb").write(png)
+    return [w, h, f"{zlib.crc32(png) & 0xFFFFFFFF:08x}"]
+
+
 def card_names(grf):
     """{card id: picture name}, from the client's num2cardillustnametable.txt."""
     out = {}
@@ -243,7 +260,13 @@ def main():
             skipped.append(f"{name} ({st.get('Type')})")
         items[i] = [name, category(name, d, st), clean(ls)]
     from export_minimaps import DesGrf
-    wanted = {}
+    wanted, big = {}, {"card": {}, "mob": {}}
+    for folder in ("cards", "mobs"):  # written afresh, so a picture the client drops goes too
+        d = os.path.join(ROOT, "img", folder)
+        os.makedirs(d, exist_ok=True)
+        for f in os.listdir(d):
+            if f.endswith(".png"):
+                os.remove(os.path.join(d, f))
     grf, art, res = DesGrf(os.path.join(client, "data.grf")), {}, {i: d.get("identifiedResourceName") for i, d in data.items()}
     card_ids, gear_ids = [c["id"] for c in cards], [e["id"] for e in eq] + [g["id"] for g in gear]
     other = sorted(({i for f, c in [("items.js", "ITEMN"), ("recipes.js", "RECIPE_ITEMN"), ("consumables.js", "CONSUM"), ("recovery.js", "RECOVERY"),
@@ -262,6 +285,8 @@ def main():
         v = sheet([shrink(pics[i], W * k, H * k) if card else pics[i] for i in got], W * k, H * k, cols, os.path.join(ROOT, "img", f"{kind}-client.png"))
         art[kind] = {"file": file, "v": v, "w": W, "h": H, "cols": cols, "ids": got, **({"hd": k} if k > 1 else {})}
         wanted[kind] = len(want)
+        if card:
+            big["card"] = {i: full("cards", i, pics[i]) for i in got}
     # a new item with no icon in the client isn't out on Global yet (Fei-Chai Egg, Tai-zi Egg): left out
     unreleased = [items.pop(i)[0] for i in list(items) if i not in art["item"]["ids"]]
     if unreleased:
@@ -284,16 +309,18 @@ def main():
                 # the size the page shows it (fitted to MOB_W x MOB_H, never enlarged), drawn at HD times that
                 k = min(1, MOB_W / w, MOB_H / h)
                 pics.append(scaled((w, h, px), max(1, round(w * k * HD)), max(1, round(h * k * HD)))); got.append(i)
+                big["mob"][i] = full("mobs", i, (w, h, px))
     art["mob"] = {"file": "img/mob-client.png", "v": sheet(pics, MOB_W * HD, MOB_H * HD, MOB_COLS, os.path.join(ROOT, "img", "mob-client.png")),
                   "w": MOB_W, "h": MOB_H, "cols": MOB_COLS, "ids": got, "hd": HD}
     wanted["mob"] = len(ours) + len(mobs)
-    out = {"text": text, "fix": fix, "gear": gear, "items": items, "mobs": mobs, "art": art}
+    out = {"text": text, "fix": fix, "gear": gear, "items": items, "mobs": mobs, "art": art, "big": big}
     with open(os.path.join(DATA, "client.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// The game client's own item data (tools/export_client.py, from the installed Global client), laid over the community database's\n"
                 "// as the page loads: wherever the client has it, it wins. text: gear's and cards' in-game descriptions; fix: name, card slots, level,\n"
                 "// DEF, ATK, MATK, weapon level where the database's differ; gear: armour the database doesn't have yet, as data/equipment.js rows;\n"
                 "// items: other items no data file has, [name, category, in-game text]; mobs: monsters the database doesn't have yet (no HP or\n"
-                "// EXP in the client); art: the client's card pictures, gear and item icons and monster pictures (sheets like data/icons.js's)\n")
+                "// EXP in the client); art: the client's card pictures, gear and item icons and monster pictures (sheets like data/icons.js's);\n"
+                "// big: full-size card pictures and monster sprites, img/cards|mobs/<id>.png, [w, h, checksum], for the details popup\n")
         f.write("const CLIENT=" + json.dumps(out, ensure_ascii=False, separators=(",", ":")) + ";\n")
         f.write("(function(){const has=new Set(EQUIP.map(e=>e.id));CLIENT.gear.forEach(r=>{if(!has.has(r.id))EQUIP.push(r)});\n"
                 "  const byId=new Map([...EQUIP,...CARDS].map(x=>[x.id,x]));Object.entries(CLIENT.fix).forEach(([id,f])=>{const x=byId.get(+id);if(x)Object.assign(x,f)});\n"
