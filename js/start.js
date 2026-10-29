@@ -40,6 +40,8 @@ function showTab(t,local){
   // a card can sit on several tabs (data-tab="maps mobinfo mapinfo"): the Monsters card goes under Monster info there, under the Maps card on Maps, and back under the Map planner on Monsters & maps
   document.querySelectorAll("[data-tab]").forEach(el=>el.hidden=!el.dataset.tab.split(" ").includes(t));
   if(t==="mobinfo")$("mobInfoCard").after($("mobCard"));else if(t==="mapinfo")$("mapInfoCard").after($("mobCard"));else if(t==="maps")$("mapCard").after($("mobCard"));
+  // the Monsters card keeps to the Maps tab's map there (renderMapInfo draws it) and has every monster again on the other two
+  if(t==="mobinfo"||t==="maps")renderMobs();
   document.querySelectorAll("[data-tabbtn]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tabbtn===t)));
   // Home has its own heading (the hero) instead of the page heading
   showHero(t);document.querySelector(".pageHead").hidden=t==="home";$("startCard").classList.toggle("offTab",!["home","char","track","maps"].includes(t));
