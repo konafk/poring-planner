@@ -57,7 +57,7 @@ try {
     assert.equal(await page.textContent("#infoDlgTitle"), "Jellopy");
     assert.match(await page.getAttribute("#infoShare", "href"), /#item\/909$/);
     await page.click("#infoDlgClose");
-    await page.waitForFunction(() => location.hash === "#Home");
+    await page.waitForFunction(() => location.hash === "#home");
     assert.deepEqual(errs, []);
     await page.close();
   });
@@ -94,9 +94,11 @@ try {
     assert.ok(!await page.isVisible("#sessionSel"));
     await page.click('[data-tabbtn="track"]');
     assert.ok(await page.isVisible("#sessionSel") && !await page.isVisible("#acctSel"));
-    const n = await page.$$eval("#sessionSel option", o => o.length);
+    assert.equal(await page.textContent("#sessionSel"), "No session yet");     // a new player has no session until they start one
+    assert.ok(await page.isDisabled("#editSession"));
     await page.click("#newSession");                                   // a new session, then off to pick its monster
-    assert.equal(await page.$$eval("#sessionSel option", o => o.length), n + 1);
+    assert.equal(await page.evaluate("state.sessions.length"), 1);
+    assert.equal(await page.textContent("#sessionSel"), "New session");
     assert.equal(await page.getAttribute('[data-tabbtn="maps"]', "aria-selected"), "true");
     assert.deepEqual(errs, []);
     await page.close();
