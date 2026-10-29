@@ -4,7 +4,7 @@ MOBS.forEach(m=>{const e=ELEM[m.id];if(e){m.el=e[0];m.elv=e[1];m.hit100=e[2];m.f
   const st=MSTAT[m.id];if(st){m.def=st[0];m.mdef=st[1];m.atkMin=st[2];m.atkMax=st[3];m.vit=st[4];m.int=st[5];m.agg=!!st[6];m.luk=st[7]||0}
   const lt=LOOT[m.id];if(lt){m.loot=lt[0];m.priced=lt[1];m.dropsN=lt[2];m.drops=lt[3]}else m.drops=[];
   const sz=SIZES[m.id];if(sz){m.size=sz[0];m.race=RACES[sz[1]]}
-  m.poison=MOBPOISON[m.id]||null;m.assist=MOB_ASSIST.has(m.id)});
+  m.poison=MOBPOISON[m.id]||null;m.assist=MOB_ASSIST.has(m.id);m.skills=MOBSKILL[m.id]||null});
 
 // ---- element table: defender element -> element level 1-4 -> attacker element ----
 // from the official guide's element chart, roz.mygnjoy.com/en/intro/guide/14 (all 400 cells checked; it calls Ghost "Ninja Aura")

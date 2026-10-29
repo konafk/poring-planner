@@ -51,8 +51,9 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
     +infoTile("Best map",om.length?mapCode(om[0][0]):"–",om.length?`${esc(mapName(om[0][0]))} ≈${spN(om[0][1])}`:a?`none open · comes with the ${esc(a)}`:"none open");
   const drops=(m.drops||[]).slice().sort((x,y)=>(y[1]??-1)-(x[1]??-1)).map(([id,ch])=>`<div>${itemIcon(id,1,"il")}${infoLink(infoKind(id),id,itemName(id))} <span class="note">${chTxt(ch)}${yourCh(m,ch)!==ch?` (you ${chTxt(yourCh(m,ch))})`:""}${npcSell(id)>0?` · NPC ${fmtN(npcPays(id))} z`:""}${state.prices[id]>0?` · players ${fmtN(state.prices[id])} z`:""}${looted(id)?"":" · not looted"}</span></div>`).join("");
   const maps=(SPAWN[m.id]||[]).slice().sort((x,y)=>y[1]-x[1]).map(([mp,n])=>`<div><a href="#" data-infomap="${esc(mp)}" class="mono">${mapCode(mp)}</a> <span class="note">${esc(mapName(mp))} · ≈${spN(n)}</span>${isClosed(mp)?` <span class="pill down">closed${mapArrives(mp)?` · ${esc(mapArrives(mp).split(", ")[1])}`:""}</span>`:""}</div>`).join("");
+  const skills=(m.skills||[]).map(([sid,st,lv,ch,,,cond])=>`<div><b>${esc(MOBSKILLNAME[sid]||`skill ${sid}`)}</b> Lv ${lv} <span class="note">${esc(st.toLowerCase())} · ${ch}%${cond?` · ${esc(cond)}`:""}</span></div>`).join("");
   return {ico:mobIcon(m.id,2),title:m.name,sub,
-    body:`<div class="calc">${tiles}</div>${infoSec("Drops",drops&&`<div class="infoList">${drops}</div>`)}${infoSec("Spawns",maps&&`<div class="infoList">${maps}</div>`)}`,
+    body:`<div class="calc">${tiles}</div>${infoSec("Drops",drops&&`<div class="infoList">${drops}</div>`)}${infoSec("Skills",skills&&`<div class="infoList">${skills}</div>`)}${infoSec("Spawns",maps&&`<div class="infoList">${maps}</div>`)}`,
     acts:`${inS?'<span class="pill up">In this session</span>':`<button type="button" class="primary" data-infoact="farm">${s.mobIds.length?"Also killing it":"Farming it now"}</button>`}
       <button type="button" data-infoact="mobinfo">Monster info</button>`}}
 

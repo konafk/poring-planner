@@ -57,10 +57,11 @@ def text(raw, enc):
         return raw.decode("cp1252", "replace")
 
 
-def lua_data(b, enc="cp949", lenient=False):
+def lua_data(b, enc="cp949", lenient=False, env=None):
     """Globals set by a compiled Lua 5.1 data file, running only the opcodes that build tables. enc: how its strings are written.
     lenient: skip the opcodes that run code (closures, calls) instead of stopping, for files that define functions next to their
-    tables (System\\itemInfo_data.lub); the tables still come out whole."""
+    tables (System\\itemInfo_data.lub); the tables still come out whole. env: globals already set (skillid.lub's SKID, for the
+    skill tables keyed by SKID.X)."""
     p = [12]
 
     def u8(): p[0] += 1; return b[p[0] - 1]
@@ -88,7 +89,7 @@ def lua_data(b, enc="cp949", lenient=False):
     if b[:5] != b"\x1bLuaQ":
         raise SystemExit("navi_mob.lub isn't Lua 5.1 bytecode")
     code, k = func()
-    G, reg, pc = {}, {}, 0
+    G, reg, pc = dict(env or {}), {}, 0
     rk = lambda x: k[x - 256] if x >= 256 else reg.get(x)
     while pc < len(code):
         i = code[pc]; pc += 1
