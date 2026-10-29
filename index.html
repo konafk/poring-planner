@@ -662,8 +662,10 @@
       <div class="worldMap" id="infoWorld"></div>
       <div id="mapInfoSel"></div>
     </div>
-    <div class="scroll mt"><table id="mapInfoTable"><thead><tr><th>Map</th><th>Name</th><th>Monsters</th><th>Levels</th><th>Spawns</th><th>World map</th><th>Open</th></tr></thead><tbody></tbody></table></div>
-    <div class="note hint">Every map monsters spawn on, and the towns. Click a box on the world map or a row to see the map's picture and its monsters; "Plan this map" opens it in the Map planner. Find a map narrows the table by code, name, monster or "town". The pictures and boxes come from the game client: maps whose region isn't out yet aren't on its world map.</div>
+    <details class="more mt" id="mapInfoMore"><summary>Map list</summary>
+      <div class="scroll"><table id="mapInfoTable"><thead><tr><th>Map</th><th>Name</th><th>Monsters</th><th>Levels</th><th>Spawns</th><th>World map</th><th>Open</th></tr></thead><tbody></tbody></table></div>
+    </details>
+    <div class="note hint">Every map monsters spawn on, and the towns; open Map list for all of them in a table. Click a box on the world map or a row to see the map's picture and its monsters; "Plan this map" opens it in the Map planner. Find a map narrows the table by code, name, monster or "town". The pictures and boxes come from the game client: maps whose region isn't out yet aren't on its world map.</div>
   </section>
 
   <section class="card" id="jelloCard" data-tab="mem">

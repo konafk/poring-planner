@@ -458,21 +458,23 @@ const mobOpt=m=>`<option value="${esc(m.name)}">Lv ${m.lv} · ${fmtExp(m)} EXP${
 // a monster search's suggestions: the monsters that pass its dropdowns
 const fillMobList=(id,f)=>{$(id).innerHTML=MOBS.filter(m=>mobFOk(m,f)).map(mobOpt).join("")};
 const isMagicAtk=()=>C().a.type==="magic"||C().a.type==="spellfist";
+// on the Maps tab the table keeps to the map picked there (mapinfo.js)
+const mobsOnMap=()=>{if($("mapInfoCard").hidden||typeof mapInfoKey!=="function")return null;const mp=mapInfoKey();return {mp,ids:new Set((MAPMOBS[mp]||[]).map(x=>x.m.id))}};
 function renderMobs(){
-  const w=walkSec();const lvMin=num(state.minLv),lvMax=num(state.maxLv)||999;
-  let rows=MOBS.filter(m=>mobFOk(m,state.mobF)&&m.lv>=lvMin&&m.lv<=lvMax&&!(state.hideClosed&&SPAWN[m.id]&&!openMaps(m).length)).map(m=>{const om=openMaps(m);return {...m,om,topN:om.length?om[0][1]:0,ratio:m.hp>0?m.exp/m.hp:0,...mobRow(m,w)}});
+  const w=walkSec();const lvMin=num(state.minLv),lvMax=num(state.maxLv)||999,on=mobsOnMap();
+  let rows=MOBS.filter(m=>(!on||on.ids.has(m.id))&&mobFOk(m,state.mobF)&&m.lv>=lvMin&&m.lv<=lvMax&&!(state.hideClosed&&SPAWN[m.id]&&!openMaps(m).length)).map(m=>{const om=openMaps(m);return {...m,om,topN:om.length?om[0][1]:0,ratio:m.hp>0?m.exp/m.hp:0,...mobRow(m,w)}});
   const F=state.filters;rows=rows.filter(m=>Object.entries(F).every(([k,v])=>!v||matchF(v,colNum(m,k),colText(m,k))));
   const k=state.sort,d=state.dir;const sv=m=>{const v=k==="name"||k==="el"||k==="size"||k==="race"?colText(m,k):colNum(m,k);return v==null||v===""?null:v};
   rows.sort((a,b)=>{const x=sv(a),y=sv(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return (x>y?1:x<y?-1:0)*d});
   document.querySelectorAll("#mobTable th").forEach(th=>th.classList.toggle("on",th.dataset.k===k));
   const sel=(calcMob()||{}).id;
-  $("mobNote").textContent=`${rows.length} monsters · ${state.job} · ${isMagicAtk()?"MATK":"ATK"} ${fmtN(sumStat(isMagicAtk()?C().matkTxt:C().atkTxt))} · ${convOn()?convLabel("per monster"):atkEl()}`;
+  $("mobNote").textContent=`${rows.length} monsters${on?` on ${mapName(on.mp)||mapCode(on.mp)}`:""} · ${state.job} · ${isMagicAtk()?"MATK":"ATK"} ${fmtN(sumStat(isMagicAtk()?C().matkTxt:C().atkTxt))} · ${convOn()?convLabel("per monster"):atkEl()}`;
   $("mobTable").querySelector("tbody").innerHTML=rows.slice(0,400).map(m=>`<tr data-id="${m.id}" class="${m.id===sel?"sel":""}"><td class="name"><a href="#" data-info="mob:${m.id}" aria-label="${esc(m.name)} details">${mobIcon(m.id,1,"il")}</a><a href="#" data-info="mob:${m.id}">${esc(m.name)}</a>${BOSS_PILL(m)}${isSkipped(m)?' <span class="pill down">skipped</span>':""}</td><td>${m.lv}</td><td>${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"–"}</td><td>${m.size||"–"}</td><td class="name">${m.race||"–"}</td><td>${m.hp==null?"?":fmtN(m.hp)}</td><td>${fmtExp(m)}</td><td>${m.expUnknown?"?":m.ratio.toFixed(2)}</td>
     <td class="${m.mult>100?"good":m.mult<=0?"bad":""}">${m.mult<=0?"can't hurt":Math.round(m.mult)+"%"}${elTag(m.el2)}</td><td class="${m.hitc>=95?"good":m.hitc>=70?"warnc":"bad"}">${Math.round(m.hitc)}%</td><td>${isFinite(m.uses)?m.uses.toFixed(1):"–"}</td>
     <td class="${m.sec<=3?"good":m.sec<=8?"warnc":"bad"}">${isFinite(m.sec)?m.sec.toFixed(1)+"s":"–"}</td><td><b>${m.epm?fmtN(m.epm):"–"}</b></td>
     <td class="${m.dodge==null?"":m.dodge>=70?"good":m.dodge>=40?"warnc":"bad"}">${m.dodge==null?"–":m.dodge+"%"}</td><td>${m.hpm==null?"–":fmtN(m.hpm)}</td><td>${hasLoot(m)?fmtN(m.zk):"–"}</td><td>${hasLoot(m)&&isFinite(m.sec)?fmtN(m.zph):"–"}</td>
     <td class="name">${m.om.length?`<span class="map" title="${esc(m.om.map(x=>mapLabel(x[0])+" ≈"+spN(x[1])).join(", "))}"><b>${mapCode(m.om[0][0])}</b><span>≈${spN(m.om[0][1])}</span></span>`:noneOpen(m)}</td><td></td></tr>`).join("")
-    ||'<tr><td colspan="19" class="name muted">No monsters match these filters.</td></tr>';
+    ||`<tr><td colspan="19" class="name muted">${on&&!on.ids.size?`${isTown(on.mp)?"A town: no monsters.":"No monsters listed on this map."}`:"No monsters match these filters."}</td></tr>`;
   renderMobTiles();
 }
 // selling trips spread over each kill (weight); hidden when it rounds to nothing
