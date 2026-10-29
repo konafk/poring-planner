@@ -15,7 +15,7 @@ from export_prices import site  # noqa: E402
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PATH = os.path.join(ROOT, "data", "mstat.js")
 CACHE = os.path.join(ROOT, "tools", "cache")
-UA = "RO-Zero-farmer-calculator data export"
+UA = "poring-planner data export"
 HEAD = "// Monster stats per id (the community database): [DEF, MDEF, ATK min, ATK max, VIT, INT, aggressive 0/1, LUK]"
 
 

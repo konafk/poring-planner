@@ -1,10 +1,10 @@
-# RO Zero Farm Planner
+# Poring Planner
 
 A farming planner and EXP tracker for **Ragnarok Zero: Global**. Enter your character, and it works out your damage, kill speed, EXP/hr and zeny/hr against every monster. Then it ranks the open maps for you and tracks your real EXP while you farm.
 
 It's a single page that runs entirely in your browser. There's no server, no login and no build step, and your data stays in your browser's local storage.
 
-**Live page:** https://kx-lam.github.io/RO-Zero-farmer-calculator/
+**Live page:** https://konafk.github.io/poring-planner/
 
 ## Quick start
 

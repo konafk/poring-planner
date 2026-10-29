@@ -23,7 +23,7 @@ CACHE = os.path.join(ROOT, "tools", "cache")
 # the community database's address comes from the DB_SITE environment variable (the Refresh data workflow sets it from the
 # repository variable of the same name), so no script names the site. site() stops with a message when it isn't set
 SITE = os.environ.get("DB_SITE", "").strip().rstrip("/")
-UA = "RO-Zero-farmer-calculator data export"
+UA = "poring-planner data export"
 
 
 def site(path=""):

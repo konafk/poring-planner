@@ -21,7 +21,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # the two pages on the community database (DB_SITE)
 PATH = "/recipes"
 LAB_PATH = "/guides/alchemy-lab"
-UA = "RO-Zero-farmer-calculator data export"
+UA = "poring-planner data export"
 # the Alchemy Lab's sections (their id in the page) and the category each becomes
 LAB = {"mixtures": "Mixture & Counteragent", "dyes": "Dye Making"}
 CATS = ["Forging", "Brewing", "Arrows", "Cooking", "Misc", *LAB.values()]

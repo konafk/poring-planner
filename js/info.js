@@ -121,7 +121,7 @@ function infoAct(a){const [kind,id]=INFO[INFO.length-1],d=$("infoDlg");
   // Share: the phone's share sheet, else the link is copied (a plain click on the link; it can also be opened in a new tab)
   $("infoShare").addEventListener("click",async e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button)return;e.preventDefault();
     const url=infoUrl(),lbl=$("infoShare").querySelector("span"),say=t=>{lbl.textContent=t;clearTimeout(lbl._t);lbl._t=setTimeout(()=>{lbl.textContent="Share"},2000)};
-    if(navigator.share&&matchMedia("(pointer:coarse)").matches){try{await navigator.share({title:$("infoDlgTitle").textContent+" · RO Zero Farm Planner",url});return}catch(err){if(err&&err.name==="AbortError")return}}
+    if(navigator.share&&matchMedia("(pointer:coarse)").matches){try{await navigator.share({title:$("infoDlgTitle").textContent+" · Poring Planner",url});return}catch(err){if(err&&err.name==="AbortError")return}}
     try{await navigator.clipboard.writeText(url);say("Link copied")}catch(err){prompt("Copy this link:",url)}});
   addEventListener("hashchange",()=>{const x=hashInfo(location.hash);if(x)openInfo(...x)});
 })();
