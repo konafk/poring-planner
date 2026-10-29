@@ -432,17 +432,21 @@ const EW_TRANS={Knight:"Lord Knight",Crusader:"Paladin",Wizard:"High Wizard",Sag
   Priest:"High Priest",Monk:"Champion",Blacksmith:"Whitesmith",Alchemist:"Creator",Assassin:"Assassin Cross",Rogue:"Stalker"};
 const ewTrans=S=>EW_TRANS[state.job]&&S.trans&&S.trans[state.job];
 // a job's look as a canvas placed from the feet (in an .ewFeet), painted by drawLook once the sheets load: L is a look like state.look
-// ({sex, hair, color, dye}, and cos: the costumes worn, {upper, middle, lower, garment: item id}), trans a 2nd job's transcendent look. A
-// job with no look of its own (or no look for the gender) takes the Novice's, or its one gender's
+// ({sex, hair, color, dye}, cos: the costumes worn and gear: the normal headgear and garment, each {upper, middle, lower, garment: item
+// id}), trans a 2nd job's transcendent look. A job with no look of its own (or no look for the gender) takes the Novice's, or its one gender's
 function lookCanvas(job,L,trans){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";
   const tj=trans&&EW_TRANS[job]&&S.trans&&S.trans[job],bj=tj||S.body[job]||S.body.Novice,sex=bj[L.sex]?L.sex:Object.keys(bj)[0],b=bj[sex],
     hs=S.head[sex]||{},hair=hs[L.hair]?L.hair:1,h=hs[hair],pk=tj?"transPal":"bodyPal",pj=tj||S.body[job]?job:"Novice";
-  // costumes (data/costumelooks.js): headgear on the head anchor, lower, upper then middle as the client stacks them (one that takes
-  // two slots drawn once); the garment from the feet, on this body's garment sheet, behind the body unless the client draws it on top
-  const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,cos=L.cos||{},look=id=>CL&&id&&CL.items[id],seen=new Set();
-  const acc=["lower","upper","middle"].map(k=>cos[k]).filter(id=>look(id)&&look(id)[0]==="h"&&!seen.has(+id)&&seen.add(+id))
+  // costumes and headgear (data/costumelooks.js). Each headgear slot shows, as in game, the costume in it, else the normal headgear; a
+  // piece in two or three slots shows from its highest (upper, middle, lower) and leaves the others empty, so a costume in that slot
+  // hides all of it. Drawn on the head anchor, lower, upper then middle as the client stacks them. The garment (a costume, else the
+  // normal one) from the feet, on this body's garment sheet, behind the body unless the client draws it on top
+  const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,cos=L.cos||{},gear=L.gear||{},look=id=>CL&&id&&CL.items[id];
+  const slotsOf=id=>(typeof COSTUMES!=="undefined"&&COSTUMES[id])||(CL&&(CL.cos[id]||CL.gear[id]))||[];
+  const shown=k=>{for(const w of [cos,gear])if(w[k])return ["upper","middle","lower"].find(s=>slotsOf(w[k]).includes(s))===k?w[k]:null;return null};
+  const acc=["lower","upper","middle"].map(shown).filter(id=>look(id)&&look(id)[0]==="h")
     .map(id=>(CL.head.at[look(id)[1]]||{})[sex]).filter(Boolean),rk=tj?job+"+":S.body[job]?job:"Novice";
-  const rl=look(cos.garment),rs=rl&&rl[0]==="r"&&CL.robe.bodies[rk],ra=rs&&(rs.at[rl[1]]||{})[sex];
+  const rl=look(cos.garment||gear.garment),rs=rl&&rl[0]==="r"&&CL.robe.bodies[rk],ra=rs&&(rs.at[rl[1]]||{})[sex];
   // body and head go into one canvas at the sprites' own size, which the page then scales: as separate boxes each rounded to the
   // screen's pixels on its own, so at some zooms the head sat a pixel off the body
   const parts=[[...b.slice(0,4),b[4],b[5]],...h?[[...h.slice(0,4),b[6]+h[4],b[7]+h[5]]]:[],...acc.map(a=>[...a.slice(0,4),b[6]+a[4],b[7]+a[5]]),...ra?[ra]:[]];

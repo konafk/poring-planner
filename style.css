@@ -811,7 +811,8 @@ details.more>.form{display:grid}
 .styOpt .ewStage{flex:none;height:108px;min-height:0;overflow:hidden}.styOpt .ewFeet{bottom:15px}.styOpt .ewStage::before{bottom:11px}
 .styHeads .styOpt{min-height:76px}
 .styOpt .lookHead{image-rendering:pixelated}
-.styslot{display:inline-flex;gap:2px}
+.styslot{display:inline-flex;gap:2px}.styslot .covered{text-decoration:line-through}
+.styKind{display:flex;flex-wrap:wrap;align-items:center;gap:6px;width:100%}.styKind>b{min-width:72px;font-size:12px;color:var(--muted)}
 .styCosQ{width:min(320px,100%);margin:8px 0 6px}
 .styCosList{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px;max-height:340px;overflow:auto;padding:2px}
 .styCos{display:flex;align-items:center;gap:8px;padding:4px 8px;border-color:var(--line);background:var(--raised);font-size:12px;font-weight:500;text-align:left;line-height:1.25}

@@ -1,10 +1,11 @@
-"""Export how each costume looks for the Stylist tab into data/costumelooks.js and img/costume-*.png, from your installed Ragnarok Zero
-client (official Global client, read-only).
+"""Export how each costume, and each normal headgear and garment, looks for the Stylist tab into data/costumelooks.js and
+img/costume-*.png, from your installed Ragnarok Zero client (official Global client, read-only).
 
     python tools/export_costume_sprites.py                                  # client in C:\\Gravity\\RagnarokZero
     python tools/export_costume_sprites.py --client "D:\\Games\\RagnarokZero"
 
-Which costumes: data/costumes.js's (their slots: upper, middle, lower, garment). Each one's view number is its ClassNum in the client's
+Which: data/costumes.js's costumes (their slots: upper, middle, lower, garment), and the headgear and garments of data/equipment.js and
+data/client.js's gear (those named "[Costume] ..." are costumes too) (normal gear shows on the character too, under a costume in the same slot). Each one's view number is its ClassNum in the client's
 System\\itemInfo_data.lub. A headgear's view is an accessory: data.grf's accessoryid.lub and accname.lub (compiled Lua, read with
 tools/lua51.py) name its sprite, data\\sprite\\악세사리\\<남|여>\\<남|여><name>.spr/.act, one per gender. A garment's view is a robe:
 spriterobeid.lub and spriterobename.lub name its folder, data\\sprite\\로브\\<name>\\<남|여>\\<body>_<남|여>.spr/.act, one per job (and
@@ -13,7 +14,8 @@ Each is drawn as the game draws it standing and facing you (action 0, frame 0), 
 bodies: a headgear placed from the body's head anchor (as hair is), a garment from the feet, moved by the body's anchor less its own.
 Many entries are DES-encoded; export_minimaps' DesGrf reads them.
 
-Writes data/costumelooks.js (COSTUME_LOOKS: items {item id: ["h" | "r", view]}, the headgear sheet with each view's [x, y, w, h on the
+Writes data/costumelooks.js (COSTUME_LOOKS: items {item id: ["h" | "r", view]}, gear {item id: [slots]} for the normal gear among them,
+the headgear sheet with each view's [x, y, w, h on the
 sheet, left, top from the head anchor] per gender, and per body (job, or "<job>+" for the transcendent look) a garment sheet with each
 robe's [x, y, w, h, left, top from the feet] per gender, plus the robes drawn over the body), img/costume-head.png and
 img/costume-robe-<job>.png (RGBA, packed in rows). Standard library only.
@@ -57,6 +59,18 @@ def main():
     grf = DesGrf(os.path.join(client, "data.grf"))
     src = open(os.path.join(ROOT, "data", "costumes.js"), encoding="utf-8").read()
     costumes = {int(k): json.loads(v) for k, v in re.findall(r"(\d+):(\[[^\]]*\])", src[src.index("const COSTUMES="):])}
+    # normal headgear and garments: the database's gear and the client's own additions, their slots named as the costumes' are
+    SLOT = {"head_upper": "upper", "head_middle": "middle", "head_lower": "lower", "garment": "garment"}
+    e = open(os.path.join(ROOT, "data", "equipment.js"), encoding="utf-8").read()
+    rows = json.JSONDecoder().raw_decode(e, e.index("[", e.index("const EQUIP=")))[0]
+    c = open(os.path.join(ROOT, "data", "client.js"), encoding="utf-8").read()
+    rows += json.JSONDecoder().raw_decode(c, c.index("{", c.index("const CLIENT=")))[0].get("gear", [])
+    rows = [r for r in rows if isinstance(r, dict) and r.get("id") and r["id"] not in costumes]
+    gear = {r["id"]: [SLOT[s] for s in r.get("slot", []) if s in SLOT] for r in rows}
+    # a few costumes are only in the gear data ("[Costume] Mr. Smile"): costumes, with their slots from there
+    extra = {i: s for i, s in gear.items() if s and any(r["id"] == i and r.get("name", "").startswith("[Costume]") for r in rows)}
+    gear = {i: s for i, s in gear.items() if s and i not in extra}
+    costumes.update(extra)
     info = lua_data(open(os.path.join(client, "System", "itemInfo_data.lub"), "rb").read(), "utf-8", lenient=True)["tbl_data"]
     g = {}
     for f in ("accessoryid.lub", "accname.lub", "spriterobeid.lub", "spriterobename.lub", "spriterobename_f.lub"):
@@ -77,10 +91,12 @@ def main():
         return (crop(img), anchor) if img and img[0] and img[1] else None
 
     items, heads, robes, missing = {}, {}, {}, []
-    for i, slots in sorted(costumes.items()):
+    for i, slots in sorted({**costumes, **gear}.items()):
         view = (info.get(i) or {}).get("ClassNum")
         if not view:
-            missing.append(f"{i} (no view)"); continue
+            if i in costumes:      # most normal gear shows nothing on the character (a Manteau, a Ribbon …): only costumes are missed
+                missing.append(f"{i} (no view)")
+            continue
         kind = "r" if "garment" in slots else "h"
         if (acc_names if kind == "h" else robe_names).get(view) is None:
             missing.append(f"{i} (view {view} unnamed)"); continue
@@ -133,14 +149,17 @@ def main():
                                                          for view, g2 in robe_at.items()}}
     top = [view for view in robes if call(g["IsTopLayer"], [view])[0]]
     print(f"garments: {len(robes)} robes, {len(robe_sheets)} body sheets, {total // 1024} KB in all")
-    out = {"items": {str(k): v for k, v in items.items()}, "head": head, "robe": {"top": top, "bodies": robe_sheets}}
+    out = {"items": {str(k): v for k, v in items.items()}, "gear": {str(i): gear[i] for i in items if i in gear},
+           "cos": {str(i): extra[i] for i in items if i in extra}, "head": head,
+           "robe": {"top": top, "bodies": robe_sheets}}
     with open(os.path.join(ROOT, "data", "costumelooks.js"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("// How costumes look in the Stylist (tools/export_costume_sprites.py, from the game client). items: {item id: [\"h\" (headgear) |\n"
-                "// \"r\" (garment), view]}; head: the headgear sheet and per view and gender (m/f) [x,y,w,h on the sheet, left,top from the\n"
+        f.write("// How costumes, and normal headgear and garments, look in the Stylist (tools/export_costume_sprites.py, from the game client).\n"
+                "// items: {item id: [\"h\" (headgear) | \"r\" (garment), view]}; gear: the normal gear among them {item id: [slots]}; cos: the\n"
+                "// costumes only the gear data has, with their slots (the rest are data/costumes.js's); head: the headgear sheet and per view and gender (m/f) [x,y,w,h on the sheet, left,top from the\n"
                 "// body's head anchor]; robe.bodies: per job (\"<job>+\": its transcendent look) a garment sheet and per robe and gender\n"
                 "// [x,y,w,h, left,top from the feet]; robe.top: the robes drawn over the body (the rest go behind it). Sheets are RGBA.\n")
         f.write("const COSTUME_LOOKS=" + json.dumps(out, separators=(",", ":"), ensure_ascii=False) + ";\n")
-    print(f"{len(items)} of {len(costumes)} costumes have a look")
+    print(f"{sum(i in costumes for i in items)} of {len(costumes)} costumes and {sum(i in gear for i in items)} of {len(gear)} normal headgear and garments have a look")
     if missing:
         print(f"not drawn ({len(missing)}): " + ", ".join(missing[:40]) + (" …" if len(missing) > 40 else ""))
 
