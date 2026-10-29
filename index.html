@@ -31,7 +31,6 @@
       <button type="button" role="tab" data-tabbtn="mapinfo" title="Maps"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Maps</span></button>
       <button type="button" role="tab" data-tabbtn="equip" title="Equipment"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3z"/></svg><span>Equipment</span></button>
       <button type="button" role="tab" data-tabbtn="cards" title="Cards"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>Cards</span></button>
-      <button type="button" role="tab" data-tabbtn="skilltree" title="Skill tree"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M12 7v5M12 12l-6 5M12 12l6 5"/></svg><span>Skill tree</span></button>
       <button type="button" role="tab" data-tabbtn="recipes" title="Recipes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg><span>Recipes</span></button>
       <button type="button" class="navGrp" aria-expanded="true" title="Show or hide the Reference tabs"><span>Reference</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
       <button type="button" role="tab" data-tabbtn="news" title="What's new"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="2.5"/></svg><span>What's new</span></button>
@@ -41,6 +40,7 @@
       <button type="button" class="navGrp" aria-expanded="true" title="Show or hide the Simulators tabs"><span>Simulators</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
       <button type="button" role="tab" data-tabbtn="brew" title="Brewing simulator"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v5.3a6.5 6.5 0 1 0 4 0V3"/><path d="M6 15.5h12"/></svg><span>Brewing</span></button>
       <button type="button" role="tab" data-tabbtn="cook" title="Cooking simulator"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M2 10h2M20 10h2M9.5 3.5c-.8.8-.8 1.7 0 2.5M14.5 3.5c-.8.8-.8 1.7 0 2.5"/></svg><span>Cooking</span></button>
+      <button type="button" role="tab" data-tabbtn="skilltree" title="Skill tree"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M12 7v5M12 12l-6 5M12 12l6 5"/></svg><span>Skill tree</span></button>
       <button type="button" class="navGrp" aria-expanded="true" title="Show or hide the Data tabs"><span>Data</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
       <button type="button" role="tab" data-tabbtn="acct" title="Account"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>Account</span></button>
     </nav>
@@ -813,7 +813,7 @@
   <section class="card" id="skpCard" data-tab="skilltree">
     <div class="bar"><h2 class="grow">Skill tree</h2><button type="button" class="small" id="skpLoad" hidden title="Start from the skills your character of this job has learned"></button><button type="button" class="small" id="skpUse" hidden title="Give your character of this job these learned skills (the Skills card on the Character tab)"></button><button type="button" class="small danger" id="skpReset">Reset</button></div>
     <div class="bar">
-      <label>Job<select id="skpJob"></select></label>
+      <div id="skpJob"></div>
       <label id="skpJobLvWrap" title="The 2nd-job tree gets one point a job level after the first: 69 at Job Lv 70, the cap (1st jobs stop at Job Lv 50, 49 points). Blank: Job Lv 70">Job Lv<input class="w-xs" id="skpJobLv" type="number" min="1" max="70" step="1"></label>
     </div>
     <div class="note" id="skpSum"></div>

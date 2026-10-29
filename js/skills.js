@@ -161,7 +161,7 @@ wireTree("skillTrees",SK_TIP,"skillCard",()=>state.job,()=>learned(C()),(slug,ac
 $("skReset").addEventListener("click",()=>{const c=C();c.skills={};c.buffs={};refreshPreset(c);$("skillNote").textContent="";save();renderSkills();syncChar();renderAll()});
 $("buffList").addEventListener("change",e=>{const k=e.target.dataset.buff;if(!k)return;const c=C();c.buffs=c.buffs||{};c.buffs[k]=e.target.checked;save();renderAll()});
 
-// ---- Skill tree tab (Game data): try any job's tree without a character. state.skPlan = {job, jobLv: {job: Lv, blank = 70}, skills: {job: {slug: level}}};
+// ---- Skill tree tab (Simulators): try any job's tree without a character. state.skPlan = {job, jobLv: {job: Lv, blank = 70}, skills: {job: {slug: level}}};
 // it never touches your characters unless you press "Use on my character" ----
 // cleaned once per save it comes from (an imported backup brings its own)
 const SKP_OK=new WeakSet();
@@ -169,9 +169,11 @@ const skPlan=()=>{if(SKP_OK.has(state.skPlan))return state.skPlan;const p=state.
   p.skills=Object.fromEntries(Object.entries(p.skills).filter(([j])=>SKILLS[j]).map(([j,L])=>[j,Object.fromEntries(Object.entries(objOr(L)).filter(([k,v])=>skOf(j)[k]&&+v>0).map(([k,v])=>[k,Math.min(skOf(j)[k].max,Math.round(+v))]))]));return p};
 const planOf=()=>{const p=skPlan();return {skills:grantSkills(p.skills[p.job]||(p.skills[p.job]={}),p.job)}};
 const SKP_TIP={id:"skpTip",slug:null};
-$("skpJob").innerHTML=[["Novice & 1st jobs",j=>!SECOND(j)],["2nd jobs",SECOND]].map(([g,f])=>`<optgroup label="${g}">${Object.keys(SKILLS).filter(f).map(j=>`<option>${esc(j)}</option>`).join("")}</optgroup>`).join("");
+// the Job picker: each job's look and icon (classPicker, js/build-ui.js), made the first time the tab draws
+let skpPick=null;
 function renderSkPlan(){const p=skPlan(),job=p.job,L=planOf().skills,trees=treesOf(job),mine=state.chars[job],second=SECOND(job),jl=p.jobLv[job]||JOB_MAX2;
-  $("skpJob").value=job;$("skpJobLvWrap").hidden=!second;$("skpJobLv").value=p.jobLv[job]||"";$("skpJobLv").placeholder=String(JOB_MAX2);
+  (skpPick=skpPick||classPicker($("skpJob"),[["Novice & 1st jobs",j=>!SECOND(j)],["2nd jobs",SECOND]].map(([g,f])=>[g,Object.keys(SKILLS).filter(f)]),
+    j=>{skPlan().job=j;$("skpNote").textContent="";save();renderSkPlan()}))(job);$("skpJobLvWrap").hidden=!second;$("skpJobLv").value=p.jobLv[job]||"";$("skpJobLv").placeholder=String(JOB_MAX2);
   $("skpTrees").innerHTML=treesHtml(job,L,jl);$("skpTip").hidden=true;SKP_TIP.slug=null;
   // what the plan takes: points per tree and the job level each tree needs (one point a job level after the first)
   const parts=trees.map((t,ti)=>{const used=treeUsed(t,L),pts=treePts(job,t,ti,jl);if(pts==null)return "";
@@ -180,7 +182,6 @@ function renderSkPlan(){const p=skPlan(),job=p.job,L=planOf().skills,trees=trees
   $("skpLoad").hidden=!(mine&&hasTree(mine,job));$("skpUse").hidden=!mine;$("skpUse").textContent=`Use on my ${job}`;$("skpLoad").textContent=`Load my ${job}'s`}
 wireTree("skpTrees",SKP_TIP,"skpCard",()=>skPlan().job,()=>planOf().skills,(slug,act)=>{const why=stepSkill(planOf(),slug,act,skPlan().job);
   $("skpNote").textContent=why?why.join(" · "):"";save();renderSkPlan()});
-$("skpJob").addEventListener("change",e=>{skPlan().job=e.target.value;$("skpNote").textContent="";save();renderSkPlan()});
 $("skpJobLv").addEventListener("change",e=>{const p=skPlan(),v=Math.min(JOB_MAX2,Math.round(num(e.target.value)));if(v>0)p.jobLv[p.job]=v;else delete p.jobLv[p.job];save();renderSkPlan()});
 $("skpReset").addEventListener("click",()=>{const p=skPlan();p.skills[p.job]={};$("skpNote").textContent="";save();renderSkPlan()});
 $("skpLoad").addEventListener("click",()=>{const p=skPlan(),c=state.chars[p.job];if(!c)return;p.skills[p.job]={...(c.skills||{})};if(c.jobLv)p.jobLv[p.job]=num(c.jobLv);$("skpNote").textContent="";save();renderSkPlan()});
