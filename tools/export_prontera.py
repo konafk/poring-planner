@@ -77,6 +77,10 @@ GROUP_DMG = {300944: ("physical_damage_percent", "boulder_dwarf", 30), 300943: (
 # +3 group twice, MaxHP / MaxSP and the "DEF +x" line (on top of the armor's DEF) missing, the shoes' SP Heal effect missing,
 # the Oath rings' INT / DEX and LUK / AGI +2 only at +7. Replaced with the groups the Global client's item description gives
 GEAR_G = {
+    # Clock Casket: prontera has the refine line vs Formless and no ATK; the client: "ATK +20. Every 2 refine levels, increases Physical
+    # Damage to monsters of all races by 1%. At +7 refine, HIT +15. At +9 refine, MHP +250."
+    19357: [{"b": [["atk", None, None, 20]]}, {"r": 7, "b": [["hit", None, None, 15]]}, {"r": 9, "b": [["hp", None, None, 250]]},
+            {"b": [["damage_percent", "race", "all", 1, 2]]}],
     15220: [{"b": [["hp", None, None, 300], ["sp", None, None, 20], ["def", None, None, 20]]}],  # Subjugation Team's Armor
     22150: [{"b": [["item_heal_percent", None, None, 5], ["sp_heal_percent", None, None, 3]]}],  # Subjugation Team Boots
     15221: [{"b": [["hp", None, None, 500], ["sp", None, None, 30], ["def", None, None, 30]]},  # Expedition's Armor

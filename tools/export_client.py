@@ -10,6 +10,8 @@ the client isn't, so what the client says goes in a file of its own that only th
   the rules and spacers, lines joined with spaces like the database's. The database's copies often stop before the refine lines.
 - fix: where the client's name (unless another item already has it), card slots (System\\itemInfo_data.lub slotCount), required level, DEF, ATK, MATK or weapon level
   differ from the database's.
+- lines: bonus lines an item's client text has that its database lines don't (missing(): flat stat lines, mostly), added to it.
+- cards: cards the database doesn't have yet (the Gatchaman event cards), as data/cards.js rows (card_row()).
 - gear: armour the database doesn't have yet, built from the client: slot from its Type / Position, the numbers from its stat block,
   card slots, and bonus lines read from its simple sentences (stat lists, "For every N refine levels", "At +N refine", "for each refine
   level above +N"); a sentence it can't read stays in the text only and is printed. Only "All Jobs" gear is built (the job lists of
@@ -109,6 +111,64 @@ def bonus(sentence):
     return b and [{"b": b}]
 
 
+def line_key(g, b):
+    return (g.get("r") or 0, *b[:4], (b[4] if len(b) > 4 else None) or None)
+
+
+def missing(t, x):
+    """Bonus groups the client's text has and the item's lines don't: the database's often leave out a flat stat line (Clock Tower
+    headgear's ATK / MATK +20, a card's INT +1 next to its class line). Only the sentences bonus() reads, and only before "※" (the
+    siege-only options), and only sentences that end in a full stop; a line the item has unconditionally, or as its ATK / MATK / DEF / MDEF column, isn't added again."""
+    have = {line_key(g, b) for g in x.get("g") or [] if not (g.get("cls") or g.get("lv") or g.get("rs") or g.get("lvPer")) for b in g.get("b", [])}
+    flat = {(k, x.get(k)) for k in ("atk", "matk", "def", "mdef") if x.get(k)}
+    out = []
+    for s in re.split(r"(?<=\.)\s+", (t or "").split("※")[0]):
+        # a sentence with no full stop runs into the next ("At refine level 7, ATK +18. MATK +65"): not read
+        for g in (bonus(s) if s.strip().endswith(".") else None) or []:
+            b = [b for b in g["b"] if line_key(g, b) not in have and not (not g.get("r") and len(b) < 5 and (b[0], b[3]) in flat)]
+            if b:
+                out.append({**g, "b": b})
+    return out
+
+
+CARD_SLOT = {"Weapon": "weapon", "Armor": "armor", "Shield": "shield", "Garment": "garment", "Shoes": "footgear", "Footgear": "footgear",
+             "Accessory": "accessory_1", "Headgear": "head_upper"}
+
+
+def affixes(grf):
+    """{card id: [the name it gives gear, "prefix" | "suffix"]}, from the client's cardprefixnametable_enus.txt (cardpostfixnametable.txt
+    lists the ones that go after the item's name). Only for cards the database doesn't have: for the rest the tables don't say clearly
+    enough how the game builds the name (Crab Card's "of Cancer" listed as a prefix, Cookie Card's bare "Chance"), so data/cards.js's stay."""
+    post = {int(l.split("#")[0]) for l in grf.read("data\\cardpostfixnametable.txt").decode("utf-8", "replace").splitlines() if l.split("#")[0].isdigit()}
+    out = {}
+    for line in grf.read("data\\cardprefixnametable_enus.txt").decode("utf-8", "replace").splitlines():
+        c = line.split("#")
+        if len(c) > 1 and c[0].isdigit() and c[1]:
+            out[int(c[0])] = [c[1], "suffix" if int(c[0]) in post else "prefix"]
+    return out
+
+
+def card_row(i, v, st, affix):
+    """A data/cards.js row for a card the database doesn't have yet: its slot from "Equipped on" / "Equippable by", bonus lines from
+    its text up to "[Event-Limited Option]" (an event's options go when it ends, so they stay text only), "For every 10 BaseLv, ...
+    (Applies up to BaseLv 50.)" as lvPer / lvMax."""
+    slot = CARD_SLOT.get(st.get("Equipped On") or st.get("Equippable by") or "")
+    if not slot:
+        return None
+    name, t = v["identifiedDisplayName"].replace("’", "'"), desc(lines(v)).split("[Event-Limited Option]")[0]
+    g, cap = [], re.search(r"Applies up to BaseLv (\d+)", t)
+    for s in re.split(r"(?<=\.)\s+", t):
+        if m := re.fullmatch(r"For every (\d+) BaseLv, (.+)", re.sub(r"([+-]) (\d)", r"\1\2", s.strip())):
+            b = bonus(m.group(2))
+            if b:
+                g.append({"lvPer": int(m.group(1)), **({"lvMax": int(cap.group(1))} if cap else {}), "b": b[0]["b"]})
+        elif b := bonus(s):
+            g += b
+    row = {"id": i, "slug": re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") + f"-{i}", "name": name, "slot": [slot], "slots": 0, "lv": 0,
+           "wlv": 0, "g": g, **({"affix": affix[0], "affixPos": affix[1]} if affix else {})}
+    return {k: x for k, x in row.items() if x not in (None, [], "")}
+
+
 def build(i, v, d, st):
     """An equipment.js row for gear the database doesn't have, and the sentences it couldn't read; None when it can't be built."""
     ty, pos = st.get("Type", ""), st.get("Position", "")
@@ -201,13 +261,15 @@ def main():
     info = lua_data(open(os.path.join(client, "System", "iteminfo_enUS.lub"), "rb").read(), "utf-8")["tbl_string"]
     data = lua_data(open(os.path.join(client, "System", "itemInfo_data.lub"), "rb").read(), "utf-8", lenient=True)["tbl_data"]
     eq, cards = rows("equipment.js", "EQUIP"), rows("cards.js", "CARDS")
+    from export_minimaps import DesGrf
+    affix, new_cards = affixes(DesGrf(os.path.join(client, "data.grf"))), []
     known = {e["id"] for e in eq} | {c["id"] for c in cards} | set(ids("equipment.js", "EQUIP"))
     known |= {i for f, c in [("items.js", "ITEMN"), ("recipes.js", "RECIPE_ITEMN"), ("consumables.js", "CONSUM"), ("recovery.js", "RECOVERY"),
                              ("clientitems.js", "CLIENT_ITEMS")] for i in keys(f, c)} | set(pairs("memorial.js"))
     cos = open(os.path.join(DATA, "costumes.js"), encoding="utf-8").read()
     known |= {int(i) for i in re.findall(r"[{,](\d+):\[", cos[cos.index("const COSTUMES="):])}  # its keys aren't quoted
     eq_ids, names = {e["id"] for e in eq}, {x["name"] for x in eq + cards}
-    text, fix, gear, items, skipped, unread = {}, {}, [], {}, [], {}
+    text, fix, gear, items, skipped, unread, extra = {}, {}, [], {}, [], {}, {}
     for x in eq + cards:
         v = info.get(x["id"])
         if not v:
@@ -229,6 +291,9 @@ def main():
                     f[field] = n
         if f:
             fix[x["id"]] = f
+        add = missing(t, x)
+        if add:
+            extra[x["id"]] = add
     for i, v in sorted(info.items()):
         name = (v.get("identifiedDisplayName") or "").replace("’", "'")
         if i in known or not name:
@@ -244,6 +309,8 @@ def main():
                 continue
             skipped.append(f"{name} ({st.get('Type')})")
         items[i] = [name, category(name, d, st), clean(ls)]
+        if items[i][1] == "Card" and (row := card_row(i, v, st, affix.get(i))):
+            new_cards.append(row); text[i] = desc(ls)
     from export_minimaps import DesGrf
     wanted = {}
     grf, art, res = DesGrf(os.path.join(client, "data.grf")), {}, {i: d.get("identifiedResourceName") for i, d in data.items()}
@@ -292,7 +359,7 @@ def main():
     # every monster the client spawns: [name, level], for the monster list's levels and the drop lists (the database's are often another
     # server's: Baphomet Lv 105 for the client's 81, Extra Joker 126 for 105)
     mob_lv = {i: [m["name"], m["lv"]] for i, m in sorted(spawned.items())}
-    out = {"text": text, "fix": fix, "gear": gear, "items": items, "mobs": mobs, "mobLv": mob_lv, "art": art}
+    out = {"text": text, "fix": fix, "lines": extra, "gear": gear, "cards": new_cards, "items": items, "mobs": mobs, "mobLv": mob_lv, "art": art}
     with open(os.path.join(DATA, "client.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// The game client's own item data (tools/export_client.py, from the installed Global client), laid over the community database's\n"
                 "// as the page loads: wherever the client has it, it wins. text: gear's and cards' in-game descriptions; fix: name, card slots, level,\n"
@@ -302,7 +369,10 @@ def main():
                 "// mobLv: every monster the client spawns, [name, level], for the monster list's levels and the drop lists\n")
         f.write("const CLIENT=" + json.dumps(out, ensure_ascii=False, separators=(",", ":")) + ";\n")
         f.write("(function(){const has=new Set(EQUIP.map(e=>e.id));CLIENT.gear.forEach(r=>{if(!has.has(r.id))EQUIP.push(r)});\n"
+                "  const hasCard=new Set(CARDS.map(c=>c.id));CLIENT.cards.forEach(r=>{if(!hasCard.has(r.id))CARDS.push(r)});\n"
                 "  const byId=new Map([...EQUIP,...CARDS].map(x=>[x.id,x]));Object.entries(CLIENT.fix).forEach(([id,f])=>{const x=byId.get(+id);if(x)Object.assign(x,f)});\n"
+                "  // bonus lines the client's text has and the database's lines don't\n"
+                "  Object.entries(CLIENT.lines).forEach(([id,g])=>{const x=byId.get(+id);if(x)x.g=(x.g||[]).concat(g)});\n"
                 "  Object.entries(CLIENT.text).forEach(([id,t])=>{ITEM_INFO[id]=Object.assign(ITEM_INFO[id]||{},{t})});\n"
                 "  // monsters from the client: HP and EXP unknown (expUnknown keeps them out of the farm tables); element, size and race go in the\n"
                 "  // tables js/game.js reads them from, and their spawns in SPAWN\n"
@@ -319,6 +389,9 @@ def main():
     print(f"{len(text)} texts, {len(fix)} fixes, {len(gear)} new gear ({', '.join(g['name'] for g in gear)}), {len(items)} new items, "
           f"{len(mobs)} new monsters ({', '.join(m['name'] for m in mobs)}); pictures: "
           + ", ".join(f"{len(s['ids'])} of {wanted[k]} {k}" for k, s in art.items()))
+    print(f"  {len(new_cards)} new cards ({', '.join(c['name'] for c in new_cards)}); bonus lines added from the client's text to {len(extra)} items:")
+    for i, g in extra.items():
+        print(f"    {i}: {json.dumps(g)}")
     for k in ("name", "slots", "lv", "def", "atk", "matk", "wlv"):
         n = [f"{i}" for i, f in fix.items() if k in f]
         if n:
