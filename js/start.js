@@ -77,19 +77,21 @@ function renderHome(){
   const nx=ROADMAP.find(u=>!upOut(u)),cap=capNow();
   $("homeNext").innerHTML=[cap&&`<b>Level cap ${esc(capTxt(cap))}</b>`,nx&&`Next: ${esc(nx.name)}, ${esc(upWhen(nx))}`].filter(Boolean).join('<span aria-hidden="true">·</span>')+'<span aria-hidden="true">→</span>';
   newsBanner();
-  const c=C(),set=charSet(c),s=cur(),st=stats(s),last=[...s.entries].sort((a,b)=>a.t-b.t).pop(),ms=sessMobs(s),smp=sessMap(s);
+  const c=C(),set=charSet(c),s=cur(),ms=sessMobs(s),smp=sessMap(s),max=atMaxLv();
   $("homeCharBtn").textContent=set?"Open Character":"Set up your character";
   // a new player has the get started card instead
-  $("homeNowCard").hidden=!set&&!last;if($("homeNowCard").hidden)return;
+  $("homeNowCard").hidden=!set&&!ms.length;if($("homeNowCard").hidden)return;
   const tile=(k,v,sub,tab,now)=>`<button type="button" class="tile${now?" now":""}" data-gotab="${tab}"><div class="k">${k}</div><div class="v">${esc(v)}</div><div class="s">${esc(sub)}</div></button>`;
+  // what the planner works out for your character on the map you're farming, not what you've logged
+  const est=set&&smp?mapStats(smp,walkSec()):null,why=!set?"Set up your character":!smp?"Farm a map for an estimate":"No estimate for this map";
   $("homeTiles").innerHTML=
     tile("Character",state.job,set?[c.baseLv&&`Base ${c.baseLv}`,c.jobLv&&`Job ${c.jobLv}`,c.a&&c.a.name].filter(Boolean).join(" · "):"Not set up yet","char",true)+
-    tile("Session",last?`Lv ${last.lv} · ${pct(last.pct,1)}`:"–",[s.name,smp?`on ${mapCode(smp)}`:ms.length===1?ms[0].name:ms.length?`${ms.length} monsters`:""].filter(Boolean).join(" · "),"track",true)+
-    tile("Average EXP/hr",st?pct(st.avgPct):"–",st?`over ${st.spanMin} min`:"Log at least two entries","track")+
-    tile(st?`To Lv ${st.last.lv+1}`:"To next level",st?fmtDur(st.nextH):"–",st?`${(100-st.last.pct).toFixed(1)}% left`:"From your EXP/hr","track");
-  $("homeNowNote").textContent=last?`last logged ${fmtD(last.t)} ${fmtT(last.t)}`:"";
+    tile("Farming",smp?mapCode(smp):ms.length===1?ms[0].name:ms.length?`${ms.length} monsters`:"–",smp?mapName(smp):ms.length?s.name:"Pick a spot below","maps",true)+
+    tile("EXP / min there",max?"Max level":est?fmtN(est.epm):"–",max?"EXP no longer counts":est?"planner estimate":why,"maps")+
+    tile("Zeny / hr there",est?fmtN(est.net):"–",est?"net, planner estimate":why,"maps");
+  $("homeNowNote").textContent="";
   // the best maps for EXP (zeny at the max level) as Where to farm ranks them
-  const max=atMaxLv(),sm=smp;
+  const sm=smp;
   $("homeSpots").innerHTML=set&&SPOT_EXP.length?`<div class="secHead">${max?"Best for zeny":"Best for EXP"} right now</div>`+SPOT_EXP.map(r=>`<div class="spot${r.mp===sm?" on":""}"><span class="spotN">${r.rank}</span>
     <div class="spotTxt"><div><b class="mono">${mapCode(r.mp)}</b> <span class="note">${esc(mapName(r.mp))}</span></div><div class="spotV">${max?`<b>${fmtN(r.net)}</b> z/hr net`:`<b>${fmtN(r.epm)}</b> EXP / min · ${fmtN(r.net)} z/hr net`}</div></div>${farmBtn(r)}</div>`).join(""):"";
 }
