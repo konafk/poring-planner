@@ -2509,6 +2509,23 @@ t("Skill tree: a 2nd job's points can go on its 1st-job skills", () => {
   assert.equal(run(`treeTally("Mage",${L},50)[0].over`), 1);
 });
 
+t("Stylist: a saved look is cleaned, and drawn as the job's body allows", () => {
+  const app = load({ stylist: { job: "Knight", sex: "x", hair: "abc", color: -3, dye: 2.6, trans: 1 } });
+  assert.equal(app("JSON.stringify(state.stylist)"), JSON.stringify({ job: "Knight", sex: "m", hair: 1, color: 0, dye: 3, trans: true }));
+  // the Knight's transcendent look has its own clothes colours; a number past the last falls back to the first
+  assert.equal(app("JSON.stringify((({job,trans,sex,dye,dyes})=>({job,trans,sex,dye,dyes}))(styleOf()))"),
+    JSON.stringify({ job: "Knight", trans: true, sex: "m", dye: 3, dyes: app("JOB_SPRITES.transPal.Knight.m.c.length") }));
+  // Dancers are female only; an unknown job takes yours, and a 1st job has no transcendent look
+  app(`state.stylist={job:"Dancer",sex:"m",hair:99,color:0,dye:0,trans:false}`);
+  assert.equal(app("styleOf().sex"), "f"); assert.equal(app("styleOf().hair"), 1);
+  app(`state.job="Mage";state.stylist.job="Nope";state.stylist.trans=true`);
+  assert.equal(app("styleOf().job"), "Mage"); assert.equal(app("styleOf().trans"), false);
+  // a hair style on its own: its place on the hair sheet, drawn twice its size
+  const h = app("JSON.stringify(JOB_SPRITES.head.f[7])");
+  const [x, y, w, hh] = JSON.parse(h);
+  assert.match(app(`headCanvas("f",7,3,2)`), new RegExp(`width="${w}" height="${hh}" style="width:${w * 2}px;height:${hh * 2}px" data-head="${x},${y},${w},${hh},0,0" data-hair="f,7,3"`));
+});
+
 t("Equipment and Cards tabs: in-game text, where to get it and the Where to get filter", () => {
   // Eddga Card: its bonus line is only MaxHP -25%; Endure is in the in-game text, which the search and the card's effects use
   assert.match(run(`itemText(4123)`), /Endure/);

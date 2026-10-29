@@ -481,17 +481,20 @@ function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),
   // the button you pressed keeps focus through the redraw
   const a=document.activeElement,f=a&&el.contains(a)?["ewtab","ewsex","ewhair","ewcolor","ewdye","ewtrans","ewslot"].map(k=>a.dataset[k]!=null?`[data-${k}="${a.dataset[k]}"]`:null).find(Boolean):null;
   if(renderEquipWin.html===html)return;renderEquipWin.html=html;el.innerHTML=html;drawLook(el);if(f)el.querySelector(f)?.focus()}
-// each look's canvas in root (lookCanvas): the body [x,y,w,h on the sheet, x,y in the canvas] from the job sheet, each index coloured
-// with the clothes colour's palette, then the head the same from the hair sheet with the hair colour's; once both sheets have loaded
+// a hair style on its own (the Stylist's hair grids), drawn k times its size, painted by drawLook like a look's canvas
+function headCanvas(sex,hair,color,k=1){const h=typeof JOB_SPRITES!=="undefined"&&(JOB_SPRITES.head[sex]||{})[hair];if(!h)return "";
+  return `<canvas class="ewPic ewHead" width="${h[2]}" height="${h[3]}" style="width:${h[2]*k}px;height:${h[3]*k}px" data-head="${[...h.slice(0,4),0,0].join(",")}" data-hair="${sex},${hair},${color}"></canvas>`}
+// each look's canvas in root (lookCanvas, headCanvas): the body [x,y,w,h on the sheet, x,y in the canvas] from the job sheet, each index
+// coloured with the clothes colour's palette, then the head the same from the hair sheet with the hair colour's; once both sheets have loaded
 function drawLook(root){const bp=ewPx(EW_SHEET),hp=ewPx(EW_HAIR);if(!bp||!hp)return;
-  root.querySelectorAll("canvas.ewPic").forEach(c=>{const [k,j,s]=c.dataset.pal.split(","),body=((JOB_SPRITES[k]||{})[j]||{})[s];if(body)paintLook(c,bp,hp,body)})}
+  root.querySelectorAll("canvas.ewPic").forEach(c=>{const [k,j,s]=(c.dataset.pal||"").split(","),body=k&&((JOB_SPRITES[k]||{})[j]||{})[s];if(body||!c.dataset.body)paintLook(c,bp,hp,body)})}
 function paintLook(c,bp,hp,body){const g=c.getContext("2d");g.clearRect(0,0,c.width,c.height);
   // through a canvas of its own: putImageData would replace the body under the head instead of drawing over it
   const paint=(px,at,pal)=>{const [x,y,w,h,l,t]=at.split(",").map(Number),img=g.createImageData(w,h);
     for(let yy=0;yy<h;yy++)for(let xx=0;xx<w;xx++){const s=((y+yy)*px.width+x+xx)*4,o=(yy*w+xx)*4,rgb=px.data[s+3]&&pal[px.data[s]];
       if(rgb){img.data[o]=parseInt(rgb.slice(0,2),16);img.data[o+1]=parseInt(rgb.slice(2,4),16);img.data[o+2]=parseInt(rgb.slice(4),16);img.data[o+3]=255}}
     const pc=document.createElement("canvas");pc.width=w;pc.height=h;pc.getContext("2d").putImageData(img,0,0);g.drawImage(pc,l,t)};
-  paint(bp,c.dataset.body,ewPal(body,+c.dataset.dye));if(!c.dataset.head)return;
+  if(c.dataset.body)paint(bp,c.dataset.body,ewPal(body,+c.dataset.dye));if(!c.dataset.head)return;
   const [sex,n,color]=c.dataset.hair.split(",");paint(hp,c.dataset.head,ewPal(JOB_SPRITES.hairPal[sex][n],+color))}
 $("equipWin").addEventListener("click",e=>{const t=e.target.closest("button");if(!t||t.disabled)return;const L=state.look;
   if(t.dataset.ewtab){EW_TAB=t.dataset.ewtab;renderEquipWin();return}
@@ -507,17 +510,18 @@ $("equipWin").addEventListener("click",e=>{const t=e.target.closest("button");if
 // ---- class picker (the Skill tree's Job): a button with the job's look, icon and name that opens every job's in groups, like a list
 // of classes to pick from. Each job shows its male and female look side by side (a Bard only male, a Dancer only female), undyed, each
 // with a random hair style and colour, rolled each time you open the tab (the button and the list show the same). groups: [[heading,
-// [job…]]…]; onPick(job) when another job is picked. Returns set(job, fresh), which shows that job on the button (fresh: roll new hair) ----
+// [job…]]…]; onPick(job) when another job is picked; mine(job), if given, is the looks the button shows instead (the Stylist's look).
+// Returns set(job, fresh), which shows that job on the button (fresh: roll new hair) ----
 // hair styles left out of the roll, as they read as the other gender's: long male styles, short and spiky female ones
 const CP_HAIR_SKIP={m:[14,31,36,38,39],f:[22,24,26,29,30,31,32,35,42]};
-function classPicker(el,groups,onPick){let cur=null,shown="",looks={};
+function classPicker(el,groups,onPick,mine){let cur=null,shown="",looks={};
   const rnd=j=>{const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES,bj=S&&(S.body[j]||S.body.Novice);if(!bj)return [];
     return ["m","f"].filter(s=>bj[s]).map(sex=>{const ok=Array.from({length:ewHairs(sex)},(_,i)=>i+1).filter(n=>!CP_HAIR_SKIP[sex].includes(n)),
         hair=ok.length?ok[Math.floor(Math.random()*ok.length)]:1;
       return {sex,hair,color:Math.floor(Math.random()*ewColors(sex,hair)),dye:0}})};
   const lookOf=j=>looks[j]||(looks[j]=rnd(j));
   // the pair stands a little apart, from the feet: male on the left
-  const look=(j,Ls)=>`<span class="ewStage cpPair">${Ls.map((L,i)=>`<span class="ewFeet" style="left:${Ls.length<2?50:i?66:34}%">${lookCanvas(j,L)}</span>`).join("")}</span>`;
+  const look=(j,Ls)=>`<span class="ewStage cpPair">${Ls.map((L,i)=>`<span class="ewFeet" style="left:${Ls.length<2?50:i?66:34}%">${lookCanvas(j,L,L.trans)}</span>`).join("")}</span>`;
   el.classList.add("classPick");
   el.innerHTML=`<button type="button" class="cpBtn" aria-haspopup="listbox" aria-expanded="false"></button><div class="cpPop" role="listbox" aria-label="Job" hidden></div>`;
   const btn=el.firstChild,pop=el.lastChild;
@@ -543,7 +547,7 @@ function classPicker(el,groups,onPick){let cur=null,shown="",looks={};
     e.preventDefault();if(os[n])os[n].focus()});
   document.addEventListener("click",e=>{if(!el.contains(e.target))close()});
   el.addEventListener("focusout",e=>{if(e.relatedTarget&&!el.contains(e.relatedTarget))close()});
-  return (job,fresh)=>{if(fresh)looks={};const html=`${look(job,lookOf(job))}${iconHtml("job",job)}<span class="cpName"><span class="cpLbl">Job</span>${esc(job)}</span><svg class="ic cpChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
+  return (job,fresh)=>{if(fresh)looks={};const html=`${look(job,mine?mine(job):lookOf(job))}${iconHtml("job",job)}<span class="cpName"><span class="cpLbl">Job</span>${esc(job)}</span><svg class="ic cpChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
     cur=job;btn.setAttribute("aria-label",`Job: ${job}`);if(shown===html)return;shown=html;btn.innerHTML=html;drawLook(btn)}}
 // Build from gear's Status, Gear, Equipment and Special equipment panels fold away, remembered like a card (state.collapsed)
 [["buildStatFold","Build from gear: status"],["gsetFold","Build from gear: gear sets"],["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];

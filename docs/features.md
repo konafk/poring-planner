@@ -222,7 +222,7 @@ Every piece of gear and every card the build simulator knows. Gear shows its inv
 
 ## Simulators
 
-The Simulators group in the sidebar has a tab for each: Brewing, Cooking and Skill tree.
+The Simulators group in the sidebar has a tab for each: Brewing, Cooking, Skill tree and Stylist.
 
 ### Brewing simulator
 
@@ -237,6 +237,10 @@ Both use rAthena's formulas (roz.prontera.info's Crafting Calculator has the sam
 ### Skill tree
 
 Try any job's skill tree without making a character. **Job** opens every class with its icon from the game client and its look, Novice and 1st jobs then 2nd jobs. Each class shows its male and female look side by side (Bards are male only, Dancers female only), each with a random hair style and colour (one that reads as that gender's), rolled each time you open the tab; arrow keys move through them. + and − change a skill's level, its name maxes it (or clears it once maxed), and raising a skill raises what it needs. As in the game's skill window, a 1st or 2nd job's 1st-job tree has the Novice skills in its first column: Basic Skill at Lv 9 (learned as a Novice) and the quest skills First Aid and Play Dead, none of them using the job's points. Above the trees: the points each tree uses and has, and the job level it needs. As in game, a 2nd job's points can also go on its 1st-job skills: past the 1st job's own points, they come out of the 2nd job's ("Mage 50 / 49 (1 of Sage's)", "Sage 68 + 1 in Mage = 69 / 69"). Each job's plan is kept on its own; **Use on my <job>** gives it to your character of that job, and **Load my <job>'s** starts from what your character has learned.
+
+### Stylist
+
+Every look the game client has for a job: pick the job (the same class picker as the Skill tree), the gender (Bards are male only, Dancers female only) and, for a 2nd job, its transcendent look (Zero has no transcendent jobs, but a 2nd job can wear one's look). Below the large preview are the job in every clothes colour (0 is undyed), then every hair style and every hair colour of the style you picked, each drawn from the client's sprites and palettes. Click any of them to try it. **Use as my look** puts the gender, hair, colours and transcendent look on your character in the Character tab's equipment window; **Start from my look** brings your character's in. Saved per account.
 
 ## Recipes
 
