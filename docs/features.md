@@ -236,7 +236,7 @@ Both use rAthena's formulas (roz.prontera.info's Crafting Calculator has the sam
 
 ### Skill tree
 
-Try any job's skill tree without making a character. **Job** opens every class with its icon from the game client and its look (your equipment window's gender and hair), Novice and 1st jobs then 2nd jobs; arrow keys move through them. + and − change a skill's level, its name maxes it (or clears it once maxed), and raising a skill raises what it needs. Above the trees: the points each tree uses and has, and the job level it needs. Each job's plan is kept on its own; **Use on my <job>** gives it to your character of that job, and **Load my <job>'s** starts from what your character has learned.
+Try any job's skill tree without making a character. **Job** opens every class with its icon from the game client and its look, Novice and 1st jobs then 2nd jobs. Each look is in your equipment window's gender (Bards are male, Dancers female) with a random hair style and colour, new each time the list opens; arrow keys move through them. + and − change a skill's level, its name maxes it (or clears it once maxed), and raising a skill raises what it needs. Above the trees: the points each tree uses and has, and the job level it needs. Each job's plan is kept on its own; **Use on my <job>** gives it to your character of that job, and **Load my <job>'s** starts from what your character has learned.
 
 ## Recipes
 
