@@ -28,5 +28,11 @@ assert.ok(minimaps.length > 100, `only ${minimaps.length} map pictures`);
 const worlds = JSON.parse(mapsSrc.match(/WORLDMAPS=(\[.*\]);/)[1]);
 assert.ok(worlds.length >= 2 && Object.keys(worlds[0].maps).length > 50, `only ${worlds.length} world maps, ${Object.keys(worlds[0].maps).length} maps on the first`);
 for (const f of [...minimaps, ...worlds.map(w => w.file)]) assert.ok(assetFiles().includes(f), `${f} isn't deployed`);
+// and every animated piece data/looks/index.js lists (js/lookanim.js loads them by script, so no tag names them)
+const looksSrc = readFileSync(new URL("../data/looks/index.js", import.meta.url), "utf8");
+const looks = Object.entries(JSON.parse(looksSrc.match(/LOOK_FILES=(\{.*\});/)[1])).flatMap(([k, ks]) => ks.map(x => `data/looks/${k}/${x}.js`));
+assert.ok(looks.length > 2000, `only ${looks.length} animated pieces`);
+const deployed = new Set(assetFiles());
+for (const f of looks) assert.ok(deployed.has(f), `${f} isn't deployed`);
 console.log(`ok ${local.length} files unstamped in index.html and stamped with their hash on deploy`);
 console.log("1 tests passed");

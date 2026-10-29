@@ -13,10 +13,12 @@ export const hashOf = path => createHash("sha256").update(readFileSync(new URL(p
 // each local src="…" / href="…" (not http, not #) on a script or link tag
 const LOCAL = /(<(?:script|link)\b[^>]*?\b(?:src|href)=")(?![a-z]+:|\/\/|#)([^"?]+)(?:\?v=[^"]*)?"/g;
 export const localFiles = html => [...html.matchAll(LOCAL)].map(m => m[2]);
-// images the page loads from its scripts (the gear icon and card picture sheets, data/icons.js; the map pictures in img/maps/,
-// data/minimaps.js): copied as they are, every file in img/ and its folders
-export const assetFiles = () => readdirSync(new URL("img/", root), { recursive: true, withFileTypes: true }).filter(d => d.isFile())
-  .map(d => `img/${relative(fileURLToPath(new URL("img/", root)), join(d.parentPath, d.name)).replace(/\\/g, "/")}`);
+// what the page loads from its scripts rather than its own tags, copied as it is: every file in img/ and its folders (the gear icon and
+// card picture sheets, data/icons.js; the map pictures in img/maps/, data/minimaps.js) and in data/looks/ (the Stylist's animated
+// pieces, which js/lookanim.js loads one at a time)
+const DYNAMIC = ["img/", "data/looks/"];
+export const assetFiles = () => DYNAMIC.flatMap(dir => readdirSync(new URL(dir, root), { recursive: true, withFileTypes: true }).filter(d => d.isFile())
+  .map(d => `${dir}${relative(fileURLToPath(new URL(dir, root)), join(d.parentPath, d.name)).replace(/\\/g, "/")}`));
 // the stamped page: each local file's ?v= set to that file's hash
 export const stamp = html => html.replace(LOCAL, (_, pre, path) => `${pre}${path}?v=${hashOf(path)}"`);
 
