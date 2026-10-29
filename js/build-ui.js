@@ -370,7 +370,8 @@ function iconHtml(kind,id,scale=1,cls=""){
   const s=typeof ICON_SHEETS!=="undefined"&&ICON_SHEETS[kind],i=ICON_AT[kind]&&ICON_AT[kind][id];
   const size=s&&scale!==1?`width:${s.w*scale}px;height:${s.h*scale}px;`:"",c=`ico ico-${kind}${cls?" "+cls:""}`;
   if(!s||i==null)return `<span class="${c} none" aria-hidden="true"${size?` style="${size}"`:""}></span>`;
-  const rows=Math.ceil(s.ids.length/s.cols),fit=scale!==1?`background-size:${s.cols*s.w*scale}px ${rows*s.h*scale}px;`:"";
+  // an hd sheet (data/client.js) holds each picture at hd times its size: always drawn at the cell size, so it's sharp on high-DPI screens
+  const rows=Math.ceil(s.ids.length/s.cols),fit=scale!==1||s.hd?`background-size:${s.cols*s.w*scale}px ${rows*s.h*scale}px;`:"";
   return `<span class="${c}" aria-hidden="true" style="${size}${fit}background-position:-${i%s.cols*s.w*scale}px -${Math.floor(i/s.cols)*s.h*scale}px"></span>`}
 // any item by id: a card's picture at half size (as tall as an icon), else its gear or item icon
 const hasIcon=(k,id)=>[k,k+"Db"].some(x=>ICON_AT[x]&&ICON_AT[x][id]!=null);
