@@ -19,6 +19,7 @@ function fxLine([t,kind,target,v,per,skill,scale]){
   else if(kind==="status")l=`Resistance to ${T}`;
   else if(kind==="monster_kind")l+=target==="boss"?" vs Boss":" vs normal monsters";
   else if(kind&&(t==="damage_taken_percent"||t==="magic_damage_taken_percent"))l+=` from ${T}`;
+  else if(kind==="race"&&target==="all")l+=" vs all races";
   else if(kind)l+=` vs ${T}${kind==="size"?" size":""}`;
   if(skill)l=`${skill}: ${l}`;
   return `${l} ${+v>0?"+":""}${v}${pct||stat?"%":""}${per?` per${+per>1?` ${per}`:""} refine${+per>1?"s":""}`:""}${scale?` per ${scale} level`:""}`}
