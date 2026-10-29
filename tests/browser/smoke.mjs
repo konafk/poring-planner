@@ -57,7 +57,7 @@ try {
     assert.equal(await page.textContent("#infoDlgTitle"), "Jellopy");
     assert.match(await page.getAttribute("#infoShare", "href"), /#item\/909$/);
     await page.click("#infoDlgClose");
-    await page.waitForFunction(() => location.hash === "#Home");
+    await page.waitForFunction(() => location.hash === "#home");
     assert.deepEqual(errs, []);
     await page.close();
   });
