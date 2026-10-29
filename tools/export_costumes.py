@@ -6,7 +6,8 @@ its slot (Special Equipment).
 
 Costumes are the items data/clientitems.js lists as "Costume". Each one's slot is in the community database's item record
 (/api/items/<id>: slot, such as "Lower Head" or "Upper/Mid Head", else the "Position : ..." line of its description; cached like
-tools/export_prices.py's), fetched a couple a second.
+tools/export_prices.py's), fetched a couple a second. Costumes only the game client has (data/client.js's items, such as Golden
+Majestic Goat) take the slot from the "Position : ..." (or "Location : ...") line of their in-game text.
 Writes COSTUMES: {item id: [costume slots]}, the slots as the stones name them (upper, middle, lower, garment). Costumes the database
 has no slot for, or one no stone goes in, are left out and listed at the end.
 """
@@ -24,6 +25,13 @@ def costume_ids():
     src = open(os.path.join(ROOT, "data", "clientitems.js"), encoding="utf-8").read()
     i = src.index("{", src.index("const CLIENT_ITEMS="))
     return sorted(int(k) for k, v in json.JSONDecoder().raw_decode(src, i)[0].items() if v[1] == "Costume")
+
+
+def client_costumes():
+    """{item id: in-game text} for the costumes data/client.js adds that data/clientitems.js doesn't have."""
+    src = open(os.path.join(ROOT, "data", "client.js"), encoding="utf-8").read()
+    i = src.index("{", src.index("const CLIENT="))
+    return {int(k): v[2] or "" for k, v in json.JSONDecoder().raw_decode(src, i)[0]["items"].items() if v[1] == "Costume"}
 
 
 def slots_of(slot):
@@ -57,9 +65,18 @@ def main():
             odd[i] = (rec or {}).get("slot")
         if n % 100 == 0:
             print(f"{n} / {len(ids)}", flush=True)
+    for i, t in sorted(client_costumes().items()):
+        if i in out or i in odd:
+            continue
+        pos = re.search(r"(?:Position|Location)\s*:\s*([^\n]+)", t)
+        if pos and (s := slots_of(pos.group(1))):
+            out[i] = s
+        else:
+            odd[i] = pos and pos.group(1)
     with open(os.path.join(ROOT, "data", "costumes.js"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("// The costume slots each costume takes (tools/export_costumes.py, from the community database's item records), for the\n"
-                "// costume a costume enchant stone goes on. COSTUMES: {item id: [slots]}, slots as data/stones.js names them.\n")
+        f.write("// The costume slots each costume takes (tools/export_costumes.py, from the community database's item records and the\n"
+                "// client's item text), for the costume a costume enchant stone goes on. COSTUMES: {item id: [slots]}, slots as\n"
+                "// data/stones.js names them.\n")
         f.write("const COSTUMES={" + ",".join(f'{i}:{json.dumps(s)}' for i, s in out.items()) + "};\n")
     print(f"{len(out)} costumes")
     if odd:
