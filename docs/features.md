@@ -8,6 +8,7 @@
 - [Monsters & maps](#monsters--maps): Where to farm, Map planner, Monster table
 - [Memorial dungeons](#memorial-dungeons): Jellostones, Expedition upgrades, memorial dungeons and their gear's enchants
 - [Stellar weapons](#stellar-weapons): ★ Forging Certificates and Activation
+- [What's new](#whats-new)
 - [Roadmap](#roadmap)
 - [Monster info](#monster-info)
 - [Maps](#maps)
@@ -21,7 +22,7 @@
 
 ## Page layout
 
-The tabs sit in a sidebar on the left: Home at the top, then grouped into Plan (Character, Session, Monsters & maps, Memorial dungeons, Stellar weapons), Simulators (Brewing, Cooking), Game data (Monster info, Item info, Maps, Equipment, Cards, Skill tree, Recipes), Reference (Roadmap, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
+The tabs sit in a sidebar on the left: Home at the top, then grouped into Plan (Character, Session, Monsters & maps, Memorial dungeons, Stellar weapons), Simulators (Brewing, Cooking), Game data (Monster info, Item info, Maps, Equipment, Cards, Skill tree, Recipes), Reference (What's new, Roadmap, Market, EXP & formulas) and Data (Account). On a phone or a narrow window they become a tab bar along the top that stays in view as you scroll. A bar at the top of the page names the session you're on and what you're farming; its dot turns amber while the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
 
 **Log EXP from any tab:** type in the Log EXP box on the right of the top bar, or press **L** on any tab to jump to it. It takes a line like the paste box does: `17.9` (EXP %), `17.9 63` (with job %), `15:05 17.9 63` (at that time), and `died` on the line for EXP after a death. The entry goes in at the level of your last one, and a level-up is picked up the same way as in the Log EXP card. On a phone the box opens as a sheet from the round **+** button. At the max base level (70) base EXP no longer counts, so the box, the + button and **L** go away.
 
@@ -173,6 +174,10 @@ Its own tab, for the Activation System. It's marked **Not open in game yet**: it
 
 - **★ Forging Certificates:** the 17 ★ weapons Global's client has. Each takes 100 ★ Forging Certificates of its own weapon: Workshop Apprentice Nariya (`/navi prontera 272/264`) gives one for each monster-drop copy of it, so ★ Book takes 100 Book. Made from lists those weapons. Type the certificates and copies you have; To go counts down from the 100 a ★ to ★★ activation takes. Fastest for you is the monster (bosses aside, on an open map) that gets you copies quickest: at its drop rate, with your drop bonus and level penalty, at the kill speed and walking Monsters & maps works out. Time is To go over that rate. Monsters whose drop rate isn't published are listed under it, or instead of it when none is, but can't be timed.
 - **Activation:** each route's refine loss, certificates and Goblin Coin Fragments at Grandpa Taotao (`/navi prontera 272/260`): ★ to ★★ (−7, 100 ★ certificates, 8 fragments), ★★ to ★★★ (−3, 3 ★★ certificates, 30), and ★ armor (stable −3 for 100 and 30, aggressive −7 for 10 and 3); the last three came in the Taiwan server's later updates. Type your weapon's refine to see it after each. Cards, enchants and random options stay.
+
+## What's new
+
+Its own tab: the latest game update's highlights, from `data/news.js` (read from the game client after the patch, and its maintenance notice). For the Clock Tower update (29 October 2026) it draws the tower floor by floor, 4F at the top, Al De Baran, then B1F to B4F: each floor's monsters with their level and spawn count from the planner's own spawn data, every bar on one scale, and the floor's field bosses. Below that, the basement bosses with their cards, the new gear, the events that started or ended, and what changed in town. Monster, card and gear names open the details popup; a floor's name opens it on the Maps tab. For a month after an update, Home shows a "New in game" link to the tab next to the next update.
 
 ## Roadmap
 
