@@ -897,6 +897,10 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 .newsItem{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-top:1px solid var(--line)}
 .newsItem:first-child{border-top:0;padding-top:4px}
 .newsItem>span{font-size:13px;color:var(--muted);line-height:1.5}
+.newsIntro{margin:0 0 4px;max-width:80ch;font-size:13px;line-height:1.55}
+.newsCollab{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px 28px}
+.newsGrp{display:flex;flex-direction:column;min-width:0}
+.newsGrp .secHead{padding:10px 0 2px}
 @media (max-width:600px){.newsMob{grid-template-columns:auto minmax(0,1fr) 2.4rem;gap:2px 8px}.newsMob>.note{display:none}.newsMob>.ico{grid-row:1 / 3}
   .newsMob>a{grid-column:2;grid-row:1}.newsMob>.mono{grid-column:3;grid-row:1}.newsBar{grid-column:2 / -1;grid-row:2}
   .newsFloor{grid-template-columns:44px minmax(0,1fr)}.newsTag{padding-left:10px}.newsHeadCard h2{font-size:1.5rem}}
