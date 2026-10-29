@@ -2562,6 +2562,12 @@ t("Stylist costumes: worn by slot, drawn on the look from the client's sheets", 
   assert.equal(app("JSON.stringify([state.stylist.gear,state.stylist.cos])"), JSON.stringify([{ upper: 2225, middle: 2225 }, { upper: 5915 }]));
   assert.equal(app(`Object.keys(COSTUME_LOOKS.gear).filter(i=>styCosName(i).startsWith("[Costume]")).length`), 0);
   assert.equal(app(`STY_COS.cos.middle.includes("19638")`), true);
+  // "Start from my look" brings in what the character wears: the gear set's headgear (Goggles in upper and middle, a lower one) and
+  // Special equipment's costumes, replacing what the Stylist had
+  app(`state.job="Knight";const b=gearSet(C());b.gear={headTop:{id:2225},headMid:{id:2225},headLow:{id:2218},armor:{id:2301}};b.special={costume:{upper:5915,garment:480574}};
+    state.look={sex:"m",hair:7,color:2,dye:1,trans:false};state.stylist={job:"Mage",cos:{lower:19683},gear:{}};styFromMine()`);
+  assert.equal(app("JSON.stringify(state.stylist)"), JSON.stringify({ job: "Knight", sex: "m", hair: 7, color: 2, dye: 1, trans: false,
+    cos: { upper: 5915, garment: 480574 }, gear: { upper: 2225, middle: 2225, lower: 2218 } }));
   // the lists: costumes with a look in the client, by name; one with no look for this body is greyed out, not hidden
   assert.ok(app("STY_COS.cos.upper.length") > 300 && app("STY_COS.cos.garment.length") > 40);
   assert.equal(app(`STY_COS.cos.upper.every((id,i,a)=>!i||styCosName(a[i-1]).localeCompare(styCosName(id))<=0)`), true);

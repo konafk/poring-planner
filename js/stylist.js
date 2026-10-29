@@ -82,7 +82,15 @@ $("styCard").addEventListener("click",e=>{const b=e.target.closest("button");if(
   else if(d.styact){STY_ANIM.act=d.styact;STY_ANIM.t0=performance.now();renderStylist();return}
   else if(d.styoff){const [kd,k]=d.styoff.split(",");keep();styWear(kd,t[kd][k])}else if(d.stycos){keep();styWear(STY_AT[0],+d.stycos)}else return;
   save();renderStylist()});
-$("styMine").addEventListener("click",()=>{state.stylist={job:state.job||"Novice",...state.look,cos:state.stylist.cos,gear:state.stylist.gear};save();renderStylist()});
+// "Start from my look": your job and look, and what your character wears in the gear set the Character tab shows: its headgear and
+// garment (one that's a costume, "[Costume] ...", goes in the costume row) and the costumes in Special equipment. Pieces the client
+// has no look for are left out
+function styFromMine(){state.stylist={job:state.job||"Novice",...state.look,cos:{},gear:{}};
+  const b=state.job&&typeof gearSet==="function"?gearSet(C()):null,has=id=>typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS.items[id];
+  const ids=a=>[...new Set(a.map(x=>+x).filter(Boolean))];
+  if(b){ids(["headTop","headMid","headLow","garment"].map(k=>((b.gear||{})[k]||{}).id)).forEach(id=>{if(has(id))styWear(stySlotsOf("cos",id).length?"cos":"gear",id)});
+    ids(Object.values((b.special||{}).costume||{})).forEach(id=>{if(has(id))styWear("cos",id)})}}
+$("styMine").addEventListener("click",()=>{styFromMine();save();renderStylist()});
 $("styCosQ").addEventListener("input",()=>renderStyCos(styleOf()));
 // each section folds away, remembered like a card (state.collapsed)
 [["styFoldCos","Stylist: costumes"],["styFoldDye","Stylist: clothes colours"],["styFoldHair","Stylist: hair styles"],["styFoldColor","Stylist: hair colours"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
