@@ -2511,7 +2511,7 @@ t("Skill tree: a 2nd job's points can go on its 1st-job skills", () => {
 
 t("Stylist: a saved look is cleaned, and drawn as the job's body allows", () => {
   const app = load({ stylist: { job: "Knight", sex: "x", hair: "abc", color: -3, dye: 2.6, trans: 1 } });
-  assert.equal(app("JSON.stringify(state.stylist)"), JSON.stringify({ job: "Knight", sex: "m", hair: 1, color: 0, dye: 3, trans: true }));
+  assert.equal(app("JSON.stringify(state.stylist)"), JSON.stringify({ job: "Knight", sex: "m", hair: 1, color: 0, dye: 3, trans: true, cos: {}, gear: {} }));
   // the Knight's transcendent look has its own clothes colours; a number past the last falls back to the first
   assert.equal(app("JSON.stringify((({job,trans,sex,dye,dyes})=>({job,trans,sex,dye,dyes}))(styleOf()))"),
     JSON.stringify({ job: "Knight", trans: true, sex: "m", dye: 3, dyes: app("JOB_SPRITES.transPal.Knight.m.c.length") }));
@@ -2524,6 +2524,44 @@ t("Stylist: a saved look is cleaned, and drawn as the job's body allows", () => 
   const h = app("JSON.stringify(JOB_SPRITES.head.f[7])");
   const [x, y, w, hh] = JSON.parse(h);
   assert.match(app(`headCanvas("f",7,3,2)`), new RegExp(`width="${w}" height="${hh}" style="width:${w * 2}px;height:${hh * 2}px" data-head="${x},${y},${w},${hh},0,0" data-hair="f,7,3"`));
+});
+
+t("Stylist costumes: worn by slot, drawn on the look from the client's sheets", () => {
+  const app = load({ stylist: { job: "Knight", cos: { upper: "19930", middle: -1, garment: 480574, weapon: 1101 } } });
+  assert.equal(app("JSON.stringify(state.stylist.cos)"), JSON.stringify({ upper: 19930, garment: 480574 }));   // item ids by slot only
+  // a costume that takes two slots (the Annoyed Mask: middle and lower) fills both and takes off what was in them; wearing it again
+  // takes it off
+  assert.equal(app("JSON.stringify(COSTUMES[19794])"), JSON.stringify(["middle", "lower"]));
+  app(`state.stylist.cos={lower:19683};styWear("cos",19794)`);
+  assert.equal(app("JSON.stringify(state.stylist.cos)"), JSON.stringify({ middle: 19794, lower: 19794 }));
+  app(`styWear("cos",19794)`);
+  assert.equal(app("JSON.stringify(state.stylist.cos)"), "{}");
+  // on the look: headgear on the head anchor (one costume in two slots drawn once), the garment on the Knight's garment sheet, or the
+  // Lord Knight's for the transcendent look
+  const cos = "{upper:19930,middle:19794,lower:19794,garment:480574}";
+  const html = app(`lookCanvas("Knight",{sex:"m",hair:1,color:0,dye:0,cos:${cos}})`);
+  assert.equal((html.match(/data-acc="([^"]*)"/) || [])[1].split(";").length, 2);
+  assert.match(html, /data-robe="Knight,(-?\d+,){6}[01]"/);
+  assert.match(app(`lookCanvas("Knight",{sex:"m",hair:1,color:0,dye:0,cos:${cos}},true)`), /data-robe="Knight\+,/);
+  assert.doesNotMatch(app(`lookCanvas("Knight",{sex:"m",hair:1,color:0,dye:0})`), /data-acc|data-robe/);
+  // the canvas grows to hold them: the wings are wider than the Knight
+  const w = s => +s.match(/width="(\d+)"/)[1];
+  assert.ok(w(html) > w(app(`lookCanvas("Knight",{sex:"m",hair:1,color:0,dye:0})`)));
+  // normal headgear shows too, under costumes, as in game: each slot shows its costume, else its headgear, and a piece in two slots
+  // shows from its highest. 2225 (upper and middle) with 2218 (lower): both drawn
+  const n = L => ((app(`lookCanvas("Knight",{sex:"m",hair:1,color:0,dye:0,...${L}})`).match(/data-acc="([^"]*)"/) || [, ""])[1].split(";").filter(Boolean)).length;
+  assert.equal(n("{gear:{upper:2225,middle:2225,lower:2218}}"), 2);
+  // an upper costume (5915) covers the whole two-slot headgear; a middle one (19291) doesn't, as the headgear shows from upper
+  assert.equal(n("{gear:{upper:2225,middle:2225,lower:2218},cos:{upper:5915}}"), 2);
+  assert.equal(n("{gear:{upper:2225,middle:2225,lower:2218},cos:{middle:19291}}"), 3);
+  // headgear and costumes are worn apart; the few costumes only the gear data has (named "[Costume] ...") are costumes
+  app(`state.stylist.gear={};state.stylist.cos={};styWear("gear",2225);styWear("cos",5915)`);
+  assert.equal(app("JSON.stringify([state.stylist.gear,state.stylist.cos])"), JSON.stringify([{ upper: 2225, middle: 2225 }, { upper: 5915 }]));
+  assert.equal(app(`Object.keys(COSTUME_LOOKS.gear).filter(i=>styCosName(i).startsWith("[Costume]")).length`), 0);
+  assert.equal(app(`STY_COS.cos.middle.includes("19638")`), true);
+  // the lists: costumes with a look in the client, by name; one with no look for this body is greyed out, not hidden
+  assert.ok(app("STY_COS.cos.upper.length") > 300 && app("STY_COS.cos.garment.length") > 40);
+  assert.equal(app(`STY_COS.cos.upper.every((id,i,a)=>!i||styCosName(a[i-1]).localeCompare(styCosName(id))<=0)`), true);
 });
 
 t("Equipment and Cards tabs: in-game text, where to get it and the Where to get filter", () => {
