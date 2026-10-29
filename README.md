@@ -27,7 +27,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 - **Equipment, Cards:** every weapon, armor and card, filtered by type, job, level, card slots and ATK / MATK / DEF, with one click to put it in your gear or another gear set.
 - **Brewing** and **Cooking** (Simulators): each potion's or dish's chance for your stats and kit, what one costs you counting the failures, and a run of tries rolled the server's way.
 - **Skill tree** (Simulators): any job's skill tree without a character, picked from every class with its icon and look from the game client, with the points and job level it takes.
-- **Stylist** (Simulators): every job's clothes colours, hair styles and hair colours, and its costumes (headgear and garments), drawn from the game client, to try a look and put it on your character.
+- **Stylist** (Simulators): every job's clothes colours, hair styles and hair colours, and its headgear and costumes, drawn from the game client, to try a look and put it on your character.
 - **Recipes:** every forging, brewing, arrow crafting, cooking, Mixture & Counteragent and Dye Making recipe, the Jellostone exchange and the Expedition upgrades, searchable by the item made or its materials, with what the materials are worth.
 - **EXP & formulas:** EXP tables, party share and every formula with your numbers.
 - **Accounts:** separate characters per account, text backups and share links.
