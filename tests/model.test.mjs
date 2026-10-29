@@ -1502,6 +1502,9 @@ t("damage taken from race / size / element cuts HP lost, heal cost and raises ne
   run(`C().mode="status";C().eq=[{by:"takenRace",t:"Demi-Human",v:-24}];applyBuild()`); near(run(`takenMul(${orc})`), 0.76);
   run(`C().eq=[{by:"takenSize",t:"M",v:-10},{by:"takenEle",t:"Earth",v:-20}];applyBuild()`); near(run(`takenMul(${orc})`), 0.9 * 0.8);
   run(`C().eq=[{by:"takenSize",t:"L",v:-10}];applyBuild()`); near(run(`takenMul(${orc})`), 1);   // orcs are Medium
+  // each kind of cut stops at −70% (official guide, Option Maximum Limit System), each kind on its own
+  run(`C().eq=[{by:"takenRace",t:"Demi-Human",v:-50},{by:"takenRace",t:"Demi-Human",v:-40}];applyBuild()`); near(run(`takenMul(${orc})`), 0.3);
+  run(`C().eq=[{by:"takenRace",t:"Demi-Human",v:-90},{by:"takenSize",t:"M",v:-80}];applyBuild()`); near(run(`takenMul(${orc})`), 0.3 * 0.3);
 });
 
 t("maps too slow to farm rank last with a badge; nrd_dun02 needs base Lv 50", () => {

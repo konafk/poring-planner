@@ -7,6 +7,7 @@ MOBS.forEach(m=>{const e=ELEM[m.id];if(e){m.el=e[0];m.elv=e[1];m.hit100=e[2];m.f
   m.poison=MOBPOISON[m.id]||null;m.assist=MOB_ASSIST.has(m.id)});
 
 // ---- element table: defender element -> element level 1-4 -> attacker element ----
+// from the official guide's element chart, roz.mygnjoy.com/en/intro/guide/14 (all 400 cells checked; it calls Ghost "Ninja Aura")
 const AE=["Neutral","Water","Earth","Fire","Wind","Poison","Holy","Shadow","Ghost","Undead"];
 const ET0={
 Neutral:["100,100,100,100,100,100,100,100,90,100","100,100,100,100,100,100,100,100,70,100","100,100,100,100,100,100,100,100,50,100","100,100,100,100,100,100,100,100,0,100"],
