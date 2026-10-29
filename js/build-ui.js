@@ -364,14 +364,18 @@ const memTxt=m=>[num(m.refine)?`+${num(m.refine)}`:"",...(m.cards||[]).filter(Bo
 const ICON_AT={};
 (typeof ICON_SHEETS!=="undefined"?Object.entries(ICON_SHEETS):[]).forEach(([k,s])=>{ICON_AT[k]={};s.ids.forEach((id,i)=>ICON_AT[k][id]=i);
   document.documentElement.style.setProperty(`--ico-${k}`,`url("${s.file}?v=${s.v}")`)});
-function iconHtml(kind,id,scale=1,cls=""){const s=typeof ICON_SHEETS!=="undefined"&&ICON_SHEETS[kind],i=ICON_AT[kind]&&ICON_AT[kind][id];
+function iconHtml(kind,id,scale=1,cls=""){
+  // what the client has no picture for (data/client.js) has the database's
+  if(ICON_AT[kind+"Db"]&&(ICON_AT[kind]||{})[id]==null&&ICON_AT[kind+"Db"][id]!=null)kind+="Db";
+  const s=typeof ICON_SHEETS!=="undefined"&&ICON_SHEETS[kind],i=ICON_AT[kind]&&ICON_AT[kind][id];
   const size=s&&scale!==1?`width:${s.w*scale}px;height:${s.h*scale}px;`:"",c=`ico ico-${kind}${cls?" "+cls:""}`;
   if(!s||i==null)return `<span class="${c} none" aria-hidden="true"${size?` style="${size}"`:""}></span>`;
   const rows=Math.ceil(s.ids.length/s.cols),fit=scale!==1?`background-size:${s.cols*s.w*scale}px ${rows*s.h*scale}px;`:"";
   return `<span class="${c}" aria-hidden="true" style="${size}${fit}background-position:-${i%s.cols*s.w*scale}px -${Math.floor(i/s.cols)*s.h*scale}px"></span>`}
 // any item by id: a card's picture at half size (as tall as an icon), else its gear or item icon
-const itemIcon=(id,scale=1,cls="")=>ICON_AT.card&&ICON_AT.card[id]!=null?iconHtml("card",id,scale/2,cls)
-  :iconHtml(ICON_AT.gear&&ICON_AT.gear[id]!=null?"gear":"item",id,scale,cls);
+const hasIcon=(k,id)=>[k,k+"Db"].some(x=>ICON_AT[x]&&ICON_AT[x][id]!=null);
+const itemIcon=(id,scale=1,cls="")=>hasIcon("card",id)?iconHtml("card",id,scale/2,cls)
+  :iconHtml(hasIcon("gear",id)?"gear":"item",id,scale,cls);
 // a monster by id: its sprite at half size (as tall as an icon); scale 2 draws it full size (48 x 48)
 const mobIcon=(id,scale=1,cls="")=>iconHtml("mob",id,scale/2,cls);
 function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};let lists="";

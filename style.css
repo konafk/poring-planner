@@ -728,12 +728,14 @@ details.more>.form{display:grid}
 .ico-skill{width:24px;height:24px;background-image:var(--ico-skill)}
 /* an icon in a line of text: it doesn't make the line taller */
 .ico.il{margin:-5px 5px -4px 0}
-.ico-card{width:36px;height:48px;background-image:var(--ico-card);border-radius:3px}
+.ico-card,.ico-cardDb{width:36px;height:48px;background-image:var(--ico-card);border-radius:3px}
+.ico-cardDb{background-image:var(--ico-cardDb)}
+.ico-gearDb,.ico-itemDb{width:24px;height:24px}.ico-gearDb{background-image:var(--ico-gearDb)}.ico-itemDb{background-image:var(--ico-itemDb)}
 .ico-mob{width:48px;height:48px;background-image:var(--ico-mob)}
 .ico.none{background:none}
 .dbName{display:flex;align-items:center;gap:8px}
-.eqDlgHead .ico-card{margin-top:-2px}
-.eqPick .ico-gear{margin:-4px 6px -4px 0}
+.eqDlgHead :is(.ico-card,.ico-cardDb){margin-top:-2px}
+.eqPick :is(.ico-gear,.ico-gearDb){margin:-4px 6px -4px 0}
 /* the Character tab's gear table: the item's icon beside its box, a small picture beside each card box */
 #gearTable .itemBox,#gearTable .cardBox,#specialTable .itemBox{display:flex;align-items:center;gap:6px}
 #specialTable .itemBox input{flex:1}
