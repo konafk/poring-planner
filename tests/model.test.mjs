@@ -2574,8 +2574,13 @@ t("equipment window: gear named as the game shows it, and the job's look (Bards 
 
 t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {
   // Cooking from the client's cookbooks (60 dishes, Lv 1–10) in place of the database's 29, the Tip Box's 6 potions and 4 fruit juices,
-  // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts
-  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length+60+10+18`), run(`RECIPE_LIST.length`));
+  // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts, and the client's 7 headgear crafts (Februs's 5, the Hat Maker's 2)
+  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length+60+10+18+7`), run(`RECIPE_LIST.length`));
+  assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Headgear").length`), 7);
+  assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===19361))`), "Februs · prontera 50,293");                            // Wanderer's Sakkat
+  assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===19361).mats)`), "[[7005,50],[1059,50],[2280,1],[983,5],[25429,40]]");
+  assert.equal(run(`RECIPE_LIST.find(r=>r.id===19361).fee`), 50000);
+  assert.match(run(`recipeNpcHtml(RECIPE_LIST.find(r=>r.id===19333))`), /data-navito="aldebaran"/);                        // Hat Maker
   assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Potions").length`), 6); assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Fruit Juice").length`), 4);
   assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===502&&r.cat==="Potions"))`), "Old Pharmacist · alberta_in 16,28");   // Orange Potion: Red + Yellow Herb
   assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===531))`), "Marienne (quest) · prt_in 49,172");                     // Apple Juice

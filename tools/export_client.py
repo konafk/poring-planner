@@ -24,6 +24,8 @@ the client isn't, so what the client says goes in a file of its own that only th
   Porings, the Solid / Furious / ... champions, event monsters) stay out, as before.
 - mobLv: every monster the client spawns, [name, level]: the monster list takes the client's level, and the drop lists name each
   monster as the monster list does (or as the client does, for one the list doesn't have) with its level.
+- recipes: the headgear NPCs craft (npc_recipes(): Februs's from the dialogue, the Hat Maker's from the quest log), as
+  data/recipes.js's NPC rows in a Headgear category, for the Recipes tab and each item's details.
 - art: the client's pictures, as sheets like tools/export_icons.py's (img/<kind>-client.png): card pictures (data.grf's
   data\\num2cardillustnametable.txt gives each card id its picture's name, data\\texture\\유저인터페이스\\cardbmp\\<name>.bmp,
   300 x 400, shrunk), and gear and item icons (System\\itemInfo_data.lub gives each item its identifiedResourceName,
@@ -212,6 +214,47 @@ def scaled(img, W, H):
     return W, H, out
 
 
+ITEM_TAG = re.compile(r"<ITEM>\[.*?\]<INFO>(\d+)</INFO></ITEM>")  # a name can hold brackets itself: "[Clock Casket[1]]"
+
+
+def npc_at(name):
+    """Where data/navi.js puts an NPC: "map x,y" (the first it finds), or None."""
+    src = open(os.path.join(DATA, "navi.js"), encoding="utf-8").read()
+    npcs = json.JSONDecoder().raw_decode(src, src.index("{", src.index("const NAVI_NPCS=")))[0]
+    return next((f"{m} {r[1]},{r[2]}" for m, rs in npcs.items() for r in rs if r[0] == name), None)
+
+
+def npc_recipes(grf, client):
+    """The headgear NPCs craft, as data/recipes.js's NPC rows (cat Headgear): from the client's NPC dialogue (data\\i18n\\sc\\*.csv,
+    the lines the server sends by key), "[Februs] / You mean the <ITEM>..</ITEM>. / Here's the material estimate. / <ITEM>..</ITEM> xN
+    ... / A crafting fee of 50,000z is required.", and from the quest log (System\\OngoingQuestInfoList_enUS.lub), "The <NAVI>[Hat
+    Maker]<INFO>map,x,y..</INFO></NAVI> ... if you need <ITEM>..</ITEM> ... Bring 1 <ITEM>..</ITEM>, 100 <ITEM>..</ITEM> ...", with
+    where the NPC is from data/navi.js (or the quest's NAVI tag)."""
+    import base64
+    out = {}
+    for f in (n for n in grf.ents if n.startswith("data\\i18n\\sc\\") and n.endswith(".csv")):
+        for line in grf.read(f).decode("utf-8", "replace").splitlines():
+            c = line.split(",")
+            if len(c) < 3 or not c[2]:
+                continue
+            t = base64.b64decode(c[2]).decode("utf-8", "replace")
+            m = re.match(r"\[([^\]]+)\]\s*You mean the " + ITEM_TAG.pattern + r"\.\s*Here.s the material estimate\.(.*?)A crafting fee of ([\d,]+)z",
+                         t.replace("\n", " "))
+            if m:
+                mats = [[int(i), int(n)] for i, n in re.findall(ITEM_TAG.pattern + r"\s*x(\d+)", m.group(3))]
+                out[(m.group(1), int(m.group(2)))] = {"cat": "Headgear", "type": "npc", "id": int(m.group(2)), "n": 1, "lv": None, "mats": mats,
+                                                       "fee": int(m.group(4).replace(",", "")), "npc": [m.group(1), npc_at(m.group(1))]}
+    quests = lua_data(open(os.path.join(client, "System", "OngoingQuestInfoList_enUS.lub"), "rb").read(), "utf-8")["QuestInfoList_string"]
+    for q in quests.values():
+        t = " ".join(str(x) for x in (q.get("Description") or {}).values())
+        m = re.search(r"<NAVI>\[([^\]]+)\]<INFO>(\w+),(\d+),(\d+)[^<]*</INFO></NAVI>.*?if you need " + ITEM_TAG.pattern + r".*?Bring (.*)", t)
+        if m:
+            mats = [[int(i), int(n)] for n, i in re.findall(r"(\d+) " + ITEM_TAG.pattern, m.group(6))]
+            out[(m.group(1), int(m.group(5)))] = {"cat": "Headgear", "type": "npc", "id": int(m.group(5)), "n": 1, "lv": None, "mats": mats,
+                                                   "npc": [m.group(1), npc_at(m.group(1)) or f"{m.group(2)} {m.group(3)},{m.group(4)}"]}
+    return [{k: x for k, x in r.items() if x is not None or k == "lv"} for _, r in sorted(out.items())]
+
+
 def card_names(grf):
     """{card id: picture name}, from the client's num2cardillustnametable.txt."""
     out = {}
@@ -359,14 +402,20 @@ def main():
     # every monster the client spawns: [name, level], for the monster list's levels and the drop lists (the database's are often another
     # server's: Baphomet Lv 105 for the client's 81, Extra Joker 126 for 105)
     mob_lv = {i: [m["name"], m["lv"]] for i, m in sorted(spawned.items())}
-    out = {"text": text, "fix": fix, "lines": extra, "gear": gear, "cards": new_cards, "items": items, "mobs": mobs, "mobLv": mob_lv, "art": art}
+    recipes = npc_recipes(grf, client)
+    # the names of what they make and use, as the client has them, for the Recipes tab (data/recipes.js's RECIPE_ITEMN lacks some)
+    recipe_names = {i: (info[i].get("identifiedDisplayName") or "").replace("’", "'") for r in recipes for i in [r["id"], *(m[0] for m in r["mats"])]
+                    if i in info}
+    out = {"text": text, "fix": fix, "lines": extra, "gear": gear, "cards": new_cards, "items": items, "mobs": mobs, "mobLv": mob_lv,
+           "recipes": recipes, "recipeNames": recipe_names, "art": art}
     with open(os.path.join(DATA, "client.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// The game client's own item data (tools/export_client.py, from the installed Global client), laid over the community database's\n"
                 "// as the page loads: wherever the client has it, it wins. text: gear's and cards' in-game descriptions; fix: name, card slots, level,\n"
                 "// DEF, ATK, MATK, weapon level where the database's differ; gear: armour the database doesn't have yet, as data/equipment.js rows;\n"
                 "// items: other items no data file has, [name, category, in-game text]; mobs: monsters the database doesn't have yet (no HP or\n"
                 "// EXP in the client); art: the client's card pictures, gear and item icons and monster pictures (sheets like data/icons.js's);\n"
-                "// mobLv: every monster the client spawns, [name, level], for the monster list's levels and the drop lists\n")
+                "// mobLv: every monster the client spawns, [name, level], for the monster list's levels and the drop lists; recipes: the headgear\n"
+                "// NPCs craft, as data/recipes.js's NPC rows (js/recipes.js adds them)\n")
         f.write("const CLIENT=" + json.dumps(out, ensure_ascii=False, separators=(",", ":")) + ";\n")
         f.write("(function(){const has=new Set(EQUIP.map(e=>e.id));CLIENT.gear.forEach(r=>{if(!has.has(r.id))EQUIP.push(r)});\n"
                 "  const hasCard=new Set(CARDS.map(c=>c.id));CLIENT.cards.forEach(r=>{if(!hasCard.has(r.id))CARDS.push(r)});\n"
@@ -384,11 +433,15 @@ def main():
                 "  Object.values(ITEM_INFO).forEach(x=>(x.d||[]).forEach(r=>{const m=byMob.get(r[0]),c=CLIENT.mobLv[r[0]];\n"
                 "    if(m){r[1]=m.name;r[2]=m.lv}else if(c){r[1]=c[0];r[2]=c[1]}}));\n"
                 "  Object.entries(CLIENT.items).forEach(([id,[n,c,t]])=>{if(!CLIENT_ITEMS[id])CLIENT_ITEMS[id]=[n,c];if(t&&!ITEM_TEXT[id])ITEM_TEXT[id]=t});\n"
+                "  Object.entries(CLIENT.recipeNames).forEach(([id,n])=>{if(n&&!RECIPE_ITEMN[id])RECIPE_ITEMN[id]=n});\n"
                 "  // the database's sheets stay as the fallback for what the client has no picture for (js/build-ui.js iconHtml)\n"
                 "  Object.entries(CLIENT.art).forEach(([k,s])=>{if(s.ids.length){ICON_SHEETS[k+\"Db\"]=ICON_SHEETS[k];ICON_SHEETS[k]=s}})})();\n")
     print(f"{len(text)} texts, {len(fix)} fixes, {len(gear)} new gear ({', '.join(g['name'] for g in gear)}), {len(items)} new items, "
           f"{len(mobs)} new monsters ({', '.join(m['name'] for m in mobs)}); pictures: "
           + ", ".join(f"{len(s['ids'])} of {wanted[k]} {k}" for k, s in art.items()))
+    for r in recipes:
+        fee = f", {r['fee']:,}z" if r.get("fee") else ""
+        print(f"  recipe: {r['npc'][0]} ({r['npc'][1]}) makes {r['id']} from {r['mats']}{fee}")
     print(f"  {len(new_cards)} new cards ({', '.join(c['name'] for c in new_cards)}); bonus lines added from the client's text to {len(extra)} items:")
     for i, g in extra.items():
         print(f"    {i}: {json.dumps(g)}")
