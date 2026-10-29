@@ -39,6 +39,10 @@ PVP = re.compile(r"^(.+)_[yz]$")
 # NPC kinds the page marks on the map: Kafra, shops, the rest
 SHOP = re.compile(r"(Dealer|Merchant|Trader|Vendor|Shop)$")
 KEEP_ROUTES = 6  # starts kept per spawn map, nearest first
+# NPCs the client's dialogue has but its Navigation doesn't place: (map, name, x, y), each with where it's from. Februs crafts the
+# Atelier Manus headgear (data/client.js recipes); the Project Zero wiki (wiki.playragnarokzero.com, Headgear Ingredients) has
+# Atelier Manus at prontera 50 293. Not checked in game on Global yet: correct it here if it's elsewhere
+EXTRA_NPCS = [("prontera", "Februs", 50, 293)]
 
 
 def translations(grf):
@@ -134,6 +138,7 @@ def main():
             seen.add((n, r[7], r[8]))
             kind = "k" if n == "Kafra Employee" else "s" if SHOP.search(n) else "w" if (code, r[7], r[8]) in sends else ""
             lst.append([n, r[7], r[8], kind] if kind else [n, r[7], r[8]])
+        lst += [[n, x, y] for m, n, x, y in EXTRA_NPCS if m == k and not any(e[0] == n for e in lst)]
         if lst:
             out_npcs[k] = sorted(lst, key=lambda x: (x[0], x[1], x[2]))
         seen, lst = set(), []
