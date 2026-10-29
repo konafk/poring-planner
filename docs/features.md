@@ -112,7 +112,7 @@ Open maps, or single monsters, ranked by net zeny/hr. That's the loot value per 
 
 Per-map averages, kills/hr, EXP/hr and net zeny/hr, with the map's picture from the game client's map window beside them (click it for full size; Ayothaya - Ancient Shrine Maze has none in the client), under the game's world map with the map lit (**World map** folds it away; the page remembers). Every spawn map is a box on the world map: click one to plan that map (a dungeon's floors share a box, so click again for the next floor; dashed boxes aren't open yet). **Midgard** and **Nordfeld** switch between the game's two world maps; the map you plan turns it to its own. Maps whose region isn't out yet aren't on the game's world map. Its **Farming this map now** button does what Farm here does. The EXP ranking's Zeny / hr column is net the same way.
 
-**Getting there** (under the map's name) and the marks on its picture come from the game's Navigation, the same as on the [Maps](#maps) tab: the walk from your save town, and the map's ways out. Clicking a way out on the picture, or a spawn map's name in the route, plans that map.
+**Getting there** (under the map's name) and the marks on its picture come from the game's Navigation, the same as on the [Maps](#maps) tab: the walk from the nearest town, and the map's ways out. Clicking a way out on the picture, or a spawn map's name in the route, plans that map.
 
 ### Farm without items
 
@@ -200,7 +200,7 @@ Every map monsters spawn on, and the towns (Prontera, Geffen, Nordfeld, ...: the
 From the game's Navigation (`/navi`), read from the client:
 
 - **On the picture:** red squares are the map's ways out (click one to open that map; small faint ones are doors into buildings), blue dots Kafra Employees, green dots shops, yellow dots NPCs that send you to another map. On a map with few NPCs, grey dots are the rest. Hover any of them for its name and cell.
-- **Getting there** (spawn maps): the shortest walk from your save town (**from**: pick it; *nearest town* takes whichever is closest), counting a Kafra teleport from it when that's quicker ("Kafra teleport from Geffen to Orc Village, then walk"), with the cells walked, about how long that takes at normal walking speed (150 ms a cell), and each map on the way with the portal or NPC you take out of it (hover a map for every one). When your save town's ways aren't among the nearest it says so and shows the nearest. A few maps you only reach by talking to someone the Navigation doesn't list (Nordfeld Cave 2F, the Izlude Shipwreck) have none. NPCs that send you somewhere may want something first (a level, a fee, a quest): the step names them.
+- **Getting there** (spawn maps): the shortest walk from the nearest town, counting a Kafra teleport when that's quicker ("Kafra teleport to Orc Village (from Geffen · Prontera), then walk"), with the cells walked, about how long that takes at normal walking speed (150 ms a cell), and each map on the way with the portal or NPC you take out of it (hover a map for every one). A few maps you only reach by talking to someone the Navigation doesn't list (Nordfeld Cave 2F, the Izlude Shipwreck) have none. NPCs that send you somewhere may want something first (a level, a fee, a quest): the step names them.
 - **Kafra teleports to** (towns): where its Kafra Employees teleport you, for a fee the client doesn't give.
 - **Ways out** and **NPCs here**: the maps you can go to from here, and every NPC with its cell, the ones worth finding first (Kafra, shops, NPCs that send you somewhere).
 

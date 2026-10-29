@@ -798,7 +798,7 @@ function renderMap(){
   $("mapInput").value=mp?mapCode(mp):"";$("mapName").textContent=mapName(mp)+(isRoomMap(mp)?` · room dungeon: one map cut into small rooms, so monsters crowd into yours (a possible rampage of ${ROOM_CROWD} unless you change it)`:"");
   // the map's picture from the client (data/minimaps.js, tools/export_minimaps.py), asked for with its checksum so a new one isn't read from an old cache
   {const a=$("mapPicLink"),v=typeof MINIMAPS!=="undefined"&&mp&&MINIMAPS[mp];$("mapPicWrap").hidden=!v;if(v){const u=`img/maps/${mp}.png?v=${v}`;if(a.getAttribute("href")!==u){a.href=u;$("mapPic").src=u;$("mapPic").alt=`Map of ${mapName(mp)||mapCode(mp)}`}}
-   // its NPCs and ways out on it, and the way there from your save town (navi.js)
+   // its NPCs and ways out on it, and the way there from the nearest town (navi.js)
    if(typeof naviMarks==="function"){$("mapMarks").innerHTML=v?naviMarks(mp):"";$("mapRoute").innerHTML=naviRouteHtml(mp)}}
   worldMap($("planWorld"),mp,planPick);{const wi=worldOf(mp);$("worldSum").textContent=!mp?"":wi>=0?`${WORLDMAPS[wi].name}, ${mapName(mp)||mapCode(mp)} lit`:"not on it yet"}
   {const b=$("mobbedIn");b.disabled=!MAPMOBS[mp];b.placeholder=MAPMOBS[mp]?(mobbedDef(mp)?`${mobbedDef(mp)} (room dungeon)`:"Character tab's number"):"";if(document.activeElement!==b)b.value=MAPMOBS[mp]&&(state.mobbed||{})[mp]!=null?state.mobbed[mp]:""}
