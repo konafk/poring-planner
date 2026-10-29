@@ -2581,7 +2581,8 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===19358).mats)`), "[[1061,200],[983,5],[2252,1],[25506,1],[25429,50]]"); // Black Witch Hat
   assert.equal(run(`RECIPE_LIST.find(r=>r.id===19357).fee`), 50000);
   assert.ok(run(`!RECIPE_LIST.some(r=>[19361,19332,19356].includes(r.id))`), "Februs's crafts Global doesn't offer yet stay out");
-  assert.match(run(`recipeNpcHtml(RECIPE_LIST.find(r=>r.id===19333))`), /data-navito="aldebaran"/);                        // Hat Maker
+  assert.match(run(`recipeNpcHtml(RECIPE_LIST.find(r=>r.id===19333))`), /data-copynavi="\/navi aldebaran 130\/140"/);          // Hat Maker
+  assert.match(run(`recipeNpcHtml(RECIPE_LIST.find(r=>r.id===19357))`), />\/navi prontera 50\/293</);                            // Februs
   assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Potions").length`), 6); assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Fruit Juice").length`), 4);
   assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===502&&r.cat==="Potions"))`), "Old Pharmacist · alberta_in 16,28");   // Orange Potion: Red + Yellow Herb
   assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===531))`), "Marienne (quest) · prt_in 49,172");                     // Apple Juice

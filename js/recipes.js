@@ -37,9 +37,14 @@ const buyPrice=id=>state.prices[id]>0?state.prices[id]:shopPrice(id)??matPrice(i
 const worthNone=(r,w)=>w.unknown===r.mats.length&&!r.fee;
 // who makes it, for the recipes an NPC makes: "JavaDullihan · morocc_in 146,99", "Marienne (quest) · prt_in 49,172" when her quest unlocks them
 const recipeNpc=r=>r.npc?`${r.npc[0]}${r.quest?" (quest)":""} · ${r.npc[1]}`:"";
-// the same as HTML, the place a link to its map on the Maps tab (with the NPC on it) when the tab has that map
-const recipeNpcHtml=r=>{if(!r.npc)return "";const mp=String(r.npc[1]||"").split(" ")[0];
-  return `${esc(r.npc[0])}${r.quest?" (quest)":""} · ${mp&&(MAPMOBS[mp]||isTown(mp))?`<a href="#" data-navito="${esc(mp)}">${esc(r.npc[1])}</a>`:esc(r.npc[1]||"")}`};
+// the same as HTML, the place as the game's Navigation command (/navi prontera 50/293): a click copies it, to paste in the game's chat
+const recipeNpcHtml=r=>{if(!r.npc)return "";const at=String(r.npc[1]||"").replace(","," "),cmd=at?naviCmd(at):"";
+  return `${esc(r.npc[0])}${r.quest?" (quest)":""}${cmd?` · <a href="#" class="navi mono" data-copynavi="${esc(cmd)}" title="Copy it, then paste it in the game's chat: the Navigation shows you the way">${esc(cmd)}</a>`:""}`};
+document.addEventListener("click",async e=>{const a=e.target.closest&&e.target.closest("[data-copynavi]");if(!a)return;e.preventDefault();const t=a.dataset.copynavi;
+  try{await navigator.clipboard.writeText(t);showToast(`Copied ${t}: paste it in the game's chat.`)}
+  // where the clipboard is refused: select it, try the older copy command, else leave it selected for Ctrl+C
+  catch(err){const s=getSelection(),rg=document.createRange();rg.selectNodeContents(a);s.removeAllRanges();s.addRange(rg);
+    let ok=false;try{ok=document.execCommand("copy")}catch(e2){}showToast(ok?`Copied ${t}: paste it in the game's chat.`:"Press Ctrl+C to copy it.")}});
 const recipeMade=r=>`${itemName(r.id)}${r.n>1?` ×${fmtN(r.n)}`:""}`;
 // "10 × Iron, 1 × Steel" with icons, each opening its details
 const recipeMats=r=>r.mats.map(([id,n])=>`<span class="mat">${itemIcon(id,1,"il")}<span class="mono">${fmtN(n)}×</span> <a href="#" data-info="item:${id}">${esc(itemName(id))}</a></span>`).join("");
