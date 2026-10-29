@@ -8,11 +8,15 @@ The client's navigation table (data.grf: navi_mob.lub) gives each spawned monste
 data\\i18n\\sc\\*.csv give each code its name per language as base64 (code, Korean, English, ...). A name two of our monsters would
 share (the five Goblins, the two Petites, Whisper (1185), Weak Skeleton, which the client calls "Giearth") keeps ours, so rows
 stay apart. Monsters the client doesn't spawn yet (regions not out, most MVPs) keep their community database names and are printed.
+KEEP holds monsters that keep our name anyway: High Orc (1213), whose only client spawn is one on Clock Tower B2F that the client
+calls "Infinite High Orc".
 """
 import base64, os, re, struct, sys, zlib
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from export_spawns import DATA, NAVI, grf_file, lua_data
+
+KEEP = {1213}
 
 
 def english(grf):
@@ -51,7 +55,7 @@ def main():
     src = open(path, encoding="utf-8").read()
     start = src.index("const MOBS=")
     mobs = {int(i): n for i, n in re.findall(r'\[(\d+),"([^"]*)"', src[start:])}
-    shown = {i: en[code[i]] for i in mobs if code.get(i) in en}
+    shown = {i: en[code[i]] for i in mobs if code.get(i) in en and i not in KEEP}
     taken = {}
     for i, n in shown.items():
         taken.setdefault(n, []).append(i)
