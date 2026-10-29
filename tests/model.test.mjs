@@ -2564,6 +2564,30 @@ t("Stylist costumes: worn by slot, drawn on the look from the client's sheets", 
   assert.equal(app(`STY_COS.cos.upper.every((id,i,a)=>!i||styCosName(a[i-1]).localeCompare(styCosName(id))<=0)`), true);
 });
 
+t("Stylist animation: every frame of a look, drawn by anchors", () => {
+  // every job's body (both genders where it has them) and every hair style has its frames; the pieces' list names their files
+  assert.equal(run(`Object.keys(JOB_SPRITES.body).every(j=>Object.keys(JOB_SPRITES.body[j]).every(s=>LOOK_HAS["body/"+j+"-"+s]))`), true);
+  assert.equal(run(`["m","f"].every(s=>Object.keys(JOB_SPRITES.head[s]).every(n=>LOOK_HAS["hair/"+n+"-"+s]))`), true);
+  // a piece: four actions in 8 directions, frames of layers [image, x, y, mirror, scale x, scale y] and the anchor
+  const src = readFileSync(new URL("data/looks/body/Knight-m.js", root), "utf8");
+  const p = JSON.parse(src.slice(src.indexOf(",") + 1, src.lastIndexOf(")")));
+  assert.deepEqual(Object.keys(p.act), ["stand", "walk", "sit", "attack"]);
+  assert.ok(Object.values(p.act).every(dirs => dirs.length === 8 && dirs.every(d => d.f.length > 0 && d.d > 0)));
+  assert.ok(p.act.walk[0].f.length > 1 && p.act.walk[0].f.every(([ls, a]) => ls.length && a.length === 2 && ls.every(l => l.length === 6 && p.img[l[0]])));
+  // drawn on a canvas stand-in: the body, then the hair attached by anchors; walking moves through the frames with the time
+  const drawn = run(`(()=>{LOOKS["body/Knight-m"]={...${JSON.stringify(p)},im:{naturalWidth:1,naturalHeight:1}};
+    LOOKS["hair/1-m"]={img:[[0,0,10,10]],act:Object.fromEntries(LOOK_ACTS.map(([a])=>[a,Array.from({length:8},()=>({d:4,f:[[[[0,0,0,0,1,1]],[0,-70]]]}))])),im:{}};
+    const calls=[];lookTinted=(k)=>k;const g={imageSmoothingEnabled:true,save(){},restore(){},translate(){},scale(){},drawImage:(im,...a)=>calls.push([im,...a])};
+    const o={job:"Knight",trans:false,sex:"m",hair:1,color:0,dye:0,worn:{head:[],robe:null}};
+    lookAnimDraw(g,o,"walk",0,0,90,168);const first=calls.splice(0);lookAnimDraw(g,o,"walk",0,150,90,168);
+    return JSON.stringify([first.map(c=>c[0]),first.at(-1).slice(5,7),calls[0].slice(1,5)])})()`);
+  const [order, hairAt, later] = JSON.parse(drawn);
+  assert.deepEqual(order, ["body/Knight-m", "hair/1-m"]);
+  const a = p.act.walk[0].f[0][1];
+  assert.deepEqual(hairAt, [90 + a[0] - 0 - 5, 168 + a[1] + 70 - 5]);           // the hair's anchor on the body's, the image centred
+  assert.deepEqual(later, p.img[p.act.walk[0].f[1][0][0][0]].slice(0, 4));        // 150 ms in: the second walking frame (100 ms each)
+});
+
 t("Equipment and Cards tabs: in-game text, where to get it and the Where to get filter", () => {
   // Eddga Card: its bonus line is only MaxHP -25%; Endure is in the in-game text, which the search and the card's effects use
   assert.match(run(`itemText(4123)`), /Endure/);

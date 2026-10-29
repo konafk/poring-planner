@@ -431,29 +431,32 @@ const ewHairs=sex=>Object.keys(((typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES.h
 const EW_TRANS={Knight:"Lord Knight",Crusader:"Paladin",Wizard:"High Wizard",Sage:"Professor",Hunter:"Sniper",Bard:"Clown",Dancer:"Gypsy",
   Priest:"High Priest",Monk:"Champion",Blacksmith:"Whitesmith",Alchemist:"Creator",Assassin:"Assassin Cross",Rogue:"Stalker"};
 const ewTrans=S=>EW_TRANS[state.job]&&S.trans&&S.trans[state.job];
+// what a look shows of what it wears (data/costumelooks.js): its headgear views in the order the client stacks them (lower, upper,
+// middle) and its garment's view. Each headgear slot shows, as in game, the costume in it, else the normal headgear (L.gear); a piece in
+// two or three slots shows from its highest (upper, middle, lower) and leaves the others empty, so a costume in that slot hides all of
+// it. The garment is the costume one, else the normal one
+function wornOf(L){const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,cos=L.cos||{},gear=L.gear||{},look=id=>CL&&id&&CL.items[id];
+  const slotsOf=id=>(typeof COSTUMES!=="undefined"&&COSTUMES[id])||(CL&&(CL.cos[id]||CL.gear[id]))||[];
+  const shown=k=>{for(const w of [cos,gear])if(w[k])return ["upper","middle","lower"].find(s=>slotsOf(w[k]).includes(s))===k?w[k]:null;return null};
+  const r=look(cos.garment||gear.garment);
+  return {head:["lower","upper","middle"].map(shown).map(look).filter(x=>x&&x[0]==="h").map(x=>x[1]),robe:r&&r[0]==="r"?r[1]:null}}
 // a job's look as a canvas placed from the feet (in an .ewFeet), painted by drawLook once the sheets load: L is a look like state.look
 // ({sex, hair, color, dye}, cos: the costumes worn and gear: the normal headgear and garment, each {upper, middle, lower, garment: item
 // id}), trans a 2nd job's transcendent look. A job with no look of its own (or no look for the gender) takes the Novice's, or its one gender's
 function lookCanvas(job,L,trans){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";
   const tj=trans&&EW_TRANS[job]&&S.trans&&S.trans[job],bj=tj||S.body[job]||S.body.Novice,sex=bj[L.sex]?L.sex:Object.keys(bj)[0],b=bj[sex],
     hs=S.head[sex]||{},hair=hs[L.hair]?L.hair:1,h=hs[hair],pk=tj?"transPal":"bodyPal",pj=tj||S.body[job]?job:"Novice";
-  // costumes and headgear (data/costumelooks.js). Each headgear slot shows, as in game, the costume in it, else the normal headgear; a
-  // piece in two or three slots shows from its highest (upper, middle, lower) and leaves the others empty, so a costume in that slot
-  // hides all of it. Drawn on the head anchor, lower, upper then middle as the client stacks them. The garment (a costume, else the
-  // normal one) from the feet, on this body's garment sheet, behind the body unless the client draws it on top
-  const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,cos=L.cos||{},gear=L.gear||{},look=id=>CL&&id&&CL.items[id];
-  const slotsOf=id=>(typeof COSTUMES!=="undefined"&&COSTUMES[id])||(CL&&(CL.cos[id]||CL.gear[id]))||[];
-  const shown=k=>{for(const w of [cos,gear])if(w[k])return ["upper","middle","lower"].find(s=>slotsOf(w[k]).includes(s))===k?w[k]:null;return null};
-  const acc=["lower","upper","middle"].map(shown).filter(id=>look(id)&&look(id)[0]==="h")
-    .map(id=>(CL.head.at[look(id)[1]]||{})[sex]).filter(Boolean),rk=tj?job+"+":S.body[job]?job:"Novice";
-  const rl=look(cos.garment||gear.garment),rs=rl&&rl[0]==="r"&&CL.robe.bodies[rk],ra=rs&&(rs.at[rl[1]]||{})[sex];
+  // what it wears (wornOf): headgear on the head anchor, the garment from the feet on this body's garment sheet, behind the body unless
+  // the client draws it on top
+  const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,w=wornOf(L),rk=tj?job+"+":S.body[job]?job:"Novice";
+  const acc=w.head.map(v=>(CL.head.at[v]||{})[sex]).filter(Boolean),rs=w.robe&&CL.robe.bodies[rk],ra=rs&&(rs.at[w.robe]||{})[sex];
   // body and head go into one canvas at the sprites' own size, which the page then scales: as separate boxes each rounded to the
   // screen's pixels on its own, so at some zooms the head sat a pixel off the body
   const parts=[[...b.slice(0,4),b[4],b[5]],...h?[[...h.slice(0,4),b[6]+h[4],b[7]+h[5]]]:[],...acc.map(a=>[...a.slice(0,4),b[6]+a[4],b[7]+a[5]]),...ra?[ra]:[]];
   const l=Math.min(...parts.map(p=>p[4])),t=Math.min(...parts.map(p=>p[5])),r=Math.max(...parts.map(p=>p[4]+p[2])),bt=Math.max(...parts.map(p=>p[5]+p[3]));
   const at=(p,x,y)=>[...p.slice(0,4),x-l,y-t].join(","),bp=((S[pk]||{})[pj]||{})[sex],dye=bp&&L.dye<bp.c.length?L.dye:0,color=L.color<ewColors(sex,hair)?L.color:0;
   return `<canvas class="ewPic" width="${r-l}" height="${bt-t}" style="left:${l}px;top:${t}px" data-body="${at(b,b[4],b[5])}" data-pal="${pk},${pj},${sex}" data-dye="${dye}"${h?` data-head="${at(h,b[6]+h[4],b[7]+h[5])}" data-hair="${sex},${hair},${color}"`:""}`+
-    `${acc.length?` data-acc="${acc.map(a=>at(a,b[6]+a[4],b[7]+a[5])).join(";")}"`:""}${ra?` data-robe="${rk},${at(ra,ra[4],ra[5])},${CL.robe.top.includes(rl[1])?1:0}"`:""}></canvas>`}
+    `${acc.length?` data-acc="${acc.map(a=>at(a,b[6]+a[4],b[7]+a[5])).join(";")}"`:""}${ra?` data-robe="${rk},${at(ra,ra[4],ra[5])},${CL.robe.top.includes(w.robe)?1:0}"`:""}></canvas>`}
 function lookHtml(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";const tj=ewTrans(S),bj=(state.look.trans&&tj)||S.body[state.job]||S.body.Novice,sex=ewSex(bj),hs=S.head[sex]||{};
   const one=Object.keys(bj).length<2,hair=hs[state.look.hair]?state.look.hair:1,nc=ewColors(sex,hair),color=state.look.color<nc?state.look.color:0;
   const pal=S.hairPal&&S.hairPal[sex]&&S.hairPal[sex][hair],swatch=pal?pal.c[color].substr(pal.k*6,6):"";

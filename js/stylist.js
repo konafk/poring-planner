@@ -37,13 +37,30 @@ function renderStyCos(v){const t=state.stylist,[kind,slot]=STY_AT,q=$("styCosQ")
   $("styCosN").textContent=`${all.length} ${STY_SLOTS.find(([k])=>k===slot)[1].toLowerCase()} ${kind==="cos"?"costumes":"headgear"}`;
   $("styCosList").innerHTML=list.map(id=>{const ok=styCosOk(id,v),on=Object.values(t[kind]).includes(+id);
     return `<button type="button" class="styCos" data-stycos="${id}" aria-pressed="${on}"${ok||on?"":` disabled title="The game client has no look of it for a ${esc(v.trans?EW_TRANS[v.job]:v.job)}${v.one?"":` (${v.sex==="f"?"female":"male"})`}"`}>${itemIcon(+id)}<span>${esc(styCosName(id))}</span></button>`}).join("")||'<div class="note">Nothing matches.</div>'}
+// the preview's animation (js/lookanim.js): the action and direction (not saved), when the action started, and the frame it asked for
+const STY_ANIM={act:"stand",dir:0,t0:0,raf:0};
+// one frame of the preview: the look as it is now, doing the action; the still look stays in view while a piece it needs loads
+function styAnimTick(now){STY_ANIM.raf=0;const c=$("styAnimCanvas");if(!c||$("styCard").hidden)return;
+  const v=styleOf(),o={job:v.job,trans:v.trans,sex:v.sex,hair:v.hair,color:v.color,dye:v.dye,worn:wornOf({cos:state.stylist.cos,gear:state.stylist.gear})};
+  const g=c.getContext("2d");g.clearRect(0,0,c.width,c.height);
+  const ok=lookAnimDraw(g,o,STY_ANIM.act,STY_ANIM.dir,now-STY_ANIM.t0,c.width/2,c.height-32,styAnimRun);
+  c.hidden=!ok;const s=$("styPreview").querySelector(".ewStage");if(s)s.hidden=ok;
+  if(ok)styAnimRun()}
+// the next frame in 40 ms (the client's frames last 100 ms or more), on a timer rather than animation frames, which some embedded
+// browsers hold back
+function styAnimRun(){if(!STY_ANIM.raf&&typeof performance!=="undefined")STY_ANIM.raf=setTimeout(()=>styAnimTick(performance.now()),40)}
 // one choice in a grid: its picture and number, pressed when it's the one in the look
 const styOpt=(k,n,on,pic,label)=>`<button type="button" class="styOpt" data-sty${k}="${n}" aria-pressed="${on}" title="${esc(label)}">${pic}<span class="mono">${n}</span></button>`;
 const styStage=(job,L,trans)=>`<span class="ewStage"><span class="ewFeet">${lookCanvas(job,L,trans)}</span></span>`;
 function renderStylist(){if(typeof JOB_SPRITES==="undefined")return;const v=styleOf(),L={sex:v.sex,hair:v.hair,color:v.color,dye:v.dye,cos:state.stylist.cos,gear:state.stylist.gear};
   (styPick=styPick||classPicker($("styJob"),[["Novice & 1st jobs",j=>!SECOND(j)],["2nd jobs",SECOND]].map(([g,f])=>[g,Object.keys(JOB_SPRITES.body).filter(f)]),
     j=>{state.stylist.job=j;save();renderStylist()},()=>{const w=styleOf();return [{sex:w.sex,hair:w.hair,color:w.color,dye:w.dye,trans:w.trans}]}))(v.job);
-  $("styPreview").innerHTML=styStage(v.job,L,v.trans);
+  // the still look, then the animated one over it once its pieces load (where the client's frames were exported)
+  const anim=typeof LOOK_FILES!=="undefined"&&LOOK_HAS[`body/${v.trans?v.job+"+":v.job}-${v.sex}`];
+  $("styPreview").innerHTML=styStage(v.job,L,v.trans)+(anim?'<canvas id="styAnimCanvas" class="styAnim" width="180" height="200" hidden></canvas>':"");
+  $("styAnimCtl").innerHTML=anim?`<button type="button" class="small" data-styturn="1" aria-label="Turn left" title="Turn">⟲</button><span class="note styDir">${LOOK_DIRS[STY_ANIM.dir]}</span><button type="button" class="small" data-styturn="-1" aria-label="Turn right" title="Turn">⟳</button>`+
+    LOOK_ACTS.map(([k,n])=>`<button type="button" class="small" data-styact="${k}" aria-pressed="${STY_ANIM.act===k}">${n}</button>`).join(""):"";
+  if(anim)styAnimRun();
   $("stySex").innerHTML=["m","f"].map(s=>`<button type="button" class="small" data-stysex="${s}" aria-pressed="${v.sex===s}"${v.one&&v.sex!==s?` disabled title="${esc(v.job)}s are ${v.sex==="f"?"female":"male"} only"`:""}>${s==="f"?"♀ Female":"♂ Male"}</button>`).join("")+
     (v.canTrans?`<button type="button" class="small" data-stytrans="" aria-pressed="${v.trans}" title="${esc(`${EW_TRANS[v.job]} look: Ragnarok Zero has no transcendent jobs, so a ${v.job} can look like a ${EW_TRANS[v.job]}. A Costume Change Ticket switches the look in game`)}">${esc(EW_TRANS[v.job])} look</button>`:"");
   $("stySum").textContent=`${v.trans?EW_TRANS[v.job]:v.job} · clothes colour ${v.dye} of 0–${v.dyes-1} · hair style ${v.hair} of 1–${v.hairs} · hair colour ${v.color} of 0–${v.colors-1}`;
@@ -61,6 +78,8 @@ $("styCard").addEventListener("click",e=>{const b=e.target.closest("button");if(
   if(d.stysex){keep();t.sex=d.stysex}else if(d.stytrans!=null){keep();t.trans=!v.trans}else if(d.stydye){keep();t.dye=+d.stydye}
   else if(d.styhair){keep();t.hair=+d.styhair}else if(d.stycolor){keep();t.color=+d.stycolor}
   else if(d.styslot){STY_AT=d.styslot.split(",");renderStyCos(v);return}
+  else if(d.styturn){STY_ANIM.dir=(STY_ANIM.dir+ +d.styturn+8)%8;renderStylist();return}
+  else if(d.styact){STY_ANIM.act=d.styact;STY_ANIM.t0=performance.now();renderStylist();return}
   else if(d.styoff){const [kd,k]=d.styoff.split(",");keep();styWear(kd,t[kd][k])}else if(d.stycos){keep();styWear(STY_AT[0],+d.stycos)}else return;
   save();renderStylist()});
 $("styMine").addEventListener("click",()=>{state.stylist={job:state.job||"Novice",...state.look,cos:state.stylist.cos,gear:state.stylist.gear};save();renderStylist()});
