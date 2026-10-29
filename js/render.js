@@ -146,12 +146,11 @@ const KEY_START="rozero-farm-planner-start-hidden";
 const charSet=(c=C())=>c.mode==="build"||STATS.every(k=>statVal(c,k)!=null);
 const NO_CHAR_TXT="Set up your character on the Character tab to see your kill time, EXP / min and zeny a kill";
 function renderStart(){const box=$("startCard"),c=C(),s=cur(),n=s.entries.length;
-  // any session counts, so a new, empty session doesn't bring the card back; once all three are done it stays away
-  const done={char:charSet(c),mob:state.sessions.some(x=>(x.mobIds||[]).length),log:atMaxLv()||state.sessions.some(x=>(x.entries||[]).length>=2)};
+  // any session counts, so a new, empty session doesn't bring the card back; once both are done it stays away
+  const done={char:charSet(c),mob:state.sessions.some(x=>(x.mobIds||[]).length)};
   let off=false;try{off=localStorage.getItem(KEY_START)==="1";if(!off&&Object.values(done).every(Boolean)){localStorage.setItem(KEY_START,"1");off=true}}catch(e){}
   box.hidden=off||Object.values(done).every(Boolean);
   box.querySelectorAll("[data-step]").forEach(li=>li.classList.toggle("done",!!done[li.dataset.step]));
-  $("startLogTxt").textContent=n===1?"One entry in: log again in a few minutes for your EXP/hr.":"Type your EXP % now, and again in a few minutes: two entries give your EXP/hr.";
   // the Session tab's tiles wait for the first entry instead of showing nine dashes
   $("tCurLv").closest(".tiles").classList.toggle("noData",!n)}
 // ---- top bar trend: EXP %/hr between this session's entries (paused time left out), and its average ----

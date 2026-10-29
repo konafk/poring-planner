@@ -75,27 +75,26 @@
   </header>
   <section class="homeHero" data-tab="home" aria-labelledby="homeTitle">
     <div class="homeLinks"><a href="#Roadmap" class="homeNext" id="homeNext" data-gotab="roadmap"></a><a href="#What-s-new" class="homeNext homeNews" id="homeNews" data-gotab="news" hidden></a></div>
-    <h1 id="homeTitle">Know where to farm before you go</h1>
-    <p>Enter your character once and the planner works out your damage, kill speed, EXP/hr and zeny/hr against every monster, ranks the open maps for you, then tracks your real EXP while you farm. It all runs in this browser: no login, and your data stays here.</p>
-    <div class="bar homeActs"><button type="button" class="primary" data-gotab="char" id="homeCharBtn">Set up your character</button><button type="button" data-gotab="maps">Find where to farm</button><button type="button" id="homeSearch">Search <kbd>/</kbd></button></div>
+    <h1 id="homeTitle">Everything for Ragnarok Zero, in one place</h1>
+    <p>Look up any monster, item, map, gear, card, skill or recipe from the game client. Plan your build, skills and farming spots, work out memorial dungeon and ★ weapon costs, roll brewing and cooking, and keep up with prices and the roadmap. Enter your character once and every tab uses your numbers. No login: your data stays in this browser.</p>
+    <div class="bar homeActs"><button type="button" class="primary" id="homeSearch">Search everything <kbd>/</kbd></button><button type="button" data-gotab="char" id="homeCharBtn">Set up your character</button><button type="button" data-gotab="news">What's new</button></div>
     <div class="homeCounts" id="homeCounts"></div>
   </section>
   <section class="startCard" id="startCard" hidden aria-labelledby="startTitle">
-    <div class="startHead"><div><div class="eyebrow">Get started</div><h2 id="startTitle">Three steps to your real EXP/hr</h2></div><button type="button" class="iconX" id="startHide" aria-label="Hide get started" title="Hide this">×</button></div>
+    <div class="startHead"><div><div class="eyebrow">Get started</div><h2 id="startTitle">Set up once, and every tab uses your numbers</h2></div><button type="button" class="iconX" id="startHide" aria-label="Hide get started" title="Hide this">×</button></div>
     <ol class="steps">
       <li data-step="char"><span class="stepN" aria-hidden="true">1</span><div class="stepTxt"><b>Set up your character</b><span>Pick your job and type your six stats from the in-game status window.</span></div><button type="button" class="small" data-go="char">Open Character</button></li>
-      <li data-step="mob"><span class="stepN" aria-hidden="true">2</span><div class="stepTxt"><b>Pick where to farm</b><span>Press "Farm here" on one of the best spots for your character.</span></div><button type="button" class="small" data-go="maps">Find a spot</button></li>
-      <li data-step="log"><span class="stepN" aria-hidden="true">3</span><div class="stepTxt"><b>Log your EXP twice</b><span id="startLogTxt">Type your EXP % now, and again in a few minutes: two entries give your EXP/hr.</span></div><button type="button" class="small primary" data-go="log">Log EXP</button></li>
+      <li data-step="mob"><span class="stepN" aria-hidden="true">2</span><div class="stepTxt"><b>Pick where to farm</b><span>Press "Farm here" on one of the best spots for your character.</span></div><button type="button" class="small primary" data-go="maps">Find a spot</button></li>
     </ol>
+  </section>
+  <section class="card" id="homeToolsCard" data-tab="home">
+    <h2>Everything in Poring Planner</h2>
+    <div class="homeTools" id="homeTools"></div>
   </section>
   <section class="card" id="homeNowCard" data-tab="home">
     <div class="bar"><h2 class="grow">Pick up where you left off</h2><span class="note" id="homeNowNote"></span></div>
     <div class="tiles homeTiles" id="homeTiles"></div>
     <div class="spotCol" id="homeSpots"></div>
-  </section>
-  <section class="card" id="homeToolsCard" data-tab="home">
-    <h2>Everything in the planner</h2>
-    <div class="homeTools" id="homeTools"></div>
   </section>
   <section class="card" data-tab="acct">
     <div class="bar"><h2 class="grow">Backup</h2><span class="note hint">Saved only in this browser. Copy backup copies every account. Copy share link makes a link to this account that anyone can open.</span></div>
