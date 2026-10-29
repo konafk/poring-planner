@@ -14,7 +14,7 @@ the client isn't, so what the client says goes in a file of its own that only th
   card slots, and bonus lines read from its simple sentences (stat lists, "For every N refine levels", "At +N refine", "for each refine
   level above +N"); a sentence it can't read stays in the text only and is printed. Only "All Jobs" gear is built (the job lists of
   the rest would need reading), and weapons are left for the database, which has their weapon type; both are printed.
-- items: items in the client that no data file has (new event items, packages, costumes), with a category and their text in
+- items: items in the client that no data file has (new event items and cards, packages, costumes), with a category and their text in
   data/itemtext.js's form (tools/export_itemtext.py's clean).
 - art: the client's pictures, as sheets like tools/export_icons.py's (img/<kind>-client.png): card pictures (data.grf's
   data\\num2cardillustnametable.txt gives each card id its picture's name, data\\texture\\유저인터페이스\\cardbmp\\<name>.bmp,
@@ -115,7 +115,9 @@ def build(i, v, d, st):
     return {k: x for k, x in row.items() if x not in (None, [], "")}, unread
 
 
-def category(name, d):
+def category(name, d, st):
+    if st.get("Type") == "Card":
+        return "Card"
     if d.get("costume") or name.startswith("[Costume]"):
         return "Costume"
     if name.endswith(" Egg"):
@@ -192,8 +194,9 @@ def main():
                     unread[name] = bad
                 continue
             skipped.append(f"{name} ({st.get('Type')})")
-        items[i] = [name, category(name, d), clean(ls)]
+        items[i] = [name, category(name, d, st), clean(ls)]
     from export_minimaps import DesGrf
+    wanted = {}
     grf, art, res = DesGrf(os.path.join(client, "data.grf")), {}, {i: d.get("identifiedResourceName") for i, d in data.items()}
     card_ids, gear_ids = [c["id"] for c in cards], [e["id"] for e in eq] + [g["id"] for g in gear]
     other = sorted(({i for f, c in [("items.js", "ITEMN"), ("recipes.js", "RECIPE_ITEMN"), ("consumables.js", "CONSUM"), ("recovery.js", "RECOVERY"),
@@ -201,7 +204,8 @@ def main():
                    - set(card_ids) - set(gear_ids))
     # card pictures shrunk to their cell; icons as they are (24 x 24), and only when they're icon-sized
     for kind, want, names, folder, (W, H, cols), card in (
-            ("card", card_ids, card_names(grf), "cardbmp", (CARD_W, CARD_H, CARD_COLS), True),
+            # cards the database doesn't have yet (the Gatchaman event cards) get their picture too
+            ("card", card_ids + [i for i, x in items.items() if x[1] == "Card"], card_names(grf), "cardbmp", (CARD_W, CARD_H, CARD_COLS), True),
             ("gear", gear_ids, res, "item", (GEAR_W, GEAR_H, GEAR_COLS), False),
             ("item", other, res, "item", (GEAR_W, GEAR_H, ITEM_COLS), False)):
         pics = pictures(grf, {i: names.get(i) for i in want}, folder, opaque=card)
@@ -209,6 +213,7 @@ def main():
         file = f"img/{kind}-client.png"
         v = sheet([shrink(pics[i], W, H) if card else pics[i] for i in got], W, H, cols, os.path.join(ROOT, "img", f"{kind}-client.png"))
         art[kind] = {"file": file, "v": v, "w": W, "h": H, "cols": cols, "ids": got}
+        wanted[kind] = len(want)
     # a new item with no icon in the client isn't out on Global yet (Fei-Chai Egg, Tai-zi Egg): left out
     unreleased = [items.pop(i)[0] for i in list(items) if i not in art["item"]["ids"]]
     if unreleased:
@@ -228,7 +233,7 @@ def main():
                 "  // the database's sheets stay as the fallback for what the client has no picture for (js/build-ui.js iconHtml)\n"
                 "  Object.entries(CLIENT.art).forEach(([k,s])=>{if(s.ids.length){ICON_SHEETS[k+\"Db\"]=ICON_SHEETS[k];ICON_SHEETS[k]=s}})})();\n")
     print(f"{len(text)} texts, {len(fix)} fixes, {len(gear)} new gear ({', '.join(g['name'] for g in gear)}), {len(items)} new items; pictures: "
-          + ", ".join(f"{len(s['ids'])} of {n} {k}" for (k, s), n in zip(art.items(), (len(card_ids), len(gear_ids), len(other)))))
+          + ", ".join(f"{len(s['ids'])} of {wanted[k]} {k}" for k, s in art.items()))
     for k in ("name", "slots", "lv", "def", "atk", "matk", "wlv"):
         n = [f"{i}" for i, f in fix.items() if k in f]
         if n:
