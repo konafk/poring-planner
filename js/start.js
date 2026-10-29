@@ -28,11 +28,11 @@ function showHero(t){
   let g=b.previousElementSibling;while(g&&!g.classList.contains("navGrp"))g=g.previousElementSibling;
   $("heroGrp").textContent=g?g.textContent:"";$("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
 }
-// a link to a tab: #Memorial-dungeons (its name, any case) or #mem (its key); the address bar always shows the open tab's link. A name
-// goes before a key: #Maps is the Maps tab, not Monsters & maps (key maps)
-const tabSlug=t=>document.querySelector(`[data-tabbtn="${t}"] span`).textContent.replace(/[^A-Za-z0-9]+/g,"-").replace(/^-|-$/g,"");
+// a link to a tab: #memorial-dungeons (its name, any case) or #mem (its key); the address bar always shows the open tab's link, in
+// lower case. A name goes before a key: #maps is the Maps tab, not Monsters & maps (key maps)
+const tabSlug=t=>document.querySelector(`[data-tabbtn="${t}"] span`).textContent.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 function hashTab(){let h="";try{h=decodeURIComponent(location.hash.slice(1)).toLowerCase()}catch(e){}if(!h)return null;
-  const bs=[...document.querySelectorAll("[data-tabbtn]")],b=bs.find(b=>tabSlug(b.dataset.tabbtn).toLowerCase()===h)||bs.find(b=>b.dataset.tabbtn===h);
+  const bs=[...document.querySelectorAll("[data-tabbtn]")],b=bs.find(b=>tabSlug(b.dataset.tabbtn)===h)||bs.find(b=>b.dataset.tabbtn===h);
   return b?b.dataset.tabbtn:null}
 function showTab(t,local){
   if(t==="data")t="acct";// the old Data tab is the Account tab
