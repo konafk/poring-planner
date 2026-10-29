@@ -1,6 +1,6 @@
-// ---- Stylist tab (Simulators): a job's look in every clothes colour, hair style and hair colour the game client has, to try styles on
-// any job. Saved per account in state.stylist = {job, sex, hair, color, dye, trans}; "Use as my look" copies it to the equipment
-// window's look (state.look), and "Start from my look" brings yours in ----
+// ---- Stylist tab (Simulators): a job's look in every clothes colour, hair style and hair colour the game client has, and its costumes,
+// to try styles on any job. Saved per account in state.stylist = {job, sex, hair, color, dye, trans, cos: {upper, middle, lower, garment:
+// item id}}; "Use as my look" copies the look (not the costumes) to the equipment window's (state.look), "Start from my look" brings yours in ----
 // the look as it can be drawn: the job (yours, else Novice, when none is picked), its body (the transcendent one for a 2nd job with trans
 // on), the gender it has (Bards are male, Dancers female), and how many hair styles, hair colours and clothes colours there are
 function styleOf(){const S=JOB_SPRITES,t=state.stylist,job=S.body[t.job]?t.job:S.body[state.job]?state.job:"Novice";
@@ -8,28 +8,55 @@ function styleOf(){const S=JOB_SPRITES,t=state.stylist,job=S.body[t.job]?t.job:S
   const pal=((S[tj?"transPal":"bodyPal"]||{})[job]||{})[sex],dyes=pal?pal.c.length:1,hairs=ewHairs(sex),hair=t.hair<=hairs?t.hair:1,colors=ewColors(sex,hair);
   return {job,trans:!!tj,canTrans,sex,one:Object.keys(bj).length<2,hair,hairs,color:t.color<colors?t.color:0,colors,dye:t.dye<dyes?t.dye:0,dyes,pal}}
 let styPick=null;
+// the costume slots, and the costumes that go in each (data/costumes.js) with a look in the client (data/costumelooks.js), by name
+const STY_SLOTS=[["upper","Upper"],["middle","Middle"],["lower","Lower"],["garment","Garment"]];
+let STY_SLOT="upper";
+const styCosName=id=>((typeof CLIENT_ITEMS!=="undefined"&&CLIENT_ITEMS[id])||[])[0]||`Costume ${id}`;
+const STY_COS=Object.fromEntries(STY_SLOTS.map(([k])=>[k,Object.keys(typeof COSTUMES!=="undefined"?COSTUMES:{})
+  .filter(id=>COSTUMES[id].includes(k)&&typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS.items[id]).sort((a,b)=>styCosName(a).localeCompare(styCosName(b)))]));
+// whether a costume can be drawn on this look: headgear for the gender, a garment for the job's body (or its transcendent one) and gender
+function styCosOk(id,v){const [kind,view]=COSTUME_LOOKS.items[id];
+  if(kind==="h")return !!(COSTUME_LOOKS.head.at[view]||{})[v.sex];
+  const b=COSTUME_LOOKS.robe.bodies[v.trans?v.job+"+":v.job];return !!(b&&(b.at[view]||{})[v.sex])}
+// wear a costume in every slot it takes, taking off whatever was in them; or take it off when it's on
+function styWear(id){const c=state.stylist.cos,on=Object.values(c).includes(id);
+  const off=x=>Object.keys(c).forEach(k=>{if(c[k]===x)delete c[k]});
+  if(on){off(id);return}COSTUMES[id].forEach(k=>{if(c[k])off(c[k])});COSTUMES[id].forEach(k=>{if(STY_SLOTS.some(([s])=>s===k))c[k]=id})}
+function renderStyCos(v){const c=state.stylist.cos,q=$("styCosQ").value.trim().toLowerCase();
+  $("stySlots").innerHTML=STY_SLOTS.map(([k,n])=>`<span class="styslot"><button type="button" class="small" data-styslot="${k}" aria-pressed="${STY_SLOT===k}">${n}: ${c[k]?esc(styCosName(c[k])):'<span class="muted">none</span>'}</button>${c[k]?`<button type="button" class="small" data-styoff="${k}" aria-label="Take off the ${n.toLowerCase()} costume" title="Take it off">×</button>`:""}</span>`).join("");
+  const list=STY_COS[STY_SLOT].filter(id=>!q||styCosName(id).toLowerCase().includes(q)||id===q);
+  $("styCosN").textContent=`${STY_COS[STY_SLOT].length} ${STY_SLOTS.find(([k])=>k===STY_SLOT)[1].toLowerCase()}`;
+  $("styCosList").innerHTML=list.map(id=>{const ok=styCosOk(id,v),on=Object.values(c).includes(+id);
+    return `<button type="button" class="styCos" data-stycos="${id}" aria-pressed="${on}"${ok||on?"":` disabled title="The game client has no look of it for a ${esc(v.trans?EW_TRANS[v.job]:v.job)}${v.one?"":` (${v.sex==="f"?"female":"male"})`}"`}>${itemIcon(+id)}<span>${esc(styCosName(id))}</span></button>`}).join("")||'<div class="note">No costume matches.</div>'}
 // one choice in a grid: its picture and number, pressed when it's the one in the look
 const styOpt=(k,n,on,pic,label)=>`<button type="button" class="styOpt" data-sty${k}="${n}" aria-pressed="${on}" title="${esc(label)}">${pic}<span class="mono">${n}</span></button>`;
 const styStage=(job,L,trans)=>`<span class="ewStage"><span class="ewFeet">${lookCanvas(job,L,trans)}</span></span>`;
-function renderStylist(){if(typeof JOB_SPRITES==="undefined")return;const v=styleOf(),L={sex:v.sex,hair:v.hair,color:v.color,dye:v.dye};
+function renderStylist(){if(typeof JOB_SPRITES==="undefined")return;const v=styleOf(),L={sex:v.sex,hair:v.hair,color:v.color,dye:v.dye,cos:state.stylist.cos};
   (styPick=styPick||classPicker($("styJob"),[["Novice & 1st jobs",j=>!SECOND(j)],["2nd jobs",SECOND]].map(([g,f])=>[g,Object.keys(JOB_SPRITES.body).filter(f)]),
     j=>{state.stylist.job=j;save();renderStylist()},()=>{const w=styleOf();return [{sex:w.sex,hair:w.hair,color:w.color,dye:w.dye,trans:w.trans}]}))(v.job);
   $("styPreview").innerHTML=styStage(v.job,L,v.trans);
   $("stySex").innerHTML=["m","f"].map(s=>`<button type="button" class="small" data-stysex="${s}" aria-pressed="${v.sex===s}"${v.one&&v.sex!==s?` disabled title="${esc(v.job)}s are ${v.sex==="f"?"female":"male"} only"`:""}>${s==="f"?"♀ Female":"♂ Male"}</button>`).join("")+
     (v.canTrans?`<button type="button" class="small" data-stytrans="" aria-pressed="${v.trans}" title="${esc(`${EW_TRANS[v.job]} look: Ragnarok Zero has no transcendent jobs, so a ${v.job} can look like a ${EW_TRANS[v.job]}. A Costume Change Ticket switches the look in game`)}">${esc(EW_TRANS[v.job])} look</button>`:"");
   $("stySum").textContent=`${v.trans?EW_TRANS[v.job]:v.job} · clothes colour ${v.dye} of 0–${v.dyes-1} · hair style ${v.hair} of 1–${v.hairs} · hair colour ${v.color} of 0–${v.colors-1}`;
-  // clothes colours on the whole look; hair styles (each in your hair colour, or its first where it has fewer) and hair colours as heads
-  $("styDyes").innerHTML=Array.from({length:v.dyes},(_,d)=>styOpt("dye",d,d===v.dye,styStage(v.job,{...L,dye:d},v.trans),d?`Clothes colour ${d}`:"Clothes colour 0: undyed")).join("");
+  // clothes colours on the whole look without its costumes (which can cover the clothes and reach past a tile; only the preview wears
+  // them); hair styles (each in your hair colour, or its first where it has fewer) and hair colours as heads
+  $("styDyes").innerHTML=Array.from({length:v.dyes},(_,d)=>styOpt("dye",d,d===v.dye,styStage(v.job,{...L,dye:d,cos:{}},v.trans),d?`Clothes colour ${d}`:"Clothes colour 0: undyed")).join("");
   $("styHairs").innerHTML=Array.from({length:v.hairs},(_,i)=>i+1).map(n=>styOpt("hair",n,n===v.hair,headCanvas(v.sex,n,v.color<ewColors(v.sex,n)?v.color:0,2),`Hair style ${n}`)).join("");
   $("styColors").innerHTML=Array.from({length:v.colors},(_,c)=>styOpt("color",c,c===v.color,headCanvas(v.sex,v.hair,c,2),`Hair colour ${c}`)).join("");
   $("styDyeN").textContent=v.dyes;$("styHairN").textContent=v.hairs;$("styColorN").textContent=v.colors;
+  if(typeof COSTUME_LOOKS!=="undefined")renderStyCos(v);
   drawLook($("styCard"))}
 $("styCard").addEventListener("click",e=>{const b=e.target.closest("button");if(!b||b.disabled)return;const t=state.stylist,v=styleOf(),d=b.dataset;
   // a choice keeps the rest of the look as it's drawn now (a new gender or job starts from the hair and colours that fit it)
   const keep=()=>Object.assign(t,{job:v.job,sex:v.sex,hair:v.hair,color:v.color,dye:v.dye,trans:v.trans});
   if(d.stysex){keep();t.sex=d.stysex}else if(d.stytrans!=null){keep();t.trans=!v.trans}else if(d.stydye){keep();t.dye=+d.stydye}
-  else if(d.styhair){keep();t.hair=+d.styhair}else if(d.stycolor){keep();t.color=+d.stycolor}else return;
+  else if(d.styhair){keep();t.hair=+d.styhair}else if(d.stycolor){keep();t.color=+d.stycolor}
+  else if(d.styslot){STY_SLOT=d.styslot;renderStyCos(v);return}else if(d.styoff){keep();styWear(t.cos[d.styoff])}else if(d.stycos){keep();styWear(+d.stycos)}else return;
   save();renderStylist()});
-$("styMine").addEventListener("click",()=>{state.stylist={job:state.job||"Novice",...state.look};save();renderStylist()});
+$("styMine").addEventListener("click",()=>{state.stylist={job:state.job||"Novice",...state.look,cos:state.stylist.cos};save();renderStylist()});
+$("styCosQ").addEventListener("input",()=>renderStyCos(styleOf()));
+// each section folds away, remembered like a card (state.collapsed)
+[["styFoldCos","Stylist: costumes"],["styFoldDye","Stylist: clothes colours"],["styFoldHair","Stylist: hair styles"],["styFoldColor","Stylist: hair colours"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
+  d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[key])return;if(d.open)delete c[key];else c[key]=true;save()})});
 $("styUse").addEventListener("click",()=>{const v=styleOf();state.look={sex:v.sex,hair:v.hair,color:v.color,dye:v.dye,trans:v.trans};save();
   if(typeof renderEquipWin==="function")renderEquipWin();showToast("Your character's look in the equipment window is now this one")});

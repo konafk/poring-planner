@@ -843,13 +843,25 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <div class="note" id="stySum"></div>
       </div>
     </div>
-    <h3>Clothes colours <span class="note" id="styDyeN"></span></h3>
-    <div class="styGrid styLooks" id="styDyes"></div>
-    <h3>Hair styles <span class="note" id="styHairN"></span></h3>
-    <div class="styGrid styHeads" id="styHairs"></div>
-    <h3>Hair colours <span class="note" id="styColorN"></span></h3>
-    <div class="styGrid styHeads" id="styColors"></div>
-    <div class="note hint">Every look the game client has for a job: its clothes colours (0 is undyed; a Clothing Dye Coupon or Clothing Dye Coupon II from the KP shop changes it in game), and every hair style and hair colour (after character creation a paid KP shop item, such as a New Style Coupon, changes them). Click one to try it; Use as my look puts it on your character in the Character tab's equipment window.</div>
+    <details class="card sub styFold" id="styFoldCos" open>
+      <summary><b>Costumes</b> <span class="note" id="styCosN"></span></summary>
+      <div class="bar styOpts" id="stySlots"></div>
+      <input type="search" class="styCosQ" id="styCosQ" placeholder="Search this slot's costumes" aria-label="Search costumes">
+      <div class="styCosList" id="styCosList"></div>
+    </details>
+    <details class="card sub styFold" id="styFoldDye" open>
+      <summary><b>Clothes colours</b> <span class="note" id="styDyeN"></span></summary>
+      <div class="styGrid styLooks" id="styDyes"></div>
+    </details>
+    <details class="card sub styFold" id="styFoldHair" open>
+      <summary><b>Hair styles</b> <span class="note" id="styHairN"></span></summary>
+      <div class="styGrid styHeads" id="styHairs"></div>
+    </details>
+    <details class="card sub styFold" id="styFoldColor" open>
+      <summary><b>Hair colours</b> <span class="note" id="styColorN"></span></summary>
+      <div class="styGrid styHeads" id="styColors"></div>
+    </details>
+    <div class="note hint">Every look the game client has for a job: its clothes colours (0 is undyed; a Clothing Dye Coupon or Clothing Dye Coupon II from the KP shop changes it in game), and every hair style and hair colour (after character creation a paid KP shop item, such as a New Style Coupon, changes them). Costumes are drawn from the client's own sprites, standing and facing you: pick a slot, then a costume (one that takes two slots fills both). Click any of them to try it; Use as my look puts the look (not the costumes) on your character in the Character tab's equipment window.</div>
   </section>
 
   <section class="card" id="brewCard" data-tab="brew">
@@ -967,6 +979,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 <script src="data/stellar.js"></script>
 <script src="data/icons.js"></script>
 <script src="data/sprites.js"></script>
+<script src="data/costumelooks.js"></script>
 <script src="data/iteminfo.js"></script>
 <script src="data/itemtext.js"></script>
 <script src="data/client.js"></script>

@@ -432,17 +432,24 @@ const EW_TRANS={Knight:"Lord Knight",Crusader:"Paladin",Wizard:"High Wizard",Sag
   Priest:"High Priest",Monk:"Champion",Blacksmith:"Whitesmith",Alchemist:"Creator",Assassin:"Assassin Cross",Rogue:"Stalker"};
 const ewTrans=S=>EW_TRANS[state.job]&&S.trans&&S.trans[state.job];
 // a job's look as a canvas placed from the feet (in an .ewFeet), painted by drawLook once the sheets load: L is a look like state.look
-// ({sex, hair, color, dye}), trans a 2nd job's transcendent look. A job with no look of its own (or no look for the gender) takes the
-// Novice's, or its one gender's
+// ({sex, hair, color, dye}, and cos: the costumes worn, {upper, middle, lower, garment: item id}), trans a 2nd job's transcendent look. A
+// job with no look of its own (or no look for the gender) takes the Novice's, or its one gender's
 function lookCanvas(job,L,trans){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";
   const tj=trans&&EW_TRANS[job]&&S.trans&&S.trans[job],bj=tj||S.body[job]||S.body.Novice,sex=bj[L.sex]?L.sex:Object.keys(bj)[0],b=bj[sex],
     hs=S.head[sex]||{},hair=hs[L.hair]?L.hair:1,h=hs[hair],pk=tj?"transPal":"bodyPal",pj=tj||S.body[job]?job:"Novice";
+  // costumes (data/costumelooks.js): headgear on the head anchor, lower, upper then middle as the client stacks them (one that takes
+  // two slots drawn once); the garment from the feet, on this body's garment sheet, behind the body unless the client draws it on top
+  const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,cos=L.cos||{},look=id=>CL&&id&&CL.items[id],seen=new Set();
+  const acc=["lower","upper","middle"].map(k=>cos[k]).filter(id=>look(id)&&look(id)[0]==="h"&&!seen.has(+id)&&seen.add(+id))
+    .map(id=>(CL.head.at[look(id)[1]]||{})[sex]).filter(Boolean),rk=tj?job+"+":S.body[job]?job:"Novice";
+  const rl=look(cos.garment),rs=rl&&rl[0]==="r"&&CL.robe.bodies[rk],ra=rs&&(rs.at[rl[1]]||{})[sex];
   // body and head go into one canvas at the sprites' own size, which the page then scales: as separate boxes each rounded to the
   // screen's pixels on its own, so at some zooms the head sat a pixel off the body
-  const parts=[[...b.slice(0,4),b[4],b[5]],...h?[[...h.slice(0,4),b[6]+h[4],b[7]+h[5]]]:[]];
+  const parts=[[...b.slice(0,4),b[4],b[5]],...h?[[...h.slice(0,4),b[6]+h[4],b[7]+h[5]]]:[],...acc.map(a=>[...a.slice(0,4),b[6]+a[4],b[7]+a[5]]),...ra?[ra]:[]];
   const l=Math.min(...parts.map(p=>p[4])),t=Math.min(...parts.map(p=>p[5])),r=Math.max(...parts.map(p=>p[4]+p[2])),bt=Math.max(...parts.map(p=>p[5]+p[3]));
   const at=(p,x,y)=>[...p.slice(0,4),x-l,y-t].join(","),bp=((S[pk]||{})[pj]||{})[sex],dye=bp&&L.dye<bp.c.length?L.dye:0,color=L.color<ewColors(sex,hair)?L.color:0;
-  return `<canvas class="ewPic" width="${r-l}" height="${bt-t}" style="left:${l}px;top:${t}px" data-body="${at(b,b[4],b[5])}" data-pal="${pk},${pj},${sex}" data-dye="${dye}"${h?` data-head="${at(h,b[6]+h[4],b[7]+h[5])}" data-hair="${sex},${hair},${color}"`:""}></canvas>`}
+  return `<canvas class="ewPic" width="${r-l}" height="${bt-t}" style="left:${l}px;top:${t}px" data-body="${at(b,b[4],b[5])}" data-pal="${pk},${pj},${sex}" data-dye="${dye}"${h?` data-head="${at(h,b[6]+h[4],b[7]+h[5])}" data-hair="${sex},${hair},${color}"`:""}`+
+    `${acc.length?` data-acc="${acc.map(a=>at(a,b[6]+a[4],b[7]+a[5])).join(";")}"`:""}${ra?` data-robe="${rk},${at(ra,ra[4],ra[5])},${CL.robe.top.includes(rl[1])?1:0}"`:""}></canvas>`}
 function lookHtml(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";const tj=ewTrans(S),bj=(state.look.trans&&tj)||S.body[state.job]||S.body.Novice,sex=ewSex(bj),hs=S.head[sex]||{};
   const one=Object.keys(bj).length<2,hair=hs[state.look.hair]?state.look.hair:1,nc=ewColors(sex,hair),color=state.look.color<nc?state.look.color:0;
   const pal=S.hairPal&&S.hairPal[sex]&&S.hairPal[sex][hair],swatch=pal?pal.c[color].substr(pal.k*6,6):"";
@@ -484,8 +491,14 @@ function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),
 // a hair style on its own (the Stylist's hair grids), drawn k times its size, painted by drawLook like a look's canvas
 function headCanvas(sex,hair,color,k=1){const h=typeof JOB_SPRITES!=="undefined"&&(JOB_SPRITES.head[sex]||{})[hair];if(!h)return "";
   return `<canvas class="ewPic lookHead" width="${h[2]}" height="${h[3]}" style="width:${h[2]*k}px;height:${h[3]*k}px" data-head="${[...h.slice(0,4),0,0].join(",")}" data-hair="${sex},${hair},${color}"></canvas>`}
+// the costume sheets (data/costumelooks.js: "head", or a body's garment sheet by job), each loaded the first time a look wears one; the
+// looks are painted again once it has
+const COS_IMG=new Map();
+function costumeImg(key){const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,s=CL&&(key==="head"?CL.head:CL.robe.bodies[key]);if(!s)return null;
+  if(!COS_IMG.has(key))COS_IMG.set(key,Object.assign(new Image(),{onload:()=>drawLook(document),src:`${s.file}?v=${s.v}`}));return COS_IMG.get(key)}
 // each look's canvas in root (lookCanvas, headCanvas): the body [x,y,w,h on the sheet, x,y in the canvas] from the job sheet, each index
-// coloured with the clothes colour's palette, then the head the same from the hair sheet with the hair colour's; once both sheets have loaded
+// coloured with the clothes colour's palette, then the head the same from the hair sheet with the hair colour's; once both sheets have
+// loaded. Costumes are drawn from their sheets as they are: a garment behind the body (or over it), headgear over the head
 function drawLook(root){const bp=ewPx(EW_SHEET),hp=ewPx(EW_HAIR);if(!bp||!hp)return;
   root.querySelectorAll("canvas.ewPic").forEach(c=>{const [k,j,s]=(c.dataset.pal||"").split(","),body=k&&((JOB_SPRITES[k]||{})[j]||{})[s];if(body||!c.dataset.body)paintLook(c,bp,hp,body)})}
 function paintLook(c,bp,hp,body){const g=c.getContext("2d");g.clearRect(0,0,c.width,c.height);
@@ -494,8 +507,13 @@ function paintLook(c,bp,hp,body){const g=c.getContext("2d");g.clearRect(0,0,c.wi
     for(let yy=0;yy<h;yy++)for(let xx=0;xx<w;xx++){const s=((y+yy)*px.width+x+xx)*4,o=(yy*w+xx)*4,rgb=px.data[s+3]&&pal[px.data[s]];
       if(rgb){img.data[o]=parseInt(rgb.slice(0,2),16);img.data[o+1]=parseInt(rgb.slice(2,4),16);img.data[o+2]=parseInt(rgb.slice(4),16);img.data[o+3]=255}}
     const pc=document.createElement("canvas");pc.width=w;pc.height=h;pc.getContext("2d").putImageData(img,0,0);g.drawImage(pc,l,t)};
-  if(c.dataset.body)paint(bp,c.dataset.body,ewPal(body,+c.dataset.dye));if(!c.dataset.head)return;
-  const [sex,n,color]=c.dataset.hair.split(",");paint(hp,c.dataset.head,ewPal(JOB_SPRITES.hairPal[sex][n],+color))}
+  const sheet=(im,at)=>{if(!im||!im.complete||!im.naturalWidth)return;const [x,y,w,h,l,t]=at.map(Number);g.drawImage(im,x,y,w,h,l,t,w,h)};
+  const robe=c.dataset.robe&&c.dataset.robe.split(","),ri=robe&&costumeImg(robe[0]),top=robe&&robe[7]==="1";
+  if(robe&&!top)sheet(ri,robe.slice(1,7));
+  if(c.dataset.body)paint(bp,c.dataset.body,ewPal(body,+c.dataset.dye));
+  if(robe&&top)sheet(ri,robe.slice(1,7));
+  if(c.dataset.head){const [sex,n,color]=c.dataset.hair.split(",");paint(hp,c.dataset.head,ewPal(JOB_SPRITES.hairPal[sex][n],+color))}
+  if(c.dataset.acc){const im=costumeImg("head");c.dataset.acc.split(";").forEach(a=>sheet(im,a.split(",")))}}
 $("equipWin").addEventListener("click",e=>{const t=e.target.closest("button");if(!t||t.disabled)return;const L=state.look;
   if(t.dataset.ewtab){EW_TAB=t.dataset.ewtab;renderEquipWin();return}
   if(t.dataset.ewtrans!=null){L.trans=!L.trans;save();renderEquipWin();return}
