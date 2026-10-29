@@ -231,13 +231,18 @@ def npc_recipes(grf, client):
     Maker]<INFO>map,x,y..</INFO></NAVI> ... if you need <ITEM>..</ITEM> ... Bring 1 <ITEM>..</ITEM>, 100 <ITEM>..</ITEM> ...", with
     where the NPC is from data/navi.js (or the quest's NAVI tag)."""
     import base64
-    out = {}
+    out, offered = {}, {}
     for f in (n for n in grf.ents if n.startswith("data\\i18n\\sc\\") and n.endswith(".csv")):
         for line in grf.read(f).decode("utf-8", "replace").splitlines():
             c = line.split(",")
             if len(c) < 3 or not c[2]:
                 continue
             t = base64.b64decode(c[2]).decode("utf-8", "replace")
+            # the NPC's list of what it makes now: Februs has two, the full menu's (Tip Box links to all five) and one with item links
+            # (Clock Casket, Black Witch Hat), which is what Global offers (seen in game, 29 October 2026)
+            a = re.match(r"\[([^\]]+)\]\s*Here.s the list of items available for commission\.(.*)", t.replace("\n", " "))
+            if a and ITEM_TAG.search(a.group(2)):
+                offered.setdefault(a.group(1), set()).update(int(i) for i in ITEM_TAG.findall(a.group(2)))
             m = re.match(r"\[([^\]]+)\]\s*You mean the " + ITEM_TAG.pattern + r"\.\s*Here.s the material estimate\.(.*?)A crafting fee of ([\d,]+)z",
                          t.replace("\n", " "))
             if m:
@@ -252,7 +257,12 @@ def npc_recipes(grf, client):
             mats = [[int(i), int(n)] for n, i in re.findall(r"(\d+) " + ITEM_TAG.pattern, m.group(6))]
             out[(m.group(1), int(m.group(5)))] = {"cat": "Headgear", "type": "npc", "id": int(m.group(5)), "n": 1, "lv": None, "mats": mats,
                                                    "npc": [m.group(1), npc_at(m.group(1)) or f"{m.group(2)} {m.group(3)},{m.group(4)}"]}
-    return [{k: x for k, x in r.items() if x is not None or k == "lv"} for _, r in sorted(out.items())]
+    # an NPC with an item-linked list only makes what's on it; the rest of its recipes are in the client for later
+    later = sorted(r["id"] for (npc, i), r in out.items() if npc in offered and i not in offered[npc])
+    if later:
+        print(f"  in the dialogue but not offered yet, left out: {later}")
+    return [{k: x for k, x in r.items() if x is not None or k == "lv"} for (npc, i), r in sorted(out.items())
+            if npc not in offered or i in offered[npc]]
 
 
 def card_names(grf):
