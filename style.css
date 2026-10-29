@@ -728,12 +728,14 @@ details.more>.form{display:grid}
 .ico-skill{width:24px;height:24px;background-image:var(--ico-skill)}
 /* an icon in a line of text: it doesn't make the line taller */
 .ico.il{margin:-5px 5px -4px 0}
-.ico-card{width:36px;height:48px;background-image:var(--ico-card);border-radius:3px}
+.ico-card,.ico-cardDb{width:36px;height:48px;background-image:var(--ico-card);border-radius:3px}
+.ico-cardDb{background-image:var(--ico-cardDb)}
+.ico-gearDb,.ico-itemDb{width:24px;height:24px}.ico-gearDb{background-image:var(--ico-gearDb)}.ico-itemDb{background-image:var(--ico-itemDb)}
 .ico-mob{width:48px;height:48px;background-image:var(--ico-mob)}
 .ico.none{background:none}
 .dbName{display:flex;align-items:center;gap:8px}
-.eqDlgHead .ico-card{margin-top:-2px}
-.eqPick .ico-gear{margin:-4px 6px -4px 0}
+.eqDlgHead :is(.ico-card,.ico-cardDb){margin-top:-2px}
+.eqPick :is(.ico-gear,.ico-gearDb){margin:-4px 6px -4px 0}
 /* the Character tab's gear table: the item's icon beside its box, a small picture beside each card box */
 #gearTable .itemBox,#gearTable .cardBox,#specialTable .itemBox{display:flex;align-items:center;gap:6px}
 #specialTable .itemBox input{flex:1}
@@ -862,3 +864,45 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 .infoList .recipe{display:flex;flex-wrap:wrap;gap:0 10px;align-items:baseline}
 .infoList .recipe .mat{white-space:nowrap}
 #cookTable :is(th,td).sel{background:var(--accent-soft)}
+/* the What's new tab: the update's heading, its floors (one row per monster, bars on one scale), bosses' cards, gear and events */
+.homeLinks{display:flex;flex-wrap:wrap;gap:8px}
+.homeNews .pill{margin-right:2px}
+.newsHeadCard{display:flex;flex-direction:column;gap:8px}
+.newsHeadCard h2{font-family:var(--display);font-size:1.9rem;font-weight:800;letter-spacing:-.03em;line-height:1.05}
+.newsHeadCard p{margin:0;max-width:75ch;color:var(--muted);line-height:1.6;text-wrap:pretty}
+.newsTower{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.newsFloor{display:grid;grid-template-columns:56px minmax(0,1fr);border-top:1px solid var(--line)}
+.newsFloor:first-child{border-top:0}
+.newsTag{padding:12px 0 0 14px;font-weight:600;color:var(--accent)}
+.newsFloor.under .newsTag{color:var(--accent-2)}
+.newsRows{display:flex;flex-direction:column;gap:4px;padding:10px 14px 12px 0;min-width:0}
+.newsMap{font-weight:600;color:var(--fg);text-decoration:none;margin-bottom:2px;width:fit-content}
+.newsMap:hover{color:var(--accent)}
+.newsMap .mono{font-size:11.5px;font-weight:400;color:var(--muted);margin-left:4px}
+.newsMob{display:grid;grid-template-columns:auto minmax(0,10rem) 3.4rem minmax(0,1fr) 2.4rem;align-items:center;gap:0 8px;font-size:13px}
+.newsMob>a{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.newsMob>.mono{text-align:right}
+.newsBar{height:7px;border-radius:4px;background:var(--grid);overflow:hidden}
+.newsBar i{display:block;height:100%;border-radius:4px;background:var(--accent)}
+.newsFloor.under .newsBar i{background:var(--accent-2)}
+.newsBosses{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.newsBoss{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 50%,transparent);background:color-mix(in srgb,var(--warn) 8%,transparent);font-weight:600}
+.newsBoss .mono{font-weight:400;opacity:.85}
+.newsGround{display:flex;align-items:baseline;gap:10px;padding:8px 14px;background:var(--raised);border-top:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong)}
+.newsGround a{font-weight:600}
+.newsGround span{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.newsCards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.newsCard{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:var(--r);background:var(--raised);border:1px solid var(--line);min-width:0}
+.newsCard>b{font-family:var(--display);font-size:15px}
+.newsCard p{margin:2px 0 0;font-size:12.5px;color:var(--muted);line-height:1.5}
+.newsList{display:flex;flex-direction:column}
+.newsItem{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-top:1px solid var(--line)}
+.newsItem:first-child{border-top:0;padding-top:4px}
+.newsItem>span{font-size:13px;color:var(--muted);line-height:1.5}
+.newsIntro{margin:0 0 4px;max-width:80ch;font-size:13px;line-height:1.55}
+.newsCollab{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px 28px}
+.newsGrp{display:flex;flex-direction:column;min-width:0}
+.newsGrp .secHead{padding:10px 0 2px}
+@media (max-width:600px){.newsMob{grid-template-columns:auto minmax(0,1fr) 2.4rem;gap:2px 8px}.newsMob>.note{display:none}.newsMob>.ico{grid-row:1 / 3}
+  .newsMob>a{grid-column:2;grid-row:1}.newsMob>.mono{grid-column:3;grid-row:1}.newsBar{grid-column:2 / -1;grid-row:2}
+  .newsFloor{grid-template-columns:44px minmax(0,1fr)}.newsTag{padding-left:10px}.newsHeadCard h2{font-size:1.5rem}}

@@ -57,8 +57,10 @@ def text(raw, enc):
         return raw.decode("cp1252", "replace")
 
 
-def lua_data(b, enc="cp949"):
-    """Globals set by a compiled Lua 5.1 data file, running only the opcodes that build tables. enc: how its strings are written."""
+def lua_data(b, enc="cp949", lenient=False):
+    """Globals set by a compiled Lua 5.1 data file, running only the opcodes that build tables. enc: how its strings are written.
+    lenient: skip the opcodes that run code (closures, calls) instead of stopping, for files that define functions next to their
+    tables (System\\itemInfo_data.lub); the tables still come out whole."""
     p = [12]
 
     def u8(): p[0] += 1; return b[p[0] - 1]
@@ -104,7 +106,7 @@ def lua_data(b, enc="cp949"):
             if C == 0: C = code[pc]; pc += 1
             for j in range(1, B + 1): reg[A][(C - 1) * 50 + j] = reg.get(A + j)
         elif op == 30: break                                  # RETURN
-        else: raise SystemExit(f"navi_mob.lub: opcode {op} not handled")
+        elif not lenient: raise SystemExit(f"navi_mob.lub: opcode {op} not handled")
     return G
 
 

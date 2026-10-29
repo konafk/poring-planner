@@ -34,6 +34,7 @@
       <button type="button" role="tab" data-tabbtn="skilltree" title="Skill tree"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M12 7v5M12 12l-6 5M12 12l6 5"/></svg><span>Skill tree</span></button>
       <button type="button" role="tab" data-tabbtn="recipes" title="Recipes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg><span>Recipes</span></button>
       <button type="button" class="navGrp" aria-expanded="true" title="Show or hide the Reference tabs"><span>Reference</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+      <button type="button" role="tab" data-tabbtn="news" title="What's new"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="2.5"/></svg><span>What's new</span></button>
       <button type="button" role="tab" data-tabbtn="roadmap" title="Roadmap"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Roadmap</span></button>
       <button type="button" role="tab" data-tabbtn="market" title="Market"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="M15.5 9.5A6 6 0 1 1 9.5 15.5"/></svg><span>Market</span></button>
       <button type="button" role="tab" data-tabbtn="ref" title="EXP &amp; formulas"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg><span>EXP &amp; formulas</span></button>
@@ -73,7 +74,7 @@
     <div class="eyebrow" id="heroGrp"></div><h1 id="heroTitle"></h1><p id="heroDesc"></p>
   </header>
   <section class="homeHero" data-tab="home" aria-labelledby="homeTitle">
-    <a href="#Roadmap" class="homeNext" id="homeNext" data-gotab="roadmap"></a>
+    <div class="homeLinks"><a href="#Roadmap" class="homeNext" id="homeNext" data-gotab="roadmap"></a><a href="#What-s-new" class="homeNext homeNews" id="homeNews" data-gotab="news" hidden></a></div>
     <h1 id="homeTitle">Know where to farm before you go</h1>
     <p>Enter your character once and the planner works out your damage, kill speed, EXP/hr and zeny/hr against every monster, ranks the open maps for you, then tracks your real EXP while you farm. It all runs in this browser: no login, and your data stays here.</p>
     <div class="bar homeActs"><button type="button" class="primary" data-gotab="char" id="homeCharBtn">Set up your character</button><button type="button" data-gotab="maps">Find where to farm</button><button type="button" id="homeSearch">Search <kbd>/</kbd></button></div>
@@ -624,6 +625,27 @@
     <div class="note hint">Click a row to see its details beside the table; "Farming this now" or "Also killing" adds it to the session. Filters: &lt;350, &gt;=2, 100-200, =86, text, "-" for blank, "or". Your hit % = skill % after element, size and bonuses.</div>
   </section>
 
+  <section class="card newsHeadCard" id="newsHead" data-tab="news"></section>
+  <section class="card" data-tab="news">
+    <div class="bar"><h2 class="grow">The tower, floor by floor</h2></div>
+    <div class="newsTower" id="newsTower"></div>
+    <div class="note hint" id="newsTowerNote"></div>
+  </section>
+  <section class="card" data-tab="news">
+    <h2>Basement bosses and their cards</h2>
+    <div class="newsCards" id="newsBosses"></div>
+    <div class="note hint" id="newsBossNote"></div>
+  </section>
+  <section class="row2" data-tab="news">
+    <div class="card"><h2>New gear</h2><div class="newsList" id="newsGear"></div></div>
+    <div class="card"><h2>Events and town</h2><div class="newsList" id="newsEvents"></div></div>
+  </section>
+  <section class="card" id="newsCollabCard" data-tab="news">
+    <h2 id="newsCollabTitle"></h2>
+    <p class="note newsIntro" id="newsCollabIntro"></p>
+    <div class="newsCollab" id="newsCollab"></div>
+  </section>
+
   <section class="card" id="roadmapCard" data-tab="roadmap">
     <div class="bar"><h2 class="grow">Roadmap</h2><span class="note" id="roadmapNote"></span></div>
     <div class="scroll"><table id="roadmapTable"><thead><tr><th>When</th><th>Update</th><th>Level cap</th><th>What's new</th><th>Maps</th></tr></thead><tbody id="regions"></tbody></table></div>
@@ -887,6 +909,7 @@
 <script src="data/minimaps.js"></script>
 <script src="data/navi.js"></script>
 <script src="data/roadmap.js"></script>
+<script src="data/news.js"></script>
 <script src="data/loot.js"></script>
 <script src="data/items.js"></script>
 <script src="data/weights.js"></script>
@@ -918,6 +941,7 @@
 <script src="data/sprites.js"></script>
 <script src="data/iteminfo.js"></script>
 <script src="data/itemtext.js"></script>
+<script src="data/client.js"></script>
 <script src="build.js"></script>
 <button type="button" class="fab" id="qlFab" aria-label="Log EXP" aria-expanded="false" aria-controls="quickLog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
 <dialog class="jump" id="jump" aria-label="Search">
@@ -952,6 +976,7 @@
 <script src="js/stellar.js"></script>
 <script src="js/navi.js"></script>
 <script src="js/mapinfo.js"></script>
+<script src="js/news.js"></script>
 <script src="js/start.js"></script>
 </body>
 </html>

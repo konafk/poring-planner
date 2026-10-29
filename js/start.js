@@ -8,6 +8,7 @@ const TAB_DESC={
   maps:"The best maps for your character by EXP or zeny, and one click to farm one. Then the map planner and every monster.",
   star:"Not open in game yet (Taiwan Zero data). The ★ Forging Certificates each ★ weapon needs, where you'd farm its weapon fastest, and what Activation costs.",
   mem:"Jellostones from Poring Village, the Expedition gear they upgrade to, and the memorial dungeons' rewards and enchants.",
+  news:"The latest game update: what spawns on its new maps, its bosses and cards, its gear and its events.",
   roadmap:"Ragnarok Zero Global's release roadmap: when each update comes, its level cap, and which maps and monsters are open now.",
   mobinfo:"Drops, spawn maps and your numbers against any monster.",
   items:"Every drop: who drops it, where they spawn and what it's worth to you.",
@@ -45,7 +46,7 @@ function showTab(t,local){
   if(!local&&state.tab!==t){state.tab=t;save()}
   // not over a share link (#s=…) that loadShareLink hasn't read yet
   if(location.hash!=="#"+tabSlug(t)&&!location.hash.startsWith("#s="))try{history.replaceState(null,"",location.pathname+location.search+"#"+tabSlug(t))}catch(e){}
-  if(t==="home")renderHome();if(t==="ref"){renderRef();refScroll()}
+  if(t==="home")renderHome();if(t==="news")renderNews();if(t==="ref"){renderRef();refScroll()}
   if(t==="char")renderGearCmp();
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
@@ -75,6 +76,7 @@ addEventListener("hashchange",()=>{const t=hashTab();if(t){showTab(t);scrollTo({
 function renderHome(){
   const nx=ROADMAP.find(u=>!upOut(u)),cap=capNow();
   $("homeNext").innerHTML=[cap&&`<b>Level cap ${esc(capTxt(cap))}</b>`,nx&&`Next: ${esc(nx.name)}, ${esc(upWhen(nx))}`].filter(Boolean).join('<span aria-hidden="true">·</span>')+'<span aria-hidden="true">→</span>';
+  newsBanner();
   const c=C(),set=charSet(c),s=cur(),st=stats(s),last=[...s.entries].sort((a,b)=>a.t-b.t).pop(),ms=sessMobs(s),smp=sessMap(s);
   $("homeCharBtn").textContent=set?"Open Character":"Set up your character";
   // a new player has the get started card instead
