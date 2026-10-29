@@ -11,6 +11,13 @@
 <link rel="stylesheet" href="style.css">
 <!-- full width, the compact sidebar, hints and the colour theme are per-device display choices: set them before the page draws so it doesn't jump -->
 <script>try{if(localStorage.getItem("rozero-farm-planner-wide")==="1")document.documentElement.classList.add("wide");if(localStorage.getItem("rozero-farm-planner-compact")==="1")document.documentElement.classList.add("compact");if(localStorage.getItem("rozero-farm-planner-hints")==="0")document.documentElement.classList.add("nohints");var th=localStorage.getItem("rozero-farm-planner-theme");if(th==="light"||th==="dark")document.documentElement.dataset.theme=th}catch(e){}</script>
+<!-- until the scripts at the end have run (a few MB, slow on a phone) every tab's cards would show at once, then collapse into one tab
+     when start.js hides the rest: a big layout shift. Until then the page shows only the Home hero (when Home opens: the address, or
+     with none the saved tab) and nothing else in the page column, so the open tab's cards appear without moving anything -->
+<script>(function(){var h=location.hash.slice(1).toLowerCase(),home=!h||h==="home";
+try{if(!h){var a=JSON.parse(localStorage.getItem("rozero-farm-planner-accounts")),id=a&&a.active||"a0",s=JSON.parse(localStorage.getItem(id==="a0"?"rozero-farm-planner-v1":"rozero-farm-planner-v1:"+id));home=!s||!s.tab||s.tab==="home"}}catch(e){}
+var st=document.createElement("style");st.textContent=home?".wrap>:not(.homeHero){display:none!important}":".wrap>*{display:none!important}";
+document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.remove()})})()</script>
 </head>
 <body>
 <div class="app">

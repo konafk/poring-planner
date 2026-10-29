@@ -319,7 +319,7 @@ $("minLv").value=state.minLv;$("maxLv").value=state.maxLv;
 ["minLv","maxLv"].forEach(id=>$(id).addEventListener("input",e=>{state[id]=e.target.value===""?(id==="maxLv"?99:1):num(e.target.value);save();renderMobs()}));
 $("hideClosed").checked=state.hideClosed;$("hideClosed").addEventListener("change",e=>{state.hideClosed=e.target.checked;save();renderMobs()});
 // Where to farm: rank by EXP (the EXP table) or by zeny (the zeny table), one Show and one Max sec / kill for both; closed regions
-const renderFarm=()=>{renderBest();if(state.tab==="maps")renderHunt()};
+const renderFarm=()=>rowPass(()=>{renderBest();if(state.tab==="maps")renderHunt()});
 ROOTQ("[data-farmby]").forEach(b=>b.addEventListener("click",()=>{state.farmBy=b.dataset.farmby;save();renderFarm()}));
 $("bestMin").addEventListener("input",renderBest);$("farmN").addEventListener("change",renderFarm);
 // max sec / kill: blank goes back to 60

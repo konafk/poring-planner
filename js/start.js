@@ -34,27 +34,39 @@ const tabSlug=t=>document.querySelector(`[data-tabbtn="${t}"] span`).textContent
 function hashTab(){let h="";try{h=decodeURIComponent(location.hash.slice(1)).toLowerCase()}catch(e){}if(!h)return null;
   const bs=[...document.querySelectorAll("[data-tabbtn]")],b=bs.find(b=>tabSlug(b.dataset.tabbtn)===h)||bs.find(b=>b.dataset.tabbtn===h);
   return b?b.dataset.tabbtn:null}
-function showTab(t,local){
+function showTab(t,local){rowPass(()=>showTab0(t,local))}
+function showTab0(t,local){
   if(t==="data")t="acct";// the old Data tab is the Account tab
   if(![...document.querySelectorAll("[data-tabbtn]")].some(b=>b.dataset.tabbtn===t))t="home";
   // a card can sit on several tabs (data-tab="maps mobinfo mapinfo"): the Monsters card goes under Monster info there, under the Maps card on Maps, and back under the Map planner on Monsters & maps
-  document.querySelectorAll("[data-tab]").forEach(el=>el.hidden=!el.dataset.tab.split(" ").includes(t));
+  document.querySelectorAll("[data-tab]").forEach(el=>el.hidden=!el.dataset.tab.split(" ").includes(t));TAB_ON=t;
   if(t==="mobinfo")$("mobInfoCard").after($("mobCard"));else if(t==="mapinfo")$("mapInfoCard").after($("mobCard"));else if(t==="maps")$("mapCard").after($("mobCard"));
   // the Monsters card keeps to the Maps tab's map there (renderMapInfo draws it) and has every monster again on the other two
   if(t==="mobinfo"||t==="maps")renderMobs();
   document.querySelectorAll("[data-tabbtn]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tabbtn===t)));
   // Home has its own heading (the hero) instead of the page heading
   showHero(t);document.querySelector(".pageHead").hidden=t==="home";$("startCard").classList.toggle("offTab",!["home","char","track","maps"].includes(t));
-  if(!local&&state.tab!==t){state.tab=t;save()}
+  // not save(): the open tab changes no card, so it leaves GEN (and the cards already drawn) alone
+  if(!local&&state.tab!==t){state.tab=t;store.set(state)}
   // not over a share link (#s=…) that loadShareLink hasn't read yet
   if(location.hash!=="#"+tabSlug(t)&&!location.hash.startsWith("#s="))try{history.replaceState(null,"",location.pathname+location.search+"#"+tabSlug(t))}catch(e){}
+  // Where to farm (its best spots show on Home too) after the tab has drawn. At load renderAll draws it just after this
+  if(DREW_ALL&&(t==="home"||t==="maps"))farmLater();
   if(t==="home")renderHome();if(t==="news")renderNews();if(t==="ref"){renderRef();refScroll()}
   if(t==="char")renderGearCmp();
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
-  // renderAll only draws these while their tab is showing
-  if(t==="maps")renderHunt();if(t==="market")renderPrices();if(t==="mobinfo")renderMobInfo();if(t==="items")renderItems();if(t==="equip")renderEquipDb();if(t==="cards")renderCardDb();if(t==="recipes")renderRecipes();if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="skilltree")renderSkPlan(true);if(t==="mapinfo")renderMapInfo();
+  // renderAll only draws these while their tab is showing; the big ones again only when something was saved since
+  if(t==="market")renderPrices();if(t==="mobinfo")redraw("mobinfo",renderMobInfo);if(t==="items")redraw("items",renderItems);if(t==="equip")redraw("equip",renderEquipDb);if(t==="cards")redraw("cards",renderCardDb);if(t==="recipes")redraw("recipes",renderRecipes);if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="skilltree")renderSkPlan(true);if(t==="mapinfo")renderMapInfo();
 }
+// opening Home or Monsters & maps after a change: pricing every map for Where to farm takes a few hundred ms, so the tab shows first
+// with the cards as they were (dimmed), and they're redrawn just after that paint (or after 300 ms where no frame comes, as in a
+// background tab). Nothing to do when they're up to date
+function farmLater(){const els=[$("farmCard"),$("homeSpots")],due=()=>DRAWN.best!==GEN||TAB_ON==="maps"&&DRAWN.hunt!==GEN;if(!due())return;
+  els.forEach(el=>el.classList.add("stale"));let done=false;
+  const go=()=>{if(done)return;done=true;els.forEach(el=>el.classList.remove("stale"));if((TAB_ON!=="home"&&TAB_ON!=="maps")||!due())return;
+    rowPass(()=>{redraw("best",renderBest);if(TAB_ON==="maps")redraw("hunt",renderHunt);if(TAB_ON==="home")renderHome()})};
+  if(typeof requestAnimationFrame==="function")requestAnimationFrame(()=>setTimeout(go));setTimeout(go,300)}
 document.querySelectorAll("[data-tabbtn]").forEach(b=>b.addEventListener("click",()=>{showTab(b.dataset.tabbtn);scrollTo({top:0})}));
 // a link to another tab (data-gotab="roadmap")
 document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("[data-gotab]");if(!a)return;e.preventDefault();showTab(a.dataset.gotab);scrollTo({top:0})});
