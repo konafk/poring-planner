@@ -183,9 +183,10 @@ const planOf=()=>{const p=skPlan();return {skills:grantSkills(p.skills[p.job]||(
 const SKP_TIP={id:"skpTip",slug:null};
 // the Job picker: each job's look and icon (classPicker, js/build-ui.js), made the first time the tab draws
 let skpPick=null;
-function renderSkPlan(){const p=skPlan(),job=p.job,L=planOf().skills,trees=treesOf(job),mine=state.chars[job],second=SECOND(job),jl=p.jobLv[job]||JOB_MAX2;
+// fresh: the Job button's looks get new random hair (each time the tab opens)
+function renderSkPlan(fresh){const p=skPlan(),job=p.job,L=planOf().skills,trees=treesOf(job),mine=state.chars[job],second=SECOND(job),jl=p.jobLv[job]||JOB_MAX2;
   (skpPick=skpPick||classPicker($("skpJob"),[["Novice & 1st jobs",j=>!SECOND(j)],["2nd jobs",SECOND]].map(([g,f])=>[g,Object.keys(SKILLS).filter(f)]),
-    j=>{skPlan().job=j;$("skpNote").textContent="";save();renderSkPlan()}))(job);$("skpJobLvWrap").hidden=!second;$("skpJobLv").value=p.jobLv[job]||"";$("skpJobLv").placeholder=String(JOB_MAX2);
+    j=>{skPlan().job=j;$("skpNote").textContent="";save();renderSkPlan()}))(job,fresh);$("skpJobLvWrap").hidden=!second;$("skpJobLv").value=p.jobLv[job]||"";$("skpJobLv").placeholder=String(JOB_MAX2);
   $("skpTrees").innerHTML=treesHtml(job,L,jl);$("skpTip").hidden=true;SKP_TIP.slug=null;
   // what the plan takes: points per tree and the job level each tree needs (one point a job level after the first)
   // a 1st-job tree that borrows the 2nd job's points is full, and the 2nd job's job level counts what it lent
