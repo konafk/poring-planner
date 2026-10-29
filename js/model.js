@@ -123,7 +123,9 @@ const expGear=m=>{const c=C();return c.bx?(c.bx.exp.all||0)+((c.bx.exp.race||{})
 const partyCut=(v,s=cur())=>Math.floor(v*(100+partyBonus(s))/100/partyN(s));
 const killExp=(m,s=cur())=>Math.floor(partyCut(m.exp,s)*(1+(expGear(m)+num(state.bonus)+consSum("exp_base"))/100));
 const killJobExp=(m,s=cur())=>Math.floor(partyCut(m.job,s)*(1+(expGear(m)+num(state.jobBonus)+consSum("exp_job"))/100));
-const takenMul=m=>{const c=C();if(!c.bx)return 1;const t=c.bx.taken;return Math.max(0,(1+(t.race[m.race]||0)/100)*(1+((t.size||{})[m.size]||0)/100)*(1+(t.ele[m.el||"Neutral"]||0)/100)*(1+(t.kind[m.boss?"boss":"normal"]||0)/100))};
+// each kind of cut counts only down to −70% (official guide, Option Maximum Limit System); more of it does nothing
+const TAKEN_CAP=-70,takenPct=v=>Math.max(TAKEN_CAP,v||0);
+const takenMul=m=>{const c=C();if(!c.bx)return 1;const t=c.bx.taken;return (1+takenPct(t.race[m.race])/100)*(1+takenPct((t.size||{})[m.size])/100)*(1+takenPct(t.ele[m.el||"Neutral"])/100)*(1+takenPct(t.kind[m.boss?"boss":"normal"])/100)};
 // ignore DEF / MDEF %: lowers the monster's hard defence before the (4000+DEF)/(4000+10·DEF) or (1000+MDEF)/(1000+10·MDEF) factor
 // ignOf: the plain ignore % plus gear that ignores it only against the monster's race, size, element or boss / normal (bx.ign)
 const ignOf=(k,m)=>{const c=C(),I=c.bx&&c.bx.ign&&c.bx.ign[k];let v=num(c[k==="def"?"ignDef":"ignMdef"]);
