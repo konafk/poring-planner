@@ -85,7 +85,7 @@ function renderHome(){
   // what the planner works out for your character on the map you're farming, not what you've logged
   const est=set&&smp?mapStats(smp,walkSec()):null,why=!set?"Set up your character":!smp?"Farm a map for an estimate":"No estimate for this map";
   $("homeTiles").innerHTML=
-    tile("Character",state.job,set?[c.baseLv&&`Base ${c.baseLv}`,c.jobLv&&`Job ${c.jobLv}`,c.a&&c.a.name].filter(Boolean).join(" · "):"Not set up yet","char",true)+
+    tile("Character",noChar()?"–":state.job,set?[c.baseLv&&`Base ${c.baseLv}`,c.jobLv&&`Job ${c.jobLv}`,c.a&&c.a.name].filter(Boolean).join(" · "):"Not set up yet","char",true)+
     tile("Farming",smp?mapCode(smp):ms.length===1?ms[0].name:ms.length?`${ms.length} monsters`:"–",smp?mapName(smp):ms.length?s.name:"Pick a spot below","maps",true)+
     tile("EXP / min there",max?"Max level":est?fmtN(est.epm):"–",max?"EXP no longer counts":est?"planner estimate":why,"maps")+
     tile("Zeny / hr there",est?fmtN(est.net):"–",est?"net, planner estimate":why,"maps");

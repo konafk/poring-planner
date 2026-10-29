@@ -1,10 +1,10 @@
 // ---- events ----
-$("job").innerHTML=Object.keys(JOBS).map(j=>`<option>${j}</option>`).join("");
+$("job").innerHTML='<option value="" disabled hidden>Pick your job</option>'+Object.keys(JOBS).map(j=>`<option>${j}</option>`).join("");
 $("weapon").innerHTML=Object.keys(WEAPONS).map(w=>`<option>${w}</option>`).join("");
 $("wElem").innerHTML=AE.map(e=>`<option>${e}</option>`).join("");$("lwElem").innerHTML=$("wElem").innerHTML;
 $("lw").innerHTML='<option value="">None</option>'+BUILD.DUAL_W.map(w=>`<option>${w}</option>`).join("");
 $("aElem").innerHTML='<option value="W">Weapon / arrow</option>'+AE.map(e=>`<option>${e}</option>`).join("");
-$("job").addEventListener("change",e=>{state.job=e.target.value;C();save();syncChar();renderAll()});
+$("job").addEventListener("change",e=>{state.job=e.target.value;delete state.noJob;C();save();syncChar();renderAll()});
 $("preset").addEventListener("change",e=>{const c=C();const i=+e.target.value;c.preset=i;if(i>=0){c.a=levelPreset(JOBS[state.job].p[i],c).a}save();syncChar();renderAll()});
 // ---- stats: status ATK/MATK/HIT/FLEE from the renewal formulas (irowiki.org/wiki/Stats) ----
 const STATS=["str","agi","vit","dex","luk"];
@@ -103,7 +103,7 @@ $("recTable").addEventListener("input",e=>{const i=e.target,id=i.dataset.rid,k=i
 $("recTable").addEventListener("change",e=>{if(e.target.dataset.rid)setTimeout(renderRecovery,0)});
 $("recTable").addEventListener("focusout",()=>setTimeout(renderRecovery,0));
 $("recTable").addEventListener("click",e=>{const a=e.target.closest("[data-rreset]");if(!a)return;e.preventDefault();delete REC().overrides[a.dataset.rreset];save();renderAll()});
-$("partyN").addEventListener("input",e=>{cur().partyN=num(e.target.value,1)||1;save();renderAll()});
+$("partyN").addEventListener("input",e=>{sessNow().partyN=num(e.target.value,1)||1;save();renderAll()});
 $("dropBonus").value=state.dropBonus||0;$("dropBonus").addEventListener("input",e=>{state.dropBonus=num(e.target.value);save();renderAll()});
 $("bonus").addEventListener("input",e=>{state.bonus=num(e.target.value);save();renderAll()});
 $("jobBonus").addEventListener("input",e=>{state.jobBonus=num(e.target.value);save();renderAll()});
@@ -130,7 +130,7 @@ function pasteLine(line){const pct="(\\d+(?:\\.\\d+)?)\\s*%?(?:[^\\d\\n]*?(\\d+(
 function guessLevel(s,t,lv,p){const prev=[...s.entries].filter(e=>e.t<t).sort((a,b)=>b.t-a.t)[0];return prev&&prev.lv===lv&&prev.pct-p>=50?lv+1:lv}
 // the time the form logs at: the clock, or the date and time you typed
 function formTime(){const [h,m]=($("fTime").dataset.auto==="1"?nowTime():$("fTime").value||nowTime()).split(":").map(Number);return entryTime(h,m,pickedDay())}
-$("addForm").addEventListener("submit",e=>{e.preventDefault();const s=cur();const t=formTime();
+$("addForm").addEventListener("submit",e=>{e.preventDefault();const s=sessNow();const t=formTime();
   s.entries=s.entries.filter(x=>x.t!==t);const was=s.entries.map(x=>x.t);const lvIn=num($("fLevel").value,60),pIn=num($("fPct").value),lvG=guessLevel(s,t,lvIn,pIn);
   $("pasteMsg").textContent=lvG!==lvIn?`EXP % went down a lot, so this entry is saved as Lv ${lvG}.`:"";
   const ent={t,lv:lvG,pct:pIn};if($("fDied").checked){ent.died=diePct();$("fDied").checked=false}if($("fJob").value!==""){ent.jpct=num($("fJob").value);const pv=[...s.entries].filter(e=>e.t<t&&e.jpct!=null).sort((a,b)=>b.t-a.t)[0];if(pv&&pv.jpct-ent.jpct>=50&&num(C().jobLv))C().jobLv=Math.min(jobMax(),num(C().jobLv)+1)}s.entries.push(ent);autoResume(s,t);if(!s.job)s.job=state.job;
@@ -141,16 +141,16 @@ $("addForm").addEventListener("submit",e=>{e.preventDefault();const s=cur();cons
 $("dieItem").addEventListener("change",e=>{state.dieItem=e.target.checked;save();renderTracker()});
 $("dieBtn").addEventListener("click",()=>{const box=$("fPct").value,pen=diePct();
   if(box===""){$("pasteMsg").textContent="Type your EXP % from just before you died, then press Died.";$("fPct").focus();return}
-  const s=cur(),t=formTime(),before=num(box),after=Math.max(0,Math.round((before-pen)*100)/100);$("fDied").checked=false;$("addForm").requestSubmit();
+  const s=sessNow(),t=formTime(),before=num(box),after=Math.max(0,Math.round((before-pen)*100)/100);$("fDied").checked=false;$("addForm").requestSubmit();
   const pre=s.entries.find(x=>x.t===t);if(!pre||$("fPct").value)return;
   const ent={t:t+1000,lv:pre.lv,pct:after,died:pen};if(pre.jpct!=null)ent.jpct=pre.jpct;if(pre.jlv)ent.jlv=pre.jlv;
   s.entries=s.entries.filter(x=>x.t!==ent.t);s.entries.push(ent);save();renderAll();
   $("pasteMsg").textContent=`Died: logged ${before}% then ${after}% (−${pen}%).`});
-$("pasteAdd").addEventListener("click",()=>{const s=cur();let lv=num($("fLevel").value,60),n=0,ups=0;
+$("pasteAdd").addEventListener("click",()=>{let lv=num($("fLevel").value,60),n=0,ups=0;
   // a line with "died", "dead" or 💀 is the EXP after a death
   const [h0,m0]=nowTime().split(":").map(Number),lines=$("pasteBox").value.split(/\n/).map(l=>{const p=pasteLine(l);return p&&[...p,/died|dead|💀/i.test(l)]}).filter(Boolean).map(([h,m,...r])=>h==null?[h0,m0,...r]:[h,m,...r]);
   const ts=pasteTimes(lines,pickedDay()),parsed=[...new Map(lines.map(([,,pct,jpct,died],i)=>[ts[i],{t:ts[i],pct,jpct,died}])).values()].sort((a,b)=>a.t-b.t);
-  const was=s.entries.filter(e=>!parsed.some(x=>x.t===e.t)).map(e=>e.t);
+  const s=parsed.length?sessNow():cur(),was=s.entries.filter(e=>!parsed.some(x=>x.t===e.t)).map(e=>e.t);
   parsed.forEach(x=>{const g=guessLevel(s,x.t,lv,x.pct);if(g!==lv){ups++;lv=g}const ent={t:x.t,lv,pct:x.pct};if(x.jpct!=null)ent.jpct=x.jpct;if(x.died)ent.died=diePct();s.entries=s.entries.filter(e=>e.t!==x.t);s.entries.push(ent);n++});
   $("pasteMsg").textContent=n?`Added ${n} entr${n===1?"y":"ies"}${ups?` with ${ups} level-up${ups>1?"s":""} (now Lv ${lv})`:` at Lv ${lv}`}.`:"No lines matched. Use the format 15:05 17.9% 63% or 15:05 17.9 63 (time and job % optional; no time means now)";
   if(n){autoResume(s,parsed[parsed.length-1].t);if(!s.job)s.job=state.job;snapSession(s,was);$("pasteBox").value="";save();renderAll()}});
@@ -177,7 +177,7 @@ let openQuickLog=()=>{};
     if(e.key.toLowerCase()==="l"&&!atMaxLv()&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!(a&&(/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)||a.isContentEditable))){e.preventDefault();open(true)}});
   document.addEventListener("click",e=>{if(app.classList.contains("qlOpen")&&!f.contains(e.target))open(false)});
 })();
-$("pauseBtn").addEventListener("click",()=>{const s=cur(),p=openPause(s);if(!s.pauses)s.pauses=[];
+$("pauseBtn").addEventListener("click",()=>{const s=sessNow(),p=openPause(s);if(!s.pauses)s.pauses=[];
   if(p){p.to=Date.now();save();renderAll();showTab("track");$("fPct").focus()}else{s.pauses.push({from:Date.now()});save();renderAll()}});
 // sell timer: its weight boxes are the Character tab's, so typing in one updates the other
 [["tripW","curW"],["tripMax","maxW"],["tripTownMin","townMin"]].forEach(([id,k])=>$(id).addEventListener("input",e=>{C()[k]=num(e.target.value);$(k).value=e.target.value;save();renderAll()}));
@@ -188,7 +188,7 @@ $("tripNotify").addEventListener("change",e=>{const on=e.target.checked;state.tr
   if(!on)return;if(typeof Notification==="undefined"){state.tripNotify=false;save();renderTrip();$("tripS").textContent="This browser can't show notifications; the sound and the tab title still work";return}
   if(Notification.permission==="default")Notification.requestPermission().then(p=>{if(p!=="granted"){state.tripNotify=false;save();renderTrip()}});
   else if(Notification.permission==="denied"){state.tripNotify=false;save();renderTrip();$("tripS").textContent="Notifications are blocked for this page in your browser settings"}});
-$("tripBtns").addEventListener("click",e=>{const b=e.target.closest("[data-trip]");if(!b)return;const s=cur();
+$("tripBtns").addEventListener("click",e=>{const b=e.target.closest("[data-trip]");if(!b)return;const s=sessNow();
   if(b.dataset.trip==="stop")delete s.trip;
   else{const wasPaused=!!openPause(s);if(!startTrip(s))return;TRIP_RING={id:null,n:0,at:0};
     if(state.tripSound!==false)tripAudio();// a click lets the page play sound later
@@ -273,27 +273,27 @@ let renameId=null;
 // the ✎ button next to the picker does the same as Rename in the ⋯ menu, and turns into ✓ (save) while the box is open
 const setRenameBtns=on=>{$("renameSession").textContent=on?"Save":"Rename";const b=$("editSession");b.textContent=on?"✓":"✎";b.title=on?"Save session name":"Rename session";b.setAttribute("aria-label",b.title)};
 const endRename=keep=>{const i=$("sessName");if(i.hidden)return;if(keep){const v=i.value.trim(),s=state.sessions.find(x=>x.id===renameId);if(v&&s){s.name=v;save()}}renameId=null;i.hidden=true;$("sessionSel").hidden=false;setRenameBtns(false);renderAll()};
-const toggleRename=()=>{const i=$("sessName");if(!i.hidden){endRename(true);return}renameId=cur().id;i.value=cur().name;i.hidden=false;$("sessionSel").hidden=true;setRenameBtns(true);i.focus();i.select()};
+const toggleRename=()=>{const i=$("sessName");if(!i.hidden){endRename(true);return}if(cur()===NO_SESS)return;renameId=cur().id;i.value=cur().name;i.hidden=false;$("sessionSel").hidden=true;setRenameBtns(true);i.focus();i.select()};
 $("renameSession").addEventListener("click",toggleRename);
 $("editSession").addEventListener("click",toggleRename);
 $("sessName").addEventListener("keydown",e=>{if(e.key==="Enter")endRename(true);else if(e.key==="Escape")endRename(false)});
 $("sessName").addEventListener("blur",()=>setTimeout(()=>endRename(true),150));
-$("newSession").addEventListener("click",()=>{const id="s"+Date.now();state.sessions.push({id,name:"New session",mobIds:[],entries:[]});openSession(id);showTab("maps");scrollTo({top:0})});
+$("newSession").addEventListener("click",()=>{openSession(newSess().id);showTab("maps");scrollTo({top:0})});
 let delArmed=false;
-$("delSession").addEventListener("click",()=>{if(!delArmed){delArmed=true;$("delSession").textContent="Confirm delete";setTimeout(()=>{delArmed=false;$("delSession").textContent="Delete"},3000);return}
+$("delSession").addEventListener("click",()=>{if(cur()===NO_SESS)return;if(!delArmed){delArmed=true;$("delSession").textContent="Confirm delete";setTimeout(()=>{delArmed=false;$("delSession").textContent="Delete"},3000);return}
   delArmed=false;$("delSession").textContent="Delete";state.sessions=state.sessions.filter(s=>s.id!==state.current);
-  if(!state.sessions.length)state.sessions.push({id:"s"+Date.now(),name:"New session",mobIds:[],entries:[]});openSession(state.sessions[0].id)});
+  openSession((state.sessions[0]||newSess()).id)});
 $("cmpTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.target.closest("tr[data-sid]");if(!tr)return;openSession(tr.dataset.sid);window.scrollTo({top:0,behavior:"smooth"})});
 // monsters
 // add or remove a monster from the current session; the first one sets a fresh session's job
 // a fresh session is named after its map (the first monster's name if it has no open map), and the name follows the map while it's still the default
 const sessAutoName=s=>{const mp=sessMap(s),m=sessMobs(s)[0];return mp?mapCode(mp):m?m.name:""};
-const toggleSessMob=id=>{const s=cur(),auto=s.name==="New session"||s.name===sessAutoName(s);const i=s.mobIds.indexOf(id);
+const toggleSessMob=id=>{const s=sessNow(),auto=s.name==="New session"||s.name===sessAutoName(s);const i=s.mobIds.indexOf(id);
   if(i>=0)s.mobIds.splice(i,1);else{if(!s.mobIds.length)s.job=state.job;s.mobIds.push(id)}
   if(s.map&&!sessOn(s,s.map))delete s.map;
   const nm=sessAutoName(s);if(auto&&nm)s.name=nm};
 // the session's map: blank is the auto pick; the name follows it while it's still the default
-$("sessMapSel").addEventListener("change",e=>{const s=cur(),auto=s.name==="New session"||s.name===sessAutoName(s);
+$("sessMapSel").addEventListener("change",e=>{const s=sessNow(),auto=s.name==="New session"||s.name===sessAutoName(s);
   if(e.target.value)s.map=e.target.value;else delete s.map;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;save();renderAll()});
 // the monster you click is also the one Monster info shows
 const pickMob=m=>{if(!m)return;state.calcMobId=m.id;state.infoMobId=m.id;const s=cur();if(!s.mobIds.length)toggleSessMob(m.id);save();renderAll()};
@@ -326,7 +326,7 @@ $("bestMin").addEventListener("input",renderBest);$("farmN").addEventListener("c
 $("farmMaxSec").value=maxSecKill();$("farmMaxSec").addEventListener("input",e=>{state.maxSec=e.target.value===""?60:Math.max(0,num(e.target.value));save();renderFarm()});
 // Farm here (the best spots and every map row): the map becomes the session's, with the monsters you hunt there; the name follows
 // it while it's still the default. A capture listener, so the row under the button doesn't also open the map planner
-function farmMap(mp,ids){if(!MAPMOBS[mp])return;const s=cur(),auto=s.name==="New session"||s.name===sessAutoName(s);
+function farmMap(mp,ids){if(!MAPMOBS[mp])return;const s=sessNow(),auto=s.name==="New session"||s.name===sessAutoName(s);
   if(!s.mobIds.length)s.job=state.job;s.mobIds=ids&&ids.length?ids:mapHuntIds(mp);s.map=mp;state.map=mp;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;state.calcMobId=null;save();renderAll()}
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-farm]");if(!b)return;e.preventDefault();e.stopPropagation();
   farmMap(b.dataset.farm,(b.dataset.ids||"").split(",").filter(Boolean).map(Number));showToast(`Farming ${mapCode(b.dataset.farm)} in "${cur().name}": log your EXP as you go`)},true);
