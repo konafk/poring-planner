@@ -3,10 +3,14 @@ sprite sheets, and data/icons.js.
 
     python tools/export_icons.py            # fetch what isn't cached, then write the sheets and data/icons.js
     python tools/export_icons.py --refresh  # refetch every image
+    python tools/export_icons.py --client "D:\\Games\\RagnarokZero"   # client somewhere other than C:\\Gravity\\RagnarokZero
 
 Gear and every other item: the inventory icon from the game client (24 x 24), as divine-pride.net serves it for each item id
 (static.divine-pride.net/images/items/item/<id>.png). Cards: every card has the same inventory icon in the client, so a card shows
-a thumbnail of its illustration instead (.../images/items/cards/<id>.png, 300 x 400, shrunk to CARD_W x CARD_H). Ids: gear from
+a thumbnail of its illustration instead, shrunk to CARD_W x CARD_H: read from your installed client (data.grf's
+data\\num2cardillustnametable.txt gives each card id its picture's name, data\\texture\\유저인터페이스\\cardbmp\\<name>.bmp, 300 x 400),
+so a card has the picture the Global client shows; a card the client has no picture for falls back to divine-pride's
+(.../images/items/cards/<id>.png). Ids: gear from
 data/equipment.js, cards from data/cards.js, and items (drops, recipe items, consumables, recovery items, every other item in the
 client) from data/items.js, data/recipes.js, data/consumables.js, data/recovery.js and data/clientitems.js, and every [id, "name"] in
 data/memorial.js (Jello Fragments, Jellostones, memorial rewards), that aren't gear or cards. Monsters: the client's standing sprite, as
@@ -75,6 +79,24 @@ def pairs(name):
     """The item ids a hand-made table names as [id, "name", ...] (data/memorial.js isn't JSON either)."""
     path = os.path.join(ROOT, "data", name)
     return [int(k) for k in re.findall(r'\[(\d+),"', open(path, encoding="utf-8").read())] if os.path.exists(path) else []
+
+
+def client_cards(client):
+    """{card id: (w, h, RGBA bytearray)} for every card picture in the client's data.grf, or {} without a client."""
+    path = os.path.join(client, "data.grf")
+    if not os.path.exists(path):
+        print(f"no client at {client}: card pictures from divine-pride")
+        return {}
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from export_minimaps import DesGrf, UI, bmp_rgba
+    grf, out = DesGrf(path), {}
+    for line in grf.read("data\\num2cardillustnametable.txt").decode("cp949", "replace").splitlines():
+        c = line.split("#")
+        bmp = UI + "cardbmp\\" + c[1] + ".bmp" if len(c) > 1 and c[0].isdigit() else None
+        if bmp and grf.has(bmp):
+            w, h, rows = bmp_rgba(grf.read(bmp))
+            out[int(c[0])] = (w, h, bytearray(v for r in rows for px in r for v in (*px[:3], 255)))
+    return out
 
 
 def fetch(kind, item_id, refresh=False):
@@ -223,6 +245,8 @@ def sheet(imgs, W, H, cols, path):
 
 def main():
     refresh = "--refresh" in sys.argv
+    client = sys.argv[sys.argv.index("--client") + 1] if "--client" in sys.argv else r"C:\Gravity\RagnarokZero"
+    art, from_db = client_cards(client), []
     gear, cards, items, mobs, skills, gear_ids, card_ids, item_ids, mob_ids_, skill_ids, missing = [], [], [], [], [], [], [], [], [], [], []
     eq, cd = ids("equipment.js", "EQUIP"), ids("cards.js", "CARDS")
     known = set(eq) | set(cd)
@@ -233,6 +257,11 @@ def main():
     icon_of = dict(skill_icons()); todo += [("skills", slug) for slug in icon_of]
     no_mob = fetch("mobs", 0, refresh)  # the placeholder, to tell it from a real monster's picture
     for n, (kind, i) in enumerate(todo, 1):
+        if kind == "cards" and i in art:
+            cards.append(shrink(art[i], CARD_W, CARD_H)); card_ids.append(i)
+            continue
+        if kind == "cards":
+            from_db.append(str(i))
         b = fetch("skills", icon_of[i], refresh) if kind == "skills" else fetch(kind if kind in PATH else "item", i, refresh); img = png_read(b)
         if kind == "skills":
             if img and img[0] <= 32 and img[1] <= 32:
@@ -258,9 +287,10 @@ def main():
     mv = sheet(mobs, MOB_W, MOB_H, MOB_COLS, os.path.join(ROOT, "img", "mob-icons.png"))
     sv = sheet(skills, SKILL_W, SKILL_H, SKILL_COLS, os.path.join(ROOT, "img", "skill-icons.png"))
     with open(os.path.join(ROOT, "data", "icons.js"), "w", encoding="utf-8", newline="\n") as f:
-        f.write("// Gear icons, other items' icons, card pictures and monster pictures (tools/export_icons.py, from divine-pride.net's copies of the game\n"
-                "// client's images), and skill icons (from roz.prontera.info): each sheet's file, a checksum of it (v), its cell size, and the item or\n"
-                "// monster ids, or skill slugs, in cell order (left to right, then down). Ids with no image aren't listed.\n")
+        f.write("// Gear icons, other items' icons and monster pictures (tools/export_icons.py, from divine-pride.net's copies of the game client's\n"
+                "// images), card pictures (from the installed client's card illustrations), and skill icons (from roz.prontera.info): each sheet's\n"
+                "// file, a checksum of it (v), its cell size, and the item or monster ids, or skill slugs, in cell order (left to right, then down).\n"
+                "// Ids with no image aren't listed.\n")
         f.write("const ICON_SHEETS=" + json.dumps({
             "gear": {"file": "img/gear-icons.png", "v": gv, "w": GEAR_W, "h": GEAR_H, "cols": GEAR_COLS, "ids": gear_ids},
             "item": {"file": "img/item-icons.png", "v": iv, "w": GEAR_W, "h": GEAR_H, "cols": ITEM_COLS, "ids": item_ids},
@@ -269,6 +299,8 @@ def main():
             "skill": {"file": "img/skill-icons.png", "v": sv, "w": SKILL_W, "h": SKILL_H, "cols": SKILL_COLS, "ids": skill_ids}},
             separators=(",", ":")) + ";\n")
     print(f"{len(gear_ids)} gear icons, {len(item_ids)} item icons, {len(card_ids)} card pictures, {len(mob_ids_)} monster pictures, {len(skill_ids)} skill icons")
+    if from_db:
+        print(f"{len(from_db)} card pictures not in the client, from divine-pride: " + ", ".join(from_db))
     if missing:
         print(f"no image for {len(missing)}: " + ", ".join(missing))
 
