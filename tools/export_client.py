@@ -1,4 +1,4 @@
-"""Lay the game client's own item data over the community database's: writes data/client.js and img/card-art-client.png from your
+"""Lay the game client's own item and monster data over the community database's: writes data/client.js and img/*-client.png from your
 installed Ragnarok Zero client (official Global client, read-only), for the page to put on top of the database's data as it loads.
 
     python tools/export_client.py                                  # client in C:\\Gravity\\RagnarokZero
@@ -16,17 +16,23 @@ the client isn't, so what the client says goes in a file of its own that only th
   the rest would need reading), and weapons are left for the database, which has their weapon type; both are printed.
 - items: items in the client that no data file has (new event items and cards, packages, costumes), with a category and their text in
   data/itemtext.js's form (tools/export_itemtext.py's clean).
+- mobs: monsters the database doesn't have yet that were asked for (CLIENT_MOBS: the Clock Tower basement bosses), from the client's
+  spawn table (data.grf's navi_mob.lub): name, level, element, size, race and where they spawn. The client has no HP, EXP or drops,
+  so those stay unknown and the farm tables leave them out. The other monsters it has and the database doesn't (plants, Knight
+  Porings, the Solid / Furious / ... champions, event monsters) stay out, as before.
 - art: the client's pictures, as sheets like tools/export_icons.py's (img/<kind>-client.png): card pictures (data.grf's
   data\\num2cardillustnametable.txt gives each card id its picture's name, data\\texture\\유저인터페이스\\cardbmp\\<name>.bmp,
   300 x 400, shrunk), and gear and item icons (System\\itemInfo_data.lub gives each item its identifiedResourceName,
-  data\\texture\\유저인터페이스\\item\\<name>.bmp, 24 x 24, magenta see-through). Anything the client has no picture for keeps the
-  database's.
+  data\\texture\\유저인터페이스\\item\\<name>.bmp, 24 x 24, magenta see-through), and monster pictures (each spawned monster's
+  standing sprite, data\\sprite\\몬스터\\<sprite>.spr / .act with the sprite name from navi_mob.lub, drawn as tools/export_sprites.py
+  draws a body and fitted to MOB_W x MOB_H). Anything the client has no picture for keeps the database's.
 """
 import json, os, re, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from export_spawns import DATA, lua_data  # noqa: E402
-from export_icons import ROOT, CARD_W, CARD_H, CARD_COLS, GEAR_W, GEAR_H, GEAR_COLS, ITEM_COLS, ids, keys, pairs, shrink, sheet  # noqa: E402
+from export_icons import (ROOT, CARD_W, CARD_H, CARD_COLS, GEAR_W, GEAR_H, GEAR_COLS, ITEM_COLS, MOB_W, MOB_H, MOB_COLS,  # noqa: E402
+                          ids, keys, pairs, shrink, sheet, fit)
 from export_itemtext import clean  # noqa: E402
 
 STAT = r"Type|Position|Weight|DEF|MDEF|ATK|MATK|Required Level|Equippable [Bb]y|Weapon Level|Element|Equipped on|Property|Range|Usable by"
@@ -39,6 +45,11 @@ HEAD = {"Upper": "head_upper", "Middle": "head_middle", "Lower": "head_lower"}
 STATS = {"MHP": "hp", "MaxHP": "hp", "MSP": "sp", "MaxSP": "sp", "ATK": "atk", "MATK": "matk", "M.ATK": "matk", "HIT": "hit", "FLEE": "flee",
          "CRIT": "crit", "DEF": "def", "MDEF": "mdef", "STR": "str", "AGI": "agi", "VIT": "vit", "INT": "int", "DEX": "dex", "LUK": "luk"}
 PCT = {"variable casting time": "cast_time_variable_percent", "after attack delay": "attack_delay_percent"}
+CLIENT_MOBS = {20175, 20176, 20177, 20178, 20179}  # Extra Joker, Erzsebet, Jeniffer, Orc General, Sieglouse
+# navi_mob.lub's element numbers -> data/elem.js's names; sizes S M L; races in data/sizes.js's RACES order
+ELEMENTS = ["Neutral", "Water", "Earth", "Fire", "Wind", "Poison", "Holy", "Shadow", "Ghost", "Undead"]
+RACES = ["Formless", "Undead", "Brute", "Plant", "Insect", "Fish", "Demon", "Demi-Human", "Angel", "Dragon"]
+MOB_SPR = "data\\sprite\\몬스터\\"
 
 
 def rows(name, const):
@@ -147,6 +158,28 @@ def pictures(grf, names, folder, opaque=False):
     return out
 
 
+def monsters(grf, path):
+    """{monster id: {name, lv, el, elv, size, race, sprite, spawn: {map key: count}}} from navi_mob.lub, for every monster it spawns on
+    a map in data/maps.js (the most on one normal channel). Rows: [map, uid, 300 / 301, count << 16 | id, name code, sprite, level,
+    (element level * 20 + element) << 16 | size << 8 | race]."""
+    from export_spawns import NAVI
+    from export_mobnames import english
+    src = open(os.path.join(DATA, "maps.js"), encoding="utf-8").read()
+    maps = json.JSONDecoder().raw_decode(src, src.index("{", src.index("const MAPNAMES=")))[0]
+    key = {c: k for k, v in maps.items() for c in [k, v[0], *v[2:]]}
+    en, out = english(path), {}
+    for e in lua_data(grf.read(NAVI))["Navi_Mob"].values():
+        i, n, table = e[4] & 0xFFFF, e[4] >> 16, re.sub(r"^b_", "", e[1])
+        k = key.get(table) or key.get(re.sub(r"_a$", "", table))
+        if not i or not k:
+            continue
+        v = e[8]
+        m = out.setdefault(i, {"name": en.get(e[5].strip("\x1c"), e[5]), "lv": e[7], "el": ELEMENTS[(v >> 16) % 20], "elv": (v >> 16) // 20,
+                                "size": "SML"[(v >> 8) & 0xFF], "race": RACES[v & 0xFF], "sprite": e[6], "spawn": {}})
+        m["spawn"][k] = max(m["spawn"].get(k, 0), n)
+    return out
+
+
 def main():
     client = sys.argv[sys.argv.index("--client") + 1] if "--client" in sys.argv else r"C:\Gravity\RagnarokZero"
     info = lua_data(open(os.path.join(client, "System", "iteminfo_enUS.lub"), "rb").read(), "utf-8")["tbl_string"]
@@ -218,21 +251,46 @@ def main():
     unreleased = [items.pop(i)[0] for i in list(items) if i not in art["item"]["ids"]]
     if unreleased:
         print(f"  no icon in the client, left out: {', '.join(unreleased)}")
-    out = {"text": text, "fix": fix, "gear": gear, "items": items, "art": art}
+    # monsters: the new ones asked for, and a picture of every one the client spawns (the planner's too)
+    from export_sprites import draw, crop
+    src = open(os.path.join(DATA, "mobs.js"), encoding="utf-8").read()
+    ours = [int(k) for k in re.findall(r'\[(\d+),\s*"', src[src.index("const MOBS="):src.index("].map(")])]
+    spawned = monsters(grf, os.path.join(client, "data.grf"))
+    mobs = [{"id": i, **{k: x for k, x in spawned[i].items() if k not in ("sprite", "spawn")},
+             "spawn": sorted(([k, n] for k, n in spawned[i]["spawn"].items()), key=lambda x: -x[1])}
+            for i in sorted(CLIENT_MOBS - set(ours)) if i in spawned]
+    pics, got = [], []
+    for i in ours + [m["id"] for m in mobs]:
+        base = MOB_SPR + (spawned[i]["sprite"] or "").lower() if i in spawned else ""
+        if base and grf.has(base + ".spr") and grf.has(base + ".act"):
+            img, _ = draw(grf.read(base + ".spr"), grf.read(base + ".act"))
+            if img:
+                w, h, px, _, _ = crop(img)
+                pics.append(fit((w, h, px), MOB_W, MOB_H)); got.append(i)
+    art["mob"] = {"file": "img/mob-client.png", "v": sheet(pics, MOB_W, MOB_H, MOB_COLS, os.path.join(ROOT, "img", "mob-client.png")),
+                  "w": MOB_W, "h": MOB_H, "cols": MOB_COLS, "ids": got}
+    wanted["mob"] = len(ours) + len(mobs)
+    out = {"text": text, "fix": fix, "gear": gear, "items": items, "mobs": mobs, "art": art}
     with open(os.path.join(DATA, "client.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// The game client's own item data (tools/export_client.py, from the installed Global client), laid over the community database's\n"
                 "// as the page loads: wherever the client has it, it wins. text: gear's and cards' in-game descriptions; fix: name, card slots, level,\n"
                 "// DEF, ATK, MATK, weapon level where the database's differ; gear: armour the database doesn't have yet, as data/equipment.js rows;\n"
-                "// items: other items no data file has, [name, category, in-game text]; art: the client's card pictures and gear and item icons\n"
-                "// (sheets like data/icons.js's)\n")
+                "// items: other items no data file has, [name, category, in-game text]; mobs: monsters the database doesn't have yet (no HP or\n"
+                "// EXP in the client); art: the client's card pictures, gear and item icons and monster pictures (sheets like data/icons.js's)\n")
         f.write("const CLIENT=" + json.dumps(out, ensure_ascii=False, separators=(",", ":")) + ";\n")
         f.write("(function(){const has=new Set(EQUIP.map(e=>e.id));CLIENT.gear.forEach(r=>{if(!has.has(r.id))EQUIP.push(r)});\n"
                 "  const byId=new Map([...EQUIP,...CARDS].map(x=>[x.id,x]));Object.entries(CLIENT.fix).forEach(([id,f])=>{const x=byId.get(+id);if(x)Object.assign(x,f)});\n"
                 "  Object.entries(CLIENT.text).forEach(([id,t])=>{ITEM_INFO[id]=Object.assign(ITEM_INFO[id]||{},{t})});\n"
+                "  // monsters from the client: HP and EXP unknown (expUnknown keeps them out of the farm tables); element, size and race go in the\n"
+                "  // tables js/game.js reads them from, and their spawns in SPAWN\n"
+                "  const mob=new Set(MOBS.map(m=>m.id));CLIENT.mobs.forEach(m=>{if(mob.has(m.id))return;\n"
+                "    MOBS.push({id:m.id,name:m.name,lv:m.lv,hp:null,exp:0,job:0,expUnknown:true,boss:false,mini:false,mvp:false});\n"
+                "    ELEM[m.id]=ELEM[m.id]||[m.el,m.elv,null,null];SIZES[m.id]=SIZES[m.id]||[m.size,RACES.indexOf(m.race)];SPAWN[m.id]=SPAWN[m.id]||m.spawn});\n"
                 "  Object.entries(CLIENT.items).forEach(([id,[n,c,t]])=>{if(!CLIENT_ITEMS[id])CLIENT_ITEMS[id]=[n,c];if(t&&!ITEM_TEXT[id])ITEM_TEXT[id]=t});\n"
                 "  // the database's sheets stay as the fallback for what the client has no picture for (js/build-ui.js iconHtml)\n"
                 "  Object.entries(CLIENT.art).forEach(([k,s])=>{if(s.ids.length){ICON_SHEETS[k+\"Db\"]=ICON_SHEETS[k];ICON_SHEETS[k]=s}})})();\n")
-    print(f"{len(text)} texts, {len(fix)} fixes, {len(gear)} new gear ({', '.join(g['name'] for g in gear)}), {len(items)} new items; pictures: "
+    print(f"{len(text)} texts, {len(fix)} fixes, {len(gear)} new gear ({', '.join(g['name'] for g in gear)}), {len(items)} new items, "
+          f"{len(mobs)} new monsters ({', '.join(m['name'] for m in mobs)}); pictures: "
           + ", ".join(f"{len(s['ids'])} of {wanted[k]} {k}" for k, s in art.items()))
     for k in ("name", "slots", "lv", "def", "atk", "matk", "wlv"):
         n = [f"{i}" for i, f in fix.items() if k in f]
