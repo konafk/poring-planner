@@ -37,9 +37,9 @@ function hashTab(){let h="";try{h=decodeURIComponent(location.hash.slice(1)).toL
 function showTab(t,local){
   if(t==="data")t="acct";// the old Data tab is the Account tab
   if(![...document.querySelectorAll("[data-tabbtn]")].some(b=>b.dataset.tabbtn===t))t="home";
-  // a card can sit on several tabs (data-tab="maps mobinfo"): the Monsters card goes under Monster info there, and back under the Map planner on Monsters & maps
+  // a card can sit on several tabs (data-tab="maps mobinfo mapinfo"): the Monsters card goes under Monster info there, under the Maps card on Maps, and back under the Map planner on Monsters & maps
   document.querySelectorAll("[data-tab]").forEach(el=>el.hidden=!el.dataset.tab.split(" ").includes(t));
-  if(t==="mobinfo")$("mobInfoCard").after($("mobCard"));else if(t==="maps")$("mapCard").after($("mobCard"));
+  if(t==="mobinfo")$("mobInfoCard").after($("mobCard"));else if(t==="mapinfo")$("mapInfoCard").after($("mobCard"));else if(t==="maps")$("mapCard").after($("mobCard"));
   document.querySelectorAll("[data-tabbtn]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tabbtn===t)));
   // Home has its own heading (the hero) instead of the page heading
   showHero(t);document.querySelector(".pageHead").hidden=t==="home";$("startCard").classList.toggle("offTab",!["home","char","track","maps"].includes(t));
