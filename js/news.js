@@ -1,6 +1,8 @@
 // ---- What's new tab: the latest game update's highlights (data/news.js). The floors draw their monsters from the spawn data the
 // planner uses (MAPMOBS), every bar on one scale; monster and card names open the details popup, map names the Maps tab ----
 const newsUpdate=n=>ROADMAP.find(u=>u.name===n.name);
+// an item's icon and name, opening its details (the costume tag left off: the group says what they are)
+const newsItemLink=id=>`<a href="#" data-info="item:${id}">${itemIcon(id,1,"il")}${esc(itemName(id).replace(/^\[Costume\] /,""))}</a>`;
 function newsFloors(n){
   const rows=n.floors.filter(f=>!f.ground).map(([mp])=>(MAPMOBS[mp]||[]).filter(x=>!x.m.mvp)),max=Math.max(1,...rows.flat().map(x=>x.n||0));
   const boss={};n.bosses.forEach(([nm,lv,mp])=>(boss[mp]=boss[mp]||[]).push([nm,lv]));
@@ -22,7 +24,7 @@ function renderNews(){
   $("newsGear").innerHTML=n.gear.map(([id,nm,t])=>`<div class="newsItem"><b>${id?`<a href="#" data-info="item:${id}">${esc(nm)}</a>`:esc(nm)}</b><span>${esc(t)}</span></div>`).join("");
   const cb=n.collab;$("newsCollabCard").hidden=!cb;
   if(cb){$("newsCollabTitle").textContent=cb.name;$("newsCollabIntro").textContent=cb.intro;
-    $("newsCollab").innerHTML=cb.groups.map(([g,rows])=>`<div class="newsGrp"><div class="secHead">${esc(g)}</div><div class="newsList">${rows.map(([nm,t])=>`<div class="newsItem"><b>${esc(nm)}</b><span>${esc(t)}</span></div>`).join("")}</div></div>`).join("")}
+    $("newsCollab").innerHTML=cb.groups.map(([g,rows])=>`<div class="newsGrp"><div class="secHead">${esc(g)}</div><div class="newsList">${rows.map(([ids,nm,t])=>`<div class="newsItem"><b>${ids.length?ids.map(newsItemLink).join(" · "):esc(nm)}</b><span>${esc(t)}</span></div>`).join("")}</div></div>`).join("")}
   $("newsEvents").innerHTML=n.events.map(([nm,k,t])=>`<div class="newsItem"><b>${esc(nm)} <span class="pill ${k==="ended"?"":"up"}">${k==="ended"?"Ended":"New"}</span></b><span>${esc(t)}</span></div>`).join("")+
     n.town.map(t=>`<div class="newsItem"><b>In town</b><span>${esc(t)}</span></div>`).join("");
 }
