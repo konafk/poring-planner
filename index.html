@@ -81,11 +81,12 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   <header class="pageHead">
     <div class="eyebrow" id="heroGrp"></div><h1 id="heroTitle"></h1><p id="heroDesc"></p>
   </header>
+  <section class="card homeNewsCard" id="homeNews" data-tab="home" aria-labelledby="homeNewsTitle" hidden></section>
   <section class="homeHero" data-tab="home" aria-labelledby="homeTitle">
-    <div class="homeLinks"><a href="#Roadmap" class="homeNext" id="homeNext" data-gotab="roadmap"></a><a href="#What-s-new" class="homeNext homeNews" id="homeNews" data-gotab="news" hidden></a></div>
+    <a href="#Roadmap" class="homeNext" id="homeNext" data-gotab="roadmap"></a>
     <h1 id="homeTitle">Everything for Ragnarok Zero, in one place</h1>
     <p>Look up any monster, item, map, gear, card, skill or recipe from the game client. Plan your build, skills and farming spots, work out memorial dungeon and ★ weapon costs, roll brewing and cooking, and keep up with prices and the roadmap. Enter your character once and every tab uses your numbers. No login: your data stays in this browser.</p>
-    <div class="bar homeActs"><button type="button" class="primary" id="homeSearch">Search everything <kbd>/</kbd></button><button type="button" data-gotab="char" id="homeCharBtn">Set up your character</button><button type="button" data-gotab="news">What's new</button></div>
+    <div class="bar homeActs"><button type="button" class="primary" id="homeSearch">Search everything <kbd>/</kbd></button><button type="button" data-gotab="char" id="homeCharBtn">Set up your character</button><button type="button" id="homeNewsBtn" data-gotab="news">What's new</button></div>
     <div class="homeCounts" id="homeCounts"></div>
   </section>
   <section class="startCard" id="startCard" hidden aria-labelledby="startTitle">
