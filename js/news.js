@@ -25,14 +25,22 @@ function renderNews(){
   $("newsGear").innerHTML=n.gear.map(([id,nm,t])=>`<div class="newsItem"><b>${id?`<a href="#" data-info="item:${id}">${esc(nm)}</a>`:esc(nm)}</b><span>${esc(t)}</span></div>`).join("");
   // a card each for a collaboration or event's items, after the gear and events
   document.querySelectorAll(".newsCollabCard").forEach(el=>el.remove());
-  $("newsRow").insertAdjacentHTML("afterend",(n.cards||[]).map(cb=>`<section class="card newsCollabCard" data-tab="news"><h2>${esc(cb.name)}</h2><p class="note newsIntro">${esc(cb.intro)}</p>
+  $("newsRow").insertAdjacentHTML("afterend",(n.cards||[]).map(cb=>`<section class="card newsCollabCard" id="${cb.id}" data-tab="news"><h2>${esc(cb.name)}</h2><p class="note newsIntro">${esc(cb.intro)}</p>
     <div class="newsCollab">${cb.groups.map(([g,rows])=>`<div class="newsGrp"><div class="secHead">${esc(g)}</div><div class="newsList">${rows.map(([ids,nm,t])=>`<div class="newsItem"><b>${ids.length?ids.map(newsItemLink).join(" · "):esc(nm)}</b><span>${esc(t)}</span></div>`).join("")}</div></div>`).join("")}</div></section>`).join(""));
   $("newsEvents").innerHTML=n.events.map(([nm,k,t])=>`<div class="newsItem"><b>${esc(nm)} <span class="pill ${k==="ended"?"":"up"}">${k==="ended"?"Ended":"New"}</span></b><span>${esc(t)}</span></div>`).join("")+
     n.town.map(t=>`<div class="newsItem"><b>In town</b><span>${esc(t)}</span></div>`).join("");
 }
-// Home: a link to the tab while the latest update is under a month old
+// a highlight's days (each [first, last], UTC+0 like the event posts) as they stand today: what's on now or next, null once they're over
+function newsWhen(on){
+  const t=typeof ROADMAP_TODAY==="string"?ROADMAP_TODAY:new Date().toISOString().slice(0,10),r=on.find(([,b])=>b>=t);if(!r)return null;
+  const day=d=>`${+d.slice(8)} ${MONTHS[+d.slice(5,7)-1]}`,[a,b]=r;
+  return a<=t?{now:true,text:`On now, until ${day(b)}`}:{now:false,text:`Next: ${a.slice(0,7)===b.slice(0,7)?+a.slice(8):day(a)} to ${day(b)}`}}
+const newsMark=m=>m.startsWith("mob:")?mobIcon(+m.slice(4)):m.startsWith("item:")?itemIcon(+m.slice(5)):esc(m);
+// Home: the top of the page while the latest update is under a month old; each highlight opens its part of the tab, and goes once its days are over
 function newsBanner(){
   const n=NEWS[0],el=$("homeNews");if(!el)return;const age=n?(new Date(todayISO())-new Date(n.when))/864e5:1e9;
-  el.hidden=!(age>=0&&age<31);if(el.hidden)return;
-  el.innerHTML=`<span class="pill up">New in game</span><b>${esc(n.name)}</b><span>${esc(n.intro.split(": ")[0])}.</span><span aria-hidden="true">→</span>`;
+  el.hidden=!(age>=0&&age<31);$("homeNewsBtn").hidden=!el.hidden;if(el.hidden)return;
+  const u=newsUpdate(n),tiles=n.highlights.map(([nm,t,mark,to,on])=>{const w=on?newsWhen(on):null;if(on&&!w)return "";
+    return `<button type="button" class="tool" data-gotab="news" data-goto="${esc(to)}"><span class="toolIc">${newsMark(mark)}</span><span class="toolTxt"><b>${esc(nm)}</b><span>${esc(t)}</span>${w?`<span class="pill${w.now?" up":""}">${esc(w.text)}</span>`:""}</span></button>`}).join("");
+  el.innerHTML=`<div class="homeNewsHead"><div><div class="eyebrow">What's new · ${esc(u?upWhen(u):n.when)}</div><h2 id="homeNewsTitle">${esc(n.name)}</h2><p>${esc(n.intro.split(". ")[0])}.</p></div><button type="button" data-gotab="news">See everything →</button></div><div class="toolGrid">${tiles}</div>`;
 }

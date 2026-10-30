@@ -70,7 +70,9 @@ function farmLater(){const els=[$("farmCard"),$("homeSpots")],due=()=>DRAWN.best
   if(typeof requestAnimationFrame==="function")requestAnimationFrame(()=>setTimeout(go));setTimeout(go,300)}
 document.querySelectorAll("[data-tabbtn]").forEach(b=>b.addEventListener("click",()=>{showTab(b.dataset.tabbtn);scrollTo({top:0})}));
 // a link to another tab (data-gotab="roadmap")
-document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("[data-gotab]");if(!a)return;e.preventDefault();showTab(a.dataset.gotab);scrollTo({top:0})});
+document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("[data-gotab]");if(!a)return;e.preventDefault();showTab(a.dataset.gotab);
+  // data-goto: a part of that tab, not its top
+  const to=a.dataset.goto&&$(a.dataset.goto);if(to)(to.closest(".card")||to).scrollIntoView({block:"start"});else scrollTo({top:0})});
 // a popup link (#mob/1002) opens over the tab you were on once the page is drawn (showTab puts the tab's link in the address bar first)
 const INFO_AT=hashInfo(location.hash);
 {const h=hashTab();showTab(h||VIEW&&VIEW.tab||state.tab||"home",!h&&!!VIEW)}

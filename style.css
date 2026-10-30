@@ -914,8 +914,16 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 .infoList .recipe .mat{white-space:nowrap}
 #cookTable :is(th,td).sel{background:var(--accent-soft)}
 /* the What's new tab: the update's heading, its floors (one row per monster, bars on one scale), bosses' cards, gear and events */
-.homeLinks{display:flex;flex-wrap:wrap;gap:8px}
-.homeNews .pill{margin-right:2px}
+.homeNewsCard{margin-top:20px;border-color:transparent;background:linear-gradient(160deg,var(--accent-soft),transparent 50%) padding-box,linear-gradient(var(--surface),var(--surface)) padding-box,var(--brand) border-box}
+.homeNewsHead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
+.homeNewsHead h2{margin:6px 0;font-family:var(--display);font-size:1.9rem;font-weight:800;letter-spacing:-.03em;line-height:1.05}
+.homeNewsHead p{margin:0;max-width:75ch;color:var(--muted);line-height:1.6;text-wrap:pretty}
+.homeNewsCard .toolGrid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.homeNewsCard .toolIc{font-family:var(--display);font-size:15px;font-weight:800}
+.homeNewsCard .toolTxt .pill{width:fit-content;margin-top:4px;font-size:11px}
+.homeNewsCard .toolTxt .pill.up{color:var(--good)}
+.card[data-tab="news"],#newsRow .card{scroll-margin-top:72px}
+@media (max-width:1023px){.card[data-tab="news"],#newsRow .card{scroll-margin-top:108px}}
 .newsHeadCard{display:flex;flex-direction:column;gap:8px}
 .newsHeadCard h2{font-family:var(--display);font-size:1.9rem;font-weight:800;letter-spacing:-.03em;line-height:1.05}
 .newsHeadCard p{margin:0;max-width:75ch;color:var(--muted);line-height:1.6;text-wrap:pretty}

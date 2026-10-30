@@ -2921,6 +2921,14 @@ t("a new visitor starts with no session and no job picked", () => {
   assert.equal(app("noChar()"), true);
   assert.equal(app("cur()===NO_SESS&&stats(cur())===null&&sessMap(cur())===null"), true);
   app("renderAll();renderHome()");                                          // every tab draws without a session
+  // Home's What's new banner: a highlight's days as they stand today, by its first and last day
+  const whenOn = day => app(`ROADMAP_TODAY="${day}";JSON.stringify(newsWhen([["2026-10-30","2026-11-01"],["2026-11-06","2026-11-08"]]))`);
+  assert.equal(whenOn("2026-10-29"), '{"now":false,"text":"Next: 30 Oct to 1 Nov"}');
+  assert.equal(whenOn("2026-10-30"), '{"now":true,"text":"On now, until 1 Nov"}');
+  assert.equal(whenOn("2026-11-01"), '{"now":true,"text":"On now, until 1 Nov"}');
+  assert.equal(whenOn("2026-11-02"), '{"now":false,"text":"Next: 6 to 8 Nov"}');
+  assert.equal(whenOn("2026-11-09"), "null");
+  app("ROADMAP_TODAY=undefined");
   assert.equal(app("state.sessions.length"), 0);                           // and reading doesn't make one
   app("sessNow().entries.push({t:1,lv:5,pct:1})");                          // logging EXP (Farm here, New session…) starts one
   assert.equal(app("state.sessions.length+' '+(state.current===state.sessions[0].id)+' '+cur().entries.length"), "1 true 1");
