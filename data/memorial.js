@@ -55,7 +55,7 @@ const MEM_CRAFTS=[
 {id:28571,name:"Red Oath Ring",npc:MEM_CRAFT_NPC,mats:[[25460,"Ruby Soaked in Blood",15],[25430,"Mithril",10]]}];
 // the enchant in card slot 4 of Subjugation Team and Expedition armor, garments and shoes (Enchant Association staff, prt_in 135 35
 // for Subjugation Team gear, prt_in 135 28 for Expedition): 100,000 zeny for one random line. Its pool depends on the gear and on
-// refine: MEM_ENCHANT[gear][pool] = [[line, %], …]; "spirit" rows are the job spirit enchants, together (see MEM_SPIRITS)
+// refine: MEM_ENCHANT[gear][pool] = [[line, %], …]; "essence" rows are the Job Essences, together (see MEM_ESSENCE)
 const MEM_STATS=["STR","AGI","VIT","INT","DEX","LUK"];
 const memPool=(s1,s2,flee,crit,def,mdef,hp)=>[...MEM_STATS.map(s=>[s+" +1",s1]),...MEM_STATS.map(s=>[s+" +2",s2]),["FLEE +3",flee],["CRIT +1",crit],
   ["DEF +15",def],["MDEF +2",mdef],...hp.map(([v,p])=>["MaxHP +"+v,p])];
@@ -63,21 +63,14 @@ const MEM_ENCHANT={
  subjugation:{low:memPool(10.52,0.09,6.03,6.03,5.17,5.17,[[50,6.18],[100,4.31],[200,3.45]]),
    garment:memPool(7.13,0.89,3.48,3.48,3.48,3.48,[[50,10.70],[100,8.91],[200,7.58],[300,6.31],[400,4.46]]),
    shoes:memPool(7.58,3.57,4.90,4.90,4.90,4.90,[[50,4.90],[100,3.50],[200,2.60],[300,1.70],[400,0.80]]),
-   armor:[...memPool(6.75,0.81,6.54,6.54,6.54,6.54,[[50,4.88],[100,4.07],[200,3.25],[300,2.44],[400,1.66]]),["spirit",12.18]]},
+   armor:[...memPool(6.75,0.81,6.54,6.54,6.54,6.54,[[50,4.88],[100,4.07],[200,3.25],[300,2.44],[400,1.66]]),["essence",12.18]]},
  expedition:{low:memPool(6.00,5.00,5.00,5.00,5.00,5.00,[[50,6.00],[100,5.00],[200,3.00]]),
    garment:memPool(7.13,0.89,3.48,3.48,3.48,3.48,[[50,10.70],[100,8.91],[200,7.58],[300,6.31],[400,4.46]]),
    shoes:memPool(7.58,3.57,4.90,4.90,4.90,4.90,[[50,4.90],[100,3.50],[200,2.60],[300,1.70],[400,0.80]]),
-   armor:[...memPool(5.25,4.90,4.28,4.28,4.28,4.28,[[50,5.25],[100,5.25],[200,5.25],[300,3.50],[400,0.805]]),["spirit",1.925]]}};
-// the job spirit enchants on +9 armor: Subjugation Team armor rolls a 1st job's spirit Lv 1 (2.03% each); Expedition armor rolls a 2nd
-// job's, 0.05% for a Lv 1 and 0.025% for a Lv 2
-const MEM_SPIRITS={
- subjugation:["Swordsman Spirit Lv 1: Magnum Break SP −10, after-attack delay −1% per 2 levels of Bash",
-   "Merchant Spirit Lv 1: ATK +2 per level of Discount, after-attack delay −1% per 2 levels of Overcharge",
-   "Thief Spirit Lv 1: ATK +30 for Thieves, after-attack delay −1% per 2 levels of Steal",
-   "Mage Spirit Lv 1: Cold Bolt, Fire Bolt and Lightning Bolt damage +20%, variable cast −1% per 2 levels of Fire Wall",
-   "Acolyte Spirit Lv 1: Heal, Increase AGI and Blessing SP −15%, heal +1% per 2 levels of Heal",
-   "Archer Spirit Lv 1: Double Strafe SP −5, bow ATK +1% per level of Owl's Eye"],
- expedition:["Knight, Blacksmith, Assassin, Wizard, Priest, Hunter, Crusader, Alchemist, Rogue, Sage, Monk, Bard / Dancer and Ninja spirits, Lv 1 and Lv 2: skill damage, cast and after-attack delay bonuses for that job"]};
+   armor:[...memPool(5.25,4.90,4.28,4.28,4.28,4.28,[[50,5.25],[100,5.25],[200,5.25],[300,3.50],[400,0.805]]),["essence",1.925]]}};
+// the Job Essences on +9 armor (names and effects in data/essences.js), % each by essence level: Subjugation Team armor rolls a 1st
+// job's Lv 1; Expedition armor rolls a 2nd job's. What the essences here don't add up to in MEM_ENCHANT is the Ninja's, which the client doesn't have
+const MEM_ESSENCE={subjugation:{tier:1,lv:{1:2.03}},expedition:{tier:2,lv:{1:0.05,2:0.025}}};
 // every NPC the tab's memorials, Jellostones, upgrades, crafts and enchants need, for the NPCs card: [name, where ("map x y", or a
 // list when there are several), what they do]
 const MEM_NPCS=[
