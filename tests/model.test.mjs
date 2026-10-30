@@ -780,6 +780,26 @@ t("drops with no published rate (Nordfeld Cave Boulder Dwarves) are listed as ? 
   run(`state.prices={}`);
 });
 
+t("monster variants (data/client.js): bosses and C<n>_ sprites name their base, and take nothing else from it", () => {
+  [[20176, "Boss Bathory"], [20177, "Boss Penomena"], [20175, "Boss Joker"], [20178, "Boss Infinite High Orc"], [20179, "Boss Arclouse"],
+    [2721, "Enhanced Owl Duke"], [2885, "Enhanced Bathory"], [2717, "Enhanced Penomena"]].forEach(([id, tag]) => assert.equal(run(`MOB_VARIANT[${id}]`), tag));
+  assert.equal(run(`MOB_VARIANT[1102]`), undefined);  // Bathory itself
+  assert.ok(run(`bossTag(MOBS.find(m=>m.id===20176))`).includes("Boss Bathory"));  // so a Monster filter finds it
+  assert.equal(run(`MOBS.find(m=>m.id===20176).hp`), null);  // the base's HP isn't copied
+});
+t("gear fixes from the client (data/client.js): the guild staffs' MATK and armour weights", () => {
+  [[550005, 140], [640001, 200], [550004, 145], [26147, 115], [2052, 180], [26146, 125]].forEach(([id, matk]) => assert.equal(run(`BUILD.item(${id}).matk`), matk));
+  assert.equal(run(`BUILD.item(540118).matk`), 125);  // ★ Book: its MATK comes from its text, the stats table's 0 changes nothing
+  assert.equal(run(`JSON.stringify(BUILD.item(550005).g||null)`), "null");  // the MATK isn't also added as a bonus line
+  assert.equal(run(`BUILD.item(480008).w`), 30);  // Advanced Guild Manteau, weightless before
+});
+t("box contents (data/client.js): a selection box says to choose one, with refine and count", () => {
+  assert.equal(run(`CLIENT.boxes[200923][0]`), "pick");
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(CLIENT.boxes[200923][1])`)), [[510214, 1, 7, 0]]);
+  assert.equal(run(`CLIENT.boxes[108025][0]`), "all");
+  assert.equal(run(`CLIENT.boxes[909]`), undefined);  // Jellopy isn't a box
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(CLIENT.boxes[108083][1].map(r=>r[1]))`)).every(n => n === 5), true);
+});
 t("drops seen in game (data/client.js): on the monster and the item, rate unknown, earning nothing", () => {
   [[480999, "General's Cape", 20178, "Orc General"], [481000, "Hunter's Cape", 1211, "Brilight"], [481001, "Rotating Gear", 1269, "Clock"]].forEach(([id, item, mob, name]) => {
     assert.equal(run(`itemName(${id})`), item);

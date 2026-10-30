@@ -150,6 +150,8 @@ Vocal, Eclipse, Toad, Mastering, Dragon Fly and the other monsters that spawn on
 
 Mini boss is how they spawn, not the game's Boss class, which is what boss / normal bonuses go by: Vocal and Garm Baby count as normal monsters, Eclipse as a boss (hover the tag to see which). Boss-class monsters that aren't mini bosses (Owl Duke) are tagged `boss`. Boss-class monsters stay out of the farming tables; Vocal and Garm Baby stay in, weighted by their one spawn on a map.
 
+A monster that is a version of another carries a tag naming it, wherever monsters are listed and in drop lists: `Boss Bathory` on Erzsebet, `Enhanced Owl Duke` on Owl Duke Ringleader. Type `Bathory` in a Monster filter to find them. The tags don't change any numbers: a boss's or enhanced monster's HP, EXP and drops are never copied from its base.
+
 ### MVPs
 
 The MVPs that spawn on the maps here (Amon Ra, Osiris, Baphomet, Moonlight, Orc Hero, Orc Lord, Dracula and the rest) are in the monster tables: each carries an `MVP` tag wherever monsters are listed, Monster info says so, and the Boss dropdown's MVPs lists them. Type `mvp` in a Monster filter to find them. They're Boss class, so they stay out of the farming tables like the other bosses; the ones with no EXP data yet show it as unknown. Maya, Mistress, Phreeoni, Eddga, Pharaoh and Drake are in the tables too but have no map: the client's spawn table doesn't list them on any map it has.
@@ -174,6 +176,8 @@ Its own tab, for the Activation System. It's marked **Not open in game yet**: it
 
 - **★ Forging Certificates:** the 17 ★ weapons Global's client has. Each takes 100 ★ Forging Certificates of its own weapon: Workshop Apprentice Nariya (`/navi prontera 272/264`) gives one for each monster-drop copy of it, so ★ Book takes 100 Book. Made from lists those weapons. Type the certificates and copies you have; To go counts down from the 100 a ★ to ★★ activation takes. Fastest for you is the monster (bosses aside, on an open map) that gets you copies quickest: at its drop rate, with your drop bonus and level penalty, at the kill speed and walking Monsters & maps works out. Time is To go over that rate. Monsters whose drop rate isn't published are listed under it, or instead of it when none is, but can't be timed.
 - **Activation:** each route's refine loss, certificates and Goblin Coin Fragments at Grandpa Taotao (`/navi prontera 272/260`): ★ to ★★ (−7, 100 ★ certificates, 8 fragments), ★★ to ★★★ (−3, 3 ★★ certificates, 30), and ★ armor (stable −3 for 100 and 30, aggressive −7 for 10 and 3); the last three came in the Taiwan server's later updates. Type your weapon's refine to see it after each. Cards, enchants and random options stay.
+
+A box's details popup lists its **Contents** where the game client has them: selection boxes say to choose one and show each choice's count, refine level and time limit; the client's other box lists show what can come from the box. Each item opens its own details.
 
 ## What's new
 
