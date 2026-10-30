@@ -780,6 +780,18 @@ t("drops with no published rate (Nordfeld Cave Boulder Dwarves) are listed as ? 
   run(`state.prices={}`);
 });
 
+t("drops seen in game (data/client.js): on the monster and the item, rate unknown, earning nothing", () => {
+  [[480999, "General's Cape", 20178, "Orc General"], [481000, "Hunter's Cape", 1211, "Brilight"], [481001, "Rotating Gear", 1269, "Clock"]].forEach(([id, item, mob, name]) => {
+    assert.equal(run(`itemName(${id})`), item);
+    assert.ok(run(`MOBS.find(m=>m.id===${mob}).drops.some(([i,ch])=>i===${id}&&ch==null)`));
+    assert.equal(run(`JSON.stringify(ITEM_INFO[${id}].d.map(r=>[r[0],r[1],r[4]]))`), JSON.stringify([[mob, name, null]]));
+    assert.equal(run(`ITEMTYPE[${id}]`), "a");
+  });
+  // Brilight's zeny per kill is what its other drops earn, as before
+  near(run(`zenyKill(MOBS.find(m=>m.id===1211))`), run(`zenyKill({loot:LOOT[1211][0],drops:LOOT[1211][3].filter(([,ch])=>ch!=null)})`));
+  assert.equal(run(`hasLoot(MOBS.find(m=>m.id===20178))`), false);
+});
+
 t("auto loot: drops of a group you don't loot earn nothing", () => {
   run(`C().baseLv=1;state.dropBonus=0;state.prices={};state.npcPrices={};state.autoLoot={}`);
   assert.equal(run(`ITEMTYPE[909]`), "e"); assert.equal(run(`ITEMTYPE[4001]`), "c"); assert.equal(run(`ITEMTYPE[1202]`), "w");

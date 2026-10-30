@@ -26,6 +26,8 @@ the client isn't, so what the client says goes in a file of its own that only th
   monster as the monster list does (or as the client does, for one the list doesn't have) with its level.
 - recipes: the headgear NPCs craft (npc_recipes(): Februs's from the dialogue, the Hat Maker's from the quest log), as
   data/recipes.js's NPC rows in a Headgear category, for the Recipes tab and each item's details.
+- drops: drops seen in game that neither the client nor the database lists (DROPS, kept by hand), rate unknown. They go on the monster's
+  drop list and the item's Where to get it, and a row the database has for the same item and monster wins, so a published rate shows.
 - art: the client's pictures, as sheets like tools/export_icons.py's (img/<kind>-client.png): card pictures (data.grf's
   data\\num2cardillustnametable.txt gives each card id its picture's name, data\\texture\\유저인터페이스\\cardbmp\\<name>.bmp,
   300 x 400, shrunk), and gear and item icons (System\\itemInfo_data.lub gives each item its identifiedResourceName,
@@ -52,6 +54,7 @@ STATS = {"MHP": "hp", "MaxHP": "hp", "MSP": "sp", "MaxSP": "sp", "ATK": "atk", "
          "CRIT": "crit", "DEF": "def", "MDEF": "mdef", "STR": "str", "AGI": "agi", "VIT": "vit", "INT": "int", "DEX": "dex", "LUK": "luk"}
 PCT = {"variable casting time": "cast_time_variable_percent", "after attack delay": "attack_delay_percent"}
 CLIENT_MOBS = {20175, 20176, 20177, 20178, 20179}  # Extra Joker, Erzsebet, Jeniffer, Orc General, Sieglouse
+DROPS = {480999: [20178], 481000: [1211], 481001: [1269]}  # item id -> monsters, seen in game: General's Cape from Orc General, Hunter's Cape from Brilight, Rotating Gear from Clock
 # navi_mob.lub's element numbers -> data/elem.js's names; sizes S M L; races in data/sizes.js's RACES order
 ELEMENTS = ["Neutral", "Water", "Earth", "Fire", "Wind", "Poison", "Holy", "Shadow", "Ghost", "Undead"]
 RACES = ["Formless", "Undead", "Brute", "Plant", "Insect", "Fish", "Demon", "Demi-Human", "Angel", "Dragon"]
@@ -417,7 +420,7 @@ def main():
     recipe_names = {i: (info[i].get("identifiedDisplayName") or "").replace("’", "'") for r in recipes for i in [r["id"], *(m[0] for m in r["mats"])]
                     if i in info}
     out = {"text": text, "fix": fix, "lines": extra, "gear": gear, "cards": new_cards, "items": items, "mobs": mobs, "mobLv": mob_lv,
-           "recipes": recipes, "recipeNames": recipe_names, "art": art}
+           "recipes": recipes, "recipeNames": recipe_names, "drops": DROPS, "art": art}
     with open(os.path.join(DATA, "client.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// The game client's own item data (tools/export_client.py, from the installed Global client), laid over the community database's\n"
                 "// as the page loads: wherever the client has it, it wins. text: gear's and cards' in-game descriptions; fix: name, card slots, level,\n"
@@ -425,7 +428,7 @@ def main():
                 "// items: other items no data file has, [name, category, in-game text]; mobs: monsters the database doesn't have yet (no HP or\n"
                 "// EXP in the client); art: the client's card pictures, gear and item icons and monster pictures (sheets like data/icons.js's);\n"
                 "// mobLv: every monster the client spawns, [name, level], for the monster list's levels and the drop lists; recipes: the headgear\n"
-                "// NPCs craft, as data/recipes.js's NPC rows (js/recipes.js adds them)\n")
+                "// NPCs craft, as data/recipes.js's NPC rows (js/recipes.js adds them); drops: item id -> monsters, seen in game with no known rate\n")
         f.write("const CLIENT=" + json.dumps(out, ensure_ascii=False, separators=(",", ":")) + ";\n")
         f.write("(function(){const has=new Set(EQUIP.map(e=>e.id));CLIENT.gear.forEach(r=>{if(!has.has(r.id))EQUIP.push(r)});\n"
                 "  const hasCard=new Set(CARDS.map(c=>c.id));CLIENT.cards.forEach(r=>{if(!hasCard.has(r.id))CARDS.push(r)});\n"
@@ -438,6 +441,11 @@ def main():
                 "  const mob=new Set(MOBS.map(m=>m.id));CLIENT.mobs.forEach(m=>{if(mob.has(m.id))return;\n"
                 "    MOBS.push({id:m.id,name:m.name,lv:m.lv,hp:null,exp:0,job:0,expUnknown:true,boss:false,mini:false,mvp:false});\n"
                 "    ELEM[m.id]=ELEM[m.id]||[m.el,m.elv,null,null];SIZES[m.id]=SIZES[m.id]||[m.size,RACES.indexOf(m.race)];SPAWN[m.id]=SPAWN[m.id]||m.spawn});\n"
+                "  // drops seen in game (armour), rate unknown; a row the database has for the same item and monster stays. The tables data/loot.js's\n"
+                "  // items are all in get these too: no known NPC price, looted as armour\n"
+                "  Object.entries(CLIENT.drops).forEach(([id,mobs])=>{const g=byId.get(+id);if(g&&!ITEMN[id])ITEMN[id]=g.name;if(!(id in NPCSELL))NPCSELL[id]=null;if(!ITEMTYPE[id])ITEMTYPE[id]=\"a\";\n"
+                "    const x=ITEM_INFO[id]=ITEM_INFO[id]||{};x.d=x.d||[];mobs.forEach(mid=>{const l=LOOT[mid]=LOOT[mid]||[null,0,0,[]];if(!l[3].some(d=>d[0]===+id)){l[3].push([+id,null]);l[2]++}\n"
+                "      if(!x.d.some(r=>r[0]===mid))x.d.push([mid,\"\",0,\"normal\",null])})});\n"
                 "  // every monster's level as the client spawns it; the drop lists name a monster as the monster list does, or as the client does\n"
                 "  const byMob=new Map(MOBS.map(m=>[m.id,m]));Object.entries(CLIENT.mobLv).forEach(([id,[n,lv]])=>{const m=byMob.get(+id);if(m)m.lv=lv});\n"
                 "  Object.values(ITEM_INFO).forEach(x=>(x.d||[]).forEach(r=>{const m=byMob.get(r[0]),c=CLIENT.mobLv[r[0]];\n"
