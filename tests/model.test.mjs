@@ -793,6 +793,11 @@ t("gear fixes from the client (data/client.js): the guild staffs' MATK and armou
   assert.equal(run(`JSON.stringify(BUILD.item(550005).g||null)`), "null");  // the MATK isn't also added as a bonus line
   assert.equal(run(`BUILD.item(480008).w`), 30);  // Advanced Guild Manteau, weightless before
 });
+t("Job Essences (data/essences.js) have their name and In-game text for the details popup", () => {
+  assert.equal(run(`ITEM_TEXT[29399]`), "CRIT increases by 3× the level of Cavalier Mastery.\nIncreases Bowling Bash damage by 20%.\nFor each armor refine level, ASPD increases (After Attack Delay -1%).");
+  assert.equal(run(`ESSENCES.every(x=>ITEM_TEXT[x.id]===x.t&&CLIENT_ITEMS[x.id][0]===x.name)`), true);
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(CLIENT_ITEMS[29574])`)), ["Alchemist Essence II Lv.2", "Enchant Stone"]);  // the one the catalog lacks
+});
 t("box contents (data/client.js): a selection box says to choose one, with refine and count", () => {
   assert.equal(run(`CLIENT.boxes[200923][0]`), "pick");
   assert.deepEqual(JSON.parse(run(`JSON.stringify(CLIENT.boxes[200923][1])`)), [[510214, 1, 7, 0]]);
