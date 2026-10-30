@@ -48,7 +48,7 @@ from export_icons import (ROOT, CARD_W, CARD_H, CARD_COLS, GEAR_W, GEAR_H, GEAR_
                           ids, keys, pairs, shrink, sheet, fit)
 from export_itemtext import clean  # noqa: E402
 from lua_tables import load as load_lua  # noqa: E402
-from check_client import EQUIP_PROPS, in_text  # noqa: E402
+from check_client import EQUIP_PROPS, MOB_BOSSES, in_text  # noqa: E402
 
 STAT = r"Type|Position|Weight|DEF|MDEF|ATK|MATK|Required Level|Equippable [Bb]y|Weapon Level|Element|Equipped on|Property|Range|Usable by"
 STAT_RE = re.compile(rf"({STAT})\s*:\s*(.*?)(?=\s+(?:{STAT})\s*:|$)")
@@ -61,7 +61,6 @@ STATS = {"MHP": "hp", "MaxHP": "hp", "MSP": "sp", "MaxSP": "sp", "ATK": "atk", "
          "CRIT": "crit", "DEF": "def", "MDEF": "mdef", "STR": "str", "AGI": "agi", "VIT": "vit", "INT": "int", "DEX": "dex", "LUK": "luk"}
 PCT = {"variable casting time": "cast_time_variable_percent", "after attack delay": "attack_delay_percent"}
 CLIENT_MOBS = {20175, 20176, 20177, 20178, 20179}  # Extra Joker, Erzsebet, Jeniffer, Orc General, Sieglouse
-MOB_BOSSES = {20175: 1131, 20176: 1102, 20177: 1216, 20178: 1213, 20179: 1194}  # boss -> its base, told by a player: Joker, Bathory, Penomena, Infinite High Orc, Arclouse
 DROPS = {480999: [20178], 481000: [1211], 481001: [1269]}  # item id -> monsters, seen in game: General's Cape from Orc General, Hunter's Cape from Brilight, Rotating Gear from Clock
 # navi_mob.lub's element numbers -> data/elem.js's names; sizes S M L; races in data/sizes.js's RACES order
 ELEMENTS = ["Neutral", "Water", "Earth", "Fire", "Wind", "Poison", "Holy", "Shadow", "Ghost", "Undead"]

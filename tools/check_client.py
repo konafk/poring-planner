@@ -16,6 +16,10 @@ That table's OnStartEquip functions aren't read, so a number a script gives show
 0 there (★ Book's MATK +125). When the two differ, the gear's in-game text decides: if a line that isn't a refine or set bonus gives
 the planner's number, that's no difference. A gear's data-driven bonuses aren't compared, only those numbers.
 
+Boss links: MOB_BOSSES is kept by hand, because the client doesn't link a boss to its base, so each link is checked against the client:
+same element, size and race, a higher level, and a sprite that looks most like its base's (bosses are their base's art recoloured).
+A monster with a new id that looks like a lower-level one is printed as a possible new boss, but doesn't count as a difference.
+
 Nothing is written. It prints each difference and a summary, and exits 1 if there are any, so it can gate an update.
 Run: python tools/check_client.py [--client PATH]
 """
@@ -24,6 +28,7 @@ import json, os, re, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from export_spawns import DATA, lua_data  # noqa: E402
 from export_minimaps import DesGrf  # noqa: E402
+from export_sprites import crop, draw  # noqa: E402
 from lua_tables import load  # noqa: E402
 
 LUA = "data\\luafiles514\\lua files\\"
@@ -32,6 +37,10 @@ EQUIP_PROPS = LUA + "equipmentproperties\\equipmentproperties.lub"
 SETTINGS = LUA + "externalsettings.lub"
 CHANNEL = re.compile(r"_[abcdyz]$")
 COLOUR = re.compile(r"\^[0-9a-fA-F]{6}")
+MOB_SPR = "data\\sprite\\몬스터\\"
+MOB_BOSSES = {20175: 1131, 20176: 1102, 20177: 1216, 20178: 1213, 20179: 1194}  # boss -> its base, told by a player: Joker, Bathory, Penomena, Infinite High Orc, Arclouse
+SPRITE_MATCH = 0.75  # how alike a boss's first frame and its base's must be; unrelated monsters score 0.5 or less, the bosses 0.83 and up
+SPRITE_SUGGEST = 0.8  # how alike, to suggest a boss nobody has linked yet
 GEAR_FIELDS = {"armor": {"def": 1, "mdef": 10}, "Mweapon": {"atk": 3, "matk": 4, "wlv": 11}, "Rweapon": {"atk": 2, "wlv": 9}, "ammo": {"atk": 2}}
 
 
@@ -175,10 +184,81 @@ def check_gear(equip, fix, props, info, slots):
     return len(bad)
 
 
+def sprite_look(grf, sprite, n=24):
+    """A monster's first frame shrunk to n x n, whatever its colours: (drawn or not, brightness) per cell; None if it has no sprite file."""
+    path = MOB_SPR + (sprite or "").lower()
+    if not sprite or not grf.has(path + ".spr") or not grf.has(path + ".act"):
+        return None
+    w, h, px, _, _ = crop(draw(grf.read(path + ".spr"), grf.read(path + ".act"))[0])
+    cells = [(yy * h // n * w + xx * w // n) * 4 for yy in range(n) for xx in range(n)]
+    return [1 if px[i + 3] else 0 for i in cells], [(px[i] + px[i + 1] + px[i + 2]) // 3 if px[i + 3] else 0 for i in cells]
+
+
+def sprite_score(a, b):
+    """0 to 1: the average of how well two looks' shapes overlap and how alike their shading is, so a recolour still scores high."""
+    both = [(x, y) for x, y, m, k in zip(a[1], b[1], a[0], b[0]) if m and k]
+    either = sum(1 for m, k in zip(a[0], b[0]) if m or k)
+    if len(both) < 20 or not either:
+        return 0
+    mx, my = sum(x for x, _ in both) / len(both), sum(y for _, y in both) / len(both)
+    dx, dy = sum((x - mx) ** 2 for x, _ in both) ** .5, sum((y - my) ** 2 for _, y in both) ** .5
+    shading = sum((x - mx) * (y - my) for x, y in both) / (dx * dy) if dx and dy else 0
+    return (len(both) / either + max(shading, 0)) / 2
+
+
+def check_bosses(grf, navi, bosses, levels):
+    """A boss link holds if the boss has its base's element, size and race, a higher level, and looks most like its base of the monsters
+    that share those. Monsters that look like a lower-level one with the same element, size and race but aren't linked are only suggested."""
+    packed = {r[4] & 0xFFFF: r[8] for r in navi.values() if isinstance(r, dict) and isinstance(r.get(4), int) and r[4] & 0xFFFF}
+    looks, name = {}, lambda i: levels[i][0] if i in levels else i
+
+    def look(i):
+        if i not in looks:
+            looks[i] = sprite_look(grf, levels[i][0]) if i in levels else None
+        return looks[i]
+
+    def rivals(i):
+        return [j for j in packed if j != i and packed[j] == packed[i] and look(j)]
+
+    bad, good = [], 0
+    for boss, base in sorted(bosses.items()):
+        if boss not in packed or base not in packed:
+            bad.append(f"  {boss} -> {base}: not in the client's spawn table")
+        elif packed[boss] != packed[base]:
+            bad.append(f"  {name(boss)} -> {name(base)}: different element, size or race")
+        elif levels[boss][1] <= levels[base][1]:
+            bad.append(f"  {name(boss)} -> {name(base)}: Lv {levels[boss][1]} isn't above its base's Lv {levels[base][1]}")
+        elif not look(boss) or not look(base):
+            bad.append(f"  {name(boss)} -> {name(base)}: no sprite file to compare")
+        else:
+            score = sprite_score(look(boss), look(base))
+            best = max(rivals(boss), key=lambda j: sprite_score(look(boss), look(j)))
+            if score < SPRITE_MATCH:
+                bad.append(f"  {name(boss)} -> {name(base)}: sprites don't look alike ({score:.2f})")
+            elif best != base:
+                bad.append(f"  {name(boss)} -> {name(base)}: looks more like {name(best)} ({sprite_score(look(boss), look(best)):.2f} against {score:.2f})")
+            else:
+                good += 1
+    print(f"Boss links: {good} confirmed by their sprites, {len(bad)} don't hold")
+    print("\n".join(bad)) if bad else None
+    # not a difference, only worth a look: a new boss nobody has linked yet
+    new = []
+    for i in sorted(packed):
+        if i in bosses or i < 20000 or i not in levels or not look(i):
+            continue
+        low = [j for j in rivals(i) if levels[j][1] < levels[i][1]]
+        best = max(low, key=lambda j: sprite_score(look(i), look(j)), default=None)
+        if best and sprite_score(look(i), look(best)) >= SPRITE_SUGGEST:
+            new.append(f"  {name(i)} ({i}) looks like {name(best)} ({best}): add it to MOB_BOSSES if it's a boss version")
+    print("Possible new boss versions (not counted as differences):\n" + "\n".join(new)) if new else None
+    return len(bad)
+
+
 def main():
     client = sys.argv[sys.argv.index("--client") + 1] if "--client" in sys.argv else r"C:\Gravity\RagnarokZero"
     grf = DesGrf(os.path.join(client, "data.grf"))
-    counts, levels = navi_counts(load(grf.read(NAVI))["Navi_Mob"])
+    navi = load(grf.read(NAVI))["Navi_Mob"]
+    counts, levels = navi_counts(navi)
     props = load(grf.read(EQUIP_PROPS))["Item"]
     settings = load(grf.read(SETTINGS))
     names = js_value("maps.js", "MAPNAMES")
@@ -191,6 +271,7 @@ def main():
     data = lua_data(open(os.path.join(client, "System", "itemInfo_data.lub"), "rb").read(), "utf-8", lenient=True)["tbl_data"]
     slots = {int(k): v["slotCount"] for k, v in data.items() if isinstance(v, dict) and isinstance(v.get("slotCount"), int)}
     n += check_gear(js_value("equipment.js", "EQUIP"), js_value("client.js", "CLIENT")["fix"], props, info, slots)
+    n += check_bosses(grf, navi, MOB_BOSSES, levels)
     print(f"{n} difference{'' if n == 1 else 's'}" if n else "No differences.")
     sys.exit(1 if n else 0)
 
