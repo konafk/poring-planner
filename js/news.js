@@ -23,9 +23,10 @@ function renderNews(){
     return `<div class="newsCard"><div class="note">${esc(fl||"")} · Lv ${lv}</div><b>${infoMobLink(id,nm)}</b><a href="#" data-info="item:${card}">${itemIcon(card,1,"il")}${esc(nm)} Card</a>${c&&c.t?`<p>${esc(c.t)}</p>`:""}</div>`}).join("");
   $("newsBossNote").textContent=n.bossNote;
   $("newsGear").innerHTML=n.gear.map(([id,nm,t])=>`<div class="newsItem"><b>${id?`<a href="#" data-info="item:${id}">${esc(nm)}</a>`:esc(nm)}</b><span>${esc(t)}</span></div>`).join("");
-  const cb=n.collab;$("newsCollabCard").hidden=!cb;
-  if(cb){$("newsCollabTitle").textContent=cb.name;$("newsCollabIntro").textContent=cb.intro;
-    $("newsCollab").innerHTML=cb.groups.map(([g,rows])=>`<div class="newsGrp"><div class="secHead">${esc(g)}</div><div class="newsList">${rows.map(([ids,nm,t])=>`<div class="newsItem"><b>${ids.length?ids.map(newsItemLink).join(" · "):esc(nm)}</b><span>${esc(t)}</span></div>`).join("")}</div></div>`).join("")}
+  // a card each for a collaboration or event's items, after the gear and events
+  document.querySelectorAll(".newsCollabCard").forEach(el=>el.remove());
+  $("newsRow").insertAdjacentHTML("afterend",(n.cards||[]).map(cb=>`<section class="card newsCollabCard" data-tab="news"><h2>${esc(cb.name)}</h2><p class="note newsIntro">${esc(cb.intro)}</p>
+    <div class="newsCollab">${cb.groups.map(([g,rows])=>`<div class="newsGrp"><div class="secHead">${esc(g)}</div><div class="newsList">${rows.map(([ids,nm,t])=>`<div class="newsItem"><b>${ids.length?ids.map(newsItemLink).join(" · "):esc(nm)}</b><span>${esc(t)}</span></div>`).join("")}</div></div>`).join("")}</div></section>`).join(""));
   $("newsEvents").innerHTML=n.events.map(([nm,k,t])=>`<div class="newsItem"><b>${esc(nm)} <span class="pill ${k==="ended"?"":"up"}">${k==="ended"?"Ended":"New"}</span></b><span>${esc(t)}</span></div>`).join("")+
     n.town.map(t=>`<div class="newsItem"><b>In town</b><span>${esc(t)}</span></div>`).join("");
 }
