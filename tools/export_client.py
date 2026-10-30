@@ -8,7 +8,7 @@ The database exports (equipment.js, cards.js, iteminfo.js, clientitems.js, icons
 the client isn't, so what the client says goes in a file of its own that only this script writes. Wherever the client has it, it wins:
 - text: every piece of gear's and card's in-game description (System\\iteminfo_enUS.lub), without the Type / DEF / Weight ... block,
   the rules and spacers, lines joined with spaces like the database's. The database's copies often stop before the refine lines.
-- fix: where the client's name (unless another item already has it), card slots (System\\itemInfo_data.lub slotCount), required level, DEF, ATK, MATK or weapon level
+- fix: where the client's name (unless another item already has it), card slots (System\\itemInfo_data.lub slotCount), required level, DEF, ATK, MATK, weapon level or weight
   differ from the database's.
 - lines: bonus lines an item's client text has that its database lines don't (missing(): flat stat lines, mostly), added to it.
 - cards: cards the database doesn't have yet (the Gatchaman event cards), as data/cards.js rows (card_row()).
@@ -24,6 +24,11 @@ the client isn't, so what the client says goes in a file of its own that only th
   Porings, the Solid / Furious / ... champions, event monsters) stay out, as before.
 - mobLv: every monster the client spawns, [name, level]: the monster list takes the client's level, and the drop lists name each
   monster as the monster list does (or as the client does, for one the list doesn't have) with its level.
+- mobVar: monsters that are a version of another, {id: ["Enhanced" | "Boss", base id]}: a C<number>_ sprite (C1_ Swift, C2_ Solid,
+  C3_ Ringleader, C4_ Furious, C5_ Elusive) is an enhanced version of the monster with that sprite name without the prefix, and the
+  bosses are MOB_BOSSES, kept by hand because the client doesn't link them. Tags only: the base's HP, EXP and drops aren't copied.
+- boxes: what's in the boxes the client lists: {box id: ["all" | "pick", [[item id, count, refine, hours]]]}, from data.grf's
+  packageitem.lub (the probability lists; "all" says only that these can come from it) and SelectPackageItem_Data.lub ("pick": choose one).
 - recipes: the headgear NPCs craft (npc_recipes(): Februs's from the dialogue, the Hat Maker's from the quest log), as
   data/recipes.js's NPC rows in a Headgear category, for the Recipes tab and each item's details.
 - drops: drops seen in game that neither the client nor the database lists (DROPS, kept by hand), rate unknown. They go on the monster's
@@ -42,6 +47,8 @@ from export_spawns import DATA, lua_data  # noqa: E402
 from export_icons import (ROOT, CARD_W, CARD_H, CARD_COLS, GEAR_W, GEAR_H, GEAR_COLS, ITEM_COLS, MOB_W, MOB_H, MOB_COLS,  # noqa: E402
                           ids, keys, pairs, shrink, sheet, fit)
 from export_itemtext import clean  # noqa: E402
+from lua_tables import load as load_lua  # noqa: E402
+from check_client import EQUIP_PROPS, in_text  # noqa: E402
 
 STAT = r"Type|Position|Weight|DEF|MDEF|ATK|MATK|Required Level|Equippable [Bb]y|Weapon Level|Element|Equipped on|Property|Range|Usable by"
 STAT_RE = re.compile(rf"({STAT})\s*:\s*(.*?)(?=\s+(?:{STAT})\s*:|$)")
@@ -54,6 +61,7 @@ STATS = {"MHP": "hp", "MaxHP": "hp", "MSP": "sp", "MaxSP": "sp", "ATK": "atk", "
          "CRIT": "crit", "DEF": "def", "MDEF": "mdef", "STR": "str", "AGI": "agi", "VIT": "vit", "INT": "int", "DEX": "dex", "LUK": "luk"}
 PCT = {"variable casting time": "cast_time_variable_percent", "after attack delay": "attack_delay_percent"}
 CLIENT_MOBS = {20175, 20176, 20177, 20178, 20179}  # Extra Joker, Erzsebet, Jeniffer, Orc General, Sieglouse
+MOB_BOSSES = {20175: 1131, 20176: 1102, 20177: 1216, 20178: 1213, 20179: 1194}  # boss -> its base, told by a player: Joker, Bathory, Penomena, Infinite High Orc, Arclouse
 DROPS = {480999: [20178], 481000: [1211], 481001: [1269]}  # item id -> monsters, seen in game: General's Cape from Orc General, Hunter's Cape from Brilight, Rotating Gear from Clock
 # navi_mob.lub's element numbers -> data/elem.js's names; sizes S M L; races in data/sizes.js's RACES order
 ELEMENTS = ["Neutral", "Water", "Earth", "Fire", "Wind", "Poison", "Holy", "Shadow", "Ghost", "Undead"]
@@ -227,6 +235,21 @@ def npc_at(name):
     return next((f"{m} {r[1]},{r[2]}" for m, rs in npcs.items() for r in rs if r[0] == name), None)
 
 
+def box_contents(grf):
+    """{box id: ["all" | "pick", [[item id, count, refine, hours]]]} from the client's box tables; a box in both is the selection."""
+    lua = "data\\luafiles514\\lua files\\"
+    out = {}
+    for i, rows in load_lua(grf.read(lua + "probabilityinfo\\packageitem.lub")).get("tbl", {}).items():
+        if isinstance(i, int) and isinstance(rows, dict):
+            out[i] = ["all", [[r["id"], 1, 0, 0] for r in rows.values() if isinstance(r, dict) and isinstance(r.get("id"), int)]]
+    pick = load_lua(grf.read(lua + "selectpackage\\selectpackageitem_data.lub")).get("SelectPackageItemData", {}).get("PackageTbl", {})
+    for i, groups in pick.items():
+        rows = [r for g in groups.values() if isinstance(g, dict) for r in g.values() if isinstance(r, dict) and isinstance(r.get("item"), int)]
+        if isinstance(i, int) and rows:
+            out[i] = ["pick", [[r["item"], r.get("cnt") or 1, r.get("refine") or 0, r.get("hour") or 0] for r in rows]]
+    return {i: out[i] for i in sorted(out) if out[i][1]}
+
+
 def npc_recipes(grf, client):
     """The headgear NPCs craft, as data/recipes.js's NPC rows (cat Headgear): from the client's NPC dialogue (data\\i18n\\sc\\*.csv,
     the lines the server sends by key), "[Februs] / You mean the <ITEM>..</ITEM>. / Here's the material estimate. / <ITEM>..</ITEM> xN
@@ -322,10 +345,9 @@ def main():
     known = {e["id"] for e in eq} | {c["id"] for c in cards} | set(ids("equipment.js", "EQUIP"))
     known |= {i for f, c in [("items.js", "ITEMN"), ("recipes.js", "RECIPE_ITEMN"), ("consumables.js", "CONSUM"), ("recovery.js", "RECOVERY"),
                              ("clientitems.js", "CLIENT_ITEMS")] for i in keys(f, c)} | set(pairs("memorial.js"))
-    cos = open(os.path.join(DATA, "costumes.js"), encoding="utf-8").read()
-    known |= {int(i) for i in re.findall(r"[{,](\d+):\[", cos[cos.index("const COSTUMES="):])}  # its keys aren't quoted
     eq_ids, names = {e["id"] for e in eq}, {x["name"] for x in eq + cards}
     text, fix, gear, items, skipped, unread, extra = {}, {}, [], {}, [], {}, {}
+    props = load_lua(DesGrf(os.path.join(client, "data.grf")).read(EQUIP_PROPS))["Item"]
     for x in eq + cards:
         v = info.get(x["id"])
         if not v:
@@ -341,10 +363,15 @@ def main():
         if x["id"] in eq_ids:
             if "slotCount" in d and d["slotCount"] != (x.get("slots") or 0):
                 f["slots"] = d["slotCount"]
-            for k, field in (("Required Level", "lv"), ("Def", "def"), ("Atk", "atk"), ("Matk", "matk"), ("Weapon Level", "wlv")):
+            for k, field in (("Required Level", "lv"), ("Def", "def"), ("Atk", "atk"), ("Matk", "matk"), ("Weapon Level", "wlv"), ("Weight", "w")):
                 n = num(st.get(k))
                 if n is not None and n != (x.get(field) or 0):
                     f[field] = n
+            # a weapon's base MATK that's a sentence, not in the stat block (the guild staffs' "MATK +140"): the stats table has it too
+            p = props.get(x["id"])
+            m = p["Stat"].get(4) if isinstance(p, dict) and p.get("Type") == "Mweapon" and isinstance(p.get("Stat"), dict) else 0
+            if m and not x.get("matk") and "matk" not in f and in_text(ls, "matk", m):
+                f["matk"] = m
         if f:
             fix[x["id"]] = f
         add = missing(t, x)
@@ -415,11 +442,17 @@ def main():
     # every monster the client spawns: [name, level], for the monster list's levels and the drop lists (the database's are often another
     # server's: Baphomet Lv 105 for the client's 81, Extra Joker 126 for 105)
     mob_lv = {i: [m["name"], m["lv"]] for i, m in sorted(spawned.items())}
+    # which monsters are a version of another: the sprite names the enhanced ones, MOB_BOSSES the bosses
+    by_sprite = {m["sprite"]: i for i, m in spawned.items()}
+    mob_var = {i: ["Enhanced", by_sprite[re.sub(r"^C\d+_", "", m["sprite"])]] for i, m in sorted(spawned.items())
+               if re.match(r"C\d+_", m["sprite"] or "") and re.sub(r"^C\d+_", "", m["sprite"]) in by_sprite}
+    mob_var.update({i: ["Boss", b] for i, b in MOB_BOSSES.items()})
+    boxes = box_contents(grf)
     recipes = npc_recipes(grf, client)
     # the names of what they make and use, as the client has them, for the Recipes tab (data/recipes.js's RECIPE_ITEMN lacks some)
     recipe_names = {i: (info[i].get("identifiedDisplayName") or "").replace("’", "'") for r in recipes for i in [r["id"], *(m[0] for m in r["mats"])]
                     if i in info}
-    out = {"text": text, "fix": fix, "lines": extra, "gear": gear, "cards": new_cards, "items": items, "mobs": mobs, "mobLv": mob_lv,
+    out = {"text": text, "fix": fix, "lines": extra, "gear": gear, "cards": new_cards, "items": items, "mobs": mobs, "mobLv": mob_lv, "mobVar": mob_var, "boxes": boxes,
            "recipes": recipes, "recipeNames": recipe_names, "drops": DROPS, "art": art}
     with open(os.path.join(DATA, "client.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// The game client's own item data (tools/export_client.py, from the installed Global client), laid over the community database's\n"
@@ -427,9 +460,12 @@ def main():
                 "// DEF, ATK, MATK, weapon level where the database's differ; gear: armour the database doesn't have yet, as data/equipment.js rows;\n"
                 "// items: other items no data file has, [name, category, in-game text]; mobs: monsters the database doesn't have yet (no HP or\n"
                 "// EXP in the client); art: the client's card pictures, gear and item icons and monster pictures (sheets like data/icons.js's);\n"
-                "// mobLv: every monster the client spawns, [name, level], for the monster list's levels and the drop lists; recipes: the headgear\n"
+                "// mobLv: every monster the client spawns, [name, level], for the monster list's levels and the drop lists; mobVar: which monsters are an\n"
+                "// enhanced or boss version of another, [kind, base id], read into MOB_VARIANT (\"Boss Bathory\") for their tags; boxes: what's in a\n"
+                "// box, [\"all\" | \"pick\", [[item id, count, refine, hours]]] (js/info.js shows it); recipes: the headgear\n"
                 "// NPCs craft, as data/recipes.js's NPC rows (js/recipes.js adds them); drops: item id -> monsters, seen in game with no known rate\n")
         f.write("const CLIENT=" + json.dumps(out, ensure_ascii=False, separators=(",", ":")) + ";\n")
+        f.write("const MOB_VARIANT={};\n")
         f.write("(function(){const has=new Set(EQUIP.map(e=>e.id));CLIENT.gear.forEach(r=>{if(!has.has(r.id))EQUIP.push(r)});\n"
                 "  const hasCard=new Set(CARDS.map(c=>c.id));CLIENT.cards.forEach(r=>{if(!hasCard.has(r.id))CARDS.push(r)});\n"
                 "  const byId=new Map([...EQUIP,...CARDS].map(x=>[x.id,x]));Object.entries(CLIENT.fix).forEach(([id,f])=>{const x=byId.get(+id);if(x)Object.assign(x,f)});\n"
@@ -448,6 +484,8 @@ def main():
                 "      if(!x.d.some(r=>r[0]===mid))x.d.push([mid,\"\",0,\"normal\",null])})});\n"
                 "  // every monster's level as the client spawns it; the drop lists name a monster as the monster list does, or as the client does\n"
                 "  const byMob=new Map(MOBS.map(m=>[m.id,m]));Object.entries(CLIENT.mobLv).forEach(([id,[n,lv]])=>{const m=byMob.get(+id);if(m)m.lv=lv});\n"
+                "  // each enhanced or boss monster's tag, naming its base as the client does\n"
+                "  Object.entries(CLIENT.mobVar).forEach(([id,[k,b]])=>{const n=(CLIENT.mobLv[b]||[])[0];if(n)MOB_VARIANT[id]=k+\" \"+n});\n"
                 "  Object.values(ITEM_INFO).forEach(x=>(x.d||[]).forEach(r=>{const m=byMob.get(r[0]),c=CLIENT.mobLv[r[0]];\n"
                 "    if(m){r[1]=m.name;r[2]=m.lv}else if(c){r[1]=c[0];r[2]=c[1]}}));\n"
                 "  Object.entries(CLIENT.items).forEach(([id,[n,c,t]])=>{if(!CLIENT_ITEMS[id])CLIENT_ITEMS[id]=[n,c];if(t&&!ITEM_TEXT[id])ITEM_TEXT[id]=t});\n"
@@ -463,7 +501,7 @@ def main():
     print(f"  {len(new_cards)} new cards ({', '.join(c['name'] for c in new_cards)}); bonus lines added from the client's text to {len(extra)} items:")
     for i, g in extra.items():
         print(f"    {i}: {json.dumps(g)}")
-    for k in ("name", "slots", "lv", "def", "atk", "matk", "wlv"):
+    for k in ("name", "slots", "lv", "def", "atk", "matk", "wlv", "w"):
         n = [f"{i}" for i, f in fix.items() if k in f]
         if n:
             print(f"  {k} differs: {len(n)} ({', '.join(n[:15])}{'…' if len(n) > 15 else ''})")

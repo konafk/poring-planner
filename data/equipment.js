@@ -1,5 +1,5 @@
 // Equipment (Exported by tools/export_prontera.py from roz.prontera.info); GvG-only bonuses are left out.
-// fields: id, slug, name, slot (every slot it takes), type (weapon type), el, slots, lv (required), wlv (weapon level), w (weapon and shield weight, as in game; none = weightless), refine (schedule),
+// fields: id, slug, name, slot (every slot it takes), type (weapon type), el, slots, lv (required), wlv (weapon level), w (weapon and shield weight; data/client.js adds armour's), refine (schedule),
 // atk, matk, def, mdef, g: bonus groups {r: min refine, rs: min combined refine, lv: min base level, cls: job slugs, lvPer / lvMax: lines count once per lvPer base levels up to lvMax,
 // proc: text of an effect that isn't a plain stat, b: [[type, target kind, target, value, per N refines, skill, scaling skill]]}
 // SETS: combos by item or card slug, same bonus groups; ref: the piece whose item's refine per-refine lines count.
