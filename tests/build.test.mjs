@@ -39,7 +39,7 @@ Object.assign(globalThis, {
   JOBDATA: { Knight: { bonus: { str: [1, 6], vit: [5] }, hp: [40, 48, 58], sp: [10, 12, 14] } },
 });
 // the real affix list (the database) and costume enchant stones, as the page loads them before build.js
-for (const f of ["affixes", "stones", "special"]) (0, eval)(readFileSync(new URL(`../data/${f}.js`, import.meta.url), "utf8").replace(/^const (\w+)=/gm, "globalThis.$1="));
+for (const f of ["affixes", "stones", "special", "essences"]) (0, eval)(readFileSync(new URL(`../data/${f}.js`, import.meta.url), "utf8").replace(/^const (\w+)=/gm, "globalThis.$1="));
 const BUILD = require("../build.js");
 const aspdBase = () => 150;
 const base = { str: 50, agi: 30, vit: 20, int: 1, dex: 30, luk: 10 };
@@ -229,9 +229,9 @@ t("random options come from the affix list, filtered to what the row's gear roll
   assert.deepEqual(by("armor", BUILD.item(2), "res_race_demon").range, [3, 7]);
   assert.ok(keys("garment", null).includes("res_ele_fire") && !keys("armor", BUILD.item(2)).includes("res_ele_fire"));
   assert.deepEqual(by("shoes", BUILD.item(3), "hp").range, [150, 300]);
-  // the database has no pool for accessories, headgear or shields: those list every option, old hand-made ones too
+  // the database has no pool for accessories, headgear or shields: those list every option but the armor's Job Essences, old hand-made ones too
   assert.equal(BUILD.optGear("acc1", BUILD.item(7)), null);
-  assert.equal(keys("acc1", BUILD.item(7)).length, BUILD.OPTIONS.length);
+  assert.equal(keys("acc1", BUILD.item(7)).length, BUILD.OPTIONS.filter(o => !o.ess).length);
   assert.ok(keys("acc1", BUILD.item(7)).includes("str") && keys("headTop", BUILD.item(4)).includes("mele_fire"));
   assert.equal(by("acc1", BUILD.item(7), "atk").range, null);
   // options the model can't use are listed, then reported; ones apply() can't place report through it
@@ -264,6 +264,40 @@ t("ignore DEF / MDEF of a race, size, element or boss / normal monsters", () => 
   const A = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { weapon: { id: 1, opts } } }, "Knight", aspdBase).acc;
   assert.equal(A.ign.mdef.race.Dragon, 15); assert.equal(A.ign.def.size.S, 10); assert.equal(A.ign.def.ele.Undead, 20); assert.equal(A.ign.mdef.kind.boss, 5);
   assert.equal(A.ignDef + A.ignMdef, 0);
+});
+
+t("Job Essences: armor only, by the armor's refine and your skills", () => {
+  const keys = (slot, it) => BUILD.optChoices(slot, it).map(o => o.k);
+  // offered on armor only, under their own groups, with no min–max
+  assert.ok(keys("armor", BUILD.item(2)).includes("ess_29399") && !keys("weapon", BUILD.item(1)).includes("ess_29399"));
+  assert.ok(!keys("garment", { slot: ["garment"] }).includes("ess_29399") && !keys("acc1", { slot: ["accessory_1"] }).includes("ess_29399") && !keys("special", null).includes("ess_29399"));
+  const pick = BUILD.optChoices("armor", BUILD.item(2)).find(o => o.k === "ess_29399");
+  assert.equal(pick.g, "Job essence: 2nd jobs"); assert.equal(pick.label, "Knight's Essence Lv.1"); assert.equal(pick.range, null);
+  assert.equal(BUILD.optChoices("armor", BUILD.item(2)).find(o => o.k === "ess_29387").g, "Job essence: 1st jobs");
+  const run = (ess, refine, skills, job = "Knight", weapon) => BUILD.compute({ baseLv: 3, jobLv: 1, base, skills, gear: { armor: { id: 2, refine, opts: [{ k: "ess_" + ess, v: "" }] }, ...weapon ? { weapon: { id: weapon } } : {} } }, job, aspdBase);
+  // Knight's Essence Lv.1: CRIT +3 per Cavalier Mastery, Bowling Bash +20%, After Attack Delay -1% per armor refine
+  const k = run(29399, 9, { "cavalier-mastery": 5 });
+  assert.equal(k.acc.crit, 15); assert.equal(k.acc.aspdPct, 9); assert.equal(k.acc.skillOf["Bowling Bash"], 20);
+  // no skill learned or +0: those lines give nothing, the rest still counts
+  const k0 = run(29399, 0, {});
+  assert.equal(k0.acc.crit, 0); assert.equal(k0.acc.aspdPct, 0); assert.equal(k0.acc.skillOf["Bowling Bash"], 20);
+  // per N levels and per N refines round down (Swordsman's Essence Lv.2: delay per Bash level, Magnum Break +15% per 2 refines)
+  const s1 = run(29387, 9, { bash: 5 }); assert.equal(s1.acc.aspdPct, 2);          // Lv.1: one step per 2 levels of Bash
+  const s2 = run(29393, 9, { bash: 5 }); assert.equal(s2.acc.aspdPct, 5); assert.equal(s2.acc.skillOf["Magnum Break"], 60);
+  // class lines: "Swordsman Class" covers Knight, not Mage
+  assert.equal(run(29411, 0, {}, "Knight").acc.critDmg, 7); assert.equal(run(29411, 0, {}, "Mage").acc.critDmg, 0);
+  // what the model can't use is listed under "Not counted"
+  assert.ok(s1.unmodelled.includes("Swordsman's Essence Lv.1: Magnum Break SP cost -10"));
+  // a typed value left over from another option doesn't turn it into a line
+  const left = BUILD.compute({ baseLv: 3, jobLv: 1, base, skills: {}, gear: { armor: { id: 2, opts: [{ k: "ess_29387", v: 50 }] } } }, "Knight", aspdBase);
+  assert.ok(!left.unmodelled.some(x => /option not counted/.test(x)));
+  // every essence has the client's text; every skill it names and scales with is in the skill tree
+  assert.equal(ESSENCES.length, 60); assert.ok(ESSENCES.every(x => x.t && x.g.length));
+  const tree = readFileSync(new URL("../data/skills.js", import.meta.url), "utf8"), has = (f, v) => tree.includes(`"${f}":${JSON.stringify(v)}`);
+  for (const x of ESSENCES) for (const g of x.g) for (const b of g.b || []) {
+    if (b[5]) assert.ok(has("name", b[5]), `${x.name}: ${b[5]}`);
+    if (b[6]) assert.ok(has("slug", b[6]), `${x.name}: ${b[6]}`);
+  }
 });
 
 t("costume enchant stones: one per slot, plus the sets they complete", () => {

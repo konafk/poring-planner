@@ -14,6 +14,7 @@ The numbers are estimates. Skill values and formulas follow the sources below an
 - Crafting recipes (Recipes tab): the community database's recipe list and its Alchemy Lab guide (Mixture, Counteragent, Dyestuffs); the Old Pharmacist's potions and Marienne's fruit juices from the official client's Tip Box (`System/tipbox_enUS.lub`, Item Creation)
 - Random options (affixes) per gear type, pool and slot, with their min–max: the community database's affix simulator
 - Costume enchant stones and their sets: the stones' item descriptions (Global client text)
+- Job Essences (`data/essences.js`): their item descriptions in the client's `System\iteminfo_enUS.lub`; that they go on +9 armor from the Enchant Staff's dialogue in `data.grf`
 - Taming Ring pet egg enchants: the eggs' item descriptions (Global client text)
 - Memorial dungeons, Jellostones, the Expedition upgrades and the memorial gear's enchants (`data/memorial.js`): made by hand; item names and ids as the Global client has them
 - Every item in the game client that isn't gear or a card (Item info's All items): the community database's item catalog, read from the Global client

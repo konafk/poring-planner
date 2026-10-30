@@ -698,8 +698,8 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="bar"><h2 class="grow">Memorial gear enchants</h2>
       <label>Gear<select id="enchGear"><option value="subjugation">Subjugation Team</option><option value="expedition">Expedition</option></select></label>
       <label>Refine and part<select id="enchPool"><option value="low">+0 to +8, any part</option><option value="garment">+9 or more, garment</option><option value="shoes">+9 or more, shoes</option><option value="armor">+9 or more, armor</option></select></label></div>
-    <div class="scroll"><table id="enchTable"><thead><tr><th>Enchant</th><th>Chance</th></tr></thead><tbody id="enchRows"></tbody></table></div>
-    <div class="note mt" id="enchSpirits"></div>
+    <div class="scroll"><table id="enchTable"><thead><tr><th>Enchant</th><th>Chance</th><th id="enchFxHead" hidden>Effect</th></tr></thead><tbody id="enchRows"></tbody></table></div>
+    <div class="note mt" id="enchEssences"></div>
     <div class="note hint">The armor, garment and shoes take one enchant in card slot 4: 100,000 zeny for one line at random, from the pool for the gear's refine and part. Reset it for 10,000,000 zeny (works 70% of the time) or a Zelstar (KP shop; always). Put the line you get in the item's random options on the Character tab and it counts.</div>
   </section>
 
@@ -985,6 +985,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 <script src="data/iteminfo.js"></script>
 <script src="data/itemtext.js"></script>
 <script src="data/client.js"></script>
+<script src="data/essences.js"></script>
 <script src="build.js"></script>
 <button type="button" class="fab" id="qlFab" aria-label="Log EXP" aria-expanded="false" aria-controls="quickLog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
 <dialog class="jump" id="jump" aria-label="Search">

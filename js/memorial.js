@@ -61,9 +61,14 @@ function renderMemorials(){
     <td class="name">${m.normal.map(x=>`<div>${memItem(x)}</div>`).join("")}</td><td class="name">${m.hard?m.hard.map(x=>`<div>${memItem(x)}</div>`).join(""):"–"}</td></tr>`).join("");
   $("memNpcs").innerHTML=MEM_NPCS.map(([n,at,what])=>`<tr><td class="name"><b>${esc(n)}</b></td>
     <td>${[].concat(at).map(a=>`<div>${naviTag(a)}</div>`).join("")}</td><td class="name">${esc(what)}</td></tr>`).join("")}
-function renderEnchants(){const g=$("enchGear").value||"subjugation",p=$("enchPool").value||"low",rows=MEM_ENCHANT[g][p];
-  $("enchRows").innerHTML=rows.map(([l,v])=>`<tr><td class="name">${l==="spirit"?"A job spirit (below)":esc(l)}</td><td>${v}%</td></tr>`).join("");
-  $("enchSpirits").innerHTML=p==="armor"?MEM_SPIRITS[g].map(s=>`<div>${esc(s)}</div>`).join(""):""}
+// each Job Essence a gear's +9 armor rolls: {x: the essence, v: its %}
+const memEssences=g=>{const m=MEM_ESSENCE[g];return ESSENCES.filter(x=>x.tier===m.tier).map(x=>({x,v:m.lv[/Lv\.(\d)$/.exec(x.name)[1]]})).filter(e=>e.v)};
+function renderEnchants(){const g=$("enchGear").value||"subjugation",p=$("enchPool").value||"low",rows=MEM_ENCHANT[g][p],armor=p==="armor";
+  const line=(name,v,fx)=>`<tr><td class="name">${name}</td><td>${v}%</td>${armor?`<td class="name enchFx">${esc(fx)}</td>`:""}</tr>`;
+  $("enchFxHead").hidden=!armor;
+  $("enchRows").innerHTML=rows.map(([l,v])=>{if(l!=="essence")return line(esc(l),v,"");const es=memEssences(g),rest=Math.round((v-es.reduce((t,e)=>t+e.v,0))*1000)/1000;
+    return es.map(e=>line(memName([e.x.id,e.x.name]),e.v,e.x.t)).join("")+(rest>0?line("Ninja's essences",rest,"Not in the game client"):"")}).join("");
+  $("enchEssences").textContent=armor?`Job Essences together: ${rows.find(r=>r[0]==="essence")[1]}%. Pick the one you get from the Armor row's affix list on the Character tab.`:""}
 function renderMem(){renderJello();renderMemorials()}
 const jelloSave=()=>{save();renderJello()};
 $("jelloCard").addEventListener("input",e=>{const J=jello(),d=e.target.dataset,v=Math.max(0,Math.round(num(e.target.value)));
