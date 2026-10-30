@@ -16,7 +16,7 @@ const altIdx=(c=C())=>{const m=c.mode==="build"&&/^alt(\d+)$/.exec(c.gearEdit||"
 const editAlt=(c=C())=>altIdx(c)>=0;
 const gearSet=(c=C())=>editAlt(c)?altOf(c,altIdx(c)):buildOf(c);
 function applyBuild(){const c=C();if(c.mode!=="build"){BUILD_LAST=null;c.bx=eqToBx(c);return}
-  const r=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,extra:[...consLines().lines,...(SKFX?[...SKFX.stat,...SKFX.buffStat]:[]),...aspdBuffLines(c)]},state.job,aspdBase);BUILD_LAST=r;const F=r.fields,A=r.acc;
+  const r=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,skills:learned(c),extra:[...consLines().lines,...(SKFX?[...SKFX.stat,...SKFX.buffStat]:[]),...aspdBuffLines(c)]},state.job,aspdBase);BUILD_LAST=r;const F=r.fields,A=r.acc;
   // skill-specific gear lines count when the attack's name contains the skill
   const nm=String(c.a.name||"").toLowerCase(),match=o=>Object.entries(o).reduce((t,[k,v])=>t+(nm.includes(k.toLowerCase())?v:0),0);
   const top=o=>Object.entries(o).reduce((t,[k,v])=>nm.includes(k.toLowerCase())?Math.max(t,v):t,0); // fixed cast %: only the highest counts
@@ -227,7 +227,7 @@ function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}}
 // equipment; not consumables or buffs), one row per bonus. A bonus with different physical and magic values gets a row for each
 const setSaved=b=>{const sp=b.special||{};return Object.keys(b.gear||{}).length>0||Object.values(b.stones||{}).some(Boolean)||!!sp.ring||!!sp.shield||(sp.own||[]).length>0||Object.values(sp.costume||{}).some(Boolean)};
 const gearSaved=c=>setSaved(c.build||{});
-function gearEqRows(c){const A=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,extra:[]},state.job,aspdBase).acc,rows=[];
+function gearEqRows(c){const A=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,skills:learned(c),extra:[]},state.job,aspdBase).acc,rows=[];
   const add=(by,t,v,ch="both")=>{v=Math.round(v*100)/100;if(v)rows.push({by,t,ch,v})};
   const both=(by,t,p,m)=>{if(p===m)add(by,t,p);else{add(by,t,p,"phys");add(by,t,m,"magic")}};
   ["race","size","ele","kind","group"].forEach(by=>new Set([...Object.keys(A.phys[by]),...Object.keys(A.magic[by])]).forEach(t=>both(by,t,A.phys[by][t]||0,A.magic[by][t]||0)));
@@ -285,8 +285,8 @@ const optFoot=(g,n)=>(optKept(g)?`<div class="note">Kept as typed, not counted: 
 const optList=ch=>{const gs=[...new Set(ch.map(o=>o.g))];
   return gs.map(g=>`<optgroup label="${esc(g)}">${ch.filter(o=>o.g===g).map(o=>`<option value="${o.k}">${esc(o.label)}${o.range?` (${o.range[0]}${o.range[1]!==o.range[0]?"–"+o.range[1]:""})`:""}</option>`).join("")}</optgroup>`).join("")};
 function optBoxes(slot,g,it){const ch=BUILD.optChoices(slot,it),gk=BUILD.optGear(slot,it)||"all",list=OPT_HTML[gk]||(OPT_HTML[gk]=optList(ch)),rows=BUILD.optRows(g.opts);
-  const one=(x,i)=>{const o=x&&ch.find(c=>c.k===x.k),saved=x&&!o?BUILD.OPTIONS.find(c=>c.k===x.k):null,r=o&&o.range;
-    return `<div class="opt"><select data-opt="${i}"><option value="">${x?"remove":"+ affix"}</option>${saved?`<optgroup label="Saved"><option value="${saved.k}">${esc(saved.label)}</option></optgroup>`:""}${list}</select>${x?`<input data-optv="${i}" type="number" step="any"${r?` min="${r[0]}" max="${r[1]}" placeholder="${r[0]}–${r[1]}" title="${esc(o.label)}: ${r[0]}–${r[1]}"`:""} value="${esc(x.v??"")}">`:""}</div>`};
+  const one=(x,i)=>{const o=x&&ch.find(c=>c.k===x.k),saved=x&&!o?BUILD.OPTIONS.find(c=>c.k===x.k):null,r=o&&o.range,ess=(o||saved||{}).ess;
+    return `<div class="opt"><select data-opt="${i}"><option value="">${x?"remove":"+ affix"}</option>${saved?`<optgroup label="Saved"><option value="${saved.k}">${esc(saved.label)}</option></optgroup>`:""}${list}</select>${x&&!ess?`<input data-optv="${i}" type="number" step="any"${r?` min="${r[0]}" max="${r[1]}" placeholder="${r[0]}–${r[1]}" title="${esc(o.label)}: ${r[0]}–${r[1]}"`:""} value="${esc(x.v??"")}">`:""}</div>${ess?`<div class="note essFx">${esc(ess.t)}</div>`:""}`};
   return `<div class="opts">${rows.map(one).join("")}${rows.length<BUILD.OPT_MAX?one(null,rows.length):""}${optFoot(g,rows.length)}</div>`}
 // costume enchant stones: a list per costume slot, each stone with what it gives
 const STONE_FX={str:"STR",agi:"AGI",vit:"VIT",int:"INT",dex:"DEX",luk:"LUK",crit:"CRIT",hit:"HIT",flee:"FLEE",def:"DEF",mdef:"MDEF",hp:"MaxHP",sp:"MaxSP",aspd:"ASPD",

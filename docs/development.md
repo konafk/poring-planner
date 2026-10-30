@@ -72,6 +72,7 @@ Each table lives in its own file, so a re-export after a patch only touches that
 | `jobs.js` | Job bonus stats and base Max HP / SP per base level. Written by `tools/export_jobs.py`. |
 | `affixes.js` | Random options per pool (monster drop, MVP, forging, activation, Glast Heim), gear type and option slot, with min–max and whether it's a %. Written by `tools/export_affixes.py`. |
 | `stones.js` | Costume enchant stones (one per costume slot) as bonus lines, and the stone sets. Made by hand from the stones' item descriptions. |
+| `essences.js` | Job Essences (armor enchants) as bonus groups: lines can go per armor refine and per level of a skill. Made by hand from the items' descriptions in the client. |
 | `special.js` | Pet egg enchants for the Taming Ring (Special Equipment, Accessory Right), Lv.1 and Lv.2 per pet, as bonus lines. Made from the eggs' item descriptions. |
 | `memorial.js` | Memorial dungeons and their reward boxes, the Jello Fragment of each weekday and its Jellostone, the Expedition upgrades and the Subjugation Team / Expedition enchant pools. Also Thor's Flame's Mithril and the Suspicious Craftsman's Oath rings and earrings. Made by hand. |
 | `jobmasters.js` | Where each 2nd job changes class: the NPC, the place and where they stand. Made by hand from the [official guide](https://roz.mygnjoy.com/en/intro/guide/22), checked against the client's `navi_npc.lub`. |

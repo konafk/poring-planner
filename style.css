@@ -368,6 +368,8 @@ td .map{cursor:default}
 #gearTable .opt,#specialTable .opt{display:flex;gap:6px}
 #gearTable .opt select,#specialTable .opt select{flex:1;min-width:0;padding:4px 26px 4px 6px;font-size:13px}
 #gearTable .opt input,#specialTable .opt input{width:72px;flex:none}
+/* a Job Essence's effect wraps to the width of its list instead of stretching the table */
+#gearTable .essFx{white-space:normal;width:0;min-width:100%;text-align:left}
 #gearTable .cards{display:flex;gap:6px;min-width:180px}
 #gearTable .cards input{min-width:140px}
 #gearTable tbody tr,#gearTable tbody tr:hover td,#specialTable tbody tr,#specialTable tbody tr:hover td{cursor:default;background:none}

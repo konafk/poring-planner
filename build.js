@@ -207,7 +207,9 @@ const BUILD=(()=>{
     ((typeof AFFIXES!=="undefined"&&AFFIXES.rows)||[]).forEach(([,type,,name,min,max,pct])=>{const [k,g,line,neg]=affixOpt(name);
       let x=by[k];if(!x){x=by[k]={k,g,label:name.replace(/\s*\(%\)$/,"")+(pct?" %":""),line,pct:!!pct,neg:!!neg,gear:{}};o.push(x)}
       (AFFIX_GEAR[type]||[]).forEach(gk=>{const r=x.gear[gk];x.gear[gk]=r?[Math.min(r[0],min),Math.max(r[1],max)]:[min,max]})});
-    LEGACY.forEach(x=>{if(!by[x.k]&&!OPT_ALIAS[x.k]){by[x.k]={...x,g:"Other",gear:{}};o.push(by[x.k])}});return o})();
+    LEGACY.forEach(x=>{if(!by[x.k]&&!OPT_ALIAS[x.k]){by[x.k]={...x,g:"Other",gear:{}};o.push(by[x.k])}});
+    // Job Essences (data/essences.js): armor enchants at the end of the list. No value to type: they go by the armor's refine and your skills
+    (typeof ESSENCES!=="undefined"?ESSENCES:[]).forEach(x=>o.push({k:"ess_"+x.id,g:`Job essence: ${x.tier===1?"1st":"2nd"} jobs`,label:x.name,line:null,pct:false,neg:false,gear:{},ess:x}));return o})();
   const OPT_BY=Object.fromEntries(OPTIONS.map(x=>[x.k,x]));
   // the gear kind a row's item rolls options as: weapons by type (staves magic, bows / instruments / whips ranged, the rest
   // melee; a weapon in the Shield row too), else armor / garment / shoes; null for parts the database lists no pool for. Books and
@@ -218,8 +220,8 @@ const BUILD=(()=>{
   // the options a row offers, with the min–max for its gear (over every kind it rolls as); every option when its gear has no
   // pool. Options the database has no affix for ("Other": special enchants, like a dungeon's gear) go on every part
   function optChoices(slot,it){const gk=optGear(slot,it),ks=gk?gk.split("+"):[],other=x=>!Object.keys(x.gear).length;
-    if(!ks.some(k=>OPTIONS.some(x=>x.gear[k])))return OPTIONS.map(x=>({...x,range:null}));
-    return OPTIONS.filter(x=>other(x)||ks.some(k=>x.gear[k])).map(x=>{const rs=ks.map(k=>x.gear[k]).filter(Boolean);
+    if(!ks.some(k=>OPTIONS.some(x=>x.gear[k])))return OPTIONS.filter(x=>!x.ess).map(x=>({...x,range:null}));
+    return OPTIONS.filter(x=>x.ess?ks.includes("armor"):other(x)||ks.some(k=>x.gear[k])).map(x=>{const rs=ks.map(k=>x.gear[k]).filter(Boolean);
       return {...x,range:rs.length?[Math.min(...rs.map(r=>r[0])),Math.max(...rs.map(r=>r[1]))]:null}})}
   const optKey=k=>OPT_ALIAS[k]||k;
   // the picked rows; a build saved before the lists keeps its typed text and is read as rows where it matches one
@@ -227,7 +229,7 @@ const BUILD=(()=>{
     return parseOptions(opts).lines.map(([t,kd,tg,v])=>{const o=OPTIONS.find(x=>x.line&&x.line[0]===t&&x.line[1]===kd&&x.line[2]===tg);return o&&{k:o.k,v:o.neg?-v:v}}).filter(Boolean)}
   // bonus lines of the picked rows; off: the ones the model can't count (shown under "Not counted")
   function optLines(opts){if(!Array.isArray(opts))return {...parseOptions(opts),off:[]};const lines=[],off=[];
-    optRows(opts).filter(x=>+x.v).forEach(x=>{const o=OPT_BY[x.k];if(o.line)lines.push([...o.line,o.neg?-x.v:+x.v]);else off.push(`${o.label.replace(/ %$/,"")} ${x.v}${o.pct?"%":""}`)});
+    optRows(opts).filter(x=>+x.v&&!OPT_BY[x.k].ess).forEach(x=>{const o=OPT_BY[x.k];if(o.line)lines.push([...o.line,o.neg?-x.v:+x.v]);else off.push(`${o.label.replace(/ %$/,"")} ${x.v}${o.pct?"%":""}`)});
     return {lines,bad:[],off}}
   // a row's options: the picked ones and any typed lines kept from before the lists
   function optLinesOf(o){const a=optLines(o.opts);if(!o.optsText)return a;const t=parseOptions(o.optsText);return {lines:[...a.lines,...t.lines],bad:[...a.bad,...t.bad],off:a.off}}
@@ -240,17 +242,19 @@ const BUILD=(()=>{
   const stonesWorn=sel=>STONE_SLOTS.map(z=>stone((sel||{})[z.k])).filter((x,i)=>x&&x.slot===STONE_SLOTS[i].k);
   // does a bonus group apply? r: item refine, rs: combined refine of a set, lv: base level, cls: job slugs
   // ("Acolyte Class" in game covers Priest and Monk, so a 2nd job also matches its 1st job)
-  const groupOn=(g,ctx)=>(g.r==null||ctx.refine>=g.r)&&(g.rs==null||ctx.refineSum>=g.rs)&&(g.lv==null||ctx.baseLv>=g.lv)&&(!g.cls||!g.cls.length||g.cls.includes(ctx.jobSlug)||g.cls.includes(ctx.firstSlug));
+  // wt: the weapon type a Job Essence's group needs
+  const groupOn=(g,ctx)=>(g.r==null||ctx.refine>=g.r)&&(g.rs==null||ctx.refineSum>=g.rs)&&(g.lv==null||ctx.baseLv>=g.lv)&&(!g.wt||ctx.weapon===g.wt)&&(!g.cls||!g.cls.length||g.cls.includes(ctx.jobSlug)||g.cls.includes(ctx.firstSlug));
   function applyGroups(A,gs,ctx,src){(gs||[]).forEach(g=>{if(!groupOn(g,ctx))return;
     if(g.proc||g.text){A.unmodelled.push(`${src}: ${g.proc||g.text}`);}
     // a proc's lines last only while it's up (Extra Joker & Joker: ATK +70 while transformed): listed, not counted
     if(g.proc)return;
     // "For every 10 BaseLv ... (up to BaseLv 50)": lvPer / lvMax on the group multiply its lines by the base level steps
     const lk=g.lvPer?Math.floor(Math.min(ctx.baseLv,g.lvMax||Infinity)/g.lvPer):1;
-    (g.b||[]).forEach(b=>{const per=b[4];const k=(per?Math.floor(ctx.refine/per):1)*lk;if(k<=0)return;const bb=b.slice();bb[3]=(+b[3]||0)*k;apply(A,bb,src)})})}
+    // ctx.skills (Job Essences only; {slug: learned level}): a line with a scaling skill counts per b[7] levels of it
+    (g.b||[]).forEach(b=>{const per=b[4],sk=ctx.skills&&b[6]?Math.floor((ctx.skills[b[6]]||0)/(b[7]||1)):1;const k=(per?Math.floor(ctx.refine/per):1)*lk*sk;if(k<=0)return;const bb=b.slice();bb[3]=(+b[3]||0)*k;apply(A,bb,src)})})}
 
   // ---- the whole build ----
-  // b = {baseLv, jobLv, base:{str..luk}, gear:{slot:{id, refine, cards:[ids]}}, stones?, special?, extra?, hpBase?, spBase?}; job = "Knight"
+  // b = {baseLv, jobLv, base:{str..luk}, gear:{slot:{id, refine, cards:[ids]}}, stones?, special?, extra?, hpBase?, spBase?, skills?}; job = "Knight"
   function compute(b,job,aspdBase){
     const A=blank(),lv=Math.max(1,+b.baseLv||1),jobLv=Math.max(1,+b.jobLv||1),ctxBase={baseLv:lv,jobSlug:String(job).toLowerCase(),firstSlug:String(FIRST_OF[job]||job).toLowerCase(),refineSum:0};
     const gear=b.gear||{},worn=[];let wpn=null,wpnL=null,shield=false,weaponAtk=0,gearAtk=0,gearMatk=0,refAtk=0,refMatk=0,refDef=0,gearDef=0,gearMdef=0;
@@ -262,7 +266,9 @@ const BUILD=(()=>{
       // a weapon in the Shield row is the left hand (Assassin); its ATK shows on the gear side of the status window like the right one's
       if(s.k==="shield"){if((it.slot||[]).includes("weapon"))wpnL=it;else shield=true}gearMatk+=it.matk||0;gearDef+=it.def||0;gearMdef+=it.mdef||0;refDef+=rd});
     worn.forEach(w=>{const ctx={...ctxBase,refine:w.r};applyGroups(A,w.it.g,ctx,w.it.name);w.cards.forEach(c=>applyGroups(A,c.g,ctx,c.name));
-      const o=optLinesOf(gear[w.slot]||{});o.lines.forEach(b=>apply(A,b,w.it.name+" option"));o.bad.forEach(x=>A.unmodelled.push(`${w.it.name} option not understood: ${x}`));o.off.forEach(x=>A.unmodelled.push(`${w.it.name} option not counted: ${x}`))});
+      const o=optLinesOf(gear[w.slot]||{});o.lines.forEach(b=>apply(A,b,w.it.name+" option"));o.bad.forEach(x=>A.unmodelled.push(`${w.it.name} option not understood: ${x}`));o.off.forEach(x=>A.unmodelled.push(`${w.it.name} option not counted: ${x}`));
+      // Job Essences among the row's options, by the armor's refine and b.skills
+      optRows((gear[w.slot]||{}).opts).forEach(x=>{const e=OPT_BY[x.k].ess;if(e)applyGroups(A,e.g,{...ctx,skills:b.skills||{},weapon:wpn?WTYPE[wpn.type]:""},e.name)})});
     // costume enchant stones (data/stones.js): b.stones = {upper, middle, lower, garment} -> stone id, plus the sets they complete
     const st=stonesWorn(b.stones);st.forEach(x=>{(x.b||[]).forEach(l=>apply(A,l,x.name));if(x.off)A.unmodelled.push(`${x.name}: ${x.off}`)});
     const ids=st.map(x=>x.id);(typeof STONE_SETS!=="undefined"?STONE_SETS:[]).forEach(z=>{if(z.need.every(i=>ids.includes(i)))z.b.forEach(l=>apply(A,l,z.name))});
