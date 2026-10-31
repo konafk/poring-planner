@@ -70,7 +70,7 @@ function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
     const sp=[],dr=dracSPPerSec(),dp=dpSPPerSec(),ks=killSPPerSec();
     {const k=dracCards();if(k)sp.push(`Dracula${k>1?` ×${k}`:""}${cardsInGear(c,[DRACULA])>0?" (from your gear)":""} ~${fmtN(dr*60)} SP/min`)}
     if(cd.dpOn&&state.job==="Sage")sp.push(dp>0?`Dark Priest ~${fmtN(dp*60)} SP/min`:"Dark Priest: only physical attacks");
-    if(cd.killSp.length)sp.push(!m?"pick a monster to see the SP per kill":ks>0?`vs ${esc(m.name)}: +5 SP a kill ≈ ${fmtN(ks*60)} SP/min`:`no +5 SP per kill vs ${esc(m.name)}${isSF()?" (not with Spell Fist)":RANGED.includes(c.weapon)?" (melee only)":cd.killSp.includes(m.race)?"":` (${esc(m.race||"?")})`}`);
+    if(cd.killSp.length)sp.push(!m?"pick a monster to see the SP per kill":ks>0?`vs ${esc(m.name)}: +5 SP a kill ≈ ${fmtN(ks*60)} SP/min`:`no +5 SP per kill vs ${esc(m.name)}${isSF()?" (not with Spell Fist)":isRangedHit()?" (melee only)":cd.killSp.includes(m.race)?"":` (${esc(m.race||"?")})`}`);
     if(spRecPct())sp.push(`SP recovery +${spRecPct()}% from gear`);
     $("spCardInfo").innerHTML=sp.join(" · ")}finally{SG_MOB=k0}}
   if(ecOn()){const m=calcMob(),k0=SG_MOB;SG_MOB=m;try{const d=m?defense(m):null;
