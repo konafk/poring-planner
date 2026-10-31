@@ -38,7 +38,6 @@ function levelPreset(p,c){if(p.type==="spellfist")return sgPreset(p,c);const s=p
   const cHi=(hi[3]||0)+(hi[4]||0),cLo=(lo[3]||0)+(lo[4]||0);if(cHi>0){const f=cLo/cHi;a.cast=Math.round(num(p.cast)*f*100)/100;if(p.vct!=null)a.vct=p.vct*f;if(p.fct!=null)a.fct=p.fct*f}
   const dHi=Math.max(hi[5]||0,hi[6]||0),dLo=Math.max(lo[5]||0,lo[6]||0);if(dHi>0)a.delay=Math.round(num(p.delay)*dLo/dHi*100)/100;
   if(p.gcd!=null&&hi[5])a.gcd=p.gcd*(lo[5]||0)/hi[5];if(p.cd!=null&&hi[6])a.cd=p.cd*(lo[6]||0)/hi[6];
-  if(p.meleeLv1&&lv===1)a.rng=false;
   // zeny per use follows the level's "Zeny Cost: 300Z" (Mammonite: 100 × Lv)
   if(p.zeny!=null){const z=String(lo[7]).match(/Zeny Cost:?\s*([\d,]+)/i);if(z)a.zeny=+z[1].replace(/,/g,"")}
   a.name=/Lv\s*\d+/.test(p.name)?p.name.replace(/Lv\s*\d+/,"Lv"+lv):`${p.name} Lv${lv}`;return {a,lv,s}}

@@ -99,11 +99,19 @@ const targets=()=>Math.max(1,num(C().a.targets,1));
 // it as whole words (Aster, not Mastering)
 const nameWords=s=>` ${String(s||"").toLowerCase().replace(/[^a-z0-9]+/g," ")} `;
 const groupMul=(B,m)=>Object.entries(B.group||{}).reduce((k,[g,v])=>nameWords(m.name).includes(nameWords(g))?k*(1+v/100):k,1);
+// melee or ranged, for "Melee / Ranged Physical Damage" bonuses: a skill goes by its description in the client ("dealing Ranged Physical Damage";
+// Spear Boomerang is melee at Lv1), a basic attack or a skill whose text doesn't say goes by the weapon. Every job's skills: Plagiarism copies too
+let SK_DIST=null;
+const skDistText=n=>{if(!SK_DIST){SK_DIST={};for(const j in SKILLS)for(const t of SKILLS[j])for(const s of t.skills)if(/(melee|ranged) physical damage/i.test(s.desc||""))SK_DIST[normSk(s.name)]=s.desc}
+  return SK_DIST[n]||SK_DIST[Object.keys(SK_DIST).find(k=>n.startsWith(k))]};
+const isRangedHit=(a=C().a,weapon=C().weapon)=>{const d=a.type==="auto"?null:skDistText(normSk(String(a.name).replace(/^copied:\s*/i,"")));if(!d)return a.rng??RANGED.includes(weapon);
+  const at=d.match(/At Lv\.?\s*(\d+), deals (melee|ranged) physical damage instead/i),lv=String(a.name).match(/Lv\s*(\d+)/);
+  return (at&&lv&&+lv[1]===+at[1]?at[2]:d.match(/(melee|ranged) physical damage/i)[1]).toLowerCase()==="ranged"};
+// the melee / ranged % on this attack: in build mode gear's own for the attack's tag, else the box as typed
+const distPct=(c=C())=>c.bx&&c.bx.dist?c.bx.dist[isRangedHit(c.a,c.weapon)?"ranged":"melee"]:num(c.rangePct);
 // damage bonuses in two groups. post: race, size, monster element, boss / normal, monster name, "all" and your attack element %, which on a
 // physical hit only scale weapon + equipment ATK (each its own multiplier); full: the extra damage %, consumables' ranged / magic %
 // and skill passives' damage % (Power Thrust, Advanced Katar Mastery), on the whole hit. Spells take both on the whole hit
-// does this attack take ranged damage %? The skill's own tag (a.rng in game.js), else the weapon: a thrown spear is ranged, and melee gear doesn't help it
-const rangedAtk=(a,w)=>a.rng??RANGED.includes(w);
 const bonusParts=(m,magic=false)=>{const c=C();let post=1,full=1+num(c.dmgBonus)/100;
   const on=t=>t==="both"||(t==="magic")===magic;
   const nm=String(c.nameSel||"").trim().toLowerCase();if(nm&&on(c.nameType||"phys")&&String(m.name).toLowerCase().includes(nm))post*=1+num(c.namePct)/100;
@@ -112,7 +120,7 @@ const bonusParts=(m,magic=false)=>{const c=C();let post=1,full=1+num(c.dmgBonus)
   if(!m.boss)post*=1+num(c.normalPct)/100;
   post*=1+num(c.myElPct)/100;if(magic&&c.bx)post*=1+((c.bx.myEle||{})[atkEl()]||0)/100;
   // consumables: magic damage % (Unlimited Drink) on spells, ranged damage % on ranged physical attacks
-  full*=1+consSum(magic?"magic_dmg":rangedAtk(c.a,c.weapon)?"range_dmg":"")/100;
+  full*=1+consSum(magic?"magic_dmg":isRangedHit(c.a,c.weapon)?"range_dmg":"")/100;
   // learned passives and buffs: physical damage % (Advanced Katar Mastery, Power Thrust), element % for spells (Endow, Volcano...)
   // and, for an element's plain "Damage" bonus (Volcano, Deluge, Whirlwind), for physical attacks of that element too
   if(SKFX){if(!magic){full*=1+SKFX.pct/100;post*=1+(SKFX.physEle[atkEl()]||0)/100}else post*=1+(SKFX.myEle[atkEl()]||0)/100}return {post,full}};
@@ -172,7 +180,7 @@ function dmgPerHit(m){
   return dualHit()&&d>0?Math.max(1,Math.floor(d*handPct().right/100)):d}
 // one physical hit from a hand's ATK (handAtk: the post bonuses and element are in it), × skill %, then the full bonuses and DEF
 function physDmg(m,pool){if(pool<=0)return 0;
-  const c=C(),a=c.a,skill=a.type!=="auto";const rng=(1+num(c.rangePct)/100)*(skill?1+num(c.skillPct)/100:1);
+  const c=C(),a=c.a,skill=a.type!=="auto";const rng=(1+distPct(c)/100)*(skill?1+num(c.skillPct)/100:1);
   // mastery ATK (flat, from passive skills) is added after the skill ratio, before the full bonuses and DEF; race / size cards don't scale it
   const df=effDef(m);return Math.max(1,Math.floor((pool*pctEff(m)/100+masteryFor(m)*elemMult(m,"Neutral")/100)*bonusParts(m).full*rng*(4000+df)/(4000+10*df)-mobSoftDef(m)))}
 // the left hand's hit on a dual-wield basic attack (0 otherwise): its own weapon, size and element, status ATK once
@@ -389,7 +397,7 @@ const dpSPPerSec=()=>{if(!CRD().dpOn||state.job!=="Sage")return 0;const r=physAt
   return r*withAtk(isSF()?BASIC:C().a,()=>{const cr=critChance(m),hc=hitChance(m)/100;return cr+(1-cr)*hc})};
 // +5 SP per kill (Nereid, Tri-Joint… Cards) when a melee physical attack kills that race: counted over the time spent fighting it.
 // Not with Spell Fist, where the killing blow is as likely to be the bolt
-const killSPPerSec=()=>{const cd=CRD(),m=SG_MOB||calcMob(),t=C().a.type;if(!m||!cd.killSp.includes(m.race)||isSF()||(t!=="auto"&&t!=="phys")||RANGED.includes(C().weapon))return 0;
+const killSPPerSec=()=>{const cd=CRD(),m=SG_MOB||calcMob(),t=C().a.type;if(!m||!cd.killSp.includes(m.race)||isSF()||(t!=="auto"&&t!=="phys")||isRangedHit())return 0;
   const f=rawFight(m);return isFinite(f)&&f>0?5/f:0};
 const cardSPPerSec=()=>dracSPPerSec()+dpSPPerSec()+killSPPerSec();
 // Energy Coat: damage cut and SP per hit taken (% of Max SP) depend on how full your SP is
