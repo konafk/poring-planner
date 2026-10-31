@@ -103,6 +103,38 @@ t("physical damage: cards and ATK % scale weapon + equipment ATK only, ATK % add
   assert.equal(run(`dmgPerHit(${MOB})`), hit(post * (1.2 * 1.1 + 0.19) + 200, 1.15 * 1.1));
 });
 
+t("melee / ranged %: a skill follows its description, a basic attack or a skill that doesn't say follows the weapon", () => {
+  const atk = (name, type = "phys") => JSON.stringify({ name, type, pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 });
+  const ranged = (name, weapon, type) => run(`isRangedHit(${atk(name, type)},${JSON.stringify(weapon)})`);
+  for (const n of ["Spear Boomerang Lv5", "Spear Boomerang Lv2", "Cannon Spear Lv5", "Spear Stab Lv10", "Brandish Spear Lv10", "Shield Boomerang Lv5", "Copied: Cannon Spear Lv5"]) assert.equal(ranged(n, "Two-handed spear"), true, n);
+  for (const n of ["Spear Boomerang Lv1", "Pierce Lv10", "Holy Cross Lv10 (spear)"]) assert.equal(ranged(n, "Two-handed spear"), false, n);
+  assert.equal(ranged("Sand Attack Lv1", "Bow"), false, "a melee skill with a bow");
+  assert.equal(ranged("Bash Lv10", "One-handed sword"), false, "the text doesn't say: the weapon");
+  assert.equal(ranged("Double Strafe Lv10", "Bow"), true, "the text doesn't say: the weapon");
+  assert.equal(ranged("Basic attack", "Two-handed spear", "auto"), false);
+  assert.equal(ranged("Basic attack", "Bow", "auto"), true);
+  // Archer Skeleton Card (ranged +10%) in a Partizan: a ranged skill gains from it, a melee one and a basic attack don't
+  const dmg = (name, type) => { run(`C().a=${atk(name, type)};applyBuild()`); return run(`dmgPerHit(${MOB})`) };
+  const wear = cards => setup("Knight", { mode: "build", baseLv: 50, jobLv: 40, build: { base: { str: 50, agi: 1, vit: 1, int: 1, dex: 1, luk: 1 }, gear: { weapon: { id: 1457, cards } } }, cons: [], consStat: {}, pbuffs: {}, buffs: {}, skills: {}, a: JSON.parse(atk("Spear Stab Lv10")) });
+  wear([]);
+  const plain = [dmg("Spear Stab Lv10"), dmg("Pierce Lv10"), dmg("Basic attack", "auto")];
+  wear([4094]);
+  const stab = dmg("Spear Stab Lv10");
+  assert.equal(run("C().rangePct"), 10, "the box shows the attack's %");
+  assert.ok(stab > plain[0] * 1.08 && stab < plain[0] * 1.12, `${stab} vs ${plain[0]}`);
+  assert.equal(dmg("Pierce Lv10"), plain[1]);
+  assert.equal(run("C().rangePct"), 0);
+  assert.equal(dmg("Basic attack", "auto"), plain[2]);
+  // the Status window's box applies as typed, to whichever attack is picked
+  setup("Knight", { atkTxt: "100+300", wAtk: 200, weapon: "Two-handed spear", wElem: "Neutral", st: {}, rangePct: 15, a: JSON.parse(atk("Pierce Lv10")) });
+  assert.equal(run("distPct()"), 15);
+  // consumables' ranged % follows the skill as well
+  run(`C().cons=[{on:true,name:"x",eff:"Ranged damage +50%"}];C().a=${atk("Pierce Lv10")}`);
+  const melee = run(`bonusParts(${MOB}).full`);
+  run(`C().a=${atk("Cannon Spear Lv5")}`);
+  near(run(`bonusParts(${MOB}).full`), melee * 1.5);
+});
+
 t("ATK %: not in the status window's ATK; build mode and consumables pass it on as atkPct", () => {
   run(`state.job="Knight";state.chars={};C().mode='build';C().build={base:{str:50,agi:1,vit:1,int:1,dex:1,luk:1},gear:{}};C().cons={}`);
   const r = run(`(()=>{const a=BUILD.compute({base:{str:50,agi:1,vit:1,int:1,dex:1,luk:1},gear:{},extra:[]},"Knight",aspdBase).fields,
@@ -1854,6 +1886,9 @@ t("SP back from cards: Dracula, Dark Priest, +5 SP per kill, SP recovery %", () 
   assert.equal(at(`(SG_MOB={...SG_MOB,race:'Plant'},killSPPerSec())`), 0);  // other races don't count
   run("C().weapon='Bow'");                                                  // melee only
   assert.equal(at("killSPPerSec()"), 0);
+  run("C().weapon='Two-handed spear';C().a={...C().a,type:'phys',name:'Cannon Spear Lv5'}"); // a ranged skill, even with a spear
+  assert.equal(at("killSPPerSec()"), 0);
+  run(`C().a=${JSON.stringify(AUTO)}`);
   run("C().weapon='Two-handed sword';C().a={...C().a,type:'magic'}");       // physical only
   assert.equal(at("killSPPerSec()"), 0);
   run(`C().a=${JSON.stringify(AUTO)};CRD().killSp=[]`);
