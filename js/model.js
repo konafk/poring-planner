@@ -104,7 +104,7 @@ const groupMul=(B,m)=>Object.entries(B.group||{}).reduce((k,[g,v])=>nameWords(m.
 let SK_DIST=null;
 const skDistText=n=>{if(!SK_DIST){SK_DIST={};for(const j in SKILLS)for(const t of SKILLS[j])for(const s of t.skills)if(/(melee|ranged) physical damage/i.test(s.desc||""))SK_DIST[normSk(s.name)]=s.desc}
   return SK_DIST[n]||SK_DIST[Object.keys(SK_DIST).find(k=>n.startsWith(k))]};
-const isRangedHit=(a=C().a,weapon=C().weapon)=>{const d=a.type==="auto"?null:skDistText(normSk(String(a.name).replace(/^copied:\s*/i,"")));if(!d)return RANGED.includes(weapon);
+const isRangedHit=(a=C().a,weapon=C().weapon)=>{const d=a.type==="auto"?null:skDistText(normSk(String(a.name).replace(/^copied:\s*/i,"")));if(!d)return a.rng??RANGED.includes(weapon);
   const at=d.match(/At Lv\.?\s*(\d+), deals (melee|ranged) physical damage instead/i),lv=String(a.name).match(/Lv\s*(\d+)/);
   return (at&&lv&&+lv[1]===+at[1]?at[2]:d.match(/(melee|ranged) physical damage/i)[1]).toLowerCase()==="ranged"};
 // the melee / ranged % on this attack: in build mode gear's own for the attack's tag, else the box as typed
