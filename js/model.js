@@ -102,6 +102,8 @@ const groupMul=(B,m)=>Object.entries(B.group||{}).reduce((k,[g,v])=>nameWords(m.
 // damage bonuses in two groups. post: race, size, monster element, boss / normal, monster name, "all" and your attack element %, which on a
 // physical hit only scale weapon + equipment ATK (each its own multiplier); full: the extra damage %, consumables' ranged / magic %
 // and skill passives' damage % (Power Thrust, Advanced Katar Mastery), on the whole hit. Spells take both on the whole hit
+// does this attack take ranged damage %? The skill's own tag (a.rng in game.js), else the weapon: a thrown spear is ranged, and melee gear doesn't help it
+const rangedAtk=(a,w)=>a.rng??RANGED.includes(w);
 const bonusParts=(m,magic=false)=>{const c=C();let post=1,full=1+num(c.dmgBonus)/100;
   const on=t=>t==="both"||(t==="magic")===magic;
   const nm=String(c.nameSel||"").trim().toLowerCase();if(nm&&on(c.nameType||"phys")&&String(m.name).toLowerCase().includes(nm))post*=1+num(c.namePct)/100;
@@ -109,8 +111,8 @@ const bonusParts=(m,magic=false)=>{const c=C();let post=1,full=1+num(c.dmgBonus)
   if(B)post*=(1+(B.race[m.race]||0)/100)*(1+(B.size[m.size]||0)/100)*(1+(B.ele[el]||0)/100)*(1+(B.all||0)/100)*(1+(B.kind[m.boss?"boss":"normal"]||0)/100)*groupMul(B,m);
   if(!m.boss)post*=1+num(c.normalPct)/100;
   post*=1+num(c.myElPct)/100;if(magic&&c.bx)post*=1+((c.bx.myEle||{})[atkEl()]||0)/100;
-  // consumables: magic damage % (Unlimited Drink) on spells, ranged damage % on physical attacks with a ranged weapon
-  full*=1+consSum(magic?"magic_dmg":RANGED.includes(c.weapon)?"range_dmg":"")/100;
+  // consumables: magic damage % (Unlimited Drink) on spells, ranged damage % on ranged physical attacks
+  full*=1+consSum(magic?"magic_dmg":rangedAtk(c.a,c.weapon)?"range_dmg":"")/100;
   // learned passives and buffs: physical damage % (Advanced Katar Mastery, Power Thrust), element % for spells (Endow, Volcano...)
   // and, for an element's plain "Damage" bonus (Volcano, Deluge, Whirlwind), for physical attacks of that element too
   if(SKFX){if(!magic){full*=1+SKFX.pct/100;post*=1+(SKFX.physEle[atkEl()]||0)/100}else post*=1+(SKFX.myEle[atkEl()]||0)/100}return {post,full}};

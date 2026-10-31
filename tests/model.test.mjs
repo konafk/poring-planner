@@ -87,6 +87,15 @@ t("Assassin dual wield: both hands on basic attacks, hand masteries, left weapon
   assert.equal(run(`dualOn()`), false);
 });
 
+t("ranged or melee damage % follows the skill's tag, else the weapon", () => {
+  run(`state.job="Knight"`);
+  assert.equal(run(`rangedAtk(JOBS.Knight.p.find(p=>p.name.startsWith("Spear Boomerang")),"Two-handed spear")`), true);
+  assert.equal(run(`rangedAtk(JOBS.Knight.p.find(p=>p.name.startsWith("Pierce")),"Two-handed spear")`), false);
+  assert.equal(run(`rangedAtk(JOBS.Rogue.p.find(p=>p.name.startsWith("Back Stab")),"Bow")`), false);
+  assert.equal(run(`rangedAtk(BASIC,"Bow")`), true);
+  assert.equal(run(`rangedAtk(BASIC,"Two-handed spear")`), false);
+});
+
 t("physical damage: cards and ATK % scale weapon + equipment ATK only, ATK % adds next to the cards", () => {
   const basic = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
   // gear side 300 = weapon 200 + 100 other gear; status ATK 100 counts twice; Neutral weapon vs Water 1, 1h sword vs Large 75%
