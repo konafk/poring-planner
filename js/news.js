@@ -1,8 +1,8 @@
 // ---- What's new tab: the latest game update's highlights (data/news.js). The floors draw their monsters from the spawn data the
 // planner uses (MAPMOBS), every bar on one scale; monster and card names open the details popup, map names the Maps tab ----
 const newsUpdate=n=>ROADMAP.find(u=>u.name===n.name);
-// an item's icon and name, opening its details (the costume tag left off: the group says what they are)
-const newsItemLink=id=>`<a href="#" data-info="item:${id}">${itemIcon(id,1,"il")}${esc(itemName(id).replace(/^\[Costume\] /,""))}</a>`;
+// an item's icon and name, opening its details (the costume tag left off: the group says what they are); gear itemName doesn't know passes its name
+const newsItemLink=(id,nm)=>`<a href="#" data-info="item:${id}">${itemIcon(id,1,"il")}${esc((nm||itemName(id)).replace(/^\[Costume\] /,""))}</a>`;
 function newsFloors(n){
   const bossIds=new Set(n.bosses.map(b=>b[4])),plain=mp=>(MAPMOBS[mp]||[]).filter(x=>!x.m.mvp&&!bossIds.has(x.m.id));
   const rows=n.floors.filter(f=>!f.ground).map(([mp])=>plain(mp)),max=Math.max(1,...rows.flat().map(x=>x.n||0));
@@ -26,7 +26,7 @@ function renderNews(){
   // a card each for a collaboration or event's items, after the gear and events
   document.querySelectorAll(".newsCollabCard").forEach(el=>el.remove());
   $("newsRow").insertAdjacentHTML("afterend",(n.cards||[]).map(cb=>`<section class="card newsCollabCard" id="${cb.id}" data-tab="news"><h2>${esc(cb.name)}</h2><p class="note newsIntro">${esc(cb.intro)}</p>
-    <div class="newsCollab">${cb.groups.map(([g,rows])=>`<div class="newsGrp"><div class="secHead">${esc(g)}</div><div class="newsList">${rows.map(([ids,nm,t])=>`<div class="newsItem"><b>${ids.length?ids.map(newsItemLink).join(" · "):esc(nm)}</b><span>${esc(t)}</span></div>`).join("")}</div></div>`).join("")}</div></section>`).join(""));
+    <div class="newsCollab">${cb.groups.map(([g,rows])=>`<div class="newsGrp"><div class="secHead">${esc(g)}</div><div class="newsList">${rows.map(([ids,nm,t])=>`<div class="newsItem"><b>${ids.length?ids.map(id=>newsItemLink(id,ids.length===1&&nm)).join(" · "):esc(nm)}</b><span>${esc(t)}</span></div>`).join("")}</div></div>`).join("")}</div></section>`).join(""));
   $("newsEvents").innerHTML=n.events.map(([nm,k,t])=>`<div class="newsItem"><b>${esc(nm)} <span class="pill ${k==="ended"?"":"up"}">${k==="ended"?"Ended":"New"}</span></b><span>${esc(t)}</span></div>`).join("")+
     n.town.map(t=>`<div class="newsItem"><b>In town</b><span>${esc(t)}</span></div>`).join("");
 }
