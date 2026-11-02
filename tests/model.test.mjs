@@ -2768,9 +2768,25 @@ t("equipment window: gear named as the game shows it, and the job's look (Bards 
 
 t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {
   // Cooking from the client's cookbooks (60 dishes, Lv 1–10) in place of the database's 29, the Tip Box's 6 potions and 4 fruit juices,
-  // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts, and the client's 4 headgear crafts (the 2 Februs offers on Global, the Hat Maker's 2)
-  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length+60+10+18+4`), run(`RECIPE_LIST.length`));
-  assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Headgear").length`), 4);
+  // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts, and the client's 37 headgear crafts (the 2 Februs offers on Global, the Hat Maker's 2, 33 hat quests)
+  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length+60+10+18+37`), run(`RECIPE_LIST.length`));
+  assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Headgear").length`), 37);
+  // a hat quest: the Tip Box's materials by id, any fee only it and the NPC's lines have, the quest's level
+  assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===5031))`), "Mini Pot (quest, Lv 40+) · geffen 83,189");
+  assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===5031).mats)`), "[[5009,1],[1041,1],[999,25],[747,1]]");
+  assert.equal(run(`RECIPE_LIST.find(r=>r.id===2272).fee`), 10000);                                                          // Stop Post
+  assert.equal(run(`RECIPE_LIST.find(r=>r.id===2273).fee`), 3500);                                                           // Doctor Band
+  assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===5024).mats)`), "[[539,20],[530,5],[538,15],[529,10],[999,10]]"); // Cake Hat: no Tip Box guide
+  // who a quest starts with, when it isn't who makes the hat, gets its own /navi
+  assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===5082))`), "Hat Artisan (quest, Lv 15+) · aldebaran 51,202 · starts with Puppy · aldebaran 86,72");
+  assert.match(run(`recipeNpcHtml(RECIPE_LIST.find(r=>r.id===5082))`), /starts with Puppy · <a [^>]*data-copynavi="\/navi aldebaran 86\/72"/);
+  assert.equal(run(`recipeOk(RECIPE_LIST.find(r=>r.id===5082),{q:"puppy",cat:""})`), true);
+  // every hat has a Where to get: its quest, or who makes it; the database's quest name stays when it has one
+  assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Headgear"&&!fromOk(r.id,"quest")).length`), 0);
+  assert.equal(run(`itemInfo(5076).q[0]`), "Grandmother’s Beanie");
+  assert.equal(run(`itemInfo(19357).q[0]`), "Made by Februs");
+  assert.equal(run(`itemInfo(5031).q[0]`), "Crafting Mine Hat");
+  assert.ok(run(`!RECIPE_LIST.some(r=>[5001,5004,5073,2285,2250,5447,5064,5065].includes(r.id))`), "the Tip Box's hats no source says Global offers stay out");
   assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===19357))`), "Februs · prontera 50,293");                            // Clock Casket
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===19358).mats)`), "[[1061,200],[983,5],[2252,1],[25506,1],[25429,50]]"); // Black Witch Hat
   assert.equal(run(`RECIPE_LIST.find(r=>r.id===19357).fee`), 50000);

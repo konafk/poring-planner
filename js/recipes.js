@@ -17,7 +17,8 @@ const COOKBOOK_RECIPES=typeof COOKBOOKS==="undefined"?[]:Object.entries(COOKBOOK
 // The Tip Box's Item Creation guides (data/tipbox.js) for the NPC crafts the database lacks: the Old Pharmacist's potions and
 // Marienne's fruit juices. Its dyes and Mixture & Counteragent are the database's too, with the same materials and fees
 const TIPBOX_ONLY=typeof TIPBOX_RECIPES==="undefined"?[]:TIPBOX_RECIPES.filter(r=>typeof RECIPES==="undefined"||!RECIPES.some(x=>x.cat===r.cat));
-// The headgear NPCs craft, from the client's NPC dialogue and quest log (data/client.js recipes): Februs at Atelier Manus, the Hat Maker
+// The headgear NPCs craft, from the client's NPC dialogue, Tip Box and quest log (data/client.js recipes): Februs at Atelier Manus, the
+// Hat Maker, and the hat quests around the towns
 const CLIENT_RECIPES=typeof CLIENT!=="undefined"&&CLIENT.recipes||[];
 const RECIPE_LIST=[...(typeof RECIPES!=="undefined"?RECIPES:[]).filter(r=>!COOKBOOK_RECIPES.length||r.cat!=="Cooking"),...COOKBOOK_RECIPES,...TIPBOX_ONLY,...MEMORIAL_RECIPES,...CLIENT_RECIPES];
 const RECIPE_CATS=["Forging","Brewing","Arrows","Cooking","Misc","Mixture & Counteragent","Dye Making","Potions","Fruit Juice","Headgear","Memorial"];
@@ -35,11 +36,16 @@ const shopPrice=id=>SHOPS_OF[id]?Math.min(...SHOPS_OF[id].map(s=>s[2])):null;
 // what a material costs you to get: your Market price, else an NPC shop's, else what an NPC pays (the simulators' cost of a try)
 const buyPrice=id=>state.prices[id]>0?state.prices[id]:shopPrice(id)??matPrice(id);
 const worthNone=(r,w)=>w.unknown===r.mats.length&&!r.fee;
-// who makes it, for the recipes an NPC makes: "JavaDullihan · morocc_in 146,99", "Marienne (quest) · prt_in 49,172" when her quest unlocks them
-const recipeNpc=r=>r.npc?`${r.npc[0]}${r.quest?" (quest)":""} · ${r.npc[1]}`:"";
-// the same as HTML, the place as the game's Navigation command (/navi prontera 50/293): a click copies it, to paste in the game's chat
-const recipeNpcHtml=r=>{if(!r.npc)return "";const at=String(r.npc[1]||"").replace(","," "),cmd=at?naviCmd(at):"";
-  return `${esc(r.npc[0])}${r.quest?" (quest)":""}${cmd?` · <a href="#" class="navi mono" data-copynavi="${esc(cmd)}" title="Copy it, then paste it in the game's chat: the Navigation shows you the way">${esc(cmd)}</a>`:""}`};
+// "(quest)" when the NPC's quest unlocks it, "(quest, Lv 40+)" when the quest has a level
+const recipeQuest=r=>r.quest?` (quest${r.qlv?`, Lv ${r.qlv}+`:""})`:"";
+// who makes it, for the recipes an NPC makes: "JavaDullihan · morocc_in 146,99", "Marienne (quest) · prt_in 49,172" when her quest unlocks them,
+// then who the quest starts with when that's someone else
+const recipeNpc=r=>r.npc?`${r.npc[0]}${recipeQuest(r)} · ${r.npc[1]}${r.start?` · starts with ${r.start[0]} · ${r.start[1]}`:""}`:"";
+// a place as the game's Navigation command (/navi prontera 50/293): a click copies it, to paste in the game's chat
+const recipeNaviAt=place=>{const at=String(place||"").replace(","," "),cmd=at?naviCmd(at):"";
+  return cmd?` · <a href="#" class="navi mono" data-copynavi="${esc(cmd)}" title="Copy it, then paste it in the game's chat: the Navigation shows you the way">${esc(cmd)}</a>`:""};
+// the same as HTML, each place as a link
+const recipeNpcHtml=r=>r.npc?`${esc(r.npc[0])}${recipeQuest(r)}${recipeNaviAt(r.npc[1])}${r.start?`<br>starts with ${esc(r.start[0])}${recipeNaviAt(r.start[1])}`:""}`:"";
 document.addEventListener("click",async e=>{const a=e.target.closest&&e.target.closest("[data-copynavi]");if(!a)return;e.preventDefault();const t=a.dataset.copynavi;
   try{await navigator.clipboard.writeText(t);showToast(`Copied ${t}: paste it in the game's chat.`)}
   // where the clipboard is refused: select it, try the older copy command, else leave it selected for Ctrl+C
