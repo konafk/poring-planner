@@ -773,21 +773,41 @@ function convCheck(mp,w,r){const sf=C().a.type==="spellfist",opts=sf?elOptions()
   <div class="scroll"><table class="convtab"><thead><tr><th>${sf?"Bolt":"Converter"}</th>${mobs.map(x=>`<th>${esc(x.m.name)}<br><span class="el ${x.m.el||"Neutral"}">${x.m.el||"Neutral"} ${x.m.elv||1}</span></th>`).join("")}<th>EXP / min</th></tr></thead><tbody>${rows}</tbody></table></div>${warn}`}
 // ---- the client's world maps (data/minimaps.js WORLDMAPS: Midgard, Nordfeld) with a box on each spawn map and map mp lit, drawn into el
 // (the Map planner's, the Maps tab's). It turns to the world mp is on when mp changes; the buttons over it turn to another. Floors of one
-// dungeon share a box, so clicking a box picks its first map (pick(map)), and clicking it again the next one. Towns get a box only with towns
+// dungeon share a box, so clicking it lists them, like the game's world map, and pick(map) gets the one clicked; a dungeon with one floor
+// picks it straight away. Towns get a box only with towns
 const worldOf=mp=>typeof WORLDMAPS==="undefined"?-1:WORLDMAPS.findIndex(w=>w.maps[mp]);
+// the list of dungeon d's floors, beside its box and on the side with room; clicking its box again closes it
+function wmFloors(el,W,d,fs){
+  const list=el.querySelector(".wmFloors"),[x1,y1,x2,y2]=d.box,p=(v,n)=>(v/n*100).toFixed(2)+"%";
+  const open=list.dataset.d===d.box.join();wmFloorsClose(el);if(open)return;
+  list.dataset.d=d.box.join();list.hidden=false;
+  list.style.cssText=`${x1+x2<W.w?`left:${p(x1,W.w)}`:`right:${p(W.w-x2,W.w)}`};${y2<W.h*.55?`top:${p(y2,W.h)}`:`bottom:${p(W.h-y1,W.h)}`}`;
+  list.innerHTML=`<div class="wmFloorsHead">${esc(d.n)}</div>${fs.map(([k,n,lv])=>`<button type="button" data-wmf="${esc(k)}" class="${k===el._mp?"on":""}" title="${esc(`${mapCode(k)} ${mapName(k)}`)}"><span>${esc(n||mapName(k)||mapCode(k))}</span><span class="note">${isClosed(k)?"not open":lv?`Lv ${esc(lv)}`:""}</span></button>`).join("")}`;
+  (list.querySelector(".on")||list.querySelector("button")).focus({preventScroll:true})}
+function wmFloorsClose(el){const list=el.querySelector(".wmFloors");list.hidden=true;delete list.dataset.d}
 function worldMap(el,mp,pick,towns){
   if(typeof WORLDMAPS==="undefined"||!WORLDMAPS.length){el.hidden=true;return}
-  if(!el.firstChild){el.innerHTML=`<div class="bar wmWorlds">${WORLDMAPS.map((w,i)=>`<button type="button" class="small" data-wmw="${i}">${esc(w.name)}</button>`).join("")}</div><div class="wmPic"><img alt=""><div class="wmBoxes"></div></div><div class="note wmNote"></div>`;
-    el.addEventListener("click",e=>{const t=e.target.closest("[data-wmw],[data-wm]");if(!t)return;
-      if(t.dataset.wmw!=null){el.dataset.w=t.dataset.wmw;worldMap(el,el._mp,el._pick);return}
-      const ks=t.dataset.wm.split(",");el._pick(ks[(ks.indexOf(el._mp)+1)%ks.length])})}
+  if(!el.firstChild){el.innerHTML=`<div class="bar wmWorlds">${WORLDMAPS.map((w,i)=>`<button type="button" class="small" data-wmw="${i}">${esc(w.name)}</button>`).join("")}</div><div class="wmPic"><img alt=""><div class="wmBoxes"></div><div class="wmFloors" hidden></div></div><div class="note wmNote"></div>`;
+    el.addEventListener("click",e=>{const t=e.target.closest("[data-wmw],[data-wm],[data-wmf]");if(!t){wmFloorsClose(el);return}
+      if(t.dataset.wmf!=null){wmFloorsClose(el);el._pick(t.dataset.wmf);return}
+      if(t.dataset.wmw!=null){wmFloorsClose(el);el.dataset.w=t.dataset.wmw;worldMap(el,el._mp,el._pick,el._towns);return}
+      const ks=t.dataset.wm.split(","),W=WORLDMAPS[+el.dataset.w],d=(W.dun||[]).find(x=>x.box.join()===W.maps[ks[0]].join());
+      const fs=d?d.floors.filter(f=>ks.includes(f[0])):[];
+      if(fs.length>1){wmFloors(el,W,d,fs);return}
+      wmFloorsClose(el);el._pick(ks[(ks.indexOf(el._mp)+1)%ks.length])});
+    document.addEventListener("click",e=>{if(!el.contains(e.target))wmFloorsClose(el)});
+    document.addEventListener("keydown",e=>{if(e.key==="Escape")wmFloorsClose(el)})}
   if(mp!==el._mp&&worldOf(mp)>=0||el.dataset.w==null)el.dataset.w=Math.max(0,worldOf(mp));
-  el._mp=mp;el._pick=pick;
+  el._mp=mp;el._pick=pick;el._towns=towns;
   const W=WORLDMAPS[+el.dataset.w],img=el.querySelector("img"),bx=el.querySelector(".wmBoxes");
   if(el.dataset.drawn!==el.dataset.w){el.dataset.drawn=el.dataset.w;Object.assign(img,{src:`${W.file}?v=${W.v}`,alt:`World map of ${W.name}`,width:W.w,height:W.h});
     const at={};Object.entries(W.maps).forEach(([k,r])=>{if(towns||!isTown(k))(at[r.join()]=at[r.join()]||[]).push(k)});
-    bx.innerHTML=Object.values(at).map(ks=>{const [x1,y1,x2,y2]=W.maps[ks[0]],p=(v,n)=>(v/n*100).toFixed(2)+"%";
-      return `<button type="button" class="wmBox${ks.every(isTown)?" town":""}" data-wm="${esc(ks.join())}" style="left:${p(x1,W.w)};top:${p(y1,W.h)};width:${p(x2-x1,W.w)};height:${p(y2-y1,W.h)}" title="${esc(ks.map(k=>`${mapCode(k)} ${mapName(k)}`).join("\n"))}"></button>`}).join("")}
+    // a dungeon's box is its name plate, which can sit well away from it: a line runs to a marker on the dungeon's spot
+    const dun=Object.fromEntries((W.dun||[]).map(d=>[d.box.join(),d])),p=(v,n)=>(v/n*100).toFixed(2)+"%",mid=(a,b)=>(a+b)/2;
+    const pos=([x1,y1,x2,y2])=>`left:${p(x1,W.w)};top:${p(y1,W.h)};width:${p(x2-x1,W.w)};height:${p(y2-y1,W.h)}`;
+    const groups=Object.entries(at).map(([key,ks])=>({ks,d:dun[key],wm:esc(ks.join()),title:esc([...(dun[key]?[dun[key].n+(dun[key].lv?` · Lv ${dun[key].lv}`:"")]:[]),...ks.map(k=>`${mapCode(k)} ${mapName(k)}`)].join("\n"))}));
+    bx.innerHTML=`<svg class="wmLines" viewBox="0 0 ${W.w} ${W.h}" preserveAspectRatio="none" aria-hidden="true">${groups.filter(g=>g.d).map(({d,wm})=>`<line data-wm="${wm}" x1="${mid(d.box[0],d.box[2])}" y1="${mid(d.box[1],d.box[3])}" x2="${mid(d.at[0],d.at[2])}" y2="${mid(d.at[1],d.at[3])}" vector-effect="non-scaling-stroke"/>`).join("")}</svg>`
+      +groups.map(({ks,d,wm,title})=>`<button type="button" class="wmBox${ks.every(isTown)?" town":""}${d?" dun":""}" data-wm="${wm}" style="${pos(W.maps[ks[0]])}" title="${title}">${d?`<span>${esc(d.n)}</span>`:""}</button>${d?`<button type="button" class="wmDot" data-wm="${wm}" style="${pos(d.at)}" title="${title}" aria-label="${esc(d.n)}"></button>`:""}`).join("")}
   el.querySelectorAll("[data-wmw]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.wmw===el.dataset.w)));
   bx.querySelectorAll("[data-wm]").forEach(b=>{const ks=b.dataset.wm.split(",");b.classList.toggle("on",ks.includes(mp));b.classList.toggle("closed",ks.every(isClosed))});
   const nm=mp&&(mapName(mp)||mapCode(mp)),wi=worldOf(mp);
@@ -802,7 +822,7 @@ function renderMap(){
   if(!mp)mp=mobMap(mob);
   $("mapInput").value=mp?mapCode(mp):"";$("mapName").textContent=mapName(mp)+(isRoomMap(mp)?` · room dungeon: one map cut into small rooms, so monsters crowd into yours (a possible rampage of ${ROOM_CROWD} unless you change it)`:"");
   // the map's picture from the client (data/minimaps.js, tools/export_minimaps.py), asked for with its checksum so a new one isn't read from an old cache
-  {const a=$("mapPicLink"),v=typeof MINIMAPS!=="undefined"&&mp&&MINIMAPS[mp];$("mapPicWrap").hidden=!v;if(v){const u=`img/maps/${mp}.png?v=${v}`;if(a.getAttribute("href")!==u){a.href=u;$("mapPic").src=u;$("mapPic").alt=`Map of ${mapName(mp)||mapCode(mp)}`}}
+  {const a=$("mapPic"),v=typeof MINIMAPS!=="undefined"&&mp&&MINIMAPS[mp];$("mapPicWrap").hidden=!v;if(v){const u=`img/maps/${mp}.png?v=${v}`;if(a.getAttribute("src")!==u){a.src=u;a.alt=`Map of ${mapName(mp)||mapCode(mp)}`}}
    // its NPCs and ways out on it, and the way there from the nearest town (navi.js)
    if(typeof naviMarks==="function"){$("mapMarks").innerHTML=v?naviMarks(mp):"";$("mapRoute").innerHTML=naviRouteHtml(mp)}}
   worldMap($("planWorld"),mp,planPick);{const wi=worldOf(mp);$("worldSum").textContent=!mp?"":wi>=0?`${WORLDMAPS[wi].name}, ${mapName(mp)||mapCode(mp)} lit`:"not on it yet"}

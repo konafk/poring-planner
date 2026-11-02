@@ -12,7 +12,8 @@ the way the client does, after rAthena's src/common/grfio.cpp and des.cpp.
 
 The world maps are the worlds of the client's world view (worldviewdata_list.lub: Midgard, worldmap_z.jpg, 1280 x 1024; Nordfeld,
 worldmap_Nordfeld.png, 1602 x 1216, stored in the GRF as it is), copied as they are. worldviewdata_table.lub gives each map's box on
-its world, in the picture's pixels; maps whose region isn't out yet have none.
+its world, in the picture's pixels (maps whose region isn't out yet have none), and each dungeon's marker and level, with its name in
+worldviewdata_enus.lub.
 
 The towns are the maps of the client's town guide (System\\Towninfo_enUS.lub: Prontera, Geffen, Nordfeld, ...) that no monster spawns
 on and that are on a world map, named as the client's map window names them (System\\mapInfo_enUS.lub); a town's copies under
@@ -164,7 +165,8 @@ def jpeg_size(b):
 def worlds(grf, names):
     """Each world in the world view (Midgard, Nordfeld): its picture to img/world-<name>.<ext>, and each map's box on it, by
     source map code (a map on two worlds goes on the first)."""
-    table = lua_data(grf.read(WORLDVIEW + "worldviewdata_table.lub"))
+    msg = lua_data(grf.read(WORLDVIEW + "worldviewdata_enus.lub"))["WORLD_MSGID"]
+    table = lua_data(grf.read(WORLDVIEW + "worldviewdata_table.lub"), env={**msg, "WORLD_MSGID": msg})
     out, placed = [], set()
     for _, wv in sorted(lua_data(grf.read(WORLDVIEW + "worldviewdata_list.lub"))["World_List"].items()):
         name, maps, picture = wv[1], wv[2], wv[4]  # [name, map table, dungeon table, picture]
@@ -173,13 +175,20 @@ def worlds(grf, names):
         with open(os.path.join(ROOT, file), "wb") as f:
             f.write(pic)
         at = {}
-        for r in table[maps].values():  # [id, "<code>.rsw", x1, y1, x2, y2, ...]
-            at.setdefault(r[2].lower().removesuffix(".rsw"), [r[3], r[4], r[5], r[6]])
+        for r in table[maps].values():  # [id, "<code>.rsw", x1, y1, x2, y2, name, level]
+            at.setdefault(r[2].lower().removesuffix(".rsw"), r)
         codes = lambda k: [c.lower() for c in [names[k][0], *names[k][2:], k, ALIAS.get(k)] if c]
-        boxes = {k: next(at[c] for c in codes(k) if c in at) for k in names if k not in placed and any(c in at for c in codes(k))}
+        code = {k: next(c for c in codes(k) if c in at) for k in names if k not in placed and any(c in at for c in codes(k))}
+        box = lambda r: [r[3], r[4], r[5], r[6]]
+        boxes = {k: box(at[c]) for k, c in code.items()}
         placed |= boxes.keys()
+        # a dungeon's floors share one box (its name plate); the dungeon table gives its name and marker, by the id they share
+        order = list(at)
+        floors = lambda i: [[k, at[c][7].strip(), at[c][8]] for k, c in sorted(code.items(), key=lambda kc: order.index(kc[1])) if at[c][1] == i]
+        dun = [{"n": r[6].strip(), "at": [r[2], r[3], r[4], r[5]], "lv": r[7], "box": box(f), "floors": floors(r[1])}
+               for r in table[wv[3]].values() for f in [next((m for m in at.values() if m[1] == r[1]), None)] if f and floors(r[1])]
         w, h = struct.unpack(">II", pic[16:24]) if pic[:8] == b"\x89PNG\r\n\x1a\n" else jpeg_size(pic)
-        out.append({"name": name, "file": file, "v": f"{zlib.crc32(pic) & 0xFFFFFFFF:08x}", "w": w, "h": h, "maps": boxes})
+        out.append({"name": name, "file": file, "v": f"{zlib.crc32(pic) & 0xFFFFFFFF:08x}", "w": w, "h": h, "maps": boxes, "dun": dun})
     for f in os.listdir(os.path.join(ROOT, "img")):  # pictures of worlds the client no longer has
         if f.startswith("world") and f"img/{f}" not in {w["file"] for w in out}:
             os.remove(os.path.join(ROOT, "img", f))
@@ -233,8 +242,10 @@ def main():
         f.write("const MINIMAPS=" + json.dumps(sums, separators=(",", ":")) + ";\n")
         f.write("// The towns (the client's town guide's maps no monster spawns on, on a world map): their names as the client shows them, by map code\n")
         f.write("const TOWNS=" + json.dumps({k: v[1] for k, v in town.items()}, separators=(",", ":"), ensure_ascii=False) + ";\n")
-        f.write("// The client's world maps (its world view's worlds, Midgard first): each one's picture, a checksum of it (v), its size, and each "
-                "map's box on it [x1,y1,x2,y2] in its pixels, by source map code. Maps whose region isn't out yet have no box\n")
+        f.write("// The client's world maps (its world view's worlds, Midgard first): each one's picture, a checksum of it (v), its size, each "
+                "map's box on it [x1,y1,x2,y2] in its pixels, by source map code, and its dungeons (dun): the name, the level the client "
+                "gives, the marker on the dungeon's spot (at), the box its floors share, which is where the name goes, and its floors "
+                "[map, the client's name, level] in the client's order. Maps whose region isn't out yet have no box\n")
         f.write("const WORLDMAPS=" + json.dumps(wms, separators=(",", ":")) + ";\n")
     print(f"{len(sums)} of {len(names)} maps written to img/maps ({total // 1024} KB), towns:", " ".join(town))
     print("no minimap in the client:", " ".join(missing))
