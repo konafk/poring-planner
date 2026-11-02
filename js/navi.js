@@ -57,8 +57,8 @@ function naviLists(mp){
   return `${kaf.length?`<div class="mt"><b>Kafra teleports to</b> <span class="note">(for a fee)</span> ${naviLinks(kaf)}</div>`:""}
     ${ws.length?`<div class="mt"><b>Ways out</b> <span class="naviDot warp"></span> ${naviLinks(ws)}</div>`:""}
     ${npcs.length?`<details class="more naviNpcs mt"${npcs.length<=8?" open":""}><summary>NPCs here <span class="note">${npcs.length}</span></summary><ul class="naviList">${npcs.map(npcLi).join("")}</ul></details>`:""}`}
-// the picture with its markers (a link to the full size one under them)
-const naviPic=(mp,v,cls="")=>`<div class="naviPic ${cls}"><a class="mapPic" href="img/maps/${esc(mp)}.png?v=${v}" target="_blank" rel="noopener" title="The map from the game client's map window. Click for full size"><img src="img/maps/${esc(mp)}.png?v=${v}" alt="Map of ${esc(mapName(mp)||mapCode(mp))}" width="512" height="512"></a>${naviMarks(mp)}</div>`;
+// the picture with its markers: only the markers click
+const naviPic=(mp,v,cls="")=>`<div class="naviPic ${cls}"><div class="mapPic" title="The map from the game client's map window. Click a red square to go to that map"><img src="img/maps/${esc(mp)}.png?v=${v}" alt="Map of ${esc(mapName(mp)||mapCode(mp))}" width="512" height="512"></div>${naviMarks(mp)}</div>`;
 // clicking a map's name opens it: in the Map planner when it's a spawn map clicked there, else on the Maps tab
 document.addEventListener("click",e=>{const a=e.target.closest("[data-navito]");if(!a)return;e.preventDefault();const k=a.dataset.navito;
   if(a.closest("#mapCard")&&MAPMOBS[k]){planPick(k);return}
