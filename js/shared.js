@@ -26,7 +26,8 @@ async function login(){if(!sharedOn())return;
   const v=b64u.enc(crypto.getRandomValues(new Uint8Array(32))),c=b64u.enc(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v))));
   try{sessionStorage.setItem(PKCE_KEY,JSON.stringify({v,tab:location.hash||"#"+state.tab}))}catch(e){}
   location.href=`${SHARED.url}/auth/v1/authorize?provider=discord&redirect_to=${encodeURIComponent(location.origin+location.pathname)}&code_challenge=${c}&code_challenge_method=s256`}
-async function authCallback(){const q=new URLSearchParams(location.search),code=q.get("code"),err=q.get("error_description")||q.get("error");if(!code&&!err)return;
+async function authCallback(){if(!/[?&](code|error)=/.test(String(location.search||"")))return; // not coming back from Discord
+  const q=new URLSearchParams(location.search),code=q.get("code"),err=q.get("error_description")||q.get("error");if(!code&&!err)return;
   let p={};try{p=JSON.parse(sessionStorage.getItem(PKCE_KEY)||"{}");sessionStorage.removeItem(PKCE_KEY)}catch(e){}
   try{history.replaceState(null,"",location.pathname+(p.tab||location.hash))}catch(e){}
   if(err){showToast("Discord login didn't work: "+err,6000);return}
