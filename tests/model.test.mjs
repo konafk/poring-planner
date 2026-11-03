@@ -508,6 +508,11 @@ t("roadmap: regions open on their update's day, or after its month when the day 
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Clock Tower"))`), "due 29 Oct 2026");
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Ant Hell memorial"))`), "next month");
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Glast Heim"))`), "in 2 months");
+  const awk = `ROADMAP.find(u=>u.name==="Awakening System")`;                       // only "second half of 2027"
+  assert.equal(run(`upWhen(${awk})`), "2nd half 2027");
+  assert.equal(run(`upStatus(${awk})`), "date not announced");
+  assert.ok(run(`ROADMAP_TODAY="2027-12-31";var o=upOut(${awk});ROADMAP_TODAY="2028-01-01";o===false&&upOut(${awk})`));
+  run(`ROADMAP_TODAY="2026-10-19"`);
   assert.equal(run(`capTxt(capNow())`), "Base 70 / Job 70");                       // the 1 October update raised it, not Clock Tower
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Level 70 & new dungeons"))`), "out");
   assert.equal(run(`ROADMAP.find(u=>u.name==="Clock Tower").cap`), undefined);
