@@ -749,10 +749,10 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="mktShare mt" id="mktShare" hidden></div>
     <div class="bar mt">
       <label class="grow mktPick">Item<input id="priceItem" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="priceSug" placeholder="name or #id, e.g. Snake Scale"><div class="mktSug" id="priceSug" role="listbox" hidden></div></label>
-      <label>Players pay<input class="w-xl mono" id="priceVal" inputmode="decimal" placeholder="450k, 1.5m" title="Zeny; 450k = 450,000, 1.5m = 1,500,000"></label>
-      <label>NPC pays<input class="w-xl mono" id="priceNpc" inputmode="decimal" placeholder="0" title="What an NPC pays for it; blank keeps the NPC price"></label>
+      <label>Zeny<input class="w-xl mono" id="priceVal" inputmode="decimal" placeholder="450k, 1.5m" title="What players pay for it; 450k = 450,000, 1.5m = 1,500,000"></label>
       <label><span>&nbsp;</span><button type="button" id="priceAdd">Add price</button></label>
     </div>
+    <div class="bar mt mktCopyBar" id="priceCopy" hidden></div>
     <div class="note bad" id="priceMsg"></div>
     <div class="mktCats mt" id="mktCats" role="group" aria-label="Category"></div>
     <div class="bar mt mktTools">
@@ -760,6 +760,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
       <label>Sort<select id="mktSort"><option value="recent">Recently updated</option><option value="low">Lowest price</option><option value="high">Highest price</option><option value="move">Biggest change</option><option value="name">Name</option></select></label>
       <label>Max price<input class="w-lg mono" id="mktMax" inputmode="decimal" placeholder="any" title="Zeny; 450k = 450,000, 1.5m = 1,500,000"></label>
       <label title="Only gear with a copy priced at this refine or higher">Refine ≥<select id="mktRef"></select></label>
+      <label title="Only copies with these in their slots: a card, a slot 4 enchant (STR +1) or a Taming Ring's egg. Separate several with commas">Card / enchant / egg<input class="w-xl" id="mktSlotQ" type="search" placeholder="Hydra, STR +1, Poring Egg"></label>
     </div>
     <div class="bar mt mktOptBar"><span class="note">Affix / slot options</span><span class="bar" id="mktOptF"></span></div>
     <div class="mktList mt" id="mktList"></div>

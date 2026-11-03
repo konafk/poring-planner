@@ -7,6 +7,7 @@ Players log in with Discord to share the market prices they typed, and to keep a
 ## How it keeps junk out
 
 - **Anyone can read, only logged-in players can post.** Every report is stamped by the database with the poster's Discord account and the time, whatever the page sends.
+- **Each copy has its own price.** Refine, cards (in any order), the slot 4 enchant, a Taming Ring's egg and affixes all count, so a +7 Katar with two Hydra Cards never mixes with an empty one.
 - **One player counts once.** A player can post the same item many times (several shops, refines, options), but their reports for one copy become their own median first. The shared price is the median of those, one per player.
 - **Outliers are left out.** A player whose price is over 3× or under ⅓ of the copy's median doesn't count, so a fake 999m Jellopy changes nothing.
 - **A shared price needs 2 players.** It shows how many players and reports it comes from, and how old the newest one is.

@@ -54,6 +54,12 @@ create table if not exists public.reports (
 );
 -- selling: the poster sells this copy at this price (not just saw it) and lets buyers DM them about it on Discord
 alter table public.reports add column if not exists selling boolean not null default false;
+-- what's in the copy's slots: card ids (sorted, up to 4), the slot 4 enchant line of memorial gear ("STR +1"), the egg in a Taming Ring;
+-- slots_key holds them as one text, so a carded copy never groups with an empty one
+alter table public.reports add column if not exists cards integer[] not null default '{}';
+alter table public.reports add column if not exists enchant text check (length(enchant) <= 60);
+alter table public.reports add column if not exists egg integer check (egg > 0);
+alter table public.reports add column if not exists slots_key text not null default '';
 create index if not exists reports_item on public.reports (server, item_id, created_at);
 create index if not exists reports_user on public.reports (user_id, created_at);
 alter table public.reports enable row level security;
@@ -78,11 +84,16 @@ begin
     into o from jsonb_array_elements(new.opts) e;
   new.opts := o;
   new.opts_key := coalesce((select string_agg((e->>'k') || '=' || coalesce(e->>'v', ''), ';' order by e->>'k') from jsonb_array_elements(o) e), '');
+  if cardinality(new.cards) > 4 or exists (select 1 from unnest(new.cards) c where c is null or c <= 0) then raise exception 'Bad cards'; end if;
+  new.cards := array(select c from unnest(new.cards) c order by c);
+  new.enchant := nullif(btrim(new.enchant), '');
+  new.slots_key := case when cardinality(new.cards) = 0 and new.enchant is null and new.egg is null then '' -- as on reports from before slots
+    else array_to_string(new.cards, ',') || '|' || coalesce(new.enchant, '') || '|' || coalesce(new.egg::text, '') end;
   if (select count(*) from public.reports r where r.user_id = new.user_id and r.created_at > now() - interval '1 day') >= per_day then return null; end if;
   if (select count(*) from public.reports r where r.user_id = new.user_id and r.server = new.server and r.item_id = new.item_id
       and r.created_at > now() - interval '1 day') >= per_item then return null; end if;
   if exists (select 1 from public.reports r where r.user_id = new.user_id and r.server = new.server and r.item_id = new.item_id
-             and r.refine = new.refine and r.opts_key = new.opts_key and r.price = new.price and r.selling = new.selling
+             and r.refine = new.refine and r.opts_key = new.opts_key and r.slots_key = new.slots_key and r.price = new.price and r.selling = new.selling
              and r.created_at > now() - interval '1 hour') then return null; end if;
   return new;
 end $$;
@@ -103,21 +114,22 @@ drop table if exists public.profiles;
 drop function if exists public.profiles_stamp();
 
 -- the players selling one item on one server (reports marked selling): each one's latest price per copy, from the last keep_days
+drop function if exists public.sellers(text, integer); -- its columns changed: the slots were added
 create or replace function public.sellers(srv text, item integer)
-returns table (discord_id text, discord_name text, username text, refine smallint, opts jsonb, price bigint, at timestamptz)
+returns table (discord_id text, discord_name text, username text, refine smallint, opts jsonb, cards integer[], enchant text, egg integer, price bigint, at timestamptz)
 language sql stable security definer set search_path = '' as $$
-  select x.discord_id, x.discord_name, x.username, x.refine, x.opts, x.price, x.created_at from (
-    select distinct on (r.user_id, r.refine, r.opts_key)
+  select x.discord_id, x.discord_name, x.username, x.refine, x.opts, x.cards, x.enchant, x.egg, x.price, x.created_at from (
+    select distinct on (r.user_id, r.refine, r.opts_key, r.slots_key)
       coalesce(u.raw_user_meta_data->>'provider_id', u.raw_user_meta_data->>'sub') as discord_id,
       coalesce(u.raw_user_meta_data->'custom_claims'->>'global_name', u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name') as discord_name,
       coalesce(u.raw_user_meta_data->>'name', u.raw_user_meta_data->>'full_name') as username,
-      r.refine, r.opts, r.price, r.created_at
+      r.refine, r.opts, r.cards, r.enchant, r.egg, r.price, r.created_at
     from public.reports r
     join auth.users u on u.id = r.user_id
     where r.server = srv and r.item_id = item and r.selling
       and r.created_at > now() - make_interval(days => coalesce((select s.value from public.settings s where s.key = 'keep_days'), 30)::int)
       and not exists (select 1 from public.banned b where b.user_id = r.user_id)
-    order by r.user_id, r.refine, r.opts_key, r.created_at desc) x
+    order by r.user_id, r.refine, r.opts_key, r.slots_key, r.created_at desc) x
   order by x.refine, x.price
   limit 50
 $$;
@@ -130,7 +142,7 @@ grant execute on function public.sellers(text, integer) to anon, authenticated;
 -- or more players in the last fresh_days uses only those days. A copy shows once min_players players are left.
 drop function if exists public.shared_prices(text); -- its columns changed: sellers was added
 create or replace function public.shared_prices(srv text)
-returns table (item_id integer, refine smallint, opts jsonb, price bigint, players integer, reports integer, newest timestamptz, sellers integer)
+returns table (item_id integer, refine smallint, opts jsonb, cards integer[], enchant text, egg integer, price bigint, players integer, reports integer, newest timestamptz, sellers integer)
 language sql stable security definer set search_path = '' as $$
   with s as (
     select coalesce(max(value) filter (where key = 'keep_days'), 30) as keep, coalesce(max(value) filter (where key = 'fresh_days'), 7) as fresh,
@@ -138,31 +150,32 @@ language sql stable security definer set search_path = '' as $$
            coalesce(max(value) filter (where key = 'outlier_factor'), 3) as factor
     from public.settings),
   live as (
-    select r.item_id, r.refine, r.opts, r.opts_key, r.user_id, r.price, r.created_at, r.selling, r.created_at > now() - make_interval(days => s.fresh::int) as recent
+    select r.item_id, r.refine, r.opts, r.opts_key, r.cards, r.enchant, r.egg, r.slots_key, r.user_id, r.price, r.created_at, r.selling, r.created_at > now() - make_interval(days => s.fresh::int) as recent
     from public.reports r, s
     where r.server = srv and r.created_at > now() - make_interval(days => s.keep::int)
       and not exists (select 1 from public.banned b where b.user_id = r.user_id)),
   grp as (
-    select l.item_id, l.refine, l.opts_key, count(distinct l.user_id) filter (where l.recent) as recent_n
-    from live l group by l.item_id, l.refine, l.opts_key),
+    select l.item_id, l.refine, l.opts_key, l.slots_key, count(distinct l.user_id) filter (where l.recent) as recent_n
+    from live l group by l.item_id, l.refine, l.opts_key, l.slots_key),
   used as (
-    select l.* from live l join grp g on g.item_id = l.item_id and g.refine = l.refine and g.opts_key = l.opts_key, s
+    select l.* from live l join grp g on g.item_id = l.item_id and g.refine = l.refine and g.opts_key = l.opts_key and g.slots_key = l.slots_key, s
     where g.recent_n < s.fresh_n or l.recent),
   per as (
-    select u.item_id, u.refine, u.opts_key, u.user_id, min(u.opts::text) as opts, percentile_cont(0.5) within group (order by u.price) as p,
+    select u.item_id, u.refine, u.opts_key, u.slots_key, u.user_id, min(u.opts::text) as opts, min(u.cards::text) as cards, min(u.enchant) as enchant, min(u.egg) as egg,
+           percentile_cont(0.5) within group (order by u.price) as p,
            count(*) as n, max(u.created_at) as t, bool_or(u.selling) as selling
-    from used u group by u.item_id, u.refine, u.opts_key, u.user_id),
+    from used u group by u.item_id, u.refine, u.opts_key, u.slots_key, u.user_id),
   mid as (
-    select p.item_id, p.refine, p.opts_key, percentile_cont(0.5) within group (order by p.p) as m
-    from per p group by p.item_id, p.refine, p.opts_key),
+    select p.item_id, p.refine, p.opts_key, p.slots_key, percentile_cont(0.5) within group (order by p.p) as m
+    from per p group by p.item_id, p.refine, p.opts_key, p.slots_key),
   kept as (
-    select p.* from per p join mid m on m.item_id = p.item_id and m.refine = p.refine and m.opts_key = p.opts_key, s
+    select p.* from per p join mid m on m.item_id = p.item_id and m.refine = p.refine and m.opts_key = p.opts_key and m.slots_key = p.slots_key, s
     where p.p <= m.m * s.factor and p.p >= m.m / s.factor)
-  select k.item_id, k.refine, min(k.opts)::jsonb, round(percentile_cont(0.5) within group (order by k.p))::bigint,
+  select k.item_id, k.refine, min(k.opts)::jsonb, min(k.cards)::integer[], min(k.enchant), min(k.egg), round(percentile_cont(0.5) within group (order by k.p))::bigint,
          count(*)::int, sum(k.n)::int, max(k.t),
          count(*) filter (where k.selling)::int
   from kept k, s
-  group by k.item_id, k.refine, k.opts_key, s.min_n
+  group by k.item_id, k.refine, k.opts_key, k.slots_key, s.min_n
   having count(*) >= s.min_n
 $$;
 revoke all on function public.shared_prices(text) from public;
@@ -172,16 +185,16 @@ grant execute on function public.shared_prices(text) to anon, authenticated;
 --   select * from public.flagged_accounts;    then ban one:  insert into public.banned (user_id, reason) values ('<user id>', 'fake prices');
 create or replace view public.flagged_accounts as
   with per as (
-    select r.server, r.item_id, r.refine, r.opts_key, r.user_id, percentile_cont(0.5) within group (order by r.price) as p
+    select r.server, r.item_id, r.refine, r.opts_key, r.slots_key, r.user_id, percentile_cont(0.5) within group (order by r.price) as p
     from public.reports r
     where r.created_at > now() - make_interval(days => coalesce((select s.value from public.settings s where s.key = 'keep_days'), 30)::int)
-    group by r.server, r.item_id, r.refine, r.opts_key, r.user_id),
+    group by r.server, r.item_id, r.refine, r.opts_key, r.slots_key, r.user_id),
   mid as (
-    select server, item_id, refine, opts_key, percentile_cont(0.5) within group (order by p) as m, count(*) as players
-    from per group by server, item_id, refine, opts_key)
+    select server, item_id, refine, opts_key, slots_key, percentile_cont(0.5) within group (order by p) as m, count(*) as players
+    from per group by server, item_id, refine, opts_key, slots_key)
   select p.user_id, u.raw_user_meta_data->>'full_name' as discord_name, count(*) filter (where m.players >= 3 and (p.p > m.m * f.v or p.p < m.m / f.v)) as outliers,
          count(*) as copies_reported
-  from per p join mid m using (server, item_id, refine, opts_key)
+  from per p join mid m using (server, item_id, refine, opts_key, slots_key)
   cross join (select coalesce((select s.value from public.settings s where s.key = 'outlier_factor'), 3) as v) f
   left join auth.users u on u.id = p.user_id
   group by p.user_id, u.raw_user_meta_data->>'full_name'

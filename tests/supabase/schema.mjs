@@ -91,6 +91,23 @@ await t("refined / optioned copies are their own price", async () => {
   assert.deepEqual(s[0].opts, [{ k: "atk", v: 20 }, { k: "hit", v: 5 }]);
   assert.equal(Number(s[0].price), 2900000);
 });
+await t("slots: cards (any order), enchant and egg make their own copy; bad cards are refused", async () => {
+  const put = (n, cards, enchant, egg, price) => as(n, `insert into public.reports (server, item_id, refine, cards, enchant, egg, price) values ('skadi', 1250, 7, $1, $2, $3, $4) returning cards, slots_key`, [cards, enchant, egg, price]);
+  const r = await put(1, [4035, 4001], null, null, 9000000);
+  assert.deepEqual(r[0].cards, [4001, 4035]);
+  assert.equal(r[0].slots_key, "4001,4035||");
+  await put(2, [4035, 4001], null, null, 9500000);
+  const empty = await put(3, [], null, null, 300000);                                // empty slots: another copy, keyed as before slots
+  assert.equal(empty[0].slots_key, "");
+  const s = await as(0, `select refine, cards, price, players from public.shared_prices('skadi') where item_id = 1250 order by price`);
+  assert.deepEqual(s.map(x => [x.cards, Number(x.price), x.players]), [[[4001, 4035], 9250000, 2]]);
+  await fails(1, `insert into public.reports (server, item_id, cards, price) values ('skadi', 1250, '{1,2,3,4,5}', 5)`, [], /Bad cards/);
+  await fails(1, `insert into public.reports (server, item_id, cards, price) values ('skadi', 1250, '{-1}', 5)`, [], /Bad cards/);
+  const e = await as(4, `insert into public.reports (server, item_id, enchant, egg, price, selling) values ('skadi', 24966, ' ', 313582, 500000, true) returning enchant, slots_key`);
+  assert.deepEqual([e[0].enchant, e[0].slots_key], [null, "||313582"]);
+  const sl = await as(0, `select egg, price from public.sellers('skadi', 24966)`);
+  assert.deepEqual(sl.map(x => [x.egg, Number(x.price)]), [[313582, 500000]]);
+});
 await t("old reports expire; fresh ones win when enough players reported lately", async () => {
   await db.exec(`update public.reports set created_at = now() - interval '40 days' where item_id = 909`);
   assert.equal((await as(0, `select * from public.shared_prices('skadi') where item_id = 909`)).length, 0);

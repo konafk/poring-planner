@@ -38,6 +38,8 @@ async function authCallback(){if(!/[?&](code|error)=/.test(String(location.searc
 async function logout(){try{if(AUTH)await fetch(`${SHARED.url}/auth/v1/logout`,{method:"POST",headers:{apikey:SHARED.key,Authorization:"Bearer "+AUTH.access_token}})}catch(e){}
   authSave(null);renderShared();if(state.tab==="market")renderPrices()}
 
+// a shared copy's slots from the server's columns (cards, enchant, egg), as the page keeps them (c, e, egg)
+const sharedSlots=x=>({...(Array.isArray(x.cards)&&x.cards.length?{c:x.cards.map(Number)}:{}),...(x.enchant?{e:String(x.enchant)}:{}),...(x.egg?{egg:+x.egg}:{})});
 // ---- shared prices of the picked server: item id → copies [{r, o, p, players, reports, newest (ms)}], the plain one first ----
 const SHARED_P={};let SHARED_LOADING=null;
 const sharedOf=id=>((SHARED_P[state.mktServer]||{}).rows||{})[id]||null;
@@ -45,15 +47,15 @@ const sharedPlain=id=>(sharedOf(id)||[]).find(x=>!x.r&&!x.o.length)||null;
 async function loadShared(force){if(!sharedOn())return;const srv=state.mktServer,c=SHARED_P[srv];
   if(SHARED_LOADING||(!force&&c&&Date.now()-c.at<5*60000))return;
   SHARED_LOADING=sb("/rest/v1/rpc/shared_prices",{method:"POST",body:JSON.stringify({srv})}).then(rows=>{const by={};
-      (rows||[]).forEach(x=>{(by[x.item_id]=by[x.item_id]||[]).push({r:+x.refine||0,o:Array.isArray(x.opts)?x.opts:[],p:+x.price,players:+x.players,reports:+x.reports,newest:Date.parse(x.newest)||null,sellers:+x.sellers||0,s:true})});
+      (rows||[]).forEach(x=>{(by[x.item_id]=by[x.item_id]||[]).push({r:+x.refine||0,o:Array.isArray(x.opts)?x.opts:[],...sharedSlots(x),p:+x.price,players:+x.players,reports:+x.reports,newest:Date.parse(x.newest)||null,sellers:+x.sellers||0,s:true})});
       Object.values(by).forEach(a=>a.sort((x,y)=>x.r-y.r||x.o.length-y.o.length||x.p-y.p));SHARED_P[srv]={at:Date.now(),rows:by,err:""}})
     .catch(e=>{SHARED_P[srv]={at:Date.now(),rows:(c||{}).rows||{},err:e.message}})
     .finally(()=>{SHARED_LOADING=null;if(state.tab==="market")renderPrices()})}
 const sharedTxt=x=>`${x.players} players · ${x.reports} report${x.reports>1?"s":""}${x.newest?` · newest ${agoTxt(x.newest)}`:""}`;
 // post this server's prices you typed (plain and copies) as reports. The database skips repeats from the last hour and anything past the daily limits
 async function sharePrices(){const srv=state.mktServer,rows=[];
-  for(const id in state.prices){if(state.prices[id]>0)rows.push({server:srv,item_id:+id,refine:0,opts:[],price:Math.round(state.prices[id]),selling:!!state.sell[id]});
-    (state.priceVars[id]||[]).forEach(x=>{if(x.p>0)rows.push({server:srv,item_id:+id,refine:x.r,opts:x.o.map(o=>({k:o.k,v:o.v})),price:Math.round(x.p),selling:!!x.sell})})}
+  for(const id in state.prices){if(state.prices[id]>0)rows.push({server:srv,item_id:+id,refine:0,opts:[],cards:[],enchant:null,egg:null,price:Math.round(state.prices[id]),selling:!!state.sell[id]});
+    (state.priceVars[id]||[]).forEach(x=>{if(x.p>0)rows.push({server:srv,item_id:+id,refine:x.r,opts:x.o.map(o=>({k:o.k,v:o.v})),cards:(x.c||[]).filter(Boolean),enchant:x.e||null,egg:x.egg||null,price:Math.round(x.p),selling:!!x.sell})})}
   if(!rows.length){showToast("Type some prices first, then share them.");return}
   const sent=rows.slice(0,200);
   try{const r=await sb("/rest/v1/reports",{method:"POST",headers:{Prefer:"return=representation"},body:JSON.stringify(sent)}),n=(r||[]).length;
@@ -77,7 +79,7 @@ function sellersHtml(id){const k=state.mktServer+":"+id;if(!SELLERS_OPEN.has(k))
   if(!L.length)return `<div class="mktSellerList note">Nobody sells it right now.</div>`;
   return `<div class="mktSellerList">${L.map(x=>{const id=/^\d+$/.test(x.discord_id||"")?x.discord_id:"";
     return `<div class="mktSeller"><b>${esc(x.discord_name||x.username||"Discord player")}</b>${x.username?` <span class="note">@${esc(x.username)}</span>`:""}
-      ${+x.refine||(Array.isArray(x.opts)&&x.opts.length)?`<span class="note">${esc(varTxt({r:+x.refine||0,o:Array.isArray(x.opts)?x.opts:[]}))}</span>`:""}<b class="mono">${fmtN(+x.price)} z</b><span class="note">${agoTxt(Date.parse(x.at))}</span>
+      ${(()=>{const v={r:+x.refine||0,o:Array.isArray(x.opts)?x.opts:[],...sharedSlots(x)};return copyBare(v)?"":`<span class="note">${esc(varTxt(v))}</span>`})()}<b class="mono">${fmtN(+x.price)} z</b><span class="note">${agoTxt(Date.parse(x.at))}</span>
       ${id?`<a class="small discordLink" href="https://discord.com/users/${id}" target="_blank" rel="noopener noreferrer" title="Opens their Discord profile, where you can message them">Message on Discord</a>`:""}</div>`}).join("")}
     <div class="note">Trade in game, and check the shop before you pay: the site only shows what sellers told it.</div></div>`}
 // your empty prices (0) on this server take the shared price
