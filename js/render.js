@@ -605,15 +605,97 @@ const dropList=m=>(m.drops||[]).map(([id,ch])=>({id,ch,z:dropZ(m,id,ch),on:loote
 const huntPicker=(r,w)=>`<div class="note">hunting ${r.earn.length} of ${r.mobs.length}${r.tele?` · teleport ~${r.tele.toFixed(1)}×/kill`:r.walk>w*1.01?` · walk ${r.walk.toFixed(1)}s/kill`:""}${r.manual?` · set by you · <a href="#" data-hreset="${esc(r.mp)}">reset</a>`:state.huntAuto?" · best-paying":""}${canTele()?` · <a href="#" data-notele="${esc(r.mp)}" title="Which maps block teleport isn't known: click to mark this one">${noTele(r.mp)?"no teleport":"teleport ok"}</a>`:""}</div>`
   +r.mobs.map(x=>`<div>${x.lvOut?`<span class="hpick off" title="${esc(dropNames(x.m))} · Lv ${x.m.lv}: passed by, outside your level filter">✕ ${esc(x.m.name)}</span>`
     :`<a href="#" class="hpick${x.on?"":" off"}" data-hpick="${esc(r.mp)}" data-hmob="${x.m.id}" title="${esc(dropNames(x.m))} · click to ${x.on?"pass it by":"hunt it"}">${x.on?"✓":"✕"} ${esc(x.m.name)}</a>`}${BOSS_PILL(x.m)} <span class="note">×${spN(x.n)} · Lv ${x.m.lv} · ${fmtN(x.zk)} z · ${fmtQty(x.wk)} wt${dropPenalty(x.m)?` · drops −${dropPenalty(x.m)}%`:""}${x.lvOut?" · Lv filter":""}</span></div>`).join("");
-// market prices: one row per priced item with its best drop chance
+// ---- Market: your prices for the server you play on, sorted into the in-game market's categories ----
+// the best drop chance of each item (bosses left out)
 const DROPPERS={};MOBS.forEach(m=>(m.drops||[]).forEach(([id,ch])=>{const d=DROPPERS[id];if(!m.boss&&(!d||ch>d.ch))DROPPERS[id]={m,ch}}));
+// gear and cards by id, for their names, card slots and category
+const MKT_GEAR={};(typeof EQUIP!=="undefined"?EQUIP:[]).forEach(e=>{if(e.id!=null)MKT_GEAR[e.id]=e});(typeof CARDS!=="undefined"?CARDS:[]).forEach(c=>{MKT_GEAR[c.id]=Object.assign({card:true},c)});
+// an item's name as the market shows it, card slots included ("Katar [2]")
+const mktName=id=>{const g=MKT_GEAR[id],n=ITEMN[id]||(g&&g.name)||itemName(id);return g&&g.slots&&!/\[\d\]$/.test(n)?`${n} [${g.slots}]`:n};
+const MKT_CATS=[["","All"],["cons","Consumables"],["etc","Etc."],["weapon","Weapons"],["armor","Armor"],["card","Cards"],["ench","Enchants"],["cost","Costumes"],["pet","Pets"],["box","Boxes"]];
+const MKT_CLIENT={Consumable:"cons",Costume:"cost","Enchant Stone":"ench","Pet Egg":"pet","Pet Equipment":"pet","Taming Item":"pet","Package/Box":"box"};
+const MKT_GROUP={w:"weapon",a:"armor",u:"cons",c:"card",o:"cost"};
+const mktCat=id=>{const g=MKT_GEAR[id];if(g)return g.card?"card":g.type||(g.slot||[]).includes("weapon")?"weapon":"armor";
+  return MKT_CLIENT[clientCat(id)]||(ITEMTYPE[id]&&MKT_GROUP[ITEMTYPE[id]])||"etc"};
+// zeny as typed: "1,500,000", "1.5m", "450k" or "450kz"; null when blank, NaN when it isn't a price
+const parseZ=s=>{s=String(s??"").trim().toLowerCase().replace(/[,\s_]/g,"").replace(/z$/,"");if(!s)return null;
+  const m=s.match(/^(\d+(?:\.\d+)?|\.\d+)([km]?)$/);return m?Math.round(+m[1]*(m[2]==="m"?1e6:m[2]==="k"?1e3:1)):NaN};
+// zeny short: 1.5m, 450k, 900
+const zShort=n=>{const f=(v,u)=>(+v.toFixed(v>=100?0:v>=10?1:2))+u;return n>=1e6?f(n/1e6,"m"):n>=1e3?f(n/1e3,"k"):String(Math.round(n))};
+const agoTxt=t=>{const m=(Date.now()-t)/60000;return m<1?"just now":m<60?`${Math.floor(m)} min ago`:m<1440?`${Math.floor(m/60)} h ago`:m<1440*30?`${Math.floor(m/1440)} day${m<2880?"":"s"} ago`:fmtD(t)};
+// note when each price changed and what it was before: a change within a minute of the last one is the same edit, so it keeps that edit's old price
+function stampPrices(now=Date.now()){let ch=false;const seen=state.priceSeen;
+  for(const id in seen)if(!(id in state.prices)){delete seen[id];ch=true}
+  for(const id in state.priceVars)if(!(id in state.prices)){delete state.priceVars[id];ch=true}
+  for(const id in state.prices){const p=state.prices[id],s=seen[id];if(s&&s[2]===p)continue;ch=true;
+    if(!s){seen[id]=[now,null,p];continue}
+    const same=s[0]!=null&&now-s[0]<60000;seen[id]=[now,same?s[1]:s[2]>0?s[2]:null,p]}
+  if(ch)save();return ch}
+// the change from the price before it, in %; null with none to compare
+const priceMove=id=>{const s=state.priceSeen[id],p=state.prices[id];return s&&s[1]>0&&p>0&&s[1]!==p?(p-s[1])/s[1]*100:null};
+// refine and random options: only weapons and armor (not cards) have them. A row's options are the ones its gear rolls (BUILD.optChoices)
+const mktGearOnly=id=>{const g=MKT_GEAR[id];return g&&!g.card?g:null};
+const mktSlot=g=>{const s=g.slot||[];return s.includes("weapon")?"weapon":s.includes("footgear")?"shoes":s.includes("garment")?"garment":s.includes("armor")?"armor":s[0]||""};
+const MKT_OPT_BY=()=>MKT_OPT_BY.m||(MKT_OPT_BY.m=Object.fromEntries(BUILD.OPTIONS.map(o=>[o.k,o])));
+const optTxt=x=>{const o=MKT_OPT_BY()[x.k];return o?`${o.label.replace(/ %$/,"")}${x.v!=null?` ${x.v>0?"+":""}${x.v}${o.pct?"%":""}`:""}`:x.k};
+const varTxt=x=>[`+${x.r}`,...x.o.map(optTxt)].join(" · ");
+// every copy priced for an item: the plain one (+0, no options) and the refined / optioned ones
+const listings=id=>[{r:0,o:[],p:state.prices[id]||0,i:-1},...(state.priceVars[id]||[]).map((x,i)=>({...x,i}))];
+// does a copy have the Refine ≥ and every option asked for (at least its value; any value when none is typed)?
+const mktFilterOn=()=>state.mkt.refine!=null||state.mkt.opts.some(x=>x.k);
+const listingOk=x=>{const m=state.mkt;return (m.refine==null||x.r>=m.refine)&&m.opts.filter(f=>f.k).every(f=>x.o.some(o=>o.k===f.k&&(f.v==null||(o.v??0)>=f.v)))};
+// the price a row sorts and filters by: its cheapest priced copy that fits the filters (the plain price when none are on)
+const mktBest=id=>listings(id).filter(x=>x.p>0&&listingOk(x)).sort((a,b)=>a.p-b.p)[0]||null;
+const mktPrice=id=>{const b=mktBest(id);return b?b.p:null};
+const OPT_REFINES=n=>Array.from({length:n+1},(_,i)=>i);
+function mktVarRow(id,x,g){const ch=BUILD.optChoices(mktSlot(g),g),list=optList(ch),hit=mktFilterOn()&&listingOk(x);
+  const opt=(o,j)=>{const c=o&&ch.find(c=>c.k===o.k),r=c&&c.range;
+    return `<span class="mktOpt"><select data-vok="${j}" aria-label="Random option"><option value="">${o?"remove":"+ option"}</option>${o&&!c?`<option value="${esc(o.k)}">${esc(optTxt({k:o.k,v:null}))}</option>`:""}${list}</select>${o?`<input class="mono" data-vov="${j}" inputmode="decimal" value="${o.v??""}" placeholder="${r?`${r[0]}–${r[1]}`:"value"}" aria-label="Option value">`:""}</span>`};
+  return `<div class="mktVar${hit?" hit":""}" data-var="${esc(id)}:${x.i}">
+    <select data-vr aria-label="Refine">${OPT_REFINES(20).map(r=>`<option value="${r}"${r===x.r?" selected":""}>+${r}</option>`).join("")}</select>
+    <span class="mktOpts">${x.o.map(opt).join("")}${x.o.length<BUILD.OPT_MAX?opt(null,x.o.length):""}</span>
+    <span class="mktPrice"><input class="mono" inputmode="decimal" data-vp value="${x.p>0?fmtN(x.p):""}" placeholder="price" aria-label="Price of this copy"><span class="mktZ">z</span>${x.p>=1e3?`<div class="note mono">${zShort(x.p)}</div>`:""}</span>
+    <span class="note mktAgo">${x.t?agoTxt(x.t):""}</span>
+    <button type="button" class="small ghost" data-vdel title="Remove this copy" aria-label="Remove this copy">✕</button></div>`}
 function renderPrices(){
-  const f=document.activeElement;if(f&&f.tagName==="INPUT"&&$("priceTable").tBodies[0].contains(f))return;// don't rebuild the box you're typing in (a focused Remove button is fine)
-  const ids=Object.keys(state.prices).sort((a,b)=>itemName(a).localeCompare(itemName(b)));
-  const rows=tableRows("priceTable",ids.map(id=>({id,pl:state.prices[id]||null,npc:state.npcPrices[id]??NPCSELL[id]??null,d:DROPPERS[id]})));
-  $("priceTable").querySelector("tbody").innerHTML=rows.map(({id,d})=>`<tr><td class="name">${itemIcon(id,1,"il")}<a href="#" data-info="item:${esc(id)}">${esc(itemName(id))}</a> <span class="note">#${esc(id)}</span></td><td><input type="number" min="0" step="100" data-price="${esc(id)}" value="${state.prices[id]||""}" placeholder="zeny" class="w-xl"></td><td><input type="number" min="0" step="1" data-npc="${esc(id)}" value="${state.npcPrices[id]??""}" placeholder="${NPCSELL[id]!=null?fmtN(NPCSELL[id])+" (NPC)":"0"}" title="${NPCSELL[id]!=null?`NPC price ${fmtN(NPCSELL[id])} z; type to override`:"no NPC price known; counts as 0"}" class="w-xl"></td><td class="name">${d?`${esc(d.m.name)} <span class="note">${d.ch}%</span>`:"–"}</td><td><button type="button" class="small" data-unprice="${esc(id)}">Remove</button></td></tr>`).join("")
-    ||`<tr><td colspan="5" class="name muted">${ids.length?"No prices match these filters.":"No market prices yet. Add an item above, or click a drop in the Monsters list."}</td></tr>`;
+  const f=document.activeElement;if(f&&f.tagName==="INPUT"&&$("mktList").contains(f))return;// don't rebuild the box you're typing in
+  stampPrices();const mk=state.mkt,ids=Object.keys(state.prices),q=mk.q.trim().toLowerCase(),fOn=mktFilterOn();
+  const cnt={"":ids.length};ids.forEach(id=>{const c=mktCat(id);cnt[c]=(cnt[c]||0)+1});
+  $("mktCats").innerHTML=MKT_CATS.filter(([k])=>!k||cnt[k]||mk.cat===k).map(([k,n])=>`<button type="button" class="mktCat" data-mktcat="${k}" aria-pressed="${mk.cat===k}">${n} <span>${cnt[k]||0}</span></button>`).join("");
+  mktFilterBoxes();
+  $("mktSrv").innerHTML=MKT_SERVERS.map(([k,n])=>{const c=k===state.mktServer?ids.length:Object.keys((state.serverPrices[k]||{}).prices||{}).length;
+    return `<button type="button" role="radio" data-srv="${k}" aria-checked="${k===state.mktServer}">${n}${c?` <span class="note">${fmtN(c)}</span>`:""}</button>`}).join("");
+  const seenT=id=>Math.max((state.priceSeen[id]||[])[0]||0,...(state.priceVars[id]||[]).map(x=>x.t||0));
+  const pr={};ids.forEach(id=>pr[id]=mktPrice(id));
+  const SORT={recent:(a,b)=>seenT(b)-seenT(a),low:(a,b)=>(pr[a]??Infinity)-(pr[b]??Infinity),high:(a,b)=>(pr[b]??-1)-(pr[a]??-1),
+    move:(a,b)=>Math.abs(priceMove(b)??-1)-Math.abs(priceMove(a)??-1),name:()=>0};
+  const rows=ids.filter(id=>(!mk.cat||mktCat(id)===mk.cat)&&(!q||mktName(id).toLowerCase().includes(q)||("#"+id).includes(q))
+      &&(!fOn||pr[id]!=null)&&(mk.max==null||!(pr[id]>mk.max)))
+    .sort((a,b)=>SORT[mk.sort](a,b)||mktName(a).localeCompare(mktName(b)));
+  $("mktList").innerHTML=rows.map(id=>{const p=state.prices[id],t=(state.priceSeen[id]||[])[0],mv=priceMove(id),d=DROPPERS[id],npc=state.npcPrices[id]??NPCSELL[id],g=mktGearOnly(id),vs=listings(id).slice(1),best=fOn?mktBest(id):null;
+    return `<div class="mktItem"><div class="mktRow"><span class="mktIc">${itemIcon(id)}</span>
+      <div class="mktName"><a href="#" data-info="item:${esc(id)}">${esc(mktName(id))}</a>
+        <div class="note">${[best?`<b class="mktFit">cheapest fit ${esc(varTxt(best))}: ${fmtN(best.p)} z</b>`:"",t?`<span title="${esc(new Date(t).toLocaleString("en-GB"))}">updated ${agoTxt(t)}</span>`:"",npc!=null?`NPC pays ${fmtN(npc)} z`:"",d?`best drop ${esc(d.m.name)} ${d.ch}%`:"",`#${esc(id)}`,
+          g?`<a href="#" data-varadd="${esc(id)}" title="Price a refined copy, or one with random options. The plain price stays the one every zeny figure uses">+ refine / options</a>`:""].filter(Boolean).join(" · ")}</div></div>
+      <div class="mktPrice${fOn&&!listingOk(listings(id)[0])?" off":""}"><input class="mono" inputmode="decimal" data-price="${esc(id)}" value="${p>0?fmtN(p):""}" placeholder="price" aria-label="What players pay for ${esc(mktName(id))}" title="${g?"+0, no random options. ":""}Zeny; 450k = 450,000, 1.5m = 1,500,000">
+        <span class="mktZ">z</span>${p>=1e3?`<div class="note mono">${zShort(p)}</div>`:""}</div>
+      <div class="mktMove">${mv==null?"":`<span class="pill ${mv>0?"up":"down"}" title="was ${fmtN(state.priceSeen[id][1])} z">${mv>0?"▲":"▼"} ${Math.abs(mv)>=10?Math.round(Math.abs(mv)):Math.abs(mv).toFixed(1)}%</span>`}</div>
+      <div class="mktNpc"><input class="mono" inputmode="decimal" data-npc="${esc(id)}" value="${state.npcPrices[id]!=null?fmtN(state.npcPrices[id]):""}" placeholder="${NPCSELL[id]!=null?fmtN(NPCSELL[id]):"0"}" aria-label="What an NPC pays" title="${NPCSELL[id]!=null?`NPC price ${fmtN(NPCSELL[id])} z; type to override, blank resets`:"no NPC price known; counts as 0"}"><span class="note">NPC</span></div>
+      <button type="button" class="small ghost" data-unprice="${esc(id)}" title="Remove this item and its copies" aria-label="Remove ${esc(mktName(id))}">✕</button></div>
+      ${g&&vs.length?`<div class="mktVars">${vs.map(x=>mktVarRow(id,x,g)).join("")}</div>`:""}</div>`}).join("")
+    ||`<div class="note muted mktEmpty">${ids.length?"No prices match these filters.":"No prices yet. Add an item above, or click a drop in Where to farm, Monster info or Item info."}</div>`;
+  // a select's picked option, set after the list is in (the lists are shared, so no option carries "selected")
+  ROOTQ("#mktList [data-var]").forEach(el=>{const [id,i]=el.dataset.var.split(":"),x=(state.priceVars[id]||[])[+i];if(!x)return;
+    x.o.forEach((o,j)=>{const s=el.querySelector(`[data-vok="${j}"]`);if(s)s.value=o.k})});
 }
+// the Refine ≥ list and a row per random option wanted, each with the least value
+let MKT_OPT_LIST=null;
+function mktFilterBoxes(){const f=document.activeElement;if(f&&f.tagName==="INPUT"&&$("mktOptF").contains(f))return;const m=state.mkt;
+  $("mktRef").innerHTML=`<option value="">any</option>`+OPT_REFINES(15).slice(1).map(r=>`<option value="${r}"${m.refine===r?" selected":""}>+${r}</option>`).join("");
+  MKT_OPT_LIST=MKT_OPT_LIST||optList(BUILD.OPTIONS.filter(o=>!o.ess).map(o=>({...o,range:null})));
+  $("mktOptF").innerHTML=m.opts.map((x,i)=>`<span class="mktOpt"><select data-fok="${i}" aria-label="Random option"><option value="">pick an option</option>${MKT_OPT_LIST}</select><input class="mono" data-fov="${i}" inputmode="decimal" value="${x.v??""}" placeholder="at least" aria-label="Least value"><button type="button" class="small ghost" data-fodel="${i}" aria-label="Remove this option">✕</button></span>`).join("")
+    +`<button type="button" class="small" data-foadd>+ Add random option</button>`;
+  m.opts.forEach((x,i)=>{const s=$("mktOptF").querySelector(`[data-fok="${i}"]`);if(s)s.value=x.k})}
 // ---- render: Monster info and Item info ----
 const GROUP_NAME=Object.fromEntries(LOOT_GROUPS);
 const groupOf=id=>ITEMTYPE[id]||"e";
@@ -632,7 +714,6 @@ const TABLES={
   cmpTable:{def:["when",-1],cols:{name:{t:r=>r.s.name},job:{t:r=>r.s.job||""},mobs:{t:r=>[...r.ms.map(m=>m.name),sessMap(r.s)?mapTxt(sessMap(r.s)):""].join(", ")},when:{n:r=>r.st.es[0].t,t:r=>`${fmtD(r.st.es[0].t)} ${fmtT(r.st.es[0].t)}`},
     len:{n:r=>r.st.spanMin},pct:{n:r=>r.st.avgPct,t:r=>`B${r.st.last.lv}`},epm:{n:r=>r.st.avgRaw/60},kph:{n:r=>r.kph},spk:{n:r=>r.kph?3600/r.kph:null,asc:1},die:{n:r=>r.st.deaths,asc:1}}},
   recTable:{def:["per",1],cols:{name:{t:r=>r.name},kind:{t:r=>r.kind.toUpperCase()},avg:{n:r=>r.avg},price:{n:r=>r.price},per:{n:r=>r.per,asc:1},perW:{n:r=>r.perW},uph:{n:r=>r.uph,asc:1},zph:{n:r=>r.zph,asc:1},wph:{n:r=>r.wph,asc:1}}},
-  priceTable:{def:["name",1],cols:{name:{t:r=>itemName(r.id)+" #"+r.id},pl:{n:r=>r.pl},npc:{n:r=>r.npc},best:{n:r=>r.d?r.d.ch:null,t:r=>r.d?r.d.m.name:""}}},
 };
 // at the max base level the EXP Hunter keeps a sort of its own ("bestTable@max"), Net zeny / hr until you pick another column
 const sortKey=id=>id==="bestTable"&&atMaxLv()?"bestTable@max":id;
@@ -858,5 +939,5 @@ function renderMap(){
 let TAB_ON=null,DREW_ALL=false;const DRAWN={};
 const draw=(k,f)=>{DRAWN[k]=GEN;f()},redraw=(k,f)=>{if(DRAWN[k]!==GEN)draw(k,f)};
 function renderAll(){rowPass(renderAll0)}
-function renderAll0(){SKFX=skillEffects(C());const sgTree=sageFromTree(C());ROOTQ('[data-sg="sfLv"],[data-sg="boltLv"],[data-sg="hsLv"],[data-sg="dbLv"]').forEach(i=>{i.disabled=sgTree;i.title=sgTree?"Set by the Skills card":""});ROOTQ("[data-sgbolt]").forEach(i=>i.disabled=sgTree&&!skLv(C(),SG_BOLT[i.dataset.sgbolt]));applyBuild();applyConsumables();renderBuild();hsCompare();renderSessions();renderChar();renderTracker();const t=TAB_ON;if(t==="maps"||t==="mobinfo")renderMobs();if(t==="maps"||t==="home")draw("best",renderBest);renderRecovery();if(t==="maps")draw("hunt",renderHunt);if(t==="market")renderPrices();if(t==="mobinfo")draw("mobinfo",renderMobInfo);if(t==="items")draw("items",renderItems);if(t==="equip"&&typeof renderEquipDb==="function")draw("equip",renderEquipDb);if(t==="cards"&&typeof renderCardDb==="function")draw("cards",renderCardDb);if(t==="mapinfo"&&typeof renderMapInfo==="function")renderMapInfo();renderMap();renderRef();if(t==="home"&&typeof renderHome==="function")renderHome();snapEst();DREW_ALL=true}
+function renderAll0(){stampPrices();SKFX=skillEffects(C());const sgTree=sageFromTree(C());ROOTQ('[data-sg="sfLv"],[data-sg="boltLv"],[data-sg="hsLv"],[data-sg="dbLv"]').forEach(i=>{i.disabled=sgTree;i.title=sgTree?"Set by the Skills card":""});ROOTQ("[data-sgbolt]").forEach(i=>i.disabled=sgTree&&!skLv(C(),SG_BOLT[i.dataset.sgbolt]));applyBuild();applyConsumables();renderBuild();hsCompare();renderSessions();renderChar();renderTracker();const t=TAB_ON;if(t==="maps"||t==="mobinfo")renderMobs();if(t==="maps"||t==="home")draw("best",renderBest);renderRecovery();if(t==="maps")draw("hunt",renderHunt);if(t==="market")renderPrices();if(t==="mobinfo")draw("mobinfo",renderMobInfo);if(t==="items")draw("items",renderItems);if(t==="equip"&&typeof renderEquipDb==="function")draw("equip",renderEquipDb);if(t==="cards"&&typeof renderCardDb==="function")draw("cards",renderCardDb);if(t==="mapinfo"&&typeof renderMapInfo==="function")renderMapInfo();renderMap();renderRef();if(t==="home"&&typeof renderHome==="function")renderHome();snapEst();DREW_ALL=true}
 

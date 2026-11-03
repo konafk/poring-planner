@@ -68,6 +68,15 @@ All four are remembered in this browser, apart from your account data, so backup
 - A new session is named after its map (e.g. nrd_dun02) once you add a monster, and the name follows the map while you add or remove monsters. Rename a session with ✎ next to the session picker (Enter or ✓ saves, Esc cancels), and compare sessions side by side.
 - **Goal:** the EXP needed and the farming time to a target base and job level, charted together, with a date for each level-up if you farm non-stop.
 
+### Sell timer
+
+The game's auto return only takes you to town at a weight %; it doesn't sell or store anything. Press Start when you leave town and the timer counts down to when the current session's monsters should have filled you to your sell point, then rings: a beep, an optional browser notification and "Sell now" in the tab title. It can ring a few minutes early.
+
+- Time the session spends paused is added on, and Start or **Back from town** ends a pause left open while you sold.
+- If the trip length can't be worked out (no monster picked, no Max Weight) or doesn't match what you see, type the minutes one trip takes.
+- It also shows how many town runs you make an hour.
+- In a background tab the browser can make it up to a minute late.
+
 ## Monsters & maps
 
 ### Where to farm
@@ -256,18 +265,15 @@ Every crafting recipe: 439 of them under **Forging** (weapons, with the weapon's
 
 ## Market
 
-- Type what players pay for an item, and that drop counts at the player price in every zeny figure.
-- The NPC price is subtracted, since the loot value already includes it. It's filled in for every drop, and you can type your own to override it.
+Prices you saw in game, for the server you play on: pick **Skadi (EU)**, **Odin (SEA)** or **Loki (SEA)** at the top of the card. Each server has its own market, so each keeps its own prices; the one picked is the one every zeny figure uses, and the button shows how many prices each has. Prices saved before the servers are Skadi's. Search an item at the market in game and type the cheapest shop's price.
+
+- Add any item, gear, card or costume by name or `#id`: the **Item** box suggests matches with their icons and category (arrow keys and Enter pick one). Prices take `450k` or `1.5m` as well as whole numbers.
+- **Refined and optioned gear:** under a weapon or armor, **+ refine / options** prices a copy at a refine (+0 to +20) with up to its random options, picked from the ones that gear rolls, with each one's range. The plain price (+0, no options) is the one every zeny figure on the site uses; the copies are for comparing shops.
+- **Refine ≥** and **Random options** (each with a least value, or any) show only gear with a priced copy that fits, highlight that copy, and sort and filter by its cheapest one ("cheapest fit +7 · ATK +20: 3,000,000 z").
+- The list is split into the in-game market's categories (Consumables, Etc., Weapons, Armor, Cards, Enchants, Costumes, Pets, Boxes), each with its count. Search it, sort it (recently updated, lowest or highest price, biggest change, name) and hide anything above a **Max price**.
+- Each row shows when you last changed the price, ▲▼ against the price you had before it (green when it went up, since you're selling), the NPC price, the best drop and the item number. Gear shows its card slots, e.g. Katar [2].
+- Type what players pay for an item, and that drop counts at the player price in every zeny figure. The NPC price is subtracted, since the loot value already includes it. It's filled in for every drop, and you can type your own to override it.
 - Click a drop in Where to farm (by zeny), Monster info or Item info to price it.
-
-### Sell timer
-
-The game's auto return only takes you to town at a weight %; it doesn't sell or store anything. Press Start when you leave town and the timer counts down to when the current session's monsters should have filled you to your sell point, then rings: a beep, an optional browser notification and "Sell now" in the tab title. It can ring a few minutes early.
-
-- Time the session spends paused is added on, and Start or **Back from town** ends a pause left open while you sold.
-- If the trip length can't be worked out (no monster picked, no Max Weight) or doesn't match what you see, type the minutes one trip takes.
-- It also shows how many town runs you make an hour.
-- In a background tab the browser can make it up to a minute late.
 
 ## EXP & formulas
 

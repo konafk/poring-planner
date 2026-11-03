@@ -464,18 +464,69 @@ t("monster table filters", () => {
   assert.ok(m("<10 or >100", 150) && !m("<10 or >100", 50));
 });
 
-t("info and market tables: filters, header sort, blanks last, saved sort on a missing column falls back", () => {
-  const rows = `[{id:"909",pl:500,npc:3,d:null},{id:"910",pl:null,npc:10,d:null},{id:"911",pl:2000,npc:null,d:null}]`;
-  const ids = () => run(`tableRows("priceTable",${rows}).map(r=>r.id).join()`);
-  run(`state.tfilt={};state.tsort={priceTable:["pl",-1]}`);
-  assert.equal(ids(), "911,909,910");                                   // no player price sorts last either way
-  run(`state.tsort={priceTable:["pl",1]}`);
-  assert.equal(ids(), "909,911,910");
-  run(`state.tfilt={priceTable:{npc:"<5 or -"}}`);
-  assert.equal(ids(), "909,911");
-  run(`state.tfilt={};state.tsort={priceTable:["constructor",1]}`);     // not a column: the table's own default (name)
-  assert.equal(run(`tblSort("priceTable").join()`), "name,1");
+t("info tables: filters, header sort, blanks last, saved sort on a missing column falls back", () => {
+  const rows = `[{name:"a",price:500,per:3},{name:"b",price:null,per:10},{name:"c",price:2000,per:null}]`;
+  const ids = () => run(`tableRows("recTable",${rows}).map(r=>r.name).join()`);
+  run(`state.tfilt={};state.tsort={recTable:["price",-1]}`);
+  assert.equal(ids(), "c,a,b");                                         // no price sorts last either way
+  run(`state.tsort={recTable:["price",1]}`);
+  assert.equal(ids(), "a,c,b");
+  run(`state.tfilt={recTable:{per:"<5 or -"}}`);
+  assert.equal(ids(), "a,c");
+  run(`state.tfilt={};state.tsort={recTable:["constructor",1]}`);       // not a column: the table's own default
+  assert.equal(run(`tblSort("recTable").join()`), "per,1");
   run(`state.tsort={}`);
+});
+
+t("market: prices typed as 450k or 1.5m, categories, and the change from the price before", () => {
+  assert.equal(run(`JSON.stringify(["1,500,000","1.5m","450kz",".5k","12 k",""].map(parseZ))`), "[1500000,1500000,450000,500,12000,null]");
+  assert.ok(run(`Number.isNaN(parseZ("abc"))&&Number.isNaN(parseZ("1.2.3m"))`));
+  assert.equal(run(`zShort(1500000)+" "+zShort(450000)+" "+zShort(900)`), "1.5m 450k 900");
+  assert.equal(run(`[4001,909,501].map(mktCat).join()`), "card,etc,cons");      // Poring Card, Jellopy, Red Potion
+  assert.equal(run(`mktCat(EQUIP.find(e=>e.type==="katar").id)+","+mktCat(EQUIP.find(e=>e.slot.includes("armor")).id)`), "weapon,armor");
+  run(`state.prices={"4001":400000};state.priceSeen={};stampPrices(1e9)`);
+  assert.equal(run(`JSON.stringify(state.priceSeen["4001"])`), "[1000000000,null,400000]"); // a new price has nothing before it
+  run(`state.prices["4001"]=500000;stampPrices(1e9+120000)`);
+  assert.equal(run(`JSON.stringify(state.priceSeen["4001"])`), "[1000120000,400000,500000]");
+  near(run(`priceMove("4001")`), 25);
+  run(`state.prices["4001"]=550000;stampPrices(1e9+130000)`);                     // within a minute: the same edit, so it still compares with 400k
+  assert.equal(run(`state.priceSeen["4001"][1]`), 400000);
+  run(`delete state.prices["4001"];stampPrices(1e9+200000)`);
+  assert.equal(run(`Object.keys(state.priceSeen).length`), 0);
+  run(`state.prices={};state.priceSeen={}`);
+});
+
+t("market: refined and optioned copies, Refine ≥ and random option filters pick the cheapest copy that fits", () => {
+  run(`state.prices={"28028":200000};state.priceSeen={};state.priceVars={"28028":[{r:7,o:[{k:"atk",v:20}],p:3000000,t:null},{r:9,o:[],p:5000000,t:null}]};state.mkt={cat:"",sort:"recent",q:"",max:null,refine:null,opts:[]}`);
+  assert.equal(run(`mktPrice("28028")`), 200000);                                   // no filters: the plain price
+  run(`state.mkt.refine=7`);
+  assert.equal(run(`mktPrice("28028")`), 3000000);
+  run(`state.mkt.opts=[{k:"atk",v:25}]`);
+  assert.equal(run(`mktPrice("28028")`), null);                                      // ATK 20 is under 25
+  run(`state.mkt.opts=[{k:"atk",v:null}]`);
+  assert.equal(run(`mktPrice("28028")`), 3000000);                                   // any value
+  run(`state.mkt.refine=8;state.mkt.opts=[]`);
+  assert.equal(run(`mktPrice("28028")+" "+varTxt(mktBest("28028"))`), "5000000 +9");
+  run(`state.prices={};state.priceVars={};stampPrices()`);
+  run(`state.mkt={cat:"",sort:"recent",q:"",max:null,refine:null,opts:[]}`);
+});
+
+t("market: each server keeps its own prices; prices from before the servers are Skadi's", () => {
+  const r = load({ prices: { "909": 30 }, serverPrices: { odin: { prices: { "909": 50, "x": 1 }, npcPrices: { "909": 3 } }, mars: { prices: { "1": 1 } } } });
+  assert.equal(r(`state.mktServer+" "+state.prices["909"]+" "+Object.keys(state.serverPrices).join()`), "skadi 30 odin");
+  assert.equal(r(`JSON.stringify(state.serverPrices.odin.prices)+state.serverPrices.odin.npcPrices["909"]`), '{"909":50}3');
+  r(`switchServer("odin")`);
+  assert.equal(r(`state.mktServer+" "+state.prices["909"]+" "+state.serverPrices.skadi.prices["909"]+" "+("odin" in state.serverPrices)`), "odin 50 30 false");
+  r(`switchServer("loki")`);
+  assert.equal(r(`Object.keys(state.prices).length+" "+Object.keys(state.serverPrices).sort().join()`), "0 odin,skadi");
+  r(`switchServer("skadi")`);
+  assert.equal(r(`state.prices["909"]`), 30);
+});
+
+t("market: a saved copy keeps only a refine of 0-20, options with a key, and a price", () => {
+  const r = load({ prices: { "28028": 1 }, priceVars: { "28028": [{ r: 99, o: [{ k: "atk", v: "x" }, { v: 3 }], p: -5, t: "y", evil: "<b>" }], "999": [{ r: 1, p: 1 }] }, mkt: { refine: 50, opts: "atk" } });
+  assert.equal(r(`JSON.stringify(state.priceVars)`), '{"28028":[{"r":20,"o":[{"k":"atk","v":null}],"p":0,"t":null}]}');
+  assert.equal(r(`state.mkt.refine+","+state.mkt.opts.length`), "null,0");
 });
 
 t("Hunter tables: an older save's sort carries over to the shared table sort", () => {

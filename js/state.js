@@ -92,9 +92,32 @@ for(const j in state.chars){let c=state.chars[j];if(!c||typeof c!=="object"){del
   if(c.recovery!=null){const r=c.recovery&&typeof c.recovery==="object"&&!Array.isArray(c.recovery)?c.recovery:{},o=r.overrides&&typeof r.overrides==="object"?r.overrides:{},keys=(x,ks)=>Object.fromEntries(Object.entries(numMap(x)).filter(([k,v])=>ks.includes(k)&&v>=0));
     c.recovery={hpItem:typeof r.hpItem==="string"?r.hpItem:"auto",spItem:typeof r.spItem==="string"?r.spItem:"auto",
       overrides:Object.fromEntries(Object.entries(o).filter(([id])=>Object.hasOwn(RECOVERY,id)).map(([id,x])=>[id,keys(x,["min","max","spMin","spMax","pct","w","npc","disc","player"])]).filter(([,x])=>Object.keys(x).length))}}}
-// market prices you typed for items, and optionally what an NPC pays for them (item id → zeny); numbers only, so a pasted backup can't put anything else in
-state.prices=Object.fromEntries(Object.entries(numMap(state.prices)).filter(([k,v])=>/^\d+$/.test(k)&&v>=0)); // keys are item ids
-state.npcPrices=Object.fromEntries(Object.entries(numMap(state.npcPrices)).filter(([k,v])=>v>=0&&k in state.prices));
+// market prices you typed, one book per game server (each has its own market). The server picked on the Market tab has its book in
+// state.prices / npcPrices / priceSeen / priceVars, which every zeny figure reads; the others wait in state.serverPrices[server]
+const MKT_SERVERS=[["skadi","Skadi (EU)"],["odin","Odin (SEA)"],["loki","Loki (SEA)"]];
+const numOrNull=x=>typeof x==="number"&&isFinite(x)&&x>=0?x:null;
+const mktOpts=a=>(Array.isArray(a)?a:[]).filter(x=>x&&typeof x.k==="string").slice(0,5).map(x=>({k:x.k,v:typeof x.v==="number"&&isFinite(x.v)?x.v:null}));
+const objOr=o=>o&&typeof o==="object"&&!Array.isArray(o)?o:{};
+// a book, numbers only so a pasted backup can't put anything else in:
+// prices: what players pay (item id → zeny); npcPrices: what an NPC pays, if you typed it;
+// priceSeen: when each price last changed and the one before it (item id → [time in ms or null, previous price or null, price then]);
+// priceVars: refined or optioned copies of gear you saw for sale, beside the plain price (item id → [{r: refine 0-20, o: random options
+// [{k: option key, v: value}], p: price, t: when the price was typed (ms) or null}])
+function priceBook(o){o=objOr(o);
+  const prices=Object.fromEntries(Object.entries(numMap(o.prices)).filter(([k,v])=>/^\d+$/.test(k)&&v>=0)); // keys are item ids
+  const npcPrices=Object.fromEntries(Object.entries(numMap(o.npcPrices)).filter(([k,v])=>v>=0&&k in prices));
+  const priceSeen=Object.fromEntries(Object.entries(objOr(o.priceSeen)).filter(([k,v])=>k in prices&&Array.isArray(v)).map(([k,v])=>[k,[numOrNull(v[0]),numOrNull(v[1]),numOrNull(v[2])]]));
+  for(const id in prices)if(!priceSeen[id])priceSeen[id]=[null,null,prices[id]]; // a price from before the dates: undated
+  const priceVars=Object.fromEntries(Object.entries(objOr(o.priceVars)).filter(([k,v])=>k in prices&&Array.isArray(v))
+    .map(([k,v])=>[k,v.filter(x=>x&&typeof x==="object").map(x=>({r:Math.min(20,Math.max(0,Math.round(+x.r)||0)),o:mktOpts(x.o),p:numOrNull(x.p)||0,t:numOrNull(x.t)}))]).filter(([,v])=>v.length));
+  return {prices,npcPrices,priceSeen,priceVars}}
+state.mktServer=MKT_SERVERS.some(([k])=>k===state.mktServer)?state.mktServer:"skadi"; // prices from before the servers are Skadi's
+Object.assign(state,priceBook(state));
+state.serverPrices=Object.fromEntries(MKT_SERVERS.filter(([k])=>k!==state.mktServer&&objOr(state.serverPrices)[k]).map(([k])=>[k,priceBook(state.serverPrices[k])]));
+// the Market list's category, sort, search, max price, Refine ≥ (null = any) and random options wanted ({k, v: the least value or null})
+{const m=state.mkt&&typeof state.mkt==="object"?state.mkt:{};
+  state.mkt={cat:typeof m.cat==="string"?m.cat:"",sort:["recent","low","high","move","name"].includes(m.sort)?m.sort:"recent",q:typeof m.q==="string"?m.q:"",max:numOrNull(m.max),
+    refine:Number.isInteger(m.refine)&&m.refine>0&&m.refine<=20?m.refine:null,opts:mktOpts(m.opts)}}
 // auto-loot groups you switched off (true/false by group), and per map the monsters the Zeny Hunter passes by (monster ids)
 state.autoLoot=Object.fromEntries(Object.entries(state.autoLoot&&typeof state.autoLoot==="object"?state.autoLoot:{}).filter(([k,v])=>/^[waueco]$/.test(k)&&typeof v==="boolean"));
 state.huntOff=Object.fromEntries(Object.entries(state.huntOff&&typeof state.huntOff==="object"?state.huntOff:{}).filter(([,v])=>Array.isArray(v)).map(([k,v])=>[String(k),v.map(Number).filter(Number.isFinite)]));
@@ -106,7 +129,6 @@ state.huntNoPen=state.huntNoPen===true;
 // the EXP Hunter's "Calibrate to my logs" (model.js calInfo)
 state.calOn=state.calOn===true;
 // sort ([column, 1 or -1]) and column filters (text) of the Monster info, Item info, Market and Hunter tables, by table id
-const objOr=o=>o&&typeof o==="object"&&!Array.isArray(o)?o:{};
 state.tsort=Object.fromEntries(Object.entries(objOr(state.tsort)).filter(([,v])=>Array.isArray(v)&&typeof v[0]==="string"&&(v[1]===1||v[1]===-1)));
 // the Hunter tables kept their sort in bestSort/huntSort before they moved to tsort
 [["bestTable","bestSort","bestDir"],["huntTable","huntSort","huntDir"]].forEach(([id,k,d])=>{if(typeof state[k]==="string"&&!state.tsort[id])state.tsort[id]=[state[k],state[d]===1?1:-1];delete state[k];delete state[d]});

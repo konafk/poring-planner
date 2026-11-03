@@ -994,3 +994,55 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 @media (max-width:600px){.newsMob{grid-template-columns:auto minmax(0,1fr) 2.4rem;gap:2px 8px}.newsMob>.note{display:none}.newsMob>.ico{grid-row:1 / 3}
   .newsMob>a{grid-column:2;grid-row:1}.newsMob>.mono{grid-column:3;grid-row:1}.newsBar{grid-column:2 / -1;grid-row:2}
   .newsFloor{grid-template-columns:44px minmax(0,1fr)}.newsTag{padding-left:10px}.newsHeadCard h2{font-size:1.5rem}}
+
+/* Market: category buttons and one row per price, in the in-game market's categories */
+#mktSrv button{white-space:nowrap;padding:5px 10px}#mktSrv .note{font-size:11.5px;margin-left:2px}
+.mktCats{display:flex;flex-wrap:wrap;gap:6px}
+.mktCat{border:1px solid var(--line-strong);background:var(--surface);color:var(--fg);border-radius:99px;padding:4px 12px;font-size:13px;font-weight:500}
+.mktCat span{color:var(--muted);font-family:var(--mono);font-size:11.5px;margin-left:3px;font-variant-numeric:tabular-nums}
+.mktCat:hover{background:var(--grid)}
+.mktCat[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.mktCat[aria-pressed="true"] span{color:inherit;opacity:.8}
+.mktList{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.mktRow{display:grid;grid-template-columns:32px minmax(0,1fr) 170px 74px 118px auto;align-items:center;gap:12px;padding:9px 12px;border-top:1px solid var(--line)}
+.mktRow:first-child{border-top:0}
+.mktRow:hover{background:var(--raised)}
+.mktIc{display:flex;align-items:center;justify-content:center;min-height:28px}
+.mktName{min-width:0}
+.mktName a{font-weight:600;font-size:14px;color:var(--fg);text-decoration:none}
+.mktName a:hover{color:var(--accent);text-decoration:underline}
+.mktName .note a{font-weight:500;font-size:12px;color:var(--accent)}
+.mktName .note{font-size:12px;margin-top:1px}
+.mktPrice{display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:5px}
+.mktPrice input{width:100%;text-align:right;font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.mktPrice .mktZ{color:var(--muted);font-size:13px}
+.mktPrice .note{grid-column:1;text-align:right;font-size:11.5px;line-height:1.3}
+.mktMove{text-align:right}.mktMove .pill{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.mktNpc{display:flex;align-items:center;gap:5px}.mktNpc input{width:100%;text-align:right;font-size:12.5px}
+.mktRow button.ghost{border-color:transparent;background:none;color:var(--muted)}.mktRow button.ghost:hover{color:var(--bad);background:var(--grid)}
+.mktEmpty{padding:18px 14px}
+@media (max-width:720px){
+  .mktRow{grid-template-columns:28px minmax(0,1fr) auto;row-gap:6px;gap:8px 10px}
+  .mktPrice{grid-column:2/3}.mktMove{grid-column:3;grid-row:2}.mktNpc{grid-column:2/3}.mktRow button.ghost{grid-column:3;grid-row:1}
+}
+.mktItem{border-top:1px solid var(--line)}.mktItem:first-child{border-top:0}
+.mktItem .mktRow{border-top:0}
+.mktPrice.off input{opacity:.45}
+.mktFit{color:var(--accent);font-weight:600}
+.mktVars{padding:0 12px 10px 56px;display:grid;gap:6px}
+.mktVar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;border:1px dashed var(--line-strong);border-radius:8px;background:var(--raised)}
+.mktVar.hit{border-style:solid;border-color:var(--accent);background:var(--accent-soft)}
+.mktVar select[data-vr]{width:auto}
+.mktVar .mktPrice{display:inline-grid;width:170px;margin-left:auto}
+.mktOpts{display:flex;flex-wrap:wrap;gap:6px}
+.mktOpt{display:inline-flex;align-items:center;gap:4px}
+.mktOpt select{max-width:220px}.mktOpt input{width:72px;text-align:right}
+.mktOptBar{align-items:center}.mktOptBar>.note{font-weight:550}
+.mktPick{position:relative}
+.mktSug{position:absolute;top:100%;left:0;right:0;z-index:30;margin-top:4px;max-height:360px;overflow:auto;background:var(--surface);border:1px solid var(--line-strong);border-radius:10px;box-shadow:0 10px 30px rgba(16,24,40,.18);padding:4px}
+.mktSugRow{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;color:var(--fg);text-align:left;padding:5px 8px;border-radius:7px;font-weight:500;font-size:13.5px}
+.mktSugRow .mktIc{width:28px;flex:none}.mktSugRow .note{font-size:12px;white-space:nowrap}
+.mktSugRow:hover,.mktSugRow.on{background:var(--accent-soft)}
+@media (max-width:720px){.mktVars{padding-left:12px}.mktVar .mktPrice{width:auto;flex:1 1 100%;margin-left:0}.mktSugRow .note{display:none}
+  .mktOpts,#mktOptF{width:100%;min-width:0}.mktOpt{display:flex;width:100%;min-width:0}.mktOpt select{flex:1 1 auto;min-width:0;max-width:none}.mktOpt input{flex:none;width:64px}
+  .mktVar{min-width:0}.mktVar .mktAgo{margin-left:auto}}
