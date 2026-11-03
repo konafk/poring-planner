@@ -650,7 +650,7 @@ const mktPrice=id=>{const b=mktBest(id);return b?b.p:null};
 const OPT_REFINES=n=>Array.from({length:n+1},(_,i)=>i);
 function mktVarRow(id,x,g){const ch=BUILD.optChoices(mktSlot(g),g),list=optList(ch),hit=mktFilterOn()&&listingOk(x);
   const opt=(o,j)=>{const c=o&&ch.find(c=>c.k===o.k),r=c&&c.range;
-    return `<span class="mktOpt"><select data-vok="${j}" aria-label="Random option"><option value="">${o?"remove":"+ option"}</option>${o&&!c?`<option value="${esc(o.k)}">${esc(optTxt({k:o.k,v:null}))}</option>`:""}${list}</select>${o?`<input class="mono" data-vov="${j}" inputmode="decimal" value="${o.v??""}" placeholder="${r?`${r[0]}–${r[1]}`:"value"}" aria-label="Option value">`:""}</span>`};
+    return `<span class="mktOpt"><select data-vok="${j}" aria-label="Affix / slot option"><option value="">${o?"remove":"+ option"}</option>${o&&!c?`<option value="${esc(o.k)}">${esc(optTxt({k:o.k,v:null}))}</option>`:""}${list}</select>${o?`<input class="mono" data-vov="${j}" inputmode="decimal" value="${o.v??""}" placeholder="${r?`${r[0]}–${r[1]}`:"value"}" aria-label="Option value">`:""}</span>`};
   return `<div class="mktVar${hit?" hit":""}" data-var="${esc(id)}:${x.i}">
     <select data-vr aria-label="Refine">${OPT_REFINES(20).map(r=>`<option value="${r}"${r===x.r?" selected":""}>+${r}</option>`).join("")}</select>
     <span class="mktOpts">${x.o.map(opt).join("")}${x.o.length<BUILD.OPT_MAX?opt(null,x.o.length):""}</span>
@@ -676,8 +676,8 @@ function renderPrices(){
     return `<div class="mktItem"><div class="mktRow"><span class="mktIc">${itemIcon(id)}</span>
       <div class="mktName"><a href="#" data-info="item:${esc(id)}">${esc(mktName(id))}</a>
         <div class="note">${[best?`<b class="mktFit">cheapest fit ${esc(varTxt(best))}: ${fmtN(best.p)} z</b>`:"",t?`<span title="${esc(new Date(t).toLocaleString("en-GB"))}">updated ${agoTxt(t)}</span>`:"",npc!=null?`NPC pays ${fmtN(npc)} z`:"",d?`best drop ${esc(d.m.name)} ${d.ch}%`:"",`#${esc(id)}`,
-          g?`<a href="#" data-varadd="${esc(id)}" title="Price a refined copy, or one with random options. The plain price stays the one every zeny figure uses">+ refine / options</a>`:""].filter(Boolean).join(" · ")}</div></div>
-      <div class="mktPrice${fOn&&!listingOk(listings(id)[0])?" off":""}"><input class="mono" inputmode="decimal" data-price="${esc(id)}" value="${p>0?fmtN(p):""}" placeholder="price" aria-label="What players pay for ${esc(mktName(id))}" title="${g?"+0, no random options. ":""}Zeny; 450k = 450,000, 1.5m = 1,500,000">
+          g?`<a href="#" data-varadd="${esc(id)}" title="Price a refined copy, or one with affix / slot options. The plain price stays the one every zeny figure uses">+ refine / options</a>`:""].filter(Boolean).join(" · ")}</div></div>
+      <div class="mktPrice${fOn&&!listingOk(listings(id)[0])?" off":""}"><input class="mono" inputmode="decimal" data-price="${esc(id)}" value="${p>0?fmtN(p):""}" placeholder="price" aria-label="What players pay for ${esc(mktName(id))}" title="${g?"+0, no affix / slot options. ":""}Zeny; 450k = 450,000, 1.5m = 1,500,000">
         <span class="mktZ">z</span>${p>=1e3?`<div class="note mono">${zShort(p)}</div>`:""}</div>
       <div class="mktMove">${mv==null?"":`<span class="pill ${mv>0?"up":"down"}" title="was ${fmtN(state.priceSeen[id][1])} z">${mv>0?"▲":"▼"} ${Math.abs(mv)>=10?Math.round(Math.abs(mv)):Math.abs(mv).toFixed(1)}%</span>`}</div>
       <div class="mktNpc"><input class="mono" inputmode="decimal" data-npc="${esc(id)}" value="${state.npcPrices[id]!=null?fmtN(state.npcPrices[id]):""}" placeholder="${NPCSELL[id]!=null?fmtN(NPCSELL[id]):"0"}" aria-label="What an NPC pays" title="${NPCSELL[id]!=null?`NPC price ${fmtN(NPCSELL[id])} z; type to override, blank resets`:"no NPC price known; counts as 0"}"><span class="note">NPC</span></div>
@@ -693,8 +693,8 @@ let MKT_OPT_LIST=null;
 function mktFilterBoxes(){const f=document.activeElement;if(f&&f.tagName==="INPUT"&&$("mktOptF").contains(f))return;const m=state.mkt;
   $("mktRef").innerHTML=`<option value="">any</option>`+OPT_REFINES(15).slice(1).map(r=>`<option value="${r}"${m.refine===r?" selected":""}>+${r}</option>`).join("");
   MKT_OPT_LIST=MKT_OPT_LIST||optList(BUILD.OPTIONS.filter(o=>!o.ess).map(o=>({...o,range:null})));
-  $("mktOptF").innerHTML=m.opts.map((x,i)=>`<span class="mktOpt"><select data-fok="${i}" aria-label="Random option"><option value="">pick an option</option>${MKT_OPT_LIST}</select><input class="mono" data-fov="${i}" inputmode="decimal" value="${x.v??""}" placeholder="at least" aria-label="Least value"><button type="button" class="small ghost" data-fodel="${i}" aria-label="Remove this option">✕</button></span>`).join("")
-    +`<button type="button" class="small" data-foadd>+ Add random option</button>`;
+  $("mktOptF").innerHTML=m.opts.map((x,i)=>`<span class="mktOpt"><select data-fok="${i}" aria-label="Affix / slot option"><option value="">pick an option</option>${MKT_OPT_LIST}</select><input class="mono" data-fov="${i}" inputmode="decimal" value="${x.v??""}" placeholder="at least" aria-label="Least value"><button type="button" class="small ghost" data-fodel="${i}" aria-label="Remove this option">✕</button></span>`).join("")
+    +`<button type="button" class="small" data-foadd>+ Add affix / slot option</button>`;
   m.opts.forEach((x,i)=>{const s=$("mktOptF").querySelector(`[data-fok="${i}"]`);if(s)s.value=x.k})}
 // ---- render: Monster info and Item info ----
 const GROUP_NAME=Object.fromEntries(LOOT_GROUPS);
