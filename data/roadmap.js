@@ -1,18 +1,18 @@
 // Ragnarok Zero Global release roadmap: the official one (mygnjoy.com/en/event/roadmap), as
-// jpgames.de's copy of it lists it. ROADMAP: one update each, in order: when (YYYY-MM, or YYYY-MM-DD once the day is announced), name,
+// jpgames.de's copy of it lists it. ROADMAP: one update each, in order: when (YYYY-MM, or YYYY-MM-DD once the day is announced, or YYYY-H1 / YYYY-H2 for half a year), name, maybe (a guess at what it is),
 // cap (the base / job level cap it raises to), add (what it brings), and regions: the maps it opens, as {id, name, pre: map code prefixes in
 // data/spawn.js}. A region opens by itself once its update's day has come, or the month after its update's month when the day isn't known;
 // mark it open or closed yourself on the Roadmap tab. Maps in no region are open: Comodo's and Umbala's fields, Sphinx, Prontera Labyrinth and Mjolnir Dead Pit, which the roadmap puts with Clock Tower
 // but came with the 1 October update (its maintenance notice; the 29 October one lists what the Clock Tower update brings), and Ant Hell 1F and 2F, open before their memorial dungeon.
 const ROADMAP=[
-{when:"2026-08",name:"Global launch",cap:{base:50},add:["1st classes","Episode 1-1"]},
-{when:"2026-09",name:"2nd classes & Episode 1-2",cap:{base:60,job:60},add:["2nd job change","Memorial dungeons: Prontera Culvert, Orc's Memory","War of Emperium"]},
+{when:"2026-08",name:"Global launch",cap:{base:50},add:["1st classes","Episode 1-1","Collaboration event: Baby Shark"]},
+{when:"2026-09",name:"2nd classes & Episode 1-2",cap:{base:60,job:60},add:["2nd job change","Memorial dungeons: Prontera Culvert, Orc's Memory","War of Emperium","Collaboration event: Kumamon"]},
 {when:"2026-10-01",name:"Level 70 & new dungeons",cap:{base:70,job:70},add:["Dungeons: Labyrinth Forest, Sphinx, Mjolnir Abandoned Mine","Daily quest tiers for levels 60-70","Event quests: The Legend of Amon Ra, The Baphomet Cult"]},
 {when:"2026-10-29",name:"Clock Tower",add:["Dungeon: Clock Tower (Al De Baran)","Clock Tower equipment","Clock Tower daily quest","Event quest: Curse of the Clock Tower","Collaboration event: Gatchaman","War of Emperium: EU schedule adjusted"],
  regions:[{id:"ct",name:"Clock Tower",pre:["c_tower","tow_d","alde_dun"]}]},
 {when:"2026-11-12",name:"Byalan Dungeon 4F & 5F",add:["Byalan Dungeon (Undersea Cave) 4F and 5F"],
  regions:[{id:"by",name:"Byalan 4F & 5F",pre:["iz_d03","iz_d04","iz_dun03","iz_dun04"]}]},
-{when:"2026-11",name:"Ant Hell memorial",cap:{base:80},add:["Memorial dungeon: Ant Hell (Mutant Maya, base Lv 70): Expedition gear, upgraded from Subjugation Team gear with 50 Faintly Glowing Crystal and Jellostones","Ant Hell 1F and 2F are open already"]},
+{when:"2026-11",name:"Ant Hell memorial",cap:{base:80},add:["Memorial dungeon: Ant Hell (Mutant Maya, base Lv 70): Expedition gear, upgraded from Subjugation Team gear with 50 Faintly Glowing Crystal and Jellostones","Ant Hell 1F and 2F are open already","Collaboration event: Noah's Tube"]},
 {when:"2026-12",name:"Glast Heim",add:["Glast Heim: the Monastery, Catacombs, caves, Underground Prison and Culvert"],
  regions:[{id:"gh",name:"Glast Heim",pre:["gl_","glast_"]}]},
 {when:"2027-01",name:"Lutie",cap:{base:90},add:["Lutie and the Toy Factory","Memorial dungeon: Izlude (Byalan Dungeon 2F, base Lv 80): Contingent gear, upgraded from Expedition gear with 50 Crystal of Blue Light and Jellostones"],
@@ -27,4 +27,6 @@ const ROADMAP=[
  regions:[{id:"am",name:"Amatsu",pre:["ama_"]}]},
 {when:"2027-06",name:"Juno",add:["Juno","Dungeon: Nogg Road"],
  regions:[{id:"ju",name:"Juno",pre:["yun_","mag_d"]}]},
-{when:"2027-07",name:"Episode 1-3",cap:{base:110},add:["Memorial dungeon: Old Glast Heim"]}];
+{when:"2027-07",name:"Episode 1-3",cap:{base:110},add:["Memorial dungeon: Old Glast Heim"]},
+// not on the official roadmap: the Bangkok media showcase (August 2026) gave it only the second half of 2027 and didn't say what it is
+{when:"2027-H2",name:"Awakening System",maybe:"transcendent 2nd jobs",add:["Awakening System: Gravity hasn't said what it is yet","Maybe transcendent 2nd jobs, kRO Zero's next step after 2nd jobs (rebirth at base Lv 99)"]}];
