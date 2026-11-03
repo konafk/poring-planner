@@ -43,7 +43,7 @@ The tabs sit in a sidebar on the left: Home at the top, then grouped into Plan (
 
 At the bottom of the sidebar, **Compact sidebar** shrinks it to its icons (hover an icon to see its tab's name), and **Settings** opens a menu that changes how the page looks. It stays open while you switch things, and Esc or a click elsewhere closes it:
 
-- **Hints:** hides the help paragraphs under the cards once you know your way around.
+- **Hints:** shows short help lines under the cards (off by default).
 - **Theme:** switches between auto (follows your device), light and dark. The sidebar follows it.
 - **Full width:** lets the page use the whole window instead of stopping at 1180px. It only shows on very wide screens.
 

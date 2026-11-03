@@ -224,12 +224,12 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
   grps.forEach(g=>{set(g,!shut.includes(g.textContent));g.addEventListener("click",()=>{set(g,g.getAttribute("aria-expanded")!=="true");
     try{localStorage.setItem(KEY_FOLD,JSON.stringify(grps.filter(x=>x.getAttribute("aria-expanded")==="false").map(x=>x.textContent)))}catch(e){}})});
 })();
-// ---- hints: the help text under the cards, on by default, per device like full width ----
+// ---- hints: the help text under the cards, off by default, per device like full width ----
 (function setupHints(){
   const KEY_HINTS="rozero-farm-planner-hints",btn=$("hintBtn");
   const set=v=>{document.documentElement.classList.toggle("nohints",!v);btn.setAttribute("aria-pressed",String(v));btn.querySelector("span").textContent=`Hints: ${v?"on":"off"}`};
   set(!document.documentElement.classList.contains("nohints"));
-  btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.removeItem(KEY_HINTS):localStorage.setItem(KEY_HINTS,"0")}catch(e){}});
+  btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.setItem(KEY_HINTS,"1"):localStorage.removeItem(KEY_HINTS)}catch(e){}});
 })();
 // ---- colour theme: auto (follows the device) → light → dark, per device like full width ----
 (function setupTheme(){
