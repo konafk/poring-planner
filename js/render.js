@@ -673,10 +673,8 @@ function renderPrices(){
   const cnt={"":ids.length};ids.forEach(id=>{const c=mktCat(id);cnt[c]=(cnt[c]||0)+1});
   $("mktCats").innerHTML=MKT_CATS.filter(([k])=>!k||cnt[k]||mk.cat===k).map(([k,n])=>`<button type="button" class="mktCat" data-mktcat="${k}" aria-pressed="${mk.cat===k}">${n} <span>${cnt[k]||0}</span></button>`).join("");
   mktFilterBoxes();
-  const srv=MKT_SERVERS.find(([k])=>k===state.mktServer)[1];
   $("mktSrv").innerHTML=MKT_SERVERS.map(([k,n])=>{const c=k===state.mktServer?mine.length:Object.keys((state.serverPrices[k]||{}).prices||{}).length;
     return `<button type="button" role="radio" data-srv="${k}" aria-checked="${k===state.mktServer}">${n}${c?` <span class="note">${fmtN(c)}</span>`:""}</button>`}).join("");
-  $("mktSrvNote").textContent=`Prices on ${srv}, as you saw them in game: search an item at the market, then type the cheapest shop's price here. Each server keeps its own prices, and the one picked is the one every zeny figure uses.`;
   const seenT=id=>Math.max((state.priceSeen[id]||[])[0]||0,...(state.priceVars[id]||[]).map(x=>x.t||0));
   const pr={};ids.forEach(id=>pr[id]=mktPrice(id));
   const SORT={recent:(a,b)=>seenT(b)-seenT(a),low:(a,b)=>(pr[a]??Infinity)-(pr[b]??Infinity),high:(a,b)=>(pr[b]??-1)-(pr[a]??-1),
