@@ -627,6 +627,7 @@ const agoTxt=t=>{const m=(Date.now()-t)/60000;return m<1?"just now":m<60?`${Math
 function stampPrices(now=Date.now()){let ch=false;const seen=state.priceSeen;
   for(const id in seen)if(!(id in state.prices)){delete seen[id];ch=true}
   for(const id in state.priceVars)if(!(id in state.prices)){delete state.priceVars[id];ch=true}
+  for(const id in state.sell)if(!(id in state.prices)){delete state.sell[id];ch=true}
   for(const id in state.prices){const p=state.prices[id],s=seen[id];if(s&&s[2]===p)continue;ch=true;
     if(!s){seen[id]=[now,null,p];continue}
     const same=s[0]!=null&&now-s[0]<60000;seen[id]=[now,same?s[1]:s[2]>0?s[2]:null,p]}
@@ -658,8 +659,12 @@ const varTxt=x=>[x.egg&&!x.r?"":`+${x.r}`,...slotTxt(x),...x.o.map(optTxt)].filt
 // a new copy, or the one the Add price form is filling in: with as many empty card slots as the gear has
 const newCopy=id=>{const g=mktGearOnly(id);return {r:0,o:[],...(g&&g.slots?{c:Array(g.slots).fill(null)}:{}),p:0,t:null}};
 const copyBare=x=>!x.r&&!x.o.length&&!(x.c||[]).some(Boolean)&&!x.e&&!x.egg;
-// every copy priced for an item: the plain one (+0, nothing in its slots, no affixes) and the others
-const listings=id=>[{r:0,o:[],p:state.prices[id]||0,i:-1},...(state.priceVars[id]||[]).map((x,i)=>({...x,i}))];
+// every copy priced for an item: yours (the plain one, +0 with nothing in its slots and no affixes, then the others) and the shared ones (s: true)
+const sharedCopies=id=>typeof sharedOf==="function"&&sharedOf(id)||[];
+// how many players sell an item and let buyers DM them
+const sellerN=id=>sharedCopies(id).reduce((a,x)=>a+(x.sellers||0),0);
+const ownCopies=id=>id in state.prices?[{r:0,o:[],p:state.prices[id]||0,i:-1},...(state.priceVars[id]||[]).map((x,i)=>({...x,i}))]:[];
+const listings=id=>[...ownCopies(id),...sharedCopies(id)];
 // does a copy have the Refine ≥, every affix asked for (at least its value; any value when none is typed) and what's typed in
 // Card / enchant / egg (every comma-separated part somewhere in its slots)?
 const mktSlotQ=()=>(state.mkt.slot||"").split(",").map(x=>x.trim().toLowerCase()).filter(Boolean);
@@ -669,6 +674,8 @@ const listingOk=x=>{const m=state.mkt,sq=mktSlotQ(),st=slotTxt(x).join(" | ").to
 // the price a row sorts and filters by: its cheapest priced copy that fits the filters (the plain price when none are on)
 const mktBest=id=>listings(id).filter(x=>x.p>0&&listingOk(x)).sort((a,b)=>a.p-b.p)[0]||null;
 const mktPrice=id=>{const b=mktBest(id);return b?b.p:null};
+// logged in to the shared prices (js/shared.js)
+const loggedIn=()=>typeof AUTH!=="undefined"&&!!AUTH;
 const OPT_REFINES=n=>Array.from({length:n+1},(_,i)=>i);
 // a copy's boxes: refine, a list per card slot, the enchant, the egg and the affixes. pre names their data attributes: "v" on a
 // list row (data-vr, data-vc="0"…), "a" in the Add price form. The lists are shared HTML, so picked values are set by copyPicks
@@ -699,7 +706,7 @@ function copyChange(x,el,pre){const d=el.dataset;
 function mktVarRow(id,x){const hit=mktFilterOn()&&listingOk(x);
   return `<div class="mktVar${hit?" hit":""}" data-var="${esc(id)}:${x.i}">${copyFields(id,x,"v")}
     <span class="mktPrice"><input class="mono" inputmode="decimal" data-vp value="${x.p>0?fmtN(x.p):""}" placeholder="price" aria-label="Price of this copy"><span class="mktZ">z</span>${x.p>=1e3?`<div class="note mono">${zShort(x.p)}</div>`:""}</span>
-    <span class="note mktAgo">${x.t?agoTxt(x.t):""}</span>
+    <span class="note mktAgo">${x.t?agoTxt(x.t):""}</span>${loggedIn()?`<label class="mktSell" title="You sell this copy at this price. Once you share it, buyers see your Discord name and can message you about it. Untick to take it back"><input type="checkbox" data-vsell${x.sell?" checked":""}> DM me</label>`:""}
     <button type="button" class="small ghost" data-vdel title="Remove this copy" aria-label="Remove this copy">✕</button></div>`}
 // the Add price form's extra boxes, for the item picked in it (ADD_COPY: its refine, slots, enchant, egg and affixes so far)
 let ADD_COPY=null,ADD_ID=null;
@@ -708,11 +715,14 @@ function renderAddCopy(id){const box=$("priceCopy");if(!id||!copyable(id)){ADD_I
   box.hidden=false;box.innerHTML=`<span class="note">${id===TAMING_RING?"Egg":"Refine, slots and affixes"} (optional: leave them empty for the plain price)</span>${copyFields(id,ADD_COPY,"a")}`;copyPicks(box,ADD_COPY,"a")}
 function renderPrices(){
   const f=document.activeElement;if(f&&f.tagName==="INPUT"&&$("mktList").contains(f))return;// don't rebuild the box you're typing in
-  stampPrices();const mk=state.mkt,ids=Object.keys(state.prices),q=mk.q.trim().toLowerCase(),fOn=mktFilterOn();
+  stampPrices();if(typeof loadShared==="function")loadShared();if(typeof renderShared==="function")renderShared();
+  const mk=state.mkt,mine=Object.keys(state.prices),q=mk.q.trim().toLowerCase(),fOn=mktFilterOn();
+  // with "show everyone's items", the items only others priced join yours
+  const ids=mk.everyone&&typeof SHARED_P!=="undefined"?[...new Set([...mine,...Object.keys((SHARED_P[state.mktServer]||{}).rows||{})])]:mine;
   const cnt={"":ids.length};ids.forEach(id=>{const c=mktCat(id);cnt[c]=(cnt[c]||0)+1});
   $("mktCats").innerHTML=MKT_CATS.filter(([k])=>!k||cnt[k]||mk.cat===k).map(([k,n])=>`<button type="button" class="mktCat" data-mktcat="${k}" aria-pressed="${mk.cat===k}">${n} <span>${cnt[k]||0}</span></button>`).join("");
   mktFilterBoxes();
-  $("mktSrv").innerHTML=MKT_SERVERS.map(([k,n])=>{const c=k===state.mktServer?ids.length:Object.keys((state.serverPrices[k]||{}).prices||{}).length;
+  $("mktSrv").innerHTML=MKT_SERVERS.map(([k,n])=>{const c=k===state.mktServer?mine.length:Object.keys((state.serverPrices[k]||{}).prices||{}).length;
     return `<button type="button" role="radio" data-srv="${k}" aria-checked="${k===state.mktServer}">${n}${c?` <span class="note">${fmtN(c)}</span>`:""}</button>`}).join("");
   const seenT=id=>Math.max((state.priceSeen[id]||[])[0]||0,...(state.priceVars[id]||[]).map(x=>x.t||0));
   const pr={};ids.forEach(id=>pr[id]=mktPrice(id));
@@ -721,17 +731,23 @@ function renderPrices(){
   const rows=ids.filter(id=>(!mk.cat||mktCat(id)===mk.cat)&&(!q||mktName(id).toLowerCase().includes(q)||("#"+id).includes(q))
       &&(!fOn||pr[id]!=null)&&(mk.max==null||!(pr[id]>mk.max)))
     .sort((a,b)=>SORT[mk.sort](a,b)||mktName(a).localeCompare(mktName(b)));
-  $("mktList").innerHTML=rows.map(id=>{const p=state.prices[id],t=(state.priceSeen[id]||[])[0],mv=priceMove(id),d=DROPPERS[id],npc=state.npcPrices[id]??NPCSELL[id],g=mktGearOnly(id),vs=listings(id).slice(1),best=fOn?mktBest(id):null;
+  $("mktList").innerHTML=rows.map(id=>{const p=state.prices[id],t=(state.priceSeen[id]||[])[0],mv=priceMove(id),d=DROPPERS[id],npc=state.npcPrices[id]??NPCSELL[id],g=mktGearOnly(id),vs=ownCopies(id).slice(1),best=fOn?mktBest(id):null,own=id in state.prices,
+      sp=typeof sharedPlain==="function"?sharedPlain(id):null,sc=sharedCopies(id).filter(x=>x!==sp);
     return `<div class="mktItem"><div class="mktRow"><span class="mktIc">${itemIcon(id)}</span>
       <div class="mktName"><a href="#" data-info="item:${esc(id)}">${esc(mktName(id))}</a>
-        <div class="note">${[best?`<b class="mktFit">cheapest fit ${esc(varTxt(best))}: ${fmtN(best.p)} z</b>`:"",t?`<span title="${esc(new Date(t).toLocaleString("en-GB"))}">updated ${agoTxt(t)}</span>`:"",npc!=null?`NPC pays ${fmtN(npc)} z`:"",d?`best drop ${esc(d.m.name)} ${d.ch}%`:"",`#${esc(id)}`,
-          copyable(id)?`<a href="#" data-varadd="${esc(id)}" title="Price a copy with a refine, cards, an enchant, an egg or affixes. The plain price stays the one every zeny figure uses">${g?"+ refine / slots / affixes":"+ egg"}</a>`:""].filter(Boolean).join(" · ")}</div></div>
-      <div class="mktPrice${fOn&&!listingOk(listings(id)[0])?" off":""}"><input class="mono" inputmode="decimal" data-price="${esc(id)}" value="${p>0?fmtN(p):""}" placeholder="price" aria-label="What players pay for ${esc(mktName(id))}" title="${g?"+0, empty slots, no affixes. ":""}Zeny; 450k = 450,000, 1.5m = 1,500,000">
-        <span class="mktZ">z</span>${p>=1e3?`<div class="note mono">${zShort(p)}</div>`:""}</div>
+        <div class="note">${[best?`<b class="mktFit">cheapest fit ${esc(varTxt(best))}${best.s?" (shared)":""}: ${fmtN(best.p)} z</b>`:"",
+          sp&&own?`<span class="mktShared" title="${esc(sharedTxt(sp))}">shared ${zShort(sp.p)} · ${sp.players} players${p>0?"":` · <a href="#" data-suse="${esc(id)}">use it</a>`}</span>`:"",t?`<span title="${esc(new Date(t).toLocaleString("en-GB"))}">updated ${agoTxt(t)}</span>`:"",npc!=null?`NPC pays ${fmtN(npc)} z`:"",d?`best drop ${esc(d.m.name)} ${d.ch}%`:"",`#${esc(id)}`,
+          own&&loggedIn()?`<label class="mktSell" title="You sell it at this price. Once you share it, buyers see your Discord name and can message you about it. Untick to take it back"><input type="checkbox" data-sell="${esc(id)}"${state.sell[id]?" checked":""}> DM me</label>`:"",
+          sellerN(id)?`<a href="#" data-sellers="${esc(id)}" class="mktSellers">${sellerN(id)} seller${sellerN(id)>1?"s":""} · DM</a>`:"",
+          copyable(id)&&own?`<a href="#" data-varadd="${esc(id)}" title="Price a copy with a refine, cards, an enchant, an egg or affixes. The plain price stays the one every zeny figure uses">${g?"+ refine / slots / affixes":"+ egg"}</a>`:""].filter(Boolean).join(" · ")}</div></div>
+      ${own?`<div class="mktPrice${fOn&&!listingOk(listings(id)[0])?" off":""}"><input class="mono" inputmode="decimal" data-price="${esc(id)}" value="${p>0?fmtN(p):""}" placeholder="price" aria-label="What players pay for ${esc(mktName(id))}" title="${g?"+0, empty slots, no affixes. ":""}Zeny; 450k = 450,000, 1.5m = 1,500,000">
+        <span class="mktZ">z</span>${p>=1e3?`<div class="note mono">${zShort(p)}</div>`:""}</div>`
+        :`<div class="mktPrice mktSharedP" title="${sp?esc(sharedTxt(sp)):""}"><b class="mono">${sp?fmtN(sp.p):"–"}</b><span class="mktZ">z</span><div class="note">${sp?`shared · ${sp.players} players`:"shared copies only"}</div></div>`}
       <div class="mktMove">${mv==null?"":`<span class="pill ${mv>0?"up":"down"}" title="was ${fmtN(state.priceSeen[id][1])} z">${mv>0?"▲":"▼"} ${Math.abs(mv)>=10?Math.round(Math.abs(mv)):Math.abs(mv).toFixed(1)}%</span>`}</div>
-      <div class="mktNpc"><input class="mono" inputmode="decimal" data-npc="${esc(id)}" value="${state.npcPrices[id]!=null?fmtN(state.npcPrices[id]):""}" placeholder="${NPCSELL[id]!=null?fmtN(NPCSELL[id]):"0"}" aria-label="What an NPC pays" title="${NPCSELL[id]!=null?`NPC price ${fmtN(NPCSELL[id])} z; type to override, blank resets`:"no NPC price known; counts as 0"}"><span class="note">NPC</span></div>
-      <button type="button" class="small ghost" data-unprice="${esc(id)}" title="Remove this item and its copies" aria-label="Remove ${esc(mktName(id))}">✕</button></div>
-      ${copyable(id)&&vs.length?`<div class="mktVars">${vs.map(x=>mktVarRow(id,x)).join("")}</div>`:""}</div>`}).join("")
+      ${own?`<div class="mktNpc"><input class="mono" inputmode="decimal" data-npc="${esc(id)}" value="${state.npcPrices[id]!=null?fmtN(state.npcPrices[id]):""}" placeholder="${NPCSELL[id]!=null?fmtN(NPCSELL[id]):"0"}" aria-label="What an NPC pays" title="${NPCSELL[id]!=null?`NPC price ${fmtN(NPCSELL[id])} z; type to override, blank resets`:"no NPC price known; counts as 0"}"><span class="note">NPC</span></div>
+      <button type="button" class="small ghost" data-unprice="${esc(id)}" title="Remove this item and its copies" aria-label="Remove ${esc(mktName(id))}">✕</button>`
+        :`<div class="mktNpc note">${npc!=null?`NPC ${fmtN(npc)} z`:""}</div><button type="button" class="small" data-sadd="${esc(id)}" title="Add it to your prices${sp?" at the shared price":""}">+ add</button>`}</div>
+      ${(copyable(id)&&vs.length)||sc.length?`<div class="mktVars">${copyable(id)?vs.map(x=>mktVarRow(id,x)).join(""):""}${sc.map(x=>`<div class="mktVar shared${fOn&&listingOk(x)?" hit":""}" title="${esc(sharedTxt(x))}"><span class="pill">shared</span><span>${esc(varTxt(x))}</span><span class="mktPrice"><b class="mono">${fmtN(x.p)}</b><span class="mktZ">z</span></span><span class="note mktAgo">${x.players} players</span></div>`).join("")}</div>`:""}${typeof sellersHtml==="function"?sellersHtml(id):""}</div>`}).join("")
     ||`<div class="note muted mktEmpty">${ids.length?"No prices match these filters.":"No prices yet. Add an item above, or click a drop in Where to farm, Monster info or Item info."}</div>`;
   // a select's picked option, set after the list is in (the lists are shared, so no option carries "selected")
   ROOTQ("#mktList [data-var]").forEach(el=>{const [id,i]=el.dataset.var.split(":"),x=(state.priceVars[id]||[])[+i];if(x)copyPicks(el,x,"v")});
