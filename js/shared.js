@@ -1,7 +1,7 @@
 // ---- shared prices and cloud backup: Discord login through a Supabase project (supabase/schema.sql, docs/shared-prices.md) ----
 // url and key are the project's URL and its public (anon / publishable) key, from Project Settings, API. The key is meant to be
 // public: the database's own rules decide what it can do. Never put the service_role (secret) key here. Blank: the feature is hidden.
-const SHARED={url:"",key:""};
+const SHARED={url:"https://uhwcrqijwnrhoamyyqxc.supabase.co",key:"sb_publishable_ZhkoMeGKvKB2l4EgANdBbA_rKzpv-uc"};
 const sharedOn=()=>!!(SHARED.url&&SHARED.key);
 // the login: kept in its own storage key, apart from the accounts, so backups and share links never carry it
 const AUTH_KEY="rozero-farm-planner-auth",PKCE_KEY="rozero-farm-planner-pkce";
