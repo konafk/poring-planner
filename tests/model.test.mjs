@@ -523,6 +523,28 @@ t("market: each server keeps its own prices; prices from before the servers are 
   assert.equal(r(`state.prices["909"]`), 30);
 });
 
+t("market: slots: cards that fit the gear, the memorial enchant, the Taming Ring's egg, and the Card / enchant / egg filter", () => {
+  const katar = run(`EQUIP.find(e=>e.type==="katar"&&e.slots===2).id`);
+  assert.ok(run(`cardsFor(MKT_GEAR[${katar}]).every(c=>c.slot.includes("weapon"))&&cardsFor(MKT_GEAR[${katar}]).length>20`));
+  assert.ok(run(`cardsFor(MKT_GEAR[28540]).every(c=>c.slot.some(s=>s.startsWith("accessory")))`));   // Expedition Ring: accessory cards
+  assert.ok(run(`enchantsFor(MKT_GEAR[15221]).includes("STR +1")&&!enchantsFor(MKT_GEAR[15221]).includes("essence")`)); // Expedition's Armor
+  assert.equal(run(`enchantsFor(MKT_GEAR[28540]).length+enchantsFor(MKT_GEAR[${katar}]).length`), 0); // rings and weapons have none
+  assert.ok(run(`copyable("24966")&&!copyable("909")&&!copyable("4001")`));
+  assert.equal(run(`newCopy("${katar}").c.length`), 2);
+  const hydra = run(`CARDS.find(c=>c.name==="Hydra Card").id`);
+  run(`state.prices={"${katar}":200000,"24966":300000};state.priceVars={"${katar}":[{r:7,o:[],c:[${hydra},${hydra}],p:9000000,t:null}],"24966":[{r:0,o:[],egg:313582,p:500000,t:null}]};state.mkt={cat:"",sort:"recent",q:"",max:null,refine:null,opts:[],slot:""}`);
+  assert.equal(run(`varTxt(state.priceVars["${katar}"][0])`), "+7 · Hydra Card ×2");
+  assert.equal(run(`varTxt(state.priceVars["24966"][0])`), "Poring Egg Lv.1");
+  run(`state.mkt.slot="hydra"`);
+  assert.equal(run(`mktPrice("${katar}")+" "+mktPrice("24966")`), "9000000 null");
+  run(`state.mkt.slot="poring egg, lv.1"`);
+  assert.equal(run(`mktPrice("24966")`), 500000);
+  // what a copy saves: card ids or null per slot (4 at most), the enchant line, the egg id; nothing else
+  const r = load({ prices: { "15221": 1, "24966": 1 }, priceVars: { "15221": [{ r: 9, o: [], c: [4001, "x", -2, 4002, 4003], e: "STR +1", egg: "evil", p: 5 }], "24966": [{ r: 0, o: [], c: [null], e: "", egg: 313582, p: 5 }] } });
+  assert.equal(r(`JSON.stringify(state.priceVars)`), '{"15221":[{"r":9,"o":[],"p":5,"t":null,"c":[4001,null,null,4002],"e":"STR +1"}],"24966":[{"r":0,"o":[],"p":5,"t":null,"egg":313582}]}');
+  run(`state.prices={};state.priceVars={};state.mkt.slot=""`);
+});
+
 t("market: a saved copy keeps only a refine of 0-20, options with a key, and a price", () => {
   const r = load({ prices: { "28028": 1 }, priceVars: { "28028": [{ r: 99, o: [{ k: "atk", v: "x" }, { v: 3 }], p: -5, t: "y", evil: "<b>" }], "999": [{ r: 1, p: 1 }] }, mkt: { refine: 50, opts: "atk" } });
   assert.equal(r(`JSON.stringify(state.priceVars)`), '{"28028":[{"r":20,"o":[{"k":"atk","v":null}],"p":0,"t":null}]}');

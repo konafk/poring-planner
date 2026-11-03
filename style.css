@@ -1045,3 +1045,6 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 @media (max-width:720px){.mktVars{padding-left:12px}.mktVar .mktPrice{width:auto;flex:1 1 100%;margin-left:0}.mktSugRow .note{display:none}
   .mktOpts,#mktOptF{width:100%;min-width:0}.mktOpt{display:flex;width:100%;min-width:0}.mktOpt select{flex:1 1 auto;min-width:0;max-width:none}.mktOpt input{flex:none;width:64px}
   .mktVar{min-width:0}.mktVar .mktAgo{margin-left:auto}}
+.mktSlots{display:flex;flex-wrap:wrap;gap:6px}.mktSlots select{max-width:190px}
+.mktCopyBar{align-items:center;padding:8px 10px;border:1px dashed var(--line-strong);border-radius:8px;background:var(--raised)}.mktCopyBar>.note{flex:1 1 100%}
+@media (max-width:720px){.mktSlots,.mktSlots select{width:100%;max-width:none}}

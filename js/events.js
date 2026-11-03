@@ -366,39 +366,43 @@ function showSug(){const q=$("priceItem").value.trim().toLowerCase().replace(/^#
   box.innerHTML=SUG.map((id,i)=>`<button type="button" role="option" class="mktSugRow${i===SUG_I?" on":""}" data-sug="${id}" aria-selected="${i===SUG_I}"><span class="mktIc">${itemIcon(id)}</span><span class="grow">${esc(mktName(id))}</span><span class="note">${MKT_CAT_NAME[mktCat(id)]} · #${id}</span>${id in state.prices?`<span class="pill">priced</span>`:""}</button>`).join("");
   box.hidden=!SUG.length;$("priceItem").setAttribute("aria-expanded",String(!box.hidden))}
 const hideSug=()=>{$("priceSug").hidden=true;$("priceItem").setAttribute("aria-expanded","false")};
-const pickSug=id=>{$("priceItem").value=`${mktName(id)} #${id}`;hideSug();$("priceNpc").placeholder=NPCSELL[id]!=null?fmtN(NPCSELL[id])+" (NPC)":"0";$("priceVal").focus()};
+const pickSug=id=>{$("priceItem").value=`${mktName(id)} #${id}`;hideSug();renderAddCopy(id);$("priceVal").focus()};
 $("priceSug").addEventListener("mousedown",e=>e.preventDefault()); // keep the box focused, so the click picks
 $("priceSug").addEventListener("click",e=>{const b=e.target.closest("[data-sug]");if(b)pickSug(b.dataset.sug)});
 $("priceItem").addEventListener("blur",hideSug);
 // pricing an item from another tab clears the Market filters, so its row is there to type in
-const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus){Object.assign(state.mkt,{cat:"",q:"",max:null,refine:null,opts:[]});mktTools()}save();renderPrices();
+const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus){Object.assign(state.mkt,{cat:"",q:"",max:null,refine:null,opts:[],slot:""});mktTools()}save();renderPrices();
   if(focus){showTab("market");const i=document.querySelector(`[data-price="${id}"]`);if(i){i.focus();i.scrollIntoView({behavior:"smooth",block:"center"})}}};
-// the NPC box shows the database's NPC price for the picked item; typing one overrides it
-$("priceItem").addEventListener("input",()=>{const id=findItem($("priceItem").value);$("priceNpc").placeholder=id&&NPCSELL[id]!=null?fmtN(NPCSELL[id])+" (NPC)":"0";showSug()});
+// picking gear (or the Taming Ring) shows its refine, slot and affix boxes under the form
+$("priceItem").addEventListener("input",()=>{renderAddCopy(findItem($("priceItem").value));showSug()});
+$("priceCopy").addEventListener("change",e=>{if(ADD_COPY&&copyChange(ADD_COPY,e.target,"a"))renderAddCopy(ADD_ID)});
 $("priceItem").addEventListener("keydown",e=>{const box=$("priceSug");
   if(!box.hidden&&(e.key==="ArrowDown"||e.key==="ArrowUp")){e.preventDefault();SUG_I=(SUG_I+(e.key==="ArrowDown"?1:-1)+SUG.length)%SUG.length;
     box.querySelectorAll("[data-sug]").forEach((b,i)=>{b.classList.toggle("on",i===SUG_I);b.setAttribute("aria-selected",String(i===SUG_I));if(i===SUG_I)b.scrollIntoView({block:"nearest"})});return}
   if(e.key==="Escape"){hideSug();return}
   if(e.key==="Enter"){e.preventDefault();if(!box.hidden&&SUG_I>=0)pickSug(SUG[SUG_I]);else $("priceAdd").click()}});
-$("priceAdd").addEventListener("click",()=>{const id=findItem($("priceItem").value),p=parseZ($("priceVal").value),np=parseZ($("priceNpc").value);
-  if(!id){$("priceMsg").textContent="Pick an item from the list.";return}if(Number.isNaN(p)||Number.isNaN(np)){$("priceMsg").textContent="Type a price as 450000, 450k or 1.5m.";return}
-  $("priceMsg").textContent="";state.prices[id]=p||0;if(np!=null)state.npcPrices[id]=np;$("priceItem").value="";$("priceVal").value="";$("priceNpc").value="";$("priceNpc").placeholder="0";save();renderAll()});
-["priceVal","priceNpc"].forEach(k=>$(k).addEventListener("keydown",e=>{if(e.key==="Enter")$("priceAdd").click()}));
+$("priceAdd").addEventListener("click",()=>{const id=findItem($("priceItem").value),p=parseZ($("priceVal").value);
+  if(!id){$("priceMsg").textContent="Pick an item from the list.";return}if(Number.isNaN(p)){$("priceMsg").textContent="Type a price as 450000, 450k or 1.5m.";return}
+  $("priceMsg").textContent="";
+  // with a refine, a card, an enchant, an egg or an affix set, the price is that copy's; the item's plain price stays as it was
+  if(ADD_COPY&&ADD_ID===id&&!copyBare(ADD_COPY)){if(!(id in state.prices))state.prices[id]=0;const x={...ADD_COPY,o:ADD_COPY.o.filter(o=>o.k),p:p||0,t:Date.now()};
+    if(x.c&&!x.c.some(Boolean))delete x.c;(state.priceVars[id]=state.priceVars[id]||[]).push(x)}
+  else state.prices[id]=p||0;
+  $("priceItem").value="";$("priceVal").value="";renderAddCopy(null);save();renderAll()});
+$("priceVal").addEventListener("keydown",e=>{if(e.key==="Enter")$("priceAdd").click()});
 // a row's boxes save when you leave them or press Enter; something that isn't a price puts the old one back
 const varOf=el=>{const v=el.closest("[data-var]");if(!v)return null;const [id,i]=v.dataset.var.split(":");return {id,i:+i,x:(state.priceVars[id]||[])[+i]}};
 $("mktList").addEventListener("change",e=>{const el=e.target,vr=varOf(el);
   if(vr&&vr.x){const x=vr.x;
-    if(el.matches("[data-vr]"))x.r=+el.value;
-    else if(el.matches("[data-vp]")){const v=parseZ(el.value);if(Number.isNaN(v)){el.blur();renderPrices();return}x.p=v||0;x.t=Date.now()}
-    else if(el.matches("[data-vok]")){const j=+el.dataset.vok;if(el.value)x.o[j]={k:el.value,v:x.o[j]?x.o[j].v:null};else x.o.splice(j,1)}
-    else if(el.matches("[data-vov]")){const v=parseFloat(el.value);x.o[+el.dataset.vov].v=Number.isFinite(v)?v:null}
+    if(el.matches("[data-vp]")){const v=parseZ(el.value);if(Number.isNaN(v)){el.blur();renderPrices();return}x.p=v||0;x.t=Date.now()}
+    else copyChange(x,el,"v");
     el.blur();save();renderPrices();return}
   const i=el.closest("[data-price],[data-npc]");if(!i)return;const v=parseZ(i.value);
   if(Number.isNaN(v)){i.blur();renderPrices();return}
   if(i.dataset.price)state.prices[i.dataset.price]=v||0;else if(v==null)delete state.npcPrices[i.dataset.npc];else state.npcPrices[i.dataset.npc]=v;i.blur();save();renderAll()});
 $("mktList").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("input"))e.target.blur()});
 $("mktList").addEventListener("click",e=>{
-  const a=e.target.closest("[data-varadd]");if(a){e.preventDefault();const id=a.dataset.varadd;(state.priceVars[id]=state.priceVars[id]||[]).push({r:state.mkt.refine||0,o:state.mkt.opts.filter(f=>f.k).map(f=>({k:f.k,v:f.v})),p:0,t:null});save();renderPrices();
+  const a=e.target.closest("[data-varadd]");if(a){e.preventDefault();const id=a.dataset.varadd;(state.priceVars[id]=state.priceVars[id]||[]).push({...newCopy(id),r:mktGearOnly(id)?state.mkt.refine||0:0,o:mktGearOnly(id)?state.mkt.opts.filter(f=>f.k).map(f=>({k:f.k,v:f.v})):[]});save();renderPrices();
     const rows=document.querySelectorAll(`[data-var^="${id}:"] [data-vp]`);if(rows.length)rows[rows.length-1].focus();return}
   if(e.target.closest("[data-vdel]")){const vr=varOf(e.target);if(!vr)return;state.priceVars[vr.id].splice(vr.i,1);if(!state.priceVars[vr.id].length)delete state.priceVars[vr.id];save();renderPrices();return}
   const b=e.target.closest("[data-unprice]");if(!b)return;const id=b.dataset.unprice;delete state.prices[id];delete state.npcPrices[id];delete state.priceVars[id];save();renderAll()});
@@ -415,6 +419,7 @@ $("mktCats").addEventListener("click",e=>{const b=e.target.closest("[data-mktcat
 $("mktQ").addEventListener("input",e=>{state.mkt.q=e.target.value;save();renderPrices()});
 $("mktSort").addEventListener("change",e=>{state.mkt.sort=e.target.value;save();renderPrices()});
 $("mktMax").addEventListener("change",e=>{const v=parseZ(e.target.value);state.mkt.max=Number.isNaN(v)?state.mkt.max:v;mktTools();save();renderPrices()});
+$("mktSlotQ").addEventListener("input",e=>{state.mkt.slot=e.target.value;save();renderPrices()});
 $("mktRef").addEventListener("change",e=>{state.mkt.refine=e.target.value?+e.target.value:null;save();renderPrices()});
 $("mktOptF").addEventListener("click",e=>{if(e.target.closest("[data-foadd]")){state.mkt.opts.push({k:"",v:null});save();renderPrices();const s=$("mktOptF").querySelectorAll("[data-fok]");if(s.length)s[s.length-1].focus();return}
   const d=e.target.closest("[data-fodel]");if(d){state.mkt.opts.splice(+d.dataset.fodel,1);save();renderPrices()}});
