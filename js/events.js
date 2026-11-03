@@ -405,6 +405,12 @@ $("mktList").addEventListener("click",e=>{
 // the list's category buttons, search, sort, max price, Refine ≥ and random options (saved)
 function mktTools(){$("mktQ").value=state.mkt.q;$("mktSort").value=state.mkt.sort;$("mktMax").value=state.mkt.max!=null?fmtN(state.mkt.max):""}
 mktTools();
+// switching server puts the current server's prices away and takes out the other's
+const BOOK_KEYS=["prices","npcPrices","priceSeen","priceVars"];
+function switchServer(k){if(k===state.mktServer||!MKT_SERVERS.some(([x])=>x===k))return;
+  state.serverPrices[state.mktServer]=Object.fromEntries(BOOK_KEYS.map(b=>[b,state[b]]));
+  const next=state.serverPrices[k]||{};BOOK_KEYS.forEach(b=>{state[b]=next[b]||{}});delete state.serverPrices[k];state.mktServer=k;save();renderAll();renderPrices()}
+$("mktSrv").addEventListener("click",e=>{const b=e.target.closest("[data-srv]");if(b)switchServer(b.dataset.srv)});
 $("mktCats").addEventListener("click",e=>{const b=e.target.closest("[data-mktcat]");if(!b)return;state.mkt.cat=b.dataset.mktcat;save();renderPrices()});
 $("mktQ").addEventListener("input",e=>{state.mkt.q=e.target.value;save();renderPrices()});
 $("mktSort").addEventListener("change",e=>{state.mkt.sort=e.target.value;save();renderPrices()});

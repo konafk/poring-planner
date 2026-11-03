@@ -744,8 +744,8 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   </section>
 
   <section class="card" id="marketCard" data-tab="market">
-    <div class="bar"><h2 class="grow">Market prices <span class="pill mktSrv" title="Skadi, the Europe server of Ragnarok Zero Global">Skadi (EU)</span></h2><span class="note" id="mktCount"></span></div>
-    <div class="note">No site publishes Skadi's market, so these prices are yours: search an item at the market in game, then type the cheapest shop's price here.</div>
+    <div class="bar"><h2 class="grow">Market prices</h2><div class="seg" role="radiogroup" aria-label="Game server" id="mktSrv" title="Each server has its own market, so each keeps its own prices; the one picked is the one every zeny figure uses"></div></div>
+    <div class="note" id="mktSrvNote"></div>
     <div class="bar mt">
       <label class="grow mktPick">Item<input id="priceItem" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="priceSug" placeholder="name or #id, e.g. Snake Scale"><div class="mktSug" id="priceSug" role="listbox" hidden></div></label>
       <label>Players pay<input class="w-xl mono" id="priceVal" inputmode="decimal" placeholder="450k, 1.5m" title="Zeny; 450k = 450,000, 1.5m = 1,500,000"></label>
@@ -762,7 +762,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     </div>
     <div class="bar mt mktOptBar"><span class="note">Random options</span><span class="bar" id="mktOptF"></span></div>
     <div class="mktList mt" id="mktList"></div>
-    <div class="note hint">Prices take 450k or 1.5m as well as whole numbers. ▲▼ compares a price with the one you had before it. For gear, + refine / options prices a refined copy or one with random options; Refine ≥ and Random options then show only gear with a copy that fits, at its cheapest. Only the plain price counts in zeny figures. Player prices replace NPC prices in every zeny figure; the NPC price is taken off, since the loot value already counts it. Saved per account. Click any drop in Where to farm, Monster info or Item info to add it here.</div>
+    <div class="note hint">Prices take 450k or 1.5m as well as whole numbers. ▲▼ compares a price with the one you had before it. For gear, + refine / options prices a refined copy or one with random options; Refine ≥ and Random options then show only gear with a copy that fits, at its cheapest. Only the plain price counts in zeny figures. Player prices replace NPC prices in every zeny figure; the NPC price is taken off, since the loot value already counts it. Saved per account and server. Click any drop in Where to farm, Monster info or Item info to add it here.</div>
   </section>
 
   <section class="card" id="mobInfoCard" data-tab="mobinfo">

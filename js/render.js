@@ -605,7 +605,7 @@ const dropList=m=>(m.drops||[]).map(([id,ch])=>({id,ch,z:dropZ(m,id,ch),on:loote
 const huntPicker=(r,w)=>`<div class="note">hunting ${r.earn.length} of ${r.mobs.length}${r.tele?` · teleport ~${r.tele.toFixed(1)}×/kill`:r.walk>w*1.01?` · walk ${r.walk.toFixed(1)}s/kill`:""}${r.manual?` · set by you · <a href="#" data-hreset="${esc(r.mp)}">reset</a>`:state.huntAuto?" · best-paying":""}${canTele()?` · <a href="#" data-notele="${esc(r.mp)}" title="Which maps block teleport isn't known: click to mark this one">${noTele(r.mp)?"no teleport":"teleport ok"}</a>`:""}</div>`
   +r.mobs.map(x=>`<div>${x.lvOut?`<span class="hpick off" title="${esc(dropNames(x.m))} · Lv ${x.m.lv}: passed by, outside your level filter">✕ ${esc(x.m.name)}</span>`
     :`<a href="#" class="hpick${x.on?"":" off"}" data-hpick="${esc(r.mp)}" data-hmob="${x.m.id}" title="${esc(dropNames(x.m))} · click to ${x.on?"pass it by":"hunt it"}">${x.on?"✓":"✕"} ${esc(x.m.name)}</a>`}${BOSS_PILL(x.m)} <span class="note">×${spN(x.n)} · Lv ${x.m.lv} · ${fmtN(x.zk)} z · ${fmtQty(x.wk)} wt${dropPenalty(x.m)?` · drops −${dropPenalty(x.m)}%`:""}${x.lvOut?" · Lv filter":""}</span></div>`).join("");
-// ---- Market: your Skadi prices, sorted into the in-game market's categories ----
+// ---- Market: your prices for the server you play on, sorted into the in-game market's categories ----
 // the best drop chance of each item (bosses left out)
 const DROPPERS={};MOBS.forEach(m=>(m.drops||[]).forEach(([id,ch])=>{const d=DROPPERS[id];if(!m.boss&&(!d||ch>d.ch))DROPPERS[id]={m,ch}}));
 // gear and cards by id, for their names, card slots and category
@@ -663,6 +663,10 @@ function renderPrices(){
   const cnt={"":ids.length};ids.forEach(id=>{const c=mktCat(id);cnt[c]=(cnt[c]||0)+1});
   $("mktCats").innerHTML=MKT_CATS.filter(([k])=>!k||cnt[k]||mk.cat===k).map(([k,n])=>`<button type="button" class="mktCat" data-mktcat="${k}" aria-pressed="${mk.cat===k}">${n} <span>${cnt[k]||0}</span></button>`).join("");
   mktFilterBoxes();
+  const srv=MKT_SERVERS.find(([k])=>k===state.mktServer)[1];
+  $("mktSrv").innerHTML=MKT_SERVERS.map(([k,n])=>{const c=k===state.mktServer?ids.length:Object.keys((state.serverPrices[k]||{}).prices||{}).length;
+    return `<button type="button" role="radio" data-srv="${k}" aria-checked="${k===state.mktServer}">${n}${c?` <span class="note">${fmtN(c)}</span>`:""}</button>`}).join("");
+  $("mktSrvNote").textContent=`Prices on ${srv}, as you saw them in game: search an item at the market, then type the cheapest shop's price here. Each server keeps its own prices, and the one picked is the one every zeny figure uses.`;
   const seenT=id=>Math.max((state.priceSeen[id]||[])[0]||0,...(state.priceVars[id]||[]).map(x=>x.t||0));
   const pr={};ids.forEach(id=>pr[id]=mktPrice(id));
   const SORT={recent:(a,b)=>seenT(b)-seenT(a),low:(a,b)=>(pr[a]??Infinity)-(pr[b]??Infinity),high:(a,b)=>(pr[b]??-1)-(pr[a]??-1),
@@ -670,7 +674,6 @@ function renderPrices(){
   const rows=ids.filter(id=>(!mk.cat||mktCat(id)===mk.cat)&&(!q||mktName(id).toLowerCase().includes(q)||("#"+id).includes(q))
       &&(!fOn||pr[id]!=null)&&(mk.max==null||!(pr[id]>mk.max)))
     .sort((a,b)=>SORT[mk.sort](a,b)||mktName(a).localeCompare(mktName(b)));
-  $("mktCount").textContent=ids.length?`${fmtN(ids.length)} price${ids.length>1?"s":""}`:"";
   $("mktList").innerHTML=rows.map(id=>{const p=state.prices[id],t=(state.priceSeen[id]||[])[0],mv=priceMove(id),d=DROPPERS[id],npc=state.npcPrices[id]??NPCSELL[id],g=mktGearOnly(id),vs=listings(id).slice(1),best=fOn?mktBest(id):null;
     return `<div class="mktItem"><div class="mktRow"><span class="mktIc">${itemIcon(id)}</span>
       <div class="mktName"><a href="#" data-info="item:${esc(id)}">${esc(mktName(id))}</a>

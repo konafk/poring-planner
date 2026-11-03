@@ -20,7 +20,7 @@ const TAB_DESC={
   brew:"Prepare Potion's chance for every potion with your stats, what a potion costs counting the failures, and a run of tries rolled the server's way.",
   cook:"Every dish's chance with each cooking kit for your stats, cook mastery, and a run of tries rolled the server's way.",
   recipes:"What every forge, brew, arrow, cooking, NPC and memorial recipe uses up.",
-  market:"What Skadi's vendors ask for items, as you saw it in game, by market category; every zeny figure on the site uses them.",
+  market:"What vendors ask for items on your server (Skadi, Odin or Loki), as you saw it in game, by market category; every zeny figure on the site uses them.",
   ref:"EXP tables, party share, the element and size tables, and every formula with your numbers in it.",
   acct:"Back up every account, restore one, or share it as a link. Everything is saved in this browser only.",
 };

@@ -265,7 +265,7 @@ Every crafting recipe: 439 of them under **Forging** (weapons, with the weapon's
 
 ## Market
 
-Prices for the Skadi (EU) server, typed in by you: no site publishes Skadi's market, so search an item at the market in game and type the cheapest shop's price.
+Prices you saw in game, for the server you play on: pick **Skadi (EU)**, **Odin (SEA)** or **Loki (SEA)** at the top of the card. Each server has its own market, so each keeps its own prices; the one picked is the one every zeny figure uses, and the button shows how many prices each has. Prices saved before the servers are Skadi's. Search an item at the market in game and type the cheapest shop's price.
 
 - Add any item, gear, card or costume by name or `#id`: the **Item** box suggests matches with their icons and category (arrow keys and Enter pick one). Prices take `450k` or `1.5m` as well as whole numbers.
 - **Refined and optioned gear:** under a weapon or armor, **+ refine / options** prices a copy at a refine (+0 to +20) with up to its random options, picked from the ones that gear rolls, with each one's range. The plain price (+0, no options) is the one every zeny figure on the site uses; the copies are for comparing shops.

@@ -511,6 +511,18 @@ t("market: refined and optioned copies, Refine ≥ and random option filters pic
   run(`state.mkt={cat:"",sort:"recent",q:"",max:null,refine:null,opts:[]}`);
 });
 
+t("market: each server keeps its own prices; prices from before the servers are Skadi's", () => {
+  const r = load({ prices: { "909": 30 }, serverPrices: { odin: { prices: { "909": 50, "x": 1 }, npcPrices: { "909": 3 } }, mars: { prices: { "1": 1 } } } });
+  assert.equal(r(`state.mktServer+" "+state.prices["909"]+" "+Object.keys(state.serverPrices).join()`), "skadi 30 odin");
+  assert.equal(r(`JSON.stringify(state.serverPrices.odin.prices)+state.serverPrices.odin.npcPrices["909"]`), '{"909":50}3');
+  r(`switchServer("odin")`);
+  assert.equal(r(`state.mktServer+" "+state.prices["909"]+" "+state.serverPrices.skadi.prices["909"]+" "+("odin" in state.serverPrices)`), "odin 50 30 false");
+  r(`switchServer("loki")`);
+  assert.equal(r(`Object.keys(state.prices).length+" "+Object.keys(state.serverPrices).sort().join()`), "0 odin,skadi");
+  r(`switchServer("skadi")`);
+  assert.equal(r(`state.prices["909"]`), 30);
+});
+
 t("market: a saved copy keeps only a refine of 0-20, options with a key, and a price", () => {
   const r = load({ prices: { "28028": 1 }, priceVars: { "28028": [{ r: 99, o: [{ k: "atk", v: "x" }, { v: 3 }], p: -5, t: "y", evil: "<b>" }], "999": [{ r: 1, p: 1 }] }, mkt: { refine: 50, opts: "atk" } });
   assert.equal(r(`JSON.stringify(state.priceVars)`), '{"28028":[{"r":20,"o":[{"k":"atk","v":null}],"p":0,"t":null}]}');
