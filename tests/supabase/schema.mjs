@@ -54,6 +54,7 @@ await t("a repeat within the hour is skipped; a player can post the same item se
   assert.equal((await ins(1, 909, 30)).length, 1);
   assert.equal((await ins(1, 909, 30)).length, 0);   // same copy, same price: skipped
   assert.equal((await ins(1, 909, 32)).length, 1);   // another shop
+  assert.equal((await as(1, `insert into public.reports (server, item_id, price, selling) values ('skadi', 909, 30, true) returning id`)).length, 1); // now selling it: not a repeat
   assert.equal((await ins(1, 909, 30, 0, "[]", "odin")).length, 1);
 });
 await t("players see only their own reports and can't edit them", async () => {
@@ -130,21 +131,18 @@ await t("backups: one each, only your own, upsert", async () => {
   await as(2, `delete from public.backups`);
   assert.equal((await as(1, `select count(*)::int c from public.backups`))[0].c, 1);
 });
-await t("sellers: only selling reports from players who allow DMs, with the name from their login", async () => {
+await t("sellers: only reports marked selling, with the name from the poster's login; deleting them takes the seller off", async () => {
   await db.query(`update auth.users set raw_user_meta_data = $2 where id = $1`, [U(2), { full_name: "seller2", name: "seller2", provider_id: "11112222", custom_claims: { global_name: "Seller Two" } }]);
-  await as(2, `insert into public.reports (server, item_id, price, selling) values ('skadi', 7001, 900, true)`);
-  await as(3, `insert into public.reports (server, item_id, price, selling) values ('skadi', 7001, 950, true)`);  // no DMs
   await as(4, `insert into public.reports (server, item_id, price) values ('skadi', 7001, 1000)`);               // just saw it
   assert.equal((await as(0, `select * from public.sellers('skadi', 7001)`)).length, 0);
-  await as(2, `insert into public.profiles (user_id, dm_ok) values ($1, true) on conflict (user_id) do update set dm_ok = excluded.dm_ok`, [U(6)]); // stamped as player 2
-  await as(4, `insert into public.profiles (dm_ok) values (true)`);
+  await as(2, `insert into public.reports (server, item_id, price, selling) values ('skadi', 7001, 900, true)`);
   const s = await as(0, `select * from public.sellers('skadi', 7001)`);
   assert.deepEqual(s.map(x => [x.discord_id, x.discord_name, x.username, Number(x.price)]), [["11112222", "Seller Two", "seller2", 900]]);
+  assert.equal((await as(0, `select * from public.sellers('odin', 7001)`)).length, 0);
+  await as(3, `insert into public.reports (server, item_id, price, selling) values ('skadi', 7001, 950, true)`);
   const sp = await as(0, `select sellers, players from public.shared_prices('skadi') where item_id = 7001`);
-  assert.equal(sp[0].sellers, 1);
-  assert.equal((await as(4, `select * from public.profiles`)).length, 1);                // only their own
-  await fails(0, `select * from public.profiles`, [], /permission denied/);
-  await as(2, `update public.profiles set dm_ok = false`);
-  assert.equal((await as(0, `select * from public.sellers('skadi', 7001)`)).length, 0);  // turning it off hides them at once
+  assert.equal(sp[0].sellers, 2);
+  await as(2, `delete from public.reports where item_id = 7001 and selling`);
+  assert.deepEqual((await as(0, `select * from public.sellers('skadi', 7001)`)).map(x => Number(x.price)), [950]);
 });
 console.log(n, "tests passed");

@@ -662,7 +662,7 @@ function mktVarRow(id,x,g){const ch=BUILD.optChoices(mktSlot(g),g),list=optList(
     <select data-vr aria-label="Refine">${OPT_REFINES(20).map(r=>`<option value="${r}"${r===x.r?" selected":""}>+${r}</option>`).join("")}</select>
     <span class="mktOpts">${x.o.map(opt).join("")}${x.o.length<BUILD.OPT_MAX?opt(null,x.o.length):""}</span>
     <span class="mktPrice"><input class="mono" inputmode="decimal" data-vp value="${x.p>0?fmtN(x.p):""}" placeholder="price" aria-label="Price of this copy"><span class="mktZ">z</span>${x.p>=1e3?`<div class="note mono">${zShort(x.p)}</div>`:""}</span>
-    <span class="note mktAgo">${x.t?agoTxt(x.t):""}</span>${loggedIn()?`<label class="mktSell" title="You sell this copy yourself, at this price: buyers can DM you about it if you let them"><input type="checkbox" data-vsell${x.sell?" checked":""}> selling</label>`:""}
+    <span class="note mktAgo">${x.t?agoTxt(x.t):""}</span>${loggedIn()?`<label class="mktSell" title="You sell this copy at this price. Once you share it, buyers see your Discord name and can message you about it. Untick to take it back"><input type="checkbox" data-vsell${x.sell?" checked":""}> DM me</label>`:""}
     <button type="button" class="small ghost" data-vdel title="Remove this copy" aria-label="Remove this copy">✕</button></div>`}
 function renderPrices(){
   const f=document.activeElement;if(f&&f.tagName==="INPUT"&&$("mktList").contains(f))return;// don't rebuild the box you're typing in
@@ -688,7 +688,7 @@ function renderPrices(){
       <div class="mktName"><a href="#" data-info="item:${esc(id)}">${esc(mktName(id))}</a>
         <div class="note">${[best?`<b class="mktFit">cheapest fit ${esc(varTxt(best))}${best.s?" (shared)":""}: ${fmtN(best.p)} z</b>`:"",
           sp&&own?`<span class="mktShared" title="${esc(sharedTxt(sp))}">shared ${zShort(sp.p)} · ${sp.players} players${p>0?"":` · <a href="#" data-suse="${esc(id)}">use it</a>`}</span>`:"",t?`<span title="${esc(new Date(t).toLocaleString("en-GB"))}">updated ${agoTxt(t)}</span>`:"",npc!=null?`NPC pays ${fmtN(npc)} z`:"",d?`best drop ${esc(d.m.name)} ${d.ch}%`:"",`#${esc(id)}`,
-          own&&loggedIn()?`<label class="mktSell" title="You sell it yourself, at this price: buyers can DM you about it if you let them"><input type="checkbox" data-sell="${esc(id)}"${state.sell[id]?" checked":""}> selling</label>`:"",
+          own&&loggedIn()?`<label class="mktSell" title="You sell it at this price. Once you share it, buyers see your Discord name and can message you about it. Untick to take it back"><input type="checkbox" data-sell="${esc(id)}"${state.sell[id]?" checked":""}> DM me</label>`:"",
           sellerN(id)?`<a href="#" data-sellers="${esc(id)}" class="mktSellers">${sellerN(id)} seller${sellerN(id)>1?"s":""} · DM</a>`:"",
           g&&own?`<a href="#" data-varadd="${esc(id)}" title="Price a refined copy, or one with random options. The plain price stays the one every zeny figure uses">+ refine / options</a>`:""].filter(Boolean).join(" · ")}</div></div>
       ${own?`<div class="mktPrice${fOn&&!listingOk(listings(id)[0])?" off":""}"><input class="mono" inputmode="decimal" data-price="${esc(id)}" value="${p>0?fmtN(p):""}" placeholder="price" aria-label="What players pay for ${esc(mktName(id))}" title="${g?"+0, no random options. ":""}Zeny; 450k = 450,000, 1.5m = 1,500,000">

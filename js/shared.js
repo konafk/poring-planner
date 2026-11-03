@@ -33,10 +33,10 @@ async function authCallback(){if(!/[?&](code|error)=/.test(String(location.searc
   if(err){showToast("Discord login didn't work: "+err,6000);return}
   if(!p.v||!sharedOn())return;
   try{const r=await fetch(`${SHARED.url}/auth/v1/token?grant_type=pkce`,{method:"POST",headers:{apikey:SHARED.key,"Content-Type":"application/json"},body:JSON.stringify({auth_code:code,code_verifier:p.v})});
-    if(!r.ok)throw 0;authSave(authOf(await r.json()));showToast(`Logged in as ${AUTH.user.name}`);if(p.tab)location.hash=p.tab;renderShared();loadShared(true);cloudInfo();profileLoad()}
+    if(!r.ok)throw 0;authSave(authOf(await r.json()));showToast(`Logged in as ${AUTH.user.name}`);if(p.tab)location.hash=p.tab;renderShared();loadShared(true);cloudInfo()}
   catch(e){showToast("Discord login didn't work. Try again.",6000)}}
 async function logout(){try{if(AUTH)await fetch(`${SHARED.url}/auth/v1/logout`,{method:"POST",headers:{apikey:SHARED.key,Authorization:"Bearer "+AUTH.access_token}})}catch(e){}
-  authSave(null);PROFILE=null;renderShared();if(state.tab==="market")renderPrices()}
+  authSave(null);renderShared();if(state.tab==="market")renderPrices()}
 
 // ---- shared prices of the picked server: item id → copies [{r, o, p, players, reports, newest (ms)}], the plain one first ----
 const SHARED_P={};let SHARED_LOADING=null;
@@ -63,12 +63,11 @@ let UNSHARE_ARMED=false;
 async function unsharePrices(){if(!UNSHARE_ARMED){UNSHARE_ARMED=true;renderShared();setTimeout(()=>{UNSHARE_ARMED=false;renderShared()},4000);return}
   UNSHARE_ARMED=false;try{await sb(`/rest/v1/reports?user_id=eq.${encodeURIComponent(AUTH.user.id)}`,{method:"DELETE"});showToast("Your shared reports are deleted.");loadShared(true)}
   catch(e){showToast("Couldn't delete them: "+e.message,6000)}renderShared()}
-// ---- selling: who sells an item and lets buyers DM them on Discord. Off unless the player turns it on (profiles.dm_ok) ----
-let PROFILE=null;
-async function profileLoad(){if(!AUTH)return;try{const r=await sb("/rest/v1/profiles?select=dm_ok");PROFILE={dm_ok:!!(r&&r[0]&&r[0].dm_ok)}}catch(e){PROFILE={dm_ok:false}}renderShared()}
-async function profileDm(on){try{await sb("/rest/v1/profiles?on_conflict=user_id",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({user_id:AUTH.user.id,dm_ok:on})});
-    PROFILE={dm_ok:on};showToast(on?"Buyers can DM you about prices you mark as selling, once you share them.":"Buyers can't see you any more.");loadShared(true)}
-  catch(e){showToast("Couldn't change it: "+e.message,6000)}renderShared()}
+// ---- selling: a price marked DM me (state.sell, or sell on a copy) is shared as selling, and buyers see who sells it ----
+// unticking DM me on an item takes back your selling reports for it on this server, so buyers stop seeing you at once
+async function unsell(id){if(!AUTH)return;
+  try{await sb(`/rest/v1/reports?user_id=eq.${encodeURIComponent(AUTH.user.id)}&server=eq.${state.mktServer}&item_id=eq.${+id}&selling=is.true`,{method:"DELETE"});
+    delete SELLERS[state.mktServer+":"+id];loadShared(true)}catch(e){showToast("Couldn't take back your listing: "+e.message,6000)}}
 // the sellers of an item, shown under it: each one's Discord name, @username, copy, price and when, with a link to their profile
 const SELLERS={},SELLERS_OPEN=new Set();
 async function toggleSellers(id){const k=state.mktServer+":"+id;if(SELLERS_OPEN.has(k)){SELLERS_OPEN.delete(k);renderPrices();return}SELLERS_OPEN.add(k);renderPrices();
@@ -105,7 +104,6 @@ function renderShared(){const on=sharedOn();["mktShare","cloudBar"].forEach(k=>{
   const inBtn=`<button type="button" class="discordBtn" data-auth="login">Log in with Discord</button>`,c=SHARED_P[state.mktServer];
   $("mktShare").innerHTML=`<div class="bar">${AUTH?`${who}<button type="button" data-shared="share" title="Post this server's prices you typed, so everyone sees them. Up to 200 a day">Share my prices</button><button type="button" class="small ${UNSHARE_ARMED?"danger":"ghost"}" data-shared="unshare">${UNSHARE_ARMED?"Click again to delete them":"Delete my shared reports"}</button>${out}`
       :`${inBtn}<span class="note">to share your prices. Everyone's prices show without logging in; yours always win.</span>`}
-    ${AUTH?`<label class="bar mktDm" title="Shows your Discord name and a link to message you on the items you mark as selling. Turn it off and you disappear at once"><input type="checkbox" data-shared="dm"${PROFILE&&PROFILE.dm_ok?" checked":""}${PROFILE?"":" disabled"}> buyers can DM me on Discord</label>`:""}
     <label class="bar grow mktEveryone"><input type="checkbox" data-shared="everyone"${state.mkt.everyone?" checked":""}> show everyone's items</label>
     <button type="button" class="small" data-shared="fill" title="Your items with no price take the shared one">Use shared for my blanks</button></div>
     ${c&&c.err?`<div class="note bad">Couldn't load shared prices: ${esc(c.err)}</div>`:""}`;
@@ -117,6 +115,5 @@ ROOTQ("#mktShare,#cloudBar").forEach(el=>el.addEventListener("click",e=>{const a
   const s=e.target.closest("[data-shared]");if(s&&s.dataset.shared!=="everyone"){const k=s.dataset.shared;
     if(k==="share")sharePrices();else if(k==="unshare")unsharePrices();else if(k==="fill"){const n=useShared(Object.keys(state.prices));showToast(n?`${n} price${n>1?"s":""} filled from the shared ones`:"No blanks with a shared price")}return}
   const c=e.target.closest("[data-cloud]");if(c)({save:cloudSave,load:cloudLoad,del:cloudDelete})[c.dataset.cloud]()}));
-$("mktShare").addEventListener("change",e=>{if(e.target.matches('[data-shared="everyone"]')){state.mkt.everyone=e.target.checked;save();renderPrices()}
-  if(e.target.matches('[data-shared="dm"]'))profileDm(e.target.checked)});
-renderShared();if(sharedOn()){authCallback();if(AUTH){cloudInfo();profileLoad()}}
+$("mktShare").addEventListener("change",e=>{if(e.target.matches('[data-shared="everyone"]')){state.mkt.everyone=e.target.checked;save();renderPrices()}});
+renderShared();if(sharedOn()){authCallback();if(AUTH)cloudInfo()}

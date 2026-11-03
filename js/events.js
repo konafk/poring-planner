@@ -392,9 +392,9 @@ $("mktList").addEventListener("change",e=>{const el=e.target,vr=varOf(el);
     else if(el.matches("[data-vp]")){const v=parseZ(el.value);if(Number.isNaN(v)){el.blur();renderPrices();return}x.p=v||0;x.t=Date.now()}
     else if(el.matches("[data-vok]")){const j=+el.dataset.vok;if(el.value)x.o[j]={k:el.value,v:x.o[j]?x.o[j].v:null};else x.o.splice(j,1)}
     else if(el.matches("[data-vov]")){const v=parseFloat(el.value);x.o[+el.dataset.vov].v=Number.isFinite(v)?v:null}
-    else if(el.matches("[data-vsell]")){if(el.checked)x.sell=true;else delete x.sell}
+    else if(el.matches("[data-vsell]")){if(el.checked)x.sell=true;else{delete x.sell;unsell(vr.id)}}
     el.blur();save();renderPrices();return}
-  if(el.matches("[data-sell]")){if(el.checked)state.sell[el.dataset.sell]=true;else delete state.sell[el.dataset.sell];save();renderPrices();return}
+  if(el.matches("[data-sell]")){const id=el.dataset.sell;if(el.checked)state.sell[id]=true;else{delete state.sell[id];unsell(id)}save();renderPrices();return}
   const i=el.closest("[data-price],[data-npc]");if(!i)return;const v=parseZ(i.value);
   if(Number.isNaN(v)){i.blur();renderPrices();return}
   if(i.dataset.price)state.prices[i.dataset.price]=v||0;else if(v==null)delete state.npcPrices[i.dataset.npc];else state.npcPrices[i.dataset.npc]=v;i.blur();save();renderAll()});

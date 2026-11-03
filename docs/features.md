@@ -284,7 +284,7 @@ Once the site has a shared prices database ([setting it up](shared-prices.md)), 
 - **Share my prices** posts this server's prices you typed, plain and refined / optioned copies, up to 200 a day. **Delete my shared reports** takes them all back.
 - Each of your items shows the shared price beside yours ("shared 400k · 3 players", hover for the reports and how new they are), with **use it** when yours is blank. **Use shared for my blanks** fills every blank at once. Yours always win.
 - **Show everyone's items** adds the items only others priced, with **+ add** to put one in your list at the shared price. Shared refined / optioned copies show under their item, and Refine ≥ and Random options look at them too.
-- **Selling and DMs (optional):** tick **buyers can DM me on Discord**, then **selling** on the prices you sell yourself (and on copies), and share them. Buyers see **N sellers · DM** on the item: open it for each seller's Discord name, @username, copy, price and when, and **Message on Discord**. Untick it and you disappear at once.
+- **Selling and DMs (optional, per item):** tick **DM me** on a price you sell yourself (or on a copy) and share it. Buyers see **N sellers · DM** on the item: open it for each seller's Discord name, @username, copy, price and when, and **Message on Discord**. Untick it and that listing goes at once.
 - The shared price is the median of the players' prices, each player counted once, outliers left out, from the last 30 days (the last 7 when 3 or more players reported lately). [How it keeps junk out](shared-prices.md#how-it-keeps-junk-out).
 
 ## EXP & formulas

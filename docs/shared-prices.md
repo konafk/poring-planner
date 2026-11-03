@@ -17,7 +17,7 @@ Players log in with Discord to share the market prices they typed, and to keep a
 
 All of these are rules in the database (`supabase/schema.sql`), so changing the page or calling the API directly doesn't get around them. The numbers are in the `settings` table, so you can change them without touching the site.
 
-**Buyers can DM sellers (optional):** a player who ticks **buyers can DM me on Discord** and marks a price as **selling** (they sell it, not just saw it) shows up under that item for buyers: their Discord name and @username, the copy, price and when, with a link to their Discord profile. It's off until the player turns it on, and turning it off hides them at once. The name and id come from the Discord login itself, never from the page, so nobody can show someone else's. Selling reports still count in the shared price like any other.
+**Buyers can DM sellers (optional, per item):** a player who ticks **DM me** on a price (or on a refined / optioned copy) and shares it shows up under that item for buyers: their Discord name and @username, the copy, price and when, with a link to their Discord profile. Nothing else of theirs is shown. Unticking it takes that item's listing back at once (Delete my shared reports takes back all of them). The name and id come from the Discord login itself, never from the page, so nobody can show someone else's. These reports still count in the shared price like any other.
 
 **Cloud backup:** one per Discord account, only that player's to read, write or delete. It's the Copy backup text (every account), compressed, up to 2 MB. Load from cloud puts it in the backup box, and Restore from text (twice) uses it, as with a pasted backup.
 

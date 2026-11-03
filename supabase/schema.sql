@@ -52,7 +52,7 @@ create table if not exists public.reports (
   price bigint not null check (price between 1 and 1000000000000),
   created_at timestamptz not null default now()
 );
--- selling: the poster sells this copy at this price (not just saw it), so buyers can DM them if their profile allows it
+-- selling: the poster sells this copy at this price (not just saw it) and lets buyers DM them about it on Discord
 alter table public.reports add column if not exists selling boolean not null default false;
 create index if not exists reports_item on public.reports (server, item_id, created_at);
 create index if not exists reports_user on public.reports (user_id, created_at);
@@ -82,7 +82,8 @@ begin
   if (select count(*) from public.reports r where r.user_id = new.user_id and r.server = new.server and r.item_id = new.item_id
       and r.created_at > now() - interval '1 day') >= per_item then return null; end if;
   if exists (select 1 from public.reports r where r.user_id = new.user_id and r.server = new.server and r.item_id = new.item_id
-             and r.refine = new.refine and r.opts_key = new.opts_key and r.price = new.price and r.created_at > now() - interval '1 hour') then return null; end if;
+             and r.refine = new.refine and r.opts_key = new.opts_key and r.price = new.price and r.selling = new.selling
+             and r.created_at > now() - interval '1 hour') then return null; end if;
   return new;
 end $$;
 drop trigger if exists reports_check on public.reports;
@@ -97,29 +98,11 @@ drop policy if exists "delete your own" on public.reports;
 create policy "delete your own" on public.reports for delete to authenticated using (user_id = (select auth.uid()) or public.is_admin());
 revoke update on public.reports from anon, authenticated;
 
--- ---- profiles: whether buyers may DM the player on Discord (off unless they turn it on) ----
--- The Discord name and id shown to buyers come from the login (auth.users), never from the page, so nobody can show someone else's
-create table if not exists public.profiles (
-  user_id uuid primary key default auth.uid() references auth.users on delete cascade,
-  dm_ok boolean not null default false,
-  updated_at timestamptz not null default now()
-);
-alter table public.profiles enable row level security;
-create or replace function public.profiles_stamp() returns trigger
-language plpgsql security definer set search_path = '' as $$
-begin
-  new.user_id := auth.uid();
-  if new.user_id is null then raise exception 'Log in first'; end if;
-  new.updated_at := now();
-  return new;
-end $$;
-drop trigger if exists profiles_stamp on public.profiles;
-create trigger profiles_stamp before insert or update on public.profiles for each row execute function public.profiles_stamp();
-drop policy if exists "your own profile" on public.profiles;
-create policy "your own profile" on public.profiles for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
-revoke all on public.profiles from anon;
+-- an account-wide DM switch from an earlier version: the selling mark on each report replaced it
+drop table if exists public.profiles;
+drop function if exists public.profiles_stamp();
 
--- the players selling one item on one server who let buyers DM them: each one's latest price per copy, from the last keep_days
+-- the players selling one item on one server (reports marked selling): each one's latest price per copy, from the last keep_days
 create or replace function public.sellers(srv text, item integer)
 returns table (discord_id text, discord_name text, username text, refine smallint, opts jsonb, price bigint, at timestamptz)
 language sql stable security definer set search_path = '' as $$
@@ -130,7 +113,6 @@ language sql stable security definer set search_path = '' as $$
       coalesce(u.raw_user_meta_data->>'name', u.raw_user_meta_data->>'full_name') as username,
       r.refine, r.opts, r.price, r.created_at
     from public.reports r
-    join public.profiles p on p.user_id = r.user_id and p.dm_ok
     join auth.users u on u.id = r.user_id
     where r.server = srv and r.item_id = item and r.selling
       and r.created_at > now() - make_interval(days => coalesce((select s.value from public.settings s where s.key = 'keep_days'), 30)::int)
@@ -178,7 +160,7 @@ language sql stable security definer set search_path = '' as $$
     where p.p <= m.m * s.factor and p.p >= m.m / s.factor)
   select k.item_id, k.refine, min(k.opts)::jsonb, round(percentile_cont(0.5) within group (order by k.p))::bigint,
          count(*)::int, sum(k.n)::int, max(k.t),
-         count(*) filter (where k.selling and exists (select 1 from public.profiles p where p.user_id = k.user_id and p.dm_ok))::int
+         count(*) filter (where k.selling)::int
   from kept k, s
   group by k.item_id, k.refine, k.opts_key, s.min_n
   having count(*) >= s.min_n
