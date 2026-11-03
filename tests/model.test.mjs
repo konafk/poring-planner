@@ -3102,4 +3102,14 @@ t("a new visitor starts with no session and no job picked", () => {
   assert.equal(app("C().mode='build';noChar()"), false);                     // a character built from gear counts as set up
 });
 
+t("a monster's world map opens on the world with the most of its spawns", () => {
+  const most = rows => run(`worldMost(${JSON.stringify(rows)})`);
+  assert.equal(most([["nrd_fild01", 50], ["prt_d02", 20], ["pay_f08", 8]]), 1);   // Nordfeld has more spawns, though Midgard has more maps
+  assert.equal(most([["nrd_fild01", 50], ["prt_d02", 60]]), 0);
+  assert.equal(most([["nrd_fild01", null], ["prt_d02", 1]]), 0);                   // no count from the client adds none
+  assert.equal(most([["nrd_fild01", null], ["prt_d02", null], ["pay_f08", null]]), 0);   // with no counts at all, the most maps
+  assert.equal(most([["not_a_map", 9]]), -1);
+  assert.equal(most([]), -1);
+});
+
 console.log(`${n} tests passed`);

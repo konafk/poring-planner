@@ -897,6 +897,9 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 .wmBox:hover{border-color:#fff;background:rgba(255,255,255,.2)}
 .wmBox.closed{border-style:dashed;border-color:rgba(0,0,0,.35)}
 .wmBox.town{border-color:rgba(255,214,10,.75)}
+.wmBox.on.closed{border-style:dashed}
+#mobInfoWorld{max-width:720px;margin:8px 0}
+#mobInfoWorld button:disabled{opacity:1;pointer-events:none}
 .wmBox.on{border:2px solid #ff3b30;background:rgba(255,59,48,.3);box-shadow:0 0 0 2px rgba(255,255,255,.8)}
 .wmFloors{position:absolute;z-index:3;width:max-content;max-width:100%;margin:3px 0;padding:3px 0;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.35)}
 .wmFloors[hidden]{display:none}

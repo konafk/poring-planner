@@ -429,7 +429,7 @@ $("huntTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.ta
   else{state.calcMobId=state.infoMobId=+tr.dataset.id;MOB_PANEL_SHUT=false;save();renderAll();$("mobPanel").scrollIntoView({behavior:"smooth",block:"nearest"})}});
 // Monster info: pick a monster; click a map to open it in the map planner (a drop opens its details: js/info.js)
 $("mobInfoInput").addEventListener("change",e=>{const m=MOBS.find(x=>x.name.toLowerCase()===e.target.value.trim().toLowerCase());if(!m)return;state.infoMobId=m.id;save();renderMobInfo()});
-$("mobInfoMaps").addEventListener("click",e=>{const tr=e.target.closest("tr[data-map]");if(!tr)return;state.map=tr.dataset.map;save();showTab("maps");renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})});
+$("mobInfoMaps").addEventListener("click",e=>{const tr=e.target.closest("tr[data-map]");if(!tr)return;mobInfoPlan(tr.dataset.map)});
 // Item info: search and filter; click an item for its droppers, a dropper for its Monster info
 $("itemSearch").addEventListener("input",renderItems);
 // Items: the monster drops, every item, or one client catalog category, with how many each has
