@@ -905,6 +905,7 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 .wmFloors button:hover,.wmFloors button:focus-visible{background:var(--accent-soft)}
 .wmFloors button.on{font-weight:600;color:var(--accent)}
 .wmFloors button .note{flex:none;margin:0;font-size:11px}
+.wmFloors button[data-wmall]{border-bottom:1px solid var(--line);margin-bottom:2px}
 @container (max-width:560px){.wmFloors{left:0!important;right:0!important;width:auto}}
 .wmBox.dun{z-index:1;display:flex;align-items:center;justify-content:center}
 .wmBox.dun span{display:none}

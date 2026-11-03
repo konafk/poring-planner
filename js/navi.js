@@ -62,4 +62,4 @@ const naviPic=(mp,v,cls="")=>`<div class="naviPic ${cls}"><div class="mapPic" ti
 // clicking a map's name opens it: in the Map planner when it's a spawn map clicked there, else on the Maps tab
 document.addEventListener("click",e=>{const a=e.target.closest("[data-navito]");if(!a)return;e.preventDefault();const k=a.dataset.navito;
   if(a.closest("#mapCard")&&MAPMOBS[k]){planPick(k);return}
-  state.mapInfo=k;save();if(state.tab!=="mapinfo")showTab("mapinfo");renderMapInfo();$("mapInfoSel").scrollIntoView({block:"nearest"})});
+  state.mapInfo=k;state.mapInfoAll=null;save();if(state.tab!=="mapinfo")showTab("mapinfo");renderMapInfo();$("mapInfoSel").scrollIntoView({block:"nearest"})});
