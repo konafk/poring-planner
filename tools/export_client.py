@@ -29,8 +29,9 @@ the client isn't, so what the client says goes in a file of its own that only th
   bosses are MOB_BOSSES, kept by hand because the client doesn't link them. Tags only: the base's HP, EXP and drops aren't copied.
 - boxes: what's in the boxes the client lists: {box id: ["all" | "pick", [[item id, count, refine, hours]]]}, from data.grf's
   packageitem.lub (the probability lists; "all" says only that these can come from it) and SelectPackageItem_Data.lub ("pick": choose one).
-- recipes: the headgear NPCs craft (npc_recipes(): Februs's from the dialogue, the Hat Maker's from the quest log), as
-  data/recipes.js's NPC rows in a Headgear category, for the Recipes tab and each item's details.
+- recipes: the headgear NPCs craft (npc_recipes(): Februs's from the dialogue, the Hat Maker's from the quest log; hat_quests(): the
+  Tip Box's helmet assembly guides and the quest log), as data/recipes.js's NPC rows in a Headgear category, for the Recipes tab,
+  each item's details and its Where to get.
 - drops: drops seen in game that neither the client nor the database lists (DROPS, kept by hand), rate unknown. They go on the monster's
   drop list and the item's Where to get it, and a row the database has for the same item and monster wins, so a published rate shows.
 - art: the client's pictures, as sheets like tools/export_icons.py's (img/<kind>-client.png): card pictures (data.grf's
@@ -61,6 +62,11 @@ STATS = {"MHP": "hp", "MaxHP": "hp", "MSP": "sp", "MaxSP": "sp", "ATK": "atk", "
          "CRIT": "crit", "DEF": "def", "MDEF": "mdef", "STR": "str", "AGI": "agi", "VIT": "vit", "INT": "int", "DEX": "dex", "LUK": "luk"}
 PCT = {"variable casting time": "cast_time_variable_percent", "after attack delay": "attack_delay_percent"}
 CLIENT_MOBS = {20175, 20176, 20177, 20178, 20179}  # Extra Joker, Erzsebet, Jeniffer, Orc General, Sieglouse
+# Tip Box helmet assembly guides for hats no source says Global offers yet: Headset, Oxygen Mask, Model Training Hat, Apple of Archer,
+# the ribbon dyeing, Frog Hat, Smokie Leaf, Blue Fish
+HATS_LATER = {5001, 5004, 5073, 2285, 2250, 5447, 5064, 5065}
+# hats with a crafting quest but no Tip Box guide: their materials, from the NPC's lines (the quest log only names them, as "Cake Slice")
+HATS_LOG_ONLY = {5026: [[539, 20], [982, 1], [949, 30]], 5024: [[539, 20], [530, 5], [538, 15], [529, 10], [999, 10]], 5028: [[2279, 1], [7035, 1]]}
 DROPS = {480999: [20178], 481000: [1211], 481001: [1269]}  # item id -> monsters, seen in game: General's Cape from Orc General, Hunter's Cape from Brilight, Rotating Gear from Clock
 # navi_mob.lub's element numbers -> data/elem.js's names; sizes S M L; races in data/sizes.js's RACES order
 ELEMENTS = ["Neutral", "Water", "Earth", "Fire", "Wind", "Poison", "Holy", "Shadow", "Ghost", "Undead"]
@@ -249,6 +255,53 @@ def box_contents(grf):
     return {i: out[i] for i in sorted(out) if out[i][1]}
 
 
+def hat_quests(client, quests):
+    """The hats NPCs make through a quest, as data/recipes.js's NPC rows. The Tip Box's helmet assembly guides (tips 8001-8043, "Talk to
+    <NAVI>[Dog]<INFO>map,x,y..</INFO></NAVI> ... <ITEM>[hat]<INFO>id</INFO></ITEM> Combination Materials ... ▷<ITEM>..</ITEM> xN ... ▷2,000
+    Zeny", then "After reaching Lv. 40" on page 2) have the materials and fee by item id, in an older translation; the quest log's
+    crafting quest (naming the hat by item or by tip) has the NPC's name, and where they stand when the guide starts somewhere else
+    (start: the Puppy leads to the Hat Artisan). quest: the quest's name, qlv: its level."""
+    navi = open(os.path.join(DATA, "navi.js"), encoding="utf-8").read()
+    named = json.JSONDecoder().raw_decode(navi, navi.index("{", navi.index("const NAVI_NPCS=")))[0]
+    tag = r"<NAVI>\[([^\]]+)\]<INFO>(\w+)(?:\.gat)?,(\d*),(\d*)[^<]*</INFO></NAVI>"
+    tips = lua_data(open(os.path.join(client, "System", "tipbox_enUS.lub"), "rb").read(), "utf-8")["tbl_string"]
+    logged = {}  # item id or tip id -> (quest name, its last NAVI)
+    for _, q in sorted(quests.items()):
+        t = " ".join(str(x) for x in (q.get("Description") or {}).values())
+        at = re.findall(tag, t)
+        for i in re.findall(r"<(?:ITEM|TIPBOX)>\[[^<]*<INFO>(\d+)</INFO>", t) if at else []:
+            logged.setdefault(int(i), (re.sub(r"«T:(.*?)»", r"\1", q["Title"]), at[-1]))
+    # the name the Navigation has for who stands there (the Tip Box's are an older translation: Pichi for Peach), else the Tip Box's
+    def navi_name(n, m, x, y):
+        return next((r[0] for r in named.get(m, []) if [str(r[1]), str(r[2])] == [x, y]), n)
+    rows = []
+    for tip, v in tips.items():
+        if "HeadgearHatCombineM" not in str(v.get("Title")):
+            continue
+        p1, p2 = (" ".join(str(x) for x in p.values()) for p in [v["Page"][1], v["Page"].get(2, {})])
+        hat = int(re.search(r"◈ <ITEM>\[[^<]*<INFO>(\d+)</INFO></ITEM>", p1).group(1))
+        if hat in HATS_LATER:
+            continue
+        talk = re.search(tag, p1).groups()
+        title, crafter = logged.get(hat) or logged.get(tip) or (None, None)
+        # the guide's place when it's the same NPC (Pero: it and the Navigation say 214,184, the quest log 214,186); the quest log's when it has none (Olli)
+        same = crafter and talk[2] and talk[1] == crafter[1] and abs(int(talk[2]) - int(crafter[2])) + abs(int(talk[3]) - int(crafter[3])) < 9
+        at = talk if same or not crafter else crafter
+        fee, lv = re.search(r"▷([\d,]+) Zeny", p1), re.search(r"Lv\. ?(\d+)", p2)
+        row = {"cat": "Headgear", "type": "npc", "id": hat, "n": 1, "lv": None,
+               "mats": [[int(i), int(n)] for i, n in re.findall(r"▷" + ITEM_TAG.pattern + r"\s*x(\d+)", p1)],
+               "fee": int(fee.group(1).replace(",", "")) if fee else None,
+               "npc": [crafter[0] if crafter else navi_name(*talk), f"{at[1]} {at[2]},{at[3]}"],
+               "quest": title or True, "qlv": int(lv.group(1)) if lv else None}
+        if crafter and talk[2] and not same:
+            row["start"] = [navi_name(*talk), f"{talk[1]} {talk[2]},{talk[3]}"]
+        rows.append(row)
+    for hat, mats in HATS_LOG_ONLY.items():
+        title, at = logged[hat]
+        rows.append({"cat": "Headgear", "type": "npc", "id": hat, "n": 1, "lv": None, "mats": mats, "npc": [at[0], f"{at[1]} {at[2]},{at[3]}"], "quest": title})
+    return rows
+
+
 def npc_recipes(grf, client):
     """The headgear NPCs craft, as data/recipes.js's NPC rows (cat Headgear): from the client's NPC dialogue (data\\i18n\\sc\\*.csv,
     the lines the server sends by key), "[Februs] / You mean the <ITEM>..</ITEM>. / Here's the material estimate. / <ITEM>..</ITEM> xN
@@ -281,13 +334,13 @@ def npc_recipes(grf, client):
         if m:
             mats = [[int(i), int(n)] for n, i in re.findall(r"(\d+) " + ITEM_TAG.pattern, m.group(6))]
             out[(m.group(1), int(m.group(5)))] = {"cat": "Headgear", "type": "npc", "id": int(m.group(5)), "n": 1, "lv": None, "mats": mats,
-                                                   "npc": [m.group(1), npc_at(m.group(1)) or f"{m.group(2)} {m.group(3)},{m.group(4)}"]}
+                                                   "npc": [m.group(1), npc_at(m.group(1)) or f"{m.group(2)} {m.group(3)},{m.group(4)}"], "quest": q["Title"]}
     # an NPC with an item-linked list only makes what's on it; the rest of its recipes are in the client for later
     later = sorted(r["id"] for (npc, i), r in out.items() if npc in offered and i not in offered[npc])
     if later:
         print(f"  in the dialogue but not offered yet, left out: {later}")
-    return [{k: x for k, x in r.items() if x is not None or k == "lv"} for (npc, i), r in sorted(out.items())
-            if npc not in offered or i in offered[npc]]
+    made = [r for (npc, i), r in sorted(out.items()) if npc not in offered or i in offered[npc]]
+    return [{k: x for k, x in r.items() if x is not None or k == "lv"} for r in made + hat_quests(client, quests)]
 
 
 def card_names(grf):
@@ -489,6 +542,8 @@ def main():
                 "    if(m){r[1]=m.name;r[2]=m.lv}else if(c){r[1]=c[0];r[2]=c[1]}}));\n"
                 "  Object.entries(CLIENT.items).forEach(([id,[n,c,t]])=>{if(!CLIENT_ITEMS[id])CLIENT_ITEMS[id]=[n,c];if(t&&!ITEM_TEXT[id])ITEM_TEXT[id]=t});\n"
                 "  Object.entries(CLIENT.recipeNames).forEach(([id,n])=>{if(n&&!RECIPE_ITEMN[id])RECIPE_ITEMN[id]=n});\n"
+                "  // the headgear NPCs make: their quest, or who makes it, as its Where to get when the database names none\n"
+                "  CLIENT.recipes.forEach(r=>{const x=ITEM_INFO[r.id]=ITEM_INFO[r.id]||{};if(!(x.q||[]).length)x.q=[typeof r.quest===\"string\"?r.quest:`Made by ${r.npc[0]}`]});\n"
                 "  // the database's sheets stay as the fallback for what the client has no picture for (js/build-ui.js iconHtml)\n"
                 "  Object.entries(CLIENT.art).forEach(([k,s])=>{if(s.ids.length){ICON_SHEETS[k+\"Db\"]=ICON_SHEETS[k];ICON_SHEETS[k]=s}})})();\n")
     print(f"{len(text)} texts, {len(fix)} fixes, {len(gear)} new gear ({', '.join(g['name'] for g in gear)}), {len(items)} new items, "

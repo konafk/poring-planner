@@ -505,9 +505,13 @@ t("roadmap: regions open on their update's day, or after its month when the day 
   assert.ok(!run(`isClosed("pay_d00")||isClosed("um_fild01")||isClosed("cmd_fild01")`)); // not on the roadmap (Umbala, Comodo are out): open
   assert.ok(!run(`isClosed("sp_d05")||isClosed("maz_d01")||isClosed("mjo_d03")`)); // opened before Clock Tower
   assert.ok(!run(`isClosed("an_d01")||isClosed("an_d02")`));                     // Ant Hell is open, only its memorial isn't
-  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Clock Tower"))`), "due 29 Oct 2026");
-  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Ant Hell memorial"))`), "next month");
-  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Glast Heim"))`), "in 2 months");
+  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Clock Tower"))`), "");            // no countdown ("due 29 Oct 2026", "in 2 months")
+  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Glast Heim"))`), "");
+  const awk = `ROADMAP.find(u=>u.name==="Awakening System")`;                       // only "second half of 2027"
+  assert.equal(run(`upWhen(${awk})`), "2nd half 2027");
+  assert.equal(run(`upStatus(${awk})`), "date not announced");
+  assert.ok(run(`ROADMAP_TODAY="2027-12-31";var o=upOut(${awk});ROADMAP_TODAY="2028-01-01";o===false&&upOut(${awk})`));
+  run(`ROADMAP_TODAY="2026-10-19"`);
   assert.equal(run(`capTxt(capNow())`), "Base 70 / Job 70");                       // the 1 October update raised it, not Clock Tower
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Level 70 & new dungeons"))`), "out");
   assert.equal(run(`ROADMAP.find(u=>u.name==="Clock Tower").cap`), undefined);
@@ -2768,9 +2772,25 @@ t("equipment window: gear named as the game shows it, and the job's look (Bards 
 
 t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {
   // Cooking from the client's cookbooks (60 dishes, Lv 1–10) in place of the database's 29, the Tip Box's 6 potions and 4 fruit juices,
-  // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts, and the client's 4 headgear crafts (the 2 Februs offers on Global, the Hat Maker's 2)
-  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length+60+10+18+4`), run(`RECIPE_LIST.length`));
-  assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Headgear").length`), 4);
+  // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts, and the client's 37 headgear crafts (the 2 Februs offers on Global, the Hat Maker's 2, 33 hat quests)
+  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length+60+10+18+37`), run(`RECIPE_LIST.length`));
+  assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Headgear").length`), 37);
+  // a hat quest: the Tip Box's materials by id, any fee only it and the NPC's lines have, the quest's level
+  assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===5031))`), "Mini Pot (quest, Lv 40+) · geffen 83,189");
+  assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===5031).mats)`), "[[5009,1],[1041,1],[999,25],[747,1]]");
+  assert.equal(run(`RECIPE_LIST.find(r=>r.id===2272).fee`), 10000);                                                          // Stop Post
+  assert.equal(run(`RECIPE_LIST.find(r=>r.id===2273).fee`), 3500);                                                           // Doctor Band
+  assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===5024).mats)`), "[[539,20],[530,5],[538,15],[529,10],[999,10]]"); // Cake Hat: no Tip Box guide
+  // who a quest starts with, when it isn't who makes the hat, gets its own /navi
+  assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===5082))`), "Hat Artisan (quest, Lv 15+) · aldebaran 51,202 · starts with Puppy · aldebaran 86,72");
+  assert.match(run(`recipeNpcHtml(RECIPE_LIST.find(r=>r.id===5082))`), /starts with Puppy · <a [^>]*data-copynavi="\/navi aldebaran 86\/72"/);
+  assert.equal(run(`recipeOk(RECIPE_LIST.find(r=>r.id===5082),{q:"puppy",cat:""})`), true);
+  // every hat has a Where to get: its quest, or who makes it; the database's quest name stays when it has one
+  assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Headgear"&&!fromOk(r.id,"quest")).length`), 0);
+  assert.equal(run(`itemInfo(5076).q[0]`), "Grandmother’s Beanie");
+  assert.equal(run(`itemInfo(19357).q[0]`), "Made by Februs");
+  assert.equal(run(`itemInfo(5031).q[0]`), "Crafting Mine Hat");
+  assert.ok(run(`!RECIPE_LIST.some(r=>[5001,5004,5073,2285,2250,5447,5064,5065].includes(r.id))`), "the Tip Box's hats no source says Global offers stay out");
   assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===19357))`), "Februs · prontera 50,293");                            // Clock Casket
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===19358).mats)`), "[[1061,200],[983,5],[2252,1],[25506,1],[25429,50]]"); // Black Witch Hat
   assert.equal(run(`RECIPE_LIST.find(r=>r.id===19357).fee`), 50000);
@@ -2958,6 +2978,28 @@ t("Brewing and Cooking simulators: typed numbers over the character's, saved per
   // a save's simulator settings are cleaned up when it loads
   const run2 = load({ craftSim: { brew: { dex: "70", pp: 40, junk: 1 }, cook: { kit: 20, mastery: -5, luk: "x" } } });
   assert.deepEqual(JSON.parse(run2(`JSON.stringify(state.craftSim)`)), { brew: { dex: 70, pp: 10 }, cook: { mastery: 0, kit: 13 } });
+});
+
+t("Maps tab: All floors adds up a dungeon's spawn counts from SPAWN, by level, and an unknown count stays unknown", () => {
+  const d = "dunOf('alde_dun01')";
+  assert.equal(run(`${d}.n`), "Clock Tower Dungeon");
+  assert.equal(run(`${d}.floors.length`), 8);
+  const floors = JSON.parse(run(`JSON.stringify(${d}.floors.map(f=>f[0]))`));
+  const spawn = JSON.parse(run("JSON.stringify(SPAWN)")), want = {};
+  for (const [id, rows] of Object.entries(spawn)) for (const [mp, c] of rows) if (floors.includes(mp)) want[id] = (want[id] ?? 0) + c;
+  const got = JSON.parse(run(`JSON.stringify(dunMobs(${d}).map(x=>[x.m.id,x.n,x.m.lv]))`));
+  assert.deepEqual(Object.fromEntries(got.map(([id, c]) => [id, c])), want);
+  assert.deepEqual(got.map(x => x[2]), got.map(x => x[2]).sort((a, b) => a - b));
+  // made-up floors: 5 + 7 add up, and 5 + unknown (either way round) is unknown, not 5
+  assert.deepEqual(JSON.parse(run(`(()=>{const m=id=>({id,name:"M"+id,lv:id});Object.assign(MAPMOBS,{t_a:[{m:m(1),n:5},{m:m(2),n:5},{m:m(3),n:null}],t_b:[{m:m(1),n:7},{m:m(2),n:null},{m:m(3),n:5}]});
+    const r=dunMobs({floors:[["t_a"],["t_b"],["no_such_map"]]}).map(x=>x.n);delete MAPMOBS.t_a;delete MAPMOBS.t_b;return JSON.stringify(r)})()`)), [12, null, null]);
+  assert.equal(run("spSum([5,7])"), "≈12");
+  assert.equal(run("spSum([5,null])"), "?");
+  // All floors holds only while its floor is the map showing
+  run("state.mapInfo=state.mapInfoAll='alde_dun01'");
+  assert.equal(run("mapInfoDun().n"), "Clock Tower Dungeon");
+  run("state.mapInfo='prt_f08'");
+  assert.equal(run("mapInfoDun()"), null);
 });
 
 t("Navigation: routes from the nearest town, the Kafra teleport in front, and where a cell is on a map's picture", () => {
