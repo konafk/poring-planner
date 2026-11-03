@@ -505,9 +505,13 @@ t("roadmap: regions open on their update's day, or after its month when the day 
   assert.ok(!run(`isClosed("pay_d00")||isClosed("um_fild01")||isClosed("cmd_fild01")`)); // not on the roadmap (Umbala, Comodo are out): open
   assert.ok(!run(`isClosed("sp_d05")||isClosed("maz_d01")||isClosed("mjo_d03")`)); // opened before Clock Tower
   assert.ok(!run(`isClosed("an_d01")||isClosed("an_d02")`));                     // Ant Hell is open, only its memorial isn't
-  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Clock Tower"))`), "due 29 Oct 2026");
-  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Ant Hell memorial"))`), "next month");
-  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Glast Heim"))`), "in 2 months");
+  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Clock Tower"))`), "");            // no countdown ("due 29 Oct 2026", "in 2 months")
+  assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Glast Heim"))`), "");
+  const awk = `ROADMAP.find(u=>u.name==="Awakening System")`;                       // only "second half of 2027"
+  assert.equal(run(`upWhen(${awk})`), "2nd half 2027");
+  assert.equal(run(`upStatus(${awk})`), "date not announced");
+  assert.ok(run(`ROADMAP_TODAY="2027-12-31";var o=upOut(${awk});ROADMAP_TODAY="2028-01-01";o===false&&upOut(${awk})`));
+  run(`ROADMAP_TODAY="2026-10-19"`);
   assert.equal(run(`capTxt(capNow())`), "Base 70 / Job 70");                       // the 1 October update raised it, not Clock Tower
   assert.equal(run(`upStatus(ROADMAP.find(u=>u.name==="Level 70 & new dungeons"))`), "out");
   assert.equal(run(`ROADMAP.find(u=>u.name==="Clock Tower").cap`), undefined);

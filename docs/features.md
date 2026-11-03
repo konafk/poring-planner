@@ -185,13 +185,13 @@ Its own tab: the latest game update's highlights, from `data/news.js` (read from
 
 ## Roadmap
 
-Its own tab: Ragnarok Zero Global's release roadmap, from August 2026 to July 2027: each update's month, the level cap it raises to, what it adds, and the map regions it opens. The heading shows the level cap now and the next update.
+Its own tab: Ragnarok Zero Global's release roadmap, from August 2026 to July 2027, then the Awakening System in the second half of 2027 (from the Bangkok media showcase; maybe transcendent 2nd jobs): each update's month, the level cap it raises to, what it adds, and the map regions it opens. Under an update's name are its collaboration event and, where Gravity hasn't said what it is, a guess. The heading shows the level cap now and the next update.
 
 - A region opens by itself on its update's day, or once its month is over when the day isn't announced (so the Clock Tower update opens on 29 October 2026, and Glast Heim, December 2026, counts as open from 1 January). Maps on no region, such as Comodo's and Umbala's fields, Sphinx, Prontera Labyrinth and Mjolnir Dead Pit (out since the 1 October update, which raised the level cap to 70), and Ant Hell 1F and 2F (only its memorial dungeon is still to come), are always open. Until then its maps are left out of Where to farm and the Map planner rankings, and its monsters are hidden by "Hide monsters with no open map".
 - A closed monster shows when it comes: "none open · Dec 2026" in the monster table and Item info, "comes with the Glast Heim update, Dec 2026" in its details, a `closed · Dec 2026` tag on its maps in Monster info, and the same line in the Map planner.
 - Spawn counts come only from the game client, so maps it doesn't list yet (the regions still to come, and Western Cave Karu) show `≈?`: which monsters are there is known, how many isn't. Those maps stay out of the map rankings until a client update lists them and `tools/export_spawns.py` reads their counts.
 - Click a region to mark it open (or closed) yourself, for example the day an update goes live; it shows `yours` while it differs from the roadmap, and clicking it back follows the roadmap again. Other closed maps takes any single map.
-- The roadmap is `data/roadmap.js`. When an update's day is announced, set its `when` to `YYYY-MM-DD`.
+- The roadmap is `data/roadmap.js`. When an update's day is announced, set its `when` to `YYYY-MM-DD`; an update given only half a year is `YYYY-H1` or `YYYY-H2`.
 
 ## Monster info
 
