@@ -55,6 +55,7 @@ All four are remembered in this browser, apart from your account data, so backup
 - **Accounts:** keep separate characters, sessions and settings for each of your accounts. The account picker is at the top of the Character tab, with **+ New account** beside it, and Rename and Delete in its ⋯ menu.
 - **Sessions:** the session picker is at the top of the Session tab, with ✎ to rename it, **+ New session** (which takes you to Monsters & maps to pick its monster), and Rename and Delete in its ⋯ menu.
 - **Backup** (the Account tab): Copy backup copies every account as one block of text (it also shows in the box). Restore from text replaces every account with it; older single-account backups still restore into the current account.
+- **Cloud backup** (the Account tab, once the site has a shared prices database): log in with Discord, then **Save to cloud** keeps the Copy backup text online, only yours to read. **Load from cloud** puts it in the box on any device, and Restore from text uses it. Saving over an older cloud copy, or deleting it, asks for a second click.
 - **Several browser tabs:** you can keep the page open in more than one tab. Every save carries a revision number. When one tab saves (an EXP entry, a setting), the others reload to pick it up, straight away if they're showing or when you switch back to them, and say "Updated from another tab". A tab that still saves on an old copy (or finds storage changed by something else) never overwrites the newer save: the EXP entries and pauses it added go into the newer save by time, its other changes give way, and it reloads. A reloaded tab keeps its own account, page tab, scroll position and any EXP % you'd typed but not logged.
 - **Copy share link** puts the current account in a link. The data sits in the part after `#`, which never reaches the server. Opening the link loads the account into the backup box, and nothing changes until you click Restore.
 
@@ -274,6 +275,17 @@ Prices you saw in game, for the server you play on: pick **Skadi (EU)**, **Odin 
 - Each row shows when you last changed the price, ▲▼ against the price you had before it (green when it went up, since you're selling), the NPC price, the best drop and the item number. Gear shows its card slots, e.g. Katar [2].
 - Type what players pay for an item, and that drop counts at the player price in every zeny figure. The NPC price is subtracted, since the loot value already includes it. It's filled in for every drop, and you can type your own to override it.
 - Click a drop in Where to farm (by zeny), Monster info or Item info to price it.
+
+### Shared prices
+
+Once the site has a shared prices database ([setting it up](shared-prices.md)), players can share what they typed and see everyone's:
+
+- **Log in with Discord** (on the Market or Account tab) to share. Reading needs no login.
+- **Share my prices** posts this server's prices you typed, plain and refined / optioned copies, up to 200 a day. **Delete my shared reports** takes them all back.
+- Each of your items shows the shared price beside yours ("shared 400k · 3 players", hover for the reports and how new they are), with **use it** when yours is blank. **Use shared for my blanks** fills every blank at once. Yours always win.
+- **Show everyone's items** adds the items only others priced, with **+ add** to put one in your list at the shared price. Shared refined / optioned copies show under their item, and Refine ≥ and Random options look at them too.
+- **Selling and DMs (optional):** tick **buyers can DM me on Discord**, then **selling** on the prices you sell yourself (and on copies), and share them. Buyers see **N sellers · DM** on the item: open it for each seller's Discord name, @username, copy, price and when, and **Message on Discord**. Untick it and you disappear at once.
+- The shared price is the median of the players' prices, each player counted once, outliers left out, from the last 30 days (the last 7 when 3 or more players reported lately). [How it keeps junk out](shared-prices.md#how-it-keeps-junk-out).
 
 ## EXP & formulas
 

@@ -392,7 +392,9 @@ $("mktList").addEventListener("change",e=>{const el=e.target,vr=varOf(el);
     else if(el.matches("[data-vp]")){const v=parseZ(el.value);if(Number.isNaN(v)){el.blur();renderPrices();return}x.p=v||0;x.t=Date.now()}
     else if(el.matches("[data-vok]")){const j=+el.dataset.vok;if(el.value)x.o[j]={k:el.value,v:x.o[j]?x.o[j].v:null};else x.o.splice(j,1)}
     else if(el.matches("[data-vov]")){const v=parseFloat(el.value);x.o[+el.dataset.vov].v=Number.isFinite(v)?v:null}
+    else if(el.matches("[data-vsell]")){if(el.checked)x.sell=true;else delete x.sell}
     el.blur();save();renderPrices();return}
+  if(el.matches("[data-sell]")){if(el.checked)state.sell[el.dataset.sell]=true;else delete state.sell[el.dataset.sell];save();renderPrices();return}
   const i=el.closest("[data-price],[data-npc]");if(!i)return;const v=parseZ(i.value);
   if(Number.isNaN(v)){i.blur();renderPrices();return}
   if(i.dataset.price)state.prices[i.dataset.price]=v||0;else if(v==null)delete state.npcPrices[i.dataset.npc];else state.npcPrices[i.dataset.npc]=v;i.blur();save();renderAll()});
@@ -401,12 +403,15 @@ $("mktList").addEventListener("click",e=>{
   const a=e.target.closest("[data-varadd]");if(a){e.preventDefault();const id=a.dataset.varadd;(state.priceVars[id]=state.priceVars[id]||[]).push({r:state.mkt.refine||0,o:state.mkt.opts.filter(f=>f.k).map(f=>({k:f.k,v:f.v})),p:0,t:null});save();renderPrices();
     const rows=document.querySelectorAll(`[data-var^="${id}:"] [data-vp]`);if(rows.length)rows[rows.length-1].focus();return}
   if(e.target.closest("[data-vdel]")){const vr=varOf(e.target);if(!vr)return;state.priceVars[vr.id].splice(vr.i,1);if(!state.priceVars[vr.id].length)delete state.priceVars[vr.id];save();renderPrices();return}
-  const b=e.target.closest("[data-unprice]");if(!b)return;const id=b.dataset.unprice;delete state.prices[id];delete state.npcPrices[id];delete state.priceVars[id];save();renderAll()});
+  const sl=e.target.closest("[data-sellers]");if(sl){e.preventDefault();toggleSellers(sl.dataset.sellers);return}
+  const su=e.target.closest("[data-suse]");if(su){e.preventDefault();useShared([su.dataset.suse]);return}
+  const sa=e.target.closest("[data-sadd]");if(sa){const id=sa.dataset.sadd,sp=sharedPlain(id);state.prices[id]=sp?sp.p:0;save();renderAll();renderPrices();return}
+  const b=e.target.closest("[data-unprice]");if(!b)return;const id=b.dataset.unprice;delete state.prices[id];delete state.npcPrices[id];delete state.priceVars[id];delete state.sell[id];save();renderAll()});
 // the list's category buttons, search, sort, max price, Refine ≥ and random options (saved)
 function mktTools(){$("mktQ").value=state.mkt.q;$("mktSort").value=state.mkt.sort;$("mktMax").value=state.mkt.max!=null?fmtN(state.mkt.max):""}
 mktTools();
 // switching server puts the current server's prices away and takes out the other's
-const BOOK_KEYS=["prices","npcPrices","priceSeen","priceVars"];
+const BOOK_KEYS=["prices","npcPrices","priceSeen","priceVars","sell"];
 function switchServer(k){if(k===state.mktServer||!MKT_SERVERS.some(([x])=>x===k))return;
   state.serverPrices[state.mktServer]=Object.fromEntries(BOOK_KEYS.map(b=>[b,state[b]]));
   const next=state.serverPrices[k]||{};BOOK_KEYS.forEach(b=>{state[b]=next[b]||{}});delete state.serverPrices[k];state.mktServer=k;save();renderAll();renderPrices()}

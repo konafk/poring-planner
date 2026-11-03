@@ -108,6 +108,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   <section class="card" data-tab="acct">
     <div class="bar"><h2 class="grow">Backup</h2><span class="note hint">Saved only in this browser. Copy backup copies every account. Copy share link makes a link to this account that anyone can open.</span></div>
     <div class="bar"><button type="button" id="bkCopy">Copy backup</button><button type="button" id="bkLink">Copy share link</button><button type="button" id="bkRestore" class="danger">Restore from text</button><span class="note" id="bkMsg"></span></div>
+    <div class="bar mt cloudBar" id="cloudBar" hidden></div>
     <textarea class="mono-area" id="bkText" rows="3" placeholder="Paste a backup here, then click Restore from text"></textarea>
   </section>
 
@@ -746,6 +747,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   <section class="card" id="marketCard" data-tab="market">
     <div class="bar"><h2 class="grow">Market prices</h2><div class="seg" role="radiogroup" aria-label="Game server" id="mktSrv" title="Each server has its own market, so each keeps its own prices; the one picked is the one every zeny figure uses"></div></div>
     <div class="note" id="mktSrvNote"></div>
+    <div class="mktShare mt" id="mktShare" hidden></div>
     <div class="bar mt">
       <label class="grow mktPick">Item<input id="priceItem" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="priceSug" placeholder="name or #id, e.g. Snake Scale"><div class="mktSug" id="priceSug" role="listbox" hidden></div></label>
       <label>Players pay<input class="w-xl mono" id="priceVal" inputmode="decimal" placeholder="450k, 1.5m" title="Zeny; 450k = 450,000, 1.5m = 1,500,000"></label>
@@ -1031,6 +1033,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 <script src="js/news.js"></script>
 <script src="js/lookanim.js"></script>
 <script src="js/stylist.js"></script>
+<script src="js/shared.js"></script>
 <script src="js/start.js"></script>
 </body>
 </html>
