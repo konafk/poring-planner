@@ -352,18 +352,69 @@ $("autoLoot").addEventListener("change",e=>{const i=e.target.closest("[data-loot
 // you always hunt at least one the level filter allows. "reset" goes back to all / best-paying
 const huntPick=(mp,id)=>{const r=huntMap(mp,walkSec(),num($("huntMin").value));if(!r)return;const off=new Set(r.mobs.filter(x=>!x.on).map(x=>x.m.id));
   off.has(id)?off.delete(id):off.add(id);if(r.mobs.every(x=>x.lvOut||off.has(x.m.id)))return;state.huntOff[mp]=[...off];save();renderAll()};
-// market prices: add by name ("Name #id" from the list, or a unique name), edit, remove, or click a drop in the table
+// market prices: add any item by name ("Name #id" from the list, or a unique name), edit, remove, or click a drop to price it
 const DROP_IDS=[...new Set(MOBS.flatMap(m=>(m.drops||[]).map(d=>String(d[0]))))].filter(id=>ITEMN[id]);
-$("priceList").innerHTML=DROP_IDS.map(id=>`<option value="${esc(ITEMN[id])} #${id}"></option>`).join("");
-const findItem=s=>{s=String(s).trim();const h=s.match(/#(\d+)$/);if(h&&ITEMN[h[1]])return h[1];const l=s.toLowerCase();const hit=DROP_IDS.filter(id=>ITEMN[id].toLowerCase()===l);return hit.length?hit[0]:null};
-const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;save();renderPrices();if(focus){showTab("market");const i=document.querySelector(`[data-price="${id}"]`);if(i){i.focus();i.scrollIntoView({behavior:"smooth",block:"center"})}}};
+const MKT_IDS=[...new Set([...DROP_IDS,...allItemIds(),...Object.keys(MKT_GEAR)])].filter(id=>!/^#/.test(mktName(id)));
+const MKT_LOW=Object.fromEntries(MKT_IDS.map(id=>[id,mktName(id).toLowerCase()]));
+const findItem=s=>{s=String(s).trim();const h=s.match(/#(\d+)$/);if(h&&h[1] in MKT_LOW)return h[1];const l=s.toLowerCase();return MKT_IDS.find(id=>MKT_LOW[id]===l)||null};
+// the Item box's suggestions, each with its icon: names that start with what you typed first, then names that have it, then #ids
+const MKT_CAT_NAME=Object.fromEntries(MKT_CATS);
+let SUG=[],SUG_I=-1;
+function showSug(){const q=$("priceItem").value.trim().toLowerCase().replace(/^#/,""),box=$("priceSug");
+  SUG=!q?[]:[...MKT_IDS.filter(id=>MKT_LOW[id].startsWith(q)),...MKT_IDS.filter(id=>!MKT_LOW[id].startsWith(q)&&MKT_LOW[id].includes(q)),...MKT_IDS.filter(id=>id.startsWith(q))]
+    .filter((id,i,a)=>a.indexOf(id)===i).slice(0,12);SUG_I=SUG.length?0:-1;
+  box.innerHTML=SUG.map((id,i)=>`<button type="button" role="option" class="mktSugRow${i===SUG_I?" on":""}" data-sug="${id}" aria-selected="${i===SUG_I}"><span class="mktIc">${itemIcon(id)}</span><span class="grow">${esc(mktName(id))}</span><span class="note">${MKT_CAT_NAME[mktCat(id)]} · #${id}</span>${id in state.prices?`<span class="pill">priced</span>`:""}</button>`).join("");
+  box.hidden=!SUG.length;$("priceItem").setAttribute("aria-expanded",String(!box.hidden))}
+const hideSug=()=>{$("priceSug").hidden=true;$("priceItem").setAttribute("aria-expanded","false")};
+const pickSug=id=>{$("priceItem").value=`${mktName(id)} #${id}`;hideSug();$("priceNpc").placeholder=NPCSELL[id]!=null?fmtN(NPCSELL[id])+" (NPC)":"0";$("priceVal").focus()};
+$("priceSug").addEventListener("mousedown",e=>e.preventDefault()); // keep the box focused, so the click picks
+$("priceSug").addEventListener("click",e=>{const b=e.target.closest("[data-sug]");if(b)pickSug(b.dataset.sug)});
+$("priceItem").addEventListener("blur",hideSug);
+// pricing an item from another tab clears the Market filters, so its row is there to type in
+const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus){Object.assign(state.mkt,{cat:"",q:"",max:null,refine:null,opts:[]});mktTools()}save();renderPrices();
+  if(focus){showTab("market");const i=document.querySelector(`[data-price="${id}"]`);if(i){i.focus();i.scrollIntoView({behavior:"smooth",block:"center"})}}};
 // the NPC box shows the database's NPC price for the picked item; typing one overrides it
-$("priceItem").addEventListener("input",()=>{const id=findItem($("priceItem").value);$("priceNpc").placeholder=id&&NPCSELL[id]!=null?fmtN(NPCSELL[id])+" (NPC)":"0"});
-$("priceAdd").addEventListener("click",()=>{const id=findItem($("priceItem").value),p=$("priceVal").value;if(!id){$("priceMsg").textContent="Pick an item from the list.";return}
-  $("priceMsg").textContent="";state.prices[id]=Math.max(0,num(p));const np=$("priceNpc").value;if(np!=="")state.npcPrices[id]=Math.max(0,num(np));$("priceItem").value="";$("priceVal").value="";$("priceNpc").value="";$("priceNpc").placeholder="0";save();renderAll()});
-$("priceTable").addEventListener("input",e=>{const i=e.target.closest("[data-price],[data-npc]");if(!i)return;
-  if(i.dataset.price)state.prices[i.dataset.price]=Math.max(0,num(i.value));else if(i.value==="")delete state.npcPrices[i.dataset.npc];else state.npcPrices[i.dataset.npc]=Math.max(0,num(i.value));save();renderAll()});
-$("priceTable").addEventListener("click",e=>{const b=e.target.closest("[data-unprice]");if(!b)return;delete state.prices[b.dataset.unprice];delete state.npcPrices[b.dataset.unprice];save();renderAll()});
+$("priceItem").addEventListener("input",()=>{const id=findItem($("priceItem").value);$("priceNpc").placeholder=id&&NPCSELL[id]!=null?fmtN(NPCSELL[id])+" (NPC)":"0";showSug()});
+$("priceItem").addEventListener("keydown",e=>{const box=$("priceSug");
+  if(!box.hidden&&(e.key==="ArrowDown"||e.key==="ArrowUp")){e.preventDefault();SUG_I=(SUG_I+(e.key==="ArrowDown"?1:-1)+SUG.length)%SUG.length;
+    box.querySelectorAll("[data-sug]").forEach((b,i)=>{b.classList.toggle("on",i===SUG_I);b.setAttribute("aria-selected",String(i===SUG_I));if(i===SUG_I)b.scrollIntoView({block:"nearest"})});return}
+  if(e.key==="Escape"){hideSug();return}
+  if(e.key==="Enter"){e.preventDefault();if(!box.hidden&&SUG_I>=0)pickSug(SUG[SUG_I]);else $("priceAdd").click()}});
+$("priceAdd").addEventListener("click",()=>{const id=findItem($("priceItem").value),p=parseZ($("priceVal").value),np=parseZ($("priceNpc").value);
+  if(!id){$("priceMsg").textContent="Pick an item from the list.";return}if(Number.isNaN(p)||Number.isNaN(np)){$("priceMsg").textContent="Type a price as 450000, 450k or 1.5m.";return}
+  $("priceMsg").textContent="";state.prices[id]=p||0;if(np!=null)state.npcPrices[id]=np;$("priceItem").value="";$("priceVal").value="";$("priceNpc").value="";$("priceNpc").placeholder="0";save();renderAll()});
+["priceVal","priceNpc"].forEach(k=>$(k).addEventListener("keydown",e=>{if(e.key==="Enter")$("priceAdd").click()}));
+// a row's boxes save when you leave them or press Enter; something that isn't a price puts the old one back
+const varOf=el=>{const v=el.closest("[data-var]");if(!v)return null;const [id,i]=v.dataset.var.split(":");return {id,i:+i,x:(state.priceVars[id]||[])[+i]}};
+$("mktList").addEventListener("change",e=>{const el=e.target,vr=varOf(el);
+  if(vr&&vr.x){const x=vr.x;
+    if(el.matches("[data-vr]"))x.r=+el.value;
+    else if(el.matches("[data-vp]")){const v=parseZ(el.value);if(Number.isNaN(v)){el.blur();renderPrices();return}x.p=v||0;x.t=Date.now()}
+    else if(el.matches("[data-vok]")){const j=+el.dataset.vok;if(el.value)x.o[j]={k:el.value,v:x.o[j]?x.o[j].v:null};else x.o.splice(j,1)}
+    else if(el.matches("[data-vov]")){const v=parseFloat(el.value);x.o[+el.dataset.vov].v=Number.isFinite(v)?v:null}
+    el.blur();save();renderPrices();return}
+  const i=el.closest("[data-price],[data-npc]");if(!i)return;const v=parseZ(i.value);
+  if(Number.isNaN(v)){i.blur();renderPrices();return}
+  if(i.dataset.price)state.prices[i.dataset.price]=v||0;else if(v==null)delete state.npcPrices[i.dataset.npc];else state.npcPrices[i.dataset.npc]=v;i.blur();save();renderAll()});
+$("mktList").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("input"))e.target.blur()});
+$("mktList").addEventListener("click",e=>{
+  const a=e.target.closest("[data-varadd]");if(a){e.preventDefault();const id=a.dataset.varadd;(state.priceVars[id]=state.priceVars[id]||[]).push({r:state.mkt.refine||0,o:state.mkt.opts.filter(f=>f.k).map(f=>({k:f.k,v:f.v})),p:0,t:null});save();renderPrices();
+    const rows=document.querySelectorAll(`[data-var^="${id}:"] [data-vp]`);if(rows.length)rows[rows.length-1].focus();return}
+  if(e.target.closest("[data-vdel]")){const vr=varOf(e.target);if(!vr)return;state.priceVars[vr.id].splice(vr.i,1);if(!state.priceVars[vr.id].length)delete state.priceVars[vr.id];save();renderPrices();return}
+  const b=e.target.closest("[data-unprice]");if(!b)return;const id=b.dataset.unprice;delete state.prices[id];delete state.npcPrices[id];delete state.priceVars[id];save();renderAll()});
+// the list's category buttons, search, sort, max price, Refine ≥ and random options (saved)
+function mktTools(){$("mktQ").value=state.mkt.q;$("mktSort").value=state.mkt.sort;$("mktMax").value=state.mkt.max!=null?fmtN(state.mkt.max):""}
+mktTools();
+$("mktCats").addEventListener("click",e=>{const b=e.target.closest("[data-mktcat]");if(!b)return;state.mkt.cat=b.dataset.mktcat;save();renderPrices()});
+$("mktQ").addEventListener("input",e=>{state.mkt.q=e.target.value;save();renderPrices()});
+$("mktSort").addEventListener("change",e=>{state.mkt.sort=e.target.value;save();renderPrices()});
+$("mktMax").addEventListener("change",e=>{const v=parseZ(e.target.value);state.mkt.max=Number.isNaN(v)?state.mkt.max:v;mktTools();save();renderPrices()});
+$("mktRef").addEventListener("change",e=>{state.mkt.refine=e.target.value?+e.target.value:null;save();renderPrices()});
+$("mktOptF").addEventListener("click",e=>{if(e.target.closest("[data-foadd]")){state.mkt.opts.push({k:"",v:null});save();renderPrices();const s=$("mktOptF").querySelectorAll("[data-fok]");if(s.length)s[s.length-1].focus();return}
+  const d=e.target.closest("[data-fodel]");if(d){state.mkt.opts.splice(+d.dataset.fodel,1);save();renderPrices()}});
+$("mktOptF").addEventListener("change",e=>{const s=e.target.closest("[data-fok]"),v=e.target.closest("[data-fov]");
+  if(s)state.mkt.opts[+s.dataset.fok].k=s.value;else if(v){const n=parseFloat(v.value);state.mkt.opts[+v.dataset.fov].v=Number.isFinite(n)?n:null;v.blur()}else return;save();renderPrices()});
+$("mktOptF").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("input"))e.target.blur()});
 $("huntTable").querySelector("tbody").addEventListener("click",e=>{const h=e.target.closest("[data-hpick]");if(h){e.preventDefault();e.stopPropagation();huntPick(h.dataset.hpick,+h.dataset.hmob);return}
   const x=e.target.closest("[data-hreset]");if(x){e.preventDefault();e.stopPropagation();delete state.huntOff[x.dataset.hreset];save();renderAll();return}
   const t=e.target.closest("[data-notele]");if(t){e.preventDefault();e.stopPropagation();const mp=t.dataset.notele;state.noTele=noTele(mp)?state.noTele.filter(x=>x!==mp):[...state.noTele,mp];save();renderHunt()}},true);
@@ -384,7 +435,7 @@ $("itemShow").addEventListener("change",e=>{state.itemShow=e.target.value;save()
 ROOTQ('select[data-tf="group"]').forEach(sel=>sel.innerHTML=`<option value="">Any</option>${LOOT_GROUPS.map(([,n])=>`<option>${n}</option>`).join("")}<option value="not looted">Not looted</option>`);
 // Compare sessions, Monster info, Item info, Market and the Hunter tables: click a header to sort (again to flip it), type under it to filter; saved per table
 const TF_RENDER={};
-[["cmpTable",renderCompare],["bestTable",renderBest],["huntTable",renderHunt],["recTable",renderRecovery],["mobInfoDrops",renderMobInfo],["mobInfoMaps",renderMobInfo],["itemTable",renderItems],["itemDropTable",renderItems],["priceTable",renderPrices]].forEach(([id,render])=>{const t=$(id);TF_RENDER[id]=render;
+[["cmpTable",renderCompare],["bestTable",renderBest],["huntTable",renderHunt],["recTable",renderRecovery],["mobInfoDrops",renderMobInfo],["mobInfoMaps",renderMobInfo],["itemTable",renderItems],["itemDropTable",renderItems]].forEach(([id,render])=>{const t=$(id);TF_RENDER[id]=render;
   t.tHead.addEventListener("click",e=>{const th=e.target.closest("th[data-sk]");if(!th)return;const k=th.dataset.sk,[k0,d0]=tblSort(id);
     const c=TABLES[id].cols[k];state.tsort[sortKey(id)]=[k,k===k0?-d0:c.n&&!c.asc?-1:1];save();render()});
   t.querySelectorAll("[data-tf]").forEach(inp=>{inp.value=(state.tfilt[id]||{})[inp.dataset.tf]||"";
@@ -500,7 +551,7 @@ function colViews(id,box,apply){const views={All:null,...COL_VIEWS[id]},seg=docu
   row.className="bar colBar";row.innerHTML='<span class="note">Columns</span>';row.append(seg);box.before(row);row.append(box);mark()}
 // ---- show / hide table columns (saved per table) ----
 (function setupColPicks(){
-  const IDS=["cmpTable","mobTable","bestTable","huntTable","recTable","mapTable","priceTable","mobInfoDrops","mobInfoMaps","itemTable","itemDropTable"];
+  const IDS=["cmpTable","mobTable","bestTable","huntTable","recTable","mapTable","mobInfoDrops","mobInfoMaps","itemTable","itemDropTable"];
   if(!state.hideCols)state.hideCols={};
   // columns that start hidden; each is hidden once per account (state.colsShown remembers it), so showing it again sticks
   const START_HIDDEN={bestTable:["Weight / kill","Weight / hr","Town trip every"]};

@@ -542,6 +542,26 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="scroll" id="goalJobWrap" hidden><table id="goalJobTable"><thead></thead><tbody></tbody></table></div>
   </section>
 
+  <section class="card" data-tab="track" id="tripCard">
+    <div class="bar"><h2 class="grow">Sell timer</h2><span id="tripBtns" class="bar"></span></div>
+    <div class="note hint">Start it when you leave town; it rings when loot should reach your sell point. Timing <b id="tripFor"></b> (the current session). Starting weight = what you leave town with. Time the session spends paused is added on; Start and Back from town end a pause.</div>
+    <div class="bar note mt">
+      <label class="bar">starting weight <input class="w-md" id="tripW" type="number" min="0" title="What you carry when you leave town: gear, potions, scrolls, Fly Wings… Read it from the weight in your inventory window. Only the room left above it fills with loot"></label>
+      <label class="bar">of max <input class="w-md" id="tripMax" type="number" min="0" placeholder="off" title="Worked out from STR, job and skills; type a number to override"></label>
+      <label class="bar">sell at <input class="w-xs" id="tripAt" type="number" min="1" max="90" step="1" placeholder="70">%</label>
+      <label class="bar">town and back <input class="w-xs" id="tripTownMin" type="number" step="0.5" min="0" placeholder="3"> min</label>
+      <label class="bar">one trip <input class="w-sm" id="tripMin" type="number" min="0" step="1" placeholder="auto" title="Minutes from leaving town to your sell point. Blank: worked out from the session's monsters, your weight and your kill speed"> min</label>
+      <label class="bar">ring <input class="w-xs" id="tripEarly" type="number" min="0" step="0.5" placeholder="0"> min early</label>
+      <label class="bar"><input type="checkbox" id="tripSound"> sound</label>
+      <label class="bar"><input type="checkbox" id="tripNotify"> notification</label>
+    </div>
+    <div class="tiles mt">
+      <div class="tile now"><div class="k" id="tripK">Next sell</div><div class="v mono" id="tripClock">–</div><div class="s" id="tripS"></div></div>
+      <div class="tile"><div class="k">One trip</div><div class="v mono" id="tripLen">–</div><div class="s" id="tripLenS"></div></div>
+      <div class="tile"><div class="k">Town runs</div><div class="v mono" id="tripRuns">–</div><div class="s" id="tripRunsS"></div></div>
+    </div>
+  </section>
+
   <section class="card" data-tab="track">
     <div class="bar"><h2 class="grow">Compare sessions</h2><span class="note hint">Click a row to open it</span></div>
     <div class="scroll tall"><table id="cmpTable"><thead><tr><th data-sk="name">Session</th><th data-sk="job">Job</th><th data-sk="mobs" title="filters on the monsters and the map">Monster</th><th data-sk="when">When</th><th data-sk="len">Length</th><th data-sk="pct" title="filters on the %/hr, or on the level: B65">%/hr</th><th data-sk="epm">EXP/min</th><th data-sk="kph">Kills/hr</th><th data-sk="spk">Sec/kill</th><th data-sk="die" title="deaths logged in the session (entries marked died)">Deaths</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><input type="search" data-tf="job" placeholder="job"></td><td><input type="search" data-tf="mobs" placeholder="monster or map"></td><td><input type="search" data-tf="when" placeholder="3 Oct"></td><td><input type="search" data-tf="len" placeholder=">60"></td><td><input type="search" data-tf="pct" placeholder=">5 or B65"></td><td><input type="search" data-tf="epm" placeholder=">100000"></td><td><input type="search" data-tf="kph" placeholder=">300"></td><td><input type="search" data-tf="spk" placeholder="<10"></td><td><input type="search" data-tf="die" placeholder=">0"></td></tr></thead><tbody></tbody></table></div>
@@ -723,38 +743,26 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="note hint">Activation keeps the cards, enchants and random options; only the refine drops, so refine to +9 or +10 first (+9 ends at +2 on the −7 route, +6 on the −3 one). That makes a well-rolled monster-drop weapon worth keeping. ★★ to ★★★ and ★ armor came in the Taiwan server's later updates. Whether Blacksmith-forged weapons count for certificates isn't known.</div>
   </section>
 
-  <section class="card" data-tab="market" id="tripCard">
-    <div class="bar"><h2 class="grow">Sell timer</h2><span id="tripBtns" class="bar"></span></div>
-    <div class="note hint">Start it when you leave town; it rings when loot should reach your sell point. Timing <b id="tripFor"></b> (the current session). Starting weight = what you leave town with. Time the session spends paused is added on; Start and Back from town end a pause.</div>
-    <div class="bar note mt">
-      <label class="bar">starting weight <input class="w-md" id="tripW" type="number" min="0" title="What you carry when you leave town: gear, potions, scrolls, Fly Wings… Read it from the weight in your inventory window. Only the room left above it fills with loot"></label>
-      <label class="bar">of max <input class="w-md" id="tripMax" type="number" min="0" placeholder="off" title="Worked out from STR, job and skills; type a number to override"></label>
-      <label class="bar">sell at <input class="w-xs" id="tripAt" type="number" min="1" max="90" step="1" placeholder="70">%</label>
-      <label class="bar">town and back <input class="w-xs" id="tripTownMin" type="number" step="0.5" min="0" placeholder="3"> min</label>
-      <label class="bar">one trip <input class="w-sm" id="tripMin" type="number" min="0" step="1" placeholder="auto" title="Minutes from leaving town to your sell point. Blank: worked out from the session's monsters, your weight and your kill speed"> min</label>
-      <label class="bar">ring <input class="w-xs" id="tripEarly" type="number" min="0" step="0.5" placeholder="0"> min early</label>
-      <label class="bar"><input type="checkbox" id="tripSound"> sound</label>
-      <label class="bar"><input type="checkbox" id="tripNotify"> notification</label>
-    </div>
-    <div class="tiles mt">
-      <div class="tile now"><div class="k" id="tripK">Next sell</div><div class="v mono" id="tripClock">–</div><div class="s" id="tripS"></div></div>
-      <div class="tile"><div class="k">One trip</div><div class="v mono" id="tripLen">–</div><div class="s" id="tripLenS"></div></div>
-      <div class="tile"><div class="k">Town runs</div><div class="v mono" id="tripRuns">–</div><div class="s" id="tripRunsS"></div></div>
-    </div>
-  </section>
-
   <section class="card" id="marketCard" data-tab="market">
-    <div class="bar"><h2 class="grow">Market prices</h2></div>
-    <div class="bar">
-      <label class="grow">Item<input id="priceItem" list="priceList" placeholder="e.g. Snake Scale"></label>
-      <label>Players pay (z)<input class="w-xl" id="priceVal" type="number" min="0" step="100"></label>
-      <label>NPC pays (z)<input class="w-xl" id="priceNpc" type="number" min="0" step="1" placeholder="0"></label>
+    <div class="bar"><h2 class="grow">Market prices <span class="pill mktSrv" title="Skadi, the Europe server of Ragnarok Zero Global">Skadi (EU)</span></h2><span class="note" id="mktCount"></span></div>
+    <div class="note">No site publishes Skadi's market, so these prices are yours: search an item at the market in game, then type the cheapest shop's price here.</div>
+    <div class="bar mt">
+      <label class="grow mktPick">Item<input id="priceItem" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="priceSug" placeholder="name or #id, e.g. Snake Scale"><div class="mktSug" id="priceSug" role="listbox" hidden></div></label>
+      <label>Players pay<input class="w-xl mono" id="priceVal" inputmode="decimal" placeholder="450k, 1.5m" title="Zeny; 450k = 450,000, 1.5m = 1,500,000"></label>
+      <label>NPC pays<input class="w-xl mono" id="priceNpc" inputmode="decimal" placeholder="0" title="What an NPC pays for it; blank keeps the NPC price"></label>
       <label><span>&nbsp;</span><button type="button" id="priceAdd">Add price</button></label>
     </div>
-    <datalist id="priceList"></datalist>
     <div class="note bad" id="priceMsg"></div>
-    <div class="scroll"><table id="priceTable"><thead><tr><th data-sk="name">Item</th><th data-sk="pl">Players pay</th><th data-sk="npc">NPC pays</th><th data-sk="best" title="the monster with the best drop chance; sorts and filters by that chance, or by its name">Best drop</th><th></th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><input type="search" data-tf="pl" placeholder=">1000"></td><td><input type="search" data-tf="npc" placeholder=">100"></td><td><input type="search" data-tf="best" placeholder=">1"></td><td></td></tr></thead><tbody></tbody></table></div>
-    <div class="note hint">Player prices replace NPC prices in every zeny figure. NPC box: what an NPC pays; type to override, blank resets. Saved per account. Click any drop in Where to farm, Monster info or Item info to add it here.</div>
+    <div class="mktCats mt" id="mktCats" role="group" aria-label="Category"></div>
+    <div class="bar mt mktTools">
+      <label class="grow">Search<input id="mktQ" type="search" placeholder="name or #id"></label>
+      <label>Sort<select id="mktSort"><option value="recent">Recently updated</option><option value="low">Lowest price</option><option value="high">Highest price</option><option value="move">Biggest change</option><option value="name">Name</option></select></label>
+      <label>Max price<input class="w-lg mono" id="mktMax" inputmode="decimal" placeholder="any" title="Zeny; 450k = 450,000, 1.5m = 1,500,000"></label>
+      <label title="Only gear with a copy priced at this refine or higher">Refine ≥<select id="mktRef"></select></label>
+    </div>
+    <div class="bar mt mktOptBar"><span class="note">Random options</span><span class="bar" id="mktOptF"></span></div>
+    <div class="mktList mt" id="mktList"></div>
+    <div class="note hint">Prices take 450k or 1.5m as well as whole numbers. ▲▼ compares a price with the one you had before it. For gear, + refine / options prices a refined copy or one with random options; Refine ≥ and Random options then show only gear with a copy that fits, at its cheapest. Only the plain price counts in zeny figures. Player prices replace NPC prices in every zeny figure; the NPC price is taken off, since the loot value already counts it. Saved per account. Click any drop in Where to farm, Monster info or Item info to add it here.</div>
   </section>
 
   <section class="card" id="mobInfoCard" data-tab="mobinfo">

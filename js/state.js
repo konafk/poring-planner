@@ -95,6 +95,20 @@ for(const j in state.chars){let c=state.chars[j];if(!c||typeof c!=="object"){del
 // market prices you typed for items, and optionally what an NPC pays for them (item id → zeny); numbers only, so a pasted backup can't put anything else in
 state.prices=Object.fromEntries(Object.entries(numMap(state.prices)).filter(([k,v])=>/^\d+$/.test(k)&&v>=0)); // keys are item ids
 state.npcPrices=Object.fromEntries(Object.entries(numMap(state.npcPrices)).filter(([k,v])=>v>=0&&k in state.prices));
+// when each market price last changed and the one before it: item id → [time in ms or null, previous price or null, price then]
+const numOrNull=x=>typeof x==="number"&&isFinite(x)&&x>=0?x:null;
+state.priceSeen=Object.fromEntries(Object.entries(state.priceSeen&&typeof state.priceSeen==="object"?state.priceSeen:{})
+  .filter(([k,v])=>k in state.prices&&Array.isArray(v)).map(([k,v])=>[k,[numOrNull(v[0]),numOrNull(v[1]),numOrNull(v[2])]]));
+for(const id in state.prices)if(!state.priceSeen[id])state.priceSeen[id]=[null,null,state.prices[id]]; // a price from before the dates: undated
+// refined or optioned copies of gear you saw for sale, beside the plain price above: item id → [{r: refine 0-20, o: random options
+// [{k: option key, v: value}], p: price, t: when the price was typed (ms) or null}]
+const mktOpts=a=>(Array.isArray(a)?a:[]).filter(x=>x&&typeof x.k==="string").slice(0,5).map(x=>({k:x.k,v:typeof x.v==="number"&&isFinite(x.v)?x.v:null}));
+state.priceVars=Object.fromEntries(Object.entries(state.priceVars&&typeof state.priceVars==="object"?state.priceVars:{}).filter(([k,v])=>k in state.prices&&Array.isArray(v))
+  .map(([k,v])=>[k,v.filter(x=>x&&typeof x==="object").map(x=>({r:Math.min(20,Math.max(0,Math.round(+x.r)||0)),o:mktOpts(x.o),p:numOrNull(x.p)||0,t:numOrNull(x.t)}))]).filter(([,v])=>v.length));
+// the Market list's category, sort, search, max price, Refine ≥ (null = any) and random options wanted ({k, v: the least value or null})
+{const m=state.mkt&&typeof state.mkt==="object"?state.mkt:{};
+  state.mkt={cat:typeof m.cat==="string"?m.cat:"",sort:["recent","low","high","move","name"].includes(m.sort)?m.sort:"recent",q:typeof m.q==="string"?m.q:"",max:numOrNull(m.max),
+    refine:Number.isInteger(m.refine)&&m.refine>0&&m.refine<=20?m.refine:null,opts:mktOpts(m.opts)}}
 // auto-loot groups you switched off (true/false by group), and per map the monsters the Zeny Hunter passes by (monster ids)
 state.autoLoot=Object.fromEntries(Object.entries(state.autoLoot&&typeof state.autoLoot==="object"?state.autoLoot:{}).filter(([k,v])=>/^[waueco]$/.test(k)&&typeof v==="boolean"));
 state.huntOff=Object.fromEntries(Object.entries(state.huntOff&&typeof state.huntOff==="object"?state.huntOff:{}).filter(([,v])=>Array.isArray(v)).map(([k,v])=>[String(k),v.map(Number).filter(Number.isFinite)]));
