@@ -616,9 +616,8 @@ const todayISO=()=>{if(typeof ROADMAP_TODAY==="string")return ROADMAP_TODAY;cons
 const upHalf=u=>u.when[5]==="H";
 const upOut=u=>upHalf(u)?todayISO().slice(0,7)>u.when.slice(0,5)+(u.when[6]==="1"?"06":"12"):u.when.length>7?todayISO()>=u.when:todayISO().slice(0,7)>u.when;
 const upWhen=u=>upHalf(u)?`${u.when[6]==="1"?"1st":"2nd"} half ${u.when.slice(0,4)}`:`${u.when.length>7?+u.when.slice(8)+" ":""}${MONTHS[+u.when.slice(5,7)-1]} ${u.when.slice(0,4)}`;
-// "out", "due this month" (no day yet), "in 2 months", "Dec 2026" or "date not announced" (half a year)
-const upStatus=u=>{if(upOut(u))return "out";if(upHalf(u))return "date not announced";const t=todayISO(),m=(+u.when.slice(0,4)-+t.slice(0,4))*12+(+u.when.slice(5,7)-+t.slice(5,7));
-  return m===0?(u.when.length>7?`due ${upWhen(u)}`:"due this month"):m===1?"next month":`in ${m} months`};
+// "out", "date not announced" (half a year) or "" (no countdown)
+const upStatus=u=>upOut(u)?"out":upHalf(u)?"date not announced":"";
 const REGIONS=ROADMAP.flatMap(u=>(u.regions||[]).map(r=>({...r,up:u,when:upWhen(u)})));
 const regionOf=map=>REGIONS.find(r=>r.pre.some(p=>map.toLowerCase().startsWith(p)));
 const regionClosed=r=>{const v=state.regions[r.id];return v==null?!upOut(r.up):!!v};

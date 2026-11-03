@@ -759,7 +759,7 @@ const syncClosed=()=>{$("closedMaps").value=state.closed.join(", ");
   const grp=[];ROADMAP.forEach(u=>{const k=upHalf(u)?u.when:u.when.slice(0,7),g=grp[grp.length-1];if(g&&g.k===k)g.ups.push(u);else grp.push({k,ups:[u]})});
   $("regions").innerHTML=grp.map(({ups})=>ups.map((u,i)=>{const nm=Object.keys(MAPMOBS).filter(mp=>{const r=regionOf(mp);return r&&r.up===u}).length,
       clb=u.add.filter(a=>a.startsWith("Collaboration event: ")).map(a=>a.slice(21)),many=ups.length>1,nxt=ups.find(x=>!upOut(x));
-    const when=i?"":`<td class="name"${many?` rowspan="${ups.length}"`:""}><b>${many?`${MONTHS[+u.when.slice(5,7)-1]} ${u.when.slice(0,4)}`:upWhen(u)}</b><div class="note">${nxt?upStatus(nxt):"out"}</div></td>`;
+    const when=i?"":`<td class="name"${many?` rowspan="${ups.length}"`:""}><b>${many?`${MONTHS[+u.when.slice(5,7)-1]} ${u.when.slice(0,4)}`:upWhen(u)}</b>${(s=>s?`<div class="note">${s}</div>`:"")(nxt?upStatus(nxt):"out")}</td>`;
     return `<tr class="${upOut(u)?"muted":u===nx?"sel":""}${i?" sub":""}">${when}<td class="name"><b>${many&&u.when.length>7?`${+u.when.slice(8)} ${MONTHS[+u.when.slice(5,7)-1]}: `:""}${esc(u.name)}</b>${clb.map(c=>`<div class="note">Collab: ${esc(c)}</div>`).join("")}${u.maybe?`<div class="note">Maybe: ${esc(u.maybe)}?</div>`:""}</td><td>${u.cap?capTxt(u.cap):"–"}</td>
     <td class="name">${u.add.map(esc).join("<br>")}</td><td class="name"><div class="maps">${REGIONS.filter(r=>r.up===u).map(regionBtn).join("")}</div>${nm?`<div class="note">${nm} map${nm>1?"s":""}</div>`:""}</td></tr>`}).join("")).join("");
   const shut=REGIONS.filter(regionClosed);
