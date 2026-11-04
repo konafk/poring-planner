@@ -1010,7 +1010,9 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 <dialog class="jump eqDlg mktDlg" id="addDlg" aria-labelledby="addDlgTitle">
   <div class="eqDlgHead"><div class="grow"><b id="addDlgTitle">Add an item</b><div class="note" id="addNote"></div></div><button type="button" class="small" data-addclose aria-label="Close">✕</button></div>
   <div class="eqDlgBody">
-    <label class="mktPick">Item<input id="priceItem" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="priceSug" placeholder="name or #id, e.g. Snake Scale"><div class="mktSug" id="priceSug" role="listbox" hidden></div></label>
+    <div class="mktCats" id="addCats" role="group" aria-label="Category"></div>
+    <div class="bar" id="addTypeBar" hidden><label>Type<select id="addType"></select></label></div>
+    <label class="mktPick">Item<input id="priceItem" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="priceSug" placeholder="type a name or #id, or pick a category above"><div class="mktSug" id="priceSug" role="listbox" hidden></div></label>
     <div class="bar mktCopyBar" id="priceCopy" hidden></div>
     <div class="bar"><label>Zeny<input class="w-xl mono" id="priceVal" inputmode="decimal" placeholder="450k, 1.5m" title="What players pay for it; 450k = 450,000, 1.5m = 1,500,000"></label><label class="mktSell" id="priceDmL" hidden title="You sell it at this price: buyers see your Discord name and can message you about it"><input type="checkbox" id="priceDm"> DM me</label></div>
     <div class="note bad" id="priceMsg"></div>

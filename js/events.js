@@ -360,16 +360,33 @@ const findItem=s=>{s=String(s).trim();const h=s.match(/#(\d+)$/);if(h&&h[1] in M
 // the Item box's suggestions, each with its icon: names that start with what you typed first, then names that have it, then #ids
 const MKT_CAT_NAME=Object.fromEntries(MKT_CATS);
 let SUG=[],SUG_I=-1;
+// the popup's category buttons and Type list narrow the items to click through, with or without a name typed:
+// weapons by weapon type, armor by the part it's worn on
+let ADD_CAT="",ADD_TYPE="",MKT_BYNAME=null;
+const ADD_PARTS={head_upper:"Upper headgear",head_middle:"Middle headgear",head_lower:"Lower headgear",armor:"Armor",shield:"Shield",garment:"Garment",footgear:"Shoes",accessory:"Accessory"};
+const addSub=id=>{const g=MKT_GEAR[id];if(!g||g.card)return "";const c=mktCat(id);
+  return c==="weapon"?g.type||"":c==="armor"?((g.slot||[]).map(s=>s.startsWith("accessory")?"accessory":s).find(s=>ADD_PARTS[s])||""):""};
+function renderAddCats(){const n={"":MKT_IDS.length};MKT_IDS.forEach(id=>{const c=mktCat(id);n[c]=(n[c]||0)+1});
+  $("addCats").innerHTML=MKT_CATS.filter(([k])=>k&&n[k]).map(([k,nm])=>`<button type="button" class="mktCat" data-addcat="${k}" aria-pressed="${ADD_CAT===k}">${nm} <span>${fmtN(n[k])}</span></button>`).join("");
+  const subs=ADD_CAT==="weapon"?Object.keys(BUILD.WTYPE).map(t=>[t,BUILD.WTYPE[t]]):ADD_CAT==="armor"?Object.entries(ADD_PARTS):[];
+  $("addTypeBar").hidden=!subs.length;$("addType").innerHTML=`<option value="">Any</option>`+subs.map(([k,nm])=>`<option value="${k}"${ADD_TYPE===k?" selected":""}>${esc(nm)}</option>`).join("")}
 function showSug(){const q=$("priceItem").value.trim().toLowerCase().replace(/^#/,""),box=$("priceSug");
-  SUG=!q?[]:[...MKT_IDS.filter(id=>MKT_LOW[id].startsWith(q)),...MKT_IDS.filter(id=>!MKT_LOW[id].startsWith(q)&&MKT_LOW[id].includes(q)),...MKT_IDS.filter(id=>id.startsWith(q))]
-    .filter((id,i,a)=>a.indexOf(id)===i).slice(0,12);SUG_I=SUG.length?0:-1;
+  // a typed name: prefix matches first, then the rest, then #ids; nothing typed but a category picked: the category by name
+  const pool=(ADD_CAT?(MKT_BYNAME=MKT_BYNAME||[...MKT_IDS].sort((a,b)=>MKT_LOW[a].localeCompare(MKT_LOW[b]))):MKT_IDS).filter(id=>(!ADD_CAT||mktCat(id)===ADD_CAT)&&(!ADD_TYPE||addSub(id)===ADD_TYPE));
+  const hit=!q?(ADD_CAT?pool:[]):[...pool.filter(id=>MKT_LOW[id].startsWith(q)),...pool.filter(id=>!MKT_LOW[id].startsWith(q)&&MKT_LOW[id].includes(q)),...pool.filter(id=>id.startsWith(q))]
+    .filter((id,i,a)=>a.indexOf(id)===i),max=ADD_CAT?80:12;
+  SUG=hit.slice(0,max);SUG_I=SUG.length?0:-1;
   box.innerHTML=SUG.map((id,i)=>`<button type="button" role="option" class="mktSugRow${i===SUG_I?" on":""}" data-sug="${id}" aria-selected="${i===SUG_I}"><span class="mktIc">${itemIcon(id)}</span><span class="grow">${esc(mktName(id))}</span><span class="note">${MKT_CAT_NAME[mktCat(id)]} · #${id}</span>${id in state.prices?`<span class="pill">priced</span>`:""}</button>`).join("");
-  box.hidden=!SUG.length;$("priceItem").setAttribute("aria-expanded",String(!box.hidden))}
+  if(hit.length>SUG.length)box.innerHTML+=`<div class="note mktSugMore">${fmtN(hit.length-SUG.length)} more: type a name, or pick a type, to narrow it</div>`;
+  else if(!SUG.length&&(q||ADD_CAT))box.innerHTML=`<div class="note mktSugMore">No item matches.</div>`;
+  box.hidden=!box.innerHTML;$("priceItem").setAttribute("aria-expanded",String(!box.hidden))}
 const hideSug=()=>{$("priceSug").hidden=true;$("priceItem").setAttribute("aria-expanded","false")};
 const pickSug=id=>{$("priceItem").value=`${mktName(id)} #${id}`;hideSug();renderAddCopy(id);$("priceVal").focus()};
 $("priceSug").addEventListener("mousedown",e=>e.preventDefault()); // keep the box focused, so the click picks
 $("priceSug").addEventListener("click",e=>{const b=e.target.closest("[data-sug]");if(b)pickSug(b.dataset.sug)});
-$("priceItem").addEventListener("blur",hideSug);
+$("priceItem").addEventListener("blur",()=>{if(!ADD_CAT)hideSug()});
+$("addCats").addEventListener("click",e=>{const b=e.target.closest("[data-addcat]");if(!b)return;ADD_CAT=ADD_CAT===b.dataset.addcat?"":b.dataset.addcat;ADD_TYPE="";renderAddCats();showSug()});
+$("addType").addEventListener("change",e=>{ADD_TYPE=e.target.value;showSug()});
 // pricing an item from another tab clears the Market filters, so its row is there to type in
 const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus){Object.assign(state.mkt,{cat:"",q:"",max:null,refine:null,opts:[],slot:""});mktTools()}save();renderPrices();
   if(focus){showTab("market");const i=document.querySelector(`[data-price="${id}"]`);if(i){i.focus();i.scrollIntoView({behavior:"smooth",block:"center"})}}};
@@ -416,6 +433,7 @@ $("mktList").addEventListener("click",e=>{
 function openAdd(id){$("priceMsg").textContent="";$("priceVal").value="";$("priceDm").checked=false;hideSug();
   $("priceDmL").hidden=!loggedIn();$("addNote").textContent=loggedIn()?`Posted for everyone on ${MKT_SERVERS.find(([k])=>k===state.mktServer)[1]} when you add it.`:"It stays in this browser. Log in with Discord to post it for everyone.";
   if(id){$("priceItem").value=`${mktName(id)} #${id}`;renderAddCopy(id)}else{$("priceItem").value="";renderAddCopy(null)}
+  renderAddCats();if(!id&&ADD_CAT)showSug();
   if(!$("addDlg").open)$("addDlg").showModal();(id?$("priceVal"):$("priceItem")).focus()}
 $("addOpen").addEventListener("click",()=>openAdd());
 ROOTQ("[data-addclose]").forEach(b=>b.addEventListener("click",()=>$("addDlg").close()));

@@ -1074,3 +1074,4 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 .mktDlg{width:min(640px,calc(100vw - 32px));max-height:min(720px,calc(100vh - 48px));margin-top:8vh}
 .mktDlg .mktPick{position:static}.mktDlg .mktSug{position:static;margin-top:6px;box-shadow:none;max-height:260px}
 .mktDlg .mktSell{align-self:flex-end;margin-bottom:9px}
+.mktSugMore{padding:6px 8px}.mktDlg .mktSug{max-height:320px}
