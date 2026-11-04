@@ -33,10 +33,10 @@ async function authCallback(){if(!/[?&](code|error)=/.test(String(location.searc
   if(err){showToast("Discord login didn't work: "+err,6000);return}
   if(!p.v||!sharedOn())return;
   try{const r=await fetch(`${SHARED.url}/auth/v1/token?grant_type=pkce`,{method:"POST",headers:{apikey:SHARED.key,"Content-Type":"application/json"},body:JSON.stringify({auth_code:code,code_verifier:p.v})});
-    if(!r.ok)throw 0;authSave(authOf(await r.json()));showToast(`Logged in as ${AUTH.user.name}`);if(p.tab)location.hash=p.tab;renderShared();loadShared(true);cloudInfo()}
+    if(!r.ok)throw 0;authSave(authOf(await r.json()));showToast(`Logged in as ${AUTH.user.name}`);if(p.tab)location.hash=p.tab;renderShared();loadShared(true);cloudInfo();syncCheck()}
   catch(e){showToast("Discord login didn't work. Try again.",6000)}}
 async function logout(){try{if(AUTH)await fetch(`${SHARED.url}/auth/v1/logout`,{method:"POST",headers:{apikey:SHARED.key,Authorization:"Bearer "+AUTH.access_token}})}catch(e){}
-  authSave(null);renderShared();if(state.tab==="market")renderPrices()}
+  authSave(null);syncSave(null);SYNC_ASK=null;renderSyncAsk();renderShared();if(state.tab==="market")renderPrices()}
 
 // a shared copy's slots from the server's columns (cards, enchant, egg), as the page keeps them (c, e, egg)
 const sharedSlots=x=>({...(Array.isArray(x.cards)&&x.cards.length?{c:x.cards.map(Number)}:{}),...(x.enchant?{e:String(x.enchant)}:{}),...(x.egg?{egg:+x.egg}:{})});
@@ -92,13 +92,67 @@ const cloudArm=k=>{CLOUD_ARMED=k;renderShared();setTimeout(()=>{if(CLOUD_ARMED==
 async function cloudSave(){if(CLOUD.at&&CLOUD_ARMED!=="save"){cloudArm("save");return}CLOUD_ARMED="";
   try{save();const data=await packShare(bkAllText());if(data.length>2e6){$("bkMsg").textContent="This backup is too big for the cloud. Use Copy backup instead.";return}
     await sb("/rest/v1/backups?on_conflict=user_id",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=minimal"},body:JSON.stringify({user_id:AUTH.user.id,data})});
-    $("bkMsg").textContent="Saved to the cloud.";cloudInfo()}catch(e){$("bkMsg").textContent="Couldn't save to the cloud: "+e.message;renderShared()}}
+    $("bkMsg").textContent="Saved to the cloud.";cloudInfo();syncCheck()}catch(e){$("bkMsg").textContent="Couldn't save to the cloud: "+e.message;renderShared()}}
 async function cloudLoad(){try{const r=await sb("/rest/v1/backups?select=data,updated_at");if(!r||!r[0]){$("bkMsg").textContent="There's no cloud backup yet.";return}
     $("bkText").value=await unpackShare(r[0].data);$("bkMsg").textContent=`Your cloud backup from ${new Date(Date.parse(r[0].updated_at)).toLocaleString("en-GB")} is in the box below. Click Restore from text (twice) to use it.`}
   catch(e){$("bkMsg").textContent="Couldn't load the cloud backup: "+e.message}}
 async function cloudDelete(){if(CLOUD_ARMED!=="del"){cloudArm("del");return}CLOUD_ARMED="";
   try{await sb(`/rest/v1/backups?user_id=eq.${encodeURIComponent(AUTH.user.id)}`,{method:"DELETE"});$("bkMsg").textContent="Cloud backup deleted.";cloudInfo()}
   catch(e){$("bkMsg").textContent="Couldn't delete it: "+e.message}}
+
+// ---- sync: while you're logged in, the cloud backup follows this browser's accounts. At login and on each page load: no cloud
+// copy yet, this browser's goes up; no character here, the cloud's comes down; otherwise whichever side changed since the last
+// sync wins, and when both did (or they never synced and differ) you choose. Changes then go up on their own (every 30 s), after
+// a check that the cloud copy didn't change on another device meanwhile. SYNC: the last sync, {uid, at: the cloud copy's time
+// (ms), h: this browser's accounts' hash then}, kept apart from the accounts like the login ----
+const SYNC_KEY="rozero-farm-planner-sync";
+let SYNC=null;try{SYNC=JSON.parse(localStorage.getItem(SYNC_KEY)||"null")}catch(e){}
+const syncSave=x=>{SYNC=x;try{x?localStorage.setItem(SYNC_KEY,JSON.stringify(x)):localStorage.removeItem(SYNC_KEY)}catch(e){}};
+let SYNC_ASK=null,SYNC_BUSY=false; // SYNC_ASK: the cloud copy waiting for your choice (nothing goes up meanwhile)
+const textHash=t=>{let h=2166136261;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)};
+// an account has a character once it has a job picked, a character saved or a logged entry
+const acctsOf=t=>{try{const d=JSON.parse(t);return Array.isArray(d&&d.accounts)?d.accounts:[]}catch(e){return []}};
+const hasChar=t=>acctsOf(t).some(a=>{const d=a&&a.data;return !!d&&(!!d.job||Object.keys(d.chars||{}).length>0||(d.sessions||[]).some(s=>s&&(s.entries||[]).length))});
+// what to do: "up" (send this browser's), "down" (take the cloud's), "same" (note it as synced), "ask", or "none"
+function syncPlan({local,cloud,cloudAt,base}){const lh=textHash(local);
+  if(cloud==null)return hasChar(local)?"up":"none";
+  if(base&&base.at===cloudAt)return base.h===lh?"none":"up";       // only this browser changed (or nothing did)
+  if(cloud===local)return "same";
+  if(!hasChar(local))return hasChar(cloud)?"down":"same";
+  if(base&&base.h===lh)return "down";                               // only the cloud changed
+  return "ask"}
+// a line about one side for the choice: accounts, characters (jobs) and the last logged entry
+function syncSummary(t){const as=acctsOf(t),jobs=[...new Set(as.flatMap(a=>Object.keys((a&&a.data&&a.data.chars)||{})))],
+  last=Math.max(0,...as.flatMap(a=>((a&&a.data&&a.data.sessions)||[]).flatMap(s=>(s&&s.entries||[]).map(e=>+e.t||0))));
+  return `${as.length} account${as.length===1?"":"s"}${jobs.length?` · ${jobs.slice(0,4).join(", ")}${jobs.length>4?"…":""}`:" · no character"}${last?` · last logged ${agoTxt(last)}`:""}`}
+async function syncUp(text){const data=await packShare(text);if(data.length>2e6){showToast("Your accounts are too big for the cloud backup.",6000);return false}
+  const r=await sb("/rest/v1/backups?on_conflict=user_id&select=updated_at",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=representation"},body:JSON.stringify({user_id:AUTH.user.id,data})});
+  syncSave({uid:AUTH.user.id,at:Date.parse(r&&r[0]&&r[0].updated_at)||Date.now(),h:textHash(text)});CLOUD={at:SYNC.at,loaded:true};renderShared();return true}
+function syncDown(ctext,at){const err=writeAccounts(JSON.parse(ctext));if(err){showToast(err,6000);return}
+  syncSave({uid:AUTH.user.id,at,h:textHash(acctsText())});reloadView("Loaded your accounts from the cloud")}
+async function syncCheck(){if(!AUTH||SYNC_ASK||SYNC_BUSY)return;SYNC_BUSY=true;
+  try{const r=await sb("/rest/v1/backups?select=data,updated_at"),c=r&&r[0],local=acctsText(),at=c?Date.parse(c.updated_at):null;
+    const base=SYNC&&SYNC.uid===AUTH.user.id?SYNC:null,cloud=c?(base&&base.at===at?null:await unpackShare(c.data)):null;
+    const plan=c&&base&&base.at===at?(base.h===textHash(local)?"none":"up"):syncPlan({local,cloud,cloudAt:at,base});
+    if(plan==="up")await syncUp(local);
+    else if(plan==="down")syncDown(cloud,at);
+    else if(plan==="same")syncSave({uid:AUTH.user.id,at,h:textHash(local)});
+    else if(plan==="ask"){SYNC_ASK={cloud,at};renderSyncAsk()}}
+  catch(e){}finally{SYNC_BUSY=false}}
+// the choice when both sides changed: what each holds, and Use the cloud's / Keep this browser's / Decide later
+function renderSyncAsk(){const el=$("syncAsk");if(!el)return;if(!SYNC_ASK){el.hidden=true;return}
+  el.hidden=false;el.innerHTML=`<b>Your cloud backup and this browser have different accounts.</b>
+    <div class="syncSides"><div><span class="note">Cloud (saved ${agoTxt(SYNC_ASK.at)})</span>${esc(syncSummary(SYNC_ASK.cloud))}</div><div><span class="note">This browser</span>${esc(syncSummary(acctsText()))}</div></div>
+    <div class="bar"><button type="button" data-syncask="cloud">Use the cloud's</button><button type="button" data-syncask="local">Keep this browser's</button><button type="button" class="small ghost" data-syncask="later">Decide later</button></div>
+    <span class="note">The one you don't pick is replaced. Copy backup on the Account tab keeps a copy of this browser's first.</span>`}
+$("syncAsk").addEventListener("click",async e=>{const b=e.target.closest("[data-syncask]");if(!b||!SYNC_ASK)return;const k=b.dataset.syncask,a=SYNC_ASK;
+  if(k==="cloud"){syncDown(a.cloud,a.at);return}
+  $("syncAsk").hidden=true;if(k==="later"){showToast("Sync is paused until you choose (Account tab).");renderShared();return}
+  SYNC_ASK=null;try{await syncUp(acctsText());showToast("Saved this browser's accounts to the cloud.")}catch(err){showToast("Couldn't save to the cloud: "+err.message,6000)}});
+// every 30 s: send this browser's changes up, after checking the cloud copy didn't change elsewhere (else syncCheck decides)
+async function syncTick(){setTimeout(syncTick,30000);if(!AUTH||SYNC_ASK||SYNC_BUSY||!SYNC||SYNC.uid!==AUTH.user.id||textHash(acctsText())===SYNC.h)return;
+  try{const r=await sb("/rest/v1/backups?select=updated_at"),at=r&&r[0]?Date.parse(r[0].updated_at):null;if(at===SYNC.at){SYNC_BUSY=true;try{await syncUp(acctsText())}finally{SYNC_BUSY=false}}else syncCheck()}catch(e){}}
+setTimeout(syncTick,30000);
 
 // the login bars on the Market and Account tabs
 function renderShared(){const on=sharedOn();["mktShare","cloudBar"].forEach(k=>{const el=$(k);if(el)el.hidden=!on});if(!on)return;
@@ -111,11 +165,11 @@ function renderShared(){const on=sharedOn();["mktShare","cloudBar"].forEach(k=>{
     ${c&&c.err?`<div class="note bad">Couldn't load shared prices: ${esc(c.err)}</div>`:""}`;
   $("cloudBar").innerHTML=AUTH?`${who}<button type="button" data-cloud="save">${CLOUD_ARMED==="save"?"Click again to replace the cloud copy":"Save to cloud"}</button><button type="button" data-cloud="load"${CLOUD.at?"":" disabled"}>Load from cloud</button>
       <button type="button" class="small ${CLOUD_ARMED==="del"?"danger":"ghost"}" data-cloud="del"${CLOUD.at?"":" disabled"}>${CLOUD_ARMED==="del"?"Click again to delete it":"Delete cloud copy"}</button>
-      <span class="note">${CLOUD.loaded?CLOUD.at?`last saved ${agoTxt(CLOUD.at)}`:"no cloud copy yet":""}</span>${out}`
+      <span class="note">${SYNC_ASK?`Sync paused: <a href="#" data-cloud="ask">choose which accounts to keep</a>`:CLOUD.loaded?CLOUD.at?`synced ${agoTxt(CLOUD.at)}`:"no cloud copy yet":""}</span>${out}`
     :`${inBtn}<span class="note">to keep a backup of every account online, only yours to read, and load it on any device.</span>`}
 ROOTQ("#mktShare,#cloudBar").forEach(el=>el.addEventListener("click",e=>{const a=e.target.closest("[data-auth]");if(a){a.dataset.auth==="login"?login():logout();return}
   const s=e.target.closest("[data-shared]");if(s&&s.dataset.shared!=="everyone"){const k=s.dataset.shared;
     if(k==="share")sharePrices();else if(k==="unshare")unsharePrices();else if(k==="fill"){const n=useShared(Object.keys(state.prices));showToast(n?`${n} price${n>1?"s":""} filled from the shared ones`:"No blanks with a shared price")}return}
-  const c=e.target.closest("[data-cloud]");if(c)({save:cloudSave,load:cloudLoad,del:cloudDelete})[c.dataset.cloud]()}));
+  const c=e.target.closest("[data-cloud]");if(c){e.preventDefault();({save:cloudSave,load:cloudLoad,del:cloudDelete,ask:renderSyncAsk})[c.dataset.cloud]()}}));
 $("mktShare").addEventListener("change",e=>{if(e.target.matches('[data-shared="everyone"]')){state.mkt.everyone=e.target.checked;save();renderPrices()}});
-renderShared();if(sharedOn()){authCallback();if(AUTH)cloudInfo()}
+renderShared();if(sharedOn()){authCallback();if(AUTH){cloudInfo();syncCheck()}}

@@ -482,7 +482,15 @@ $("mapTable").querySelector("tbody").addEventListener("click",e=>{const sm=e.tar
 // backup
 const bkText=()=>JSON.stringify(state);
 // combined backup: every account's save plus the account list
-const bkAllText=()=>{save();return JSON.stringify({allAccounts:1,active:accts.active,accounts:accts.list.map(a=>{let data=null;try{data=JSON.parse(localStorage.getItem(acctKey(a.id)))}catch(e){}return {id:a.id,name:a.name,data}})})};
+// every account as stored (acctsText doesn't save first, so it never bumps the revision other tabs watch)
+const acctsText=()=>JSON.stringify({allAccounts:1,active:accts.active,accounts:accts.list.map(a=>{let data=null;try{data=JSON.parse(localStorage.getItem(acctKey(a.id)))}catch(e){}return {id:a.id,name:a.name,data}})});
+const bkAllText=()=>{save();return acctsText()};
+// write an all-accounts backup over every account: each one first, then drop the old ones it doesn't have, so a failed write leaves
+// the old accounts in place. "" when it worked, else what went wrong
+function writeAccounts(data){if(!data||!data.allAccounts||!Array.isArray(data.accounts)||!data.accounts.length||data.accounts.some(a=>!a||typeof a.id!=="string"||!a.id))return "That backup has no accounts in it.";
+  const keep=new Set(data.accounts.map(a=>acctKey(a.id)));try{data.accounts.forEach(a=>{if(a.data)localStorage.setItem(acctKey(a.id),JSON.stringify(a.data))})}catch(err){return "Couldn't write the backup to this browser's storage. Your accounts weren't changed."}
+  try{accts.list.forEach(a=>{if(!keep.has(acctKey(a.id)))localStorage.removeItem(acctKey(a.id))});data.accounts.forEach(a=>{if(!a.data)localStorage.removeItem(acctKey(a.id))})}catch(err){}
+  accts.list=data.accounts.map((a,i)=>({id:a.id,name:String(a.name||"Account "+(i+1))}));accts.active=accts.list.some(a=>a.id===data.active)?data.active:accts.list[0].id;saveAccts();return ""}
 const bkCopyText=(t,what)=>{const fb=()=>{$("bkText").value=t;$("bkText").select();$("bkMsg").textContent="Couldn't copy automatically, so the backup is selected in the box below."};
   try{navigator.clipboard.writeText(t).then(()=>{$("bkMsg").textContent=`${what} copied. Paste it somewhere safe.`},fb)}catch(err){fb()}};
 // the backup always holds every account; the text also goes in the box so it can be seen or copied by hand
@@ -537,10 +545,7 @@ $("bkRestore").addEventListener("click",()=>{let data;try{data=JSON.parse($("bkT
   else if(!data||!Array.isArray(data.sessions)){$("bkMsg").textContent="That backup has no sessions in it.";return}
   if(!bkArmed){bkArmed=true;$("bkRestore").textContent=all?`Click again to replace all accounts (${data.accounts.length} in backup)`:"Click again to replace this account";setTimeout(()=>{bkArmed=false;$("bkRestore").textContent="Restore from text"},4000);return}
   bkArmed=false;
-  // write every account first, then drop the old ones the backup doesn't have, so a failed write leaves the old accounts in place
-  if(all){const keep=new Set(data.accounts.map(a=>acctKey(a.id)));try{data.accounts.forEach(a=>{if(a.data)localStorage.setItem(acctKey(a.id),JSON.stringify(a.data))})}catch(err){$("bkMsg").textContent="Couldn't write the backup to this browser's storage. Your accounts weren't changed.";return}
-    try{accts.list.forEach(a=>{if(!keep.has(acctKey(a.id)))localStorage.removeItem(acctKey(a.id))});data.accounts.forEach(a=>{if(!a.data)localStorage.removeItem(acctKey(a.id))})}catch(err){}
-    accts.list=data.accounts.map((a,i)=>({id:a.id,name:String(a.name||"Account "+(i+1))}));accts.active=accts.list.some(a=>a.id===data.active)?data.active:accts.list[0].id;saveAccts()}
+  if(all){const err=writeAccounts(data);if(err){$("bkMsg").textContent=err;return}}
   else{state=data;save()}
   $("bkMsg").textContent="Restored. Reloading…";try{location.reload()}catch(err){$("bkMsg").textContent="Restored. Reload the page to see it."}});
 // ---- column views: one click sets which columns the big tables show; the view that matches the columns shown is marked ----

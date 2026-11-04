@@ -545,6 +545,28 @@ t("market: slots: cards that fit the gear, the memorial enchant, the Taming Ring
   run(`state.prices={};state.priceVars={};state.mkt.slot=""`);
 });
 
+t("cloud sync: which way it goes after a Discord login", () => {
+  const acc = data => JSON.stringify({ allAccounts: 1, active: "a0", accounts: [{ id: "a0", name: "A", data }] });
+  const empty = acc({ sessions: [], chars: {} }), mine = acc({ job: "Sage", chars: { Sage: {} }, sessions: [] }), other = acc({ job: "Hunter", chars: { Hunter: {} }, sessions: [] });
+  const plan = (local, cloud, cloudAt, base) => run(`syncPlan(${JSON.stringify({ local, cloud, cloudAt, base })})`);
+  const h = t => run(`textHash(${JSON.stringify(t)})`);
+  assert.ok(!run(`hasChar(${JSON.stringify(empty)})`) && run(`hasChar(${JSON.stringify(mine)})`));
+  assert.equal(plan(mine, null, null, null), "up");                       // no cloud copy yet
+  assert.equal(plan(empty, null, null, null), "none");                    // nothing to send
+  assert.equal(plan(empty, mine, 5, null), "down");                       // no character here: take the cloud's
+  assert.equal(plan(mine, mine, 5, null), "same");
+  assert.equal(plan(mine, other, 5, null), "ask");                        // never synced and different
+  assert.equal(plan(mine, other, 5, { at: 5, h: "x" }), "up");            // cloud unchanged since the last sync: this browser's wins
+  assert.equal(plan(mine, other, 9, { at: 5, h: h(mine) }), "down");      // only the cloud changed
+  assert.equal(plan(mine, other, 9, { at: 5, h: "x" }), "ask");           // both changed
+  assert.match(run(`syncSummary(${JSON.stringify(mine)})`), /^1 account · Sage/);
+});
+
+t("Restore and the cloud sync write an all-accounts backup the same way", () => {
+  assert.equal(run(`writeAccounts({allAccounts:1,accounts:[]})`), "That backup has no accounts in it.");
+  assert.equal(run(`writeAccounts({allAccounts:1,accounts:[{id:""}]})`), "That backup has no accounts in it.");
+});
+
 t("market: a saved copy keeps only a refine of 0-20, options with a key, and a price", () => {
   const r = load({ prices: { "28028": 1 }, priceVars: { "28028": [{ r: 99, o: [{ k: "atk", v: "x" }, { v: 3 }], p: -5, t: "y", evil: "<b>" }], "999": [{ r: 1, p: 1 }] }, mkt: { refine: 50, opts: "atk" } });
   assert.equal(r(`JSON.stringify(state.priceVars)`), '{"28028":[{"r":20,"o":[{"k":"atk","v":null}],"p":0,"t":null}]}');

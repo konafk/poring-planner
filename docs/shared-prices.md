@@ -20,7 +20,7 @@ All of these are rules in the database (`supabase/schema.sql`), so changing the 
 
 **Buyers can DM sellers (optional, per item):** a player who ticks **DM me** on a price (or on a refined / optioned copy) and shares it shows up under that item for buyers: their Discord name and @username, the copy, price and when, with a link to their Discord profile. Nothing else of theirs is shown. Unticking it takes that item's listing back at once (Delete my shared reports takes back all of them). The name and id come from the Discord login itself, never from the page, so nobody can show someone else's. These reports still count in the shared price like any other.
 
-**Cloud backup:** one per Discord account, only that player's to read, write or delete. It's the Copy backup text (every account), compressed, up to 2 MB. Load from cloud puts it in the backup box, and Restore from text (twice) uses it, as with a pasted backup.
+**Cloud backup:** one per Discord account, only that player's to read, write or delete. It's the Copy backup text (every account), compressed, up to 2 MB. Load from cloud puts it in the backup box, and Restore from text (twice) uses it, as with a pasted backup. While a player is logged in it syncs on its own: a browser with no character takes the cloud copy, changes go up every 30 seconds, and when both the browser and the cloud changed the player chooses which to keep.
 
 **The keys:** the page uses the project's **public** key (anon / publishable). Anyone can read it in the page, and that's how Supabase is meant to work: the rules above decide what it can do. The **service_role** (secret) key skips every rule: never put it in the page, the repo or a chat.
 
