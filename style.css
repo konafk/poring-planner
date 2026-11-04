@@ -929,6 +929,7 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 .infoDlg .tile .v{font-size:1.15rem}
 .infoSec h3{margin:4px 0 6px;font-size:11px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
 .infoList{display:flex;flex-direction:column;gap:3px;font-size:13px;line-height:1.5}
+.infoList.craftList{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:3px 12px}
 .infoFrom{font-size:13px;line-height:1.75}
 .infoText{font-size:13px;line-height:1.5;color:var(--muted);white-space:pre-line}
 .infoActs{padding:10px 16px;border-top:1px solid var(--line);background:var(--raised);flex-wrap:wrap}

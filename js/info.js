@@ -63,14 +63,28 @@ function infoHeal(id){if(!RECOVERY[id])return "";
     const amt=x.pct!=null?`${x.pct}% of Max ${u}${x.avg>0?` (${fmtN(x.avg)} ${u})`:""}`:`${x.min===x.max?fmtN(x.min):`${fmtN(x.min)}–${fmtN(x.max)}`} ${u}${x.min===x.max&&x.avg===x.min?"":` (avg ${fmtSig(x.avg)})`}`;
     return `<div><b>${amt}</b>${x.aOk?"":' <span class="note" title="not measured in Zero yet: classic RO\'s amount">?</span>'} <span class="note">${x.price!=null?`${fmtN(x.price)} z (${REC_SRC[x.src]}) · ${x.per!=null?`${fmtSig(x.per)} z/${u}`:"–"}`:"no price: type what players pay"}</span></div>`}).join("")}</div>`}
 
-// what's in a box (data/client.js's boxes): each item with its count, refine and time limit; a selection box says to pick one
+// what's in a box (data/client.js's boxes): each item with its count, refine and time limit; a selection box says to pick one, a
+// costume enchant stone box that it gives one at random
 function infoBox(id){const b=CLIENT.boxes[id];if(!b)return "";
-  return `${b[0]==="pick"?'<div class="note">Choose one:</div>':""}<div class="infoList">${b[1].map(([i,n,r,h])=>`<div>${itemIcon(i,1,"il")}${infoLink(infoKind(i),i,`${r?`+${r} `:""}${(BUILD.item(i)||{}).name||itemName(i)}`)}${n>1||h?` <span class="note">${[n>1?`x${n}`:"",h?`${h} hours`:""].filter(Boolean).join(" · ")}</span>`:""}</div>`).join("")}</div>`}
+  return `${b[0]==="pick"?'<div class="note">Choose one:</div>':STONE_BOXES.includes(+id)?'<div class="note">One at random:</div>':""}<div class="infoList">${b[1].map(([i,n,r,h])=>`<div>${itemIcon(i,1,"il")}${infoLink(infoKind(i),i,`${r?`+${r} `:""}${(BUILD.item(i)||{}).name||itemName(i)}`)}${n>1||h?` <span class="note">${[n>1?`x${n}`:"",h?`${h} hours`:""].filter(Boolean).join(" · ")}</span>`:""}</div>`).join("")}</div>`}
+
+// the Enchant Stone Craft Box: any 5 of the costumes the official guide lists (data/costumes.js's COSTUME_CRAFT) give one of the
+// four costume enchant stone boxes at random, and that box one random stone for its slot. A listed costume's card says it goes in
+const CRAFT_BOX=104676,STONE_BOXES=[104675,104674,104673,104672];
+const craftCostumes=()=>(typeof COSTUME_CRAFT!=="undefined"?COSTUME_CRAFT:[]).filter(i=>itemName(i)).sort((a,b)=>itemName(a).localeCompare(itemName(b)));
+function infoCraft(id){const box=i=>`${itemIcon(i,1,"il")}${infoLink("item",i,itemName(i)||`#${i}`)}`;
+  if(+id===CRAFT_BOX){const cos=craftCostumes();if(!cos.length)return "";
+    return `<div class="infoList"><div>Put in any 5 of these costumes (not their Bound versions) for one costume enchant stone box at random:</div>
+      ${STONE_BOXES.map(i=>`<div>${box(i)}</div>`).join("")}<div class="note">That box opens to one random enchant stone for its slot.</div></div>
+      <h3>Costumes it takes (${cos.length})</h3><div class="infoList craftList">${cos.map(i=>`<div>${itemIcon(i,1,"il")}${infoLink(infoKind(i),i,itemName(i))}</div>`).join("")}</div>`}
+  if(typeof COSTUME_CRAFT!=="undefined"&&COSTUME_CRAFT.includes(+id))
+    return `<div class="infoList"><div>Any 5 of the listed costumes go in the ${box(CRAFT_BOX)} for one costume enchant stone box (Upper, Middle, Lower or Garment) at random.</div></div>`;
+  return ""}
 
 function popItem(id){const name=itemName(id);
   return {ico:itemIcon(id,1.5),title:name,sub:`#${id} · ${ITEM_DROPS[id]||!clientCat(id)?`${GROUP_NAME[groupOf(id)]}${looted(id)?"":" (not looted)"}`:esc(clientCat(id))}`,
     body:infoSec("Heals",infoHeal(id))+infoSec("In-game text",typeof ITEM_TEXT!=="undefined"&&ITEM_TEXT[id]&&`<div class="infoText">${esc(ITEM_TEXT[id])}</div>`)
-      +infoSec("Contents",infoBox(id))+infoPrice(id)+infoSec("Sold by",infoShops(id))+infoSec("Dropped by",infoDroppers(id))+infoSec("Memorial dungeons",infoMemorial(id))
+      +infoSec("Contents",infoBox(id))+infoSec("Enchant Stone Craft Box",infoCraft(id))+infoPrice(id)+infoSec("Sold by",infoShops(id))+infoSec("Dropped by",infoDroppers(id))+infoSec("Memorial dungeons",infoMemorial(id))
       +(ITEM_DROPS[id]||infoMemorial(id)?"":'<div class="note">No monster the farm tables know drops it.</div>')+infoRecipes(id),
     acts:(ITEM_DROPS[id]?'<button type="button" data-infoact="items">Item info</button>':"")+recipeAct(id)}}
 

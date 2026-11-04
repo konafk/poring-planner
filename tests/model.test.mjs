@@ -2665,17 +2665,21 @@ t("Stylist: a saved look is cleaned, and drawn as the job's body allows", () => 
   assert.match(app(`headCanvas("f",7,3,2)`), new RegExp(`width="${w}" height="${hh}" style="width:${w * 2}px;height:${hh * 2}px" data-head="${x},${y},${w},${hh},0,0" data-hair="f,7,3"`));
 });
 
-t("Special equipment: only the costumes the official guide lists take an enchant stone", () => {
+t("Enchant Stone Craft Box: the costumes the official guide lists, any 5 for a random stone box", () => {
   const app = load({});
-  // the guide's names, its (Bound) versions too, and the names it spells its own way (Poker Face is its Expressionless Mask)
-  const has = (k, n) => app(`costumesFor(${JSON.stringify(k)}).some(([x])=>x===${JSON.stringify(n)})`);
-  assert.equal(has("upper", "[Costume] Mini Propeller"), true);
-  assert.equal(has("upper", "[Costume] Mini Propeller (Bound)"), true);
-  assert.equal(has("middle", "[Costume] Poker Face"), true);
-  assert.equal(has("lower", "[Costume] Poker Face"), true);
-  // a costume the guide doesn't list isn't offered
-  assert.equal(has("upper", "[Costume] Shining Sun"), false);
-  assert.ok(app("costumesFor('upper').length") > 100 && app("costumesFor('garment').length") > 5);
+  const box = app("popItem(104676).body");
+  // the four slot boxes it gives one of, and the guide's costumes by the game's names (Poker Face is its Expressionless Mask)
+  for (const id of [104675, 104674, 104673, 104672]) assert.match(box, new RegExp(`data-info="item:${id}"`));
+  assert.match(box, /any 5 of these costumes/);
+  assert.match(box, /\[Costume\] Mini Propeller</);
+  assert.match(box, /\[Costume\] Poker Face</);
+  // not a (Bound) version, nor a costume the guide doesn't list
+  assert.doesNotMatch(box, /\(Bound\)/);
+  assert.doesNotMatch(box, /Shining Sun/);
+  // a listed costume's card points at the box; a stone box says it gives one stone at random
+  assert.match(app("popItem(19635).body"), /data-info="item:104676"/);
+  assert.equal(app("infoCraft(19507)"), "");
+  assert.match(app("popItem(104675).body"), /One at random/);
 });
 
 t("Stylist costumes: worn by slot, drawn on the look from the client's sheets", () => {
