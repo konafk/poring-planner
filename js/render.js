@@ -606,7 +606,7 @@ const huntPicker=(r,w)=>`<div class="note">hunting ${r.earn.length} of ${r.mobs.
   +r.mobs.map(x=>`<div>${x.lvOut?`<span class="hpick off" title="${esc(dropNames(x.m))} · Lv ${x.m.lv}: passed by, outside your level filter">✕ ${esc(x.m.name)}</span>`
     :`<a href="#" class="hpick${x.on?"":" off"}" data-hpick="${esc(r.mp)}" data-hmob="${x.m.id}" title="${esc(dropNames(x.m))} · click to ${x.on?"pass it by":"hunt it"}">${x.on?"✓":"✕"} ${esc(x.m.name)}</a>`}${BOSS_PILL(x.m)} <span class="note">×${spN(x.n)} · Lv ${x.m.lv} · ${fmtN(x.zk)} z · ${fmtQty(x.wk)} wt${dropPenalty(x.m)?` · drops −${dropPenalty(x.m)}%`:""}${x.lvOut?" · Lv filter":""}</span></div>`).join("");
 // ---- Market: your prices for the server you play on, sorted into the in-game market's categories ----
-// the best drop chance of each item (bosses left out)
+// the best drop chance of each item (bosses left out): tagged "best" in the details popup's Dropped by
 const DROPPERS={};MOBS.forEach(m=>(m.drops||[]).forEach(([id,ch])=>{const d=DROPPERS[id];if(!m.boss&&(!d||ch>d.ch))DROPPERS[id]={m,ch}}));
 // gear and cards by id, for their names, card slots and category
 const MKT_GEAR={};(typeof EQUIP!=="undefined"?EQUIP:[]).forEach(e=>{if(e.id!=null)MKT_GEAR[e.id]=e});(typeof CARDS!=="undefined"?CARDS:[]).forEach(c=>{MKT_GEAR[c.id]=Object.assign({card:true},c)});
@@ -731,12 +731,12 @@ function renderPrices(){
   const rows=ids.filter(id=>(!mk.cat||mktCat(id)===mk.cat)&&(!q||mktName(id).toLowerCase().includes(q)||("#"+id).includes(q))
       &&(!fOn||pr[id]!=null)&&(mk.max==null||!(pr[id]>mk.max)))
     .sort((a,b)=>SORT[mk.sort](a,b)||mktName(a).localeCompare(mktName(b)));
-  $("mktList").innerHTML=rows.map(id=>{const p=state.prices[id],t=(state.priceSeen[id]||[])[0],mv=priceMove(id),d=DROPPERS[id],npc=NPCSELL[id],g=mktGearOnly(id),vs=ownCopies(id).slice(1),best=fOn?mktBest(id):null,own=id in state.prices,
+  $("mktList").innerHTML=rows.map(id=>{const p=state.prices[id],t=(state.priceSeen[id]||[])[0],mv=priceMove(id),npc=NPCSELL[id],g=mktGearOnly(id),vs=ownCopies(id).slice(1),best=fOn?mktBest(id):null,own=id in state.prices,
       sp=typeof sharedPlain==="function"?sharedPlain(id):null,sc=sharedCopies(id).filter(x=>x!==sp);
     return `<div class="mktItem"><div class="mktRow"><span class="mktIc">${itemIcon(id)}</span>
       <div class="mktName"><a href="#" data-info="item:${esc(id)}">${esc(mktName(id))}</a>
         <div class="note">${[best?`<b class="mktFit">cheapest fit ${esc(varTxt(best))}${best.s?" (shared)":""}: ${fmtN(best.p)} z</b>`:"",
-          sp&&own?`<span class="mktShared" title="${esc(sharedTxt(sp))}">shared ${zShort(sp.p)} · ${sp.players} players${p>0?"":` · <a href="#" data-suse="${esc(id)}">use it</a>`}</span>`:"",t?`<span title="${esc(new Date(t).toLocaleString("en-GB"))}">updated ${agoTxt(t)}</span>`:"",npc!=null?`NPC pays ${fmtN(npc)} z`:"",d?`best drop ${esc(d.m.name)} ${d.ch}%`:"",`#${esc(id)}`,
+          sp&&own?`<span class="mktShared" title="${esc(sharedTxt(sp))}">shared ${zShort(sp.p)} · ${sp.players} players${p>0?"":` · <a href="#" data-suse="${esc(id)}">use it</a>`}</span>`:"",t?`<span title="${esc(new Date(t).toLocaleString("en-GB"))}">updated ${agoTxt(t)}</span>`:"",npc!=null?`NPC pays ${fmtN(npc)} z`:"",`#${esc(id)}`,
           own&&loggedIn()?`<label class="mktSell" title="You sell it at this price. Once you share it, buyers see your Discord name and can message you about it. Untick to take it back"><input type="checkbox" data-sell="${esc(id)}"${state.sell[id]?" checked":""}> DM me</label>`:"",
           sellerN(id)?`<a href="#" data-sellers="${esc(id)}" class="mktSellers">${sellerN(id)} seller${sellerN(id)>1?"s":""} · DM</a>`:"",
           copyable(id)&&own?`<a href="#" data-varadd="${esc(id)}" title="Price a copy with a refine, cards, an enchant, an egg or affixes. The plain price stays the one every zeny figure uses">${g?"+ refine / slots / affixes":"+ egg"}</a>`:""].filter(Boolean).join(" · ")}</div></div>
