@@ -1083,3 +1083,5 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 .slotOpt{display:flex;align-items:center;gap:8px;border:0;background:none;color:var(--fg);text-align:left;padding:4px 8px;border-radius:6px;font-weight:500}.slotOpt:hover{background:var(--accent-soft)}
 .slotMore{padding:4px 8px}
 .addPicked{align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--raised)}.addPicked .mktIc{min-height:32px}
+.mktItemChip{align-items:center;gap:8px;width:fit-content;padding:4px 6px 4px 10px;border:1px solid var(--accent);border-radius:99px;background:var(--accent-soft)}.mktItemChip .mktIc{min-height:24px}
+#mktSug{min-width:min(380px,calc(100vw - 48px))}#mktSug .mktSugRow .note{white-space:nowrap}

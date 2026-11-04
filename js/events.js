@@ -363,16 +363,13 @@ let SUG=[],SUG_I=-1;
 // the popup's category buttons and Type list narrow the items to click through, with or without a name typed:
 // weapons by weapon type, armor by the part it's worn on
 let ADD_CAT="",ADD_TYPE="",MKT_BYNAME=null;
-const ADD_PARTS={head_upper:"Upper headgear",head_middle:"Middle headgear",head_lower:"Lower headgear",armor:"Armor",shield:"Shield",garment:"Garment",footgear:"Shoes",accessory:"Accessory"};
-const addSub=id=>{const g=MKT_GEAR[id];if(!g||g.card)return "";const c=mktCat(id);
-  return c==="weapon"?g.type||"":c==="armor"?((g.slot||[]).map(s=>s.startsWith("accessory")?"accessory":s).find(s=>ADD_PARTS[s])||""):""};
 function renderAddCats(){const n={"":MKT_IDS.length};MKT_IDS.forEach(id=>{const c=mktCat(id);n[c]=(n[c]||0)+1});
   $("addCats").hidden=!!ADD_PICKED;$("addCats").innerHTML=MKT_CATS.filter(([k])=>k&&n[k]).map(([k,nm])=>`<button type="button" class="mktCat" data-addcat="${k}" aria-pressed="${ADD_CAT===k}">${nm} <span>${fmtN(n[k])}</span></button>`).join("");
-  const subs=ADD_CAT==="weapon"?Object.keys(BUILD.WTYPE).map(t=>[t,BUILD.WTYPE[t]]):ADD_CAT==="armor"?Object.entries(ADD_PARTS):[];
+  const subs=ADD_CAT==="weapon"?Object.keys(BUILD.WTYPE).map(t=>[t,BUILD.WTYPE[t]]):ADD_CAT==="armor"?Object.entries(ITEM_PARTS):[];
   $("addTypeBar").hidden=!subs.length||!!ADD_PICKED;$("addType").innerHTML=`<option value="">Any</option>`+subs.map(([k,nm])=>`<option value="${k}"${ADD_TYPE===k?" selected":""}>${esc(nm)}</option>`).join("")}
 function showSug(){const q=$("priceItem").value.trim().toLowerCase().replace(/^#/,""),box=$("priceSug");
   // a typed name: prefix matches first, then the rest, then #ids; nothing typed but a category picked: the category by name
-  const pool=(ADD_CAT?(MKT_BYNAME=MKT_BYNAME||[...MKT_IDS].sort((a,b)=>MKT_LOW[a].localeCompare(MKT_LOW[b]))):MKT_IDS).filter(id=>(!ADD_CAT||mktCat(id)===ADD_CAT)&&(!ADD_TYPE||addSub(id)===ADD_TYPE));
+  const pool=(ADD_CAT?(MKT_BYNAME=MKT_BYNAME||[...MKT_IDS].sort((a,b)=>MKT_LOW[a].localeCompare(MKT_LOW[b]))):MKT_IDS).filter(id=>(!ADD_CAT||mktCat(id)===ADD_CAT)&&(!ADD_TYPE||itemSub(id)===ADD_TYPE));
   const hit=!q?(ADD_CAT?pool:[]):[...pool.filter(id=>MKT_LOW[id].startsWith(q)),...pool.filter(id=>!MKT_LOW[id].startsWith(q)&&MKT_LOW[id].includes(q)),...pool.filter(id=>id.startsWith(q))]
     .filter((id,i,a)=>a.indexOf(id)===i),max=ADD_CAT?80:12;
   SUG=hit.slice(0,max);SUG_I=SUG.length?0:-1;
@@ -388,7 +385,7 @@ $("priceItem").addEventListener("blur",()=>{if(!ADD_CAT)hideSug()});
 $("addCats").addEventListener("click",e=>{const b=e.target.closest("[data-addcat]");if(!b)return;ADD_CAT=ADD_CAT===b.dataset.addcat?"":b.dataset.addcat;ADD_TYPE="";renderAddCats();showSug()});
 $("addType").addEventListener("change",e=>{ADD_TYPE=e.target.value;showSug()});
 // pricing an item from another tab clears the Market filters, so its row is there to type in
-const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus){Object.assign(state.mkt,{cat:"",q:"",max:null,refine:null,opts:[],slot:""});mktTools()}save();renderPrices();
+const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus){Object.assign(state.mkt,{cat:"",q:"",max:null,refine:null,opts:[],slot:"",type:"",item:""});mktTools()}save();renderPrices();
   if(focus){showTab("market");const i=document.querySelector(`[data-price="${id}"]`);if(i){i.focus();i.scrollIntoView({behavior:"smooth",block:"center"})}}};
 // picking gear (or the Taming Ring) shows its refine, slot and affix boxes under the form
 $("priceItem").addEventListener("input",()=>{renderAddCopy(findItem($("priceItem").value));showSug()});
@@ -454,8 +451,28 @@ function switchServer(k){if(k===state.mktServer||!MKT_SERVERS.some(([x])=>x===k)
   state.serverPrices[state.mktServer]=Object.fromEntries(BOOK_KEYS.map(b=>[b,state[b]]));
   const next=state.serverPrices[k]||{};BOOK_KEYS.forEach(b=>{state[b]=next[b]||{}});delete state.serverPrices[k];state.mktServer=k;save();renderAll();renderPrices()}
 $("mktSrv").addEventListener("click",e=>{const b=e.target.closest("[data-srv]");if(b)switchServer(b.dataset.srv)});
-$("mktCats").addEventListener("click",e=>{const b=e.target.closest("[data-mktcat]");if(!b)return;state.mkt.cat=b.dataset.mktcat;save();renderPrices()});
-$("mktQ").addEventListener("input",e=>{state.mkt.q=e.target.value;save();renderPrices()});
+$("mktCats").addEventListener("click",e=>{const b=e.target.closest("[data-mktcat]");if(!b)return;state.mkt.cat=b.dataset.mktcat;state.mkt.type="";state.mkt.item="";save();renderPrices()});
+// the list's search box: typing narrows the list and suggests the matching items with their icons; with nothing typed, focusing it
+// lists the category's items to click. Picking one shows only that item (✕ shows them all again)
+let LSUG=[],LSUG_I=-1;
+function listSug(){const q=$("mktQ").value.trim().toLowerCase().replace(/^#/,""),box=$("mktSug"),pool=MKT_POOL;
+  const hit=!q?(state.mkt.cat?[...pool].sort((a,b)=>mktName(a).localeCompare(mktName(b))):[]):[...pool.filter(id=>mktName(id).toLowerCase().startsWith(q)),...pool.filter(id=>!mktName(id).toLowerCase().startsWith(q)&&mktName(id).toLowerCase().includes(q)),...pool.filter(id=>id.startsWith(q))].filter((id,i,a)=>a.indexOf(id)===i);
+  LSUG=hit.slice(0,q?12:60);LSUG_I=LSUG.length?0:-1;
+  box.innerHTML=LSUG.map((id,i)=>`<button type="button" role="option" class="mktSugRow${i===LSUG_I?" on":""}" data-lsug="${id}"><span class="mktIc">${itemIcon(id)}</span><span class="grow">${esc(mktName(id))}</span><span class="note">${MKT_CAT_NAME[mktCat(id)]} · #${id}</span></button>`).join("")
+    +(hit.length>LSUG.length?`<div class="note mktSugMore">${fmtN(hit.length-LSUG.length)} more: type a name, or pick a type, to narrow it</div>`:"");
+  box.hidden=!LSUG.length;$("mktQ").setAttribute("aria-expanded",String(!box.hidden))}
+const listPick=id=>{state.mkt.item=id;state.mkt.q="";$("mktQ").value="";$("mktSug").hidden=true;save();renderPrices()};
+$("mktQ").addEventListener("input",e=>{state.mkt.q=e.target.value;save();renderPrices();listSug()});
+$("mktQ").addEventListener("focus",listSug);
+$("mktQ").addEventListener("blur",()=>{$("mktSug").hidden=true});
+$("mktSug").addEventListener("mousedown",e=>e.preventDefault());
+$("mktSug").addEventListener("click",e=>{const b=e.target.closest("[data-lsug]");if(b)listPick(b.dataset.lsug)});
+$("mktQ").addEventListener("keydown",e=>{const box=$("mktSug");if(box.hidden||!LSUG.length)return;
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();LSUG_I=(LSUG_I+(e.key==="ArrowDown"?1:-1)+LSUG.length)%LSUG.length;
+    box.querySelectorAll("[data-lsug]").forEach((b,i)=>{b.classList.toggle("on",i===LSUG_I);if(i===LSUG_I)b.scrollIntoView({block:"nearest"})})}
+  else if(e.key==="Enter"&&LSUG_I>=0){e.preventDefault();listPick(LSUG[LSUG_I])}else if(e.key==="Escape")box.hidden=true});
+$("mktType").addEventListener("change",e=>{state.mkt.type=e.target.value;state.mkt.item="";save();renderPrices()});
+$("mktItemChip").addEventListener("click",e=>{if(e.target.closest("[data-mktitemx]")){state.mkt.item="";save();renderPrices()}});
 $("mktSort").addEventListener("change",e=>{state.mkt.sort=e.target.value;save();renderPrices()});
 $("mktMax").addEventListener("change",e=>{const v=parseZ(e.target.value);state.mkt.max=Number.isNaN(v)?state.mkt.max:v;mktTools();save();renderPrices()});
 $("mktSlotQ").addEventListener("input",e=>{state.mkt.slot=e.target.value;save();renderPrices()});

@@ -680,6 +680,11 @@ const listingOk=x=>{const m=state.mkt,sq=mktSlotQ(),st=slotTxt(x).join(" | ").to
 // the price a row sorts and filters by: its cheapest priced copy that fits the filters (the plain price when none are on)
 const mktBest=id=>listings(id).filter(x=>x.p>0&&listingOk(x)).sort((a,b)=>a.p-b.p)[0]||null;
 const mktPrice=id=>{const b=mktBest(id);return b?b.p:null};
+// an item's type within its category, for the Type lists: a weapon's weapon type, armor's part ("" for anything else)
+const ITEM_PARTS={head_upper:"Upper headgear",head_middle:"Middle headgear",head_lower:"Lower headgear",armor:"Armor",shield:"Shield",garment:"Garment",footgear:"Shoes",accessory:"Accessory"};
+const itemSub=id=>{const g=MKT_GEAR[id];if(!g||g.card)return "";const c=mktCat(id);
+  return c==="weapon"?g.type||"":c==="armor"?((g.slot||[]).map(s=>s.startsWith("accessory")?"accessory":s).find(s=>ITEM_PARTS[s])||""):""};
+const subTypes=cat=>cat==="weapon"?Object.keys(BUILD.WTYPE).map(t=>[t,BUILD.WTYPE[t]]):cat==="armor"?Object.entries(ITEM_PARTS):[];
 // logged in to the shared prices (js/shared.js)
 const loggedIn=()=>typeof AUTH!=="undefined"&&!!AUTH;
 const OPT_REFINES=n=>Array.from({length:n+1},(_,i)=>i);
@@ -737,6 +742,8 @@ function renderAddCopy(id){ADD_PICKED=id||null;const pk=$("addPicked"),box=$("pr
   if(!id||!copyable(id)){ADD_ID=ADD_COPY=null;box.hidden=true;box.innerHTML="";return}
   if(id!==ADD_ID){ADD_ID=id;ADD_COPY=newCopy(id);if(PICK&&PICK.key==="a")PICK=null}
   box.hidden=false;box.innerHTML=`<span class="note">${id===TAMING_RING?"Egg":costumeOf(id)?"Enchant stone":"Refine, slots and affixes"} (optional: leave them empty for the plain price)</span>${copyFields(id,ADD_COPY,"a","a")}`;copyPicks(box,ADD_COPY,"a")}
+// the items the list can show right now (category and Type applied), for the search box's suggestions
+let MKT_POOL=[];
 function renderPrices(){
   const f=document.activeElement;if(f&&f.tagName==="INPUT"&&$("mktList").contains(f))return;// don't rebuild the box you're typing in
   stampPrices();if(typeof loadShared==="function")loadShared();if(typeof renderShared==="function")renderShared();
@@ -755,7 +762,11 @@ function renderPrices(){
   const pr={};ids.forEach(id=>pr[id]=mktPrice(id));
   const SORT={recent:(a,b)=>seenT(b)-seenT(a),low:(a,b)=>(pr[a]??Infinity)-(pr[b]??Infinity),high:(a,b)=>(pr[b]??-1)-(pr[a]??-1),
     move:(a,b)=>Math.abs(priceMove(b)??-1)-Math.abs(priceMove(a)??-1),name:()=>0};
-  const rows=ids.filter(id=>(!mk.cat||mktCat(id)===mk.cat)&&(!q||mktName(id).toLowerCase().includes(q)||("#"+id).includes(q))
+  // Type for weapons and armor, and the item picked from the search box's suggestions (mk.item), shown with its icon and ✕
+  const subs=subTypes(mk.cat);$("mktTypeL").hidden=!subs.length;$("mktType").innerHTML=`<option value="">Any</option>`+subs.map(([k,n])=>`<option value="${k}"${mk.type===k?" selected":""}>${esc(n)}</option>`).join("");
+  $("mktItemChip").hidden=!mk.item;$("mktItemChip").innerHTML=mk.item?`<span class="mktIc">${itemIcon(mk.item)}</span><b>${esc(mktName(mk.item))}</b><button type="button" class="small ghost" data-mktitemx aria-label="Show every item again">✕</button>`:"";
+  MKT_POOL=ids.filter(id=>(!mk.cat||mktCat(id)===mk.cat)&&(!mk.type||itemSub(id)===mk.type));
+  const rows=MKT_POOL.filter(id=>(!mk.item||id===mk.item)&&(!q||mktName(id).toLowerCase().includes(q)||("#"+id).includes(q))
       &&(!fOn||pr[id]!=null)&&(mk.max==null||!(pr[id]>mk.max)))
     .sort((a,b)=>SORT[mk.sort](a,b)||mktName(a).localeCompare(mktName(b)));
   $("mktList").innerHTML=rows.map(id=>{const p=state.prices[id],t=(state.priceSeen[id]||[])[0],mv=priceMove(id),npc=NPCSELL[id],g=mktGearOnly(id),vs=ownCopies(id).slice(1),best=fOn?mktBest(id):null,own=id in state.prices,
