@@ -11,11 +11,13 @@ insert into public.settings (key, value, about) values
   ('keep_days',      30,  'reports older than this many days no longer count'),
   ('fresh_days',     7,   'a copy reported by fresh_players or more players in this many days uses only those days'),
   ('fresh_players',  3,   'players needed in fresh_days for a copy to use only its latest reports'),
-  ('min_players',    2,   'players needed before a shared price shows'),
+  ('min_players',    1,   'players needed before an item shows in everyone''s list'),
   ('per_item_day',   10,  'reports one player can post for one item on one server in a day'),
   ('per_day',        200, 'reports one player can post in a day'),
   ('outlier_factor', 3,   'a player whose price is this many times over or under the median is left out of it')
 on conflict (key) do nothing;
+-- the Market lists everyone's items now, so one player's item shows too (2 was the earlier default)
+update public.settings set value = 1, about = 'players needed before an item shows in everyone''s list' where key = 'min_players' and value = 2;
 alter table public.settings enable row level security; -- no policies: only the dashboard and the functions below read it
 
 -- ---- admins and banned accounts: add a row in the Table editor (the user id is under Authentication, Users) ----
@@ -137,12 +139,13 @@ revoke all on function public.sellers(text, integer) from public;
 grant execute on function public.sellers(text, integer) to anon, authenticated;
 
 -- ---- the shared prices of one server, for anyone: per copy (item, refine, options) the median of the players' prices ----
--- Each player counts once: their reports for a copy become their own median first. A player more than outlier_factor over or
--- under the copy's median is left out. Banned accounts and reports older than keep_days don't count; a copy with fresh_players
--- or more players in the last fresh_days uses only those days. A copy shows once min_players players are left.
+-- Each player counts once: their reports for a copy become their own median first. Once 3 or more players reported a copy, a
+-- player more than outlier_factor over or under its median is left out. Banned accounts and reports older than keep_days don't count; a copy with fresh_players
+-- or more players in the last fresh_days uses only those days. A copy shows once min_players players are left. low: the lowest
+-- price any of those players reported for it
 drop function if exists public.shared_prices(text); -- its columns changed: sellers was added
 create or replace function public.shared_prices(srv text)
-returns table (item_id integer, refine smallint, opts jsonb, cards integer[], enchant text, egg integer, price bigint, players integer, reports integer, newest timestamptz, sellers integer)
+returns table (item_id integer, refine smallint, opts jsonb, cards integer[], enchant text, egg integer, price bigint, low bigint, players integer, reports integer, newest timestamptz, sellers integer)
 language sql stable security definer set search_path = '' as $$
   with s as (
     select coalesce(max(value) filter (where key = 'keep_days'), 30) as keep, coalesce(max(value) filter (where key = 'fresh_days'), 7) as fresh,
@@ -163,15 +166,15 @@ language sql stable security definer set search_path = '' as $$
   per as (
     select u.item_id, u.refine, u.opts_key, u.slots_key, u.user_id, min(u.opts::text) as opts, min(u.cards::text) as cards, min(u.enchant) as enchant, min(u.egg) as egg,
            percentile_cont(0.5) within group (order by u.price) as p,
-           count(*) as n, max(u.created_at) as t, bool_or(u.selling) as selling
+           count(*) as n, min(u.price) as lo, max(u.created_at) as t, bool_or(u.selling) as selling
     from used u group by u.item_id, u.refine, u.opts_key, u.slots_key, u.user_id),
   mid as (
-    select p.item_id, p.refine, p.opts_key, p.slots_key, percentile_cont(0.5) within group (order by p.p) as m
+    select p.item_id, p.refine, p.opts_key, p.slots_key, percentile_cont(0.5) within group (order by p.p) as m, count(*) as np
     from per p group by p.item_id, p.refine, p.opts_key, p.slots_key),
   kept as (
     select p.* from per p join mid m on m.item_id = p.item_id and m.refine = p.refine and m.opts_key = p.opts_key and m.slots_key = p.slots_key, s
-    where p.p <= m.m * s.factor and p.p >= m.m / s.factor)
-  select k.item_id, k.refine, min(k.opts)::jsonb, min(k.cards)::integer[], min(k.enchant), min(k.egg), round(percentile_cont(0.5) within group (order by k.p))::bigint,
+    where m.np < 3 or (p.p <= m.m * s.factor and p.p >= m.m / s.factor))  -- with 1 or 2 players there's no telling who's off
+  select k.item_id, k.refine, min(k.opts)::jsonb, min(k.cards)::integer[], min(k.enchant), min(k.egg), round(percentile_cont(0.5) within group (order by k.p))::bigint, min(k.lo)::bigint,
          count(*)::int, sum(k.n)::int, max(k.t),
          count(*) filter (where k.selling)::int
   from kept k, s

@@ -639,8 +639,9 @@ const mktGearOnly=id=>{const g=MKT_GEAR[id];return g&&!g.card?g:null};
 const mktSlot=g=>{const s=g.slot||[];return s.includes("weapon")?"weapon":s.includes("footgear")?"shoes":s.includes("garment")?"garment":s.includes("armor")?"armor":s[0]||""};
 const MKT_OPT_BY=()=>MKT_OPT_BY.m||(MKT_OPT_BY.m=Object.fromEntries(BUILD.OPTIONS.map(o=>[o.k,o])));
 const optTxt=x=>{const o=MKT_OPT_BY()[x.k];return o?`${o.label.replace(/ %$/,"")}${x.v!=null?` ${x.v>0?"+":""}${x.v}${o.pct?"%":""}`:""}`:x.k};
-// what's in a copy's slots: cards (one per card slot), the slot 4 enchant of Subjugation Team and Expedition armor, garments and
-// shoes (data/memorial.js MEM_ENCHANT, a line such as "STR +1"), and the pet egg sealed in a Taming Ring (data/special.js)
+// what's in a copy's slots: cards (one per card slot; a costume's one slot holds the enchant stone on it, data/stones.js), the slot 4
+// enchant of Subjugation Team and Expedition armor, garments and shoes (data/memorial.js MEM_ENCHANT, a line such as "STR +1"), and
+// the pet egg sealed in a Taming Ring (data/special.js)
 const TAMING_RING="24966";
 const slotKind=s=>s.startsWith("head")?"head":s.startsWith("accessory")?"accessory":s; // head cards fit any headgear, accessory cards either ring slot
 const MKT_CARDS={};
@@ -650,14 +651,19 @@ const memKind=g=>{const m=/^(Subjugation|Expedition)/.exec(g.name||""),s=g.slot|
   return m&&part&&typeof MEM_ENCHANT!=="undefined"?{set:m[1].toLowerCase(),part}:null};
 const enchantsFor=g=>{const k=g&&memKind(g);if(!k)return [];const P=MEM_ENCHANT[k.set];return [...new Set([...P.low,...P[k.part]].map(x=>x[0]).filter(x=>x!=="essence"))]};
 const EGGS=()=>typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[];
-// copies (refine, slots, affixes) are for weapons and armor, and for the Taming Ring (its egg)
-const copyable=id=>!!mktGearOnly(id)||id===TAMING_RING;
-const cardTxt=c=>{const n={};(c||[]).filter(Boolean).forEach(id=>{const x=(MKT_GEAR[id]||{}).name||itemName(id);n[x]=(n[x]||0)+1});return Object.entries(n).map(([x,k])=>k>1?`${x} ×${k}`:x)};
+// a costume's positions (data/costumes.js, e.g. ["upper"]) and the enchant stones that fit them
+const costumeOf=id=>typeof COSTUMES!=="undefined"&&COSTUMES[id]||null;
+const stonesFor=id=>{const ps=costumeOf(id)||[];return (typeof STONES!=="undefined"?STONES:[]).filter(s=>ps.includes(s.slot)).sort((a,b)=>a.name.localeCompare(b.name))};
+// copies are for weapons and armor (refine, cards, affixes), costumes (an enchant stone) and the Taming Ring (its egg)
+const copyable=id=>!!mktGearOnly(id)||id===TAMING_RING||!!costumeOf(id);
+const slotCount=id=>{const g=mktGearOnly(id);return g?g.slots||0:costumeOf(id)?1:0};
+const slotName=id=>(MKT_GEAR[id]||{}).name||((typeof STONES!=="undefined"?STONES:[]).find(s=>s.id===+id)||{}).name||itemName(id);
+const cardTxt=c=>{const n={};(c||[]).filter(Boolean).forEach(id=>{const x=slotName(id);n[x]=(n[x]||0)+1});return Object.entries(n).map(([x,k])=>k>1?`${x} ×${k}`:x)};
 const eggTxt=id=>(EGGS().find(e=>e.id===+id)||{}).name||"#"+id;
 const slotTxt=x=>[...cardTxt(x.c),...(x.e?[x.e]:[]),...(x.egg?[eggTxt(x.egg)]:[])];
-const varTxt=x=>[x.egg&&!x.r?"":`+${x.r}`,...slotTxt(x),...x.o.map(optTxt)].filter(Boolean).join(" · ");
-// a new copy, or the one the Add price form is filling in: with as many empty card slots as the gear has
-const newCopy=id=>{const g=mktGearOnly(id);return {r:0,o:[],...(g&&g.slots?{c:Array(g.slots).fill(null)}:{}),p:0,t:null}};
+const varTxt=x=>[x.r?`+${x.r}`:"",...slotTxt(x),...x.o.map(optTxt)].filter(Boolean).join(" · ")||"+0";
+// a new copy, or the one the Add item popup is filling in: with as many empty slots as the gear (or costume) has
+const newCopy=id=>{const n=slotCount(id);return {r:0,o:[],...(n?{c:Array(n).fill(null)}:{}),p:0,t:null}};
 const copyBare=x=>!x.r&&!x.o.length&&!(x.c||[]).some(Boolean)&&!x.e&&!x.egg;
 // every copy priced for an item: yours (the plain one, +0 with nothing in its slots and no affixes, then the others) and the shared ones (s: true)
 const sharedCopies=id=>typeof sharedOf==="function"&&sharedOf(id)||[];
@@ -677,48 +683,69 @@ const mktPrice=id=>{const b=mktBest(id);return b?b.p:null};
 // logged in to the shared prices (js/shared.js)
 const loggedIn=()=>typeof AUTH!=="undefined"&&!!AUTH;
 const OPT_REFINES=n=>Array.from({length:n+1},(_,i)=>i);
-// a copy's boxes: refine, a list per card slot, the enchant, the egg and the affixes. pre names their data attributes: "v" on a
-// list row (data-vr, data-vc="0"…), "a" in the Add price form. The lists are shared HTML, so picked values are set by copyPicks
-const MKT_LISTS={};
-const cardList=g=>{const k="c:"+(g.slot||[]).join();return MKT_LISTS[k]||(MKT_LISTS[k]=cardsFor(g).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join(""))};
-function copyFields(id,x,pre){const g=mktGearOnly(id),ench=enchantsFor(g),out=[];
+// a copy's boxes: refine, a button per slot (its card or stone, with its icon) or for the egg, the slot 4 enchant and the affixes. pre
+// names their data attributes: "v" on a list row (data-vr, data-vslot="c:0"…), "a" in the Add item popup. key says which copy the
+// slot picker (PICK) is open for: "a", or "v:<item id>:<copy>"
+let PICK=null; // {key, kind: "c" a card or stone slot, "egg", j: the slot, q: what's typed in its search}
+const slotItems=(id,kind)=>kind==="egg"?EGGS():costumeOf(id)?stonesFor(id):cardsFor(mktGearOnly(id));
+function slotPickList(id,kind,q,pre){q=(q||"").trim().toLowerCase();const L=slotItems(id,kind).filter(it=>!q||it.name.toLowerCase().includes(q));
+  return `<button type="button" class="slotOpt" data-${pre}pick=""><span class="note">Empty</span></button>`+L.slice(0,60).map(it=>`<button type="button" class="slotOpt" data-${pre}pick="${it.id}">${itemIcon(it.id)}<span>${esc(it.name)}</span></button>`).join("")
+    +(L.length>60?`<div class="note slotMore">${fmtN(L.length-60)} more: type to narrow</div>`:L.length?"":`<div class="note slotMore">Nothing matches.</div>`)}
+function copyFields(id,x,pre,key){const g=mktGearOnly(id),ench=enchantsFor(g),out=[],n=slotCount(id),cos=!!costumeOf(id);
+  const btn=(kind,j,val,label)=>{const on=PICK&&PICK.key===key&&PICK.kind===kind&&PICK.j===j;
+    return `<button type="button" class="slotBtn${on?" on":""}" data-${pre}slot="${kind}:${j}" aria-expanded="${on}">${val?`${itemIcon(val)}<span>${esc(kind==="egg"?eggTxt(val):slotName(val))}</span>`:`<span class="note">${label}</span>`}</button>`};
   if(g)out.push(`<select data-${pre}r aria-label="Refine">${OPT_REFINES(20).map(r=>`<option value="${r}"${r===x.r?" selected":""}>+${r}</option>`).join("")}</select>`);
-  if(g&&g.slots)out.push(`<span class="mktSlots">${Array.from({length:g.slots},(_,j)=>`<select data-${pre}c="${j}" aria-label="Card slot ${j+1}"><option value="">slot ${j+1}: empty</option>${cardList(g)}</select>`).join("")}</span>`);
+  const slots=[...Array.from({length:n},(_,j)=>btn("c",j,(x.c||[])[j],cos?"Enchant stone: none":`Card ${j+1}: empty`)),...(id===TAMING_RING?[btn("egg",0,x.egg,"Egg: none")]:[])];
+  if(slots.length)out.push(`<span class="mktSlots">${slots.join("")}</span>`);
+  if(PICK&&PICK.key===key)out.push(`<div class="slotPick"><input type="search" data-${pre}pq value="${esc(PICK.q)}" placeholder="Search ${PICK.kind==="egg"?"eggs":cos?"stones":"cards"}" aria-label="Search"><div class="slotList">${slotPickList(id,PICK.kind,PICK.q,pre)}</div></div>`);
   if(ench.length)out.push(`<select data-${pre}e aria-label="Enchant (slot 4)"><option value="">no enchant</option>${ench.map(e=>`<option${x.e===e?" selected":""}>${esc(e)}</option>`).join("")}</select>`);
-  if(id===TAMING_RING)out.push(`<select data-${pre}egg aria-label="Pet egg"><option value="">no egg</option>${EGGS().map(e=>`<option value="${e.id}"${+x.egg===e.id?" selected":""}>${esc(e.name)}</option>`).join("")}</select>`);
   if(g){const ch=BUILD.optChoices(mktSlot(g),g),list=optList(ch);
     const opt=(o,j)=>{const c=o&&ch.find(c=>c.k===o.k),r=c&&c.range;
-      return `<span class="mktOpt"><select data-${pre}ok="${j}" aria-label="Affix"><option value="">${o?"remove":"+ affix"}</option>${o&&!c?`<option value="${esc(o.k)}">${esc(optTxt({k:o.k,v:null}))}</option>`:""}${list}</select>${o?`<input class="mono" data-${pre}ov="${j}" inputmode="decimal" value="${o.v??""}" placeholder="${r?`${r[0]}–${r[1]}`:"value"}" aria-label="Affix value">`:""}</span>`};
+      return `<span class="mktOpt"><select data-${pre}ok="${j}" aria-label="Affix"><option value="">${o?"remove":"+ affix"}</option>${o&&!c?`<option value="${esc(o.k)}">${esc(optTxt({k:o.k,v:null}))}</option>`:""}${list}</select>${o?`<input class="mono" data-${pre}ov="${j}" inputmode="decimal" value="${o.v??""}" placeholder="${r?`${r[0]}–${r[1]}`:"value"}" aria-label="Affix value"><button type="button" class="small ghost" data-${pre}odel="${j}" title="Remove this affix" aria-label="Remove this affix">✕</button>`:""}</span>`};
     out.push(`<span class="mktOpts">${x.o.map(opt).join("")}${x.o.length<BUILD.OPT_MAX?opt(null,x.o.length):""}</span>`)}
   return out.join("")}
-function copyPicks(el,x,pre){(x.c||[]).forEach((c,j)=>{const s=el.querySelector(`[data-${pre}c="${j}"]`);if(s)s.value=c?String(c):""});
-  x.o.forEach((o,j)=>{const s=el.querySelector(`[data-${pre}ok="${j}"]`);if(s)s.value=o.k})}
-// a change in one of a copy's boxes; false when el isn't one of them
+function copyPicks(el,x,pre){x.o.forEach((o,j)=>{const s=el.querySelector(`[data-${pre}ok="${j}"]`);if(s)s.value=o.k})}
+// a change in one of a copy's lists or boxes; false when el isn't one of them
 function copyChange(x,el,pre){const d=el.dataset;
   if(`${pre}r` in d)x.r=+el.value;
-  else if(`${pre}c` in d){x.c=x.c||[];x.c[+d[pre+"c"]]=el.value?+el.value:null}
   else if(`${pre}e` in d){if(el.value)x.e=el.value;else delete x.e}
-  else if(`${pre}egg` in d){if(el.value)x.egg=+el.value;else delete x.egg}
   else if(`${pre}ok` in d){const j=+d[pre+"ok"];if(el.value)x.o[j]={k:el.value,v:x.o[j]?x.o[j].v:null};else x.o.splice(j,1)}
   else if(`${pre}ov` in d){const v=parseFloat(el.value);x.o[+d[pre+"ov"]].v=Number.isFinite(v)?v:null}
   else return false;
   return true}
+// a click in a copy's boxes: a slot button opens (or closes) its picker, a picked card / stone / egg goes in, ✕ removes an affix;
+// false when it wasn't one of them
+function copyClick(x,el,pre,key){
+  const sb=el.closest(`[data-${pre}slot]`);if(sb){const [kind,j]=sb.dataset[pre+"slot"].split(":");PICK=PICK&&PICK.key===key&&PICK.kind===kind&&PICK.j===+j?null:{key,kind,j:+j,q:""};return true}
+  const pk=el.closest(`[data-${pre}pick]`);if(pk&&PICK&&PICK.key===key){const v=pk.dataset[pre+"pick"];
+    if(PICK.kind==="egg"){if(v)x.egg=+v;else delete x.egg}else{x.c=x.c||[];x.c[PICK.j]=v?+v:null}PICK=null;return true}
+  const od=el.closest(`[data-${pre}odel]`);if(od){x.o.splice(+od.dataset[pre+"odel"],1);return true}
+  return false}
+// typing in a picker's search narrows its list without rebuilding the box you're typing in
+function copySearch(id,el,pre){if(!PICK||!el.matches(`[data-${pre}pq]`))return false;PICK.q=el.value;el.parentNode.querySelector(".slotList").innerHTML=slotPickList(id,PICK.kind,PICK.q,pre);return true}
 function mktVarRow(id,x){const hit=mktFilterOn()&&listingOk(x);
-  return `<div class="mktVar${hit?" hit":""}" data-var="${esc(id)}:${x.i}">${copyFields(id,x,"v")}
+  return `<div class="mktVar${hit?" hit":""}" data-var="${esc(id)}:${x.i}">${copyFields(id,x,"v",`v:${id}:${x.i}`)}
     <span class="mktPrice"><input class="mono" inputmode="decimal" data-vp value="${x.p>0?fmtN(x.p):""}" placeholder="price" aria-label="Price of this copy"><span class="mktZ">z</span>${x.p>=1e3?`<div class="note mono">${zShort(x.p)}</div>`:""}</span>
     <span class="note mktAgo">${x.t?agoTxt(x.t):""}</span>${loggedIn()?`<label class="mktSell" title="You sell this copy at this price. Once you share it, buyers see your Discord name and can message you about it. Untick to take it back"><input type="checkbox" data-vsell${x.sell?" checked":""}> DM me</label>`:""}
     <button type="button" class="small ghost" data-vdel title="Remove this copy" aria-label="Remove this copy">✕</button></div>`}
-// the Add price form's extra boxes, for the item picked in it (ADD_COPY: its refine, slots, enchant, egg and affixes so far)
-let ADD_COPY=null,ADD_ID=null;
-function renderAddCopy(id){const box=$("priceCopy");if(!id||!copyable(id)){ADD_ID=ADD_COPY=null;box.hidden=true;box.innerHTML="";return}
-  if(id!==ADD_ID){ADD_ID=id;ADD_COPY=newCopy(id)}
-  box.hidden=false;box.innerHTML=`<span class="note">${id===TAMING_RING?"Egg":"Refine, slots and affixes"} (optional: leave them empty for the plain price)</span>${copyFields(id,ADD_COPY,"a")}`;copyPicks(box,ADD_COPY,"a")}
+// the Add item popup: the item picked (its icon, name and Change) and its copy boxes (ADD_COPY: its refine, slots, enchant, egg and
+// affixes so far). ADD_PICKED: the item picked, copyable or not
+let ADD_COPY=null,ADD_ID=null,ADD_PICKED=null;
+function renderAddCopy(id){ADD_PICKED=id||null;const pk=$("addPicked"),box=$("priceCopy");
+  pk.hidden=!id;pk.innerHTML=id?`<span class="mktIc">${itemIcon(id)}</span><div class="grow"><b>${esc(mktName(id))}</b><div class="note">#${esc(id)} · ${esc((MKT_CATS.find(([k])=>k===mktCat(id))||[])[1]||"")}</div></div><button type="button" class="small" data-addchange>Change</button>`:"";
+  $("priceItem").closest("label").hidden=!!id;$("addCats").hidden=!!id;if(id)$("addTypeBar").hidden=true;
+  if(!id||!copyable(id)){ADD_ID=ADD_COPY=null;box.hidden=true;box.innerHTML="";return}
+  if(id!==ADD_ID){ADD_ID=id;ADD_COPY=newCopy(id);if(PICK&&PICK.key==="a")PICK=null}
+  box.hidden=false;box.innerHTML=`<span class="note">${id===TAMING_RING?"Egg":costumeOf(id)?"Enchant stone":"Refine, slots and affixes"} (optional: leave them empty for the plain price)</span>${copyFields(id,ADD_COPY,"a","a")}`;copyPicks(box,ADD_COPY,"a")}
 function renderPrices(){
   const f=document.activeElement;if(f&&f.tagName==="INPUT"&&$("mktList").contains(f))return;// don't rebuild the box you're typing in
   stampPrices();if(typeof loadShared==="function")loadShared();if(typeof renderShared==="function")renderShared();
   const mk=state.mkt,mine=Object.keys(state.prices),q=mk.q.trim().toLowerCase(),fOn=mktFilterOn();
-  // with "show everyone's items", the items only others priced join yours
-  const ids=mk.everyone&&typeof SHARED_P!=="undefined"?[...new Set([...mine,...Object.keys((SHARED_P[state.mktServer]||{}).rows||{})])]:mine;
+  // Everyone: everyone's items (the shared prices of this server) with yours; Mine: only yours; My posts: what you posted (js/shared.js)
+  ROOTQ("#mktWho [data-view]").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.view===mk.view)));
+  const posts=mk.view==="posts";["mktCats","mktToolsBar","mktOptBar"].forEach(k=>{$(k).hidden=posts});
+  if(posts){if(typeof renderMyPosts==="function")renderMyPosts();return}
+  const ids=mk.view==="all"&&typeof SHARED_P!=="undefined"?[...new Set([...mine,...Object.keys((SHARED_P[state.mktServer]||{}).rows||{})])]:mine;
   const cnt={"":ids.length};ids.forEach(id=>{const c=mktCat(id);cnt[c]=(cnt[c]||0)+1});
   $("mktCats").innerHTML=MKT_CATS.filter(([k])=>!k||cnt[k]||mk.cat===k).map(([k,n])=>`<button type="button" class="mktCat" data-mktcat="${k}" aria-pressed="${mk.cat===k}">${n} <span>${cnt[k]||0}</span></button>`).join("");
   mktFilterBoxes();
@@ -736,18 +763,18 @@ function renderPrices(){
     return `<div class="mktItem"><div class="mktRow"><span class="mktIc">${itemIcon(id)}</span>
       <div class="mktName"><a href="#" data-info="item:${esc(id)}">${esc(mktName(id))}</a>
         <div class="note">${[best?`<b class="mktFit">cheapest fit ${esc(varTxt(best))}${best.s?" (shared)":""}: ${fmtN(best.p)} z</b>`:"",
-          sp&&own?`<span class="mktShared" title="${esc(sharedTxt(sp))}">shared ${zShort(sp.p)} · ${sp.players} players${p>0?"":` · <a href="#" data-suse="${esc(id)}">use it</a>`}</span>`:"",t?`<span title="${esc(new Date(t).toLocaleString("en-GB"))}">updated ${agoTxt(t)}</span>`:"",npc!=null?`NPC pays ${fmtN(npc)} z`:"",`#${esc(id)}`,
+          sp&&own?`<span class="mktShared" title="${esc(sharedTxt(sp))}">everyone: lowest ${zShort(sp.p)} · median ${zShort(sp.med)} · ${sp.players} player${sp.players>1?"s":""}</span>`:"",t?`<span title="${esc(new Date(t).toLocaleString("en-GB"))}">updated ${agoTxt(t)}</span>`:"",npc!=null?`NPC pays ${fmtN(npc)} z`:"",`#${esc(id)}`,
           own&&loggedIn()?`<label class="mktSell" title="You sell it at this price. Once you share it, buyers see your Discord name and can message you about it. Untick to take it back"><input type="checkbox" data-sell="${esc(id)}"${state.sell[id]?" checked":""}> DM me</label>`:"",
           sellerN(id)?`<a href="#" data-sellers="${esc(id)}" class="mktSellers">${sellerN(id)} seller${sellerN(id)>1?"s":""} · DM</a>`:"",
-          copyable(id)&&own?`<a href="#" data-varadd="${esc(id)}" title="Price a copy with a refine, cards, an enchant, an egg or affixes. The plain price stays the one every zeny figure uses">${g?"+ refine / slots / affixes":"+ egg"}</a>`:""].filter(Boolean).join(" · ")}</div></div>
+          copyable(id)&&own?`<a href="#" data-varadd="${esc(id)}" title="Price a copy with a refine, cards, an enchant (stone), an egg or affixes. The plain price stays the one every zeny figure uses">${g?"+ refine / slots / affixes":costumeOf(id)?"+ enchant stone":"+ egg"}</a>`:""].filter(Boolean).join(" · ")}</div></div>
       ${own?`<div class="mktPrice${fOn&&!listingOk(listings(id)[0])?" off":""}"><input class="mono" inputmode="decimal" data-price="${esc(id)}" value="${p>0?fmtN(p):""}" placeholder="price" aria-label="What players pay for ${esc(mktName(id))}" title="${g?"+0, empty slots, no affixes. ":""}Zeny; 450k = 450,000, 1.5m = 1,500,000">
         <span class="mktZ">z</span>${p>=1e3?`<div class="note mono">${zShort(p)}</div>`:""}</div>`
-        :`<div class="mktPrice mktSharedP" title="${sp?esc(sharedTxt(sp)):""}"><b class="mono">${sp?fmtN(sp.p):"–"}</b><span class="mktZ">z</span><div class="note">${sp?`shared · ${sp.players} players`:"shared copies only"}</div></div>`}
+        :`<div class="mktPrice mktSharedP" title="${sp?esc(sharedTxt(sp)):""}"><b class="mono">${sp?fmtN(sp.p):"–"}</b><span class="mktZ">z</span><div class="note">${sp?`lowest · median ${zShort(sp.med)} · ${sp.players} player${sp.players>1?"s":""}`:"only refined / carded copies"}</div></div>`}
       <div class="mktMove">${mv==null?"":`<span class="pill ${mv>0?"up":"down"}" title="was ${fmtN(state.priceSeen[id][1])} z">${mv>0?"▲":"▼"} ${Math.abs(mv)>=10?Math.round(Math.abs(mv)):Math.abs(mv).toFixed(1)}%</span>`}</div>
       ${own?`      <button type="button" class="small ghost" data-unprice="${esc(id)}" title="Remove this item and its copies" aria-label="Remove ${esc(mktName(id))}">✕</button>`
-        :`<button type="button" class="small" data-sadd="${esc(id)}" title="Add it to your prices${sp?" at the shared price":""}">+ add</button>`}</div>
-      ${(copyable(id)&&vs.length)||sc.length?`<div class="mktVars">${copyable(id)?vs.map(x=>mktVarRow(id,x)).join(""):""}${sc.map(x=>`<div class="mktVar shared${fOn&&listingOk(x)?" hit":""}" title="${esc(sharedTxt(x))}"><span class="pill">shared</span><span>${esc(varTxt(x))}</span><span class="mktPrice"><b class="mono">${fmtN(x.p)}</b><span class="mktZ">z</span></span><span class="note mktAgo">${x.players} players</span></div>`).join("")}</div>`:""}${typeof sellersHtml==="function"?sellersHtml(id):""}</div>`}).join("")
-    ||`<div class="note muted mktEmpty">${ids.length?"No prices match these filters.":"No prices yet. Add an item above, or click a drop in Where to farm, Monster info or Item info."}</div>`;
+        :`<button type="button" class="small" data-sadd="${esc(id)}" title="Add your own price for it">+ mine</button>`}</div>
+      ${(copyable(id)&&vs.length)||sc.length?`<div class="mktVars">${copyable(id)?vs.map(x=>mktVarRow(id,x)).join(""):""}${sc.map(x=>`<div class="mktVar shared${fOn&&listingOk(x)?" hit":""}" title="${esc(sharedTxt(x))}"><span class="pill">shared</span><span>${esc(varTxt(x))}</span><span class="mktPrice"><b class="mono">${fmtN(x.p)}</b><span class="mktZ">z</span></span><span class="note mktAgo">median ${zShort(x.med)} · ${x.players} player${x.players>1?"s":""}</span></div>`).join("")}</div>`:""}${typeof sellersHtml==="function"?sellersHtml(id):""}</div>`}).join("")
+    ||`<div class="note muted mktEmpty">${ids.length?"No prices match these filters.":(mk.view==="mine"?"You have no items here yet. Click + Add item, or a drop in Where to farm, Monster info or Item info.":"Nobody has posted an item on this server yet. Click + Add item to add yours.")}</div>`;
   // a select's picked option, set after the list is in (the lists are shared, so no option carries "selected")
   ROOTQ("#mktList [data-var]").forEach(el=>{const [id,i]=el.dataset.var.split(":"),x=(state.priceVars[id]||[])[+i];if(x)copyPicks(el,x,"v")});
 }

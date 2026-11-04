@@ -1052,7 +1052,7 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 /* shared prices and cloud backup (js/shared.js) */
 .discordBtn{background:#5865f2;border-color:#5865f2;color:#fff;font-weight:600}.discordBtn:hover{background:#4752c4;border-color:#4752c4;color:#fff}
 .mktShare{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--raised)}
-.mktShare .bar{align-items:center}.mktEveryone{justify-content:flex-end;gap:6px;font-size:13px}
+.mktShare .bar{align-items:center}
 .mktShared{color:var(--accent)}
 .mktSharedP b{font-size:15px;text-align:right}.mktSharedP{justify-items:end}
 .mktVar.shared{border-style:dotted;background:none}.mktVar.shared .mktPrice{text-align:right}
@@ -1070,3 +1070,16 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 .syncAsk{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;width:min(560px,calc(100% - 32px));background:var(--surface);color:var(--fg);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 12px 40px rgba(16,24,40,.25);padding:14px 16px;display:grid;gap:10px}
 .syncSides{display:grid;grid-template-columns:1fr 1fr;gap:10px}.syncSides>div{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--raised);font-size:13px}
 @media (max-width:520px){.syncSides{grid-template-columns:1fr}}
+/* + Add item: the Market's popup (index.html #addDlg). Its suggestions sit in the flow, so the popup's scroll never cuts them off */
+.mktDlg{width:min(640px,calc(100vw - 32px));max-height:min(720px,calc(100vh - 48px));margin-top:8vh}
+.mktDlg .mktPick{position:static}.mktDlg .mktSug{position:static;margin-top:6px;box-shadow:none;max-height:260px}
+.mktDlg .mktSell{align-self:flex-end;margin-bottom:9px}
+.mktSugMore{padding:6px 8px}.mktDlg .mktSug{max-height:320px}
+/* a copy's slot buttons and their picker (the card, stone or egg with its icon; js/render.js copyFields) */
+.slotBtn{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:3px 10px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--fg);font-weight:500;max-width:240px}
+.slotBtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.slotBtn.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.slotPick{flex:1 1 100%;display:grid;gap:6px;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.slotList{display:grid;gap:1px;max-height:240px;overflow:auto}
+.slotOpt{display:flex;align-items:center;gap:8px;border:0;background:none;color:var(--fg);text-align:left;padding:4px 8px;border-radius:6px;font-weight:500}.slotOpt:hover{background:var(--accent-soft)}
+.slotMore{padding:4px 8px}
+.addPicked{align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--raised)}.addPicked .mktIc{min-height:32px}

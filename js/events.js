@@ -360,22 +360,42 @@ const findItem=s=>{s=String(s).trim();const h=s.match(/#(\d+)$/);if(h&&h[1] in M
 // the Item box's suggestions, each with its icon: names that start with what you typed first, then names that have it, then #ids
 const MKT_CAT_NAME=Object.fromEntries(MKT_CATS);
 let SUG=[],SUG_I=-1;
+// the popup's category buttons and Type list narrow the items to click through, with or without a name typed:
+// weapons by weapon type, armor by the part it's worn on
+let ADD_CAT="",ADD_TYPE="",MKT_BYNAME=null;
+const ADD_PARTS={head_upper:"Upper headgear",head_middle:"Middle headgear",head_lower:"Lower headgear",armor:"Armor",shield:"Shield",garment:"Garment",footgear:"Shoes",accessory:"Accessory"};
+const addSub=id=>{const g=MKT_GEAR[id];if(!g||g.card)return "";const c=mktCat(id);
+  return c==="weapon"?g.type||"":c==="armor"?((g.slot||[]).map(s=>s.startsWith("accessory")?"accessory":s).find(s=>ADD_PARTS[s])||""):""};
+function renderAddCats(){const n={"":MKT_IDS.length};MKT_IDS.forEach(id=>{const c=mktCat(id);n[c]=(n[c]||0)+1});
+  $("addCats").hidden=!!ADD_PICKED;$("addCats").innerHTML=MKT_CATS.filter(([k])=>k&&n[k]).map(([k,nm])=>`<button type="button" class="mktCat" data-addcat="${k}" aria-pressed="${ADD_CAT===k}">${nm} <span>${fmtN(n[k])}</span></button>`).join("");
+  const subs=ADD_CAT==="weapon"?Object.keys(BUILD.WTYPE).map(t=>[t,BUILD.WTYPE[t]]):ADD_CAT==="armor"?Object.entries(ADD_PARTS):[];
+  $("addTypeBar").hidden=!subs.length||!!ADD_PICKED;$("addType").innerHTML=`<option value="">Any</option>`+subs.map(([k,nm])=>`<option value="${k}"${ADD_TYPE===k?" selected":""}>${esc(nm)}</option>`).join("")}
 function showSug(){const q=$("priceItem").value.trim().toLowerCase().replace(/^#/,""),box=$("priceSug");
-  SUG=!q?[]:[...MKT_IDS.filter(id=>MKT_LOW[id].startsWith(q)),...MKT_IDS.filter(id=>!MKT_LOW[id].startsWith(q)&&MKT_LOW[id].includes(q)),...MKT_IDS.filter(id=>id.startsWith(q))]
-    .filter((id,i,a)=>a.indexOf(id)===i).slice(0,12);SUG_I=SUG.length?0:-1;
+  // a typed name: prefix matches first, then the rest, then #ids; nothing typed but a category picked: the category by name
+  const pool=(ADD_CAT?(MKT_BYNAME=MKT_BYNAME||[...MKT_IDS].sort((a,b)=>MKT_LOW[a].localeCompare(MKT_LOW[b]))):MKT_IDS).filter(id=>(!ADD_CAT||mktCat(id)===ADD_CAT)&&(!ADD_TYPE||addSub(id)===ADD_TYPE));
+  const hit=!q?(ADD_CAT?pool:[]):[...pool.filter(id=>MKT_LOW[id].startsWith(q)),...pool.filter(id=>!MKT_LOW[id].startsWith(q)&&MKT_LOW[id].includes(q)),...pool.filter(id=>id.startsWith(q))]
+    .filter((id,i,a)=>a.indexOf(id)===i),max=ADD_CAT?80:12;
+  SUG=hit.slice(0,max);SUG_I=SUG.length?0:-1;
   box.innerHTML=SUG.map((id,i)=>`<button type="button" role="option" class="mktSugRow${i===SUG_I?" on":""}" data-sug="${id}" aria-selected="${i===SUG_I}"><span class="mktIc">${itemIcon(id)}</span><span class="grow">${esc(mktName(id))}</span><span class="note">${MKT_CAT_NAME[mktCat(id)]} · #${id}</span>${id in state.prices?`<span class="pill">priced</span>`:""}</button>`).join("");
-  box.hidden=!SUG.length;$("priceItem").setAttribute("aria-expanded",String(!box.hidden))}
+  if(hit.length>SUG.length)box.innerHTML+=`<div class="note mktSugMore">${fmtN(hit.length-SUG.length)} more: type a name, or pick a type, to narrow it</div>`;
+  else if(!SUG.length&&(q||ADD_CAT))box.innerHTML=`<div class="note mktSugMore">No item matches.</div>`;
+  box.hidden=!box.innerHTML;$("priceItem").setAttribute("aria-expanded",String(!box.hidden))}
 const hideSug=()=>{$("priceSug").hidden=true;$("priceItem").setAttribute("aria-expanded","false")};
 const pickSug=id=>{$("priceItem").value=`${mktName(id)} #${id}`;hideSug();renderAddCopy(id);$("priceVal").focus()};
 $("priceSug").addEventListener("mousedown",e=>e.preventDefault()); // keep the box focused, so the click picks
 $("priceSug").addEventListener("click",e=>{const b=e.target.closest("[data-sug]");if(b)pickSug(b.dataset.sug)});
-$("priceItem").addEventListener("blur",hideSug);
+$("priceItem").addEventListener("blur",()=>{if(!ADD_CAT)hideSug()});
+$("addCats").addEventListener("click",e=>{const b=e.target.closest("[data-addcat]");if(!b)return;ADD_CAT=ADD_CAT===b.dataset.addcat?"":b.dataset.addcat;ADD_TYPE="";renderAddCats();showSug()});
+$("addType").addEventListener("change",e=>{ADD_TYPE=e.target.value;showSug()});
 // pricing an item from another tab clears the Market filters, so its row is there to type in
 const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus){Object.assign(state.mkt,{cat:"",q:"",max:null,refine:null,opts:[],slot:""});mktTools()}save();renderPrices();
   if(focus){showTab("market");const i=document.querySelector(`[data-price="${id}"]`);if(i){i.focus();i.scrollIntoView({behavior:"smooth",block:"center"})}}};
 // picking gear (or the Taming Ring) shows its refine, slot and affix boxes under the form
 $("priceItem").addEventListener("input",()=>{renderAddCopy(findItem($("priceItem").value));showSug()});
 $("priceCopy").addEventListener("change",e=>{if(ADD_COPY&&copyChange(ADD_COPY,e.target,"a"))renderAddCopy(ADD_ID)});
+$("priceCopy").addEventListener("click",e=>{if(!ADD_COPY||!copyClick(ADD_COPY,e.target,"a","a"))return;renderAddCopy(ADD_ID);const q=$("priceCopy").querySelector("[data-apq]");if(q)q.focus()});
+$("priceCopy").addEventListener("input",e=>{if(ADD_ID)copySearch(ADD_ID,e.target,"a")});
+$("addPicked").addEventListener("click",e=>{if(!e.target.closest("[data-addchange]"))return;$("priceItem").value="";renderAddCopy(null);renderAddCats();showSug();$("priceItem").focus()});
 $("priceItem").addEventListener("keydown",e=>{const box=$("priceSug");
   if(!box.hidden&&(e.key==="ArrowDown"||e.key==="ArrowUp")){e.preventDefault();SUG_I=(SUG_I+(e.key==="ArrowDown"?1:-1)+SUG.length)%SUG.length;
     box.querySelectorAll("[data-sug]").forEach((b,i)=>{b.classList.toggle("on",i===SUG_I);b.setAttribute("aria-selected",String(i===SUG_I));if(i===SUG_I)b.scrollIntoView({block:"nearest"})});return}
@@ -385,32 +405,46 @@ $("priceAdd").addEventListener("click",()=>{const id=findItem($("priceItem").val
   if(!id){$("priceMsg").textContent="Pick an item from the list.";return}if(Number.isNaN(p)){$("priceMsg").textContent="Type a price as 450000, 450k or 1.5m.";return}
   $("priceMsg").textContent="";
   // with a refine, a card, an enchant, an egg or an affix set, the price is that copy's; the item's plain price stays as it was
-  if(ADD_COPY&&ADD_ID===id&&!copyBare(ADD_COPY)){if(!(id in state.prices))state.prices[id]=0;const x={...ADD_COPY,o:ADD_COPY.o.filter(o=>o.k),p:p||0,t:Date.now()};
-    if(x.c&&!x.c.some(Boolean))delete x.c;(state.priceVars[id]=state.priceVars[id]||[]).push(x)}
-  else state.prices[id]=p||0;
-  $("priceItem").value="";$("priceVal").value="";renderAddCopy(null);save();renderAll()});
+  const dm=loggedIn()&&$("priceDm").checked;let copy=null;
+  if(ADD_COPY&&ADD_ID===id&&!copyBare(ADD_COPY)){if(!(id in state.prices))state.prices[id]=0;copy={...ADD_COPY,o:ADD_COPY.o.filter(o=>o.k),p:p||0,t:Date.now(),...(dm?{sell:true}:{})};
+    if(copy.c&&!copy.c.some(Boolean))delete copy.c;(state.priceVars[id]=state.priceVars[id]||[]).push(copy)}
+  else{state.prices[id]=p||0;if(dm)state.sell[id]=true}
+  if(typeof postPrice==="function")postPrice(id,copy||undefined);$("addDlg").close();
+  $("priceItem").value="";$("priceVal").value="";$("priceDm").checked=false;renderAddCopy(null);save();renderAll()});
 $("priceVal").addEventListener("keydown",e=>{if(e.key==="Enter")$("priceAdd").click()});
 // a row's boxes save when you leave them or press Enter; something that isn't a price puts the old one back
 const varOf=el=>{const v=el.closest("[data-var]");if(!v)return null;const [id,i]=v.dataset.var.split(":");return {id,i:+i,x:(state.priceVars[id]||[])[+i]}};
 $("mktList").addEventListener("change",e=>{const el=e.target,vr=varOf(el);
   if(vr&&vr.x){const x=vr.x;
-    if(el.matches("[data-vp]")){const v=parseZ(el.value);if(Number.isNaN(v)){el.blur();renderPrices();return}x.p=v||0;x.t=Date.now()}
-    else if(el.matches("[data-vsell]")){if(el.checked)x.sell=true;else{delete x.sell;unsell(vr.id)}}
+    if(el.matches("[data-vp]")){const v=parseZ(el.value);if(Number.isNaN(v)){el.blur();renderPrices();return}x.p=v||0;x.t=Date.now();postPrice(vr.id,x)}
+    else if(el.matches("[data-vsell]")){if(el.checked){x.sell=true;postPrice(vr.id,x)}else{delete x.sell;unsell(vr.id)}}
     else copyChange(x,el,"v");
     el.blur();save();renderPrices();return}
-  if(el.matches("[data-sell]")){const id=el.dataset.sell;if(el.checked)state.sell[id]=true;else{delete state.sell[id];unsell(id)}save();renderPrices();return}
+  if(el.matches("[data-sell]")){const id=el.dataset.sell;if(el.checked){state.sell[id]=true;postPrice(id)}else{delete state.sell[id];unsell(id)}save();renderPrices();return}
   const i=el.closest("[data-price]");if(!i)return;const v=parseZ(i.value);
   if(Number.isNaN(v)){i.blur();renderPrices();return}
-  state.prices[i.dataset.price]=v||0;i.blur();save();renderAll()});
+  state.prices[i.dataset.price]=v||0;if(typeof postPrice==="function")postPrice(i.dataset.price);i.blur();save();renderAll()});
 $("mktList").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("input"))e.target.blur()});
+$("mktList").addEventListener("input",e=>{const vr=varOf(e.target);if(vr)copySearch(vr.id,e.target,"v")});
 $("mktList").addEventListener("click",e=>{
+  {const vr=varOf(e.target);if(vr&&vr.x&&copyClick(vr.x,e.target,"v",`v:${vr.id}:${vr.i}`)){save();renderPrices();const q=$("mktList").querySelector("[data-vpq]");if(q)q.focus();return}}
   const a=e.target.closest("[data-varadd]");if(a){e.preventDefault();const id=a.dataset.varadd;(state.priceVars[id]=state.priceVars[id]||[]).push({...newCopy(id),r:mktGearOnly(id)?state.mkt.refine||0:0,o:mktGearOnly(id)?state.mkt.opts.filter(f=>f.k).map(f=>({k:f.k,v:f.v})):[]});save();renderPrices();
     const rows=document.querySelectorAll(`[data-var^="${id}:"] [data-vp]`);if(rows.length)rows[rows.length-1].focus();return}
   if(e.target.closest("[data-vdel]")){const vr=varOf(e.target);if(!vr)return;state.priceVars[vr.id].splice(vr.i,1);if(!state.priceVars[vr.id].length)delete state.priceVars[vr.id];save();renderPrices();return}
   const sl=e.target.closest("[data-sellers]");if(sl){e.preventDefault();toggleSellers(sl.dataset.sellers);return}
-  const su=e.target.closest("[data-suse]");if(su){e.preventDefault();useShared([su.dataset.suse]);return}
-  const sa=e.target.closest("[data-sadd]");if(sa){const id=sa.dataset.sadd,sp=sharedPlain(id);state.prices[id]=sp?sp.p:0;save();renderAll();renderPrices();return}
-  const b=e.target.closest("[data-unprice]");if(!b)return;const id=b.dataset.unprice;delete state.prices[id];delete state.priceVars[id];delete state.sell[id];save();renderAll()});
+  const sa=e.target.closest("[data-sadd]");if(sa){openAdd(sa.dataset.sadd);return}
+  const b=e.target.closest("[data-unprice]");if(!b)return;const id=b.dataset.unprice;delete state.prices[id];delete state.priceVars[id];delete state.sell[id];if(typeof unpost==="function")unpost(id);save();renderAll()});
+// + Add item: the popup with the item box, its refine / slot / affix boxes, Zeny and DM me; logged in with Discord only, since adding
+// posts it for everyone. id: an item to start with (+ mine on someone else's)
+function openAdd(id){if(!loggedIn()){showToast("Log in with Discord to add items.");const b=document.querySelector('#mktShare [data-auth="login"]');if(b)b.focus();return}
+  $("priceMsg").textContent="";$("priceVal").value="";$("priceDm").checked=false;hideSug();
+  $("addNote").textContent=`Posted for everyone on ${MKT_SERVERS.find(([k])=>k===state.mktServer)[1]} when you add it.`;
+  if(id){$("priceItem").value=`${mktName(id)} #${id}`;renderAddCopy(id)}else{$("priceItem").value="";renderAddCopy(null)}
+  renderAddCats();if(!id&&ADD_CAT)showSug();
+  if(!$("addDlg").open)$("addDlg").showModal();(id?$("priceVal"):$("priceItem")).focus()}
+$("addOpen").addEventListener("click",()=>openAdd());
+ROOTQ("[data-addclose]").forEach(b=>b.addEventListener("click",()=>$("addDlg").close()));
+$("mktWho").addEventListener("click",e=>{const b=e.target.closest("[data-view]");if(!b)return;state.mkt.view=b.dataset.view;save();if(b.dataset.view==="posts"&&typeof loadMyPosts==="function")loadMyPosts();renderPrices()});
 // the list's category buttons, search, sort, max price, Refine ≥ and random options (saved)
 function mktTools(){$("mktQ").value=state.mkt.q;$("mktSort").value=state.mkt.sort;$("mktMax").value=state.mkt.max!=null?fmtN(state.mkt.max):""}
 mktTools();

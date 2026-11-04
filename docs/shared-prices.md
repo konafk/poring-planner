@@ -9,8 +9,8 @@ Players log in with Discord to share the market prices they typed, and to keep a
 - **Anyone can read, only logged-in players can post.** Every report is stamped by the database with the poster's Discord account and the time, whatever the page sends.
 - **Each copy has its own price.** Refine, cards (in any order), the slot 4 enchant, a Taming Ring's egg and affixes all count, so a +7 Katar with two Hydra Cards never mixes with an empty one.
 - **One player counts once.** A player can post the same item many times (several shops, refines, options), but their reports for one copy become their own median first. The shared price is the median of those, one per player.
-- **Outliers are left out.** A player whose price is over 3× or under ⅓ of the copy's median doesn't count, so a fake 999m Jellopy changes nothing.
-- **A shared price needs 2 players.** It shows how many players and reports it comes from, and how old the newest one is.
+- **Outliers are left out.** Once 3 or more players reported a copy, a player whose price is over 3× or under ⅓ of its median doesn't count, so a fake 999m Jellopy changes nothing. With 1 or 2 players there's no telling who's off, so both count; the list shows the player count and the lowest price beside the median.
+- **Every item shows, even with one player.** The Market lists everyone's items, so one player's post shows too, with how many players and reports it comes from and how old the newest one is.
 - **Reports count for 30 days.** When 3 or more players reported a copy in the last 7 days, only those days count, so the price follows the market.
 - **Limits:** 10 reports per player, per item, per server a day, and 200 a day in all. A repeat of the same copy at the same price within an hour counts once. Past a limit the extra reports are skipped.
 - **Bans:** a banned account can't post, and its reports leave every median at once.
