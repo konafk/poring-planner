@@ -202,7 +202,7 @@ function renderShared(){const on=sharedOn();["mktShare","cloudBar"].forEach(k=>{
   const who=AUTH?`<span class="note">Logged in as <b>${esc(AUTH.user.name)}</b></span>`:"",out=AUTH?`<button type="button" class="small ghost" data-auth="logout">Log out</button>`:"";
   const inBtn=`<button type="button" class="discordBtn" data-auth="login">Log in with Discord</button>`,c=SHARED_P[state.mktServer];
   $("mktShare").innerHTML=`<div class="bar">${AUTH?`${who}<span class="note">Items you add are posted for everyone on this server.</span><button type="button" class="small" data-shared="share" title="Post every price on your list for this server, such as the ones added before you logged in. Up to 200 a day">Post all mine</button><button type="button" class="small ${UNSHARE_ARMED?"danger":"ghost"}" data-shared="unshare">${UNSHARE_ARMED?"Click again to take them all back":"Take back all my posts"}</button>${out}`
-      :`${inBtn}<span class="note">to post your items for everyone. Without it they stay in this browser.</span>`}</div>
+      :`${inBtn}<span class="note">to add your items for everyone.</span>`}</div>
     ${c&&c.err?`<div class="note bad">Couldn't load everyone's items: ${esc(c.err)}</div>`:""}`;
   $("cloudBar").innerHTML=AUTH?`${who}<button type="button" data-cloud="save">${CLOUD_ARMED==="save"?"Click again to replace the cloud copy":"Save to cloud"}</button><button type="button" data-cloud="load"${CLOUD.at?"":" disabled"}>Load from cloud</button>
       <button type="button" class="small ${CLOUD_ARMED==="del"?"danger":"ghost"}" data-cloud="del"${CLOUD.at?"":" disabled"}>${CLOUD_ARMED==="del"?"Click again to delete it":"Delete cloud copy"}</button>

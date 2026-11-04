@@ -367,9 +367,9 @@ const ADD_PARTS={head_upper:"Upper headgear",head_middle:"Middle headgear",head_
 const addSub=id=>{const g=MKT_GEAR[id];if(!g||g.card)return "";const c=mktCat(id);
   return c==="weapon"?g.type||"":c==="armor"?((g.slot||[]).map(s=>s.startsWith("accessory")?"accessory":s).find(s=>ADD_PARTS[s])||""):""};
 function renderAddCats(){const n={"":MKT_IDS.length};MKT_IDS.forEach(id=>{const c=mktCat(id);n[c]=(n[c]||0)+1});
-  $("addCats").innerHTML=MKT_CATS.filter(([k])=>k&&n[k]).map(([k,nm])=>`<button type="button" class="mktCat" data-addcat="${k}" aria-pressed="${ADD_CAT===k}">${nm} <span>${fmtN(n[k])}</span></button>`).join("");
+  $("addCats").hidden=!!ADD_PICKED;$("addCats").innerHTML=MKT_CATS.filter(([k])=>k&&n[k]).map(([k,nm])=>`<button type="button" class="mktCat" data-addcat="${k}" aria-pressed="${ADD_CAT===k}">${nm} <span>${fmtN(n[k])}</span></button>`).join("");
   const subs=ADD_CAT==="weapon"?Object.keys(BUILD.WTYPE).map(t=>[t,BUILD.WTYPE[t]]):ADD_CAT==="armor"?Object.entries(ADD_PARTS):[];
-  $("addTypeBar").hidden=!subs.length;$("addType").innerHTML=`<option value="">Any</option>`+subs.map(([k,nm])=>`<option value="${k}"${ADD_TYPE===k?" selected":""}>${esc(nm)}</option>`).join("")}
+  $("addTypeBar").hidden=!subs.length||!!ADD_PICKED;$("addType").innerHTML=`<option value="">Any</option>`+subs.map(([k,nm])=>`<option value="${k}"${ADD_TYPE===k?" selected":""}>${esc(nm)}</option>`).join("")}
 function showSug(){const q=$("priceItem").value.trim().toLowerCase().replace(/^#/,""),box=$("priceSug");
   // a typed name: prefix matches first, then the rest, then #ids; nothing typed but a category picked: the category by name
   const pool=(ADD_CAT?(MKT_BYNAME=MKT_BYNAME||[...MKT_IDS].sort((a,b)=>MKT_LOW[a].localeCompare(MKT_LOW[b]))):MKT_IDS).filter(id=>(!ADD_CAT||mktCat(id)===ADD_CAT)&&(!ADD_TYPE||addSub(id)===ADD_TYPE));
@@ -393,6 +393,9 @@ const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus
 // picking gear (or the Taming Ring) shows its refine, slot and affix boxes under the form
 $("priceItem").addEventListener("input",()=>{renderAddCopy(findItem($("priceItem").value));showSug()});
 $("priceCopy").addEventListener("change",e=>{if(ADD_COPY&&copyChange(ADD_COPY,e.target,"a"))renderAddCopy(ADD_ID)});
+$("priceCopy").addEventListener("click",e=>{if(!ADD_COPY||!copyClick(ADD_COPY,e.target,"a","a"))return;renderAddCopy(ADD_ID);const q=$("priceCopy").querySelector("[data-apq]");if(q)q.focus()});
+$("priceCopy").addEventListener("input",e=>{if(ADD_ID)copySearch(ADD_ID,e.target,"a")});
+$("addPicked").addEventListener("click",e=>{if(!e.target.closest("[data-addchange]"))return;$("priceItem").value="";renderAddCopy(null);renderAddCats();showSug();$("priceItem").focus()});
 $("priceItem").addEventListener("keydown",e=>{const box=$("priceSug");
   if(!box.hidden&&(e.key==="ArrowDown"||e.key==="ArrowUp")){e.preventDefault();SUG_I=(SUG_I+(e.key==="ArrowDown"?1:-1)+SUG.length)%SUG.length;
     box.querySelectorAll("[data-sug]").forEach((b,i)=>{b.classList.toggle("on",i===SUG_I);b.setAttribute("aria-selected",String(i===SUG_I));if(i===SUG_I)b.scrollIntoView({block:"nearest"})});return}
@@ -422,16 +425,20 @@ $("mktList").addEventListener("change",e=>{const el=e.target,vr=varOf(el);
   if(Number.isNaN(v)){i.blur();renderPrices();return}
   state.prices[i.dataset.price]=v||0;if(typeof postPrice==="function")postPrice(i.dataset.price);i.blur();save();renderAll()});
 $("mktList").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("input"))e.target.blur()});
+$("mktList").addEventListener("input",e=>{const vr=varOf(e.target);if(vr)copySearch(vr.id,e.target,"v")});
 $("mktList").addEventListener("click",e=>{
+  {const vr=varOf(e.target);if(vr&&vr.x&&copyClick(vr.x,e.target,"v",`v:${vr.id}:${vr.i}`)){save();renderPrices();const q=$("mktList").querySelector("[data-vpq]");if(q)q.focus();return}}
   const a=e.target.closest("[data-varadd]");if(a){e.preventDefault();const id=a.dataset.varadd;(state.priceVars[id]=state.priceVars[id]||[]).push({...newCopy(id),r:mktGearOnly(id)?state.mkt.refine||0:0,o:mktGearOnly(id)?state.mkt.opts.filter(f=>f.k).map(f=>({k:f.k,v:f.v})):[]});save();renderPrices();
     const rows=document.querySelectorAll(`[data-var^="${id}:"] [data-vp]`);if(rows.length)rows[rows.length-1].focus();return}
   if(e.target.closest("[data-vdel]")){const vr=varOf(e.target);if(!vr)return;state.priceVars[vr.id].splice(vr.i,1);if(!state.priceVars[vr.id].length)delete state.priceVars[vr.id];save();renderPrices();return}
   const sl=e.target.closest("[data-sellers]");if(sl){e.preventDefault();toggleSellers(sl.dataset.sellers);return}
   const sa=e.target.closest("[data-sadd]");if(sa){openAdd(sa.dataset.sadd);return}
   const b=e.target.closest("[data-unprice]");if(!b)return;const id=b.dataset.unprice;delete state.prices[id];delete state.priceVars[id];delete state.sell[id];if(typeof unpost==="function")unpost(id);save();renderAll()});
-// + Add item: the popup with the item box, its refine / slot / affix boxes, Zeny and DM me. id: an item to start with (+ mine on someone else's)
-function openAdd(id){$("priceMsg").textContent="";$("priceVal").value="";$("priceDm").checked=false;hideSug();
-  $("priceDmL").hidden=!loggedIn();$("addNote").textContent=loggedIn()?`Posted for everyone on ${MKT_SERVERS.find(([k])=>k===state.mktServer)[1]} when you add it.`:"It stays in this browser. Log in with Discord to post it for everyone.";
+// + Add item: the popup with the item box, its refine / slot / affix boxes, Zeny and DM me; logged in with Discord only, since adding
+// posts it for everyone. id: an item to start with (+ mine on someone else's)
+function openAdd(id){if(!loggedIn()){showToast("Log in with Discord to add items.");const b=document.querySelector('#mktShare [data-auth="login"]');if(b)b.focus();return}
+  $("priceMsg").textContent="";$("priceVal").value="";$("priceDm").checked=false;hideSug();
+  $("addNote").textContent=`Posted for everyone on ${MKT_SERVERS.find(([k])=>k===state.mktServer)[1]} when you add it.`;
   if(id){$("priceItem").value=`${mktName(id)} #${id}`;renderAddCopy(id)}else{$("priceItem").value="";renderAddCopy(null)}
   renderAddCats();if(!id&&ADD_CAT)showSug();
   if(!$("addDlg").open)$("addDlg").showModal();(id?$("priceVal"):$("priceItem")).focus()}
