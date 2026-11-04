@@ -363,16 +363,13 @@ let SUG=[],SUG_I=-1;
 // the popup's category buttons and Type list narrow the items to click through, with or without a name typed:
 // weapons by weapon type, armor by the part it's worn on
 let ADD_CAT="",ADD_TYPE="",MKT_BYNAME=null;
-const ADD_PARTS={head_upper:"Upper headgear",head_middle:"Middle headgear",head_lower:"Lower headgear",armor:"Armor",shield:"Shield",garment:"Garment",footgear:"Shoes",accessory:"Accessory"};
-const addSub=id=>{const g=MKT_GEAR[id];if(!g||g.card)return "";const c=mktCat(id);
-  return c==="weapon"?g.type||"":c==="armor"?((g.slot||[]).map(s=>s.startsWith("accessory")?"accessory":s).find(s=>ADD_PARTS[s])||""):""};
 function renderAddCats(){const n={"":MKT_IDS.length};MKT_IDS.forEach(id=>{const c=mktCat(id);n[c]=(n[c]||0)+1});
   $("addCats").hidden=!!ADD_PICKED;$("addCats").innerHTML=MKT_CATS.filter(([k])=>k&&n[k]).map(([k,nm])=>`<button type="button" class="mktCat" data-addcat="${k}" aria-pressed="${ADD_CAT===k}">${nm} <span>${fmtN(n[k])}</span></button>`).join("");
-  const subs=ADD_CAT==="weapon"?Object.keys(BUILD.WTYPE).map(t=>[t,BUILD.WTYPE[t]]):ADD_CAT==="armor"?Object.entries(ADD_PARTS):[];
+  const subs=ADD_CAT==="weapon"?Object.keys(BUILD.WTYPE).map(t=>[t,BUILD.WTYPE[t]]):ADD_CAT==="armor"?Object.entries(ITEM_PARTS):[];
   $("addTypeBar").hidden=!subs.length||!!ADD_PICKED;$("addType").innerHTML=`<option value="">Any</option>`+subs.map(([k,nm])=>`<option value="${k}"${ADD_TYPE===k?" selected":""}>${esc(nm)}</option>`).join("")}
 function showSug(){const q=$("priceItem").value.trim().toLowerCase().replace(/^#/,""),box=$("priceSug");
   // a typed name: prefix matches first, then the rest, then #ids; nothing typed but a category picked: the category by name
-  const pool=(ADD_CAT?(MKT_BYNAME=MKT_BYNAME||[...MKT_IDS].sort((a,b)=>MKT_LOW[a].localeCompare(MKT_LOW[b]))):MKT_IDS).filter(id=>(!ADD_CAT||mktCat(id)===ADD_CAT)&&(!ADD_TYPE||addSub(id)===ADD_TYPE));
+  const pool=(ADD_CAT?(MKT_BYNAME=MKT_BYNAME||[...MKT_IDS].sort((a,b)=>MKT_LOW[a].localeCompare(MKT_LOW[b]))):MKT_IDS).filter(id=>(!ADD_CAT||mktCat(id)===ADD_CAT)&&(!ADD_TYPE||itemSub(id)===ADD_TYPE));
   const hit=!q?(ADD_CAT?pool:[]):[...pool.filter(id=>MKT_LOW[id].startsWith(q)),...pool.filter(id=>!MKT_LOW[id].startsWith(q)&&MKT_LOW[id].includes(q)),...pool.filter(id=>id.startsWith(q))]
     .filter((id,i,a)=>a.indexOf(id)===i),max=ADD_CAT?80:12;
   SUG=hit.slice(0,max);SUG_I=SUG.length?0:-1;
@@ -388,8 +385,8 @@ $("priceItem").addEventListener("blur",()=>{if(!ADD_CAT)hideSug()});
 $("addCats").addEventListener("click",e=>{const b=e.target.closest("[data-addcat]");if(!b)return;ADD_CAT=ADD_CAT===b.dataset.addcat?"":b.dataset.addcat;ADD_TYPE="";renderAddCats();showSug()});
 $("addType").addEventListener("change",e=>{ADD_TYPE=e.target.value;showSug()});
 // pricing an item from another tab clears the Market filters, so its row is there to type in
-const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus){Object.assign(state.mkt,{cat:"",q:"",max:null,refine:null,opts:[],slot:""});mktTools()}save();renderPrices();
-  if(focus){showTab("market");const i=document.querySelector(`[data-price="${id}"]`);if(i){i.focus();i.scrollIntoView({behavior:"smooth",block:"center"})}}};
+const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus){Object.assign(state.mkt,{cat:"",q:"",max:null,refine:null,opts:[],slot:"",type:"",item:"",favOnly:false});mktTools()}save();renderPrices();
+  if(focus){state.mkt.pane="mine";save();showTab("market");renderPrices();const i=$("mineList").querySelector(`[data-price="${id}"]`);if(i){i.focus();i.scrollIntoView({behavior:"smooth",block:"center"})}}};
 // picking gear (or the Taming Ring) shows its refine, slot and affix boxes under the form
 $("priceItem").addEventListener("input",()=>{renderAddCopy(findItem($("priceItem").value));showSug()});
 $("priceCopy").addEventListener("change",e=>{if(ADD_COPY&&copyChange(ADD_COPY,e.target,"a"))renderAddCopy(ADD_ID)});
@@ -414,7 +411,7 @@ $("priceAdd").addEventListener("click",()=>{const id=findItem($("priceItem").val
 $("priceVal").addEventListener("keydown",e=>{if(e.key==="Enter")$("priceAdd").click()});
 // a row's boxes save when you leave them or press Enter; something that isn't a price puts the old one back
 const varOf=el=>{const v=el.closest("[data-var]");if(!v)return null;const [id,i]=v.dataset.var.split(":");return {id,i:+i,x:(state.priceVars[id]||[])[+i]}};
-$("mktList").addEventListener("change",e=>{const el=e.target,vr=varOf(el);
+$("mineList").addEventListener("change",e=>{const el=e.target,vr=varOf(el);
   if(vr&&vr.x){const x=vr.x;
     if(el.matches("[data-vp]")){const v=parseZ(el.value);if(Number.isNaN(v)){el.blur();renderPrices();return}x.p=v||0;x.t=Date.now();postPrice(vr.id,x)}
     else if(el.matches("[data-vsell]")){if(el.checked){x.sell=true;postPrice(vr.id,x)}else{delete x.sell;unsell(vr.id)}}
@@ -424,17 +421,15 @@ $("mktList").addEventListener("change",e=>{const el=e.target,vr=varOf(el);
   const i=el.closest("[data-price]");if(!i)return;const v=parseZ(i.value);
   if(Number.isNaN(v)){i.blur();renderPrices();return}
   state.prices[i.dataset.price]=v||0;if(typeof postPrice==="function")postPrice(i.dataset.price);i.blur();save();renderAll()});
-$("mktList").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("input"))e.target.blur()});
-$("mktList").addEventListener("input",e=>{const vr=varOf(e.target);if(vr)copySearch(vr.id,e.target,"v")});
-$("mktList").addEventListener("click",e=>{
-  {const vr=varOf(e.target);if(vr&&vr.x&&copyClick(vr.x,e.target,"v",`v:${vr.id}:${vr.i}`)){save();renderPrices();const q=$("mktList").querySelector("[data-vpq]");if(q)q.focus();return}}
+$("mineList").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("input"))e.target.blur()});
+$("mineList").addEventListener("input",e=>{const vr=varOf(e.target);if(vr)copySearch(vr.id,e.target,"v")});
+$("mineList").addEventListener("click",e=>{
+  {const vr=varOf(e.target);if(vr&&vr.x&&copyClick(vr.x,e.target,"v",`v:${vr.id}:${vr.i}`)){save();renderPrices();const q=$("mineList").querySelector("[data-vpq]");if(q)q.focus();return}}
   const a=e.target.closest("[data-varadd]");if(a){e.preventDefault();const id=a.dataset.varadd;(state.priceVars[id]=state.priceVars[id]||[]).push({...newCopy(id),r:mktGearOnly(id)?state.mkt.refine||0:0,o:mktGearOnly(id)?state.mkt.opts.filter(f=>f.k).map(f=>({k:f.k,v:f.v})):[]});save();renderPrices();
-    const rows=document.querySelectorAll(`[data-var^="${id}:"] [data-vp]`);if(rows.length)rows[rows.length-1].focus();return}
+    const rows=$("mineList").querySelectorAll(`[data-var^="${id}:"] [data-vp]`);if(rows.length)rows[rows.length-1].focus();return}
   if(e.target.closest("[data-vdel]")){const vr=varOf(e.target);if(!vr)return;state.priceVars[vr.id].splice(vr.i,1);if(!state.priceVars[vr.id].length)delete state.priceVars[vr.id];save();renderPrices();return}
-  const sl=e.target.closest("[data-sellers]");if(sl){e.preventDefault();toggleSellers(sl.dataset.sellers);return}
-  const sa=e.target.closest("[data-sadd]");if(sa){openAdd(sa.dataset.sadd);return}
   const b=e.target.closest("[data-unprice]");if(!b)return;const id=b.dataset.unprice;delete state.prices[id];delete state.priceVars[id];delete state.sell[id];if(typeof unpost==="function")unpost(id);save();renderAll()});
-// + Add item: the popup with the item box, its refine / slot / affix boxes, Zeny and DM me; logged in with Discord only, since adding
+// + Add item: the popup with the item box, its refine / slot / affix boxes, Zeny and DM; logged in with Discord only, since adding
 // posts it for everyone. id: an item to start with (+ mine on someone else's)
 function openAdd(id){if(!loggedIn()){showToast("Log in with Discord to add items.");const b=document.querySelector('#mktShare [data-auth="login"]');if(b)b.focus();return}
   $("priceMsg").textContent="";$("priceVal").value="";$("priceDm").checked=false;hideSug();
@@ -444,7 +439,15 @@ function openAdd(id){if(!loggedIn()){showToast("Log in with Discord to add items
   if(!$("addDlg").open)$("addDlg").showModal();(id?$("priceVal"):$("priceItem")).focus()}
 $("addOpen").addEventListener("click",()=>openAdd());
 ROOTQ("[data-addclose]").forEach(b=>b.addEventListener("click",()=>$("addDlg").close()));
-$("mktWho").addEventListener("click",e=>{const b=e.target.closest("[data-view]");if(!b)return;state.mkt.view=b.dataset.view;save();if(b.dataset.view==="posts"&&typeof loadMyPosts==="function")loadMyPosts();renderPrices()});
+// the page's two tabs, and the Market note's link to My market
+const setPane=p=>{state.mkt.pane=p;save();if(p==="mine"&&typeof loadMyPosts==="function")loadMyPosts();renderPrices();scrollTo({top:0})};
+$("mktPanes").addEventListener("click",e=>{const b=e.target.closest("[data-pane]");if(b)setPane(b.dataset.pane)});
+$("marketCard").addEventListener("click",e=>{const a=e.target.closest("[data-gopane]");if(a){e.preventDefault();setPane(a.dataset.gopane)}});
+// the Market list: open a seller list, or ☆ an item (a favourite); ★ Favourites shows only those
+$("mktList").addEventListener("click",e=>{const sl=e.target.closest("[data-sellers]");if(sl){e.preventDefault();toggleSellers(sl.dataset.sellers);return}
+  const fv=e.target.closest("[data-fav]");if(!fv)return;const id=fv.dataset.fav,i=state.mktFav.indexOf(id);
+  if(i>=0)state.mktFav.splice(i,1);else if(state.mktFav.length<500)state.mktFav.push(id);save();renderPrices()});
+$("mktFavOnly").addEventListener("click",()=>{state.mkt.favOnly=!state.mkt.favOnly;state.mkt.item="";save();renderPrices()});
 // the list's category buttons, search, sort, max price, Refine ≥ and random options (saved)
 function mktTools(){$("mktQ").value=state.mkt.q;$("mktSort").value=state.mkt.sort;$("mktMax").value=state.mkt.max!=null?fmtN(state.mkt.max):""}
 mktTools();
@@ -453,9 +456,29 @@ const BOOK_KEYS=["prices","priceSeen","priceVars","sell"];
 function switchServer(k){if(k===state.mktServer||!MKT_SERVERS.some(([x])=>x===k))return;
   state.serverPrices[state.mktServer]=Object.fromEntries(BOOK_KEYS.map(b=>[b,state[b]]));
   const next=state.serverPrices[k]||{};BOOK_KEYS.forEach(b=>{state[b]=next[b]||{}});delete state.serverPrices[k];state.mktServer=k;save();renderAll();renderPrices()}
-$("mktSrv").addEventListener("click",e=>{const b=e.target.closest("[data-srv]");if(b)switchServer(b.dataset.srv)});
-$("mktCats").addEventListener("click",e=>{const b=e.target.closest("[data-mktcat]");if(!b)return;state.mkt.cat=b.dataset.mktcat;save();renderPrices()});
-$("mktQ").addEventListener("input",e=>{state.mkt.q=e.target.value;save();renderPrices()});
+ROOTQ("#mktSrv,#mineSrv").forEach(el=>el.addEventListener("click",e=>{const b=e.target.closest("[data-srv]");if(b)switchServer(b.dataset.srv)}));
+$("mktCats").addEventListener("click",e=>{const b=e.target.closest("[data-mktcat]");if(!b)return;state.mkt.cat=b.dataset.mktcat;state.mkt.type="";state.mkt.item="";save();renderPrices()});
+// the list's search box: typing narrows the list and suggests the matching items with their icons; with nothing typed, focusing it
+// lists the category's items to click. Picking one shows only that item (✕ shows them all again)
+let LSUG=[],LSUG_I=-1;
+function listSug(){const q=$("mktQ").value.trim().toLowerCase().replace(/^#/,""),box=$("mktSug"),pool=MKT_POOL;
+  const hit=!q?(state.mkt.cat?[...pool].sort((a,b)=>mktName(a).localeCompare(mktName(b))):[]):[...pool.filter(id=>mktName(id).toLowerCase().startsWith(q)),...pool.filter(id=>!mktName(id).toLowerCase().startsWith(q)&&mktName(id).toLowerCase().includes(q)),...pool.filter(id=>id.startsWith(q))].filter((id,i,a)=>a.indexOf(id)===i);
+  LSUG=hit.slice(0,q?12:60);LSUG_I=LSUG.length?0:-1;
+  box.innerHTML=LSUG.map((id,i)=>`<button type="button" role="option" class="mktSugRow${i===LSUG_I?" on":""}" data-lsug="${id}"><span class="mktIc">${itemIcon(id)}</span><span class="grow">${esc(mktName(id))}</span><span class="note">${MKT_CAT_NAME[mktCat(id)]} · #${id}</span></button>`).join("")
+    +(hit.length>LSUG.length?`<div class="note mktSugMore">${fmtN(hit.length-LSUG.length)} more: type a name, or pick a type, to narrow it</div>`:"");
+  box.hidden=!LSUG.length;$("mktQ").setAttribute("aria-expanded",String(!box.hidden))}
+const listPick=id=>{state.mkt.item=id;state.mkt.q="";$("mktQ").value="";$("mktSug").hidden=true;save();renderPrices()};
+$("mktQ").addEventListener("input",e=>{state.mkt.q=e.target.value;save();renderPrices();listSug()});
+$("mktQ").addEventListener("focus",listSug);
+$("mktQ").addEventListener("blur",()=>{$("mktSug").hidden=true});
+$("mktSug").addEventListener("mousedown",e=>e.preventDefault());
+$("mktSug").addEventListener("click",e=>{const b=e.target.closest("[data-lsug]");if(b)listPick(b.dataset.lsug)});
+$("mktQ").addEventListener("keydown",e=>{const box=$("mktSug");if(box.hidden||!LSUG.length)return;
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();LSUG_I=(LSUG_I+(e.key==="ArrowDown"?1:-1)+LSUG.length)%LSUG.length;
+    box.querySelectorAll("[data-lsug]").forEach((b,i)=>{b.classList.toggle("on",i===LSUG_I);if(i===LSUG_I)b.scrollIntoView({block:"nearest"})})}
+  else if(e.key==="Enter"&&LSUG_I>=0){e.preventDefault();listPick(LSUG[LSUG_I])}else if(e.key==="Escape")box.hidden=true});
+$("mktType").addEventListener("change",e=>{state.mkt.type=e.target.value;state.mkt.item="";save();renderPrices()});
+$("mktItemChip").addEventListener("click",e=>{if(e.target.closest("[data-mktitemx]")){state.mkt.item="";save();renderPrices()}});
 $("mktSort").addEventListener("change",e=>{state.mkt.sort=e.target.value;save();renderPrices()});
 $("mktMax").addEventListener("change",e=>{const v=parseZ(e.target.value);state.mkt.max=Number.isNaN(v)?state.mkt.max:v;mktTools();save();renderPrices()});
 $("mktSlotQ").addEventListener("input",e=>{state.mkt.slot=e.target.value;save();renderPrices()});

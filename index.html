@@ -744,21 +744,35 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="note hint">Activation keeps cards, enchants and options; only the refine drops.</div>
   </section>
 
+  <div class="bar mktPanes" data-tab="market"><div class="seg" role="tablist" aria-label="Market or My market" id="mktPanes"><button type="button" role="tab" data-pane="browse" title="What players posted on this server">Market</button><button type="button" role="tab" data-pane="mine" title="Add items, your posts and your own prices">My market</button></div></div>
   <section class="card" id="marketCard" data-tab="market">
-    <div class="bar"><h2 class="grow">Market</h2><button type="button" id="addOpen">+ Add item</button><div class="seg" role="radiogroup" aria-label="Game server" id="mktSrv" title="Each server has its own market, so each keeps its own prices; the one picked is the one every zeny figure uses"></div></div>
-    <div class="mktShare mt" id="mktShare" hidden></div>
-    <div class="bar mt"><div class="seg" role="radiogroup" aria-label="Which list" id="mktWho"><button type="button" role="radio" data-view="all" title="Everyone's items on this server, yours included">Everyone</button><button type="button" role="radio" data-view="mine" title="Your own prices: the ones the site's zeny figures use">Mine</button><button type="button" role="radio" data-view="posts" title="What you posted for everyone: change a price, DM me or take it back">My posts</button></div></div>
-    <div class="mktCats mt" id="mktCats" role="group" aria-label="Category"></div>
+    <div class="bar"><h2 class="grow">Market</h2><div class="seg" role="radiogroup" aria-label="Game server" id="mktSrv" title="Each server has its own market, so each keeps its own prices; the one picked is the one every zeny figure uses"></div></div>
+    <div class="note">What players posted on this server. To sell, or to change your prices, open <a href="#" data-gopane="mine">My market</a>.</div>
+    <div class="bar mt mktCatBar"><div class="mktCats grow" id="mktCats" role="group" aria-label="Category"></div><button type="button" class="mktCat mktFavOnly" id="mktFavOnly" aria-pressed="false" title="Show only the items you starred with ☆">★ Favourites</button></div>
     <div class="bar mt mktTools" id="mktToolsBar">
-      <label class="grow">Search<input id="mktQ" type="search" placeholder="name or #id"></label>
+      <label class="grow mktPick">Search<input id="mktQ" type="search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="mktSug" placeholder="type a name, or pick a category and click"><div class="mktSug" id="mktSug" role="listbox" hidden></div></label>
+      <label id="mktTypeL" hidden>Type<select id="mktType"></select></label>
       <label>Sort<select id="mktSort"><option value="recent">Recently updated</option><option value="low">Lowest price</option><option value="high">Highest price</option><option value="move">Biggest change</option><option value="name">Name</option></select></label>
       <label>Max price<input class="w-lg mono" id="mktMax" inputmode="decimal" placeholder="any" title="Zeny; 450k = 450,000, 1.5m = 1,500,000"></label>
       <label title="Only gear with a copy priced at this refine or higher">Refine ≥<select id="mktRef"></select></label>
       <label title="Only copies with these in their slots: a card, a slot 4 enchant (STR +1) or a Taming Ring's egg. Separate several with commas">Card / enchant / egg<input class="w-xl" id="mktSlotQ" type="search" placeholder="Hydra, STR +1, Poring Egg"></label>
     </div>
     <div class="bar mt mktOptBar" id="mktOptBar"><span class="note">Affix / slot options</span><span class="bar" id="mktOptF"></span></div>
+    <div class="bar mt mktItemChip" id="mktItemChip" hidden></div>
     <div class="mktList mt" id="mktList"></div>
-    <div class="note hint">Your own prices (Mine) are what the site's zeny figures use. Type 450k or 1.5m.</div>
+    <div class="note hint">Lowest: the cheapest price a player posted; median: the middle of the players' prices, each player counted once.</div>
+  </section>
+
+  <section class="card" id="mineCard" data-tab="market">
+    <div class="bar"><h2 class="grow">My market</h2><button type="button" id="addOpen">+ Add item</button><div class="seg" role="radiogroup" aria-label="Game server" id="mineSrv" title="Each server has its own market, so each keeps its own prices"></div></div>
+    <div class="mktShare mt" id="mktShare" hidden></div>
+    <h3 class="mt">My posts</h3>
+    <div class="note">What you posted on this server in the last 30 days: change a price, tick DM, or ✕ to take it back.</div>
+    <div class="mktList mt" id="postsList"></div>
+    <h3 class="mt">My prices</h3>
+    <div class="note">Your own prices, the ones every zeny figure on the site uses. Logged in, a price you change here is posted too.</div>
+    <div class="mktList mt" id="mineList"></div>
+    <div class="note hint">Type 450k or 1.5m. DM: you sell it, so buyers can message you on Discord.</div>
   </section>
 
   <section class="card" id="mobInfoCard" data-tab="mobinfo">
@@ -1015,7 +1029,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <label class="mktPick">Item<input id="priceItem" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="priceSug" placeholder="type a name or #id, or pick a category above"><div class="mktSug" id="priceSug" role="listbox" hidden></div></label>
     <div class="bar addPicked" id="addPicked" hidden></div>
     <div class="bar mktCopyBar" id="priceCopy" hidden></div>
-    <div class="bar"><label>Zeny<input class="w-xl mono" id="priceVal" inputmode="decimal" placeholder="450k, 1.5m" title="What players pay for it; 450k = 450,000, 1.5m = 1,500,000"></label><label class="mktSell" id="priceDmL" title="You sell it at this price: buyers see your Discord name and can message you about it"><input type="checkbox" id="priceDm"> DM me</label></div>
+    <div class="bar"><label>Zeny<input class="w-xl mono" id="priceVal" inputmode="decimal" placeholder="450k, 1.5m" title="What players pay for it; 450k = 450,000, 1.5m = 1,500,000"></label><label class="mktSell" id="priceDmL" title="You sell it at this price: buyers can message you about it on Discord"><input type="checkbox" id="priceDm"> DM</label></div>
     <div class="note bad" id="priceMsg"></div>
     <div class="bar"><button type="button" id="priceAdd">Add</button><button type="button" class="ghost" data-addclose>Cancel</button></div>
   </div>

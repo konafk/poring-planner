@@ -81,7 +81,7 @@ async function unsharePrices(){if(!UNSHARE_ARMED){UNSHARE_ARMED=true;renderShare
 async function unsell(id){if(!AUTH)return;
   try{await sb(`/rest/v1/reports?user_id=eq.${encodeURIComponent(AUTH.user.id)}&server=eq.${state.mktServer}&item_id=eq.${+id}&selling=is.true`,{method:"DELETE"});
     delete SELLERS[state.mktServer+":"+id];postPrice(id);loadShared(true)}catch(e){showToast("Couldn't take back your listing: "+e.message,6000)}}
-// the sellers of an item, shown under it: each one's Discord name, @username, copy, price and when, with a link to their profile
+// the sellers of an item, shown under it: each one's copy, price and when, with a DM link to their Discord profile (no names on the list)
 const SELLERS={},SELLERS_OPEN=new Set();
 async function toggleSellers(id){const k=state.mktServer+":"+id;if(SELLERS_OPEN.has(k)){SELLERS_OPEN.delete(k);renderPrices();return}SELLERS_OPEN.add(k);renderPrices();
   try{SELLERS[k]=(await sb("/rest/v1/rpc/sellers",{method:"POST",body:JSON.stringify({srv:state.mktServer,item:+id})}))||[]}catch(e){SELLERS[k]={err:e.message}}renderPrices()}
@@ -89,9 +89,9 @@ function sellersHtml(id){const k=state.mktServer+":"+id;if(!SELLERS_OPEN.has(k))
   if(!L)return `<div class="mktSellerList note">Loading sellers…</div>`;if(L.err)return `<div class="mktSellerList note bad">Couldn't load sellers: ${esc(L.err)}</div>`;
   if(!L.length)return `<div class="mktSellerList note">Nobody sells it right now.</div>`;
   return `<div class="mktSellerList">${L.map(x=>{const id=/^\d+$/.test(x.discord_id||"")?x.discord_id:"";
-    return `<div class="mktSeller"><b>${esc(x.discord_name||x.username||"Discord player")}</b>${x.username?` <span class="note">@${esc(x.username)}</span>`:""}
+    return `<div class="mktSeller"><span class="note">Seller</span>
       ${(()=>{const v={r:+x.refine||0,o:Array.isArray(x.opts)?x.opts:[],...sharedSlots(x)};return copyBare(v)?"":`<span class="note">${esc(varTxt(v))}</span>`})()}<b class="mono">${fmtN(+x.price)} z</b><span class="note">${agoTxt(Date.parse(x.at))}</span>
-      ${id?`<a class="small discordLink" href="https://discord.com/users/${id}" target="_blank" rel="noopener noreferrer" title="Opens their Discord profile, where you can message them">Message on Discord</a>`:""}</div>`}).join("")}
+      ${id?`<a class="small discordLink" href="https://discord.com/users/${id}" target="_blank" rel="noopener noreferrer" title="Opens the seller's Discord profile, where you can message them">DM</a>`:""}</div>`}).join("")}
     <div class="note">Trade in game, and check the shop before you pay: the site only shows what sellers told it.</div></div>`}
 
 // ---- cloud backup: the Copy backup text (every account), compressed, one per Discord account ----
@@ -168,21 +168,21 @@ setTimeout(syncTick,30000);
 let MYPOSTS=null;
 async function loadMyPosts(){if(!AUTH){MYPOSTS=null;return}
   try{MYPOSTS=(await sb(`/rest/v1/reports?select=id,server,item_id,refine,opts,cards,enchant,egg,price,selling,created_at&user_id=eq.${encodeURIComponent(AUTH.user.id)}&order=created_at.desc&limit=500`))||[]}
-  catch(e){MYPOSTS={err:e.message}}if(state.tab==="market"&&state.mkt.view==="posts")renderPrices()}
+  catch(e){MYPOSTS={err:e.message}}if(state.tab==="market"&&state.mkt.pane==="mine")renderPrices()}
 const postCopy=x=>({r:+x.refine||0,o:Array.isArray(x.opts)?x.opts:[],...sharedSlots(x)});
-function renderMyPosts(){const el=$("mktList"),f=document.activeElement;if(f&&f.tagName==="INPUT"&&el.contains(f))return;
-  if(!sharedOn()||!AUTH){el.innerHTML=`<div class="note muted mktEmpty">Log in with Discord to see and change what you posted.</div>`;return}
+function renderMyPosts(){const el=$("postsList"),f=document.activeElement;if(f&&f.tagName==="INPUT"&&el.contains(f))return;
+  if(!sharedOn()||!AUTH){el.innerHTML=`<div class="note muted mktEmpty">Log in with Discord to post items and change what you posted.</div>`;return}
   if(MYPOSTS==null){el.innerHTML=`<div class="note muted mktEmpty">Loading your posts…</div>`;loadMyPosts();return}
   if(MYPOSTS.err){el.innerHTML=`<div class="note bad mktEmpty">Couldn't load your posts: ${esc(MYPOSTS.err)}</div>`;return}
   const L=MYPOSTS.filter(x=>x.server===state.mktServer);
   el.innerHTML=L.map(x=>{const id=String(x.item_id),v=postCopy(x);
     return `<div class="mktItem"><div class="mktRow" data-post="${+x.id}"><span class="mktIc">${itemIcon(id)}</span>
       <div class="mktName"><a href="#" data-info="item:${esc(id)}">${esc(mktName(id))}</a>
-        <div class="note">${[copyBare(v)?"":esc(varTxt(v)),`posted ${agoTxt(Date.parse(x.created_at))}`,`<label class="mktSell" title="Buyers see your Discord name and can message you about it"><input type="checkbox" data-pdm${x.selling?" checked":""}> DM me</label>`].filter(Boolean).join(" · ")}</div></div>
+        <div class="note">${[copyBare(v)?"":esc(varTxt(v)),`posted ${agoTxt(Date.parse(x.created_at))}`,`<label class="mktSell" title="Buyers see your Discord name and can message you about it"><input type="checkbox" data-pdm${x.selling?" checked":""}> DM</label>`].filter(Boolean).join(" · ")}</div></div>
       <div class="mktPrice"><input class="mono" inputmode="decimal" data-pprice value="${fmtN(+x.price)}" aria-label="Price of this post"><span class="mktZ">z</span>${+x.price>=1e3?`<div class="note mono">${zShort(+x.price)}</div>`:""}</div>
       <div class="mktMove"></div>
       <button type="button" class="small ghost" data-pdel title="Take this post back" aria-label="Take back ${esc(mktName(id))}">✕</button></div></div>`}).join("")
-    ||`<div class="note muted mktEmpty">You haven't posted anything on this server in the last 30 days. Items you add (+ Add item) are posted here.</div>`}
+    ||`<div class="note muted mktEmpty">You haven't posted anything on this server in the last 30 days. Items you add with + Add item show here.</div>`}
 // change one post: the new one goes in first, then the old one comes out
 async function changePost(pid,chg){const x=(MYPOSTS||[]).find(p=>+p.id===pid);if(!x)return;
   const row={server:x.server,item_id:x.item_id,refine:x.refine,opts:x.opts,cards:x.cards||[],enchant:x.enchant,egg:x.egg,price:+x.price,selling:!!x.selling,...chg};
@@ -190,11 +190,11 @@ async function changePost(pid,chg){const x=(MYPOSTS||[]).find(p=>+p.id===pid);if
     if(!r||!r.length){showToast("Not changed: that's the same as a post from the last hour, or today's limit for this item is reached.",6000);renderPrices();return}
     await sb(`/rest/v1/reports?id=eq.${pid}`,{method:"DELETE"});delete SELLERS[x.server+":"+x.item_id];loadShared(true);await loadMyPosts()}
   catch(e){showToast("Couldn't change it: "+e.message,6000);renderPrices()}}
-$("mktList").addEventListener("change",e=>{const row=e.target.closest("[data-post]");if(!row)return;const pid=+row.dataset.post;
+$("postsList").addEventListener("change",e=>{const row=e.target.closest("[data-post]");if(!row)return;const pid=+row.dataset.post;
   if(e.target.matches("[data-pprice]")){const v=parseZ(e.target.value);e.target.blur();if(!(v>0)){renderPrices();return}changePost(pid,{price:v})}
   else if(e.target.matches("[data-pdm]"))changePost(pid,{selling:e.target.checked})});
-$("mktList").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("[data-pprice]"))e.target.blur()});
-$("mktList").addEventListener("click",async e=>{const b=e.target.closest("[data-pdel]");if(!b)return;const row=b.closest("[data-post]"),pid=+row.dataset.post,x=(MYPOSTS||[]).find(p=>+p.id===pid);
+$("postsList").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("[data-pprice]"))e.target.blur()});
+$("postsList").addEventListener("click",async e=>{const b=e.target.closest("[data-pdel]");if(!b)return;const row=b.closest("[data-post]"),pid=+row.dataset.post,x=(MYPOSTS||[]).find(p=>+p.id===pid);
   try{await sb(`/rest/v1/reports?id=eq.${pid}`,{method:"DELETE"});if(x)delete SELLERS[x.server+":"+x.item_id];loadShared(true);await loadMyPosts()}catch(err){showToast("Couldn't take it back: "+err.message,6000)}});
 
 // the login bars on the Market and Account tabs

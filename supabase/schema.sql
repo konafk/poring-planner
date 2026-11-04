@@ -115,16 +115,15 @@ revoke update on public.reports from anon, authenticated;
 drop table if exists public.profiles;
 drop function if exists public.profiles_stamp();
 
--- the players selling one item on one server (reports marked selling): each one's latest price per copy, from the last keep_days
-drop function if exists public.sellers(text, integer); -- its columns changed: the slots were added
+-- the players selling one item on one server (reports marked selling): each one's latest price per copy, from the last keep_days.
+-- Only the Discord id goes out (for the DM link): no names, so the public key can't list who sells what
+drop function if exists public.sellers(text, integer); -- its columns changed: the slots were added, the names taken out
 create or replace function public.sellers(srv text, item integer)
-returns table (discord_id text, discord_name text, username text, refine smallint, opts jsonb, cards integer[], enchant text, egg integer, price bigint, at timestamptz)
+returns table (discord_id text, refine smallint, opts jsonb, cards integer[], enchant text, egg integer, price bigint, at timestamptz)
 language sql stable security definer set search_path = '' as $$
-  select x.discord_id, x.discord_name, x.username, x.refine, x.opts, x.cards, x.enchant, x.egg, x.price, x.created_at from (
+  select x.discord_id, x.refine, x.opts, x.cards, x.enchant, x.egg, x.price, x.created_at from (
     select distinct on (r.user_id, r.refine, r.opts_key, r.slots_key)
       coalesce(u.raw_user_meta_data->>'provider_id', u.raw_user_meta_data->>'sub') as discord_id,
-      coalesce(u.raw_user_meta_data->'custom_claims'->>'global_name', u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name') as discord_name,
-      coalesce(u.raw_user_meta_data->>'name', u.raw_user_meta_data->>'full_name') as username,
       r.refine, r.opts, r.cards, r.enchant, r.egg, r.price, r.created_at
     from public.reports r
     join auth.users u on u.id = r.user_id
