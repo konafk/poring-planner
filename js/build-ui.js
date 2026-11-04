@@ -294,10 +294,11 @@ const STONE_FX={str:"STR",agi:"AGI",vit:"VIT",int:"INT",dex:"DEX",luk:"LUK",crit
 const stoneFx=x=>x.off&&!x.b.length?x.off:x.b.map(([t,k,g,v])=>{const l=k==="size"?`Damage vs ${g} %`:t==="damage_taken_percent"?`${g[0].toUpperCase()+g.slice(1)} resist %`:STONE_FX[t]||t,pc=/ %$/.test(l);
   if(t==="damage_taken_percent")v=-v;return `${l.replace(/ %$/,"")} ${v>0?"+":""}${v}${pc?"%":""}`}).join(", ");
 // a stone goes on the costume in its slot: b.special.costume = {slot: costume id}, picked from the costumes that take the slot
-// (data/costumes.js; names from data/clientitems.js). A costume that takes more than one slot (Upper / Middle) is in each of them
+// (data/costumes.js; names from data/clientitems.js), only those the official guide says take a stone (COSTUME_ENCHANT). A costume
+// that takes more than one slot (Upper / Middle) is in each of them
 const costumeName=id=>(typeof CLIENT_ITEMS!=="undefined"&&CLIENT_ITEMS[id]||[])[0]||"";
-const COSTUME_LISTS={};
-const costumesFor=k=>COSTUME_LISTS[k]||(COSTUME_LISTS[k]=(typeof COSTUMES!=="undefined"?Object.entries(COSTUMES):[]).filter(([id,s])=>s.includes(k)&&costumeName(id))
+const COSTUME_LISTS={},COSTUME_OK=typeof COSTUME_ENCHANT!=="undefined"?new Set(COSTUME_ENCHANT.map(String)):null;
+const costumesFor=k=>COSTUME_LISTS[k]||(COSTUME_LISTS[k]=(typeof COSTUMES!=="undefined"?Object.entries(COSTUMES):[]).filter(([id,s])=>s.includes(k)&&costumeName(id)&&(!COSTUME_OK||COSTUME_OK.has(id)))
   .map(([id])=>[costumeName(id),+id]).sort((a,b)=>a[0].localeCompare(b[0])));
 function costumeLists(){if($("costumeLists").childElementCount)return;
   $("costumeLists").innerHTML=BUILD.STONE_SLOTS.map(z=>`<datalist id="cos_${z.k}">${costumesFor(z.k).map(([n])=>`<option value="${esc(n)}">`).join("")}</datalist>`).join("")}
