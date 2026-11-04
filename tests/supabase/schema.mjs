@@ -69,7 +69,7 @@ await t("per item per day cap skips the rest", async () => {
   for (let i = 0; i < 12; i++) await ins(3, 4001, 100000 + i);
   assert.equal((await as(3, `select count(*)::int c from public.reports where item_id = 4001`))[0].c, 10);
 });
-await t("shared price: median of each player's own median, needs 2 players, outliers left out", async () => {
+await t("shared price: median of each player's own median, the lowest report, one player's item shows, outliers left out from 3 players", async () => {
   // item 1201: p4 posts 10 cheap reports, p5 one, p6 a troll price
   for (let i = 0; i < 8; i++) await ins(4, 1201, 1000 + i);
   await ins(5, 1201, 2000);
@@ -78,10 +78,11 @@ await t("shared price: median of each player's own median, needs 2 players, outl
   assert.equal(s[0].players, 2);
   assert.equal(s[0].reports, 9);
   assert.equal(Number(s[0].price), 1502);            // median of 1003.5 and 2000 = 1501.75
+  assert.equal(Number(s[0].low), 1000);
   await ins(6, 1201, 999999999);
   s = await as(0, `select * from public.shared_prices('skadi') where item_id = 1201`);
   assert.equal(s[0].players, 2);                     // the troll is left out
-  assert.equal((await as(0, `select * from public.shared_prices('skadi') where item_id = 28028`)).length, 0); // one player only
+  assert.equal((await as(0, `select players from public.shared_prices('skadi') where item_id = 28028`))[0].players, 1); // one player's item shows
   assert.equal((await as(0, `select * from public.shared_prices('odin') where item_id = 1201`)).length, 0);
 });
 await t("refined / optioned copies are their own price", async () => {
@@ -99,8 +100,8 @@ await t("slots: cards (any order), enchant and egg make their own copy; bad card
   await put(2, [4035, 4001], null, null, 9500000);
   const empty = await put(3, [], null, null, 300000);                                // empty slots: another copy, keyed as before slots
   assert.equal(empty[0].slots_key, "");
-  const s = await as(0, `select refine, cards, price, players from public.shared_prices('skadi') where item_id = 1250 order by price`);
-  assert.deepEqual(s.map(x => [x.cards, Number(x.price), x.players]), [[[4001, 4035], 9250000, 2]]);
+  const s = await as(0, `select refine, cards, price, low, players from public.shared_prices('skadi') where item_id = 1250 order by price`);
+  assert.deepEqual(s.map(x => [x.cards, Number(x.price), Number(x.low), x.players]), [[[], 300000, 300000, 1], [[4001, 4035], 9250000, 9000000, 2]]);
   await fails(1, `insert into public.reports (server, item_id, cards, price) values ('skadi', 1250, '{1,2,3,4,5}', 5)`, [], /Bad cards/);
   await fails(1, `insert into public.reports (server, item_id, cards, price) values ('skadi', 1250, '{-1}', 5)`, [], /Bad cards/);
   const e = await as(4, `insert into public.reports (server, item_id, enchant, egg, price, selling) values ('skadi', 24966, ' ', 313582, 500000, true) returning enchant, slots_key`);
@@ -130,7 +131,7 @@ await t("banned: can't post, and their reports leave the median; only admins ban
   await as(1, `insert into public.banned (user_id, reason) values ($1, 'test')`, [U(5)]);
   await fails(5, `insert into public.reports (server, item_id, price) values ('skadi', 1, 5)`, [], /can't share/);
   const s = await as(0, `select * from public.shared_prices('skadi') where item_id = 1201`);
-  assert.equal(s.length, 0);                         // p5 gone, p6 troll alone with p4 → p4 kept, troll out → 1 player
+  assert.deepEqual([s[0].players, Number(s[0].low)], [2, 1000]); // p5 gone: p4 and the troll, too few to tell who's off; the lowest is p4's
   assert.ok((await as(1, `select count(*)::int c from public.reports where user_id = $1`, [U(4)]))[0].c > 0); // admins see all
 });
 await t("flagged accounts list the troll", async () => {

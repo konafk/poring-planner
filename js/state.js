@@ -121,11 +121,11 @@ state.mktServer=MKT_SERVERS.some(([k])=>k===state.mktServer)?state.mktServer:"sk
 Object.assign(state,priceBook(state));
 state.serverPrices=Object.fromEntries(MKT_SERVERS.filter(([k])=>k!==state.mktServer&&objOr(state.serverPrices)[k]).map(([k])=>[k,priceBook(state.serverPrices[k])]));
 // the Market list's category, sort, search, max price, Refine ≥ (null = any), affixes wanted ({k, v: the least value or null}),
-// Card / enchant / egg (text: comma-separated parts a copy's slots must have) and whether it shows everyone's items (the shared
-// prices, js/shared.js) beside yours
+// Card / enchant / egg (text: comma-separated parts a copy's slots must have) and which list it shows (view: "all" everyone's
+// items, the shared prices of js/shared.js, with yours; "mine" only yours; "posts" what you posted)
 {const m=state.mkt&&typeof state.mkt==="object"?state.mkt:{};
   state.mkt={cat:typeof m.cat==="string"?m.cat:"",sort:["recent","low","high","move","name"].includes(m.sort)?m.sort:"recent",q:typeof m.q==="string"?m.q:"",max:numOrNull(m.max),
-    refine:Number.isInteger(m.refine)&&m.refine>0&&m.refine<=20?m.refine:null,opts:mktOpts(m.opts),slot:typeof m.slot==="string"?m.slot.slice(0,100):"",everyone:m.everyone===true}}
+    refine:Number.isInteger(m.refine)&&m.refine>0&&m.refine<=20?m.refine:null,opts:mktOpts(m.opts),slot:typeof m.slot==="string"?m.slot.slice(0,100):"",view:["all","mine","posts"].includes(m.view)?m.view:"all"}}
 // auto-loot groups you switched off (true/false by group), and per map the monsters the Zeny Hunter passes by (monster ids)
 state.autoLoot=Object.fromEntries(Object.entries(state.autoLoot&&typeof state.autoLoot==="object"?state.autoLoot:{}).filter(([k,v])=>/^[waueco]$/.test(k)&&typeof v==="boolean"));
 state.huntOff=Object.fromEntries(Object.entries(state.huntOff&&typeof state.huntOff==="object"?state.huntOff:{}).filter(([,v])=>Array.isArray(v)).map(([k,v])=>[String(k),v.map(Number).filter(Number.isFinite)]));
