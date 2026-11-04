@@ -168,7 +168,7 @@ setTimeout(syncTick,30000);
 let MYPOSTS=null;
 async function loadMyPosts(){if(!AUTH){MYPOSTS=null;return}
   try{MYPOSTS=(await sb(`/rest/v1/reports?select=id,server,item_id,refine,opts,cards,enchant,egg,price,selling,created_at&user_id=eq.${encodeURIComponent(AUTH.user.id)}&order=created_at.desc&limit=500`))||[]}
-  catch(e){MYPOSTS={err:e.message}}if(state.tab==="sell")renderPrices()}
+  catch(e){MYPOSTS={err:e.message}}if(state.tab==="market"&&state.mkt.pane==="mine")renderPrices()}
 const postCopy=x=>({r:+x.refine||0,o:Array.isArray(x.opts)?x.opts:[],...sharedSlots(x)});
 function renderMyPosts(){const el=$("postsList"),f=document.activeElement;if(f&&f.tagName==="INPUT"&&el.contains(f))return;
   if(!sharedOn()||!AUTH){el.innerHTML=`<div class="note muted mktEmpty">Log in with Discord to post items and change what you posted.</div>`;return}

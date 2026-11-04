@@ -744,10 +744,13 @@ function renderAddCopy(id){ADD_PICKED=id||null;const pk=$("addPicked"),box=$("pr
   box.hidden=false;box.innerHTML=`<span class="note">${id===TAMING_RING?"Egg":costumeOf(id)?"Enchant stone":"Refine, slots and affixes"} (optional: leave them empty for the plain price)</span>${copyFields(id,ADD_COPY,"a","a")}`;copyPicks(box,ADD_COPY,"a")}
 // the items the list can show right now (category and Type applied), for the search box's suggestions
 let MKT_POOL=[];
-// the Market and My market tabs: renderPrices draws whichever is open, so everything that changes a price just calls it
+// the Market page's two tabs, Market and My market: renderPrices draws whichever is open, so everything that changes a price just calls it
 function renderPrices(){stampPrices();if(typeof loadShared==="function")loadShared();if(typeof renderShared==="function")renderShared();
   ROOTQ("#mktSrv,#mineSrv").forEach(el=>{el.innerHTML=MKT_SERVERS.map(([k,n])=>`<button type="button" role="radio" data-srv="${k}" aria-checked="${k===state.mktServer}">${n}</button>`).join("")});
-  if(state.tab==="sell")renderMine();else renderMarket()}
+  // the page's own two tabs: Market (browse) and My market (mine), one card each
+  const mine=state.mkt.pane==="mine";$("marketCard").hidden=mine;$("mineCard").hidden=!mine;
+  ROOTQ("#mktPanes [data-pane]").forEach(b=>b.setAttribute("aria-selected",String((b.dataset.pane==="mine")===mine)));
+  if(mine)renderMine();else renderMarket()}
 // Market: what players posted on this server (the shared prices), read only: each item's lowest price and the median, its sellers
 // to DM, and the shared refined / carded copies under it. Your own prices that aren't posted show too, as "yours"
 function renderMarket(){

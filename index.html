@@ -43,7 +43,6 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
       <button type="button" role="tab" data-tabbtn="news" title="What's new"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="2.5"/></svg><span>What's new</span></button>
       <button type="button" role="tab" data-tabbtn="roadmap" title="Roadmap"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Roadmap</span></button>
       <button type="button" role="tab" data-tabbtn="market" title="Market"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="M15.5 9.5A6 6 0 1 1 9.5 15.5"/></svg><span>Market</span></button>
-      <button type="button" role="tab" data-tabbtn="sell" title="My market: your prices and what you posted"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16l-1 11H5z"/><path d="M8 9V7a4 4 0 0 1 8 0v2"/></svg><span>My market</span></button>
       <button type="button" role="tab" data-tabbtn="ref" title="EXP &amp; formulas"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg><span>EXP &amp; formulas</span></button>
       <button type="button" class="navGrp" aria-expanded="true" title="Show or hide the Simulators tabs"><span>Simulators</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
       <button type="button" role="tab" data-tabbtn="brew" title="Brewing simulator"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v5.3a6.5 6.5 0 1 0 4 0V3"/><path d="M6 15.5h12"/></svg><span>Brewing</span></button>
@@ -745,9 +744,10 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="note hint">Activation keeps cards, enchants and options; only the refine drops.</div>
   </section>
 
+  <div class="bar mktPanes" data-tab="market"><div class="seg" role="tablist" aria-label="Market or My market" id="mktPanes"><button type="button" role="tab" data-pane="browse" title="What players posted on this server">Market</button><button type="button" role="tab" data-pane="mine" title="Add items, your posts and your own prices">My market</button></div></div>
   <section class="card" id="marketCard" data-tab="market">
     <div class="bar"><h2 class="grow">Market</h2><div class="seg" role="radiogroup" aria-label="Game server" id="mktSrv" title="Each server has its own market, so each keeps its own prices; the one picked is the one every zeny figure uses"></div></div>
-    <div class="note">What players posted on this server. To sell, or to change your prices, open <a href="#my-market">My market</a>.</div>
+    <div class="note">What players posted on this server. To sell, or to change your prices, open <a href="#" data-gopane="mine">My market</a>.</div>
     <div class="mktCats mt" id="mktCats" role="group" aria-label="Category"></div>
     <div class="bar mt mktTools" id="mktToolsBar">
       <label class="grow mktPick">Search<input id="mktQ" type="search" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="mktSug" placeholder="type a name, or pick a category and click"><div class="mktSug" id="mktSug" role="listbox" hidden></div></label>
@@ -763,7 +763,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="note hint">Lowest: the cheapest price a player posted; median: the middle of the players' prices, each player counted once.</div>
   </section>
 
-  <section class="card" id="mineCard" data-tab="sell">
+  <section class="card" id="mineCard" data-tab="market">
     <div class="bar"><h2 class="grow">My market</h2><button type="button" id="addOpen">+ Add item</button><div class="seg" role="radiogroup" aria-label="Game server" id="mineSrv" title="Each server has its own market, so each keeps its own prices"></div></div>
     <div class="mktShare mt" id="mktShare" hidden></div>
     <h3 class="mt">My posts</h3>

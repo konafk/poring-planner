@@ -386,7 +386,7 @@ $("addCats").addEventListener("click",e=>{const b=e.target.closest("[data-addcat
 $("addType").addEventListener("change",e=>{ADD_TYPE=e.target.value;showSug()});
 // pricing an item from another tab clears the Market filters, so its row is there to type in
 const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus){Object.assign(state.mkt,{cat:"",q:"",max:null,refine:null,opts:[],slot:"",type:"",item:""});mktTools()}save();renderPrices();
-  if(focus){showTab("sell");const i=$("mineList").querySelector(`[data-price="${id}"]`);if(i){i.focus();i.scrollIntoView({behavior:"smooth",block:"center"})}}};
+  if(focus){state.mkt.pane="mine";save();showTab("market");renderPrices();const i=$("mineList").querySelector(`[data-price="${id}"]`);if(i){i.focus();i.scrollIntoView({behavior:"smooth",block:"center"})}}};
 // picking gear (or the Taming Ring) shows its refine, slot and affix boxes under the form
 $("priceItem").addEventListener("input",()=>{renderAddCopy(findItem($("priceItem").value));showSug()});
 $("priceCopy").addEventListener("change",e=>{if(ADD_COPY&&copyChange(ADD_COPY,e.target,"a"))renderAddCopy(ADD_ID)});
@@ -439,6 +439,10 @@ function openAdd(id){if(!loggedIn()){showToast("Log in with Discord to add items
   if(!$("addDlg").open)$("addDlg").showModal();(id?$("priceVal"):$("priceItem")).focus()}
 $("addOpen").addEventListener("click",()=>openAdd());
 ROOTQ("[data-addclose]").forEach(b=>b.addEventListener("click",()=>$("addDlg").close()));
+// the page's two tabs, and the Market note's link to My market
+const setPane=p=>{state.mkt.pane=p;save();if(p==="mine"&&typeof loadMyPosts==="function")loadMyPosts();renderPrices();scrollTo({top:0})};
+$("mktPanes").addEventListener("click",e=>{const b=e.target.closest("[data-pane]");if(b)setPane(b.dataset.pane)});
+$("marketCard").addEventListener("click",e=>{const a=e.target.closest("[data-gopane]");if(a){e.preventDefault();setPane(a.dataset.gopane)}});
 // the Market list: open a seller list, or + sell (the Add item popup with that item)
 $("mktList").addEventListener("click",e=>{const sl=e.target.closest("[data-sellers]");if(sl){e.preventDefault();toggleSellers(sl.dataset.sellers);return}
   const sa=e.target.closest("[data-sadd]");if(sa)openAdd(sa.dataset.sadd)});
