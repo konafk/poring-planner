@@ -272,7 +272,7 @@ Prices you saw in game, for the server you play on: pick **Skadi (EU)**, **Odin 
 - **Refine ≥**, **Card / enchant / egg** (text, e.g. `Hydra` or `STR +1`, several separated by commas) and **Affix / slot options** (each with a least value, or any) show only gear with a priced copy that fits, highlight that copy, and sort and filter by its cheapest one ("cheapest fit +7 · ATK +20: 3,000,000 z").
 - The list is split into the in-game market's categories (Consumables, Etc., Weapons, Armor, Cards, Enchants, Costumes, Pets, Boxes), each with its count. Search it, sort it (recently updated, lowest or highest price, biggest change, name) and hide anything above a **Max price**.
 - Each row shows when you last changed the price, ▲▼ against the price you had before it (green when it went up, since you're selling), the NPC price, the best drop and the item number. Gear shows its card slots, e.g. Katar [2].
-- Type what players pay for an item in **Zeny**, and that drop counts at the player price in every zeny figure. The NPC price is subtracted, since the loot value already includes it. It's filled in for every drop, and you can type your own in a row's NPC box to override it.
+- Type what players pay for an item in **Zeny**, and that drop counts at the player price in every zeny figure. The NPC price (shown under the item's name) is subtracted, since the loot value already includes it.
 - Click a drop in Where to farm (by zeny), Monster info or Item info to price it.
 
 ## EXP & formulas

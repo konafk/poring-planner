@@ -99,7 +99,8 @@ const numOrNull=x=>typeof x==="number"&&isFinite(x)&&x>=0?x:null;
 const mktOpts=a=>(Array.isArray(a)?a:[]).filter(x=>x&&typeof x.k==="string").slice(0,5).map(x=>({k:x.k,v:typeof x.v==="number"&&isFinite(x.v)?x.v:null}));
 const objOr=o=>o&&typeof o==="object"&&!Array.isArray(o)?o:{};
 // a book, numbers only so a pasted backup can't put anything else in:
-// prices: what players pay (item id → zeny); npcPrices: what an NPC pays, if you typed it;
+// prices: what players pay (item id → zeny); npcPrices: always empty now (the Market's NPC box is gone, so an NPC price typed
+// before is dropped and every figure uses the game's);
 // priceSeen: when each price last changed and the one before it (item id → [time in ms or null, previous price or null, price then]);
 // priceVars: refined or optioned copies of gear you saw for sale, beside the plain price (item id → [{r: refine 0-20, o: random options
 // [{k: option key, v: value}], p: price, t: when the price was typed (ms) or null}])
@@ -108,7 +109,7 @@ const posInt=x=>Number.isInteger(x)&&x>0;
 const mktSlots=x=>({...(Array.isArray(x.c)&&x.c.some(posInt)?{c:x.c.slice(0,4).map(v=>posInt(v)?v:null)}:{}),...(typeof x.e==="string"&&x.e&&x.e.length<=60?{e:x.e}:{}),...(posInt(x.egg)?{egg:x.egg}:{})});
 function priceBook(o){o=objOr(o);
   const prices=Object.fromEntries(Object.entries(numMap(o.prices)).filter(([k,v])=>/^\d+$/.test(k)&&v>=0)); // keys are item ids
-  const npcPrices=Object.fromEntries(Object.entries(numMap(o.npcPrices)).filter(([k,v])=>v>=0&&k in prices));
+  const npcPrices={};
   const priceSeen=Object.fromEntries(Object.entries(objOr(o.priceSeen)).filter(([k,v])=>k in prices&&Array.isArray(v)).map(([k,v])=>[k,[numOrNull(v[0]),numOrNull(v[1]),numOrNull(v[2])]]));
   for(const id in prices)if(!priceSeen[id])priceSeen[id]=[null,null,prices[id]]; // a price from before the dates: undated
   const priceVars=Object.fromEntries(Object.entries(objOr(o.priceVars)).filter(([k,v])=>k in prices&&Array.isArray(v))

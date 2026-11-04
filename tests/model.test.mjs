@@ -410,7 +410,7 @@ t("a restored save is cleaned up before anything uses it", () => {
   assert.deepEqual(app("JSON.stringify(state.chars.Sage.build.check)"), JSON.stringify({ hit: 250 }));
   assert.equal(app("'Knight' in state.chars"), false);
   assert.deepEqual(app("JSON.stringify(state.prices)"), JSON.stringify({ "904": 3000 }));   // item ids only, numbers only
-  assert.deepEqual(app("JSON.stringify(state.npcPrices)"), JSON.stringify({ "904": 10 }));
+  assert.deepEqual(app("JSON.stringify(state.npcPrices)"), "{}");   // NPC prices can't be typed any more: a saved one is dropped
   assert.equal(app("state.tab"), "home");                              // not one of the tabs: back to Home
   assert.ok(app("stats(cur())").avgRaw > 0);                            // the tracker maths still runs
 });
@@ -514,7 +514,7 @@ t("market: refined and optioned copies, Refine ≥ and random option filters pic
 t("market: each server keeps its own prices; prices from before the servers are Skadi's", () => {
   const r = load({ prices: { "909": 30 }, serverPrices: { odin: { prices: { "909": 50, "x": 1 }, npcPrices: { "909": 3 } }, mars: { prices: { "1": 1 } } } });
   assert.equal(r(`state.mktServer+" "+state.prices["909"]+" "+Object.keys(state.serverPrices).join()`), "skadi 30 odin");
-  assert.equal(r(`JSON.stringify(state.serverPrices.odin.prices)+state.serverPrices.odin.npcPrices["909"]`), '{"909":50}3');
+  assert.equal(r(`JSON.stringify(state.serverPrices.odin.prices)+JSON.stringify(state.serverPrices.odin.npcPrices)`), '{"909":50}{}');
   r(`switchServer("odin")`);
   assert.equal(r(`state.mktServer+" "+state.prices["909"]+" "+state.serverPrices.skadi.prices["909"]+" "+("odin" in state.serverPrices)`), "odin 50 30 false");
   r(`switchServer("loki")`);

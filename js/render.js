@@ -721,7 +721,7 @@ function renderPrices(){
   const rows=ids.filter(id=>(!mk.cat||mktCat(id)===mk.cat)&&(!q||mktName(id).toLowerCase().includes(q)||("#"+id).includes(q))
       &&(!fOn||pr[id]!=null)&&(mk.max==null||!(pr[id]>mk.max)))
     .sort((a,b)=>SORT[mk.sort](a,b)||mktName(a).localeCompare(mktName(b)));
-  $("mktList").innerHTML=rows.map(id=>{const p=state.prices[id],t=(state.priceSeen[id]||[])[0],mv=priceMove(id),d=DROPPERS[id],npc=state.npcPrices[id]??NPCSELL[id],g=mktGearOnly(id),vs=listings(id).slice(1),best=fOn?mktBest(id):null;
+  $("mktList").innerHTML=rows.map(id=>{const p=state.prices[id],t=(state.priceSeen[id]||[])[0],mv=priceMove(id),d=DROPPERS[id],npc=NPCSELL[id],g=mktGearOnly(id),vs=listings(id).slice(1),best=fOn?mktBest(id):null;
     return `<div class="mktItem"><div class="mktRow"><span class="mktIc">${itemIcon(id)}</span>
       <div class="mktName"><a href="#" data-info="item:${esc(id)}">${esc(mktName(id))}</a>
         <div class="note">${[best?`<b class="mktFit">cheapest fit ${esc(varTxt(best))}: ${fmtN(best.p)} z</b>`:"",t?`<span title="${esc(new Date(t).toLocaleString("en-GB"))}">updated ${agoTxt(t)}</span>`:"",npc!=null?`NPC pays ${fmtN(npc)} z`:"",d?`best drop ${esc(d.m.name)} ${d.ch}%`:"",`#${esc(id)}`,
@@ -729,7 +729,6 @@ function renderPrices(){
       <div class="mktPrice${fOn&&!listingOk(listings(id)[0])?" off":""}"><input class="mono" inputmode="decimal" data-price="${esc(id)}" value="${p>0?fmtN(p):""}" placeholder="price" aria-label="What players pay for ${esc(mktName(id))}" title="${g?"+0, empty slots, no affixes. ":""}Zeny; 450k = 450,000, 1.5m = 1,500,000">
         <span class="mktZ">z</span>${p>=1e3?`<div class="note mono">${zShort(p)}</div>`:""}</div>
       <div class="mktMove">${mv==null?"":`<span class="pill ${mv>0?"up":"down"}" title="was ${fmtN(state.priceSeen[id][1])} z">${mv>0?"▲":"▼"} ${Math.abs(mv)>=10?Math.round(Math.abs(mv)):Math.abs(mv).toFixed(1)}%</span>`}</div>
-      <div class="mktNpc"><input class="mono" inputmode="decimal" data-npc="${esc(id)}" value="${state.npcPrices[id]!=null?fmtN(state.npcPrices[id]):""}" placeholder="${NPCSELL[id]!=null?fmtN(NPCSELL[id]):"0"}" aria-label="What an NPC pays" title="${NPCSELL[id]!=null?`NPC price ${fmtN(NPCSELL[id])} z; type to override, blank resets`:"no NPC price known; counts as 0"}"><span class="note">NPC</span></div>
       <button type="button" class="small ghost" data-unprice="${esc(id)}" title="Remove this item and its copies" aria-label="Remove ${esc(mktName(id))}">✕</button></div>
       ${copyable(id)&&vs.length?`<div class="mktVars">${vs.map(x=>mktVarRow(id,x)).join("")}</div>`:""}</div>`}).join("")
     ||`<div class="note muted mktEmpty">${ids.length?"No prices match these filters.":"No prices yet. Add an item above, or click a drop in Where to farm, Monster info or Item info."}</div>`;
