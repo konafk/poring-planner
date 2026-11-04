@@ -18,6 +18,7 @@ The page is plain HTML, CSS and JavaScript with no dependencies. Open `index.htm
 | `img/` | Gear icon, item icon, card picture, monster picture and skill icon sprite sheets, written by `tools/export_icons.py`, and `img/maps/`, each spawn map's and town's picture, and `img/world-midgard.jpg` / `img/world-nordfeld.png`, the game's world maps, written by `tools/export_minimaps.py`. |
 | `tools/` | Python scripts that export and cross-check the data, and `stamp.mjs`, which builds the deployed site with each file stamped. |
 | `tests/` | Node tests. |
+| `supabase/schema.sql` | The shared prices and cloud backup database: tables, rules and the shared price function, for a Supabase project ([Shared prices](shared-prices.md)). |
 
 ### `js/`
 
@@ -40,6 +41,7 @@ Plain scripts that `index.html` loads in this order. They share one global scope
 | `navi.js` | The game's Navigation (`data/navi.js`): the marks on a map's picture (ways out, NPCs), Getting there from the nearest town (with a Kafra teleport in front when that's quicker), and the Kafra, ways out and NPC lists, for the Maps tab and the Map planner. |
 | `mapinfo.js` | The Maps tab: every spawn map and town on the game's world map (`worldMap` in `render.js`, which the Map planner's world map uses too), its picture and monsters, and a table of every map. |
 | `stellar.js` | The Stellar weapons tab: the ★ weapons by weapon type, the certificates each still needs and the monster that gets you them fastest, and the Activation routes. |
+| `shared.js` | Shared prices and cloud backup: the Discord login (through Supabase, `SHARED` at the top holds its address and public key), the Market tab's shared prices and Share button, and the Account tab's cloud backup. Hidden until `SHARED` is filled in; see [Shared prices](shared-prices.md). |
 | `start.js` | Tabs and their headings, collapsible cards, the Character tab's section links, the get started card's buttons, the search (Ctrl+K), the sidebar's Compact button and its Settings menu (Hints / Theme / Full width), and the first render. |
 
 ### `data/`
@@ -139,6 +141,12 @@ node tests/stamp.test.mjs    # index.html carries no ?v= stamps, and the deploy 
 
 ```sh
 npm i --no-save playwright && npx playwright install chromium && node tests/browser/smoke.mjs
+```
+
+`tests/supabase/schema.mjs` runs `supabase/schema.sql` in PGlite (Postgres in Node) and checks the shared prices and backup rules as anyone, a player, a banned player and an admin. It needs PGlite:
+
+```sh
+npm i --no-save @electric-sql/pglite && node tests/supabase/schema.mjs
 ```
 
 `model.test.mjs` covers the roadmap's open and closed regions, the details popup, damage per hit, hit chance, cast time, party share, EXP and job EXP rates, walking time, the monster table filters recovery item costs, and the Equipment and Cards tabs' filters and equipping. GitHub Actions runs every test (the browser one too), and checks that every script in `tools/` compiles, on each pull request and push to `main` (`.github/workflows/tests.yml`). Each push to `main` also deploys the page (`.github/workflows/pages.yml`).

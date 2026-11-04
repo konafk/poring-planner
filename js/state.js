@@ -103,7 +103,8 @@ const objOr=o=>o&&typeof o==="object"&&!Array.isArray(o)?o:{};
 // before is dropped and every figure uses the game's);
 // priceSeen: when each price last changed and the one before it (item id → [time in ms or null, previous price or null, price then]);
 // priceVars: refined or optioned copies of gear you saw for sale, beside the plain price (item id → [{r: refine 0-20, o: random options
-// [{k: option key, v: value}], p: price, t: when the price was typed (ms) or null}])
+// [{k: option key, v: value}], p: price, t: when the price was typed (ms) or null, sell: you sell it, and its slots (below)}]);
+// sell: the plain prices you sell yourself, not just saw (item id → true), for buyers to DM you about (js/shared.js)
 // a copy's slots, kept only when set: c: a card id or null per card slot (up to 4), e: the slot 4 enchant line, egg: the Taming Ring's egg id
 const posInt=x=>Number.isInteger(x)&&x>0;
 const mktSlots=x=>({...(Array.isArray(x.c)&&x.c.some(posInt)?{c:x.c.slice(0,4).map(v=>posInt(v)?v:null)}:{}),...(typeof x.e==="string"&&x.e&&x.e.length<=60?{e:x.e}:{}),...(posInt(x.egg)?{egg:x.egg}:{})});
@@ -113,16 +114,18 @@ function priceBook(o){o=objOr(o);
   const priceSeen=Object.fromEntries(Object.entries(objOr(o.priceSeen)).filter(([k,v])=>k in prices&&Array.isArray(v)).map(([k,v])=>[k,[numOrNull(v[0]),numOrNull(v[1]),numOrNull(v[2])]]));
   for(const id in prices)if(!priceSeen[id])priceSeen[id]=[null,null,prices[id]]; // a price from before the dates: undated
   const priceVars=Object.fromEntries(Object.entries(objOr(o.priceVars)).filter(([k,v])=>k in prices&&Array.isArray(v))
-    .map(([k,v])=>[k,v.filter(x=>x&&typeof x==="object").map(x=>({r:Math.min(20,Math.max(0,Math.round(+x.r)||0)),o:mktOpts(x.o),p:numOrNull(x.p)||0,t:numOrNull(x.t),...mktSlots(x)}))]).filter(([,v])=>v.length));
-  return {prices,npcPrices,priceSeen,priceVars}}
+    .map(([k,v])=>[k,v.filter(x=>x&&typeof x==="object").map(x=>({r:Math.min(20,Math.max(0,Math.round(+x.r)||0)),o:mktOpts(x.o),p:numOrNull(x.p)||0,t:numOrNull(x.t),...mktSlots(x),...(x.sell===true?{sell:true}:{})}))]).filter(([,v])=>v.length));
+  const sell=Object.fromEntries(Object.entries(objOr(o.sell)).filter(([k,v])=>k in prices&&v===true));
+  return {prices,npcPrices,priceSeen,priceVars,sell}}
 state.mktServer=MKT_SERVERS.some(([k])=>k===state.mktServer)?state.mktServer:"skadi"; // prices from before the servers are Skadi's
 Object.assign(state,priceBook(state));
 state.serverPrices=Object.fromEntries(MKT_SERVERS.filter(([k])=>k!==state.mktServer&&objOr(state.serverPrices)[k]).map(([k])=>[k,priceBook(state.serverPrices[k])]));
-// the Market list's category, sort, search, max price, Refine ≥ (null = any), affixes wanted ({k, v: the least value or null}) and
-// Card / enchant / egg (text: comma-separated parts a copy's slots must have)
+// the Market list's category, sort, search, max price, Refine ≥ (null = any), affixes wanted ({k, v: the least value or null}),
+// Card / enchant / egg (text: comma-separated parts a copy's slots must have) and whether it shows everyone's items (the shared
+// prices, js/shared.js) beside yours
 {const m=state.mkt&&typeof state.mkt==="object"?state.mkt:{};
   state.mkt={cat:typeof m.cat==="string"?m.cat:"",sort:["recent","low","high","move","name"].includes(m.sort)?m.sort:"recent",q:typeof m.q==="string"?m.q:"",max:numOrNull(m.max),
-    refine:Number.isInteger(m.refine)&&m.refine>0&&m.refine<=20?m.refine:null,opts:mktOpts(m.opts),slot:typeof m.slot==="string"?m.slot.slice(0,100):""}}
+    refine:Number.isInteger(m.refine)&&m.refine>0&&m.refine<=20?m.refine:null,opts:mktOpts(m.opts),slot:typeof m.slot==="string"?m.slot.slice(0,100):"",everyone:m.everyone===true}}
 // auto-loot groups you switched off (true/false by group), and per map the monsters the Zeny Hunter passes by (monster ids)
 state.autoLoot=Object.fromEntries(Object.entries(state.autoLoot&&typeof state.autoLoot==="object"?state.autoLoot:{}).filter(([k,v])=>/^[waueco]$/.test(k)&&typeof v==="boolean"));
 state.huntOff=Object.fromEntries(Object.entries(state.huntOff&&typeof state.huntOff==="object"?state.huntOff:{}).filter(([,v])=>Array.isArray(v)).map(([k,v])=>[String(k),v.map(Number).filter(Number.isFinite)]));
