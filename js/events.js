@@ -366,47 +366,56 @@ function showSug(){const q=$("priceItem").value.trim().toLowerCase().replace(/^#
   box.innerHTML=SUG.map((id,i)=>`<button type="button" role="option" class="mktSugRow${i===SUG_I?" on":""}" data-sug="${id}" aria-selected="${i===SUG_I}"><span class="mktIc">${itemIcon(id)}</span><span class="grow">${esc(mktName(id))}</span><span class="note">${MKT_CAT_NAME[mktCat(id)]} · #${id}</span>${id in state.prices?`<span class="pill">priced</span>`:""}</button>`).join("");
   box.hidden=!SUG.length;$("priceItem").setAttribute("aria-expanded",String(!box.hidden))}
 const hideSug=()=>{$("priceSug").hidden=true;$("priceItem").setAttribute("aria-expanded","false")};
-const pickSug=id=>{$("priceItem").value=`${mktName(id)} #${id}`;hideSug();$("priceNpc").placeholder=NPCSELL[id]!=null?fmtN(NPCSELL[id])+" (NPC)":"0";$("priceVal").focus()};
+const pickSug=id=>{$("priceItem").value=`${mktName(id)} #${id}`;hideSug();renderAddCopy(id);$("priceVal").focus()};
 $("priceSug").addEventListener("mousedown",e=>e.preventDefault()); // keep the box focused, so the click picks
 $("priceSug").addEventListener("click",e=>{const b=e.target.closest("[data-sug]");if(b)pickSug(b.dataset.sug)});
 $("priceItem").addEventListener("blur",hideSug);
 // pricing an item from another tab clears the Market filters, so its row is there to type in
-const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus){Object.assign(state.mkt,{cat:"",q:"",max:null,refine:null,opts:[]});mktTools()}save();renderPrices();
+const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus){Object.assign(state.mkt,{cat:"",q:"",max:null,refine:null,opts:[],slot:""});mktTools()}save();renderPrices();
   if(focus){showTab("market");const i=document.querySelector(`[data-price="${id}"]`);if(i){i.focus();i.scrollIntoView({behavior:"smooth",block:"center"})}}};
-// the NPC box shows the database's NPC price for the picked item; typing one overrides it
-$("priceItem").addEventListener("input",()=>{const id=findItem($("priceItem").value);$("priceNpc").placeholder=id&&NPCSELL[id]!=null?fmtN(NPCSELL[id])+" (NPC)":"0";showSug()});
+// picking gear (or the Taming Ring) shows its refine, slot and affix boxes under the form
+$("priceItem").addEventListener("input",()=>{renderAddCopy(findItem($("priceItem").value));showSug()});
+$("priceCopy").addEventListener("change",e=>{if(ADD_COPY&&copyChange(ADD_COPY,e.target,"a"))renderAddCopy(ADD_ID)});
 $("priceItem").addEventListener("keydown",e=>{const box=$("priceSug");
   if(!box.hidden&&(e.key==="ArrowDown"||e.key==="ArrowUp")){e.preventDefault();SUG_I=(SUG_I+(e.key==="ArrowDown"?1:-1)+SUG.length)%SUG.length;
     box.querySelectorAll("[data-sug]").forEach((b,i)=>{b.classList.toggle("on",i===SUG_I);b.setAttribute("aria-selected",String(i===SUG_I));if(i===SUG_I)b.scrollIntoView({block:"nearest"})});return}
   if(e.key==="Escape"){hideSug();return}
   if(e.key==="Enter"){e.preventDefault();if(!box.hidden&&SUG_I>=0)pickSug(SUG[SUG_I]);else $("priceAdd").click()}});
-$("priceAdd").addEventListener("click",()=>{const id=findItem($("priceItem").value),p=parseZ($("priceVal").value),np=parseZ($("priceNpc").value);
-  if(!id){$("priceMsg").textContent="Pick an item from the list.";return}if(Number.isNaN(p)||Number.isNaN(np)){$("priceMsg").textContent="Type a price as 450000, 450k or 1.5m.";return}
-  $("priceMsg").textContent="";state.prices[id]=p||0;if(np!=null)state.npcPrices[id]=np;$("priceItem").value="";$("priceVal").value="";$("priceNpc").value="";$("priceNpc").placeholder="0";save();renderAll()});
-["priceVal","priceNpc"].forEach(k=>$(k).addEventListener("keydown",e=>{if(e.key==="Enter")$("priceAdd").click()}));
+$("priceAdd").addEventListener("click",()=>{const id=findItem($("priceItem").value),p=parseZ($("priceVal").value);
+  if(!id){$("priceMsg").textContent="Pick an item from the list.";return}if(Number.isNaN(p)){$("priceMsg").textContent="Type a price as 450000, 450k or 1.5m.";return}
+  $("priceMsg").textContent="";
+  // with a refine, a card, an enchant, an egg or an affix set, the price is that copy's; the item's plain price stays as it was
+  if(ADD_COPY&&ADD_ID===id&&!copyBare(ADD_COPY)){if(!(id in state.prices))state.prices[id]=0;const x={...ADD_COPY,o:ADD_COPY.o.filter(o=>o.k),p:p||0,t:Date.now()};
+    if(x.c&&!x.c.some(Boolean))delete x.c;(state.priceVars[id]=state.priceVars[id]||[]).push(x)}
+  else state.prices[id]=p||0;
+  $("priceItem").value="";$("priceVal").value="";renderAddCopy(null);save();renderAll()});
+$("priceVal").addEventListener("keydown",e=>{if(e.key==="Enter")$("priceAdd").click()});
 // a row's boxes save when you leave them or press Enter; something that isn't a price puts the old one back
 const varOf=el=>{const v=el.closest("[data-var]");if(!v)return null;const [id,i]=v.dataset.var.split(":");return {id,i:+i,x:(state.priceVars[id]||[])[+i]}};
 $("mktList").addEventListener("change",e=>{const el=e.target,vr=varOf(el);
   if(vr&&vr.x){const x=vr.x;
-    if(el.matches("[data-vr]"))x.r=+el.value;
-    else if(el.matches("[data-vp]")){const v=parseZ(el.value);if(Number.isNaN(v)){el.blur();renderPrices();return}x.p=v||0;x.t=Date.now()}
-    else if(el.matches("[data-vok]")){const j=+el.dataset.vok;if(el.value)x.o[j]={k:el.value,v:x.o[j]?x.o[j].v:null};else x.o.splice(j,1)}
-    else if(el.matches("[data-vov]")){const v=parseFloat(el.value);x.o[+el.dataset.vov].v=Number.isFinite(v)?v:null}
+    if(el.matches("[data-vp]")){const v=parseZ(el.value);if(Number.isNaN(v)){el.blur();renderPrices();return}x.p=v||0;x.t=Date.now()}
+    else if(el.matches("[data-vsell]")){if(el.checked)x.sell=true;else{delete x.sell;unsell(vr.id)}}
+    else copyChange(x,el,"v");
     el.blur();save();renderPrices();return}
-  const i=el.closest("[data-price],[data-npc]");if(!i)return;const v=parseZ(i.value);
+  if(el.matches("[data-sell]")){const id=el.dataset.sell;if(el.checked)state.sell[id]=true;else{delete state.sell[id];unsell(id)}save();renderPrices();return}
+  const i=el.closest("[data-price]");if(!i)return;const v=parseZ(i.value);
   if(Number.isNaN(v)){i.blur();renderPrices();return}
-  if(i.dataset.price)state.prices[i.dataset.price]=v||0;else if(v==null)delete state.npcPrices[i.dataset.npc];else state.npcPrices[i.dataset.npc]=v;i.blur();save();renderAll()});
+  state.prices[i.dataset.price]=v||0;i.blur();save();renderAll()});
 $("mktList").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches("input"))e.target.blur()});
 $("mktList").addEventListener("click",e=>{
-  const a=e.target.closest("[data-varadd]");if(a){e.preventDefault();const id=a.dataset.varadd;(state.priceVars[id]=state.priceVars[id]||[]).push({r:state.mkt.refine||0,o:state.mkt.opts.filter(f=>f.k).map(f=>({k:f.k,v:f.v})),p:0,t:null});save();renderPrices();
+  const a=e.target.closest("[data-varadd]");if(a){e.preventDefault();const id=a.dataset.varadd;(state.priceVars[id]=state.priceVars[id]||[]).push({...newCopy(id),r:mktGearOnly(id)?state.mkt.refine||0:0,o:mktGearOnly(id)?state.mkt.opts.filter(f=>f.k).map(f=>({k:f.k,v:f.v})):[]});save();renderPrices();
     const rows=document.querySelectorAll(`[data-var^="${id}:"] [data-vp]`);if(rows.length)rows[rows.length-1].focus();return}
   if(e.target.closest("[data-vdel]")){const vr=varOf(e.target);if(!vr)return;state.priceVars[vr.id].splice(vr.i,1);if(!state.priceVars[vr.id].length)delete state.priceVars[vr.id];save();renderPrices();return}
-  const b=e.target.closest("[data-unprice]");if(!b)return;const id=b.dataset.unprice;delete state.prices[id];delete state.npcPrices[id];delete state.priceVars[id];save();renderAll()});
+  const sl=e.target.closest("[data-sellers]");if(sl){e.preventDefault();toggleSellers(sl.dataset.sellers);return}
+  const su=e.target.closest("[data-suse]");if(su){e.preventDefault();useShared([su.dataset.suse]);return}
+  const sa=e.target.closest("[data-sadd]");if(sa){const id=sa.dataset.sadd,sp=sharedPlain(id);state.prices[id]=sp?sp.p:0;save();renderAll();renderPrices();return}
+  const b=e.target.closest("[data-unprice]");if(!b)return;const id=b.dataset.unprice;delete state.prices[id];delete state.priceVars[id];delete state.sell[id];save();renderAll()});
 // the list's category buttons, search, sort, max price, Refine ≥ and random options (saved)
 function mktTools(){$("mktQ").value=state.mkt.q;$("mktSort").value=state.mkt.sort;$("mktMax").value=state.mkt.max!=null?fmtN(state.mkt.max):""}
 mktTools();
 // switching server puts the current server's prices away and takes out the other's
-const BOOK_KEYS=["prices","npcPrices","priceSeen","priceVars"];
+const BOOK_KEYS=["prices","priceSeen","priceVars","sell"];
 function switchServer(k){if(k===state.mktServer||!MKT_SERVERS.some(([x])=>x===k))return;
   state.serverPrices[state.mktServer]=Object.fromEntries(BOOK_KEYS.map(b=>[b,state[b]]));
   const next=state.serverPrices[k]||{};BOOK_KEYS.forEach(b=>{state[b]=next[b]||{}});delete state.serverPrices[k];state.mktServer=k;save();renderAll();renderPrices()}
@@ -415,6 +424,7 @@ $("mktCats").addEventListener("click",e=>{const b=e.target.closest("[data-mktcat
 $("mktQ").addEventListener("input",e=>{state.mkt.q=e.target.value;save();renderPrices()});
 $("mktSort").addEventListener("change",e=>{state.mkt.sort=e.target.value;save();renderPrices()});
 $("mktMax").addEventListener("change",e=>{const v=parseZ(e.target.value);state.mkt.max=Number.isNaN(v)?state.mkt.max:v;mktTools();save();renderPrices()});
+$("mktSlotQ").addEventListener("input",e=>{state.mkt.slot=e.target.value;save();renderPrices()});
 $("mktRef").addEventListener("change",e=>{state.mkt.refine=e.target.value?+e.target.value:null;save();renderPrices()});
 $("mktOptF").addEventListener("click",e=>{if(e.target.closest("[data-foadd]")){state.mkt.opts.push({k:"",v:null});save();renderPrices();const s=$("mktOptF").querySelectorAll("[data-fok]");if(s.length)s[s.length-1].focus();return}
   const d=e.target.closest("[data-fodel]");if(d){state.mkt.opts.splice(+d.dataset.fodel,1);save();renderPrices()}});
@@ -472,7 +482,15 @@ $("mapTable").querySelector("tbody").addEventListener("click",e=>{const sm=e.tar
 // backup
 const bkText=()=>JSON.stringify(state);
 // combined backup: every account's save plus the account list
-const bkAllText=()=>{save();return JSON.stringify({allAccounts:1,active:accts.active,accounts:accts.list.map(a=>{let data=null;try{data=JSON.parse(localStorage.getItem(acctKey(a.id)))}catch(e){}return {id:a.id,name:a.name,data}})})};
+// every account as stored (acctsText doesn't save first, so it never bumps the revision other tabs watch)
+const acctsText=()=>JSON.stringify({allAccounts:1,active:accts.active,accounts:accts.list.map(a=>{let data=null;try{data=JSON.parse(localStorage.getItem(acctKey(a.id)))}catch(e){}return {id:a.id,name:a.name,data}})});
+const bkAllText=()=>{save();return acctsText()};
+// write an all-accounts backup over every account: each one first, then drop the old ones it doesn't have, so a failed write leaves
+// the old accounts in place. "" when it worked, else what went wrong
+function writeAccounts(data){if(!data||!data.allAccounts||!Array.isArray(data.accounts)||!data.accounts.length||data.accounts.some(a=>!a||typeof a.id!=="string"||!a.id))return "That backup has no accounts in it.";
+  const keep=new Set(data.accounts.map(a=>acctKey(a.id)));try{data.accounts.forEach(a=>{if(a.data)localStorage.setItem(acctKey(a.id),JSON.stringify(a.data))})}catch(err){return "Couldn't write the backup to this browser's storage. Your accounts weren't changed."}
+  try{accts.list.forEach(a=>{if(!keep.has(acctKey(a.id)))localStorage.removeItem(acctKey(a.id))});data.accounts.forEach(a=>{if(!a.data)localStorage.removeItem(acctKey(a.id))})}catch(err){}
+  accts.list=data.accounts.map((a,i)=>({id:a.id,name:String(a.name||"Account "+(i+1))}));accts.active=accts.list.some(a=>a.id===data.active)?data.active:accts.list[0].id;saveAccts();return ""}
 const bkCopyText=(t,what)=>{const fb=()=>{$("bkText").value=t;$("bkText").select();$("bkMsg").textContent="Couldn't copy automatically, so the backup is selected in the box below."};
   try{navigator.clipboard.writeText(t).then(()=>{$("bkMsg").textContent=`${what} copied. Paste it somewhere safe.`},fb)}catch(err){fb()}};
 // the backup always holds every account; the text also goes in the box so it can be seen or copied by hand
@@ -527,10 +545,7 @@ $("bkRestore").addEventListener("click",()=>{let data;try{data=JSON.parse($("bkT
   else if(!data||!Array.isArray(data.sessions)){$("bkMsg").textContent="That backup has no sessions in it.";return}
   if(!bkArmed){bkArmed=true;$("bkRestore").textContent=all?`Click again to replace all accounts (${data.accounts.length} in backup)`:"Click again to replace this account";setTimeout(()=>{bkArmed=false;$("bkRestore").textContent="Restore from text"},4000);return}
   bkArmed=false;
-  // write every account first, then drop the old ones the backup doesn't have, so a failed write leaves the old accounts in place
-  if(all){const keep=new Set(data.accounts.map(a=>acctKey(a.id)));try{data.accounts.forEach(a=>{if(a.data)localStorage.setItem(acctKey(a.id),JSON.stringify(a.data))})}catch(err){$("bkMsg").textContent="Couldn't write the backup to this browser's storage. Your accounts weren't changed.";return}
-    try{accts.list.forEach(a=>{if(!keep.has(acctKey(a.id)))localStorage.removeItem(acctKey(a.id))});data.accounts.forEach(a=>{if(!a.data)localStorage.removeItem(acctKey(a.id))})}catch(err){}
-    accts.list=data.accounts.map((a,i)=>({id:a.id,name:String(a.name||"Account "+(i+1))}));accts.active=accts.list.some(a=>a.id===data.active)?data.active:accts.list[0].id;saveAccts()}
+  if(all){const err=writeAccounts(data);if(err){$("bkMsg").textContent=err;return}}
   else{state=data;save()}
   $("bkMsg").textContent="Restored. Reloading…";try{location.reload()}catch(err){$("bkMsg").textContent="Restored. Reload the page to see it."}});
 // ---- column views: one click sets which columns the big tables show; the view that matches the columns shown is marked ----

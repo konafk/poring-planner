@@ -108,6 +108,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   <section class="card" data-tab="acct">
     <div class="bar"><h2 class="grow">Backup</h2><span class="note hint">Saved in this browser only. A share link opens this account for anyone.</span></div>
     <div class="bar"><button type="button" id="bkCopy">Copy backup</button><button type="button" id="bkLink">Copy share link</button><button type="button" id="bkRestore" class="danger">Restore from text</button><span class="note" id="bkMsg"></span></div>
+    <div class="bar mt cloudBar" id="cloudBar" hidden></div>
     <textarea class="mono-area" id="bkText" rows="3" placeholder="Paste a backup here, then click Restore from text"></textarea>
   </section>
 
@@ -745,12 +746,13 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 
   <section class="card" id="marketCard" data-tab="market">
     <div class="bar"><h2 class="grow">Market prices</h2><div class="seg" role="radiogroup" aria-label="Game server" id="mktSrv" title="Each server has its own market, so each keeps its own prices; the one picked is the one every zeny figure uses"></div></div>
+    <div class="mktShare mt" id="mktShare" hidden></div>
     <div class="bar mt">
       <label class="grow mktPick">Item<input id="priceItem" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="priceSug" placeholder="name or #id, e.g. Snake Scale"><div class="mktSug" id="priceSug" role="listbox" hidden></div></label>
-      <label>Players pay<input class="w-xl mono" id="priceVal" inputmode="decimal" placeholder="450k, 1.5m" title="Zeny; 450k = 450,000, 1.5m = 1,500,000"></label>
-      <label>NPC pays<input class="w-xl mono" id="priceNpc" inputmode="decimal" placeholder="0" title="What an NPC pays for it; blank keeps the NPC price"></label>
+      <label>Zeny<input class="w-xl mono" id="priceVal" inputmode="decimal" placeholder="450k, 1.5m" title="What players pay for it; 450k = 450,000, 1.5m = 1,500,000"></label>
       <label><span>&nbsp;</span><button type="button" id="priceAdd">Add price</button></label>
     </div>
+    <div class="bar mt mktCopyBar" id="priceCopy" hidden></div>
     <div class="note bad" id="priceMsg"></div>
     <div class="mktCats mt" id="mktCats" role="group" aria-label="Category"></div>
     <div class="bar mt mktTools">
@@ -758,8 +760,9 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
       <label>Sort<select id="mktSort"><option value="recent">Recently updated</option><option value="low">Lowest price</option><option value="high">Highest price</option><option value="move">Biggest change</option><option value="name">Name</option></select></label>
       <label>Max price<input class="w-lg mono" id="mktMax" inputmode="decimal" placeholder="any" title="Zeny; 450k = 450,000, 1.5m = 1,500,000"></label>
       <label title="Only gear with a copy priced at this refine or higher">Refine ≥<select id="mktRef"></select></label>
+      <label title="Only copies with these in their slots: a card, a slot 4 enchant (STR +1) or a Taming Ring's egg. Separate several with commas">Card / enchant / egg<input class="w-xl" id="mktSlotQ" type="search" placeholder="Hydra, STR +1, Poring Egg"></label>
     </div>
-    <div class="bar mt mktOptBar"><span class="note">Random options</span><span class="bar" id="mktOptF"></span></div>
+    <div class="bar mt mktOptBar"><span class="note">Affix / slot options</span><span class="bar" id="mktOptF"></span></div>
     <div class="mktList mt" id="mktList"></div>
     <div class="note hint">Type 450k or 1.5m. Only the plain price counts in zeny figures. Saved per account and server.</div>
   </section>
@@ -1011,6 +1014,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   <div class="bar infoActs" id="infoDlgActs"></div>
 </dialog>
 <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<div id="syncAsk" class="syncAsk" role="alertdialog" aria-label="Choose which accounts to keep" hidden></div>
 <!-- app code, split by section; these run in order and share one global scope (plain scripts, so the page still opens from file://) -->
 <script src="js/game.js"></script>
 <script src="js/state.js"></script>
@@ -1031,6 +1035,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 <script src="js/news.js"></script>
 <script src="js/lookanim.js"></script>
 <script src="js/stylist.js"></script>
+<script src="js/shared.js"></script>
 <script src="js/start.js"></script>
 </body>
 </html>

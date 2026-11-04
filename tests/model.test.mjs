@@ -410,7 +410,7 @@ t("a restored save is cleaned up before anything uses it", () => {
   assert.deepEqual(app("JSON.stringify(state.chars.Sage.build.check)"), JSON.stringify({ hit: 250 }));
   assert.equal(app("'Knight' in state.chars"), false);
   assert.deepEqual(app("JSON.stringify(state.prices)"), JSON.stringify({ "904": 3000 }));   // item ids only, numbers only
-  assert.deepEqual(app("JSON.stringify(state.npcPrices)"), JSON.stringify({ "904": 10 }));
+  assert.deepEqual(app("JSON.stringify(state.npcPrices)"), "{}");   // NPC prices can't be typed any more: a saved one is dropped
   assert.equal(app("state.tab"), "home");                              // not one of the tabs: back to Home
   assert.ok(app("stats(cur())").avgRaw > 0);                            // the tracker maths still runs
 });
@@ -514,13 +514,57 @@ t("market: refined and optioned copies, Refine ≥ and random option filters pic
 t("market: each server keeps its own prices; prices from before the servers are Skadi's", () => {
   const r = load({ prices: { "909": 30 }, serverPrices: { odin: { prices: { "909": 50, "x": 1 }, npcPrices: { "909": 3 } }, mars: { prices: { "1": 1 } } } });
   assert.equal(r(`state.mktServer+" "+state.prices["909"]+" "+Object.keys(state.serverPrices).join()`), "skadi 30 odin");
-  assert.equal(r(`JSON.stringify(state.serverPrices.odin.prices)+state.serverPrices.odin.npcPrices["909"]`), '{"909":50}3');
+  assert.equal(r(`JSON.stringify(state.serverPrices.odin.prices)+JSON.stringify(state.serverPrices.odin.npcPrices)`), '{"909":50}{}');
   r(`switchServer("odin")`);
   assert.equal(r(`state.mktServer+" "+state.prices["909"]+" "+state.serverPrices.skadi.prices["909"]+" "+("odin" in state.serverPrices)`), "odin 50 30 false");
   r(`switchServer("loki")`);
   assert.equal(r(`Object.keys(state.prices).length+" "+Object.keys(state.serverPrices).sort().join()`), "0 odin,skadi");
   r(`switchServer("skadi")`);
   assert.equal(r(`state.prices["909"]`), 30);
+});
+
+t("market: slots: cards that fit the gear, the memorial enchant, the Taming Ring's egg, and the Card / enchant / egg filter", () => {
+  const katar = run(`EQUIP.find(e=>e.type==="katar"&&e.slots===2).id`);
+  assert.ok(run(`cardsFor(MKT_GEAR[${katar}]).every(c=>c.slot.includes("weapon"))&&cardsFor(MKT_GEAR[${katar}]).length>20`));
+  assert.ok(run(`cardsFor(MKT_GEAR[28540]).every(c=>c.slot.some(s=>s.startsWith("accessory")))`));   // Expedition Ring: accessory cards
+  assert.ok(run(`enchantsFor(MKT_GEAR[15221]).includes("STR +1")&&!enchantsFor(MKT_GEAR[15221]).includes("essence")`)); // Expedition's Armor
+  assert.equal(run(`enchantsFor(MKT_GEAR[28540]).length+enchantsFor(MKT_GEAR[${katar}]).length`), 0); // rings and weapons have none
+  assert.ok(run(`copyable("24966")&&!copyable("909")&&!copyable("4001")`));
+  assert.equal(run(`newCopy("${katar}").c.length`), 2);
+  const hydra = run(`CARDS.find(c=>c.name==="Hydra Card").id`);
+  run(`state.prices={"${katar}":200000,"24966":300000};state.priceVars={"${katar}":[{r:7,o:[],c:[${hydra},${hydra}],p:9000000,t:null}],"24966":[{r:0,o:[],egg:313582,p:500000,t:null}]};state.mkt={cat:"",sort:"recent",q:"",max:null,refine:null,opts:[],slot:""}`);
+  assert.equal(run(`varTxt(state.priceVars["${katar}"][0])`), "+7 · Hydra Card ×2");
+  assert.equal(run(`varTxt(state.priceVars["24966"][0])`), "Poring Egg Lv.1");
+  run(`state.mkt.slot="hydra"`);
+  assert.equal(run(`mktPrice("${katar}")+" "+mktPrice("24966")`), "9000000 null");
+  run(`state.mkt.slot="poring egg, lv.1"`);
+  assert.equal(run(`mktPrice("24966")`), 500000);
+  // what a copy saves: card ids or null per slot (4 at most), the enchant line, the egg id; nothing else
+  const r = load({ prices: { "15221": 1, "24966": 1 }, priceVars: { "15221": [{ r: 9, o: [], c: [4001, "x", -2, 4002, 4003], e: "STR +1", egg: "evil", p: 5 }], "24966": [{ r: 0, o: [], c: [null], e: "", egg: 313582, p: 5 }] } });
+  assert.equal(r(`JSON.stringify(state.priceVars)`), '{"15221":[{"r":9,"o":[],"p":5,"t":null,"c":[4001,null,null,4002],"e":"STR +1"}],"24966":[{"r":0,"o":[],"p":5,"t":null,"egg":313582}]}');
+  run(`state.prices={};state.priceVars={};state.mkt.slot=""`);
+});
+
+t("cloud sync: which way it goes after a Discord login", () => {
+  const acc = data => JSON.stringify({ allAccounts: 1, active: "a0", accounts: [{ id: "a0", name: "A", data }] });
+  const empty = acc({ sessions: [], chars: {} }), mine = acc({ job: "Sage", chars: { Sage: {} }, sessions: [] }), other = acc({ job: "Hunter", chars: { Hunter: {} }, sessions: [] });
+  const plan = (local, cloud, cloudAt, base) => run(`syncPlan(${JSON.stringify({ local, cloud, cloudAt, base })})`);
+  const h = t => run(`textHash(${JSON.stringify(t)})`);
+  assert.ok(!run(`hasChar(${JSON.stringify(empty)})`) && run(`hasChar(${JSON.stringify(mine)})`));
+  assert.equal(plan(mine, null, null, null), "up");                       // no cloud copy yet
+  assert.equal(plan(empty, null, null, null), "none");                    // nothing to send
+  assert.equal(plan(empty, mine, 5, null), "down");                       // no character here: take the cloud's
+  assert.equal(plan(mine, mine, 5, null), "same");
+  assert.equal(plan(mine, other, 5, null), "ask");                        // never synced and different
+  assert.equal(plan(mine, other, 5, { at: 5, h: "x" }), "up");            // cloud unchanged since the last sync: this browser's wins
+  assert.equal(plan(mine, other, 9, { at: 5, h: h(mine) }), "down");      // only the cloud changed
+  assert.equal(plan(mine, other, 9, { at: 5, h: "x" }), "ask");           // both changed
+  assert.match(run(`syncSummary(${JSON.stringify(mine)})`), /^1 account · Sage/);
+});
+
+t("Restore and the cloud sync write an all-accounts backup the same way", () => {
+  assert.equal(run(`writeAccounts({allAccounts:1,accounts:[]})`), "That backup has no accounts in it.");
+  assert.equal(run(`writeAccounts({allAccounts:1,accounts:[{id:""}]})`), "That backup has no accounts in it.");
 });
 
 t("market: a saved copy keeps only a refine of 0-20, options with a key, and a price", () => {

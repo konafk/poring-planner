@@ -1007,7 +1007,7 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 .mktCat[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
 .mktCat[aria-pressed="true"] span{color:inherit;opacity:.8}
 .mktList{border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.mktRow{display:grid;grid-template-columns:32px minmax(0,1fr) 170px 74px 118px auto;align-items:center;gap:12px;padding:9px 12px;border-top:1px solid var(--line)}
+.mktRow{display:grid;grid-template-columns:32px minmax(0,1fr) 170px 74px auto;align-items:center;gap:12px;padding:9px 12px;border-top:1px solid var(--line)}
 .mktRow:first-child{border-top:0}
 .mktRow:hover{background:var(--raised)}
 .mktIc{display:flex;align-items:center;justify-content:center;min-height:28px}
@@ -1021,12 +1021,11 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 .mktPrice .mktZ{color:var(--muted);font-size:13px}
 .mktPrice .note{grid-column:1;text-align:right;font-size:11.5px;line-height:1.3}
 .mktMove{text-align:right}.mktMove .pill{font-family:var(--mono);font-variant-numeric:tabular-nums}
-.mktNpc{display:flex;align-items:center;gap:5px}.mktNpc input{width:100%;text-align:right;font-size:12.5px}
 .mktRow button.ghost{border-color:transparent;background:none;color:var(--muted)}.mktRow button.ghost:hover{color:var(--bad);background:var(--grid)}
 .mktEmpty{padding:18px 14px}
 @media (max-width:720px){
   .mktRow{grid-template-columns:28px minmax(0,1fr) auto;row-gap:6px;gap:8px 10px}
-  .mktPrice{grid-column:2/3}.mktMove{grid-column:3;grid-row:2}.mktNpc{grid-column:2/3}.mktRow button.ghost{grid-column:3;grid-row:1}
+  .mktPrice{grid-column:2/3}.mktMove{grid-column:3;grid-row:2}.mktRow button.ghost{grid-column:3;grid-row:1}
 }
 .mktItem{border-top:1px solid var(--line)}.mktItem:first-child{border-top:0}
 .mktItem .mktRow{border-top:0}
@@ -1049,3 +1048,25 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 @media (max-width:720px){.mktVars{padding-left:12px}.mktVar .mktPrice{width:auto;flex:1 1 100%;margin-left:0}.mktSugRow .note{display:none}
   .mktOpts,#mktOptF{width:100%;min-width:0}.mktOpt{display:flex;width:100%;min-width:0}.mktOpt select{flex:1 1 auto;min-width:0;max-width:none}.mktOpt input{flex:none;width:64px}
   .mktVar{min-width:0}.mktVar .mktAgo{margin-left:auto}}
+
+/* shared prices and cloud backup (js/shared.js) */
+.discordBtn{background:#5865f2;border-color:#5865f2;color:#fff;font-weight:600}.discordBtn:hover{background:#4752c4;border-color:#4752c4;color:#fff}
+.mktShare{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--raised)}
+.mktShare .bar{align-items:center}.mktEveryone{justify-content:flex-end;gap:6px;font-size:13px}
+.mktShared{color:var(--accent)}
+.mktSharedP b{font-size:15px;text-align:right}.mktSharedP{justify-items:end}
+.mktVar.shared{border-style:dotted;background:none}.mktVar.shared .mktPrice{text-align:right}
+.cloudBar{align-items:center}
+.mktSell{display:inline-flex;flex-direction:row;align-items:center;gap:3px;font-size:12px;color:var(--fg);white-space:nowrap;vertical-align:middle}.mktSell input{margin:0;width:13px;height:13px;flex:none}
+.mktSellers{font-weight:600}
+.mktSellerList{margin:0 12px 10px 56px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--raised);display:grid;gap:6px}
+.mktSeller{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}.mktSeller .mono{margin-left:auto}
+.discordLink{color:#5865f2;font-weight:600;font-size:12.5px}
+@media (max-width:720px){.mktSellerList{margin-left:12px}}
+.mktSlots{display:flex;flex-wrap:wrap;gap:6px}.mktSlots select{max-width:190px}
+.mktCopyBar{align-items:center;padding:8px 10px;border:1px dashed var(--line-strong);border-radius:8px;background:var(--raised)}.mktCopyBar>.note{flex:1 1 100%}
+@media (max-width:720px){.mktSlots,.mktSlots select{width:100%;max-width:none}}
+/* the cloud sync's choice when both sides changed (js/shared.js) */
+.syncAsk{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;width:min(560px,calc(100% - 32px));background:var(--surface);color:var(--fg);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 12px 40px rgba(16,24,40,.25);padding:14px 16px;display:grid;gap:10px}
+.syncSides{display:grid;grid-template-columns:1fr 1fr;gap:10px}.syncSides>div{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--raised);font-size:13px}
+@media (max-width:520px){.syncSides{grid-template-columns:1fr}}
