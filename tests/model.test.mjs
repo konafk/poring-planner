@@ -3053,6 +3053,28 @@ t("Brewing and Cooking simulators: typed numbers over the character's, saved per
   assert.deepEqual(JSON.parse(run2(`JSON.stringify(state.craftSim)`)), { brew: { dex: 70, pp: 10 }, cook: { mastery: 0, kit: 13 } });
 });
 
+t("Maps tab: All floors adds up a dungeon's spawn counts from SPAWN, by level, and an unknown count stays unknown", () => {
+  const d = "dunOf('alde_dun01')";
+  assert.equal(run(`${d}.n`), "Clock Tower Dungeon");
+  assert.equal(run(`${d}.floors.length`), 8);
+  const floors = JSON.parse(run(`JSON.stringify(${d}.floors.map(f=>f[0]))`));
+  const spawn = JSON.parse(run("JSON.stringify(SPAWN)")), want = {};
+  for (const [id, rows] of Object.entries(spawn)) for (const [mp, c] of rows) if (floors.includes(mp)) want[id] = (want[id] ?? 0) + c;
+  const got = JSON.parse(run(`JSON.stringify(dunMobs(${d}).map(x=>[x.m.id,x.n,x.m.lv]))`));
+  assert.deepEqual(Object.fromEntries(got.map(([id, c]) => [id, c])), want);
+  assert.deepEqual(got.map(x => x[2]), got.map(x => x[2]).sort((a, b) => a - b));
+  // made-up floors: 5 + 7 add up, and 5 + unknown (either way round) is unknown, not 5
+  assert.deepEqual(JSON.parse(run(`(()=>{const m=id=>({id,name:"M"+id,lv:id});Object.assign(MAPMOBS,{t_a:[{m:m(1),n:5},{m:m(2),n:5},{m:m(3),n:null}],t_b:[{m:m(1),n:7},{m:m(2),n:null},{m:m(3),n:5}]});
+    const r=dunMobs({floors:[["t_a"],["t_b"],["no_such_map"]]}).map(x=>x.n);delete MAPMOBS.t_a;delete MAPMOBS.t_b;return JSON.stringify(r)})()`)), [12, null, null]);
+  assert.equal(run("spSum([5,7])"), "≈12");
+  assert.equal(run("spSum([5,null])"), "?");
+  // All floors holds only while its floor is the map showing
+  run("state.mapInfo=state.mapInfoAll='alde_dun01'");
+  assert.equal(run("mapInfoDun().n"), "Clock Tower Dungeon");
+  run("state.mapInfo='prt_f08'");
+  assert.equal(run("mapInfoDun()"), null);
+});
+
 t("Navigation: routes from the nearest town, the Kafra teleport in front, and where a cell is on a map's picture", () => {
   // every spawn map a route reaches is one the page has, and every route starts in a town or where a town's Kafra teleports you
   const bad = JSON.parse(run(`JSON.stringify(Object.entries(NAVI_ROUTES).filter(([k,rs])=>!MAPMOBS[k]||!rs.every(([s,c,st])=>(isTown(s)||naviKafraFrom(s).length)&&c>=0&&Array.isArray(st))).map(([k])=>k))`));
@@ -3100,6 +3122,16 @@ t("a new visitor starts with no session and no job picked", () => {
   assert.equal(load({ sessions: [], job: "Mage" })("state.sessions.length+' '+state.noJob+' '+state.current"), "0 undefined null");
   assert.equal(load({ job: "Mage", noJob: "yes" })("state.noJob"), undefined);
   assert.equal(app("C().mode='build';noChar()"), false);                     // a character built from gear counts as set up
+});
+
+t("a monster's world map opens on the world with the most of its spawns", () => {
+  const most = rows => run(`worldMost(${JSON.stringify(rows)})`);
+  assert.equal(most([["nrd_fild01", 50], ["prt_d02", 20], ["pay_f08", 8]]), 1);   // Nordfeld has more spawns, though Midgard has more maps
+  assert.equal(most([["nrd_fild01", 50], ["prt_d02", 60]]), 0);
+  assert.equal(most([["nrd_fild01", null], ["prt_d02", 1]]), 0);                   // no count from the client adds none
+  assert.equal(most([["nrd_fild01", null], ["prt_d02", null], ["pay_f08", null]]), 0);   // with no counts at all, the most maps
+  assert.equal(most([["not_a_map", 9]]), -1);
+  assert.equal(most([]), -1);
 });
 
 console.log(`${n} tests passed`);

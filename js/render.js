@@ -459,7 +459,7 @@ const mobOpt=m=>`<option value="${esc(m.name)}">Lv ${m.lv} · ${fmtExp(m)} EXP${
 const fillMobList=(id,f)=>{$(id).innerHTML=MOBS.filter(m=>mobFOk(m,f)).map(mobOpt).join("")};
 const isMagicAtk=()=>C().a.type==="magic"||C().a.type==="spellfist";
 // on the Maps tab the table keeps to the map picked there (mapinfo.js)
-const mobsOnMap=()=>{if($("mapInfoCard").hidden||typeof mapInfoKey!=="function")return null;const mp=mapInfoKey();return {mp,ids:new Set((MAPMOBS[mp]||[]).map(x=>x.m.id))}};
+const mobsOnMap=()=>{if($("mapInfoCard").hidden||typeof mapInfoKey!=="function")return null;const mp=mapInfoKey(),d=mapInfoDun();return {mp,name:d&&d.n,ids:new Set((d?dunMobs(d):MAPMOBS[mp]||[]).map(x=>x.m.id))}};
 function renderMobs(){
   const w=walkSec();const lvMin=num(state.minLv),lvMax=num(state.maxLv)||999,on=mobsOnMap();
   let rows=MOBS.filter(m=>(!on||on.ids.has(m.id))&&mobFOk(m,state.mobF)&&m.lv>=lvMin&&m.lv<=lvMax&&!(state.hideClosed&&SPAWN[m.id]&&!openMaps(m).length)).map(m=>{const om=openMaps(m);return {...m,om,topN:om.length?om[0][1]:0,ratio:m.hp>0?m.exp/m.hp:0,...mobRow(m,w)}});
@@ -468,7 +468,7 @@ function renderMobs(){
   rows.sort((a,b)=>{const x=sv(a),y=sv(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return (x>y?1:x<y?-1:0)*d});
   document.querySelectorAll("#mobTable th").forEach(th=>th.classList.toggle("on",th.dataset.k===k));
   const sel=(calcMob()||{}).id;
-  $("mobNote").textContent=`${rows.length} monsters${on?` on ${mapName(on.mp)||mapCode(on.mp)}`:""} · ${state.job} · ${isMagicAtk()?"MATK":"ATK"} ${fmtN(sumStat(isMagicAtk()?C().matkTxt:C().atkTxt))} · ${convOn()?convLabel("per monster"):atkEl()}`;
+  $("mobNote").textContent=`${rows.length} monsters${on?` on ${on.name||mapName(on.mp)||mapCode(on.mp)}`:""} · ${state.job} · ${isMagicAtk()?"MATK":"ATK"} ${fmtN(sumStat(isMagicAtk()?C().matkTxt:C().atkTxt))} · ${convOn()?convLabel("per monster"):atkEl()}`;
   $("mobTable").querySelector("tbody").innerHTML=rows.slice(0,400).map(m=>`<tr data-id="${m.id}" class="${m.id===sel?"sel":""}"><td class="name"><a href="#" data-info="mob:${m.id}" aria-label="${esc(m.name)} details">${mobIcon(m.id,1,"il")}</a><a href="#" data-info="mob:${m.id}">${esc(m.name)}</a>${BOSS_PILL(m)}${isSkipped(m)?' <span class="pill down">skipped</span>':""}</td><td>${m.lv}</td><td>${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"–"}</td><td>${m.size||"–"}</td><td class="name">${m.race||"–"}</td><td>${m.hp==null?"?":fmtN(m.hp)}</td><td>${fmtExp(m)}</td><td>${m.expUnknown?"?":m.ratio.toFixed(2)}</td>
     <td class="${m.mult>100?"good":m.mult<=0?"bad":""}">${m.mult<=0?"can't hurt":Math.round(m.mult)+"%"}${elTag(m.el2)}</td><td class="${m.hitc>=95?"good":m.hitc>=70?"warnc":"bad"}">${Math.round(m.hitc)}%</td><td>${isFinite(m.uses)?m.uses.toFixed(1):"–"}</td>
     <td class="${m.sec<=3?"good":m.sec<=8?"warnc":"bad"}">${isFinite(m.sec)?m.sec.toFixed(1)+"s":"–"}</td><td><b>${m.epm?fmtN(m.epm):"–"}</b></td>
@@ -804,6 +804,8 @@ function sortRows(id,rows){
   return rows;
 }
 const infoMob=()=>MOBS.find(m=>m.id===state.infoMobId)||calcMob()||MOBS.find(m=>m.id===1002);
+// a map picked in Monster info opens in the Map planner
+const mobInfoPlan=k=>{state.map=k;save();showTab("maps");renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})};
 function renderMobInfo(){
   const m=infoMob();if(!m)return;
   if(document.activeElement!==$("mobInfoInput"))$("mobInfoInput").value=m.name;
@@ -821,6 +823,7 @@ function renderMobInfo(){
   const sec=ms=>!ms?"–":ms>=36e5?`${+(ms/36e5).toFixed(1)}h`:ms>=6e4?`${+(ms/6e4).toFixed(1)} min`:`${+(ms/1000).toFixed(1)}s`;
   $("mobInfoSkills").tBodies[0].innerHTML=(m.skills||[]).map(([sid,st,lv,ch,cast,delay,cond,intr])=>`<tr><td class="name">${esc(MOBSKILLNAME[sid]||`skill ${sid}`)}</td><td class="name">${esc(st)}</td><td>${lv}</td><td>${ch}%</td><td>${cast?sec(cast)+(intr?"":` <span class="note" title="hitting it doesn't stop the cast">uninterruptible</span>`):"instant"}</td><td>${sec(delay)}</td><td class="name">${esc(cond)||"–"}</td></tr>`).join("")
     ||`<tr><td colspan="7" class="name muted">${m.skills?"No skills listed for it.":"No skill data for it."}</td></tr>`;
+  {const w=$("mobInfoWorld"),rows=SPAWN[m.id]||[];w.hidden=!rows.length;if(rows.length)worldMap(w,rows,mobInfoPlan)}
   const maps=(SPAWN[m.id]||[]).map(([mp,n])=>({mp,n,others:(MAPMOBS[mp]||[]).filter(x=>x.m.id!==m.id).sort((a,b)=>b.n-a.n)}));
   $("mobInfoMaps").tBodies[0].innerHTML=tableRows("mobInfoMaps",maps).map(({mp,n,others})=>`<tr data-map="${esc(mp)}"><td class="name"><b class="mono">${mapCode(mp)}</b> <span class="note">${esc(mapName(mp))}</span>${lockPill(mp)}${isClosed(mp)?` <span class="pill down"${mapArrives(mp)?` title="comes with the ${esc(mapArrives(mp))}"`:""}>closed${mapArrives(mp)?` · ${esc(mapArrives(mp).split(", ")[1])}`:""}</span>`:""}</td><td>≈${spN(n)}</td><td class="name">${others.slice(0,5).map(x=>`${esc(x.m.name)} <span class="note">×${spN(x.n)}</span>`).join(", ")||"–"}</td></tr>`).join("")
     ||`<tr><td colspan="3" class="name muted">${maps.length?"No maps match these filters.":"No spawns known."}</td></tr>`;
@@ -924,31 +927,44 @@ function convCheck(mp,w,r){const sf=C().a.type==="spellfist",opts=sf?elOptions()
 // ---- the client's world maps (data/minimaps.js WORLDMAPS: Midgard, Nordfeld) with a box on each spawn map and map mp lit, drawn into el
 // (the Map planner's, the Maps tab's). It turns to the world mp is on when mp changes; the buttons over it turn to another. Floors of one
 // dungeon share a box, so clicking it lists them, like the game's world map, and pick(map) gets the one clicked; a dungeon with one floor
-// picks it straight away. Towns get a box only with towns
+// picks it straight away. With all ({pick, d}, the Maps tab's) the list starts with All floors, all.pick(map) gets a floor of it, and all.d is the
+// dungeon showing all its floors, if any. Towns get a box only with towns.
+// Monster info gives a list of spawns ([map, count, ...], as in SPAWN) for mp: all of them are lit, it turns to the world with the most,
+// and only lit boxes click, picking the box's map with the most spawns
 const worldOf=mp=>typeof WORLDMAPS==="undefined"?-1:WORLDMAPS.findIndex(w=>w.maps[mp]);
+// the world with the most of these spawns (a map with no count from the client adds none, so those only break a tie), -1 with none on a world
+const worldMost=rows=>{const n={},c={};rows.forEach(([k,v])=>{const w=worldOf(k);if(w>=0){n[w]=(n[w]||0)+(v||0);c[w]=(c[w]||0)+1}});
+  return Object.keys(n).map(Number).sort((a,b)=>n[b]-n[a]||c[b]-c[a]||a-b)[0]??-1};
+// the dungeon a map is a floor of
+const dunOf=mp=>{for(const W of typeof WORLDMAPS==="undefined"?[]:WORLDMAPS){const d=(W.dun||[]).find(x=>x.floors.some(f=>f[0]===mp));if(d)return d}return null};
 // the list of dungeon d's floors, beside its box and on the side with room; clicking its box again closes it
 function wmFloors(el,W,d,fs){
   const list=el.querySelector(".wmFloors"),[x1,y1,x2,y2]=d.box,p=(v,n)=>(v/n*100).toFixed(2)+"%";
   const open=list.dataset.d===d.box.join();wmFloorsClose(el);if(open)return;
   list.dataset.d=d.box.join();list.hidden=false;
   list.style.cssText=`${x1+x2<W.w?`left:${p(x1,W.w)}`:`right:${p(W.w-x2,W.w)}`};${y2<W.h*.55?`top:${p(y2,W.h)}`:`bottom:${p(W.h-y1,W.h)}`}`;
-  list.innerHTML=`<div class="wmFloorsHead">${esc(d.n)}</div>${fs.map(([k,n,lv])=>`<button type="button" data-wmf="${esc(k)}" class="${k===el._mp?"on":""}" title="${esc(`${mapCode(k)} ${mapName(k)}`)}"><span>${esc(n||mapName(k)||mapCode(k))}</span><span class="note">${isClosed(k)?"not open":lv?`Lv ${esc(lv)}`:""}</span></button>`).join("")}`;
+  const all=el._all,whole=all&&all.d===d;
+  list.innerHTML=`<div class="wmFloorsHead">${esc(d.n)}</div>${all?`<button type="button" data-wmall="${esc(fs.some(f=>f[0]===el._mp)?el._mp:fs[0][0])}" class="${whole?"on":""}"><span>All floors</span><span class="note">${d.lv?`Lv ${esc(d.lv)}`:""}</span></button>`:""}${fs.map(([k,n,lv])=>`<button type="button" data-wmf="${esc(k)}" class="${k===el._mp&&!whole?"on":""}" title="${esc(`${mapCode(k)} ${mapName(k)}`)}"><span>${esc(n||mapName(k)||mapCode(k))}</span><span class="note">${isClosed(k)?"not open":lv?`Lv ${esc(lv)}`:""}</span></button>`).join("")}`;
   (list.querySelector(".on")||list.querySelector("button")).focus({preventScroll:true})}
 function wmFloorsClose(el){const list=el.querySelector(".wmFloors");list.hidden=true;delete list.dataset.d}
-function worldMap(el,mp,pick,towns){
+function worldMap(el,mp,pick,towns,all){
   if(typeof WORLDMAPS==="undefined"||!WORLDMAPS.length){el.hidden=true;return}
   if(!el.firstChild){el.innerHTML=`<div class="bar wmWorlds">${WORLDMAPS.map((w,i)=>`<button type="button" class="small" data-wmw="${i}">${esc(w.name)}</button>`).join("")}</div><div class="wmPic"><img alt=""><div class="wmBoxes"></div><div class="wmFloors" hidden></div></div><div class="note wmNote"></div>`;
-    el.addEventListener("click",e=>{const t=e.target.closest("[data-wmw],[data-wm],[data-wmf]");if(!t){wmFloorsClose(el);return}
+    el.addEventListener("click",e=>{const t=e.target.closest("[data-wmw],[data-wm],[data-wmf],[data-wmall]");if(!t){wmFloorsClose(el);return}
+      if(t.dataset.wmall!=null){wmFloorsClose(el);el._all.pick(t.dataset.wmall);return}
       if(t.dataset.wmf!=null){wmFloorsClose(el);el._pick(t.dataset.wmf);return}
-      if(t.dataset.wmw!=null){wmFloorsClose(el);el.dataset.w=t.dataset.wmw;worldMap(el,el._mp,el._pick,el._towns);return}
-      const ks=t.dataset.wm.split(","),W=WORLDMAPS[+el.dataset.w],d=(W.dun||[]).find(x=>x.box.join()===W.maps[ks[0]].join());
+      if(t.dataset.wmw!=null){wmFloorsClose(el);el.dataset.w=t.dataset.wmw;worldMap(el,el._mp,el._pick,el._towns,el._all);return}
+      const ks=t.dataset.wm.split(",");
+      if(Array.isArray(el._mp)){const k=el._lit.find(x=>ks.includes(x));if(k)el._pick(k);return}
+      const W=WORLDMAPS[+el.dataset.w],d=(W.dun||[]).find(x=>x.box.join()===W.maps[ks[0]].join());
       const fs=d?d.floors.filter(f=>ks.includes(f[0])):[];
       if(fs.length>1){wmFloors(el,W,d,fs);return}
       wmFloorsClose(el);el._pick(ks[(ks.indexOf(el._mp)+1)%ks.length])});
     document.addEventListener("click",e=>{if(!el.contains(e.target))wmFloorsClose(el)});
     document.addEventListener("keydown",e=>{if(e.key==="Escape")wmFloorsClose(el)})}
-  if(mp!==el._mp&&worldOf(mp)>=0||el.dataset.w==null)el.dataset.w=Math.max(0,worldOf(mp));
-  el._mp=mp;el._pick=pick;el._towns=towns;
+  const many=Array.isArray(mp),lit=many?mp.slice().sort((a,b)=>(b[1]??-1)-(a[1]??-1)).map(r=>r[0]):[mp],key=lit.join(),turn=many?worldMost(mp):worldOf(mp);
+  if(key!==el._key&&turn>=0||el.dataset.w==null)el.dataset.w=Math.max(0,turn);
+  el._mp=mp;el._lit=lit;el._key=key;el._pick=pick;el._towns=towns;el._all=all;
   const W=WORLDMAPS[+el.dataset.w],img=el.querySelector("img"),bx=el.querySelector(".wmBoxes");
   if(el.dataset.drawn!==el.dataset.w){el.dataset.drawn=el.dataset.w;Object.assign(img,{src:`${W.file}?v=${W.v}`,alt:`World map of ${W.name}`,width:W.w,height:W.h});
     const at={};Object.entries(W.maps).forEach(([k,r])=>{if(towns||!isTown(k))(at[r.join()]=at[r.join()]||[]).push(k)});
@@ -959,8 +975,12 @@ function worldMap(el,mp,pick,towns){
     bx.innerHTML=`<svg class="wmLines" viewBox="0 0 ${W.w} ${W.h}" preserveAspectRatio="none" aria-hidden="true">${groups.filter(g=>g.d).map(({d,wm})=>`<line data-wm="${wm}" x1="${mid(d.box[0],d.box[2])}" y1="${mid(d.box[1],d.box[3])}" x2="${mid(d.at[0],d.at[2])}" y2="${mid(d.at[1],d.at[3])}" vector-effect="non-scaling-stroke"/>`).join("")}</svg>`
       +groups.map(({ks,d,wm,title})=>`<button type="button" class="wmBox${ks.every(isTown)?" town":""}${d?" dun":""}" data-wm="${wm}" style="${pos(W.maps[ks[0]])}" title="${title}">${d?`<span>${esc(d.n)}</span>`:""}</button>${d?`<button type="button" class="wmDot" data-wm="${wm}" style="${pos(d.at)}" title="${title}" aria-label="${esc(d.n)}"></button>`:""}`).join("")}
   el.querySelectorAll("[data-wmw]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.wmw===el.dataset.w)));
-  bx.querySelectorAll("[data-wm]").forEach(b=>{const ks=b.dataset.wm.split(",");b.classList.toggle("on",ks.includes(mp));b.classList.toggle("closed",ks.every(isClosed))});
-  const nm=mp&&(mapName(mp)||mapCode(mp)),wi=worldOf(mp);
+  bx.querySelectorAll("[data-wm]").forEach(b=>{const ks=b.dataset.wm.split(","),on=ks.some(k=>lit.includes(k));b.classList.toggle("on",on);b.classList.toggle("closed",ks.every(isClosed));if(b.tagName==="BUTTON")b.disabled=many&&!on});
+  if(many){const here=+el.dataset.w,maps=c=>`${c} ${c>1?"maps":"map"}`,on=i=>lit.filter(k=>worldOf(k)===i),off=on(-1);
+    el.querySelector(".wmNote").textContent=[on(here).length?`${maps(on(here).length)} lit. Click a lit box to open that map in the Map planner.`:"",
+      ...WORLDMAPS.map((w,i)=>i!==here&&on(i).length?`${maps(on(i).length)} on the ${w.name} map.`:""),
+      off.length?`Not on the game's world map yet: ${off.map(k=>mapName(k)||mapCode(k)).join(", ")}.`:""].filter(Boolean).join(" ");return}
+  const nm=mp&&(all&&all.d?all.d.n:mapName(mp)||mapCode(mp)),wi=worldOf(mp);
   el.querySelector(".wmNote").textContent=!mp?"Click a box to pick that map":wi===+el.dataset.w?`${nm} is lit. Click a box to pick that map`:wi>=0?`${nm} is on the ${WORLDMAPS[wi].name} map`:`${nm} isn't on the game's world map yet`}
 // the Map planner's world map: folds, remembered like a card (state.collapsed)
 const WORLD_FOLD="Map planner: world map";
