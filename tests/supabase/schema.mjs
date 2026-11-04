@@ -149,13 +149,14 @@ await t("backups: one each, only your own, upsert", async () => {
   await as(2, `delete from public.backups`);
   assert.equal((await as(1, `select count(*)::int c from public.backups`))[0].c, 1);
 });
-await t("sellers: only reports marked selling, with the name from the poster's login; deleting them takes the seller off", async () => {
+await t("sellers: only reports marked selling, with the Discord id from the poster's login and no names; deleting them takes the seller off", async () => {
   await db.query(`update auth.users set raw_user_meta_data = $2 where id = $1`, [U(2), { full_name: "seller2", name: "seller2", provider_id: "11112222", custom_claims: { global_name: "Seller Two" } }]);
   await as(4, `insert into public.reports (server, item_id, price) values ('skadi', 7001, 1000)`);               // just saw it
   assert.equal((await as(0, `select * from public.sellers('skadi', 7001)`)).length, 0);
   await as(2, `insert into public.reports (server, item_id, price, selling) values ('skadi', 7001, 900, true)`);
   const s = await as(0, `select * from public.sellers('skadi', 7001)`);
-  assert.deepEqual(s.map(x => [x.discord_id, x.discord_name, x.username, Number(x.price)]), [["11112222", "Seller Two", "seller2", 900]]);
+  assert.deepEqual(s.map(x => [x.discord_id, Number(x.price)]), [["11112222", 900]]);
+  assert.ok(!("discord_name" in s[0]) && !("username" in s[0]));
   assert.equal((await as(0, `select * from public.sellers('odin', 7001)`)).length, 0);
   await as(3, `insert into public.reports (server, item_id, price, selling) values ('skadi', 7001, 950, true)`);
   const sp = await as(0, `select sellers, players from public.shared_prices('skadi') where item_id = 7001`);
