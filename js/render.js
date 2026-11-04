@@ -754,8 +754,9 @@ function renderPrices(){stampPrices();if(typeof loadShared==="function")loadShar
 // Market: what players posted on this server (the shared prices), read only: each item's lowest price and the median, its sellers
 // to DM, and the shared refined / carded copies under it. Your own prices that aren't posted show too, as "yours"
 function renderMarket(){
-  const mk=state.mkt,mine=Object.keys(state.prices),q=mk.q.trim().toLowerCase(),fOn=mktFilterOn();
-  const ids=typeof SHARED_P!=="undefined"?[...new Set([...mine,...Object.keys((SHARED_P[state.mktServer]||{}).rows||{})])]:mine;
+  // what players posted on this server, and your favourites even while nobody sells them (your own unposted prices are on My market)
+  const mk=state.mkt,fav=new Set(state.mktFav),q=mk.q.trim().toLowerCase(),fOn=mktFilterOn();
+  const ids=[...new Set([...state.mktFav,...Object.keys(typeof SHARED_P!=="undefined"?(SHARED_P[state.mktServer]||{}).rows||{}:{})])];
   const cnt={"":ids.length};ids.forEach(id=>{const c=mktCat(id);cnt[c]=(cnt[c]||0)+1});
   $("mktCats").innerHTML=MKT_CATS.filter(([k])=>!k||cnt[k]||mk.cat===k).map(([k,n])=>`<button type="button" class="mktCat" data-mktcat="${k}" aria-pressed="${mk.cat===k}">${n} <span>${cnt[k]||0}</span></button>`).join("");
   mktFilterBoxes();
@@ -766,21 +767,21 @@ function renderMarket(){
   // Type for weapons and armor, and the item picked from the search box's suggestions (mk.item), shown with its icon and ✕
   const subs=subTypes(mk.cat);$("mktTypeL").hidden=!subs.length;$("mktType").innerHTML=`<option value="">Any</option>`+subs.map(([k,n])=>`<option value="${k}"${mk.type===k?" selected":""}>${esc(n)}</option>`).join("");
   $("mktItemChip").hidden=!mk.item;$("mktItemChip").innerHTML=mk.item?`<span class="mktIc">${itemIcon(mk.item)}</span><b>${esc(mktName(mk.item))}</b><button type="button" class="small ghost" data-mktitemx aria-label="Show every item again">✕</button>`:"";
-  MKT_POOL=ids.filter(id=>(!mk.cat||mktCat(id)===mk.cat)&&(!mk.type||itemSub(id)===mk.type));
+  $("mktFavOnly").setAttribute("aria-pressed",String(mk.favOnly));$("mktFavOnly").innerHTML=`★ Favourites <span>${fmtN(fav.size)}</span>`;
+  MKT_POOL=ids.filter(id=>(!mk.cat||mktCat(id)===mk.cat)&&(!mk.type||itemSub(id)===mk.type)&&(!mk.favOnly||fav.has(id)));
   const rows=MKT_POOL.filter(id=>(!mk.item||id===mk.item)&&(!q||mktName(id).toLowerCase().includes(q)||("#"+id).includes(q))
       &&(!fOn||pr[id]!=null)&&(mk.max==null||!(pr[id]>mk.max)))
     .sort((a,b)=>SORT[mk.sort](a,b)||mktName(a).localeCompare(mktName(b)));
   $("mktList").innerHTML=rows.map(id=>{const npc=NPCSELL[id],best=fOn?mktBest(id):null,sp=typeof sharedPlain==="function"?sharedPlain(id):null,
-      sc=sharedCopies(id).filter(x=>x!==sp),own=state.prices[id]>0?state.prices[id]:null;
-    return `<div class="mktItem"><div class="mktRow"><span class="mktIc">${itemIcon(id)}</span>
+      sc=sharedCopies(id).filter(x=>x!==sp),f=fav.has(id);
+    return `<div class="mktItem"><div class="mktRow mktRowF"><button type="button" class="mktFav${f?" on":""}" data-fav="${esc(id)}" aria-pressed="${f}" title="${f?"Remove from your favourites":"Add to your favourites: kept on the list even when nobody sells it, and shown with ★ Favourites"}" aria-label="Favourite">${f?"★":"☆"}</button><span class="mktIc">${itemIcon(id)}</span>
       <div class="mktName"><a href="#" data-info="item:${esc(id)}">${esc(mktName(id))}</a>
         <div class="note">${[best?`<b class="mktFit">cheapest fit ${esc(varTxt(best))}: ${fmtN(best.p)} z</b>`:"",sp&&sp.newest?`newest ${agoTxt(sp.newest)}`:"",npc!=null?`NPC pays ${fmtN(npc)} z`:"",`#${esc(id)}`,
           sellerN(id)?`<a href="#" data-sellers="${esc(id)}" class="mktSellers">${sellerN(id)} seller${sellerN(id)>1?"s":""} · DM</a>`:""].filter(Boolean).join(" · ")}</div></div>
-      <div class="mktPrice mktSharedP" title="${sp?esc(sharedTxt(sp)):""}"><b class="mono">${sp?fmtN(sp.p):own!=null?fmtN(own):"–"}</b><span class="mktZ">z</span><div class="note">${sp?`lowest · median ${zShort(sp.med)} · ${sp.players} player${sp.players>1?"s":""}`:own!=null?"yours, not posted":"only refined / carded copies"}</div></div>
-      <div class="mktMove"></div>
-      <button type="button" class="small" data-sadd="${esc(id)}" title="Sell one: add your own price for it (My market)">+ sell</button></div>
+      <div class="mktPrice mktSharedP" title="${sp?esc(sharedTxt(sp)):""}"><b class="mono">${sp?fmtN(sp.p):"–"}</b><span class="mktZ">z</span><div class="note">${sp?`lowest · median ${zShort(sp.med)} · ${sp.players} player${sp.players>1?"s":""}`:sc.length?"only refined / carded copies":"nobody sells it now"}</div></div>
+      <div class="mktMove"></div></div>
       ${sc.length?`<div class="mktVars">${sc.map(x=>`<div class="mktVar shared${fOn&&listingOk(x)?" hit":""}" title="${esc(sharedTxt(x))}"><span>${esc(varTxt(x))}</span><span class="mktPrice"><b class="mono">${fmtN(x.p)}</b><span class="mktZ">z</span></span><span class="note mktAgo">median ${zShort(x.med)} · ${x.players} player${x.players>1?"s":""}</span></div>`).join("")}</div>`:""}${typeof sellersHtml==="function"?sellersHtml(id):""}</div>`}).join("")
-    ||`<div class="note muted mktEmpty">${ids.length?"No items match these filters.":"Nobody has posted an item on this server yet. Post yours on the My market tab."}</div>`}
+    ||`<div class="note muted mktEmpty">${mk.favOnly&&!fav.size?"No favourites yet: click an item's ☆ to add it.":ids.length?"No items match these filters.":"Nobody has posted an item on this server yet. Post yours on the My market tab."}</div>`}
 // My market: your prices on this server (the ones every zeny figure uses), each with its copies, DM and ✕; and what you posted
 function renderMine(){const f=document.activeElement;if(typeof renderMyPosts==="function")renderMyPosts();
   if(f&&f.tagName==="INPUT"&&$("mineList").contains(f))return;// don't rebuild the box you're typing in

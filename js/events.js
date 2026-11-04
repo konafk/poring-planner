@@ -385,7 +385,7 @@ $("priceItem").addEventListener("blur",()=>{if(!ADD_CAT)hideSug()});
 $("addCats").addEventListener("click",e=>{const b=e.target.closest("[data-addcat]");if(!b)return;ADD_CAT=ADD_CAT===b.dataset.addcat?"":b.dataset.addcat;ADD_TYPE="";renderAddCats();showSug()});
 $("addType").addEventListener("change",e=>{ADD_TYPE=e.target.value;showSug()});
 // pricing an item from another tab clears the Market filters, so its row is there to type in
-const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus){Object.assign(state.mkt,{cat:"",q:"",max:null,refine:null,opts:[],slot:"",type:"",item:""});mktTools()}save();renderPrices();
+const addPrice=(id,focus)=>{if(!(id in state.prices))state.prices[id]=0;if(focus){Object.assign(state.mkt,{cat:"",q:"",max:null,refine:null,opts:[],slot:"",type:"",item:"",favOnly:false});mktTools()}save();renderPrices();
   if(focus){state.mkt.pane="mine";save();showTab("market");renderPrices();const i=$("mineList").querySelector(`[data-price="${id}"]`);if(i){i.focus();i.scrollIntoView({behavior:"smooth",block:"center"})}}};
 // picking gear (or the Taming Ring) shows its refine, slot and affix boxes under the form
 $("priceItem").addEventListener("input",()=>{renderAddCopy(findItem($("priceItem").value));showSug()});
@@ -443,9 +443,11 @@ ROOTQ("[data-addclose]").forEach(b=>b.addEventListener("click",()=>$("addDlg").c
 const setPane=p=>{state.mkt.pane=p;save();if(p==="mine"&&typeof loadMyPosts==="function")loadMyPosts();renderPrices();scrollTo({top:0})};
 $("mktPanes").addEventListener("click",e=>{const b=e.target.closest("[data-pane]");if(b)setPane(b.dataset.pane)});
 $("marketCard").addEventListener("click",e=>{const a=e.target.closest("[data-gopane]");if(a){e.preventDefault();setPane(a.dataset.gopane)}});
-// the Market list: open a seller list, or + sell (the Add item popup with that item)
+// the Market list: open a seller list, or ☆ an item (a favourite); ★ Favourites shows only those
 $("mktList").addEventListener("click",e=>{const sl=e.target.closest("[data-sellers]");if(sl){e.preventDefault();toggleSellers(sl.dataset.sellers);return}
-  const sa=e.target.closest("[data-sadd]");if(sa)openAdd(sa.dataset.sadd)});
+  const fv=e.target.closest("[data-fav]");if(!fv)return;const id=fv.dataset.fav,i=state.mktFav.indexOf(id);
+  if(i>=0)state.mktFav.splice(i,1);else if(state.mktFav.length<500)state.mktFav.push(id);save();renderPrices()});
+$("mktFavOnly").addEventListener("click",()=>{state.mkt.favOnly=!state.mkt.favOnly;state.mkt.item="";save();renderPrices()});
 // the list's category buttons, search, sort, max price, Refine ≥ and random options (saved)
 function mktTools(){$("mktQ").value=state.mkt.q;$("mktSort").value=state.mkt.sort;$("mktMax").value=state.mkt.max!=null?fmtN(state.mkt.max):""}
 mktTools();

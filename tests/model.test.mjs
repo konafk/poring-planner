@@ -573,6 +573,18 @@ t("market: a saved copy keeps only a refine of 0-20, options with a key, and a p
   assert.equal(r(`state.mkt.refine+","+state.mkt.opts.length`), "null,0");
 });
 
+t("market: the list shows what players posted and your favourites, never your own unposted prices or a sell button", () => {
+  const r = load({ prices: { "909": 50 }, mktFav: ["4001", "4001", "x", 7] });
+  assert.equal(r(`JSON.stringify(state.mktFav)+" "+state.mkt.favOnly`), '["4001"] false');   // repeats and junk dropped
+  r(`const getEl=document.getElementById,list={innerHTML:""};document.getElementById=id=>id==="mktList"?list:getEl(id);renderMarket()`);
+  const html = () => r(`$("mktList").innerHTML`);
+  assert.match(html(), /data-fav="4001" aria-pressed="true"/);                 // a favourite stays on the list while nobody sells it
+  assert.match(html(), /nobody sells it now/);
+  assert.doesNotMatch(html(), /data-fav="909"|data-sadd|\+ sell/);             // your own price is on My market, not here
+  r(`state.mkt.favOnly=true;state.mktFav=[];renderMarket()`);
+  assert.match(html(), /No favourites yet/);
+});
+
 t("Hunter tables: an older save's sort carries over to the shared table sort", () => {
   const r = load({ bestSort: "secT", bestDir: 1, huntSort: "cost", huntDir: -1 });
   assert.equal(r(`tblSort("bestTable").join()`), "secT,1");
