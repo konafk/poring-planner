@@ -1460,9 +1460,15 @@ t("Martyr's Reckoning, Guillotine Fist, the Chain Crush combo, Excruciating Palm
   const cs = JSON.parse(run(`JSON.stringify(JOBS.Crusader.p.find(p=>/Cannon Spear/.test(p.name)))`));
   setup("Crusader", { atkTxt: "100+150", wAtk: 120, weapon: "Two-handed spear", wElem: "Neutral", hitTxt: "300", crit: 30, critDmg: 20, st: {}, a: cs });
   near(run(`critChance(${MOB})`), 0.3);                                        // Cannon Spear crits with your CRIT
-  near(run("critMul()"), 1 + (1.4 * 1.2 - 1) / 2);                              // at half of a crit's extra damage
+  near(run("critMul()"), 1.4 * 1.1);                                           // × 1.4 with half of the 20% crit damage
   run(`C().a={...C().a,critHalf:false}`);
   assert.equal(run(`critChance(${MOB})`), 0);                                  // other skills don't crit
+  for (const [job, re] of [["Hunter", /Focused Arrow Strike/], ["Assassin", /Soul Destroyer/]]) {
+    const sk = JSON.parse(run(`JSON.stringify(Object.values(JOBS).flatMap(j=>j.p).find(p=>${re}.test(p.name)))`));
+    setup(job, { atkTxt: "100+150", wAtk: 120, weapon: job === "Hunter" ? "Bow" : "Katar", wElem: "Neutral", hitTxt: "300", crit: 30, critDmg: 50, st: {}, a: sk });
+    near(run(`critChance(${MOB})`), (job === "Hunter" ? 0.15 : 0.3) - run(`(${MOB}).luk||0`) * 0.002); // half your CRIT (a katar doubles it first)
+    near(run("critMul()"), 1.4 * 1.25);                                         // half of the 50% crit damage
+  }
 });
 
 t("auto-cast spells from cards work on any job's basic attacks", () => {

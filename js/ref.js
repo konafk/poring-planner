@@ -37,7 +37,7 @@ function refFormulas(alts=[]){const vals=[],c=C(),m=calcMob(),ok=STATS.every(k=>
    R("Monster soft DEF","floor((monster Lv + VIT) / 2)",()=>need(x=>`${mobSoftDef(x)}${mn}`))+
    R("Monster soft MDEF","floor((monster Lv + INT) / 4)",()=>need(x=>`${mobSoftMdef(x)}${mn}`))+
    R("Hit chance","100 + HIT − monster's 100%-hit value",()=>need(x=>`${Math.round(hitChance(x))}%${mn}`),"5–100%; magic always hits")+
-   R("Critical hit","chance = CRIT + gear CRIT vs its race − monster LUK × 0.2; damage × 1.4 × (1 + crit damage %)",()=>c.a.type==="auto"?`${(critChance(m)*100).toFixed(1)}%${mn}`:null,"basic attacks only; always hits")+
+   R("Critical hit","chance = CRIT + gear CRIT vs its race − monster LUK × 0.2; damage × 1.4 × (1 + crit damage %)",()=>c.a.type==="auto"||c.a.critHalf?`${(critChance(m)*100).toFixed(1)}%${mn}`:null,"basic attacks, plus Cannon Spear (your CRIT), Focused Arrow Strike and Soul Destroyer (half your CRIT), which get half the crit damage %; always hits")+
    grp("Kill speed")+
    R("Uses per kill","whole hits until the damage reaches the monster's HP (each a hit, a crit × 1.4 or a miss) / share of uses that land",()=>need(x=>{const u=usesPerKill(x);return isFinite(u)?`${u.toFixed(1)}${mn}`:null}),"1,085 HP at 300 a hit: 4 hits, 3 if two crit; card auto-casts are averaged into each hit")+
    R("Damage per second","damage per use × hit chance × targets / seconds per use",()=>need(x=>{const v=dpsOf(x);return v==null?null:`${fmtN(Math.round(v))}${mn}`}))+
