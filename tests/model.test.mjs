@@ -945,6 +945,24 @@ t("gear fixes from the client (data/client.js): the guild staffs' MATK and armou
   assert.equal(run(`JSON.stringify(BUILD.item(550005).g||null)`), "null");  // the MATK isn't also added as a bonus line
   assert.equal(run(`BUILD.item(480008).w`), 30);  // Advanced Guild Manteau, weightless before
 });
+t("Affixes tab: the client's upgrade items with the gear they take, and the rolls players reported", () => {
+  // every reported item is one the client lists, and every gear it takes is in the equipment data
+  assert.equal(run(`Object.keys(AFFIX_ITEMS).every(i=>CLIENT.upgrades[i])`), true);
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(CLIENT.upgrades[108494])`)), [19333, 19334, 19357, 19358]);
+  assert.equal(run(`Object.values(CLIENT.upgrades).flat().every(g=>BUILD.item(g))`), true);
+  run(`const getEl=document.getElementById,els={affixItems:{innerHTML:""},affixMore:{innerHTML:""}};document.getElementById=id=>els[id]||getEl(id);renderAffixItems();document.getElementById=getEl`);
+  const rep = run(`els.affixItems.innerHTML`), more = run(`els.affixMore.innerHTML`);
+  assert.ok(rep.indexOf("Clock Tower Gear") < rep.indexOf("Nordfeld Helm Scroll"));     // newest first
+  assert.ok(rep.includes("Clock Casket") && rep.includes("up to +5") && rep.includes("up to +20"));
+  assert.equal(run(`affixRange(1,5)+"|"+affixRange(3,3)`), "+1–5|+3");                                  // a min once one is reported
+  assert.match(run(`affixRows({rolls:[],seen:["CRI"]})`), /CRI<\/td><td class="muted">seen, value not reported yet/);   // a line seen with no value
+  assert.ok(!rep.includes("Weight") && more.includes("★ Chain") && more.includes("None reported yet"));
+  // one affix from each list, where reported (Nordfeld Helm Scroll: MaxHP or MaxSP, then a stat, ATK, MATK, HIT or FLEE)
+  assert.equal(rep.split("Each use gives").length - 1, 1);
+  const nord = rep.slice(rep.indexOf("Nordfeld Helm Scroll"));
+  assert.match(nord, /Each use gives <b>2 affixes<\/b>, one from each list/);
+  assert.match(nord, /1st affix: one of these[\s\S]*MaxHP[\s\S]*MaxSP[\s\S]*2nd affix: one of these[\s\S]*STR[\s\S]*HIT/);
+});
 t("Job Essences (data/essences.js) have their name and In-game text for the details popup", () => {
   assert.equal(run(`ITEM_TEXT[29399]`), "CRIT increases by 3× the level of Cavalier Mastery.\nIncreases Bowling Bash damage by 20%.\nFor each armor refine level, ASPD increases (After Attack Delay -1%).");
   assert.equal(run(`ESSENCES.every(x=>ITEM_TEXT[x.id]===x.t&&CLIENT_ITEMS[x.id][0]===x.name)`), true);
@@ -2954,6 +2972,10 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   const i = run(`popItem("909")`);                                                                     // Jellopy
   assert.match(i.body, /Used in/); assert.match(i.acts, /data-infoact="recipes"/);
   assert.match(run(`popItem("1750").body`), /Made from \(\d+ ways\)/);                                // Arrow: many ways
+  // Made from is a table of materials: several ways share one, each way's line a row over its materials; one way has its own
+  const arrow = run(`popItem("1750").body`), mt = arrow.split('class="matTable"').length - 1;
+  assert.equal(mt, 1); assert.match(arrow, /class="wayRow"/); assert.match(arrow, /<th>Material<\/th><th>Amount<\/th>/);
+  assert.match(run(`popGear(19333).body`), /class="recipeT"[\s\S]*Jokers Wild[\s\S]*<td>100<\/td>/);
   assert.match(run(`popGear(1107).body`), /Made from/);                                                // Blade: a forged weapon
   // icons: drops and recipe items from the item sheet, gear from its own, cards their picture
   assert.match(run(`itemIcon(909)`), /ico-item"/);

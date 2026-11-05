@@ -23,8 +23,15 @@ function infoShops(id){const ss=SHOPS_OF[id]||[];if(!ss.length)return "";
   return `<div class="infoList">${ss.map(([name,at,z])=>`<div><b>${esc(name)}</b> <span class="note">${fmtN(z)} z · ${esc(at.map(([mp,x,y])=>`${mapName(mp)||mp} ${x},${y}`).join("; "))}</span></div>`).join("")}</div>`}
 // the recipes that make it and the ones that use it (js/recipes.js), each with its materials
 const infoRecipe=r=>`<div class="recipe"><span>${infoLink("item",r.id,recipeMade(r))} <span class="note">${esc(r.cat)}${r.lv?` Lv ${r.lv}`:""}${r.npc?` · ${recipeNpcHtml(r)}${r.fee?`, ${fmtN(r.fee)} z`:""}`:""}</span></span>${recipeMats(r)}</div>`;
+// Made from as a table of materials, one row each: one way has its line (what it makes, where, the fee) above the table; several
+// ways share one table, each way's line a row over its materials
+const recipeWay=r=>`${infoLink("item",r.id,recipeMade(r))} <span class="note">${esc(r.cat)}${r.lv?` Lv ${r.lv}`:""}${r.npc?` · ${recipeNpcHtml(r)}${r.fee?`, ${fmtN(r.fee)} z`:""}`:""}</span>`;
+const recipeMatRows=r=>r.mats.map(([m,n])=>`<tr><td class="name"><div class="dbName">${itemIcon(m,1,"il")}${infoLink("item",m,itemName(m))}</div></td><td>${fmtN(n)}</td></tr>`).join("");
+function infoMadeFrom(mk){const head=`<thead><tr><th>Material</th><th>Amount</th></tr></thead>`;
+  if(mk.length===1)return `<div class="recipeT"><div>${recipeWay(mk[0])}</div><table class="matTable">${head}<tbody>${recipeMatRows(mk[0])}</tbody></table></div>`;
+  return `<table class="matTable">${head}<tbody>${mk.slice(0,12).map(r=>`<tr class="wayRow"><td class="name" colspan="2">${recipeWay(r)}</td></tr>${recipeMatRows(r)}`).join("")}</tbody></table>`}
 function infoRecipes(id){const mk=RECIPES_MAKING[id]||[],us=RECIPES_USING[id]||[];
-  return infoSec(`Made from${mk.length>1?` (${mk.length} ways)`:""}`,mk.length&&`<div class="infoList">${mk.slice(0,12).map(infoRecipe).join("")}${mk.length>12?`<div class="note">and ${mk.length-12} more on the Recipes tab</div>`:""}</div>`)
+  return infoSec(`Made from${mk.length>1?` (${mk.length} ways)`:""}`,mk.length&&`<div class="infoList">${infoMadeFrom(mk)}${mk.length>12?`<div class="note">and ${mk.length-12} more on the Recipes tab</div>`:""}</div>`)
     +infoSec("Used in",us.length&&`<div class="infoList">${us.slice(0,12).map(infoRecipe).join("")}${us.length>12?`<div class="note">and ${us.length-12} more on the Recipes tab</div>`:""}</div>`)}
 // the memorial dungeons whose reward box has it (data/memorial.js), and the weekday Poring Village gives a Jello Fragment
 function infoMemorial(id){const j=JELLO.find(x=>x.frag[0]===+id);
