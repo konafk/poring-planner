@@ -38,6 +38,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
       <button type="button" role="tab" data-tabbtn="mapinfo" title="Maps"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><span>Maps</span></button>
       <button type="button" role="tab" data-tabbtn="equip" title="Equipment"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3z"/></svg><span>Equipment</span></button>
       <button type="button" role="tab" data-tabbtn="cards" title="Cards"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>Cards</span></button>
+      <button type="button" role="tab" data-tabbtn="affix" title="Affixes: items that add random options to gear"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="m12 8 1.2 2.8L16 12l-2.8 1.2L12 16l-1.2-2.8L8 12l2.8-1.2z"/></svg><span>Affixes</span></button>
       <button type="button" role="tab" data-tabbtn="recipes" title="Recipes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg><span>Recipes</span></button>
       <button type="button" class="navGrp" aria-expanded="true" title="Show or hide the Reference tabs"><span>Reference</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
       <button type="button" role="tab" data-tabbtn="news" title="What's new"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="2.5"/></svg><span>What's new</span></button>
@@ -904,6 +905,18 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="note hint">Every try uses the ingredients and a kit, success or not. rAthena's formula, not measured on Zero Global. Saved per account.</div>
   </section>
 
+  <section class="card" id="affixCard" data-tab="affix">
+    <div class="bar"><h2 class="grow">Items that add affixes</h2></div>
+    <div class="note">Use one on its gear for a random option (affix). The game client lists which gear each item works on; what it rolls comes from players, so the values below are what's been seen so far.</div>
+    <div id="affixItems"></div>
+    <div class="note hint">Seen a roll that isn't here, or a higher or lower value? It's only as complete as players' reports.</div>
+  </section>
+  <section class="card" id="affixMoreCard" data-tab="affix">
+    <div class="bar"><h2 class="grow">More items in the client</h2></div>
+    <div class="note">The client has these too, but no one has reported what they add yet.</div>
+    <div id="affixMore"></div>
+  </section>
+
   <section class="card" id="recipeCard" data-tab="recipes">
     <div class="bar"><h2 class="grow">Recipes</h2><span class="note" id="recipeCount"></span></div>
     <div class="bar dbF">
@@ -1005,6 +1018,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 <script src="data/itemtext.js"></script>
 <script src="data/client.js"></script>
 <script src="data/essences.js"></script>
+<script src="data/affixitems.js"></script>
 <script src="build.js"></script>
 <button type="button" class="fab" id="qlFab" aria-label="Log EXP" aria-expanded="false" aria-controls="quickLog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
 <dialog class="jump" id="jump" aria-label="Search">
@@ -1051,6 +1065,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 <script src="js/info.js"></script>
 <script src="js/memorial.js"></script>
 <script src="js/stellar.js"></script>
+<script src="js/affixitems.js"></script>
 <script src="js/navi.js"></script>
 <script src="js/mapinfo.js"></script>
 <script src="js/news.js"></script>

@@ -29,6 +29,9 @@ the client isn't, so what the client says goes in a file of its own that only th
   bosses are MOB_BOSSES, kept by hand because the client doesn't link them. Tags only: the base's HP, EXP and drops aren't copied.
 - boxes: what's in the boxes the client lists: {box id: ["all" | "pick", [[item id, count, refine, hours]]]}, from data.grf's
   packageitem.lub (the probability lists; "all" says only that these can come from it) and SelectPackageItem_Data.lub ("pick": choose one).
+- upgrades: the items that add random options (affixes) to gear, and the gear each works on: {item id: [gear ids]}, from data.grf's
+  LapineUpgradeBox_data.lua (Clock Tower Gear, Nordfeld Helm Scroll...). Which affixes they roll is the server's: data/affixitems.js
+  keeps what players report.
 - recipes: the headgear NPCs craft (npc_recipes(): Februs's from the dialogue, the Hat Maker's from the quest log; hat_quests(): the
   Tip Box's helmet assembly guides and the quest log), as data/recipes.js's NPC rows in a Headgear category, for the Recipes tab,
   each item's details and its Where to get.
@@ -253,6 +256,13 @@ def box_contents(grf):
         if isinstance(i, int) and rows:
             out[i] = ["pick", [[r["item"], r.get("cnt") or 1, r.get("refine") or 0, r.get("hour") or 0] for r in rows]]
     return {i: out[i] for i in sorted(out) if out[i][1]}
+
+
+def upgrades(grf):
+    """{item id: [gear ids]}: the client's Lapine upgrade items (add random options) and the gear each one takes."""
+    t = load_lua(grf.read("data\\luafiles514\\lua files\\datainfo\\lapineupgradebox_data.lub")).get("tblLapineUpgradeBox_data", {}).get("targets", {})
+    return {v["ItemID"]: [r[2] for r in v.get("TargetItems", {}).values() if isinstance(r, dict) and isinstance(r.get(2), int)]
+            for v in sorted(t.values(), key=lambda v: v.get("ItemID", 0)) if isinstance(v, dict) and isinstance(v.get("ItemID"), int)}
 
 
 def hat_quests(client, quests):
@@ -500,11 +510,12 @@ def main():
                if re.match(r"C\d+_", m["sprite"] or "") and re.sub(r"^C\d+_", "", m["sprite"]) in by_sprite}
     mob_var.update({i: ["Boss", b] for i, b in MOB_BOSSES.items()})
     boxes = box_contents(grf)
+    ups = upgrades(grf)
     recipes = npc_recipes(grf, client)
     # the names of what they make and use, as the client has them, for the Recipes tab (data/recipes.js's RECIPE_ITEMN lacks some)
     recipe_names = {i: (info[i].get("identifiedDisplayName") or "").replace("’", "'") for r in recipes for i in [r["id"], *(m[0] for m in r["mats"])]
                     if i in info}
-    out = {"text": text, "fix": fix, "lines": extra, "gear": gear, "cards": new_cards, "items": items, "mobs": mobs, "mobLv": mob_lv, "mobVar": mob_var, "boxes": boxes,
+    out = {"text": text, "fix": fix, "lines": extra, "gear": gear, "cards": new_cards, "items": items, "mobs": mobs, "mobLv": mob_lv, "mobVar": mob_var, "boxes": boxes, "upgrades": ups,
            "recipes": recipes, "recipeNames": recipe_names, "drops": DROPS, "art": art}
     with open(os.path.join(DATA, "client.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// The game client's own item data (tools/export_client.py, from the installed Global client), laid over the community database's\n"
@@ -514,7 +525,8 @@ def main():
                 "// EXP in the client); art: the client's card pictures, gear and item icons and monster pictures (sheets like data/icons.js's);\n"
                 "// mobLv: every monster the client spawns, [name, level], for the monster list's levels and the drop lists; mobVar: which monsters are an\n"
                 "// enhanced or boss version of another, [kind, base id], read into MOB_VARIANT (\"Boss Bathory\") for their tags; boxes: what's in a\n"
-                "// box, [\"all\" | \"pick\", [[item id, count, refine, hours]]] (js/info.js shows it); recipes: the headgear\n"
+                "// box, [\"all\" | \"pick\", [[item id, count, refine, hours]]] (js/info.js shows it); upgrades: items that add affixes, item id ->\n"
+                "// the gear it takes (the Affixes tab); recipes: the headgear\n"
                 "// NPCs craft, as data/recipes.js's NPC rows (js/recipes.js adds them); drops: item id -> monsters, seen in game with no known rate\n")
         f.write("const CLIENT=" + json.dumps(out, ensure_ascii=False, separators=(",", ":")) + ";\n")
         f.write("const MOB_VARIANT={};\n")
