@@ -997,6 +997,12 @@ function wmFloors(el,W,d,fs){
   list.innerHTML=`<div class="wmFloorsHead">${esc(d.n)}</div>${all?`<button type="button" data-wmall="${esc(fs.some(f=>f[0]===el._mp)?el._mp:fs[0][0])}" class="${whole?"on":""}"><span>All floors</span><span class="note">${d.lv?`Lv ${esc(d.lv)}`:""}</span></button>`:""}${fs.map(([k,n,lv])=>`<button type="button" data-wmf="${esc(k)}" class="${k===el._mp&&!whole?"on":""}" title="${esc(`${mapCode(k)} ${mapName(k)}`)}"><span>${esc(n||mapName(k)||mapCode(k))}</span><span class="note">${isClosed(k)?"not open":lv?`Lv ${esc(lv)}`:""}</span></button>`).join("")}`;
   (list.querySelector(".on")||list.querySelector("button")).focus({preventScroll:true})}
 function wmFloorsClose(el){const list=el.querySelector(".wmFloors");list.hidden=true;delete list.dataset.d}
+// an image's src, set once the image is on screen: the Map planner draws its world map (480 KB) and map picture into the Monsters &
+// maps tab as the page loads, and Chrome fetches an image given its src then even with the tab hidden and loading="lazy"
+let PIC_IO=null;
+function picSrc(img,u){if(img.getAttribute("src")===u){delete img.dataset.src;return}
+  if(typeof IntersectionObserver==="undefined"||img.getClientRects().length){img.src=u;delete img.dataset.src;return}
+  img.dataset.src=u;(PIC_IO=PIC_IO||new IntersectionObserver(es=>es.forEach(e=>{const t=e.target;if(e.isIntersecting&&t.dataset.src){t.src=t.dataset.src;delete t.dataset.src;PIC_IO.unobserve(t)}}),{rootMargin:"300px"})).observe(img)}
 function worldMap(el,mp,pick,towns,all){
   if(typeof WORLDMAPS==="undefined"||!WORLDMAPS.length){el.hidden=true;return}
   if(!el.firstChild){el.innerHTML=`<div class="bar wmWorlds">${WORLDMAPS.map((w,i)=>`<button type="button" class="small" data-wmw="${i}">${esc(w.name)}</button>`).join("")}</div><div class="wmPic"><img alt=""><div class="wmBoxes"></div><div class="wmFloors" hidden></div></div><div class="note wmNote"></div>`;
@@ -1016,7 +1022,7 @@ function worldMap(el,mp,pick,towns,all){
   if(key!==el._key&&turn>=0||el.dataset.w==null)el.dataset.w=Math.max(0,turn);
   el._mp=mp;el._lit=lit;el._key=key;el._pick=pick;el._towns=towns;el._all=all;
   const W=WORLDMAPS[+el.dataset.w],img=el.querySelector("img"),bx=el.querySelector(".wmBoxes");
-  if(el.dataset.drawn!==el.dataset.w){el.dataset.drawn=el.dataset.w;Object.assign(img,{src:`${W.file}?v=${W.v}`,alt:`World map of ${W.name}`,width:W.w,height:W.h});
+  if(el.dataset.drawn!==el.dataset.w){el.dataset.drawn=el.dataset.w;Object.assign(img,{alt:`World map of ${W.name}`,width:W.w,height:W.h});picSrc(img,`${W.file}?v=${W.v}`);
     const at={};Object.entries(W.maps).forEach(([k,r])=>{if(towns||!isTown(k))(at[r.join()]=at[r.join()]||[]).push(k)});
     // a dungeon's box is its name plate, which can sit well away from it: a line runs to a marker on the dungeon's spot
     const dun=Object.fromEntries((W.dun||[]).map(d=>[d.box.join(),d])),p=(v,n)=>(v/n*100).toFixed(2)+"%",mid=(a,b)=>(a+b)/2;
@@ -1042,7 +1048,7 @@ function renderMap(){
   if(!mp)mp=mobMap(mob);
   $("mapInput").value=mp?mapCode(mp):"";$("mapName").textContent=mapName(mp)+(isRoomMap(mp)?` · room dungeon: one map cut into small rooms, so monsters crowd into yours (a possible rampage of ${ROOM_CROWD} unless you change it)`:"");
   // the map's picture from the client (data/minimaps.js, tools/export_minimaps.py), asked for with its checksum so a new one isn't read from an old cache
-  {const a=$("mapPic"),v=typeof MINIMAPS!=="undefined"&&mp&&MINIMAPS[mp];$("mapPicWrap").hidden=!v;if(v){const u=`img/maps/${mp}.png?v=${v}`;if(a.getAttribute("src")!==u){a.src=u;a.alt=`Map of ${mapName(mp)||mapCode(mp)}`}}
+  {const a=$("mapPic"),v=typeof MINIMAPS!=="undefined"&&mp&&MINIMAPS[mp];$("mapPicWrap").hidden=!v;if(v){const u=`img/maps/${mp}.png?v=${v}`;if(a.getAttribute("src")!==u){picSrc(a,u);a.alt=`Map of ${mapName(mp)||mapCode(mp)}`}}
    // its NPCs and ways out on it, and the way there from the nearest town (navi.js)
    if(typeof naviMarks==="function"){$("mapMarks").innerHTML=v?naviMarks(mp):"";$("mapRoute").innerHTML=naviRouteHtml(mp)}}
   worldMap($("planWorld"),mp,planPick);{const wi=worldOf(mp);$("worldSum").textContent=!mp?"":wi>=0?`${WORLDMAPS[wi].name}, ${mapName(mp)||mapCode(mp)} lit`:"not on it yet"}
