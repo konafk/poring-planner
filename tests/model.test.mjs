@@ -922,7 +922,17 @@ t("drop level penalty scales zeny per kill and the Zeny Hunter", () => {
 
 t("drops with no published rate (Nordfeld Cave Boulder Dwarves) are listed as ? and earn nothing", () => {
   const m = "MOBS.find(m=>m.id===25327)";
-  assert.equal(run(`JSON.stringify(${m}.drops.map(([id])=>itemName(id)))`), JSON.stringify(["Coal", "Boulder Dwarf Siege Trooper Card", "Archeologist's Shoes", "Advanced Boulder Dwarf Token"]));
+  assert.equal(run(`JSON.stringify(${m}.drops.map(([id])=>itemName(id)))`), JSON.stringify(["Coal", "Boulder Dwarf Siege Trooper Card", "Advanced Boulder Dwarf Token", "Nordfeld Soldier's Armor", "Hill Patrol Boots"]));   // no Archeologist's Shoes on Global
+  // the gear told by hand comes with its affix count: 3 from the Siege Trooper, 4 from the Swordmaster (a boss the farm tables don't have)
+  assert.match(run(`fromHtml(470466)`), /Boulder Dwarf Siege Trooper<\/a> <span class="note">Lv 64 · 3 affixes[\s\S]*data-info="mob:25336">Boulder Dwarf Swordmaster<\/a> <span class="note">Lv 64 · 4 affixes<\/span> <span class="pill">mini boss/);
+  assert.ok(run(`MOBS.find(m=>m.id===25336).mini`));
+  // gear a monster drops rolls from the monster drop pool for its type; an MVP's weapon from the MVP pool; headgear has none
+  assert.equal(run(`JSON.stringify(gearAffixPool(BUILD.item(470466)))`), '["monsterDrop","Shoes"]');
+  assert.equal(run(`JSON.stringify(gearAffixPool(BUILD.item(1168)))`), '["mvp","Melee Series"]');           // Zweihander: Doppelganger
+  assert.equal(run(`gearAffixPool(BUILD.item(401510))`), null);
+  assert.match(run(`popGear(470466).body`), /<h3>Affixes<\/h3>[\s\S]*up to 3 random affixes[\s\S]*1st affix: one of these/);
+  assert.match(run(`popGear(19357).body`), /<h3>Affixes<\/h3>[\s\S]*data-info="item:108494"[\s\S]*STR/);   // Clock Casket: Clock Tower Gear's rolls
+  assert.match(run(`affixGearBlocks()`), /Monster drops · shoes[\s\S]*Hill Patrol Boots/);                                                  // the Swordmaster: from the client, tagged a boss
   assert.ok(run(`[25327,25328,25329].every(id=>{const x=MOBS.find(m=>m.id===id);return x.drops.length&&x.drops.every(([,ch])=>ch==null)&&x.loot==null})`));
   assert.equal(run(`chTxt(null)`), "?"); assert.equal(run(`chTxt(5)`), "5%"); assert.equal(run(`yourCh(${m},null)`), null);
   assert.ok(run(`dropNames(${m})`).startsWith("Coal ? (NPC 250 z)"));
@@ -2750,7 +2760,19 @@ t("Enchant Stone Craft Box: the costumes the official guide lists, any 5 for a r
   const box = app("popItem(104676).body");
   // the four slot boxes it gives one of, and the guide's costumes by the game's names (Poker Face is its Expressionless Mask)
   for (const id of [104675, 104674, 104673, 104672]) assert.match(box, new RegExp(`data-info="item:${id}"`));
-  assert.match(box, /any 5 of these costumes/);
+  assert.match(box, /any 5 of the costumes below[\s\S]*Random 1 of these[\s\S]*<th>Costume<\/th><th>Slot<\/th>/);
+  assert.equal(app("JSON.stringify(boxOf(201165).rows.map(r=>r[1]))"), "[1,30]");
+  // an upgrade item's target gear as a table: Clock Tower Gear's four hats, the Nordfeld Helm Scroll's helm; the Quartermaster's exchanges
+  const ctg = app("popItem(108494).body");
+  assert.match(ctg, /<h3>Target items<\/h3>[\s\S]*<th>Item<\/th><th>Type<\/th>/);
+  for (const g of [19333, 19334, 19357, 19358]) assert.match(ctg, new RegExp(`data-info="gear:${g}"`));
+  assert.match(app("popItem(107871).body"), /Target items[\s\S]*data-info="gear:401510"[\s\S]*Made from[\s\S]*10×/);
+  assert.equal(app("JSON.stringify(RECIPES_MAKING[401509][0].mats)"), "[[1002995,100],[1002996,100],[1002997,100]]");
+  // and back: the helm and a Clock Tower hat list what works on them
+  assert.match(app("popGear(401510).body"), /Enchant and upgrade items[\s\S]*data-info="item:107871"/);
+  assert.match(app("popGear(19357).body"), /Enchant and upgrade items[\s\S]*data-info="item:108494"/);
+  // a costume new in the client with a drop told by hand keeps the client's name and counts as a costume
+  assert.equal(app("itemName(19791)"), "[Costume] Alarm Mask"); assert.equal(app("ITEMTYPE[19791]"), "o");          // Essential Package: the Blessing, named with no amount, is one
   assert.match(box, /\[Costume\] Mini Propeller</);
   assert.match(box, /\[Costume\] Poker Face</);
   // not a (Bound) version, nor a costume the guide doesn't list
@@ -2759,7 +2781,13 @@ t("Enchant Stone Craft Box: the costumes the official guide lists, any 5 for a r
   // a listed costume's card points at the box; a stone box says it gives one stone at random
   assert.match(app("popItem(19635).body"), /data-info="item:104676"/);
   assert.equal(app("infoCraft(19507)"), "");
-  assert.match(app("popItem(104675).body"), /One at random/);
+  assert.match(app("popItem(104675).body"), /rowspan="\d+" class="boxOne">Random 1 of these/);
+  // other boxes: a scroll that says something may appear is random, a package gives all of it, with the amounts its text gives
+  assert.match(app("popItem(108434).body"), /Random 1 of these/);
+  const pk = app("JSON.stringify(boxOf(200999))"), p = JSON.parse(pk);
+  assert.equal(p.kind, "all"); assert.ok(p.rows.some(r => r[1] === 30) && p.rows.some(r => r[1] === 2), pk);
+  assert.equal(app("boxOf(201203).rows[0][1]"), 5);
+  assert.ok(app("boxOf(104672).rows.every(r=>r[1]===1)"));                             // a stone box: one stone                                   // Bubble Gum 5ea Box: "containing 5"
 });
 
 t("Stylist costumes: worn by slot, drawn on the look from the client's sheets", () => {
@@ -2889,9 +2917,28 @@ t("details popup: a monster, an item, gear and a card, linked to each other", ()
   assert.equal(m.title, "Poring");
   assert.match(m.body, /data-info="item:909"/);                                                      // its drops open theirs
   assert.match(m.body, /data-infomap="/);                                                            // and its maps the planner
-  assert.match(m.acts, /data-infoact="mobinfo"/);
+  assert.match(m.acts, /data-infoact="farm"/); assert.doesNotMatch(m.acts, /mobinfo/);              // no Monster info tab: the popup is its details
+  // what Monster info had: a drops table, a skills table, the spawns' world map and table
+  assert.match(m.body, /<h3>Drops<\/h3><\/summary><div class="scroll"><table[^>]*><thead><tr><th>Item<\/th><th>Chance<\/th>/);
+  assert.match(m.body, /<h3>Spawns<\/h3><\/summary><div class="worldMap" id="infoMobWorld">/); assert.equal(typeof m.after, "function");
+  assert.match(m.body, /class="mobChip"><span class="ico ico-mob[^>]*><\/span><a href="#" data-info="mob:/);                          // the other monsters on a map, with pictures
+  // sections fold, and a folded one stays folded in the next popup
+  assert.match(m.body, /<details class="infoSec" data-fold="info:Drops" open><summary>/);
+  run("state.collapsed={'info:Drops':true}");
+  assert.match(run(`popMob(MOBS.find(m=>m.id===1002)).body`), /<details class="infoSec" data-fold="info:Drops"><summary>/);
+  run("state.collapsed={}");
+  assert.equal(run(`infoSecKey("Made from (3 ways)")`), "info:Made from");
+  // no character: no You tile
+  assert.ok(!run("charSet()")); assert.doesNotMatch(m.body, /<div class="k">You/); assert.match(m.body, /<div class="k">Best map/);
+  assert.match(m.body, /<th>Other monsters<\/th>/);
+  const ms = run(`popMob(MOBS.find(m=>m.skills&&m.skills.length))`);
+  assert.match(ms.body, /<h3>Skills<\/h3><\/summary><div class="scroll"><table[^>]*><thead><tr><th>Skill<\/th><th>When<\/th>/);
   const i = run(`popItem("909")`);
-  assert.match(i.body, /data-infoprice="909"/);                                                      // a box for the player price
+  assert.match(i.acts, /class="infoPay">Players pay<input[^>]*data-infoprice="909"/);                // a box for the player price, in the bottom bar
+  assert.match(i.body, /NPC pays 3 z/); assert.doesNotMatch(run(`popItem("1002996").body`), /no NPC price/);
+  // only where the price counts: a recipe material yes; a box, a costume, an upgrade scroll no
+  assert.match(run(`popItem("1002996").acts`), /data-infoprice/);
+  for (const id of [201165, 410252, 107871]) assert.doesNotMatch(run(`popItem("${id}").acts`), /data-infoprice/);
   assert.match(i.body, /data-info="mob:1002"/);                                                      // Poring drops it
   const g = run(`popGear(1168)`);
   assert.equal(g.title, "Zweihander");
@@ -2920,9 +2967,9 @@ t("equipment window: gear named as the game shows it, and the job's look (Bards 
 
 t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {
   // Cooking from the client's cookbooks (60 dishes, Lv 1–10) in place of the database's 29, the Tip Box's 6 potions and 4 fruit juices,
-  // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts, and the client's 37 headgear crafts (the 2 Februs offers on Global, the Hat Maker's 2, 33 hat quests)
-  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length+60+10+18+37`), run(`RECIPE_LIST.length`));
-  assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Headgear").length`), 37);
+  // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts, and the client's 40 NPC crafts (the 2 Februs offers on Global, the Hat Maker's 2, 33 hat quests, the Quartermaster's two helms and Helm Scroll)
+  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length+60+10+18+40`), run(`RECIPE_LIST.length`));
+  assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Headgear").length`), 39);
   // a hat quest: the Tip Box's materials by id, any fee only it and the NPC's lines have, the quest's level
   assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===5031))`), "Mini Pot (quest, Lv 40+) · geffen 83,189");
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===5031).mats)`), "[[5009,1],[1041,1],[999,25],[747,1]]");
@@ -2978,10 +3025,10 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   const i = run(`popItem("909")`);                                                                     // Jellopy
   assert.match(i.body, /Used in/); assert.match(i.acts, /data-infoact="recipes"/);
   assert.match(run(`popItem("1750").body`), /Made from \(\d+ ways\)/);                                // Arrow: many ways
-  // Made from is a table of materials: several ways share one, each way's line a row over its materials; one way has its own
-  const arrow = run(`popItem("1750").body`), mt = arrow.split('class="matTable"').length - 1;
-  assert.equal(mt, 1); assert.match(arrow, /class="wayRow"/); assert.match(arrow, /<th>Material<\/th><th>Amount<\/th>/);
-  assert.match(run(`popGear(19333).body`), /class="recipeT"[\s\S]*Jokers Wild[\s\S]*<td>100<\/td>/);
+  // Made from is one table, a row per way: what it makes, then its materials
+  const arrow = run(`popItem("1750").body`).split("<h3>Used in")[0], mt = arrow.split('<th>Makes</th>').length - 1;
+  assert.equal(mt, 1); assert.match(arrow, /<th>Makes<\/th><th>Materials<\/th>/);
+  assert.match(run(`popGear(19333).body`), /<th>Makes<\/th><th>Materials<\/th>[\s\S]*Clock Tower Manager Headphones[\s\S]*100×<\/span> <a href="#" data-info="item:25506">Cute Broom/);
   assert.match(run(`popGear(1107).body`), /Made from/);                                                // Blade: a forged weapon
   // icons: drops and recipe items from the item sheet, gear from its own, cards their picture
   assert.match(run(`itemIcon(909)`), /ico-item"/);
@@ -2997,7 +3044,16 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.deepEqual([...memOk("poporing")], [25471]);                                                       // a fragment finds its stone
   assert.ok(memOk("upgrader").length === 8);
   assert.match(run(`popItem("25465").body`), /Used in/); assert.match(run(`popGear(15221).body`), /Made from/);
-  assert.doesNotMatch(run(`infoRecipe(RECIPE_LIST.find(r=>r.id===25470))`), /undefined| z</);         // no fee to show
+  assert.doesNotMatch(run(`recipeWhere(RECIPE_LIST.find(r=>r.id===25470))`), /undefined| z</);         // no fee to show
+  // a costume enchant stone: what it gives, its slot, and the box it comes out of at random
+  const stone = run(`popItem("6908").body`);
+  assert.match(stone, /<h3>Enchant stone<\/h3>[\s\S]*ASPD \+1[\s\S]*costume garment/);
+  assert.match(stone, /<h3>Comes in<\/h3>[\s\S]*<th>Box<\/th><th>You get<\/th>[\s\S]*data-info="item:104672"[\s\S]*Random 1 <span class="note">of 4/); assert.doesNotMatch(stone, /No monster/);
+  assert.match(run(`popItem("25304").body`), /Set: Critical Stones \(Upper, Middle, Lower\)/);
+  // Used in is the same table: the item each recipe makes, with its icon and link, then all its materials, this item among them
+  const frag = run(`popItem("25465").body`).split("<h3>Used in")[1];
+  assert.match(frag, /<th>Makes<\/th><th>Materials<\/th>/);
+  assert.match(frag, /ico-item[^>]*>[\s\S]*?data-info="item:25470">Crimson Jellostone<\/a>[\s\S]*?5×<\/span> <a href="#" data-info="item:25465">/);
   // Mithril Ore: no monster drops it, but the hard mode boxes do, and Thor's Flame makes Mithril from it for the Oath rings
   assert.deepEqual(JSON.parse(mem(25430)).mats, [[25429, 10]]);
   assert.deepEqual(JSON.parse(mem(28570)).mats, [[25459, 15], [25430, 10]]);                          // Ring of Blue Oath
@@ -3148,10 +3204,25 @@ t("Maps tab: All floors adds up a dungeon's spawn counts from SPAWN, by level, a
   assert.equal(run("spSum([5,7])"), "≈12");
   assert.equal(run("spSum([5,null])"), "?");
   // All floors holds only while its floor is the map showing
-  run("state.mapInfo=state.mapInfoAll='alde_dun01'");
-  assert.equal(run("mapInfoDun().n"), "Clock Tower Dungeon");
-  run("state.mapInfo='prt_f08'");
-  assert.equal(run("mapInfoDun()"), null);
+  run("state.map=state.mapAll='alde_dun01'");
+  assert.equal(run("mapDun(mapKey(state.map)).n"), "Clock Tower Dungeon");
+  run("state.map='prt_f08'");
+  assert.equal(run("mapDun(mapKey(state.map))"), null);
+  // the Map card's line: a town, an open field with its levels
+  assert.equal(run("mapFactsTxt('prontera')").split(" · ")[1], "town");
+  assert.match(run("mapFactsTxt('prt_f08')"), /open · on the .+ map · monsters Lv \d+/);
+});
+
+t("Monsters & maps: works with no character; the old Monster info and Maps tabs open it", () => {
+  // no Monster info or Maps tab, and their old links and saved tabs land on Monsters & maps
+  assert.doesNotMatch(html, /data-tabbtn="(mobinfo|mapinfo)"|id="(mobInfoCard|mapInfoCard|mobPanel)"/);
+  assert.equal(run("OLD_TAB['monster-info']"), "maps");
+  // the Monsters and Map cards hide the columns worked out for a character until there is one
+  assert.match(readFileSync(new URL("style.css", root), "utf8"), /#mobTable\.noChar[^{]+\{display:none\}/);
+  assert.match(html, /id="farmNoChar"/);
+  // the Map card takes towns and lists every map
+  assert.match(html, /id="mapCard"[\s\S]*id="mapInfoMore"[\s\S]*id="mapInfoTable"/);
+  assert.ok(run("mapInfoMaps().includes('prontera')"));
 });
 
 t("Navigation: routes from the nearest town, the Kafra teleport in front, and where a cell is on a map's picture", () => {

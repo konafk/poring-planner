@@ -20,9 +20,45 @@ function affixItemBlock(id,targets){const rep=AFFIX_ITEMS[id];
     <div class="affCols"><div><div class="affHead">Works on</div><ul class="affGear">${gear}</ul></div>
     ${rep?`<div><div class="affHead">Affixes it can add</div>${count}<div class="scroll"><table class="affTable"><thead><tr><th>Affix</th><th>Value</th></tr></thead><tbody>${rows}</tbody></table></div></div>`
       :`<div><div class="affHead">Affixes it can add</div><div class="note">None reported yet.</div></div>`}</div></div>`}
+// ---- gear that drops with affixes: the pool a piece rolls from (data/affixes.js, the community database's Affixes Simulator) ----
+// Weapon series: bows, instruments and whips are ranged, staves magic, the rest (books too: not checked) melee
+const AFF_SERIES=t=>/^(bow|instrument|whip|gun)/.test(t)?"Ranged Series":/^staff/.test(t)?"Magic Series":"Melee Series";
+const AFF_SLOT={armor:"Armor",garment:"Garment",footgear:"Shoes"};
+const AFF_POOL={monsterDrop:"Monster drops",mvp:"MVP drops",blacksmith:"Forged weapons"};
+const AFF_TYPE={"Melee Series":"melee weapons","Ranged Series":"ranged weapons","Magic Series":"staves","Forging Weapons":"weapons a Blacksmith forges",Armor:"armor",Garment:"garments",Shoes:"shoes"};
+// [pool, gear type] for a piece of gear, or null: a weapon a Blacksmith forges the forging pool; a weapon an MVP drops the MVP pool;
+// any other weapon, armor, garment or shoes a monster drops the monster drop pool. Headgear, shields and accessories have none
+function gearAffixPool(it){if(!it||typeof AFFIXES==="undefined")return null;const s=(it.slot||[])[0];
+  if(s==="weapon"&&(RECIPES_MAKING[it.id]||[]).some(r=>r.cat==="Forging"))return ["blacksmith","Forging Weapons"];
+  const d=itemInfo(it.id).d||[];if(!d.length&&!(ITEM_DROPS[it.id]||[]).length)return null;
+  if(s==="weapon")return [d.some(r=>r[3]==="mvp")?"mvp":"monsterDrop",AFF_SERIES(it.type||"")];
+  return AFF_SLOT[s]?["monsterDrop",AFF_SLOT[s]]:null}
+// a pool's lists, one per affix it can have, in order
+const affixLists=(pool,type)=>{const l={};AFFIXES.rows.filter(r=>r[0]===pool&&r[1]===type).forEach(r=>(l[r[2]]=l[r[2]]||[]).push(r));
+  return Object.keys(l).sort((a,b)=>a-b).map(k=>l[k])};
+const affixPoolRows=(pool,type)=>affixLists(pool,type).map((l,i)=>`<tr class="wayRow"><td colspan="2">${ORDINAL[i]} affix: one of these</td></tr>`
+  +l.map(r=>`<tr><td>${esc(r[3].replace(/ \(%\)$/,""))}</td><td class="mono">+${r[4]===r[5]?r[4]:`${r[4]}–${r[5]}`}${r[6]?"%":""}</td></tr>`).join("")).join("");
+// a piece of gear's affixes, for its details: the pool it drops with, and what the items that add affixes to it roll
+function gearAffixHtml(id){const it=BUILD.item(id),p=gearAffixPool(it),out=[];
+  if(p){const n=affixLists(...p).length;
+    out.push(`<div class="note">${AFF_POOL[p[0]]}: as ${AFF_TYPE[p[1]]||p[1]}, it can come with up to ${n} random affixes, one from each list (the community database's tables).</div>
+      <details class="affDetails"><summary>The ${n} lists</summary><div class="scroll"><table class="affTable"><thead><tr><th>Affix</th><th>Value</th></tr></thead><tbody>${affixPoolRows(...p)}</tbody></table></div></details>`)}
+  Object.entries((typeof CLIENT!=="undefined"&&CLIENT.upgrades)||{}).filter(([u,ts])=>ts.includes(+id)&&AFFIX_ITEMS[u]).forEach(([u])=>{const rep=AFFIX_ITEMS[u];
+    const rows=rep.slots?rep.slots.map((l,i)=>`<tr class="wayRow"><td colspan="2">${ORDINAL[i]} affix: one of these</td></tr>${affixRows(l)}`).join(""):affixRows(rep);
+    out.push(`<div class="note">With ${itemIcon(u,1,"il")}${infoLink("item",u,itemName(u))}, as players have seen it roll:</div>
+      <details class="affDetails"><summary>${rep.slots?`${rep.slots.length} affixes, one from each list`:"One of these"}</summary><div class="scroll"><table class="affTable"><thead><tr><th>Affix</th><th>Value</th></tr></thead><tbody>${rows}</tbody></table></div></details>`)});
+  return out.join("")}
+// the Affixes tab's card of them: each pool and gear type, the gear in it and its lists
+function affixGearBlocks(){const by={};(typeof EQUIP!=="undefined"?EQUIP:[]).forEach(it=>{const p=gearAffixPool(it);if(p)(by[p.join("|")]=by[p.join("|")]||[]).push(it)});
+  const order=[..."Melee Series|Ranged Series|Magic Series|Armor|Garment|Shoes".split("|").map(t=>["monsterDrop",t]),...["Melee Series","Ranged Series","Magic Series"].map(t=>["mvp",t]),["blacksmith","Forging Weapons"]];
+  return order.filter(p=>by[p.join("|")]).map(p=>{const g=by[p.join("|")].sort((a,b)=>a.name.localeCompare(b.name)),n=affixLists(...p).length;
+    return `<div class="affItem"><div class="bar"><h3 class="grow">${AFF_POOL[p[0]]} · ${esc(AFF_TYPE[p[1]]||p[1])}</h3><span class="pill">up to ${n} affixes</span></div>
+    <div class="affCols"><div><div class="affHead">Gear (${g.length})</div><ul class="affGear affGearLong">${g.map(it=>`<li class="dbName">${iconHtml("gear",it.id,1)}${infoLink("gear",it.id,it.name)}</li>`).join("")}</ul></div>
+    <div><div class="affHead">Affixes it can come with</div><div class="scroll"><table class="affTable"><thead><tr><th>Affix</th><th>Value</th></tr></thead><tbody>${affixPoolRows(...p)}</tbody></table></div></div></div></div>`}).join("")}
 let AFFIX_DRAWN=false;
 function renderAffixItems(){if(AFFIX_DRAWN)return;AFFIX_DRAWN=true;const ups=(typeof CLIENT!=="undefined"&&CLIENT.upgrades)||{};
   // newest first (the highest item id)
   const ids=Object.keys(ups).map(Number).sort((a,b)=>b-a),rep=ids.filter(i=>AFFIX_ITEMS[i]),rest=ids.filter(i=>!AFFIX_ITEMS[i]);
   $("affixItems").innerHTML=rep.map(i=>affixItemBlock(i,ups[i])).join("");
+  if($("affixGear"))$("affixGear").innerHTML=affixGearBlocks();
   $("affixMore").innerHTML=rest.map(i=>affixItemBlock(i,ups[i])).join("")}

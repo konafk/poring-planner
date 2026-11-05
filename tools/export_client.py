@@ -18,8 +18,10 @@ the client isn't, so what the client says goes in a file of its own that only th
   the rest would need reading), and weapons are left for the database, which has their weapon type; both are printed.
 - items: items in the client that no data file has (new event items and cards, packages, costumes), with a category and their text in
   data/itemtext.js's form (tools/export_itemtext.py's clean).
-- mobs: monsters the database doesn't have yet that were asked for (CLIENT_MOBS: the Clock Tower basement bosses), from the client's
-  spawn table (data.grf's navi_mob.lub): name, level, element, size, race and where they spawn. The client has no HP, EXP or drops,
+- mobs: monsters the database doesn't have yet that were asked for (CLIENT_MOBS: the Clock Tower basement bosses, the Boulder Dwarf
+  Swordmaster), from the client's
+  spawn table (data.grf's navi_mob.lub): name, level, element, size, race and where they spawn; a boss the client doesn't mark (it spawns them as type 300 like any
+  monster) is tagged by hand (CLIENT_BOSSES). The client has no HP, EXP or drops,
   so those stay unknown and the farm tables leave them out. The other monsters it has and the database doesn't (plants, Knight
   Porings, the Solid / Furious / ... champions, event monsters) stay out, as before.
 - mobLv: every monster the client spawns, [name, level]: the monster list takes the client's level, and the drop lists name each
@@ -64,13 +66,48 @@ HEAD = {"Upper": "head_upper", "Middle": "head_middle", "Lower": "head_lower"}
 STATS = {"MHP": "hp", "MaxHP": "hp", "MSP": "sp", "MaxSP": "sp", "ATK": "atk", "MATK": "matk", "M.ATK": "matk", "HIT": "hit", "FLEE": "flee",
          "CRIT": "crit", "DEF": "def", "MDEF": "mdef", "STR": "str", "AGI": "agi", "VIT": "vit", "INT": "int", "DEX": "dex", "LUK": "luk"}
 PCT = {"variable casting time": "cast_time_variable_percent", "after attack delay": "attack_delay_percent"}
-CLIENT_MOBS = {20175, 20176, 20177, 20178, 20179}  # Extra Joker, Erzsebet, Jeniffer, Orc General, Sieglouse
+CLIENT_MOBS = {20175, 20176, 20177, 20178, 20179, 25336}  # Extra Joker, Erzsebet, Jeniffer, Orc General, Sieglouse, Boulder Dwarf Swordmaster
+CLIENT_BOSSES = {25336}  # of those, the ones tagged as a boss (mini boss): the Swordmaster, a boss as the user told it
 # Tip Box helmet assembly guides for hats no source says Global offers yet: Headset, Oxygen Mask, Model Training Hat, Apple of Archer,
 # the ribbon dyeing, Frog Hat, Smokie Leaf, Blue Fish
 HATS_LATER = {5001, 5004, 5073, 2285, 2250, 5447, 5064, 5065}
 # hats with a crafting quest but no Tip Box guide: their materials, from the NPC's lines (the quest log only names them, as "Cake Slice")
 HATS_LOG_ONLY = {5026: [[539, 20], [982, 1], [949, 30]], 5024: [[539, 20], [530, 5], [538, 15], [529, 10], [999, 10]], 5028: [[2279, 1], [7035, 1]]}
-DROPS = {480999: [20178], 481000: [1211], 481001: [1269]}  # item id -> monsters, seen in game: General's Cape from Orc General, Hunter's Cape from Brilight, Rotating Gear from Clock
+# NPC exchanges whose cost the client doesn't have (its dialogue only names the NPC): item id -> (NPC, where, what it takes, its menu,
+# Recipes tab category). The Quartermaster <Helm Exchange> stands where the client's navi_npc.lub has it (nrd_in 125,305, sprite
+# nrd_helmet); its shop as seen in game (the user's screenshots, 5 November 2026): Nordfeld Onyx Helm for 100 Gleaming Pebble, 100
+# Nordium Fragment and 100 Boulder Dwarf Token, Nordfeld Platinum Helm for 300 Advanced Boulder Dwarf Token, Nordfeld Helm Scroll for
+# 10 Advanced Boulder Dwarf Token
+QM = ("Quartermaster", "nrd_in 125,305")
+EXCHANGES = {401509: (*QM, [[1002995, 100], [1002996, 100], [1002997, 100]], "Helm Exchange", "Headgear"),
+             401510: (*QM, [[1002998, 300]], "Helm Exchange", "Headgear"),
+             107871: (*QM, [[1002998, 10]], "Helm Exchange", "Misc")}
+# item id -> monsters, rate unknown. Seen in game: General's Cape from Orc General, Hunter's Cape from Brilight, Rotating Gear from Clock.
+# The Clock Tower hat materials from the basement field bosses, as the user asked (5 November 2026; reported, not confirmed in game):
+# Shining Round Shell from Sieglouse, Orc General Token from Orc General, Fancy Coral Reef from Jeniffer, Cute Broom from Erzsebet,
+# Jokers Wild from Extra Joker. And the Clock Tower costumes from the tower's monsters (reported the same way): Alarm Mask from Alarm,
+# Golden Brain Hat from Bathory, Orc Helm from High Orc, Owlduke Silk Hat from Owl Duke, Rideword from Rideword, Rotating Gears from
+# Clock, Soda in Mouth from Penomena. Nordium Fragment from Nordium Golem: the client's own dialogue says so (Blacksmith Erisa: "Please
+# obtain Nordium Fragments from Nordium Golems"), and the user too (5 November 2026)
+DROPS = {480999: [20178], 481000: [1211], 481001: [1269], 25509: [20179], 25508: [20178], 25507: [20177], 25506: [20176], 25505: [20175],
+         19791: [1193], 20063: [1102], 19901: [1213], 20037: [1320], 20216: [1195], 20990: [1269], 31261: [1216],
+         1002996: [25324]}
+# Nordfeld Cave Level 2's gear, as the user told it (5 November 2026): monster -> (the gear it drops, how many random affixes it comes
+# with). Siege Trooper: Hill Patrol Boots, Nordfeld Soldier's Armor; Squad Leader: Nordfeld Mantle, Archeologist's Shoes; Captain:
+# Nordium Plate, Guard's Boots; each with 3 affixes. The Boulder Dwarf Swordmaster (a boss, in the client's spawns only) drops all six
+# with 4 affixes
+NRD_GEAR = {25327: ([470466, 450588], 3), 25328: ([450587, 470465], 3), 25329: ([450586, 470464], 3),
+            25336: ([470466, 450588, 450587, 470465, 450586, 470464], 4)}
+DROP_AFFIXES = {}  # item id -> {monster id: affixes it drops with}
+for _m, (_ids, _n) in NRD_GEAR.items():
+    for _i in _ids:
+        DROPS.setdefault(_i, []).append(_m)
+        DROP_AFFIXES.setdefault(_i, {})[_m] = _n
+DROP_KIND = {25336: "mini"}  # monsters the drop lists tag (mini boss), for those the monster list doesn't have
+# drops the community database lists that Global doesn't have, taken out as the page loads: item id -> monsters. Archeologist's Shoes
+# from the Siege Trooper (the user, 5 November 2026: it drops Hill Patrol Boots and Nordfeld Soldier's Armor; the shoes come from the
+# Squad Leader and the Swordmaster)
+NO_DROPS = {470465: [25327]}
 # navi_mob.lub's element numbers -> data/elem.js's names; sizes S M L; races in data/sizes.js's RACES order
 ELEMENTS = ["Neutral", "Water", "Earth", "Fire", "Wind", "Poison", "Holy", "Shadow", "Ghost", "Undead"]
 RACES = ["Formless", "Undead", "Brute", "Plant", "Insect", "Fish", "Demon", "Demi-Human", "Angel", "Dragon"]
@@ -350,7 +387,9 @@ def npc_recipes(grf, client):
     if later:
         print(f"  in the dialogue but not offered yet, left out: {later}")
     made = [r for (npc, i), r in sorted(out.items()) if npc not in offered or i in offered[npc]]
-    return [{k: x for k, x in r.items() if x is not None or k == "lv"} for r in made + hat_quests(client, quests)]
+    swaps = [{"cat": cat, "type": "npc", "id": i, "n": 1, "lv": None, "mats": mats, "npc": [npc, at], "swap": menu}
+             for i, (npc, at, mats, menu, cat) in EXCHANGES.items()]
+    return [{k: x for k, x in r.items() if x is not None or k == "lv"} for r in made + hat_quests(client, quests) + swaps]
 
 
 def card_names(grf):
@@ -485,7 +524,7 @@ def main():
     src = open(os.path.join(DATA, "mobs.js"), encoding="utf-8").read()
     ours = [int(k) for k in re.findall(r'\[(\d+),\s*"', src[src.index("const MOBS="):src.index("].map(")])]
     spawned = monsters(grf, os.path.join(client, "data.grf"))
-    mobs = [{"id": i, **{k: x for k, x in spawned[i].items() if k not in ("sprite", "spawn")},
+    mobs = [{"id": i, **{k: x for k, x in spawned[i].items() if k not in ("sprite", "spawn")}, **({"boss": True} if i in CLIENT_BOSSES else {}),
              "spawn": sorted(([k, n] for k, n in spawned[i]["spawn"].items()), key=lambda x: -x[1])}
             for i in sorted(CLIENT_MOBS - set(ours)) if i in spawned]
     pics, got = [], []
@@ -516,7 +555,7 @@ def main():
     recipe_names = {i: (info[i].get("identifiedDisplayName") or "").replace("’", "'") for r in recipes for i in [r["id"], *(m[0] for m in r["mats"])]
                     if i in info}
     out = {"text": text, "fix": fix, "lines": extra, "gear": gear, "cards": new_cards, "items": items, "mobs": mobs, "mobLv": mob_lv, "mobVar": mob_var, "boxes": boxes, "upgrades": ups,
-           "recipes": recipes, "recipeNames": recipe_names, "drops": DROPS, "art": art}
+           "recipes": recipes, "recipeNames": recipe_names, "drops": DROPS, "dropAffixes": DROP_AFFIXES, "dropKind": DROP_KIND, "noDrops": NO_DROPS, "art": art}
     with open(os.path.join(DATA, "client.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("// The game client's own item data (tools/export_client.py, from the installed Global client), laid over the community database's\n"
                 "// as the page loads: wherever the client has it, it wins. text: gear's and cards' in-game descriptions; fix: name, card slots, level,\n"
@@ -527,7 +566,8 @@ def main():
                 "// enhanced or boss version of another, [kind, base id], read into MOB_VARIANT (\"Boss Bathory\") for their tags; boxes: what's in a\n"
                 "// box, [\"all\" | \"pick\", [[item id, count, refine, hours]]] (js/info.js shows it); upgrades: items that add affixes, item id ->\n"
                 "// the gear it takes (the Affixes tab); recipes: the headgear\n"
-                "// NPCs craft, as data/recipes.js's NPC rows (js/recipes.js adds them); drops: item id -> monsters, seen in game with no known rate\n")
+                "// NPCs craft, as data/recipes.js's NPC rows (js/recipes.js adds them); drops: item id -> monsters, seen in game with no known rate;\n"
+                "// dropAffixes: item id -> {monster id: how many random affixes that drop comes with}; dropKind: monster id -> its tag in the drop lists\n")
         f.write("const CLIENT=" + json.dumps(out, ensure_ascii=False, separators=(",", ":")) + ";\n")
         f.write("const MOB_VARIANT={};\n")
         f.write("(function(){const has=new Set(EQUIP.map(e=>e.id));CLIENT.gear.forEach(r=>{if(!has.has(r.id))EQUIP.push(r)});\n"
@@ -539,13 +579,16 @@ def main():
                 "  // monsters from the client: HP and EXP unknown (expUnknown keeps them out of the farm tables); element, size and race go in the\n"
                 "  // tables js/game.js reads them from, and their spawns in SPAWN\n"
                 "  const mob=new Set(MOBS.map(m=>m.id));CLIENT.mobs.forEach(m=>{if(mob.has(m.id))return;\n"
-                "    MOBS.push({id:m.id,name:m.name,lv:m.lv,hp:null,exp:0,job:0,expUnknown:true,boss:false,mini:false,mvp:false});\n"
+                "    MOBS.push({id:m.id,name:m.name,lv:m.lv,hp:null,exp:0,job:0,expUnknown:true,boss:!!m.boss,mini:!!m.boss,mvp:false});\n"
                 "    ELEM[m.id]=ELEM[m.id]||[m.el,m.elv,null,null];SIZES[m.id]=SIZES[m.id]||[m.size,RACES.indexOf(m.race)];SPAWN[m.id]=SPAWN[m.id]||m.spawn});\n"
-                "  // drops seen in game (armour), rate unknown; a row the database has for the same item and monster stays. The tables data/loot.js's\n"
-                "  // items are all in get these too: no known NPC price, looted as armour\n"
-                "  Object.entries(CLIENT.drops).forEach(([id,mobs])=>{const g=byId.get(+id);if(g&&!ITEMN[id])ITEMN[id]=g.name;if(!(id in NPCSELL))NPCSELL[id]=null;if(!ITEMTYPE[id])ITEMTYPE[id]=\"a\";\n"
+                "  // drops seen in game or reported (armour, materials), rate unknown; a row the database has for the same item and monster stays. The\n"
+                "  // tables data/loot.js's items are all in get these too: no known NPC price, looted as armour or as other items\n"
+                "  Object.entries(CLIENT.drops).forEach(([id,mobs])=>{const g=byId.get(+id),ci=CLIENT_ITEMS[id]||CLIENT.items[id]||[];if(!ITEMN[id])ITEMN[id]=g?g.name:ci[0]||RECIPE_ITEMN[id]||\"#\"+id;if(!(id in NPCSELL))NPCSELL[id]=null;if(!ITEMTYPE[id])ITEMTYPE[id]=g?\"a\":ci[1]===\"Costume\"?\"o\":\"e\";\n"
                 "    const x=ITEM_INFO[id]=ITEM_INFO[id]||{};x.d=x.d||[];mobs.forEach(mid=>{const l=LOOT[mid]=LOOT[mid]||[null,0,0,[]];if(!l[3].some(d=>d[0]===+id)){l[3].push([+id,null]);l[2]++}\n"
-                "      if(!x.d.some(r=>r[0]===mid))x.d.push([mid,\"\",0,\"normal\",null])})});\n"
+                "      if(!x.d.some(r=>r[0]===mid))x.d.push([mid,\"\",0,CLIENT.dropKind[mid]||\"normal\",null])})});\n"
+                "  // drops the database has that Global doesn't: out of the monster's loot and the item's sources\n"
+                "  Object.entries(CLIENT.noDrops).forEach(([id,mobs])=>{const x=ITEM_INFO[id];mobs.forEach(mid=>{const l=LOOT[mid];\n"
+                "    if(l){const n=l[3].length;l[3]=l[3].filter(d=>d[0]!==+id);l[2]-=n-l[3].length}if(x&&x.d)x.d=x.d.filter(r=>r[0]!==mid)})});\n"
                 "  // every monster's level as the client spawns it; the drop lists name a monster as the monster list does, or as the client does\n"
                 "  const byMob=new Map(MOBS.map(m=>[m.id,m]));Object.entries(CLIENT.mobLv).forEach(([id,[n,lv]])=>{const m=byMob.get(+id);if(m)m.lv=lv});\n"
                 "  // each enhanced or boss monster's tag, naming its base as the client does\n"
@@ -554,8 +597,8 @@ def main():
                 "    if(m){r[1]=m.name;r[2]=m.lv}else if(c){r[1]=c[0];r[2]=c[1]}}));\n"
                 "  Object.entries(CLIENT.items).forEach(([id,[n,c,t]])=>{if(!CLIENT_ITEMS[id])CLIENT_ITEMS[id]=[n,c];if(t&&!ITEM_TEXT[id])ITEM_TEXT[id]=t});\n"
                 "  Object.entries(CLIENT.recipeNames).forEach(([id,n])=>{if(n&&!RECIPE_ITEMN[id])RECIPE_ITEMN[id]=n});\n"
-                "  // the headgear NPCs make: their quest, or who makes it, as its Where to get when the database names none\n"
-                "  CLIENT.recipes.forEach(r=>{const x=ITEM_INFO[r.id]=ITEM_INFO[r.id]||{};if(!(x.q||[]).length)x.q=[typeof r.quest===\"string\"?r.quest:`Made by ${r.npc[0]}`]});\n"
+                "  // the headgear NPCs make: their quest, the NPC's exchange, or who makes it, as its Where to get when the database names none\n"
+                "  CLIENT.recipes.forEach(r=>{const x=ITEM_INFO[r.id]=ITEM_INFO[r.id]||{};if(!(x.q||[]).length)x.q=[r.swap?`${r.npc[0]}'s ${r.swap}`:typeof r.quest===\"string\"?r.quest:`Made by ${r.npc[0]}`]});\n"
                 "  // the database's sheets stay as the fallback for what the client has no picture for (js/build-ui.js iconHtml)\n"
                 "  Object.entries(CLIENT.art).forEach(([k,s])=>{if(s.ids.length){ICON_SHEETS[k+\"Db\"]=ICON_SHEETS[k];ICON_SHEETS[k]=s}})})();\n")
     print(f"{len(text)} texts, {len(fix)} fixes, {len(gear)} new gear ({', '.join(g['name'] for g in gear)}), {len(items)} new items, "

@@ -317,8 +317,7 @@ td .map{cursor:default}
 #cmpTable th:nth-child(3),#cmpTable td:nth-child(1),#cmpTable td:nth-child(3){white-space:normal;text-align:left;min-width:120px;max-width:180px;line-height:1.35}
 #cmpTable td:nth-child(1){max-width:150px}#cmpTable .filters input{min-width:40px}
 #huntTable td.mainmobs{white-space:normal;min-width:200px;line-height:1.35;text-align:left}
-#mobInfoDrops td.name,#mobInfoMaps td.name,#itemTable td.name,#itemDroppers td.name{text-align:left}
-#mobInfoMaps td:last-child{white-space:normal}
+#itemTable td.name,#itemDroppers td.name{text-align:left}
 #huntTable a.hpick{text-decoration:none;color:var(--fg)}
 #huntTable .hpick.off{color:var(--muted);text-decoration:line-through}
 #huntTable .drop.off a{color:var(--muted)}
@@ -468,7 +467,15 @@ table.formulas td.chg{background:var(--accent-soft)}
 .sumCard .tile{padding:10px 12px;border-radius:11px}
 .sumCard .tile .v{font-size:1.2rem;margin-top:3px}
 .sumCard .tile .s{font-size:11.5px}
-.charMain :is(#charCard,#buildPanel,#statPanel,#eqPanel,#atkPanel,#cardRow,#sagePanel,#weightPanel,#skillCard,#recCard,#gearCmpCard){scroll-margin-top:72px}
+.charMain :is(#charCard,#buildPanel,#statPanel,#eqPanel,#atkPanel,#cardRow,#sagePanel,#weightPanel,#skillCard,#recCard,#gearCmpCard,#backupCard){scroll-margin-top:72px}
+/* every other tab's section links (js/start.js pageNav): a column beside the cards on wide screens */
+.pageNav[hidden]{display:none}
+.hasPageNav>[data-tab],.hasPageNav .card{scroll-margin-top:72px}
+@media (min-width:1360px){
+  .wrap.hasPageNav{display:grid;grid-template-columns:minmax(0,1fr) 224px;column-gap:20px;row-gap:20px;align-content:start}
+  .wrap.hasPageNav>*{grid-column:1}
+  .wrap.hasPageNav>.pageNav{grid-column:2;position:sticky;top:64px;align-self:start}
+}
 @media (max-width:1359px){
   .charLayout{display:flex;flex-direction:column;align-items:stretch;gap:16px}
   .charAside{display:contents}
@@ -483,7 +490,9 @@ table.formulas td.chg{background:var(--accent-soft)}
   .sumCard .calc{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
   .sumCard .tile{padding:7px 10px}
   .sumCard .tile .v{font-size:1rem}
-  .charMain :is(#charCard,#buildPanel,#statPanel,#eqPanel,#atkPanel,#cardRow,#sagePanel,#weightPanel,#skillCard,#recCard,#gearCmpCard){scroll-margin-top:108px}
+  .charMain :is(#charCard,#buildPanel,#statPanel,#eqPanel,#atkPanel,#cardRow,#sagePanel,#weightPanel,#skillCard,#recCard,#gearCmpCard,#backupCard){scroll-margin-top:108px}
+  .pageNav{order:0}
+  .hasPageNav>[data-tab],.hasPageNav .card{scroll-margin-top:108px}
 }
 @media (max-width:1023px){.secNav{top:56px}}
 @media (max-width:680px){.sumCard .tile .k{font-size:9.5px;letter-spacing:.05em}.sumCard .tile .v{font-size:.92rem}}
@@ -623,29 +632,15 @@ button.tile:hover{border-color:var(--accent)}
 #chartTip b,#goalTip b{font-family:var(--body);font-weight:650}
 @media (max-width:1023px){.ctxRate{order:3}}
 
-/* ---- monster details: a panel beside the Monsters table; a drawer on narrower screens, a bottom sheet on phones ---- */
-.mobSplit{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}
-.mobSplit:has(> .mobPanel[hidden]){grid-template-columns:minmax(0,1fr)}
-.mobList{min-width:0;display:flex;flex-direction:column;gap:10px}
-.mobPanel{position:sticky;top:64px;max-height:calc(100vh - 80px);overflow:auto;display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--raised)}
-.mobPanelHead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:2px 2px 0 4px}
-.mobPanelHead b{font-family:var(--display);font-size:1.1rem;font-weight:700;letter-spacing:-.02em}
-.mobPanelHead .muted{font-family:var(--body);font-size:12.5px;font-weight:500}
-.mobPanel .calc{grid-template-columns:1fr;gap:8px}
-.mobPanel .tile{background:var(--surface)}
-@keyframes drawerIn{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
-@keyframes sheetIn{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
-@media (max-width:1359px){
-  .mobSplit{grid-template-columns:minmax(0,1fr)}
-  .mobPanel{position:fixed;top:0;right:0;bottom:0;z-index:45;width:min(380px,92vw);max-height:none;padding:16px;border-radius:18px 0 0 18px;background:var(--bg);box-shadow:var(--shadow-pop);animation:drawerIn .22s cubic-bezier(.2,.7,.2,1)}
-}
-@media (max-width:600px){
-  .mobPanel{top:auto;left:0;width:auto;max-height:80vh;padding:14px 14px calc(14px + env(safe-area-inset-bottom));border-radius:20px 20px 0 0;animation-name:sheetIn}
-  .mobPanel .calc{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .mobPanel .tile .v{font-size:1.05rem}
-}
-@media (prefers-reduced-motion:reduce){.mobPanel{animation:none}}
-@media (max-width:600px){body:has(.mobPanel:not([hidden])) .fab{opacity:0;pointer-events:none}}
+/* ---- no character yet: the Monsters & maps tables show the game's numbers only, not the ones worked out for a character ---- */
+#mobTable.noChar :is(th,td):is(:nth-child(n+9):nth-child(-n+15),:nth-child(17)),
+#mapTable.noChar :is(th,td):is(:nth-child(6),:nth-child(9),:nth-child(10),:nth-child(12)){display:none}
+.noCharNote{padding:12px 14px;border:1px dashed var(--line-strong);border-radius:12px}
+#farmNoChar{display:none}
+#farmCard.noChar #farmNoChar{display:block}
+#farmCard.noChar>:not(.bar:first-child):not(#farmNoChar){display:none}
+#farmCard.noChar>.bar:first-child>.note{display:none}
+#mapTable.noChar :is([data-sessmob],[data-skip]){display:none}
 /* max base level: no quick Log EXP */
 .maxLv :is(#quickLog,#qlFab){display:none!important}
 
@@ -851,20 +846,17 @@ details.more>.form{display:grid}
 .mapPics{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin:8px 0 12px}
 .mapPic{display:block;width:min(100%,320px)}
 .mapPic[hidden],.worldMap[hidden]{display:none}
-.mapInfo{display:grid;grid-template-columns:minmax(0,3fr) minmax(260px,2fr);gap:16px;align-items:start;margin-top:12px}
-@media (max-width:800px){.mapInfo{grid-template-columns:minmax(0,1fr)}}
-.mapInfo h3{margin:0;font-size:1rem}
-.mapInfo .mapPic{margin:8px 0}
+#mapDun{margin:0 0 12px}
+#mapDun:empty{display:none}
+#mapDun h3{margin:0;font-size:1rem}
 .mapPics>.worldMore{flex:1 1 360px;max-width:640px;border-top:0;padding-top:0}
 .mapTop{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
 .mapTop>#mapTiles{flex:1 1 360px;min-width:0}
-.mapTop>.mapPic,.mapTop>.naviPic{flex:none;width:min(100%,200px)}
+.mapTop>.mapPic,.mapTop>.naviPic{flex:none;width:min(100%,280px)}
 /* the Navigation (js/navi.js): markers over a map's picture, the way there, the NPC list */
 .naviPic{position:relative;width:min(100%,320px)}
 .naviPic[hidden]{display:none}
 .naviPic>.mapPic{width:100%}
-.mapInfo .naviPic{margin:8px 0}
-.mapInfo .naviPic>.mapPic{margin:0}
 .naviMarks{position:absolute;inset:0;pointer-events:none}
 .naviMark{position:absolute;width:9px;height:9px;min-width:0;padding:0;margin:0;border-radius:50%;transform:translate(-50%,-50%);border:1.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.45);pointer-events:auto;background:#8e8ba0}
 .naviMark.warp{width:11px;height:11px;border-radius:2px;background:#ff3b30}
@@ -898,8 +890,8 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 .wmBox.closed{border-style:dashed;border-color:rgba(0,0,0,.35)}
 .wmBox.town{border-color:rgba(255,214,10,.75)}
 .wmBox.on.closed{border-style:dashed}
-#mobInfoWorld{max-width:720px;margin:8px 0}
-#mobInfoWorld button:disabled{opacity:1;pointer-events:none}
+#infoDlg .worldMap{margin:8px 0}
+#infoDlg .worldMap button:disabled{opacity:1;pointer-events:none}
 .wmBox.on{border:2px solid #ff3b30;background:rgba(255,59,48,.3);box-shadow:0 0 0 2px rgba(255,255,255,.8)}
 .wmFloors{position:absolute;z-index:3;width:max-content;max-width:100%;margin:3px 0;padding:3px 0;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.35)}
 .wmFloors[hidden]{display:none}
@@ -928,11 +920,19 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 .infoDlg .tile{padding:10px 12px;border-radius:11px}
 .infoDlg .tile .v{font-size:1.15rem}
 .infoSec h3{margin:4px 0 6px;font-size:11px;font-weight:650;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+details.infoSec>summary{list-style:none;display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+details.infoSec>summary::-webkit-details-marker{display:none}
+details.infoSec>summary::before{content:"";width:6px;height:6px;margin:0 2px 2px 1px;border-right:1.6px solid var(--muted);border-bottom:1.6px solid var(--muted);transform:rotate(45deg);transition:transform .15s}
+details.infoSec:not([open])>summary::before{transform:rotate(-45deg)}
+details.infoSec:not([open])>summary h3{margin-bottom:4px}
+details.infoSec>summary:hover h3{color:var(--fg)}
+.mobChip{display:flex;align-items:center;gap:2px;margin:1px 0;white-space:nowrap}
 .infoList{display:flex;flex-direction:column;gap:3px;font-size:13px;line-height:1.5}
-.infoList.craftList{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:3px 12px}
 .infoFrom{font-size:13px;line-height:1.75}
 .infoText{font-size:13px;line-height:1.5;color:var(--muted);white-space:pre-line}
 .infoActs{padding:10px 16px;border-top:1px solid var(--line);background:var(--raised);flex-wrap:wrap}
+/* the bottom bar's Players pay box, at its right end */
+.infoActs .infoPay{margin-left:auto;display:flex;flex-direction:row;align-items:center;gap:8px;font-size:13px;color:var(--muted);white-space:nowrap}
 #infoBack{margin-top:-1px}
 .infoShare{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;font-size:12.5px;border-radius:7px;border:1px solid var(--line);color:inherit;text-decoration:none;white-space:nowrap}
 .infoShare:hover{border-color:var(--accent);color:var(--accent)}
@@ -943,9 +943,10 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 #recipeCats .note{margin-left:2px}
 .dbTable td.mats{white-space:normal;min-width:200px;line-height:1.9}
 .dbTable td.mats .mat{display:block;white-space:nowrap}
-/* the details popup: recipes that make or use an item */
-.infoList .recipe{display:flex;flex-wrap:wrap;gap:0 10px;align-items:baseline}
-.infoList .recipe .mat{white-space:nowrap}
+/* the details popup: the recipes that use an item, each made item's line and its other materials wrapping */
+.usedTable td.name{text-align:left;white-space:normal}
+.usedTable td.mats{line-height:1.9}.usedTable th:last-child{text-align:left}
+.usedTable td.mats .mat{display:block;white-space:nowrap}
 #cookTable :is(th,td).sel{background:var(--accent-soft)}
 /* the What's new tab: the update's heading, its floors (one row per monster, bars on one scale), bosses' cards, gear and events */
 .homeNewsCard{margin-top:20px;border-color:transparent;background:linear-gradient(160deg,var(--accent-soft),transparent 50%) padding-box,linear-gradient(var(--surface),var(--surface)) padding-box,var(--brand) border-box}
@@ -956,8 +957,43 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 .homeNewsCard .toolIc{font-family:var(--display);font-size:15px;font-weight:800}
 .homeNewsCard .toolTxt .pill{width:fit-content;margin-top:4px;font-size:11px}
 .homeNewsCard .toolTxt .pill.up{color:var(--good)}
-.card[data-tab="news"],#newsRow .card{scroll-margin-top:72px}
-@media (max-width:1023px){.card[data-tab="news"],#newsRow .card{scroll-margin-top:108px}}
+#newsMain .card,.newsSec{scroll-margin-top:72px}
+@media (max-width:1359px){#newsMain .card,.newsSec{scroll-margin-top:108px}}
+/* the tab's sections: a heading over each part of the update (Clock Tower, an event), its cards under it */
+.newsSec{display:flex;flex-direction:column;gap:20px}
+.newsSecHead{padding:14px 2px 0;border-top:2px solid var(--line)}
+.newsSecHead h2{font-family:var(--display);font-size:1.5rem;font-weight:800;letter-spacing:-.025em;line-height:1.1;cursor:pointer;user-select:none;display:flex;align-items:center;gap:10px;width:fit-content}
+.newsSecHead h2::before{content:"";flex:none;width:9px;height:9px;margin:0 2px 4px 2px;border-right:2.2px solid var(--muted);border-bottom:2.2px solid var(--muted);transform:rotate(45deg);transition:transform .15s}
+.newsSecHead h2[aria-expanded="false"]::before{transform:rotate(-45deg);margin-bottom:0}
+.newsSec.collapsed>:not(.newsSecHead){display:none}
+.newsSecHead p{margin:6px 0 0;max-width:80ch;color:var(--muted);font-size:14px;line-height:1.55;text-wrap:pretty}
+.newsNav a.newsNavSec{color:var(--fg);font-weight:600;flex:1;min-width:0}
+.newsNavGrp{display:flex;flex-direction:column}
+.newsNavGrp+.newsNavGrp{margin-top:4px}
+.newsNavRow{display:flex;align-items:center;gap:2px}
+.newsNavGrp.cur .newsNavSec{color:var(--accent)}
+.newsNavTog{flex:none;width:26px;height:26px;padding:0;border:0;border-radius:7px;background:none;color:var(--muted);cursor:pointer;display:grid;place-items:center}
+.newsNavTog::before{content:"";width:6px;height:6px;margin-left:-2px;border-right:1.6px solid currentColor;border-bottom:1.6px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
+.newsNavTog[aria-expanded="true"]::before{transform:rotate(45deg);margin:-3px 0 0}
+.newsNavTog:hover{background:var(--grid);color:var(--fg)}
+.newsNavSubs{display:none;flex-direction:column;gap:1px}
+.newsNavGrp.show .newsNavSubs{display:flex}
+.newsNav a.newsNavSub{padding:4px 10px 4px 20px;font-size:12.5px}
+/* the dropdown a section's toggle opens on narrower screens */
+.newsNavDrop{position:fixed;z-index:40;display:flex;flex-direction:column;gap:1px;min-width:210px;max-width:calc(100vw - 16px);max-height:60vh;overflow:auto;padding:6px;
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-pop)}
+.newsNavDrop[hidden]{display:none}
+.newsNavDrop a{display:block;padding:7px 10px;border-radius:8px;color:var(--fg);text-decoration:none;font-size:13px;white-space:nowrap}
+.newsNavDrop a:hover{background:var(--grid)}
+.newsNavDrop a[aria-current]{color:var(--accent);background:var(--accent-soft);font-weight:600}
+/* as a row of links (narrower screens): the sections, a divider between them; their cards are in the dropdown */
+@media (max-width:1359px){.newsNavGrp{flex:none;flex-direction:row}
+  .newsNavGrp+.newsNavGrp{margin:0 0 0 4px;padding-left:4px;border-left:1px solid var(--line)}
+  .newsNavGrp.show .newsNavSubs{display:none}
+  .newsNavTog{width:22px;height:22px}
+  .newsNavTog::before{transform:rotate(45deg);margin:-3px 0 0}
+  .newsNavTog[aria-expanded="true"]::before{transform:rotate(-135deg);margin:3px 0 0}}
+@media (max-width:760px){.newsSec{gap:16px}}
 .newsHeadCard{display:flex;flex-direction:column;gap:8px}
 .newsHeadCard h2{font-family:var(--display);font-size:1.9rem;font-weight:800;letter-spacing:-.03em;line-height:1.05}
 .newsHeadCard p{margin:0;max-width:75ch;color:var(--muted);line-height:1.6;text-wrap:pretty}
@@ -983,10 +1019,6 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 .newsGround{display:flex;align-items:baseline;gap:10px;padding:8px 14px;background:var(--raised);border-top:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong)}
 .newsGround a{font-weight:600}
 .newsGround span{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.newsCards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-.newsCard{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:var(--r);background:var(--raised);border:1px solid var(--line);min-width:0}
-.newsCard>b{font-family:var(--display);font-size:15px}
-.newsCard p{margin:2px 0 0;font-size:12.5px;color:var(--muted);line-height:1.5}
 .newsList{display:flex;flex-direction:column}
 .newsItem{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-top:1px solid var(--line)}
 .newsItem:first-child{border-top:0;padding-top:4px}
@@ -1100,7 +1132,12 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 .affTable td:first-child{font-weight:500}
 @media (max-width:720px){.affCols{grid-template-columns:minmax(0,1fr)}}
 /* the details popup's Made from: each way's materials as a small table */
-.infoList .recipeT{margin-bottom:8px}.infoList .recipeT:last-child{margin-bottom:0}
 .matTable{margin-top:4px}.matTable th{cursor:default}.matTable td.name a{white-space:normal}
-.matTable .wayRow td,.affTable .wayRow td{background:var(--raised);white-space:normal;font-family:var(--body);font-size:12.5px}
+.affTable .wayRow td{background:var(--raised);white-space:normal;font-family:var(--body);font-size:12.5px}
 .affTable .wayRow td{font-weight:600}
+.matTable td.boxOne{vertical-align:middle;text-align:center;white-space:normal;font-family:var(--body);font-weight:600;color:var(--accent);border-left:1px solid var(--line);min-width:96px}
+.affGearLong{max-height:420px;overflow:auto;padding-right:6px}
+.affDetails{margin-top:4px}.affDetails summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent);padding:2px 0}.affDetails .scroll{margin-top:6px}
+#affixGear .scroll{max-height:420px;overflow:auto}
+/* Item info: the item picked in the list, under it */
+.itemSel{display:flex;flex-direction:column;gap:12px;scroll-margin-top:72px}

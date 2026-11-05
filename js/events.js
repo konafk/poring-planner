@@ -240,6 +240,7 @@ const switchAcct=(id,add)=>{save();let a=null;try{a=JSON.parse(localStorage.getI
 $("acctSel").addEventListener("change",e=>switchAcct(e.target.value));
 $("newAcct").addEventListener("click",()=>{const id="a"+Date.now();let n=accts.list.length+1;while(accts.list.some(a=>a.name==="Account "+n))n++;const add={id,name:"Account "+n};accts.list.push(add);switchAcct(id,add)});
 const endAcctRename=keep=>{const i=$("acctName");if(i.hidden)return;if(keep){const v=i.value.trim(),a=accts.list.find(x=>x.id===accts.active);if(v&&a){a.name=v;saveAccts()}}i.hidden=true;$("acctSel").hidden=false;$("renameAcct").textContent="Rename";renderAccts()};
+$("backupAcct").addEventListener("click",()=>openCard($("backupCard")));
 $("renameAcct").addEventListener("click",()=>{const i=$("acctName");if(!i.hidden){endAcctRename(true);return}i.value=accts.list.find(x=>x.id===accts.active).name;i.hidden=false;$("acctSel").hidden=true;$("renameAcct").textContent="Save";i.focus();i.select()});
 $("acctName").addEventListener("keydown",e=>{if(e.key==="Enter")endAcctRename(true);else if(e.key==="Escape")endAcctRename(false)});
 $("acctName").addEventListener("blur",()=>setTimeout(()=>endAcctRename(true),150));
@@ -278,7 +279,8 @@ $("renameSession").addEventListener("click",toggleRename);
 $("editSession").addEventListener("click",toggleRename);
 $("sessName").addEventListener("keydown",e=>{if(e.key==="Enter")endRename(true);else if(e.key==="Escape")endRename(false)});
 $("sessName").addEventListener("blur",()=>setTimeout(()=>endRename(true),150));
-$("newSession").addEventListener("click",()=>{openSession(newSess().id);showTab("maps");scrollTo({top:0})});
+// a new session: pick where it farms
+$("newSession").addEventListener("click",()=>{openSession(newSess().id);showTab("track");$("farmCard").scrollIntoView({behavior:"smooth",block:"start"})});
 let delArmed=false;
 $("delSession").addEventListener("click",()=>{if(cur()===NO_SESS)return;if(!delArmed){delArmed=true;$("delSession").textContent="Confirm delete";setTimeout(()=>{delArmed=false;$("delSession").textContent="Delete"},3000);return}
   delArmed=false;$("delSession").textContent="Delete";state.sessions=state.sessions.filter(s=>s.id!==state.current);
@@ -295,22 +297,20 @@ const toggleSessMob=id=>{const s=sessNow(),auto=s.name==="New session"||s.name==
 // the session's map: blank is the auto pick; the name follows it while it's still the default
 $("sessMapSel").addEventListener("change",e=>{const s=sessNow(),auto=s.name==="New session"||s.name===sessAutoName(s);
   if(e.target.value)s.map=e.target.value;else delete s.map;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;save();renderAll()});
-// the monster you click is also the one Monster info shows
-const pickMob=m=>{if(!m)return;state.calcMobId=m.id;state.infoMobId=m.id;const s=cur();if(!s.mobIds.length)toggleSessMob(m.id);save();renderAll()};
+// the monster picked for the session
+const pickMob=m=>{if(!m)return;state.calcMobId=m.id;const s=cur();if(!s.mobIds.length)toggleSessMob(m.id);save();renderAll()};
 $("mobList").innerHTML=MOBS.map(mobOpt).join("");
-// Element / Race / Size / Boss dropdowns: the Monsters card's narrow its table and its search, Monster info's its search; saved per account
+// Element / Race / Size / Boss dropdowns: the Monsters card's narrow its table and its search; saved per account
 const mobFSel=(k,label,opts)=>`<label>${label}<select data-mf="${k}">${opts.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("")}</select></label>`;
 const MOBF_HTML=mobFSel("el","Element",[["","Any"],...AE.map(x=>[x,x])])+mobFSel("race","Race",[["","Any"],...RACES.map(x=>[x,x])])
   +mobFSel("size","Size",[["","Any"],["S","Small"],["M","Medium"],["L","Large"]])+mobFSel("boss","Boss",MOBF_BOSS);
-[["mobF","mobF","mobPickList",()=>renderMobs()],["mobInfoF","infoF","mobInfoList",()=>{}]].forEach(([box,k,list,render])=>{$(box).insertAdjacentHTML("beforeend",MOBF_HTML);
+[["mobF","mobF","mobPickList",()=>renderMobs()]].forEach(([box,k,list,render])=>{$(box).insertAdjacentHTML("beforeend",MOBF_HTML);
   $(box).querySelectorAll("[data-mf]").forEach(sel=>{const f=sel.dataset.mf;sel.value=state[k][f]||"";if(sel.value!==(state[k][f]||""))delete state[k][f];
     sel.addEventListener("change",()=>{state[k][f]=sel.value;save();fillMobList(list,state[k]);render()})});
   fillMobList(list,state[k])});
 $("mobInput").addEventListener("change",e=>{pickMob(MOBS.find(x=>x.name.toLowerCase()===e.target.value.trim().toLowerCase()))});
-$("mobTable").querySelector("tbody").addEventListener("click",e=>{if(e.target.closest("a"))return;const tr=e.target.closest("tr[data-id]");if(!tr)return;
-  MOB_PANEL_SHUT=false;pickMob(MOBS.find(m=>m.id===+tr.dataset.id))});
-$("mobPanelX").addEventListener("click",()=>{MOB_PANEL_SHUT=true;renderMobTiles()});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("mobPanel").hidden&&matchMedia("(max-width:1359px)").matches){MOB_PANEL_SHUT=true;renderMobTiles()}});
+// a click on a monster's row opens its details (its name and picture do too: js/info.js)
+$("mobTable").querySelector("tbody").addEventListener("click",e=>{if(e.target.closest("a,button,.map"))return;const tr=e.target.closest("tr[data-id]");if(tr)openInfo("mob",tr.dataset.id)});
 $("mobTable").querySelector("thead").addEventListener("click",e=>{if(e.target.closest(".filters"))return;const th=e.target.closest("th");if(!th||!th.dataset.k)return;
   if(state.sort===th.dataset.k)state.dir*=-1;else{state.sort=th.dataset.k;state.dir=["name","el","size","race","sec","uses","hpm"].includes(th.dataset.k)?1:-1}save();renderMobs()});
 document.querySelectorAll("#mobTable .filters [data-f]").forEach(inp=>{inp.value=state.filters[inp.dataset.f]||"";inp.addEventListener("input",()=>{state.filters[inp.dataset.f]=inp.value;save();renderMobs()})});
@@ -319,7 +319,7 @@ $("minLv").value=state.minLv;$("maxLv").value=state.maxLv;
 ["minLv","maxLv"].forEach(id=>$(id).addEventListener("input",e=>{state[id]=e.target.value===""?(id==="maxLv"?99:1):num(e.target.value);save();renderMobs()}));
 $("hideClosed").checked=state.hideClosed;$("hideClosed").addEventListener("change",e=>{state.hideClosed=e.target.checked;save();renderMobs()});
 // Where to farm: rank by EXP (the EXP table) or by zeny (the zeny table), one Show and one Max sec / kill for both; closed regions
-const renderFarm=()=>rowPass(()=>{renderBest();if(state.tab==="maps")renderHunt()});
+const renderFarm=()=>rowPass(()=>{renderBest();if(state.tab==="track")renderHunt()});
 ROOTQ("[data-farmby]").forEach(b=>b.addEventListener("click",()=>{state.farmBy=b.dataset.farmby;save();renderFarm()}));
 $("bestMin").addEventListener("input",renderBest);$("farmN").addEventListener("change",renderFarm);
 // max sec / kill: blank goes back to 60
@@ -440,7 +440,7 @@ function openAdd(id){if(!loggedIn()){showToast("Log in with Discord to add items
 $("addOpen").addEventListener("click",()=>openAdd());
 ROOTQ("[data-addclose]").forEach(b=>b.addEventListener("click",()=>$("addDlg").close()));
 // the page's two tabs, and the Market note's link to My market
-const setPane=p=>{state.mkt.pane=p;save();if(p==="mine"&&typeof loadMyPosts==="function")loadMyPosts();renderPrices();scrollTo({top:0})};
+const setPane=p=>{state.mkt.pane=p;save();if(p==="mine"&&typeof loadMyPosts==="function")loadMyPosts();renderPrices();pageNav(state.tab);scrollTo({top:0})};
 $("mktPanes").addEventListener("click",e=>{const b=e.target.closest("[data-pane]");if(b)setPane(b.dataset.pane)});
 $("marketCard").addEventListener("click",e=>{const a=e.target.closest("[data-gopane]");if(a){e.preventDefault();setPane(a.dataset.gopane)}});
 // the Market list: open a seller list, or ☆ an item (a favourite); ★ Favourites shows only those
@@ -493,22 +493,18 @@ $("huntTable").querySelector("tbody").addEventListener("click",e=>{const h=e.tar
   const t=e.target.closest("[data-notele]");if(t){e.preventDefault();e.stopPropagation();const mp=t.dataset.notele;state.noTele=noTele(mp)?state.noTele.filter(x=>x!==mp):[...state.noTele,mp];save();renderHunt()}},true);
 $("huntTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.target.closest("tr[data-map],tr[data-id]");if(!tr)return;
   if(tr.dataset.map){state.map=tr.dataset.map;save();renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})}
-  else{state.calcMobId=state.infoMobId=+tr.dataset.id;MOB_PANEL_SHUT=false;save();renderAll();$("mobPanel").scrollIntoView({behavior:"smooth",block:"nearest"})}});
-// Monster info: pick a monster; click a map to open it in the map planner (a drop opens its details: js/info.js)
-$("mobInfoInput").addEventListener("change",e=>{const m=MOBS.find(x=>x.name.toLowerCase()===e.target.value.trim().toLowerCase());if(!m)return;state.infoMobId=m.id;save();renderMobInfo()});
-$("mobInfoMaps").addEventListener("click",e=>{const tr=e.target.closest("tr[data-map]");if(!tr)return;mobInfoPlan(tr.dataset.map)});
-// Item info: search and filter; click an item for its droppers, a dropper for its Monster info
-$("itemSearch").addEventListener("input",renderItems);
+  else openInfo("mob",tr.dataset.id)});
+// Item info: filter the list; click an item for its droppers, a dropper for its details
 // Items: the monster drops, every item, or one client catalog category, with how many each has
 $("itemShow").innerHTML=[["","Monster drops",Object.keys(ITEM_DROPS).length],["all","All items",allItemIds().length],
   ...CLIENT_CATS.map(c=>[c,c,allItemIds().filter(id=>clientCat(id)===c).length])].map(([v,n,k])=>`<option value="${esc(v)}">${esc(n)} (${fmtN(k)})</option>`).join("");
 $("itemShow").value=state.itemShow||"";
 $("itemShow").addEventListener("change",e=>{state.itemShow=e.target.value;save();renderItems()});
-// the auto-loot group filters (Monster info drops, Item info) are dropdowns
+// the auto-loot group filters (Item info) are dropdowns
 ROOTQ('select[data-tf="group"]').forEach(sel=>sel.innerHTML=`<option value="">Any</option>${LOOT_GROUPS.map(([,n])=>`<option>${n}</option>`).join("")}<option value="not looted">Not looted</option>`);
-// Compare sessions, Monster info, Item info, Market and the Hunter tables: click a header to sort (again to flip it), type under it to filter; saved per table
+// Compare sessions, Item info, Market and the Hunter tables: click a header to sort (again to flip it), type under it to filter; saved per table
 const TF_RENDER={};
-[["cmpTable",renderCompare],["bestTable",renderBest],["huntTable",renderHunt],["recTable",renderRecovery],["mobInfoDrops",renderMobInfo],["mobInfoMaps",renderMobInfo],["itemTable",renderItems],["itemDropTable",renderItems]].forEach(([id,render])=>{const t=$(id);TF_RENDER[id]=render;
+[["cmpTable",renderCompare],["bestTable",renderBest],["huntTable",renderHunt],["recTable",renderRecovery],["itemTable",renderItems],["itemDropTable",renderItems]].forEach(([id,render])=>{const t=$(id);TF_RENDER[id]=render;
   t.tHead.addEventListener("click",e=>{const th=e.target.closest("th[data-sk]");if(!th)return;const k=th.dataset.sk,[k0,d0]=tblSort(id);
     const c=TABLES[id].cols[k];state.tsort[sortKey(id)]=[k,k===k0?-d0:c.n&&!c.asc?-1:1];save();render()});
   t.querySelectorAll("[data-tf]").forEach(inp=>{inp.value=(state.tfilt[id]||{})[inp.dataset.tf]||"";
@@ -519,11 +515,12 @@ document.addEventListener("click",e=>{const a=e.target.closest("[data-tfclear]")
   $(id).querySelectorAll("[data-tf]").forEach(i=>i.value="");save();TF_RENDER[id]()});
 $("itemCard").addEventListener("click",e=>{const a=e.target.closest("[data-pitem]");if(a){e.preventDefault();addPrice(a.dataset.pitem,true);return}
   const it=e.target.closest("tr[data-item]");if(it&&!ITEM_DROPS[it.dataset.item]){openInfo("item",it.dataset.item);return}
-  if(it){state.infoItem=it.dataset.item;save();renderItems();$("itemTiles").scrollIntoView({behavior:"smooth",block:"nearest"});return}
-  const mo=e.target.closest("#itemDroppers tr[data-id]");if(mo){state.infoMobId=+mo.dataset.id;save();showTab("mobinfo");scrollTo({top:0})}});
+  if(it){state.infoItem=it.dataset.item;save();renderItems();$("itemSel").scrollIntoView({behavior:"smooth",block:"start"});return}
+  const mo=e.target.closest("#itemDroppers tr[data-id]");if(mo)openInfo("mob",mo.dataset.id)});
 // map planner
-$("mapList").innerHTML=Object.keys(MAPMOBS).sort((a,b)=>mapCode(a).localeCompare(mapCode(b))).map(m=>`<option value="${mapCode(m)}">${esc(mapName(m))} · ${MAPMOBS[m].length} monsters</option>`).join("");
-$("mapInput").addEventListener("change",e=>{state.map=mapKey(e.target.value);save();renderMap()});
+// every spawn map and town; a town opens its picture, NPCs and ways out
+$("mapList").innerHTML=[...Object.keys(MAPMOBS),...(typeof TOWNS==="undefined"?[]:Object.keys(TOWNS))].sort((a,b)=>mapCode(a).localeCompare(mapCode(b))).map(m=>`<option value="${mapCode(m)}">${esc(mapName(m))} · ${isTown(m)?"town":`${MAPMOBS[m].length} monsters`}</option>`).join("");
+$("mapInput").addEventListener("change",e=>{const k=mapKey(e.target.value);if(!MAPMOBS[k]&&!isTown(k))return;state.map=k;state.mapAll=null;save();renderMap()});
 $("mapFromMob").addEventListener("click",()=>{state.map="";save();renderMap()});
 // the Map planner's map becomes the session's, with the monsters you hunt there; the name follows it while it's still the default
 $("mapToSess").addEventListener("click",()=>farmMap($("mapToSess").dataset.map));
@@ -590,7 +587,7 @@ $("bkLink").addEventListener("click",async()=>{let url;try{save();url=location.o
 // opening a share link loads it into the backup box; nothing is replaced until Restore is clicked twice
 async function loadShareLink(){const m=location.hash.match(/^#s=([\w-]+)/);if(!m)return;
   try{history.replaceState(null,"",location.pathname+location.search)}catch(err){}
-  showTab("acct");
+  showTab("char");setTimeout(()=>openCard($("backupCard")));
   try{const data=unpackState(JSON.parse(await unpackShare(m[1])));if(!data||!Array.isArray(data.sessions))throw 0;
     $("bkText").value=JSON.stringify(data);$("bkMsg").textContent="A shared account is in the box below. Click Restore from text (twice) to replace this account with it."}
   catch(err){$("bkMsg").textContent="That share link is broken or cut off, so nothing was loaded."}}
@@ -629,7 +626,7 @@ function colViews(id,box,apply){const views={All:null,...COL_VIEWS[id]},seg=docu
   row.className="bar colBar";row.innerHTML='<span class="note">Columns</span>';row.append(seg);box.before(row);row.append(box);mark()}
 // ---- show / hide table columns (saved per table) ----
 (function setupColPicks(){
-  const IDS=["cmpTable","mobTable","bestTable","huntTable","recTable","mapTable","mobInfoDrops","mobInfoMaps","itemTable","itemDropTable"];
+  const IDS=["cmpTable","mobTable","bestTable","huntTable","recTable","mapTable","itemTable","itemDropTable"];
   if(!state.hideCols)state.hideCols={};
   // columns that start hidden; each is hidden once per account (state.colsShown remembers it), so showing it again sticks
   const START_HIDDEN={bestTable:["Weight / kill","Weight / hr","Town trip every"]};

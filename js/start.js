@@ -3,16 +3,14 @@
 // the heading over each tab: its sidebar group, its name and what it's for
 const TAB_DESC={
   home:"What the planner does, where you left off, and every tool in it.",
-  char:"Your job, stats, gear and attack: everything the damage, EXP and zeny numbers work from.",
-  track:"Log your EXP as you farm to see your real EXP/hr, when you'll level and how far your goals are.",
-  maps:"The best maps for your character by EXP or zeny, and one click to farm one. Then the map planner and every monster.",
+  char:"Your job, stats, gear and attack: everything the damage, EXP and zeny numbers work from. Back up or share the account at the bottom.",
+  track:"Where to farm for your character, then log your EXP as you farm to see your real EXP/hr, when you'll level and how far your goals are.",
+  maps:"Every map and monster: any map with its picture, NPCs and monsters, and every monster's drops, skills and spawns. With a character, your numbers against them.",
   star:"Not open in game yet (Taiwan Zero data). The ★ Forging Certificates each ★ weapon needs, where you'd farm its weapon fastest, and what Activation costs.",
   mem:"Jellostones from Poring Village, the Expedition gear they upgrade to, and the memorial dungeons' rewards and enchants.",
   news:"The latest game update: what spawns on its new maps, its bosses and cards, its gear and its events.",
   roadmap:"Ragnarok Zero Global's release roadmap: when each update comes, its level cap, and which maps and monsters are open now.",
-  mobinfo:"Drops, spawn maps and your numbers against any monster.",
   items:"Every drop: who drops it, where they spawn and what it's worth to you.",
-  mapinfo:"Every map on the game's world map: its picture, the monsters on it and when it opens.",
   equip:"Every weapon and piece of armor: filter by type, job, level, card slots and stats, and put it in any of your gear sets.",
   skilltree:"Try any job's skill tree without a character: points per tree, the job level it needs, and what each skill does.",
   stylist:"Every job's clothes colours, hair styles and hair colours from the game client: try a look, then put it on your character.",
@@ -23,7 +21,6 @@ const TAB_DESC={
   recipes:"What every forge, brew, arrow, cooking, NPC and memorial recipe uses up.",
   market:"What players posted on your server (Skadi, Odin or Loki), with each item's lowest price, median and sellers to DM; and on My market, your own items, posts and prices.",
   ref:"EXP tables, party share, the element and size tables, and every formula with your numbers in it.",
-  acct:"Back up every account, restore one, or share it as a link. Everything is saved in this browser only.",
 };
 function showHero(t){
   const b=document.querySelector(`[data-tabbtn="${t}"]`);if(!b)return;
@@ -31,52 +28,82 @@ function showHero(t){
   $("heroGrp").textContent=g?g.textContent:"";$("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
 }
 // a link to a tab: #memorial-dungeons (its name, any case) or #mem (its key); the address bar always shows the open tab's link, in
-// lower case. A name goes before a key: #maps is the Maps tab, not Monsters & maps (key maps)
+// lower case. A name goes before a key. The old Monster info and Maps tabs' links (#monster-info, #maps) open Monsters & maps,
+// the old Account tab's (#account) Character
+const OLD_TAB={"monster-info":"maps",mobinfo:"maps",mapinfo:"maps",account:"char",acct:"char"};
 const tabSlug=t=>document.querySelector(`[data-tabbtn="${t}"] span`).textContent.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 function hashTab(){let h="";try{h=decodeURIComponent(location.hash.slice(1)).toLowerCase()}catch(e){}if(!h)return null;
   const bs=[...document.querySelectorAll("[data-tabbtn]")],b=bs.find(b=>tabSlug(b.dataset.tabbtn)===h)||bs.find(b=>b.dataset.tabbtn===h);
-  return b?b.dataset.tabbtn:null}
+  return b?b.dataset.tabbtn:OLD_TAB[h]||null}
 function showTab(t,local){rowPass(()=>showTab0(t,local))}
 function showTab0(t,local){
-  if(t==="data")t="acct";// the old Data tab is the Account tab
+  if(t==="data"||t==="acct")t="char";// the old Data and Account tabs: the account and its backup are on the Character tab
+  if(t==="mobinfo"||t==="mapinfo")t="maps";// the old Monster info and Maps tabs are Monsters & maps (a monster's details are its popup)
   if(![...document.querySelectorAll("[data-tabbtn]")].some(b=>b.dataset.tabbtn===t))t="home";
-  // a card can sit on several tabs (data-tab="maps mobinfo mapinfo"): the Monsters card goes under Monster info there, under the Maps card on Maps, and back under the Map planner on Monsters & maps
   document.querySelectorAll("[data-tab]").forEach(el=>el.hidden=!el.dataset.tab.split(" ").includes(t));TAB_ON=t;
-  if(t==="mobinfo")$("mobInfoCard").after($("mobCard"));else if(t==="mapinfo")$("mapInfoCard").after($("mobCard"));else if(t==="maps")$("mapCard").after($("mobCard"));
-  // the Monsters card keeps to the Maps tab's map there (renderMapInfo draws it) and has every monster again on the other two
-  if(t==="mobinfo"||t==="maps")renderMobs();
+  if(t==="maps")renderMobs();
   document.querySelectorAll("[data-tabbtn]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tabbtn===t)));
   // Home has its own heading (the hero) instead of the page heading
-  showHero(t);document.querySelector(".pageHead").hidden=t==="home";$("startCard").classList.toggle("offTab",!["home","char","track","maps"].includes(t));
+  showHero(t);document.querySelector(".pageHead").hidden=t==="home";$("startCard").classList.toggle("offTab",!["home","char","track"].includes(t));
   // not save(): the open tab changes no card, so it leaves GEN (and the cards already drawn) alone
   if(!local&&state.tab!==t){state.tab=t;store.set(state)}
   // not over a share link (#s=…) that loadShareLink hasn't read yet
   if(location.hash!=="#"+tabSlug(t)&&!location.hash.startsWith("#s="))try{history.replaceState(null,"",location.pathname+location.search+"#"+tabSlug(t))}catch(e){}
   // Where to farm (its best spots show on Home too) after the tab has drawn. At load renderAll draws it just after this
-  if(DREW_ALL&&(t==="home"||t==="maps"))farmLater();
+  if(DREW_ALL&&(t==="home"||t==="track"))farmLater();
   if(t==="home")renderHome();if(t==="news")renderNews();if(t==="ref"){renderRef();refScroll()}
   if(t==="char")renderGearCmp();
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
   // renderAll only draws these while their tab is showing; the big ones again only when something was saved since
-  if(t==="market")renderPrices();if(t==="mobinfo")redraw("mobinfo",renderMobInfo);if(t==="items")redraw("items",renderItems);if(t==="equip")redraw("equip",renderEquipDb);if(t==="cards")redraw("cards",renderCardDb);if(t==="recipes")redraw("recipes",renderRecipes);if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="affix")renderAffixItems();if(t==="skilltree")renderSkPlan(true);if(t==="stylist")renderStylist();if(t==="mapinfo")renderMapInfo();
+  if(t==="market")renderPrices();if(t==="items")redraw("items",renderItems);if(t==="equip")redraw("equip",renderEquipDb);if(t==="cards")redraw("cards",renderCardDb);if(t==="recipes")redraw("recipes",renderRecipes);if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="affix")renderAffixItems();if(t==="skilltree")renderSkPlan(true);if(t==="stylist")renderStylist();
+  // the section links, once the tab's cards are drawn (a card can hide as it draws, as the Market's two panes do)
+  pageNav(t);
 }
-// opening Home or Monsters & maps after a change: pricing every map for Where to farm takes a few hundred ms, so the tab shows first
+// opening Home or Session after a change: pricing every map for Where to farm takes a few hundred ms, so the tab shows first
 // with the cards as they were (dimmed), and they're redrawn just after that paint (or after 300 ms where no frame comes, as in a
 // background tab). Nothing to do when they're up to date
-function farmLater(){const els=[$("farmCard"),$("homeSpots")],due=()=>DRAWN.best!==GEN||TAB_ON==="maps"&&DRAWN.hunt!==GEN;if(!due())return;
+function farmLater(){const els=[$("farmCard"),$("homeSpots")],due=()=>DRAWN.best!==GEN||TAB_ON==="track"&&DRAWN.hunt!==GEN;if(!due())return;
   els.forEach(el=>el.classList.add("stale"));let done=false;
-  const go=()=>{if(done)return;done=true;els.forEach(el=>el.classList.remove("stale"));if((TAB_ON!=="home"&&TAB_ON!=="maps")||!due())return;
-    rowPass(()=>{redraw("best",renderBest);if(TAB_ON==="maps")redraw("hunt",renderHunt);if(TAB_ON==="home")renderHome()})};
+  const go=()=>{if(done)return;done=true;els.forEach(el=>el.classList.remove("stale"));if(!["home","track"].includes(TAB_ON)||!due())return;
+    rowPass(()=>{redraw("best",renderBest);if(TAB_ON==="track")redraw("hunt",renderHunt);if(TAB_ON==="home")renderHome()})};
   if(typeof requestAnimationFrame==="function")requestAnimationFrame(()=>setTimeout(go));setTimeout(go,300)}
 document.querySelectorAll("[data-tabbtn]").forEach(b=>b.addEventListener("click",()=>{showTab(b.dataset.tabbtn);scrollTo({top:0})}));
 // a link to another tab (data-gotab="roadmap")
 document.addEventListener("click",e=>{const a=e.target.closest&&e.target.closest("[data-gotab]");if(!a)return;e.preventDefault();showTab(a.dataset.gotab);
   // data-goto: a part of that tab, not its top
-  const to=a.dataset.goto&&$(a.dataset.goto);if(to)(to.closest(".card")||to).scrollIntoView({block:"start"});else scrollTo({top:0})});
+  const to=a.dataset.goto&&$(a.dataset.goto);if(!to){scrollTo({top:0});return}
+  // a What's new section folded away opens first
+  const sec=to.closest(".newsSec.collapsed");if(sec)sec.querySelector(".newsSecHead h2").click();
+  const card=to.closest(".card.collapsed");if(card)card.querySelector("h2[aria-expanded]")?.click();
+  (to.closest(".card")||to).scrollIntoView({block:"start"})});
 // a popup link (#mob/1002) opens over the tab you were on once the page is drawn (showTab puts the tab's link in the address bar first)
 const INFO_AT=hashInfo(location.hash);
-{const h=hashTab();showTab(h||VIEW&&VIEW.tab||state.tab||"home",!h&&!!VIEW)}
+// ---- every other tab's section links, as on Character and What's new (which have their own): the headings of the tab's cards, beside
+// them on wide screens and a row of links above them on narrower ones; jump to one (opening it if folded), the one you're reading marked.
+// Home and tabs of a single card have none ----
+const PAGE_NAV_OFF=new Set(["home","char","news"]);
+let PAGE_SECS=[];
+const secHeading=el=>el.querySelector(":scope>h2, :scope>.bar>h2");
+function pageNav(t){const nav=$("pageNav");if(!nav)return;const wrap=nav.parentNode;
+  const shown=el=>!el.hidden&&getComputedStyle(el).display!=="none";
+  // a card's heading, or the headings of the cards inside a row of them (the Session tab's charts)
+  const secs=PAGE_NAV_OFF.has(t)?[]:[...wrap.children].filter(el=>el.dataset.tab&&shown(el)).flatMap(el=>{const h=secHeading(el);
+    return h?[[el,h]]:[...el.querySelectorAll(":scope>.card")].map(c=>[c,secHeading(c)]).filter(x=>x[1])});
+  const on=secs.length>1;nav.hidden=!on;wrap.classList.toggle("hasPageNav",on);PAGE_SECS=on?secs.map(x=>x[0]):[];if(!on){nav.innerHTML="";return}
+  secs.forEach(([el],i)=>{if(!el.id)el.id=`sec-${t}-${i}`});
+  nav.innerHTML=`<span class="secHead">On this tab</span>`+secs.map(([el,h])=>`<a href="#${el.id}" data-psec="${el.id}">${esc(h.textContent.trim())}</a>`).join("");
+  // beside the cards from the one under the heading down
+  nav.style.gridRow=`2 / span ${Math.max(1,[...wrap.children].filter(el=>el!==nav&&!el.classList.contains("pageHead")&&shown(el)).length)}`;
+  pageSpy()}
+function pageSpy(){const nav=$("pageNav");if(!nav||nav.hidden)return;const links=[...nav.querySelectorAll("a")];let on=null;
+  links.forEach((a,i)=>{if(!on||PAGE_SECS[i].getBoundingClientRect().top<=innerHeight*.3)on=a});
+  links.forEach(a=>a.toggleAttribute("aria-current",a===on));
+  if(on&&nav.scrollWidth>nav.clientWidth)nav.scrollTo({left:on.offsetLeft-nav.clientWidth/2+on.offsetWidth/2})}
+{let raf=0;addEventListener("scroll",()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;pageSpy()})},{passive:true})}
+$("pageNav").addEventListener("click",e=>{const a=e.target.closest("[data-psec]");if(!a)return;e.preventDefault();openCard($(a.dataset.psec))});
+// after a reload for another tab's save (VIEW) the tab it showed isn't saved again: that save would reload the other tab in turn
+{const h=hashTab();showTab(h||VIEW&&VIEW.tab||state.tab||"home",!!VIEW)}
 addEventListener("hashchange",()=>{const t=hashTab();if(t){showTab(t);scrollTo({top:0})}});
 // ---- Home tab: the hero's numbers and next update, where you left off, and a card for every other tab (from the sidebar, so it
 // keeps up with it) ----
@@ -104,9 +131,9 @@ function renderHome(){
   const est=set&&smp?mapStats(smp,walkSec()):null,why=!set?"Set up your character":!smp?"Farm a map for an estimate":"No estimate for this map";
   $("homeTiles").innerHTML=
     tile("Character",noChar()?"–":state.job,set?[c.baseLv&&`Base ${c.baseLv}`,c.jobLv&&`Job ${c.jobLv}`,c.a&&c.a.name].filter(Boolean).join(" · "):"Not set up yet","char",true)+
-    tile("Farming",smp?mapCode(smp):ms.length===1?ms[0].name:ms.length?`${ms.length} monsters`:"–",smp?mapName(smp):ms.length?s.name:"Pick a spot below","maps",true)+
-    tile("EXP / min there",max?"Max level":est?fmtN(est.epm):"–",max?"EXP no longer counts":est?"planner estimate":why,"maps")+
-    tile("Zeny / hr there",est?fmtN(est.net):"–",est?"net, planner estimate":why,"maps");
+    tile("Farming",smp?mapCode(smp):ms.length===1?ms[0].name:ms.length?`${ms.length} monsters`:"–",smp?mapName(smp):ms.length?s.name:"Pick a spot below","track",true)+
+    tile("EXP / min there",max?"Max level":est?fmtN(est.epm):"–",max?"EXP no longer counts":est?"planner estimate":why,"track")+
+    tile("Zeny / hr there",est?fmtN(est.net):"–",est?"net, planner estimate":why,"track");
   $("homeNowNote").textContent="";
   // the best maps for EXP (zeny at the max level) as Where to farm ranks them
   const sm=smp;
@@ -114,15 +141,16 @@ function renderHome(){
     <div class="spotTxt"><div><b class="mono">${mapCode(r.mp)}</b> <span class="note">${esc(mapName(r.mp))}</span></div><div class="spotV">${max?`<b>${fmtN(r.net)}</b> z/hr net`:`<b>${fmtN(r.epm)}</b> EXP / min · ${fmtN(r.net)} z/hr net`}</div></div>${farmBtn(r)}</div>`).join(""):"";
 }
 // ---- collapsible cards: click a heading (or Enter/Space on it) to fold the card; saved by heading text ----
-(function setupCollapse(){
-  if(!state.collapsed)state.collapsed={};
-  document.querySelectorAll(".card:not(#acctCard)").forEach(card=>{const h=card.querySelector(":scope>h2, :scope>.bar>h2");if(!h)return;
+function foldCard(card){const h=card.querySelector(":scope>h2, :scope>.bar>h2");if(!h||h.hasAttribute("aria-expanded"))return;
+    if(!state.collapsed)state.collapsed={};
     const head=h.parentElement===card?h:h.parentElement;head.classList.add("cardHead");const key=h.textContent.trim();
     h.tabIndex=0;h.setAttribute("role","button");
     const set=v=>{card.classList.toggle("collapsed",v);h.setAttribute("aria-expanded",String(!v))};set(!!state.collapsed[key]);
     const flip=()=>{const v=!card.classList.contains("collapsed");state.collapsed[key]=v;if(!v)delete state.collapsed[key];save();set(v)};
-    h.addEventListener("click",flip);h.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();flip()}})});
-})();
+    h.addEventListener("click",flip);h.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();flip()}})}
+document.querySelectorAll(".card:not(#acctCard):not(#newsHead)").forEach(foldCard);
+// go to a card on the open tab, unfolding it
+function openCard(c){if(c.classList.contains("collapsed"))c.querySelector("h2[aria-expanded]")?.click();c.scrollIntoView({behavior:"smooth",block:"start"})}
 // ---- Character tab's section links: jump to a section (opening it if folded), mark the one you're reading, and hide the links of
 // sections that are hidden (Gear outside build mode, Equipment stats in it, Sage options for other jobs) ----
 (function setupSecNav(){
@@ -146,6 +174,8 @@ function renderHome(){
 // ---- get started card: its buttons take you to each step; × hides it in this browser ----
 document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",e=>{const g=b.dataset.go;
   if(g==="log"){e.stopPropagation();openQuickLog(true);return}
+  // Find a spot: Where to farm, on the Session tab
+  if(g==="farm"){showTab("track");openCard($("farmCard"));return}
   showTab(g);scrollTo({top:0})}));
 $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,"1")}catch(e){}renderStart()});
 // ---- search (Ctrl+K or /): tabs, a few actions, every monster, dropped item and map; Enter opens it where it lives ----
@@ -249,9 +279,14 @@ if(VIEW){if(VIEW.drafts)for(const id in VIEW.drafts)if(["fPct","fJob","pasteBox"
 // back to it; a save of its own before then merges, see state.js). A change to the account list makes it stop saving and reload ----
 (function syncTabs(){let newer=false;
   const refresh=()=>reloadView("Updated from another tab");
+  // a save that only changed the page tab open there (and its revision): nothing to reload for, so this tab takes it as read
+  const bare=raw=>{try{const o=JSON.parse(raw);delete o.tab;delete o.rev;return JSON.stringify(o)}catch(e){return null}};
+  const onlyTab=raw=>{const a=bare(raw);return a!=null&&a===bare(LAST_RAW)};
   addEventListener("storage",e=>{if(e.storageArea!==localStorage)return;
     if(e.key===null||e.key===ACCT_KEY)STALE=true;
-    else if(e.key===acctKey(accts.active)){if(e.newValue===LAST_RAW)return;newer=true}
+    else if(e.key===acctKey(accts.active)){if(e.newValue===LAST_RAW)return;
+      if(!newer&&onlyTab(e.newValue)){LAST_RAW=e.newValue;state.rev=revOf(JSON.parse(e.newValue));return}
+      newer=true}
     else return;
     if(!document.hidden)refresh()});
   document.addEventListener("visibilitychange",()=>{if((STALE||newer)&&!document.hidden)refresh()});
