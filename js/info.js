@@ -72,12 +72,14 @@ function infoBox(id){const b=CLIENT.boxes[id];if(!b)return "";
 // the Enchant Stone Craft Box: any 5 of the costumes the official guide lists (data/costumes.js's COSTUME_CRAFT) give one of the
 // four costume enchant stone boxes at random, and that box one random stone for its slot. A listed costume's card says it goes in
 const CRAFT_BOX=104676,STONE_BOXES=[104675,104674,104673,104672];
-const craftCostumes=()=>(typeof COSTUME_CRAFT!=="undefined"?COSTUME_CRAFT:[]).filter(i=>itemName(i)).sort((a,b)=>itemName(a).localeCompare(itemName(b)));
+// a costume's name; a few (Mr. Smile, Pagdaya) are only in the gear list, as they have stats
+const craftName=i=>(BUILD.item(i)||{}).name||itemName(i);
+const craftCostumes=()=>[...(typeof COSTUME_CRAFT!=="undefined"?COSTUME_CRAFT:[])].sort((a,b)=>craftName(a).localeCompare(craftName(b)));
 function infoCraft(id){const box=i=>`${itemIcon(i,1,"il")}${infoLink("item",i,itemName(i)||`#${i}`)}`;
   if(+id===CRAFT_BOX){const cos=craftCostumes();if(!cos.length)return "";
     return `<div class="infoList"><div>Put in any 5 of these costumes (not their Bound versions) for one costume enchant stone box at random:</div>
       ${STONE_BOXES.map(i=>`<div>${box(i)}</div>`).join("")}<div class="note">That box opens to one random enchant stone for its slot.</div></div>
-      <h3>Costumes it takes (${cos.length})</h3><div class="infoList craftList">${cos.map(i=>`<div>${itemIcon(i,1,"il")}${infoLink(infoKind(i),i,itemName(i))}</div>`).join("")}</div>`}
+      <h3>Costumes it takes (${cos.length})</h3><div class="infoList craftList">${cos.map(i=>`<div>${itemIcon(i,1,"il")}${infoLink(infoKind(i),i,craftName(i))}</div>`).join("")}</div>`}
   if(typeof COSTUME_CRAFT!=="undefined"&&COSTUME_CRAFT.includes(+id))
     return `<div class="infoList"><div>Any 5 of the listed costumes go in the ${box(CRAFT_BOX)} for one costume enchant stone box (Upper, Middle, Lower or Garment) at random.</div></div>`;
   return ""}

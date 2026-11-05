@@ -28,8 +28,9 @@ jobs:
         run: python3 -m py_compile tools/*.py
 
   # The real page in Chromium: every tab, search, the theme button and phone width (tests/browser/smoke.mjs)
+  # Ubuntu 24.04: ubuntu-latest moved to 26.04 (5 Nov 2026), which Playwright 1.56.1 can't install Chromium on
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
