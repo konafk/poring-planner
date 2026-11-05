@@ -72,8 +72,11 @@ const fromTxt=id=>[...(itemInfo(id).d||[]).map(([mid,n,lv,k,ch])=>`${n} Lv ${lv}
 const fromOk=(id,v)=>{const x=itemInfo(id),d=x.d||[];return !v||(v==="none"?!d.length&&!(x.q||[]).length:v==="quest"?!!(x.q||[]).length:d.some(r=>r[3]===v))};
 // the column: each monster (a link to its details when the farm tables know it), its level, MVP / mini boss and drop %, then quests
 const MOB_BY_ID=new Map(MOBS.map(m=>[m.id,m]));
-const fromHtml=(id,drops=itemInfo(id).d||[])=>[...drops.map(([mid,n,lv,k,ch])=>`${mobIcon(mid,1,"il")}${MOB_BY_ID.has(mid)?`<a href="#" data-info="mob:${mid}">${esc(n)}</a>`:esc(n)} <span class="note">Lv ${lv}${ch!=null?` · ${ch}%`:""}</span>${FROM_TAG[k]?` <span class="pill${k==="mvp"?" mvp":""}">${FROM_TAG[k]}</span>`:""}${VARIANT_PILL(mid)}`),
-  ...(itemInfo(id).q||[]).map(q=>`<span class="pill">quest</span> ${esc(q)}`)].join("<br>")||'<span class="muted">no known source</span>';
+// how many random affixes a monster's drop of a piece of gear comes with (data/client.js dropAffixes), 0 when none are known
+const dropAff=(id,mid)=>((typeof CLIENT!=="undefined"&&CLIENT.dropAffixes||{})[id]||{})[mid]||0;
+const affTxt=n=>n?`${n} affix${n>1?"es":""}`:"";
+const fromHtml=(id,drops=itemInfo(id).d||[])=>[...drops.map(([mid,n,lv,k,ch])=>`${mobIcon(mid,1,"il")}${MOB_BY_ID.has(mid)?`<a href="#" data-info="mob:${mid}">${esc(n)}</a>`:esc(n)} <span class="note">Lv ${lv}${ch!=null?` · ${ch}%`:""}${dropAff(id,mid)?` · ${affTxt(dropAff(id,mid))}`:""}</span>${FROM_TAG[k]?` <span class="pill${k==="mvp"?" mvp":""}">${FROM_TAG[k]}</span>`:""}${VARIANT_PILL(mid)}`),
+  ...(itemInfo(id).q||[]).map(q=>`<span class="pill">${/ Exchange$/.test(q)?"exchange":"quest"}</span> ${esc(q)}`)].join("<br>")||'<span class="muted">no known source</span>';
 // Item info (every drop of the monsters the farm tables know): the kinds of monster that drop an item, from those monsters (an MVP, a
 // mini boss or another Boss-class one, which counts as a mini boss) and, for gear and cards, the database's full list (MVPs too)
 const dropKinds=id=>new Set([...(ITEM_DROPS[id]||[]).map(d=>d.m.mvp?"mvp":d.m.mini||d.m.boss?"mini":"normal"),...(itemInfo(id).d||[]).map(r=>r[3])]);
@@ -224,7 +227,9 @@ function renderCardAffix(){const v=$("itemCardQ").value,hits=cardsByAffix(v),el=
     const k=th.dataset.sk,[k0,d0]=tblSort(id),col=TABLES[id].cols[k];state.tsort[id]=[k,k===k0?-d0:col.n&&!col.asc?-1:1];save();render()}));
   // the In-game text folds open without equipping (a name or a monster in Where to get opens its details: js/info.js)
   const dbLink=e=>!!e.target.closest("details.desc");
-  // a click anywhere on a row equips it, unless the item can't be worn
-  $("equipTable").tBodies[0].addEventListener("click",e=>{if(dbLink(e))return;const tr=e.target.closest("tr[data-eqrow]"),b=tr&&tr.querySelector("[data-eqitem]");if(b&&!b.disabled)openEquip("item",+tr.dataset.eqrow)});
-  $("cardTable").tBodies[0].addEventListener("click",e=>{if(dbLink(e))return;const tr=e.target.closest("tr[data-cdrow]"),b=tr&&tr.querySelector("[data-eqcard]");if(b&&!b.disabled)openEquip("card",+tr.dataset.cdrow)});
+  // the Equip button equips it; a click anywhere else on a row opens its details (js/info.js)
+  [["equipTable","eqrow","eqitem","item"],["cardTable","cdrow","eqcard","card"]].forEach(([t,row,btn,k])=>$(t).tBodies[0].addEventListener("click",e=>{if(dbLink(e))return;
+    const tr=e.target.closest(`tr[data-${row}]`);if(!tr)return;const b=e.target.closest(`[data-${btn}]`);
+    if(b){if(!b.disabled)openEquip(k,+tr.dataset[row]);return}
+    if(e.target.closest("a,button,input,select,label"))return;openInfo("item",tr.dataset[row])}));
 })();

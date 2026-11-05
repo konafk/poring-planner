@@ -15,7 +15,7 @@ function naviRoute(mp){
   const rs=naviOn()&&NAVI_ROUTES[mp];if(!rs||!rs.length)return null;
   const r=rs.find(([s])=>isTown(s)||naviKafraFrom(s).length);if(!r)return null;
   const [start,cells,steps]=r;return {start,cells,steps,kafra:isTown(start)?[]:naviKafraFrom(start)}}
-// a map name that opens it (on the Maps tab, or in the Map planner when the map's there): only maps the page has. code: with its code too
+// a map name that opens it in the Map card (Monsters & maps tab): only maps the page has. code: with its code too
 // (several fields share a name)
 const naviLink=(c,code)=>{const t=esc(naviName(c))+(code?` <span class="note mono">${esc(mapCode(c))}</span>`:"");return naviKnown(c)?`<a href="#" data-navito="${esc(c)}">${t}</a>`:t};
 // a list of maps by name, with the codes of the ones that share a name
@@ -59,7 +59,7 @@ function naviLists(mp){
     ${npcs.length?`<details class="more naviNpcs mt"${npcs.length<=8?" open":""}><summary>NPCs here <span class="note">${npcs.length}</span></summary><ul class="naviList">${npcs.map(npcLi).join("")}</ul></details>`:""}`}
 // the picture with its markers: only the markers click
 const naviPic=(mp,v,cls="")=>`<div class="naviPic ${cls}"><div class="mapPic" title="The map from the game client's map window. Click a red square to go to that map"><img src="img/maps/${esc(mp)}.png?v=${v}" alt="Map of ${esc(mapName(mp)||mapCode(mp))}" width="512" height="512"></div>${naviMarks(mp)}</div>`;
-// clicking a map's name opens it: in the Map planner when it's a spawn map clicked there, else on the Maps tab
+// clicking a map's name opens it in the Map card (Monsters & maps tab; mapinfo.js): in place when clicked there
 document.addEventListener("click",e=>{const a=e.target.closest("[data-navito]");if(!a)return;e.preventDefault();const k=a.dataset.navito;
-  if(a.closest("#mapCard")&&MAPMOBS[k]){planPick(k);return}
-  state.mapInfo=k;state.mapInfoAll=null;save();if(state.tab!=="mapinfo")showTab("mapinfo");renderMapInfo();$("mapInfoSel").scrollIntoView({block:"nearest"})});
+  if(a.closest("#mapCard")){planPick(k);return}
+  if($("infoDlg").open)$("infoDlg").close();openMap(k)});

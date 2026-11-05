@@ -37,7 +37,7 @@ const shopPrice=id=>SHOPS_OF[id]?Math.min(...SHOPS_OF[id].map(s=>s[2])):null;
 const buyPrice=id=>state.prices[id]>0?state.prices[id]:shopPrice(id)??matPrice(id);
 const worthNone=(r,w)=>w.unknown===r.mats.length&&!r.fee;
 // "(quest)" when the NPC's quest unlocks it, "(quest, Lv 40+)" when the quest has a level
-const recipeQuest=r=>r.quest?` (quest${r.qlv?`, Lv ${r.qlv}+`:""})`:"";
+const recipeQuest=r=>r.swap?` (${r.swap})`:r.quest?` (quest${r.qlv?`, Lv ${r.qlv}+`:""})`:"";
 // who makes it, for the recipes an NPC makes: "JavaDullihan · morocc_in 146,99", "Marienne (quest) · prt_in 49,172" when her quest unlocks them,
 // then who the quest starts with when that's someone else
 const recipeNpc=r=>r.npc?`${r.npc[0]}${recipeQuest(r)} · ${r.npc[1]}${r.start?` · starts with ${r.start[0]} · ${r.start[1]}`:""}`:"";

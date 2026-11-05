@@ -637,7 +637,7 @@ const mobArrives=m=>{const rs=(SPAWN[m.id]||[]).map(([mp])=>regionOf(mp)).filter
 // map names: SPAWN and saves use source codes (sp_d05); data/maps.js has the in-game code and name (in_sphinx5 · Sphinx B5F) and other codes
 const mapCode=mp=>(MAPNAMES[mp]||[])[0]||mp;
 const mapName=mp=>(MAPNAMES[mp]||[])[1]||(isTown(mp)?TOWNS[mp]:"");
-// towns (data/minimaps.js TOWNS, by code): no monsters, only on the Maps tab
+// towns (data/minimaps.js TOWNS, by code): no monsters, only in the Map card's picture, NPCs and ways out
 const isTown=mp=>typeof TOWNS!=="undefined"&&Object.hasOwn(TOWNS,mp??"");
 const mapLabel=mp=>mapName(mp)?`${mapCode(mp)} (${mapName(mp)})`:mapCode(mp);
 // any code, or a name only one map has, back to the source code
