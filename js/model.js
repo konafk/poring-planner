@@ -199,8 +199,9 @@ const perUse=m=>{const a=C().a,h=a.sizeHits?a.sizeHits[{S:0,M:1,L:2}[m.size]??1]
 // crits (basic attacks only): chance = CRIT (doubled with a katar) − monster LUK × 0.2, always hit, × 1.4 × (1 + crit damage %)
 // m: the monster, for gear CRIT that only counts against its race (Cruiser Card: CRIT +7 vs Brute)
 const critRace=m=>{const c=C();return m&&c.bx&&c.bx.critRace?num(c.bx.critRace[m.race]):0};
-// a.critHalf: a skill that crits with your CRIT and gets half of a crit's extra damage (Cannon Spear on Zero)
-const critChance=m=>{const c=C();if((c.a.type!=="auto"&&!c.a.critHalf)||c.a.mr)return 0;return Math.min(100,Math.max(0,(num(cf("crit"))+critRace(m))*(c.weapon==="Katar"?2:1)-(m&&m.luk||0)*0.2))/100};
+// a.critHalf: a skill that can crit and gets half of your crit damage bonus (Zero skill text: Cannon Spear, Focused Arrow Strike, Soul Destroyer);
+// a.critShare: the share of your CRIT it crits with (Focused Arrow Strike and Soul Destroyer: half), before the monster's LUK
+const critChance=m=>{const c=C();if((c.a.type!=="auto"&&!c.a.critHalf)||c.a.mr)return 0;return Math.min(100,Math.max(0,(num(cf("crit"))+critRace(m))*(c.weapon==="Katar"?2:1)*num(c.a.critShare,1)-(m&&m.luk||0)*0.2))/100};
 // uses needed per kill: whole hits that land, spread over misses
 // average damage of one use: hits that land (crits always do, × 1.4 × (1 + crit damage %)) plus auto-casts: card and scroll auto-casts
 // only proc on swings that connect, Auto Shadow Spell (free) procs on a miss too, like Spell Fist and Hindsight
@@ -232,7 +233,9 @@ const autoBlitzDmg=m=>{const n=autoBlitzLv();return n?Math.min(1,num(statVal(C()
 const mrHit=m=>{const c=C(),e=elemMult(m,"Neutral")/100,lv=hasTree(c)&&skLv(c,"martyrs-reckoning")>0?skLv(c,"martyrs-reckoning"):5;
   return e<=0?0:Math.max(1,Math.floor(0.09*num(cf("maxHp"))*(0.9+0.1*lv)*e))};
 const dlUpkeep=()=>{const lv=dlLv();return lv?(50+5*lv)*spCostMul()/(60+30*lv):0};
-const critMul=()=>{const k=1.4*(1+(num(C().critDmg)+consSum("crit_dmg"))/100);return C().a.critHalf?1+(k-1)/2:k};
+// a crit is × 1.4 × (1 + crit damage %), the 1.4 its own multiplier; a skill crit (critHalf) halves only the crit damage % (150% counts as 75%),
+// not the 1.4 (Landgris, RO Juno Research Institute EP9, youtu.be/OaJQvIN22g0; not checked in game)
+const critMul=()=>{const cd=(num(C().critDmg)+consSum("crit_dmg"))/100;return 1.4*(1+(C().a.critHalf?cd/2:cd))};
 const useAvg=(m,per,proc,free=0)=>{const cr=critChance(m),hc=hitChance(m)/100;return per*(cr*critMul()+(1-cr)*hc)+proc*(cr+(1-cr)*hc)+free};
 const dpsOf=m=>{if(isSF())return null;return useAvg(m,perUse(m),procPerUse(m),procFree(m))*targets()/useSec()};
 // by hit and miss: each use misses, hits or crits (and Double Attack doubles the right hand), and the monster dies on the use whose damage
