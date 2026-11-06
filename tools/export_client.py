@@ -82,6 +82,20 @@ QM = ("Quartermaster", "nrd_in 125,305")
 EXCHANGES = {401509: (*QM, [[1002995, 100], [1002996, 100], [1002997, 100]], "Helm Exchange", "Headgear"),
              401510: (*QM, [[1002998, 300]], "Helm Exchange", "Headgear"),
              107871: (*QM, [[1002998, 10]], "Helm Exchange", "Misc")}
+# Jade (Payon 173,238, where the Payon Guide points) swaps 2 Gemstones of one color for 1 of the next, up to 100 at a time, no fee.
+# Jade's lines say so ("If you don't have 2 Blue Gemstone, I can't give you a Red Gemstone!"), but as plain text, so they're written here
+JADE = ("Jade", "payon 173,238")
+EXCHANGES.update({716: (*JADE, [[717, 2]], "Gemstone Exchange", "Misc"),
+                  715: (*JADE, [[716, 2]], "Gemstone Exchange", "Misc"),
+                  717: (*JADE, [[715, 2]], "Gemstone Exchange", "Misc")})
+# Puchuchartan, the Utan shaman (Shaman's House, umbala 219,188, where the Umbala Guide points), fuses monster loot into elemental
+# ores once chief Karkatan allows it (for a Mr. Smile): 15 Horn, 20 Snail's Shell, 20 Scorpion Tail, 25 Rainbow Shell, from the shaman's lines
+# ("You need 20 Scorpion Tail from Scorpion"). The ritual can fail and the lines don't say how many ores it gives: written as one
+SHAMAN = ("Puchuchartan", "umbala 219,188")
+EXCHANGES.update({993: (*SHAMAN, [[947, 15]], "Elemental Fusion", "Misc"),
+                  991: (*SHAMAN, [[946, 20]], "Elemental Fusion", "Misc"),
+                  990: (*SHAMAN, [[904, 20]], "Elemental Fusion", "Misc"),
+                  992: (*SHAMAN, [[1013, 25]], "Elemental Fusion", "Misc")})
 # item id -> monsters, rate unknown. Seen in game: General's Cape from Orc General, Hunter's Cape from Brilight, Rotating Gear from Clock.
 # The Clock Tower hat materials from the basement field bosses, as the user asked (5 November 2026; reported, not confirmed in game):
 # Shining Round Shell from Sieglouse, Orc General Token from Orc General, Fancy Coral Reef from Jeniffer, Cute Broom from Erzsebet,
