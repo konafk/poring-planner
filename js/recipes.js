@@ -20,7 +20,9 @@ const TIPBOX_ONLY=typeof TIPBOX_RECIPES==="undefined"?[]:TIPBOX_RECIPES.filter(r
 // The headgear NPCs craft, from the client's NPC dialogue, Tip Box and quest log (data/client.js recipes): Februs at Atelier Manus, the
 // Hat Maker, and the hat quests around the towns
 const CLIENT_RECIPES=typeof CLIENT!=="undefined"&&CLIENT.recipes||[];
-const RECIPE_LIST=[...(typeof RECIPES!=="undefined"?RECIPES:[]).filter(r=>!COOKBOOK_RECIPES.length||r.cat!=="Cooking"),...COOKBOOK_RECIPES,...TIPBOX_ONLY,...MEMORIAL_RECIPES,...CLIENT_RECIPES];
+// a database recipe the client has as an NPC's (the same item from the same materials: Oridecon from 5 Rough Oridecon) shows once, as the NPC's
+const sameRecipe=(a,b)=>a.id===b.id&&JSON.stringify(a.mats)===JSON.stringify(b.mats);
+const RECIPE_LIST=[...(typeof RECIPES!=="undefined"?RECIPES:[]).filter(r=>(!COOKBOOK_RECIPES.length||r.cat!=="Cooking")&&!CLIENT_RECIPES.some(c=>sameRecipe(c,r))),...COOKBOOK_RECIPES,...TIPBOX_ONLY,...MEMORIAL_RECIPES,...CLIENT_RECIPES];
 const RECIPE_CATS=["Forging","Brewing","Arrows","Cooking","Misc","Mixture & Counteragent","Dye Making","Potions","Fruit Juice","Headgear","Memorial"];
 // by item id: the recipes that make it, and the ones it's a material of
 const RECIPES_MAKING={},RECIPES_USING={};

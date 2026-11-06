@@ -96,6 +96,18 @@ EXCHANGES.update({993: (*SHAMAN, [[947, 15]], "Elemental Fusion", "Misc"),
                   991: (*SHAMAN, [[946, 20]], "Elemental Fusion", "Misc"),
                   990: (*SHAMAN, [[904, 20]], "Elemental Fusion", "Misc"),
                   992: (*SHAMAN, [[1013, 25]], "Elemental Fusion", "Misc")})
+# 5 Rough Oridecon into 1 Oridecon, 5 Rough Elunium into 1 Elunium: Christopher Gillenlow's lines ("you can't make Oridecon unless you
+# have 5 Rough Oridecon"). Gillenlow isn't in the client's navigation, but stands in Prontera's Blacksmith Shop (the user, 6 November 2026),
+# whose door the Prontera Guide marks at prontera 179,184. Two Blacksmiths in navi_npc.lub have the same "Process refining stones"
+# menu: Tadde in Izlude ("I process Rough Elunium and Rough Oridecon") and Kantstaff in the Prontera market
+TADDE, KANT, GILL = ("Tadde", "izlude 145,122"), ("Kantstaff", "prt_mk 153,162"), ("Christopher Gillenlow", "prontera 179,184")
+EXCHANGES.update({984: (*TADDE, [[756, 5]], "Process refining stones", "Forging"),
+                  985: (*TADDE, [[757, 5]], "Process refining stones", "Forging")})
+# a second NPC for an item EXCHANGES already has: [(item id, (NPC, where, what it takes, its menu, category))]
+EXCHANGES_ALSO = [(984, (*KANT, [[756, 5]], "Process refining stones", "Forging")),
+                  (985, (*KANT, [[757, 5]], "Process refining stones", "Forging")),
+                  (984, (*GILL, [[756, 5]], "Make Oridecon", "Forging")),
+                  (985, (*GILL, [[757, 5]], "Make Elunium", "Forging"))]
 # item id -> monsters, rate unknown. Seen in game: General's Cape from Orc General, Hunter's Cape from Brilight, Rotating Gear from Clock.
 # The Clock Tower hat materials from the basement field bosses, as the user asked (5 November 2026; reported, not confirmed in game):
 # Shining Round Shell from Sieglouse, Orc General Token from Orc General, Fancy Coral Reef from Jeniffer, Cute Broom from Erzsebet,
@@ -402,7 +414,7 @@ def npc_recipes(grf, client):
         print(f"  in the dialogue but not offered yet, left out: {later}")
     made = [r for (npc, i), r in sorted(out.items()) if npc not in offered or i in offered[npc]]
     swaps = [{"cat": cat, "type": "npc", "id": i, "n": 1, "lv": None, "mats": mats, "npc": [npc, at], "swap": menu}
-             for i, (npc, at, mats, menu, cat) in EXCHANGES.items()]
+             for i, (npc, at, mats, menu, cat) in [*EXCHANGES.items(), *EXCHANGES_ALSO]]
     return [{k: x for k, x in r.items() if x is not None or k == "lv"} for r in made + hat_quests(client, quests) + swaps]
 
 

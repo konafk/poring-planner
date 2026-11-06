@@ -2968,8 +2968,10 @@ t("equipment window: gear named as the game shows it, and the job's look (Bards 
 t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {
   // Cooking from the client's cookbooks (60 dishes, Lv 1–10) in place of the database's 29, the Tip Box's 6 potions and 4 fruit juices,
   // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts, and the client's 47 NPC crafts (the 2 Februs offers on Global, the Hat Maker's 2, 33 hat quests, the Quartermaster's two helms and Helm Scroll,
-  // Jade's 3 Gemstone swaps, Puchuchartan's 4 elemental ores)
-  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length+60+10+18+47`), run(`RECIPE_LIST.length`));
+  // Jade's 3 Gemstone swaps, Puchuchartan's 4 elemental ores, Oridecon and Elunium at Tadde, Kantstaff and Christopher Gillenlow, whose Oridecon replaces the database's)
+  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length-1+60+10+18+53`), run(`RECIPE_LIST.length`));
+  assert.equal(run(`RECIPE_LIST.filter(r=>r.id===984).map(recipeNpc).join("|")`), "Tadde (Process refining stones) · izlude 145,122|Kantstaff (Process refining stones) · prt_mk 153,162|Christopher Gillenlow (Make Oridecon) · prontera 179,184");  // Oridecon: no database row
+  assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===985).mats)`), "[[757,5]]");                                     // Elunium
   assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Headgear").length`), 39);
   assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===716))`), "Jade (Gemstone Exchange) · payon 173,238");             // Red Gemstone
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===716).mats)`), "[[717,2]]");
@@ -2985,7 +2987,7 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.equal(run(`recipeSkill(RECIPE_LIST.find(r=>r.id===678))`), "Create Deadly Poison skill · Assassin");                // Poison Bottle
   assert.match(run(`recipeSkill(RECIPE_LIST.find(r=>r.cat==="Cooking"&&r.lv===3))`), /^Uses .*Cookbook/);
   assert.equal(run(`recipeSkill(RECIPE_LIST.find(r=>r.id===990&&r.npc))`), "");
-  assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Forging"&&!recipeSkill(r)).map(r=>r.id).sort().join()`), "1000,984");   // Star Crumb, Oridecon
+  assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Forging"&&!r.npc&&!recipeSkill(r)).map(r=>r.id).join()`), "1000");     // Star Crumb
   // a hat quest: the Tip Box's materials by id, any fee only it and the NPC's lines have, the quest's level
   assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===5031))`), "Mini Pot (quest, Lv 40+) · geffen 83,189");
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===5031).mats)`), "[[5009,1],[1041,1],[999,25],[747,1]]");
