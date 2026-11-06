@@ -368,7 +368,12 @@ t("session map: auto is the best open map, a picked one wins while its monsters 
   const om = run(`JSON.stringify(openMaps(MOBS.find(m=>m.id===1002)))`), maps = JSON.parse(om).map(x => x[0]);
   assert.ok(maps.length >= 2);
   assert.equal(run(`sessMap(cur())`), maps[0]);                      // nothing picked: the old best-map rule
-  assert.equal(run(`cur().name`), run(`mapCode(${JSON.stringify(maps[0])})`));
+  assert.equal(run(`cur().name`), run(`mapLabel(${JSON.stringify(maps[0])})`));   // named after the map: its name (its code)
+  // a session named by its map code before still counts as auto-named: adding a monster renames it the new way
+  const other = run(`MAPMOBS[sessMap(cur())].find(x=>x.m.id!==1002).m.id`);
+  run(`cur().name=mapCode(sessMap(cur()));toggleSessMob(${other})`);
+  assert.equal(run(`cur().name`), run(`mapLabel(sessMap(cur()))`));
+  run(`toggleSessMob(${other})`);
   run(`cur().map=${JSON.stringify(maps[1])}`);
   assert.equal(run(`sessMap(cur())`), maps[1]);
   assert.equal(run(`sessMix(cur()).mp`), maps[1]);                   // spawn weights come from the picked map
@@ -699,6 +704,23 @@ t("Amon Ra is in the monster tables as an MVP, Boss class, on Pyramid B2F", () =
   // its drops count as MVP drops in Item info, and it's no longer an other source there (Safety Ring)
   assert.equal(run(`itemFromOk("2615","mvp")`), true);
   assert.doesNotMatch(run(`otherSourcesHtml("2615")`), /Amon Ra/);
+});
+
+t("Monsters & maps: the monster search finds every monster, and an empty table says what its dropdowns leave out", () => {
+  // the search uses the list of every monster, bosses and MVPs too, whatever the dropdowns say
+  assert.match(html, /<input id="mobInput" list="mobList"/);
+  assert.doesNotMatch(html, /mobPickList/);
+  // the table with No bosses (the default) and a name filter for an MVP: empty, but it says one more matches, with a link to show it
+  const mt = run(`globalThis.getEl=document.getElementById;const mt={tb:{innerHTML:""},querySelector(){return this.tb},classList:{toggle(){}}},mn={textContent:""};
+    document.getElementById=id=>id==="mobTable"?mt:id==="mobNote"?mn:getEl(id);
+    state.mobF={boss:"noboss"};state.filters={name:"Osiris"};state.minLv=1;state.maxLv=99;renderMobs();[mt.tb.innerHTML,mn.textContent]`);
+  assert.match(mt[0], /No monsters match these filters\. 1 more monster matches.*id="showAllMobs"/);
+  assert.match(mt[1], new RegExp(`^0 of ${run(`MOBS.length`)} monsters`));
+  // with every monster shown it's listed, and no link
+  const all = run(`state.mobF={};state.hideClosed=false;renderMobs();mt.tb.innerHTML`);
+  assert.match(all, />Osiris</);
+  assert.doesNotMatch(all, /showAllMobs/);
+  run(`state.filters={};state.mobF={boss:"noboss"};state.hideClosed=true;document.getElementById=getEl`);
 });
 
 t("Zeny Hunter: net zeny per hour is loot less skill and item costs, and counts monsters with no EXP", () => {
@@ -2578,10 +2600,10 @@ t("poison: monsters with Poison Attack poison you part of the time: HP drain, no
 
 t("a fresh session is named after its map and follows it while the name is the default", () => {
   run(`cur().name="New session";toggleSessMob(25328)`);
-  assert.equal(run(`cur().name`), run(`mapCode(sessMap(cur()))`));
-  assert.equal(run(`cur().name`), "nrd_dun02");
-  run(`toggleSessMob(25329)`);                                       // same map: still its code
-  assert.equal(run(`cur().name`), "nrd_dun02");
+  assert.equal(run(`cur().name`), run(`mapLabel(sessMap(cur()))`));
+  assert.equal(run(`cur().name`), "Nordfeld Cave 2F (nrd_dun02)");
+  run(`toggleSessMob(25329)`);                                       // same map: still its name
+  assert.equal(run(`cur().name`), "Nordfeld Cave 2F (nrd_dun02)");
   run(`cur().name="my run";toggleSessMob(25329)`);                    // a name you typed is kept
   assert.equal(run(`cur().name`), "my run");
 });

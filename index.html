@@ -643,12 +643,11 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   <section class="card" id="mobCard" data-tab="maps">
     <div class="bar"><h2 class="grow">Monsters</h2><span class="note" id="mobNote"></span></div>
     <div class="bar">
-      <label class="grow">Monster for this session<input id="mobInput" list="mobPickList" placeholder="Search monster"></label>
+      <label class="grow">Monster for this session<input id="mobInput" list="mobList" placeholder="Search any monster"></label>
       <label>Level range<span class="bar"><input class="w-sm" id="minLv" type="number"> to <input class="w-sm" id="maxLv" type="number"></span></label>
       <label><span>&nbsp;</span><span class="bar"><input type="checkbox" id="hideClosed"> Hide monsters with no open map</span></label>
     </div>
-    <div class="bar" id="mobF" title="Narrows this table and the monster search above it"></div>
-    <datalist id="mobPickList"></datalist>
+    <div class="bar" id="mobF" title="Narrows this table; the monster search above it finds every monster"></div>
     <datalist id="mobList"></datalist>
     <div class="scroll tall"><table id="mobTable"><thead><tr>
       <th data-k="name">Monster</th><th data-k="lv">Lv</th><th data-k="el">Element</th><th data-k="size">Size</th><th data-k="race">Race</th><th data-k="hp">HP</th><th data-k="exp">Base EXP</th><th data-k="ratio" title="Base EXP per HP: how much EXP each point of damage earns">EXP / HP</th><th data-k="mult">Your hit %</th><th data-k="hitc">Hit chance</th><th data-k="uses">Uses / kill</th><th data-k="sec">Sec / kill</th><th data-k="epm">EXP / min</th><th data-k="dodge">Dodge %</th><th data-k="hpm">HP lost / min</th><th data-k="zk" title="Loot per kill less what your skills use up (catalysts, arrows, Mammonite zeny)">Zeny / kill</th><th data-k="zph" title="Net: loot less skill items, SP items, the ASPD potion and ground buffs">Zeny / hr</th><th data-k="topN">Best map</th><th></th>

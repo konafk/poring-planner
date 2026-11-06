@@ -639,7 +639,8 @@ const mapCode=mp=>(MAPNAMES[mp]||[])[0]||mp;
 const mapName=mp=>(MAPNAMES[mp]||[])[1]||(isTown(mp)?TOWNS[mp]:"");
 // towns (data/minimaps.js TOWNS, by code): no monsters, only in the Map card's picture, NPCs and ways out
 const isTown=mp=>typeof TOWNS!=="undefined"&&Object.hasOwn(TOWNS,mp??"");
-const mapLabel=mp=>mapName(mp)?`${mapCode(mp)} (${mapName(mp)})`:mapCode(mp);
+// a map in plain text, as players know it: its name, then its code in brackets (just the code when it has no name)
+const mapLabel=mp=>mapName(mp)?`${mapName(mp)} (${mapCode(mp)})`:mapCode(mp);
 // any code, or a name only one map has, back to the source code
 const MAPALIAS={};{const byName={};Object.entries(MAPNAMES).forEach(([k,[g,n,...rest]])=>{[k,g,...rest].forEach(a=>MAPALIAS[a.toLowerCase()]=k);const l=n.toLowerCase();byName[l]=l in byName?null:k});
   Object.entries(byName).forEach(([n,k])=>{if(k&&!(n in MAPALIAS))MAPALIAS[n]=k})}

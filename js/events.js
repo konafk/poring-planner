@@ -289,25 +289,31 @@ $("cmpTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.tar
 // monsters
 // add or remove a monster from the current session; the first one sets a fresh session's job
 // a fresh session is named after its map (the first monster's name if it has no open map), and the name follows the map while it's still the default
-const sessAutoName=s=>{const mp=sessMap(s),m=sessMobs(s)[0];return mp?mapCode(mp):m?m.name:""};
-const toggleSessMob=id=>{const s=sessNow(),auto=s.name==="New session"||s.name===sessAutoName(s);const i=s.mobIds.indexOf(id);
+// a session farming a map is named after it, name first and its code in brackets (ten Geffen fields share one name); one named by
+// its code before still counts as auto-named, so it follows its map
+const sessAutoName=s=>{const mp=sessMap(s),m=sessMobs(s)[0];return mp?mapLabel(mp):m?m.name:""};
+const autoNamed=s=>{const mp=sessMap(s);return s.name==="New session"||s.name===sessAutoName(s)||!!mp&&s.name===mapCode(mp)};
+const toggleSessMob=id=>{const s=sessNow(),auto=autoNamed(s);const i=s.mobIds.indexOf(id);
   if(i>=0)s.mobIds.splice(i,1);else{if(!s.mobIds.length)s.job=state.job;s.mobIds.push(id)}
   if(s.map&&!sessOn(s,s.map))delete s.map;
   const nm=sessAutoName(s);if(auto&&nm)s.name=nm};
 // the session's map: blank is the auto pick; the name follows it while it's still the default
-$("sessMapSel").addEventListener("change",e=>{const s=sessNow(),auto=s.name==="New session"||s.name===sessAutoName(s);
+$("sessMapSel").addEventListener("change",e=>{const s=sessNow(),auto=autoNamed(s);
   if(e.target.value)s.map=e.target.value;else delete s.map;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;save();renderAll()});
 // the monster picked for the session
 const pickMob=m=>{if(!m)return;state.calcMobId=m.id;const s=cur();if(!s.mobIds.length)toggleSessMob(m.id);save();renderAll()};
 $("mobList").innerHTML=MOBS.map(mobOpt).join("");
-// Element / Race / Size / Boss dropdowns: the Monsters card's narrow its table and its search; saved per account
+// Element / Race / Size / Boss dropdowns: the Monsters card's narrow its table (its search finds every monster); saved per account
 const mobFSel=(k,label,opts)=>`<label>${label}<select data-mf="${k}">${opts.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("")}</select></label>`;
 const MOBF_HTML=mobFSel("el","Element",[["","Any"],...AE.map(x=>[x,x])])+mobFSel("race","Race",[["","Any"],...RACES.map(x=>[x,x])])
   +mobFSel("size","Size",[["","Any"],["S","Small"],["M","Medium"],["L","Large"]])+mobFSel("boss","Boss",MOBF_BOSS);
-[["mobF","mobF","mobPickList",()=>renderMobs()]].forEach(([box,k,list,render])=>{$(box).insertAdjacentHTML("beforeend",MOBF_HTML);
-  $(box).querySelectorAll("[data-mf]").forEach(sel=>{const f=sel.dataset.mf;sel.value=state[k][f]||"";if(sel.value!==(state[k][f]||""))delete state[k][f];
-    sel.addEventListener("change",()=>{state[k][f]=sel.value;save();fillMobList(list,state[k]);render()})});
-  fillMobList(list,state[k])});
+$("mobF").insertAdjacentHTML("beforeend",MOBF_HTML);
+$("mobF").querySelectorAll("[data-mf]").forEach(sel=>{const f=sel.dataset.mf;sel.value=state.mobF[f]||"";if(sel.value!==(state.mobF[f]||""))delete state.mobF[f];
+  sel.addEventListener("change",()=>{state.mobF[f]=sel.value;save();renderMobs()})});
+// Show every monster (under a table the dropdowns, level range or Hide monsters with no open map left empty): those go back to all
+$("mobCard").addEventListener("click",e=>{if(!e.target.closest("#showAllMobs"))return;e.preventDefault();
+  state.mobF={};state.minLv=1;state.maxLv=99;state.hideClosed=false;
+  $("mobF").querySelectorAll("[data-mf]").forEach(sel=>sel.value="");$("minLv").value=1;$("maxLv").value=99;$("hideClosed").checked=false;save();renderMobs()});
 $("mobInput").addEventListener("change",e=>{pickMob(MOBS.find(x=>x.name.toLowerCase()===e.target.value.trim().toLowerCase()))});
 // a click on a monster's row opens its details (its name and picture do too: js/info.js)
 $("mobTable").querySelector("tbody").addEventListener("click",e=>{if(e.target.closest("a,button,.map"))return;const tr=e.target.closest("tr[data-id]");if(tr)openInfo("mob",tr.dataset.id)});
@@ -326,7 +332,7 @@ $("bestMin").addEventListener("input",renderBest);$("farmN").addEventListener("c
 $("farmMaxSec").value=maxSecKill();$("farmMaxSec").addEventListener("input",e=>{state.maxSec=e.target.value===""?60:Math.max(0,num(e.target.value));save();renderFarm()});
 // Farm here (the best spots and every map row): the map becomes the session's, with the monsters you hunt there; the name follows
 // it while it's still the default. A capture listener, so the row under the button doesn't also open the map planner
-function farmMap(mp,ids){if(!MAPMOBS[mp])return;const s=sessNow(),auto=s.name==="New session"||s.name===sessAutoName(s);
+function farmMap(mp,ids){if(!MAPMOBS[mp])return;const s=sessNow(),auto=autoNamed(s);
   if(!s.mobIds.length)s.job=state.job;s.mobIds=ids&&ids.length?ids:mapHuntIds(mp);s.map=mp;state.map=mp;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;state.calcMobId=null;save();renderAll()}
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-farm]");if(!b)return;e.preventDefault();e.stopPropagation();
   farmMap(b.dataset.farm,(b.dataset.ids||"").split(",").filter(Boolean).map(Number));showToast(`Farming ${mapCode(b.dataset.farm)} in "${cur().name}": log your EXP as you go`)},true);
