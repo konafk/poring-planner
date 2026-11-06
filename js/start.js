@@ -44,7 +44,10 @@ function showTab0(t,local){
   if(t==="maps")renderMobs();
   document.querySelectorAll("[data-tabbtn]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tabbtn===t)));
   // Home has its own heading (the hero) instead of the page heading
-  showHero(t);document.querySelector(".pageHead").hidden=t==="home";$("startCard").classList.toggle("offTab",!["home","char","track"].includes(t));
+  // the get started card lives on Home only, so Character and Session open on their own tools (on a phone it filled the first screen)
+  showHero(t);document.querySelector(".pageHead").hidden=t==="home";$("startCard").classList.toggle("offTab",t!=="home");
+  // on phones the row of tabs scrolls sideways: keep the open one in view
+  {const b=document.querySelector(`[data-tabbtn="${t}"]`),bar=b&&b.parentElement;if(bar&&bar.scrollWidth>bar.clientWidth)bar.scrollTo({left:b.offsetLeft-bar.clientWidth/2+b.offsetWidth/2})}
   // not save(): the open tab changes no card, so it leaves GEN (and the cards already drawn) alone
   if(!local&&state.tab!==t){state.tab=t;store.set(state)}
   // not over a share link (#s=…) that loadShareLink hasn't read yet
@@ -138,7 +141,7 @@ function renderHome(){
   // the best maps for EXP (zeny at the max level) as Where to farm ranks them
   const sm=smp;
   $("homeSpots").innerHTML=set&&SPOT_EXP.length?`<div class="secHead">${max?"Best for zeny":"Best for EXP"} right now</div>`+SPOT_EXP.map(r=>`<div class="spot${r.mp===sm?" on":""}"><span class="spotN">${r.rank}</span>
-    <div class="spotTxt"><div><b class="mono">${mapCode(r.mp)}</b> <span class="note">${esc(mapName(r.mp))}</span></div><div class="spotV">${max?`<b>${fmtN(r.net)}</b> z/hr net`:`<b>${fmtN(r.epm)}</b> EXP / min · ${fmtN(r.net)} z/hr net`}</div></div>${farmBtn(r)}</div>`).join(""):"";
+    <div class="spotTxt"><div>${mapTitle(r.mp)}</div><div class="spotV">${max?`<b>${fmtN(r.net)}</b> z/hr net`:`<b>${fmtN(r.epm)}</b> EXP / min · ${fmtN(r.net)} z/hr net`}</div></div>${farmBtn(r)}</div>`).join(""):"";
 }
 // ---- collapsible cards: click a heading (or Enter/Space on it) to fold the card; saved by heading text ----
 function foldCard(card){const h=card.querySelector(":scope>h2, :scope>.bar>h2");if(!h||h.hasAttribute("aria-expanded"))return;
@@ -189,22 +192,25 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
     {k:"Action",name:"Show or hide hints",meta:"help text under the cards",run:()=>$("hintBtn").click()},
     {k:"Action",name:"New session",meta:"Session tab",run:()=>$("newSession").click()}];
   let ALL=null;
+  // gear and cards are listed once, as Gear or Card (with what drops them), not again as an Item
+  const GC=new Set([...(typeof EQUIP!=="undefined"?EQUIP:[]).filter(it=>(it.slot||[]).length).map(it=>String(it.id)),...(typeof CARDS!=="undefined"?CARDS:[]).map(x=>String(x.id))]);
+  const dropTxt=id=>ITEM_DROPS[id]?` · dropped by ${ITEM_DROPS[id].length}`:"";
   const build=()=>ALL=[
     ...[...document.querySelectorAll("[data-tabbtn]")].map(b=>({k:"Tab",name:tabName(b.dataset.tabbtn),meta:TAB_DESC[b.dataset.tabbtn]||"",run:go(b.dataset.tabbtn)})),
     ...ACTIONS,
     ...MOBS.map(m=>({k:"Monster",name:m.name,meta:`Lv ${m.lv}${m.el?` · ${m.el} ${m.elv}`:""}${m.race?` · ${m.race}`:""}${m.mvp?" · MVP":m.boss||m.mini?" · boss":""}${MOB_VARIANT[m.id]?" · "+MOB_VARIANT[m.id]:""}`,mob:m.id,
       run:()=>openInfo("mob",m.id)})),
-    ...Object.keys(ITEM_DROPS).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · dropped by ${ITEM_DROPS[id].length}`,ico:id,
+    ...Object.keys(ITEM_DROPS).filter(id=>!GC.has(id)).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · dropped by ${ITEM_DROPS[id].length}`,ico:id,
       run:()=>openInfo("item",id)})),
     // crafted items no monster drops (potions, arrows, food, forged weapons that aren't in the gear list)
-    ...Object.keys(RECIPES_MAKING).filter(id=>!ITEM_DROPS[id]&&!BUILD.item(+id)).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · ${RECIPES_MAKING[id][0].cat.toLowerCase()} recipe`,ico:id,
+    ...Object.keys(RECIPES_MAKING).filter(id=>!ITEM_DROPS[id]&&!BUILD.item(+id)&&!GC.has(id)).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · ${RECIPES_MAKING[id][0].cat.toLowerCase()} recipe`,ico:id,
       run:()=>openInfo("item",id)})),
     // every other item in the client, the memorial ones and the recovery and skill items (Mithril Ore, Jello Fragments, costumes)
-    ...allItemIds().filter(id=>!ITEM_DROPS[id]&&!RECIPES_MAKING[id]).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · ${MEM_ITEMN[id]?"memorial item":(clientCat(id)||"item").toLowerCase()}`,ico:id,
+    ...allItemIds().filter(id=>!ITEM_DROPS[id]&&!RECIPES_MAKING[id]&&!GC.has(String(id))).map(id=>({k:"Item",name:itemName(id),meta:`#${id} · ${MEM_ITEMN[id]?"memorial item":(clientCat(id)||"item").toLowerCase()}`,ico:id,
       run:()=>openInfo("item",id)})),
-    ...(typeof EQUIP!=="undefined"?EQUIP:[]).filter(it=>(it.slot||[]).length).map(it=>({k:"Gear",name:it.name,meta:`#${it.id} · ${gearKind(it)}${it.slots?` [${it.slots}]`:""}`,ico:it.id,
+    ...(typeof EQUIP!=="undefined"?EQUIP:[]).filter(it=>(it.slot||[]).length).map(it=>({k:"Gear",name:it.name,meta:`#${it.id} · ${gearKind(it)}${it.slots?` [${it.slots}]`:""}${dropTxt(it.id)}`,ico:it.id,
       run:()=>openInfo("item",it.id)})),
-    ...(typeof CARDS!=="undefined"?CARDS:[]).map(x=>({k:"Card",name:x.name,meta:`#${x.id} · ${CARD_PART[cardPart(x)]||"–"}${cardName(x)?` · ${cardName(x)}`:""}${notInGame(x.id)?" · not in game yet":""}`,ico:x.id,
+    ...(typeof CARDS!=="undefined"?CARDS:[]).map(x=>({k:"Card",name:x.name,meta:`#${x.id} · ${CARD_PART[cardPart(x)]||"–"}${cardName(x)?` · ${cardName(x)}`:""}${notInGame(x.id)?" · not in game yet":""}${dropTxt(x.id)}`,ico:x.id,
       run:()=>openInfo("item",x.id)})),
     ...Object.keys(MAPNAMES).map(mp=>({k:"Map",name:mapName(mp)||mapCode(mp),meta:mapCode(mp),alt:mp,
       run:go("maps",()=>{state.map=mp;save();renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})})}))];
@@ -295,3 +301,7 @@ if(VIEW&&VIEW.toast)showToast(String(VIEW.toast));
 (function tripLoop(){tickTrip();setTimeout(tripLoop,1000)})();
 loadShareLink();addEventListener("hashchange",loadShareLink);
 if(INFO_AT)openInfo(...INFO_AT);
+// ---- phones: the Log EXP + button slides away while you scroll down (it sat over the Farm here buttons) and back when you scroll up ----
+(function fabScroll(){if(typeof scrollY!=="number"||typeof requestAnimationFrame!=="function")return;let y=scrollY,raf=0;
+  addEventListener("scroll",()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const d=scrollY-y;
+    if(Math.abs(d)<8)return;document.documentElement.classList.toggle("scrollDown",d>0&&scrollY>80);y=scrollY})},{passive:true})})();
