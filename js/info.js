@@ -61,7 +61,7 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
   const sub=`Lv ${m.lv} · ${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${BOSS_PILL(m)}${m.agg?' <span class="pill">aggressive</span>':""}`;
   const tiles=infoTile("HP",m.hp==null?"?":fmtN(m.hp),`DEF ${m.def??"–"} · MDEF ${m.mdef??"–"} · ATK ${m.atkMin??"–"}–${m.atkMax??"–"}${m.hit100?` · 100% hit at ${m.hit100} HIT`:""}${m.flee95?` · 95% flee at ${m.flee95} FLEE`:""}`)
     +infoTile("EXP",fmtExp(m),m.expUnknown?"no EXP data yet":`job ${fmtN(m.job)}${me?` · you get ${fmtN(killExp(m))} / ${fmtN(killJobExp(m))}`:""}`)
-    +infoTile("Best map",om.length?mapCode(om[0][0]):"–",om.length?`${esc(mapName(om[0][0]))} ≈${spN(om[0][1])}`:a?`none open · comes with the ${esc(a)}`:"none open")
+    +infoTile("Best map",om.length?esc(mapName(om[0][0])||mapCode(om[0][0])):"–",om.length?`${mapName(om[0][0])?mapCode(om[0][0])+" ":""}≈${spN(om[0][1])}`:a?`none open · comes with the ${esc(a)}`:"none open")
     +(me?infoTile(`You (${esc(state.job)})`,isFinite(r.sec)?r.sec.toFixed(1)+"s / kill":"can't hurt",`your hit ${Math.round(r.mult)}%${elTag(r.el2)} · ${Math.round(r.hitc)}% land · you dodge ${r.dodge??"–"}%`)
       +infoTile("Zeny / kill",hasLoot(m)?fmtN(r.zk):"–",`${m.drops.length&&m.drops.every(([,ch])=>ch==null)?"no published drop rates yet · ":""}${penNote(m)||"no drop level penalty"}${num(state.dropBonus)?` · drop rate +${num(state.dropBonus)}%`:""}`)
       +mobYouTiles(m):"");
@@ -75,7 +75,7 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
   // spawns: lit on the world map, then each map with the other monsters on it
   const sp=SPAWN[m.id]||[];
   const maps=sp.slice().sort((x,y)=>(y[1]??-1)-(x[1]??-1)).map(([mp,n])=>{const others=(MAPMOBS[mp]||[]).filter(x=>x.m.id!==m.id).sort((x,y)=>(y.n??-1)-(x.n??-1));
-    return `<tr><td class="name"><a href="#" data-infomap="${esc(mp)}" class="mono">${mapCode(mp)}</a>${lockPill(mp)}${isClosed(mp)?` <span class="pill down">closed${mapArrives(mp)?` · ${esc(mapArrives(mp).split(", ")[1])}`:""}</span>`:""}<div class="note">${esc(mapName(mp))}</div></td><td>≈${spN(n)}</td>
+    return `<tr><td class="name"><a href="#" data-infomap="${esc(mp)}"${mapName(mp)?"":' class="mono"'}>${esc(mapName(mp)||mapCode(mp))}</a>${lockPill(mp)}${isClosed(mp)?` <span class="pill down">closed${mapArrives(mp)?` · ${esc(mapArrives(mp).split(", ")[1])}`:""}</span>`:""}${mapName(mp)?`<div class="note mono">${mapCode(mp)}</div>`:""}</td><td>≈${spN(n)}</td>
       <td class="name l">${others.map(x=>`<span class="mobChip">${mobIcon(x.m.id,1,"il")}${infoMobLink(x.m.id,x.m.name)} <span class="note">×${spN(x.n)}</span></span>`).join("")||"–"}</td></tr>`}).join("");
   const mapT=maps&&`<div class="worldMap" id="infoMobWorld"></div><div class="scroll"><table class="matTable usedTable"><thead><tr><th>Map</th><th>Spawns</th><th>Other monsters</th></tr></thead><tbody>${maps}</tbody></table></div>`;
   return {ico:mobIcon(m.id,2),title:m.name,sub,

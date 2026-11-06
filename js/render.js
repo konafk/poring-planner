@@ -469,24 +469,27 @@ const MOBF_BOSS=[["","Any"],["noboss","No bosses"],["normal","Normal only"],["mi
 const mobFOk=(m,f)=>(!f.el||m.el===f.el)&&(!f.race||m.race===f.race)&&(!f.size||m.size===f.size)
   &&(f.boss==="noboss"?!m.boss:f.boss==="normal"?!m.boss&&!m.mini:f.boss==="mini"?m.mini:f.boss==="mvp"?m.mvp:f.boss==="boss"?m.boss&&!m.mini&&!m.mvp:true);
 const mobOpt=m=>`<option value="${esc(m.name)}">Lv ${m.lv} · ${fmtExp(m)} EXP${m.mvp?" · MVP":m.mini?" · mini boss":m.boss?" · boss":""}${MOB_VARIANT[m.id]?" · "+MOB_VARIANT[m.id]:""}</option>`;
-// a monster search's suggestions: the monsters that pass its dropdowns
-const fillMobList=(id,f)=>{$(id).innerHTML=MOBS.filter(m=>mobFOk(m,f)).map(mobOpt).join("")};
 const isMagicAtk=()=>C().a.type==="magic"||C().a.type==="spellfist";
 function renderMobs(){
   const w=walkSec();const lvMin=num(state.minLv),lvMax=num(state.maxLv)||999,me=charSet();
-  let rows=MOBS.filter(m=>mobFOk(m,state.mobF)&&m.lv>=lvMin&&m.lv<=lvMax&&!(state.hideClosed&&SPAWN[m.id]&&!openMaps(m).length)).map(m=>{const om=openMaps(m);return {...m,om,topN:om.length?om[0][1]:0,ratio:m.hp>0?m.exp/m.hp:0,...mobRow(m,w)}});
-  const F=state.filters;rows=rows.filter(m=>Object.entries(F).every(([k,v])=>!v||matchF(v,colNum(m,k),colText(m,k))));
+  const shown=m=>mobFOk(m,state.mobF)&&m.lv>=lvMin&&m.lv<=lvMax&&!(state.hideClosed&&SPAWN[m.id]&&!openMaps(m).length);
+  const row=m=>{const om=openMaps(m);return {...m,om,topN:om.length?om[0][1]:0,ratio:m.hp>0?m.exp/m.hp:0,...mobRow(m,w)}};
+  const F=state.filters,fOk=m=>Object.entries(F).every(([k,v])=>!v||matchF(v,colNum(m,k),colText(m,k)));
+  let rows=MOBS.filter(shown).map(row).filter(fOk);
+  // nothing left: how many the dropdowns, level range or Hide monsters with no open map leave out, with a way to show them
+  const hid=rows.length?0:MOBS.filter(m=>!shown(m)).map(row).filter(fOk).length;
   const k=state.sort,d=state.dir;const sv=m=>{const v=k==="name"||k==="el"||k==="size"||k==="race"?colText(m,k):colNum(m,k);return v==null||v===""?null:v};
   rows.sort((a,b)=>{const x=sv(a),y=sv(b);if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return (x>y?1:x<y?-1:0)*d});
   document.querySelectorAll("#mobTable th").forEach(th=>th.classList.toggle("on",th.dataset.k===k));
   const sel=(calcMob()||{}).id;
-  $("mobNote").textContent=!me?`${rows.length} monsters · set up your character for your kill time, EXP / min and zeny`:`${rows.length} monsters · ${state.job} · ${isMagicAtk()?"MATK":"ATK"} ${fmtN(sumStat(isMagicAtk()?C().matkTxt:C().atkTxt))} · ${convOn()?convLabel("per monster"):atkEl()}`;
+  const nTxt=Object.values(F).some(v=>v)||MOBS.some(m=>!shown(m))?`${rows.length} of ${MOBS.length} monsters`:`${rows.length} monsters`;
+  $("mobNote").textContent=!me?`${nTxt} · set up your character for your kill time, EXP / min and zeny`:`${nTxt} · ${state.job} · ${isMagicAtk()?"MATK":"ATK"} ${fmtN(sumStat(isMagicAtk()?C().matkTxt:C().atkTxt))} · ${convOn()?convLabel("per monster"):atkEl()}`;
   $("mobTable").querySelector("tbody").innerHTML=rows.slice(0,400).map(m=>`<tr data-id="${m.id}" class="${m.id===sel?"sel":""}"><td class="name"><a href="#" data-info="mob:${m.id}" aria-label="${esc(m.name)} details">${mobIcon(m.id,1,"il")}</a><a href="#" data-info="mob:${m.id}">${esc(m.name)}</a>${BOSS_PILL(m)}${isSkipped(m)?' <span class="pill down">skipped</span>':""}</td><td>${m.lv}</td><td>${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"–"}</td><td>${m.size||"–"}</td><td class="name">${m.race||"–"}</td><td>${m.hp==null?"?":fmtN(m.hp)}</td><td>${fmtExp(m)}</td><td>${m.expUnknown?"?":m.ratio.toFixed(2)}</td>
     <td class="${m.mult>100?"good":m.mult<=0?"bad":""}">${m.mult<=0?"can't hurt":Math.round(m.mult)+"%"}${elTag(m.el2)}</td><td class="${m.hitc>=95?"good":m.hitc>=70?"warnc":"bad"}">${Math.round(m.hitc)}%</td><td>${isFinite(m.uses)?m.uses.toFixed(1):"–"}</td>
     <td class="${m.sec<=3?"good":m.sec<=8?"warnc":"bad"}">${isFinite(m.sec)?m.sec.toFixed(1)+"s":"–"}</td><td><b>${m.epm?fmtN(m.epm):"–"}</b></td>
     <td class="${m.dodge==null?"":m.dodge>=70?"good":m.dodge>=40?"warnc":"bad"}">${m.dodge==null?"–":m.dodge+"%"}</td><td>${m.hpm==null?"–":fmtN(m.hpm)}</td><td>${hasLoot(m)?fmtN(m.zk):"–"}</td><td>${hasLoot(m)&&isFinite(m.sec)?fmtN(m.zph):"–"}</td>
     <td class="name">${m.om.length?`<span class="map" title="${esc(m.om.map(x=>mapLabel(x[0])+" ≈"+spN(x[1])).join(", "))}"><b>${mapCode(m.om[0][0])}</b><span>≈${spN(m.om[0][1])}</span></span>`:noneOpen(m)}</td><td></td></tr>`).join("")
-    ||`<tr><td colspan="19" class="name muted">No monsters match these filters.</td></tr>`;
+    ||`<tr><td colspan="19" class="name muted">No monsters match these filters.${hid?` ${hid} more ${hid===1?"monster matches":"monsters match"} outside the Element, Race, Size and Boss dropdowns, the level range or Hide monsters with no open map: <a href="#" id="showAllMobs">show every monster</a>.`:""}</td></tr>`;
   $("mobTable").classList.toggle("noChar",!me);
 }
 // selling trips spread over each kill (weight); hidden when it rounds to nothing
