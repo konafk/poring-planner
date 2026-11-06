@@ -13,7 +13,7 @@ const MEMORIAL_RECIPES=typeof JELLO==="undefined"?[]:[
   ...MEM_CRAFTS.map(x=>({cat:"Memorial",type:"npc",id:x.id,n:1,lv:null,mats:x.mats.map(([id,,k])=>[id,k]),npc:x.npc}))];
 // Cooking from the client's cookbooks (data/cookbooks.js: every dish Lv 1–10, lv the cookbook's level) in place of the community
 // database's, which lacks Fried Sweet Potato and Lv 6–10 and has Honey Herbal Tea at 10 Honey (the book: 2)
-const COOKBOOK_RECIPES=typeof COOKBOOKS==="undefined"?[]:Object.entries(COOKBOOKS).flatMap(([b,ds])=>ds.map(([id,mats])=>({cat:"Cooking",type:"cook",id,n:1,lv:b-7471,mats})));
+const COOKBOOK_RECIPES=typeof COOKBOOKS==="undefined"?[]:Object.entries(COOKBOOKS).flatMap(([b,ds])=>ds.map(([id,mats])=>({cat:"Cooking",type:"cook",id,n:1,lv:b-7471,mats,book:+b})));
 // The Tip Box's Item Creation guides (data/tipbox.js) for the NPC crafts the database lacks: the Old Pharmacist's potions and
 // Marienne's fruit juices. Its dyes and Mixture & Counteragent are the database's too, with the same materials and fees
 const TIPBOX_ONLY=typeof TIPBOX_RECIPES==="undefined"?[]:TIPBOX_RECIPES.filter(r=>typeof RECIPES==="undefined"||!RECIPES.some(x=>x.cat===r.cat));
@@ -40,6 +40,24 @@ const worthNone=(r,w)=>w.unknown===r.mats.length&&!r.fee;
 const recipeQuest=r=>r.swap?` (${r.swap})`:r.quest?` (quest${r.qlv?`, Lv ${r.qlv}+`:""})`:"";
 // who makes it, for the recipes an NPC makes: "JavaDullihan · morocc_in 146,99", "Marienne (quest) · prt_in 49,172" when her quest unlocks them,
 // then who the quest starts with when that's someone else
+// the skill that makes it, for what a player crafts with a skill rather than at an NPC: Arrows (Arrow Crafting), Brewing (Prepare
+// Potion), a forged weapon (the Blacksmith's Smith skill for its type), Iron, Steel and the four elemental stones (the Blacksmith's
+// Tempering and Enchanted Stone Craft), the four Elemental Converters, Holy Water, Poison Bottle. Shown with every job whose skill tree
+// has it (data/skills.js): "Arrow Crafting skill · Archer, Hunter, Bard, Dancer". Oridecon and Star Crumb have no such skill: none
+const RECIPE_SKILL={12114:"create-elemental-converter",12115:"create-elemental-converter",12116:"create-elemental-converter",
+  12117:"create-elemental-converter",523:"aqua-benedicta",678:"create-deadly-poison",998:"iron-tempering",999:"steel-tempering",
+  994:"enchanted-stone-craft",995:"enchanted-stone-craft",996:"enchanted-stone-craft",997:"enchanted-stone-craft"};
+const SMITH_SKILL={dagger:"smith-dagger",sword_1h:"smith-sword",sword_2h:"smith-two-handed-sword",spear_1h:"smith-spear",spear_2h:"smith-spear",
+  axe_1h:"smith-axe",axe_2h:"smith-axe",mace:"smith-mace",knuckle:"smith-knuckle"};
+const recipeSkillOf=r=>{if(r.npc)return null;if(r.cat==="Arrows")return"arrow-crafting";if(r.cat==="Brewing")return"prepare-potion";
+  if(r.type==="forge"){const e=typeof EQUIP!=="undefined"&&EQUIP.find(x=>x.id===r.id);return e&&SMITH_SKILL[e.type]||null}
+  return RECIPE_SKILL[r.id]||null};
+const SKILL_JOBS={};
+const skillJobs=slug=>{if(SKILL_JOBS[slug])return SKILL_JOBS[slug];let name=slug;const jobs=[];
+  for(const j in typeof SKILLS!=="undefined"?SKILLS:{})for(const t of SKILLS[j])for(const s of t.skills)if(s.slug===slug){name=s.name;if(!jobs.includes(j))jobs.push(j)}
+  return SKILL_JOBS[slug]={name,jobs}};
+// how a player makes it, when no NPC does: the skill and its jobs, or for a dish the cookbook it needs ("Uses Outdoor Cooking Kits")
+const recipeSkill=r=>{if(r.book)return `Uses ${itemName(r.book)}`;const slug=recipeSkillOf(r);if(!slug)return"";const {name,jobs}=skillJobs(slug);return `${name} skill${jobs.length?` · ${jobs.join(", ")}`:""}`};
 const recipeNpc=r=>r.npc?`${r.npc[0]}${recipeQuest(r)} · ${r.npc[1]}${r.start?` · starts with ${r.start[0]} · ${r.start[1]}`:""}`:"";
 // a place as the game's Navigation command (/navi prontera 50/293): a click copies it, to paste in the game's chat
 const recipeNaviAt=place=>{const at=String(place||"").replace(","," "),cmd=at?naviCmd(at):"";
@@ -59,7 +77,7 @@ const recipeDbF=()=>({...RECIPEDB_D,...state.recipeDb});
 TABLES.recipeTable={def:["name",1],cols:{name:{t:r=>recipeMade(r)},cat:{t:r=>r.cat},lv:{n:r=>r.lv},n:{n:r=>r.n},
   mats:{t:r=>r.mats.map(([id])=>itemName(id)).join(" ")},worth:{n:r=>{const w=recipeWorth(r);return worthNone(r,w)?null:w.z}}}};
 function recipeOk(r,f){const q=String(f.q||"").trim().toLowerCase();if(f.cat&&r.cat!==f.cat)return false;
-  return !q||itemName(r.id).toLowerCase().includes(q)||("#"+r.id).includes(q)||recipeNpc(r).toLowerCase().includes(q)||r.mats.some(([id])=>itemName(id).toLowerCase().includes(q)||("#"+id)===q)}
+  return !q||itemName(r.id).toLowerCase().includes(q)||("#"+r.id).includes(q)||recipeNpc(r).toLowerCase().includes(q)||recipeSkill(r).toLowerCase().includes(q)||r.mats.some(([id])=>itemName(id).toLowerCase().includes(q)||("#"+id)===q)}
 function renderRecipes(){const f=recipeDbF();
   ROOTQ("[data-rcf]").forEach(x=>{if(document.activeElement!==x)x.value=f[x.dataset.rcf]??""});
   // the category buttons, each with how many of its recipes the search leaves
@@ -69,7 +87,7 @@ function renderRecipes(){const f=recipeDbF();
   $("recipeCount").textContent=`${rows.length} of ${RECIPE_LIST.length} recipes`;
   $("recipeTable").tBodies[0].innerHTML=rows.map(r=>{const w=recipeWorth(r);
     return `<tr><td class="name"><div class="dbName">${itemIcon(r.id)}<div><a href="#" data-info="item:${r.id}">${esc(itemName(r.id))}</a>${r.n>1?` <b class="mono">×${fmtN(r.n)}</b>`:""} <span class="note">#${r.id}</span></div></div></td>
-      <td class="name l">${esc(r.cat)}${r.npc?`<div class="note">${recipeNpcHtml(r)}</div>`:""}</td><td>${r.lv??"–"}</td><td class="name l mats">${recipeMats(r)}</td>
+      <td class="name l">${esc(r.cat)}${r.npc?`<div class="note">${recipeNpcHtml(r)}</div>`:recipeSkill(r)?`<div class="note">${esc(recipeSkill(r))}</div>`:""}</td><td>${r.lv??"–"}</td><td class="name l mats">${recipeMats(r)}</td>
       <td title="${w.unknown?`${w.unknown} material${w.unknown>1?"s have":" has"} no price: set one on the Market tab`:""}">${worthNone(r,w)?"–":fmtN(w.z)+(w.unknown?"+?":"")}${r.fee?`<div class="note">incl. ${fmtN(r.fee)} z fee</div>`:""}${r.n>1&&!worthNone(r,w)?`<div class="note">${(w.z/r.n).toFixed(w.z/r.n>=10?0:1)} each</div>`:""}</td></tr>`}).join("")
     ||'<tr><td colspan="5" class="name muted">No recipes match.</td></tr>'}
 (function setupRecipes(){if(!$("recipeTable"))return;

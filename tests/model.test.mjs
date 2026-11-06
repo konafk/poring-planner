@@ -2975,6 +2975,17 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===716).mats)`), "[[717,2]]");
   assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===990))`), "Puchuchartan (Elemental Fusion) · umbala 219,188");    // Red Blood
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===990).mats)`), "[[904,20]]");
+  // what a player makes: the skill and every job whose tree has it, or a dish's cookbook; none for an NPC's
+  assert.equal(run(`recipeSkill(RECIPE_LIST.find(r=>r.cat==="Arrows"))`), "Arrow Crafting skill · Archer, Hunter, Bard, Dancer");
+  assert.equal(run(`recipeSkill(RECIPE_LIST.find(r=>r.cat==="Brewing"))`), "Prepare Potion skill · Alchemist");
+  assert.equal(run(`recipeSkill(RECIPE_LIST.find(r=>r.id===1301))`), "Smith Axe skill · Blacksmith");                       // Axe
+  assert.equal(run(`recipeSkill(RECIPE_LIST.find(r=>r.id===998))`), "Iron Tempering skill · Blacksmith");                    // Iron
+  assert.equal(run(`recipeSkill(RECIPE_LIST.find(r=>r.id===12114))`), "Create Elemental Converter skill · Sage");
+  assert.equal(run(`recipeSkill(RECIPE_LIST.find(r=>r.id===523))`), "Aqua Benedicta skill · Acolyte, Priest, Monk");         // Holy Water
+  assert.equal(run(`recipeSkill(RECIPE_LIST.find(r=>r.id===678))`), "Create Deadly Poison skill · Assassin");                // Poison Bottle
+  assert.match(run(`recipeSkill(RECIPE_LIST.find(r=>r.cat==="Cooking"&&r.lv===3))`), /^Uses .*Cookbook/);
+  assert.equal(run(`recipeSkill(RECIPE_LIST.find(r=>r.id===990&&r.npc))`), "");
+  assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Forging"&&!recipeSkill(r)).map(r=>r.id).sort().join()`), "1000,984");   // Star Crumb, Oridecon
   // a hat quest: the Tip Box's materials by id, any fee only it and the NPC's lines have, the quest's level
   assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===5031))`), "Mini Pot (quest, Lv 40+) · geffen 83,189");
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===5031).mats)`), "[[5009,1],[1041,1],[999,25],[747,1]]");
