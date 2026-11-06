@@ -577,6 +577,10 @@ function classPicker(el,groups,onPick,mine){let cur=null,shown="",looks={};
 // Build from gear's Status, Gear, Equipment and Special equipment panels fold away, remembered like a card (state.collapsed)
 [["buildStatFold","Build from gear: status"],["gsetFold","Build from gear: gear sets"],["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
   d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[key])return;if(d.open)delete c[key];else c[key]=true;save()})});
+// Attack details (damage %, cast time, delay, mastery…) starts folded: the Attack picker fills them in, and its line says what it
+// does. Opened once, it stays open (state.collapsed["Attack details"] === false)
+{const d=$("atkPanel"),key="Attack details";d.open=(state.collapsed||{})[key]===false;
+  d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===(c[key]===false))return;if(d.open)c[key]=false;else delete c[key];save()})}
 function renderBuild(){const c=C(),on=c.mode==="build";
   if(on&&renderBuild.job!==state.job){renderBuild.job=state.job;renderGearTable()}if(!on)renderBuild.job=null;
   ROOTQ("[data-cmode]").forEach(x=>x.setAttribute("aria-checked",String(x.dataset.cmode===(on?"build":"status"))));

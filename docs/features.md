@@ -39,7 +39,7 @@ The tabs sit in a sidebar on the left: Home at the top, then grouped into Plan (
 
 **Home:** the page a new player lands on (after that, the page opens on the tab you had open last, and Home is the first button in the sidebar). It says what the planner does, shows the level cap now and the next update on the roadmap (click it for the Roadmap tab), and counts the monsters, spawn maps, items, cards and recipes it knows. Once your character is set up or you've logged EXP, **Pick up where you left off** shows your job and levels, the session's last entry, its EXP/hr and time to the next level (each opens its tab), and the three best maps for EXP right now with **Farm here**. Below that, **Everything in the planner** has a card for every tab with what it's for.
 
-**Get started:** a new player sees three steps over the Home, Character, Session and Monsters & maps tabs: set up your character (type all six stats, or use build mode), pick where to farm (Farm here on one of the best spots), and log your EXP twice. Each one ticks off as you do it, and the card goes away for good once all three are done, or when you close it.
+**Get started:** a new player sees the steps on the Home tab: set up your character (type all six stats, or use build mode), pick where to farm (Farm here on one of the best spots), and log your EXP twice. Each one ticks off as you do it, and the card goes away for good once all three are done, or when you close it.
 
 At the bottom of the sidebar, **Compact sidebar** shrinks it to its icons (hover an icon to see its tab's name), and **Settings** opens a menu that changes how the page looks. It stays open while you switch things, and Esc or a click elsewhere closes it:
 

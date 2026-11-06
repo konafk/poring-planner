@@ -239,12 +239,14 @@ details.sub details.sub{background:var(--surface)}
 .form.c5{grid-template-columns:repeat(5,minmax(0,1fr))}
 .form.c6{grid-template-columns:repeat(6,minmax(0,1fr))}
 .form.c7{grid-template-columns:repeat(7,minmax(0,1fr))}
+/* Job & level: the Job and Attack pickers get room for their names (they read "Novic…" and "Basic a…") */
+#basicsPanel>.form.c7{grid-template-columns:minmax(0,1.4fr) minmax(0,1.9fr) repeat(5,minmax(0,1fr))}
 .form.c211{grid-template-columns:2fr 1fr 1fr}
 .form.cfill{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
 .span-all{grid-column:1/-1}.span3{grid-column:span 3;align-self:end}.span-rest{grid-column:2/-1;align-self:center}
 #bonusRow{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
-@media (max-width:900px){.form.c6,.form.c7{grid-template-columns:repeat(3,minmax(0,1fr))}.form.c5{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (max-width:600px){.form.c4,.form.c5,.form.c6,.form.c7,.form.c211{grid-template-columns:repeat(2,minmax(0,1fr))}#bonusRow{grid-template-columns:1fr}
+@media (max-width:900px){#basicsPanel>.form.c7,.form.c6,.form.c7{grid-template-columns:repeat(3,minmax(0,1fr))}.form.c5{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:600px){#basicsPanel>.form.c7,.form.c4,.form.c5,.form.c6,.form.c7,.form.c211{grid-template-columns:repeat(2,minmax(0,1fr))}#bonusRow{grid-template-columns:1fr}
   .form.c211>:first-child,.span3,.span-rest{grid-column:1/-1}}
 
 /* ---- stat tiles ---- */
@@ -467,6 +469,9 @@ table.formulas td.chg{background:var(--accent-soft)}
 .sumCard .tile{padding:10px 12px;border-radius:11px}
 .sumCard .tile .v{font-size:1.2rem;margin-top:3px}
 .sumCard .tile .s{font-size:11.5px}
+/* what you farm for (kill time, EXP, zeny) first, then the attack's own numbers under a line */
+.sumCard .tile.out{border-color:color-mix(in srgb,var(--accent) 30%,var(--line))}
+.sumCard .tile.out+.tile.det{margin-top:6px}
 .charMain :is(#charCard,#buildPanel,#statPanel,#eqPanel,#atkPanel,#cardRow,#sagePanel,#weightPanel,#skillCard,#recCard,#gearCmpCard,#backupCard){scroll-margin-top:72px}
 /* every other tab's section links (js/start.js pageNav): a column beside the cards on wide screens */
 .pageNav[hidden]{display:none}
@@ -487,6 +492,9 @@ table.formulas td.chg{background:var(--accent-soft)}
   .sumCard{order:2;position:sticky;bottom:12px;z-index:4;padding:6px;border-radius:14px;box-shadow:var(--shadow-pop);
     background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
   .sumCard .secHead,.sumCard .tile .s{display:none}
+  /* the dock shows only the outcome; a message (no monster yet) spans it with its line showing */
+  .sumCard .tile.det{display:none}
+  .sumCard .tile.wide{grid-column:1/-1}.sumCard .tile.wide .s{display:block;font-size:12px}
   .sumCard .calc{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
   .sumCard .tile{padding:7px 10px}
   .sumCard .tile .v{font-size:1rem}
@@ -519,6 +527,8 @@ table.formulas td.chg{background:var(--accent-soft)}
   .qlHelp{display:block;flex-basis:100%;font-size:12.5px;color:var(--muted)}
   .fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:30;display:grid;place-items:center;width:54px;height:54px;padding:0;border:0;border-radius:50%;
     background:var(--brand-btn);color:#fff;box-shadow:0 10px 24px -6px color-mix(in srgb,var(--accent) 60%,transparent)}
+  .fab{transition:transform .22s cubic-bezier(.2,.7,.2,1),opacity .22s}
+  .scrollDown .fab{transform:translateY(calc(100% + 40px));opacity:0;pointer-events:none}
   .fab .ic{width:24px;height:24px;stroke-width:2.2}
   .fab:hover{background:var(--brand-btn);filter:brightness(1.07)}
   body:has(.app.qlOpen) .fab{opacity:0;pointer-events:none}
