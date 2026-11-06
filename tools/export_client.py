@@ -82,6 +82,32 @@ QM = ("Quartermaster", "nrd_in 125,305")
 EXCHANGES = {401509: (*QM, [[1002995, 100], [1002996, 100], [1002997, 100]], "Helm Exchange", "Headgear"),
              401510: (*QM, [[1002998, 300]], "Helm Exchange", "Headgear"),
              107871: (*QM, [[1002998, 10]], "Helm Exchange", "Misc")}
+# Jade (Payon 173,238, where the Payon Guide points) swaps 2 Gemstones of one color for 1 of the next, up to 100 at a time, no fee.
+# Jade's lines say so ("If you don't have 2 Blue Gemstone, I can't give you a Red Gemstone!"), but as plain text, so they're written here
+JADE = ("Jade", "payon 173,238")
+EXCHANGES.update({716: (*JADE, [[717, 2]], "Gemstone Exchange", "Misc"),
+                  715: (*JADE, [[716, 2]], "Gemstone Exchange", "Misc"),
+                  717: (*JADE, [[715, 2]], "Gemstone Exchange", "Misc")})
+# Puchuchartan, the Utan shaman (Shaman's House, umbala 219,188, where the Umbala Guide points), fuses monster loot into elemental
+# ores once chief Karkatan allows it (for a Mr. Smile): 15 Horn, 20 Snail's Shell, 20 Scorpion Tail, 25 Rainbow Shell, from the shaman's lines
+# ("You need 20 Scorpion Tail from Scorpion"). The ritual can fail and the lines don't say how many ores it gives: written as one
+SHAMAN = ("Puchuchartan", "umbala 219,188")
+EXCHANGES.update({993: (*SHAMAN, [[947, 15]], "Elemental Fusion", "Misc"),
+                  991: (*SHAMAN, [[946, 20]], "Elemental Fusion", "Misc"),
+                  990: (*SHAMAN, [[904, 20]], "Elemental Fusion", "Misc"),
+                  992: (*SHAMAN, [[1013, 25]], "Elemental Fusion", "Misc")})
+# 5 Rough Oridecon into 1 Oridecon, 5 Rough Elunium into 1 Elunium: Christopher Gillenlow's lines ("you can't make Oridecon unless you
+# have 5 Rough Oridecon"). Gillenlow isn't in the client's navigation, but stands in Prontera's Blacksmith Shop (the user, 6 November 2026),
+# whose door the Prontera Guide marks at prontera 179,184. Two Blacksmiths in navi_npc.lub have the same "Process refining stones"
+# menu: Tadde in Izlude ("I process Rough Elunium and Rough Oridecon") and Kantstaff in the Prontera market
+TADDE, KANT, GILL = ("Tadde", "izlude 145,122"), ("Kantstaff", "prt_mk 153,162"), ("Christopher Gillenlow", "prontera 179,184")
+EXCHANGES.update({984: (*TADDE, [[756, 5]], "Process refining stones", "Forging"),
+                  985: (*TADDE, [[757, 5]], "Process refining stones", "Forging")})
+# a second NPC for an item EXCHANGES already has: [(item id, (NPC, where, what it takes, its menu, category))]
+EXCHANGES_ALSO = [(984, (*KANT, [[756, 5]], "Process refining stones", "Forging")),
+                  (985, (*KANT, [[757, 5]], "Process refining stones", "Forging")),
+                  (984, (*GILL, [[756, 5]], "Make Oridecon", "Forging")),
+                  (985, (*GILL, [[757, 5]], "Make Elunium", "Forging"))]
 # item id -> monsters, rate unknown. Seen in game: General's Cape from Orc General, Hunter's Cape from Brilight, Rotating Gear from Clock.
 # The Clock Tower hat materials from the basement field bosses, as the user asked (5 November 2026; reported, not confirmed in game):
 # Shining Round Shell from Sieglouse, Orc General Token from Orc General, Fancy Coral Reef from Jeniffer, Cute Broom from Erzsebet,
@@ -388,7 +414,7 @@ def npc_recipes(grf, client):
         print(f"  in the dialogue but not offered yet, left out: {later}")
     made = [r for (npc, i), r in sorted(out.items()) if npc not in offered or i in offered[npc]]
     swaps = [{"cat": cat, "type": "npc", "id": i, "n": 1, "lv": None, "mats": mats, "npc": [npc, at], "swap": menu}
-             for i, (npc, at, mats, menu, cat) in EXCHANGES.items()]
+             for i, (npc, at, mats, menu, cat) in [*EXCHANGES.items(), *EXCHANGES_ALSO]]
     return [{k: x for k, x in r.items() if x is not None or k == "lv"} for r in made + hat_quests(client, quests) + swaps]
 
 

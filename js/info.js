@@ -31,7 +31,7 @@ function infoDroppers(id){const ds=ITEM_DROPS[id]||[];if(!ds.length)return "";
 function infoShops(id){const ss=SHOPS_OF[id]||[];if(!ss.length)return "";
   return `<div class="infoList">${ss.map(([name,at,z])=>`<div><b>${esc(name)}</b> <span class="note">${fmtN(z)} z · ${esc(at.map(([mp,x,y])=>`${mapName(mp)||mp} ${x},${y}`).join("; "))}</span></div>`).join("")}</div>`}
 // the recipes that make it and the ones that use it (js/recipes.js), each with its materials
-const recipeWhere=r=>`${esc(r.cat)}${r.lv?` Lv ${r.lv}`:""}${r.npc?` · ${recipeNpcHtml(r)}${r.fee?`, ${fmtN(r.fee)} z`:""}`:""}`;
+const recipeWhere=r=>`${esc(r.cat)}${r.lv?` Lv ${r.lv}`:""}${r.npc?` · ${recipeNpcHtml(r)}${r.fee?`, ${fmtN(r.fee)} z`:""}`:recipeSkill(r)?` · ${esc(recipeSkill(r))}`:""}`;
 // Made from and Used in are tables of one row per recipe, led by what it makes: icon, name, how many, and where (craft, NPC, fee)
 const recipeMakes=r=>`<td class="name"><div class="dbName">${itemIcon(r.id,1,"il")}<div>${infoLink("item",r.id,itemName(r.id))}${r.n>1?` <b class="mono">×${fmtN(r.n)}</b>`:""}<div class="note">${recipeWhere(r)}</div></div></div></td>`;
 // then all its materials, the item itself among them

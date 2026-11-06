@@ -96,17 +96,20 @@ try {
     assert.ok(await page.isVisible("#sessionSel") && !await page.isVisible("#acctSel"));
     assert.equal(await page.textContent("#sessionSel"), "No session yet");     // a new player has no session until they start one
     assert.ok(await page.isDisabled("#editSession"));
-    await page.click("#newSession");                                   // a new session, then off to pick its monster
+    await page.click("#newSession");                                   // a new session, then down to the Session tab's monster picker
     assert.equal(await page.evaluate("state.sessions.length"), 1);
     assert.equal(await page.textContent("#sessionSel"), "New session");
-    assert.equal(await page.getAttribute('[data-tabbtn="maps"]', "aria-selected"), "true");
+    assert.equal(await page.getAttribute('[data-tabbtn="track"]', "aria-selected"), "true");
+    assert.ok(await page.isVisible("#farmCard"));
     assert.deepEqual(errs, []);
     await page.close();
   });
 
   await t("Where to farm: best spots by EXP and zeny, Farm here sets the session's map, one ranking at a time", async () => {
     const { page, errs } = await open();
-    await page.click('[data-tabbtn="maps"]');
+    await page.evaluate("C().mode='build'");                           // the spots show once there's a character
+    await page.click('[data-tabbtn="track"]');                         // Where to farm is on the Session tab
+    await page.click("#newSession");                                   // a session first: its first Farm here would re-rank the spots
     assert.equal(await page.$$eval("#spots .spot", s => s.length), 6);              // top 3 by EXP, top 3 by zeny
     const mp = await page.getAttribute("#spots .spot [data-farm]", "data-farm");
     await page.click("#spots .spot [data-farm]");
