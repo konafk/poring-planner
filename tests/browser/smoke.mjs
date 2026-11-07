@@ -22,12 +22,18 @@ async function open(opts = {}) {
   return { page, errs };
 }
 const tabs = page => page.$$eval("[data-tabbtn]", bs => bs.map(b => b.dataset.tabbtn));
+// a tab, as a player opens it: in the top bar (full width off) its group's menu first, when the tab isn't showing
+async function goTab(page, tab) {
+  const b = page.locator(`[data-tabbtn="${tab}"]`);
+  if (!(await b.isVisible())) await page.click(`.navSec:has([data-tabbtn="${tab}"]) > .navGrp`);
+  await b.click();
+}
 
 try {
   await t("every tab opens its own panel, with no script errors", async () => {
     const { page, errs } = await open();
     for (const tab of await tabs(page)) {
-      await page.click(`[data-tabbtn="${tab}"]`);
+      await goTab(page, tab);
       const shown = await page.$$eval("[data-tab]", els => els.filter(el => !el.hidden).map(el => el.dataset.tab.split(" ")));
       assert.ok(shown.length && shown.every(ts => ts.includes(tab)), `tab ${tab}`);   // a tab can have several panels, and a panel several tabs: only its own show
       assert.equal(await page.getAttribute(`[data-tabbtn="${tab}"]`, "aria-selected"), "true");
@@ -89,10 +95,10 @@ try {
 
   await t("the account picker is on the Character tab, the session picker on the Session tab, each with a + New button", async () => {
     const { page, errs } = await open();
-    await page.click('[data-tabbtn="char"]');                          // a new player starts on Home
+    await goTab(page, "char");                          // a new player starts on Home
     assert.ok(await page.isVisible("#acctSel") && await page.isVisible("#newAcct"));
     assert.ok(!await page.isVisible("#sessionSel"));
-    await page.click('[data-tabbtn="track"]');
+    await goTab(page, "track");
     assert.ok(await page.isVisible("#sessionSel") && !await page.isVisible("#acctSel"));
     assert.equal(await page.textContent("#sessionSel"), "No session yet");     // a new player has no session until they start one
     assert.ok(await page.isDisabled("#editSession"));
@@ -108,7 +114,7 @@ try {
   await t("Where to farm: best spots by EXP and zeny, Farm here sets the session's map, one ranking at a time", async () => {
     const { page, errs } = await open();
     await page.evaluate("C().mode='build'");                           // the spots show once there's a character
-    await page.click('[data-tabbtn="track"]');                         // Where to farm is on the Session tab
+    await goTab(page, "track");                         // Where to farm is on the Session tab
     await page.click("#newSession");                                   // a session first: its first Farm here would re-rank the spots
     assert.equal(await page.$$eval("#spots .spot", s => s.length), 6);              // top 3 by EXP, top 3 by zeny
     const mp = await page.getAttribute("#spots .spot [data-farm]", "data-farm");
@@ -130,10 +136,53 @@ try {
     await page.close();
   });
 
+  await t("main nav: a desktop sidebar with the open tab's sections, other groups unfolding in place; menus along the top on a phone", async () => {
+    const { page, errs } = await open();
+    // a desktop window: Monsters & maps' group is listed, with its sections under it, and not again on the page
+    await goTab(page, "maps");
+    assert.deepEqual(await page.$$eval(".navSubs a", as => as.map(a => a.textContent)), ["Map", "Monsters"]);
+    assert.equal(await page.isVisible("#pageNav"), false);
+    // another group: folded to its heading, which unfolds it in the sidebar (not a menu)
+    assert.equal(await page.isVisible('[data-tabbtn="news"]'), false);
+    await page.click('.navSec:has([data-tabbtn="news"]) > .navGrp');
+    assert.equal(await page.isVisible('[data-tabbtn="news"]'), true);
+    assert.equal(await page.$eval('[data-tabbtn="news"]', b => getComputedStyle(b.parentNode).position), "static");
+    assert.equal(await page.getAttribute('.navSec:has([data-tabbtn="news"]) > .navGrp', "aria-expanded"), "true");
+    await page.click('[data-tabbtn="news"]');
+    assert.equal(await page.getAttribute('[data-tabbtn="news"]', "aria-selected"), "true");
+    assert.equal(await page.locator(".navSec.open").count(), 0);
+    // a phone: Home and a menu for each group along the top, no sections in it
+    await page.setViewportSize({ width: 390, height: 800 });
+    assert.equal(await page.isVisible('.navSec:has([data-tabbtn="items"]) > .navGrp'), true);
+    assert.equal(await page.isVisible('[data-tabbtn="items"]'), false);
+    await page.click('.navSec:has([data-tabbtn="items"]) > .navGrp');
+    await page.click('[data-tabbtn="items"]');
+    assert.equal(await page.getAttribute('[data-tabbtn="items"]', "aria-selected"), "true");
+    assert.equal(await page.locator(".navSubs").count(), 0);
+    assert.deepEqual(errs, []);
+    await page.close();
+  });
+
+  await t("Home's search bar: typing in it opens the search with what you typed; the sidebar's Search opens it empty", async () => {
+    const { page, errs } = await open();
+    await page.click("#searchBtn");
+    assert.equal(await page.inputValue("#jumpInput"), "");
+    await page.keyboard.press("Escape");
+    await page.click("#homeSearch");
+    assert.equal(await page.isVisible("#jump"), true);
+    await page.keyboard.press("Escape");
+    await page.focus("#homeSearch");
+    await page.keyboard.type("poring");
+    assert.equal(await page.inputValue("#jumpInput"), "poring");
+    assert.match(await page.textContent("#jumpList"), /Poring/);
+    assert.deepEqual(errs, []);
+    await page.close();
+  });
+
   await t("phone width: no tab scrolls sideways", async () => {
     const { page, errs } = await open({ viewport: { width: 390, height: 800 } });
     for (const tab of await tabs(page)) {
-      await page.click(`[data-tabbtn="${tab}"]`);
+      await goTab(page, tab);
       const [sw, w] = await page.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
       assert.ok(sw <= w, `tab ${tab} is ${sw}px wide in a ${w}px window`);
     }

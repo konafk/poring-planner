@@ -384,7 +384,7 @@ t("session map: auto is the best open map, a picked one wins while its monsters 
   assert.equal(run(`cur().map`), undefined);                         // removing its monsters drops the pick
 });
 
-t("Map planner's Farming this map now: the map's hunted monsters, and a picked map holds even when marked closed", () => {
+t("Map planner's Farm here: the map's hunted monsters, and a picked map holds even when marked closed", () => {
   const mp = run(`JSON.stringify(openMaps(MOBS.find(m=>m.id===1002))[1][0])`);
   const ids = JSON.parse(run(`JSON.stringify(mapHuntIds(${mp}))`));
   assert.ok(ids.includes(1002) && ids.length > 1);
@@ -706,20 +706,47 @@ t("Amon Ra is in the monster tables as an MVP, Boss class, on Pyramid B2F", () =
   assert.doesNotMatch(run(`otherSourcesHtml("2615")`), /Amon Ra/);
 });
 
-t("Monsters & maps: the monster search finds every monster, and an empty table says what its dropdowns leave out", () => {
-  // the search uses the list of every monster, bosses and MVPs too, whatever the dropdowns say
-  assert.match(html, /<input id="mobInput" list="mobList"/);
-  assert.doesNotMatch(html, /mobPickList/);
+t("Item info: every item, gear and cards too, and an item's droppers in its details popup", () => {
+  // no drop panel or card prefix box under the list: a row opens the details popup
+  assert.doesNotMatch(html, /id="itemSel"|id="itemDropTable"|id="itemCardQ"/);
+  // gear and cards are listed, as Weapon, Armor and Card
+  assert.equal(run(`["2244","4001","600005"].every(id=>itemInfoIds().includes(id))`), true);
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(["2244","4001"].map(itemInfoCat))`)), ["Armor", "Card"]);
+  assert.equal(run(`itemInfoCat(600005)`), "Weapon");                     // Advanced Guild Claymore
+  // Dropped by: every dropper, with your chance, the zeny a kill brings from it and the best open map
+  const d = run(`infoDroppers("909")`);
+  assert.match(d, /<th>Monster<\/th><th>Chance<\/th><th[^>]*>Zeny \/ kill<\/th><th>Best open map<\/th>/);
+  assert.equal((d.match(/<tr>/g) || []).length - 1, run(`ITEM_DROPS["909"].length`));
+  // gear lists its droppers the same way, and the sources beyond them as Other sources
+  const g = run(`popGear(2244).body`);
+  assert.match(g, />Dropped by</); assert.match(g, />Other sources</); assert.match(g, /Furious Wild Rose/);
+  // a whole gear name finds the card named in it on the Cards tab
+  assert.equal(run(`cardDbOk(CARDS.find(c=>c.name==="Hydra Card"),{q:"+5 double bloody damascus"})`), true);
+});
+
+t("Monsters & maps: the table's own filters find a monster, and an empty table says what its dropdowns leave out", () => {
+  // no second search or level range over the table: its name and Lv filters do that
+  assert.doesNotMatch(html, /id="mobInput"|id="minLv"|id="maxLv"|mobPickList/);
+  // a level range saved before carries over to the Lv filter; the full range leaves no filter
+  const old = load({ minLv: 40, maxLv: 70, sessions: [] });
+  assert.equal(old(`state.filters.lv+"|"+("minLv" in state)`), "40-70|false");
+  assert.equal(load({ minLv: 1, maxLv: 99 })(`String(state.filters.lv)`), "undefined");
   // the table with No bosses (the default) and a name filter for an MVP: empty, but it says one more matches, with a link to show it
   const mt = run(`globalThis.getEl=document.getElementById;const mt={tb:{innerHTML:""},querySelector(){return this.tb},classList:{toggle(){}}},mn={textContent:""};
     document.getElementById=id=>id==="mobTable"?mt:id==="mobNote"?mn:getEl(id);
-    state.mobF={boss:"noboss"};state.filters={name:"Osiris"};state.minLv=1;state.maxLv=99;renderMobs();[mt.tb.innerHTML,mn.textContent]`);
+    state.mobF={boss:"noboss"};state.filters={name:"Osiris"};renderMobs();[mt.tb.innerHTML,mn.textContent]`);
   assert.match(mt[0], /No monsters match these filters\. 1 more monster matches.*id="showAllMobs"/);
   assert.match(mt[1], new RegExp(`^0 of ${run(`MOBS.length`)} monsters`));
   // with every monster shown it's listed, and no link
   const all = run(`state.mobF={};state.hideClosed=false;renderMobs();mt.tb.innerHTML`);
   assert.match(all, />Osiris</);
   assert.doesNotMatch(all, /showAllMobs/);
+  // Hide monsters with no open map hides the ones with no map at all too (Eddga isn't on any map in the client's table)
+  assert.equal(run(`!!SPAWN[1115]`), false);
+  const mvps = () => run(`state.filters={};state.mobF={boss:"mvp"};renderMobs();mt.tb.innerHTML`);
+  assert.match(mvps(), /data-id="1115"/);
+  run(`state.hideClosed=true`);
+  assert.doesNotMatch(mvps(), /data-id="1115"|none open/);
   run(`state.filters={};state.mobF={boss:"noboss"};state.hideClosed=true;document.getElementById=getEl`);
 });
 
@@ -2130,7 +2157,7 @@ t("hits interrupt casts unless Phen or Bloody Butterfly", () => {
 t("share links leave out defaults and get every value back", () => {
   run(`state.job="Hunter";C().baseLv=67;C().atkTxt="150+210";AC();CRD().hfOn=true;ECO();
     state.job="Sage";C().eq=[{slot:"w",id:1601,ref:7}];G().bolts={Fire:true,Water:false,Wind:true};CRD();ECO();applyBuild();
-    state.job="Assassin";C();state.minLv=40;state.prices={"512":150};
+    state.job="Assassin";C();state.maxSec=40;state.prices={"512":150};
     const s=state.sessions[0];s.mobIds=[1031];s.pauses=[{from:5}];s.entries=[{t:1791227430624,lv:60,pct:0,jpct:0},{t:1791227652213,lv:60,pct:2.44},{t:1791227848687,lv:61,pct:0.5,jpct:3.4,jlv:41}]`);
   const before = JSON.parse(run("JSON.stringify(state)"));
   const packed = run("JSON.stringify(packState(state))");
@@ -3285,6 +3312,22 @@ t("Navigation: routes from the nearest town, the Kafra teleport in front, and wh
   assert.deepEqual(JSON.parse(run(`JSON.stringify(NAVI_SIZE.pay_f08)`)), [280, 400]);
   assert.deepEqual(JSON.parse(run(`JSON.stringify(naviAt("pay_f08",0,400))`)), [15, 0]);
   assert.deepEqual(JSON.parse(run(`JSON.stringify(naviAt("pay_f08",280,0))`)), [85, 100]);
+  // a spawn map lists its ways out once, at the end of Getting there, without the map the route comes in from; a town keeps its own list
+  const rt = run(`naviRouteHtml("orc_d01")`), ls = run(`naviLists("orc_d01")`);
+  assert.match(rt, /Other ways out: /);
+  assert.doesNotMatch(rt.slice(rt.indexOf("Other ways out")), /data-navito="in_orcs01"/);
+  assert.doesNotMatch(ls, /Ways out/);
+  assert.match(run(`naviLists("geffen")`), /<b>Ways out<\/b>/);
+  // Getting there is a section of its own, open at first
+  assert.match(rt, /^<details class="more naviRoute" data-mapfold="Map planner: getting there" open><summary>Getting there<\/summary>/);
+  // an MVP's room (the Navigation's b_ maps) is named after its MVP and opens the MVP's details, on the map and in the ways out
+  assert.equal(run(`naviName("b_gef_f03")`), "Orc Hero's room");
+  assert.equal(run(`naviName("b_pry_d04")`), "Osiris's room");
+  const oh = run(`MOBS.find(m=>m.name==="Orc Hero").id`);
+  assert.match(run(`naviRouteHtml("gef_fild03")`), new RegExp(`<a href="#" data-info="mob:${oh}">Orc Hero's room</a>`));
+  assert.match(run(`naviMarks("gef_fild03")`), new RegExp(`class="naviMark warp" [^>]*data-info="mob:${oh}"`));
+  // the walk reads as a time; its cells are in the tooltip
+  assert.match(rt, /title="≈[\d,]+ cells walked[^"]*">about [^<]+ on foot</);
 });
 
 t("a new visitor starts with no session and no job picked", () => {

@@ -183,7 +183,10 @@ state.look={sex:state.look&&state.look.sex==="f"?"f":"m",hair:Math.max(1,Math.ro
 if(!state.current||!state.sessions.some(s=>s.id===state.current))state.current=state.sessions.length?state.sessions[0].id:null;
 // Element / Race / Size / Boss dropdowns: the Monsters card's (mobF) and Monster info's (infoF), {key: value}
 ["mobF","infoF"].forEach(k=>{if(state[k]!=null)state[k]=Object.fromEntries(Object.entries(objOr(state[k])).filter(([,x])=>typeof x==="string"))});
-const D={bonus:0,jobBonus:0,minLv:1,maxLv:99,hideClosed:true,filters:{},mobF:{boss:"noboss"},infoF:{},sort:"epm",dir:-1,regions:{},closed:[],maxSec:60};
+// the Monsters card's old Level range: a range set there becomes its Lv column filter
+if(state.minLv!=null||state.maxLv!=null){const lo=Math.round(+state.minLv)||1,hi=Math.round(+state.maxLv)||99,f=state.filters=objOr(state.filters);
+  if((lo>1||hi<99)&&!f.lv)f.lv=`${lo}-${hi}`;delete state.minLv;delete state.maxLv}
+const D={bonus:0,jobBonus:0,hideClosed:true,filters:{},mobF:{boss:"noboss"},infoF:{},sort:"epm",dir:-1,regions:{},closed:[],maxSec:60};
 for(const k in D)if(state[k]==null)state[k]=JSON.parse(JSON.stringify(D[k]));
 // GEN counts the saves: a card drawn since the last one is up to date (redraw in render.js)
 let GEN=0;

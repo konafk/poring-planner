@@ -86,7 +86,8 @@ function otherSourcesHtml(id){const known=new Set((ITEM_DROPS[id]||[]).map(d=>d.
   return d.length||(x.q||[]).length?fromHtml(id,d):""}
 const FROM_OPTS=`<option value="">Any</option><option value="mvp">MVP drop</option><option value="mini">Mini boss drop</option><option value="normal">Normal monster drop</option><option value="quest">Quest</option><option value="none">No known source</option>`;
 function cardDbOk(c,f){const q=String(f.q||"").trim().toLowerCase();if(f.slot&&cardPart(c)!==f.slot)return false;if(!fromOk(c.id,f.from))return false;
-  return !q||c.name.toLowerCase().includes(q)||("#"+c.id).includes(q)||cardName(c).toLowerCase().includes(q)||fromTxt(c.id).toLowerCase().includes(q)||itemText(c.id).toLowerCase().includes(q)||fxOf(c).join(" ").toLowerCase().includes(q)}
+  // a whole gear name finds the cards named in it ("+5 Double Bloody Damascus": Hydra Card)
+  return !q||c.name.toLowerCase().includes(q)||("#"+c.id).includes(q)||cardName(c).toLowerCase().includes(q)||!!c.affix&&(" "+q+" ").includes(" "+c.affix.toLowerCase()+" ")||fromTxt(c.id).toLowerCase().includes(q)||itemText(c.id).toLowerCase().includes(q)||fxOf(c).join(" ").toLowerCase().includes(q)}
 
 // ---- putting gear on: set i is your gear (−1) or other gear set i ----
 const setAt=(c,i)=>i<0?buildOf(c):altOf(c,i);
@@ -195,15 +196,12 @@ $("eqDlgBody").addEventListener("click",e=>{const f=e.target.closest("[data-eqfi
 $("eqDlgClose").addEventListener("click",()=>$("eqDlg").close());
 $("eqDlg").addEventListener("click",e=>{if(e.target===$("eqDlg"))$("eqDlg").close()});
 // ---- filters, sorting and the Equip buttons ----
-// Item info's "find card by prefix": the cards whose name in the equipment window starts with the text, then the ones that hold it,
+// the cards a name in the equipment window comes from: the cards whose name there starts with the text, then the ones that hold it,
 // then every card named in a whole gear name ("+5 Double Bloody Damascus" -> Hydra Card)
 function cardsByAffix(q){q=q.trim().toLowerCase();if(!q)return [];const all=(typeof CARDS!=="undefined"?CARDS:[]).filter(c=>c.affix),a=c=>c.affix.toLowerCase();
   const starts=all.filter(c=>a(c).startsWith(q)),has=all.filter(c=>!a(c).startsWith(q)&&a(c).includes(q));
   const inName=all.filter(c=>!a(c).includes(q)&&(" "+q+" ").includes(" "+a(c)+" "));
   return [...starts,...has,...inName]}
-function renderCardAffix(){const v=$("itemCardQ").value,hits=cardsByAffix(v),el=$("itemCardHits");el.hidden=!v.trim();
-  el.innerHTML=hits.length?hits.slice(0,30).map(c=>`<a href="#" data-info="item:${c.id}">${esc(c.name)}</a> <span class="muted">${esc(c.affixPos==="suffix"?"… "+c.affix:c.affix+" …")} · ${CARD_PART[cardPart(c)]||"–"}</span>`).join("<br>")+
-    (hits.length>30?`<br>${hits.length-30} more: narrow the search`:""):"No card gives gear that name."}
 (function setupGearDb(){
   const wt=[...new Set((typeof EQUIP!=="undefined"?EQUIP:[]).map(x=>x.type).filter(Boolean))].sort((a,b)=>BUILD.WTYPE[a].localeCompare(BUILD.WTYPE[b]));
   $("eqDbType").innerHTML=`<option value="">All equipment</option><optgroup label="Weapons"><option value="w:">All weapons</option>${wt.map(t=>`<option value="w:${t}">${esc(BUILD.WTYPE[t])}</option>`).join("")}</optgroup>`+
@@ -216,7 +214,6 @@ function renderCardAffix(){const v=$("itemCardQ").value,hits=cardsByAffix(v),el=
   // Item info's: every item there is a monster drop, so no "No known source"
   $("itemFrom").innerHTML=FROM_OPTS.replace(/<option value="none">.*?<\/option>/,"");$("itemFrom").value=state.itemFrom||"";
   $("itemFrom").addEventListener("change",e=>{state.itemFrom=e.target.value;save();renderItems()});
-  $("itemCardQ").addEventListener("input",renderCardAffix);
   $("cardDbSlot").innerHTML=`<option value="">Any</option>${Object.entries(CARD_PART).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}`;
   ROOTQ("[data-eqf]").forEach(x=>x.addEventListener("input",()=>{state.eqDb={...eqDbF(),[x.dataset.eqf]:x.value};save();renderEquipDb()}));
   ROOTQ("[data-cdf]").forEach(x=>x.addEventListener("input",()=>{state.cardDb={...cardDbF(),[x.dataset.cdf]:x.value};save();renderCardDb()}));

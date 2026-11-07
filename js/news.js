@@ -89,11 +89,16 @@ function newsWhen(on){
   const day=d=>`${+d.slice(8)} ${MONTHS[+d.slice(5,7)-1]}`,[a,b]=r;
   return a<=t?{now:true,text:`On now, until ${day(b)}`}:{now:false,text:`Next: ${a.slice(0,7)===b.slice(0,7)?+a.slice(8):day(a)} to ${day(b)}`}}
 const newsMark=m=>m.startsWith("mob:")?mobIcon(+m.slice(4)):m.startsWith("item:")?itemIcon(+m.slice(5)):esc(m);
-// Home: the top of the page while the latest update is under a month old; each highlight opens its part of the tab, and goes once its days are over
+// Home's What's new card, under the search: the level cap now and the next update on the roadmap (a link to it), and while the latest
+// update is under a month old, that update with its highlights (each opens its part of the tab, and goes once its days are over)
 function newsBanner(){
   const n=NEWS[0],el=$("homeNews");if(!el)return;const age=n?(new Date(todayISO())-new Date(n.when))/864e5:1e9;
-  el.hidden=!(age>=0&&age<31);$("homeNewsBtn").hidden=!el.hidden;if(el.hidden)return;
+  const nx=ROADMAP.find(u=>!upOut(u)),cap=capNow();
+  const next=[cap&&`<b>Level cap ${esc(capTxt(cap))}</b>`,nx&&`Next: ${esc(nx.name)}, ${esc(upWhen(nx))}`].filter(Boolean).join('<span aria-hidden="true">·</span>');
+  const nextA=next?`<a href="#Roadmap" class="homeNext" id="homeNext" data-gotab="roadmap">${next}<span aria-hidden="true">→</span></a>`:"";
+  el.hidden=false;
+  if(!(age>=0&&age<31)){el.innerHTML=`<div class="homeNewsHead"><div><div class="eyebrow">Roadmap</div>${nextA}</div><button type="button" data-gotab="news">What's new →</button></div>`;return}
   const u=newsUpdate(n),tiles=n.highlights.map(([nm,t,mark,to,on])=>{const w=on?newsWhen(on):null;if(on&&!w)return "";
-    return `<button type="button" class="tool" data-gotab="news" data-goto="${esc(to)}"><span class="toolIc">${newsMark(mark)}</span><span class="toolTxt"><b>${esc(nm)}</b><span>${esc(t)}</span>${w?`<span class="pill${w.now?" up":""}">${esc(w.text)}</span>`:""}</span></button>`}).join("");
-  el.innerHTML=`<div class="homeNewsHead"><div><div class="eyebrow">What's new · ${esc(u?upWhen(u):n.when)}</div><h2 id="homeNewsTitle">${esc(n.name)}</h2><p>${esc(n.intro.split(". ")[0])}.</p></div><button type="button" data-gotab="news">See everything →</button></div><div class="toolGrid">${tiles}</div>`;
+    return `<button type="button" class="tool" data-gotab="news" data-goto="${esc(to)}"><span class="toolIc">${newsMark(mark)}</span><span class="toolTxt"><b>${esc(nm)}</b>${w?`<span class="pill${w.now?" up":""}">${esc(w.text)}</span>`:""}</span></button>`}).join("");
+  el.innerHTML=`<div class="homeNewsHead"><div><div class="eyebrow">What's new · ${esc(u?upWhen(u):n.when)}</div><h2 id="homeNewsTitle">${esc(n.name)}</h2>${nextA}</div><button type="button" data-gotab="news">See everything →</button></div><div class="toolGrid">${tiles}</div>`;
 }

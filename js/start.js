@@ -24,8 +24,8 @@ const TAB_DESC={
 };
 function showHero(t){
   const b=document.querySelector(`[data-tabbtn="${t}"]`);if(!b)return;
-  let g=b.previousElementSibling;while(g&&!g.classList.contains("navGrp"))g=g.previousElementSibling;
-  $("heroGrp").textContent=g?g.textContent:"";$("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
+  const g=b.closest(".navSec");
+  $("heroGrp").textContent=g?g.querySelector(".navGrp").textContent:"";$("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
 }
 // a link to a tab: #memorial-dungeons (its name, any case) or #mem (its key); the address bar always shows the open tab's link, in
 // lower case. A name goes before a key. The old Monster info and Maps tabs' links (#monster-info, #maps) open Monsters & maps,
@@ -66,7 +66,7 @@ function showTab0(t,local){
 // opening Home or Session after a change: pricing every map for Where to farm takes a few hundred ms, so the tab shows first
 // with the cards as they were (dimmed), and they're redrawn just after that paint (or after 300 ms where no frame comes, as in a
 // background tab). Nothing to do when they're up to date
-function farmLater(){const els=[$("farmCard"),$("homeSpots")],due=()=>DRAWN.best!==GEN||TAB_ON==="track"&&DRAWN.hunt!==GEN;if(!due())return;
+function farmLater(){const els=[$("farmCard")],due=()=>DRAWN.best!==GEN||TAB_ON==="track"&&DRAWN.hunt!==GEN;if(!due())return;
   els.forEach(el=>el.classList.add("stale"));let done=false;
   const go=()=>{if(done)return;done=true;els.forEach(el=>el.classList.remove("stale"));if(!["home","track"].includes(TAB_ON)||!due())return;
     rowPass(()=>{redraw("best",renderBest);if(TAB_ON==="track")redraw("hunt",renderHunt);if(TAB_ON==="home")renderHome()})};
@@ -93,55 +93,53 @@ function pageNav(t){const nav=$("pageNav");if(!nav)return;const wrap=nav.parentN
   // a card's heading, or the headings of the cards inside a row of them (the Session tab's charts)
   const secs=PAGE_NAV_OFF.has(t)?[]:[...wrap.children].filter(el=>el.dataset.tab&&shown(el)).flatMap(el=>{const h=secHeading(el);
     return h?[[el,h]]:[...el.querySelectorAll(":scope>.card")].map(c=>[c,secHeading(c)]).filter(x=>x[1])});
-  const on=secs.length>1;nav.hidden=!on;wrap.classList.toggle("hasPageNav",on);PAGE_SECS=on?secs.map(x=>x[0]):[];if(!on){nav.innerHTML="";return}
+  const on=secs.length>1;nav.hidden=!on;wrap.classList.toggle("hasPageNav",on);PAGE_SECS=on?secs.map(x=>x[0]):[];if(!on){nav.innerHTML="";if(typeof navSubs==="function")navSubs();return}
   secs.forEach(([el],i)=>{if(!el.id)el.id=`sec-${t}-${i}`});
   nav.innerHTML=`<span class="secHead">On this tab</span>`+secs.map(([el,h])=>`<a href="#${el.id}" data-psec="${el.id}">${esc(h.textContent.trim())}</a>`).join("");
+  if(typeof navSubs==="function")navSubs();
   // beside the cards from the one under the heading down
   nav.style.gridRow=`2 / span ${Math.max(1,[...wrap.children].filter(el=>el!==nav&&!el.classList.contains("pageHead")&&shown(el)).length)}`;
   pageSpy()}
 function pageSpy(){const nav=$("pageNav");if(!nav||nav.hidden)return;const links=[...nav.querySelectorAll("a")];let on=null;
   links.forEach((a,i)=>{if(!on||PAGE_SECS[i].getBoundingClientRect().top<=innerHeight*.3)on=a});
   links.forEach(a=>a.toggleAttribute("aria-current",a===on));
-  if(on&&nav.scrollWidth>nav.clientWidth)nav.scrollTo({left:on.offsetLeft-nav.clientWidth/2+on.offsetWidth/2})}
+  if(on&&nav.scrollWidth>nav.clientWidth)nav.scrollTo({left:on.offsetLeft-nav.clientWidth/2+on.offsetWidth/2});
+  if(typeof navSubSpy==="function")navSubSpy()}
 {let raf=0;addEventListener("scroll",()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;pageSpy()})},{passive:true})}
 $("pageNav").addEventListener("click",e=>{const a=e.target.closest("[data-psec]");if(!a)return;e.preventDefault();openCard($(a.dataset.psec))});
+// the page hides its cards until it has loaded (index.html), so the first tab's sections are found once it has
+if(document.readyState==="loading")addEventListener("DOMContentLoaded",()=>pageNav(TAB_ON));
 // after a reload for another tab's save (VIEW) the tab it showed isn't saved again: that save would reload the other tab in turn
 {const h=hashTab();showTab(h||VIEW&&VIEW.tab||state.tab||"home",!!VIEW)}
 addEventListener("hashchange",()=>{const t=hashTab();if(t){showTab(t);scrollTo({top:0})}});
 // ---- Home tab: the hero's numbers and next update, where you left off, and a card for every other tab (from the sidebar, so it
 // keeps up with it) ----
 (function setupHome(){
-  let grp="",html="";
-  for(const el of document.querySelector(".tabs").children){
-    if(el.classList.contains("navGrp")){html+=`${grp?"</div></div>":""}<div class="toolGrp"><div class="secHead">${esc(el.textContent)}</div><div class="toolGrid">`;grp=el.textContent;continue}
-    const t=el.dataset.tabbtn;if(!t||t==="home")continue;
-    html+=`<button type="button" class="tool" data-gotab="${t}"><span class="toolIc">${el.querySelector("svg").outerHTML}</span><span class="toolTxt"><b>${esc(el.querySelector("span").textContent)}</b><span>${esc(TAB_DESC[t]||"")}</span></span></button>`}
-  $("homeTools").innerHTML=html+(grp?"</div></div>":"");
-  const n=[[MOBS.length,"monsters"],[Object.keys(MAPMOBS).length,"spawn maps"],[allItemIds().length,"items"],[typeof CARDS!=="undefined"?CARDS.length:0,"cards"],[Object.keys(RECIPES_MAKING).length,"recipes"]];
-  $("homeCounts").innerHTML=n.filter(([v])=>v).map(([v,k])=>`<div><b>${fmtN(v)}</b><span>${k}</span></div>`).join("");
-  $("homeSearch").addEventListener("click",()=>$("searchBtn").click());
+  let html="";
+  for(const sec of document.querySelectorAll(".tabs .navSec")){
+    html+=`<div class="toolGrp"><div class="secHead">${esc(sec.querySelector(".navGrp").textContent)}</div><div class="toolGrid">`;
+    for(const el of sec.querySelectorAll("[data-tabbtn]")){const t=el.dataset.tabbtn;
+      html+=`<button type="button" class="tool" data-gotab="${t}"><span class="toolIc">${el.querySelector("svg").outerHTML}</span><span class="toolTxt"><b>${esc(el.querySelector("span").textContent)}</b><span class="hint">${esc(TAB_DESC[t]||"")}</span></span></button>`}
+    html+="</div></div>"}
+  $("homeTools").innerHTML=html;
 })();
 function renderHome(){
-  const nx=ROADMAP.find(u=>!upOut(u)),cap=capNow();
-  $("homeNext").innerHTML=[cap&&`<b>Level cap ${esc(capTxt(cap))}</b>`,nx&&`Next: ${esc(nx.name)}, ${esc(upWhen(nx))}`].filter(Boolean).join('<span aria-hidden="true">·</span>')+'<span aria-hidden="true">→</span>';
   newsBanner();
+  $("homeCharBtn").textContent=charSet(C())?"Open Character":"Set up your character";
+}
+// ---- Session's At a glance: your character, where you farm, and what the planner works out for you there; hidden for a new player
+// (the get started card is on Home) ----
+function renderNow(){
   const c=C(),set=charSet(c),s=cur(),ms=sessMobs(s),smp=sessMap(s),max=atMaxLv();
-  $("homeCharBtn").textContent=set?"Open Character":"Set up your character";
-  // a new player has the get started card instead
   $("homeNowCard").hidden=!set&&!ms.length;if($("homeNowCard").hidden)return;
   const tile=(k,v,sub,tab,now)=>`<button type="button" class="tile${now?" now":""}" data-gotab="${tab}"><div class="k">${k}</div><div class="v">${esc(v)}</div><div class="s">${esc(sub)}</div></button>`;
   // what the planner works out for your character on the map you're farming, not what you've logged
   const est=set&&smp?mapStats(smp,walkSec()):null,why=!set?"Set up your character":!smp?"Farm a map for an estimate":"No estimate for this map";
   $("homeTiles").innerHTML=
     tile("Character",noChar()?"–":state.job,set?[c.baseLv&&`Base ${c.baseLv}`,c.jobLv&&`Job ${c.jobLv}`,c.a&&c.a.name].filter(Boolean).join(" · "):"Not set up yet","char",true)+
-    tile("Farming",smp?mapCode(smp):ms.length===1?ms[0].name:ms.length?`${ms.length} monsters`:"–",smp?mapName(smp):ms.length?s.name:"Pick a spot below","track",true)+
+    tile("Farming",smp?mapCode(smp):ms.length===1?ms[0].name:ms.length?`${ms.length} monsters`:"–",smp?mapName(smp):ms.length?s.name:"Pick a spot in Where to farm","maps",true)+
     tile("EXP / min there",max?"Max level":est?fmtN(est.epm):"–",max?"EXP no longer counts":est?"planner estimate":why,"track")+
     tile("Zeny / hr there",est?fmtN(est.net):"–",est?"net, planner estimate":why,"track");
-  $("homeNowNote").textContent="";
-  // the best maps for EXP (zeny at the max level) as Where to farm ranks them
-  const sm=smp;
-  $("homeSpots").innerHTML=set&&SPOT_EXP.length?`<div class="secHead">${max?"Best for zeny":"Best for EXP"} right now</div>`+SPOT_EXP.map(r=>`<div class="spot${r.mp===sm?" on":""}"><span class="spotN">${r.rank}</span>
-    <div class="spotTxt"><div>${mapTitle(r.mp)}</div><div class="spotV">${max?`<b>${fmtN(r.net)}</b> z/hr net`:`<b>${fmtN(r.epm)}</b> EXP / min · ${fmtN(r.net)} z/hr net`}</div></div>${farmBtn(r)}</div>`).join(""):"";
 }
 // ---- collapsible cards: click a heading (or Enter/Space on it) to fold the card; saved by heading text ----
 function foldCard(card){const h=card.querySelector(":scope>h2, :scope>.bar>h2");if(!h||h.hasAttribute("aria-expanded"))return;
@@ -187,7 +185,7 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
   const tabName=t=>document.querySelector(`[data-tabbtn="${t}"] span`).textContent;
   const go=(tab,fn)=>()=>{showTab(tab);scrollTo({top:0});if(fn)setTimeout(fn,30)};
   const ACTIONS=[
-    {k:"Action",name:"Log EXP",meta:"top bar · L",run:()=>openQuickLog(true),ok:()=>!atMaxLv()},
+    {k:"Action",name:"Log EXP",meta:"+ button · L",run:()=>openQuickLog(true),ok:()=>!atMaxLv()},
     {k:"Action",name:"Switch theme",meta:"auto → light → dark",run:()=>$("themeBtn").click()},
     {k:"Action",name:"Show or hide hints",meta:"help text under the cards",run:()=>$("hintBtn").click()},
     {k:"Action",name:"New session",meta:"Session tab",run:()=>$("newSession").click()}];
@@ -224,8 +222,12 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
       :`<div class="jEmpty">Nothing matches “${esc(inp.value.trim())}”.</div>`};
   const mark=()=>list.querySelectorAll(".jr").forEach((b,i)=>{b.setAttribute("aria-selected",String(i===at));if(i===at)b.scrollIntoView({block:"nearest"})});
   const pick=i=>{const x=hits[i];if(!x)return;dlg.close();x.run()};
-  const open=()=>{if(dlg.open)return;inp.value="";draw();dlg.showModal();inp.focus()};
-  $("searchBtn").addEventListener("click",open);
+  // q: text already typed (Home's search bar hands over what you type there)
+  const open=(q="")=>{if(dlg.open)return;inp.value=typeof q==="string"?q:"";draw();dlg.showModal();inp.focus()};
+  // Home's search bar: a click or a key in it opens the search with what's typed
+  {const hs=$("homeSearch");hs.addEventListener("click",()=>{open(hs.value);hs.value=""});
+   hs.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key.length===1&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();open(hs.value+(e.key==="Enter"?"":e.key));hs.value=""}})}
+  $("searchBtn").addEventListener("click",()=>open());
   inp.addEventListener("input",draw);
   inp.addEventListener("keydown",e=>{if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();if(hits.length){at=(at+(e.key==="ArrowDown"?1:hits.length-1))%hits.length;mark()}}
     else if(e.key==="Enter"){e.preventDefault();pick(at)}});
@@ -252,14 +254,69 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
   set(document.documentElement.classList.contains("compact"));
   btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.setItem(KEY_COMPACT,"1"):localStorage.removeItem(KEY_COMPACT)}catch(e){}});
 })();
-// ---- sidebar groups: a group's heading folds its tabs away (the open tab stays showing; style.css), per device like full width ----
-(function setupNavFold(){
-  const KEY_FOLD="rozero-farm-planner-navfold",grps=[...document.querySelectorAll(".tabs .navGrp")];
-  let shut=[];try{shut=JSON.parse(localStorage.getItem(KEY_FOLD))||[]}catch(e){}
-  const set=(g,open)=>{g.setAttribute("aria-expanded",String(open));
-    for(let b=g.nextElementSibling;b&&!b.classList.contains("navGrp");b=b.nextElementSibling)b.classList.toggle("navHid",!open)};
-  grps.forEach(g=>{set(g,!shut.includes(g.textContent));g.addEventListener("click",()=>{set(g,g.getAttribute("aria-expanded")!=="true");
-    try{localStorage.setItem(KEY_FOLD,JSON.stringify(grps.filter(x=>x.getAttribute("aria-expanded")==="false").map(x=>x.textContent)))}catch(e){}})});
+// ---- the main nav's levels. A desktop window (from 1024px): the sidebar, with the open tab's group listed and the open tab's sections
+// under it (the cards' headings, which the page's own section links then leave to it); another group's heading unfolds it in place
+// (remembered per device, like full width); the compact sidebar keeps its column of icons. A narrower window or a phone: Home and a
+// menu for each group along the top ----
+const KEY_NAVOPEN="rozero-farm-planner-navopen";
+// functions, not consts: the first tab shows (pageNav, navSubs) before this part of the file has run
+function navBig(){return typeof matchMedia==="function"&&matchMedia("(min-width:1024px)").matches}
+function navSide(){return navBig()}
+function navTop(){return !navBig()}
+let NAV_OPENED=0;
+function navClose(except){document.querySelectorAll(".tabs .navSec.open").forEach(s=>{if(s===except)return;s.classList.remove("open");s.querySelector(".navGrp").setAttribute("aria-expanded","false")})}
+// the open tab's sections under it in the sidebar: copies of the page's section links (Character's own, or the other tabs'); a click goes
+// through the page's link, so it jumps and opens a folded card the same way, and the one you're reading is marked as there
+// each group heading's aria-expanded: is its group showing (the sidebar) or its menu open (along the top)
+function navAria(){document.querySelectorAll(".tabs .navSec").forEach(s=>{const items=s.querySelector(".navItems");
+  s.querySelector(".navGrp").setAttribute("aria-expanded",String(navSide()?getComputedStyle(items).display!=="none":s.classList.contains("open")))})}
+function navSubs(){const old=document.querySelector(".tabs .navSubs");if(old)old.remove();
+  // a tab opened in a folded group unfolds it
+  document.querySelectorAll(".tabs .navSec.shut").forEach(s=>s.classList.remove("shut"));if(typeof getComputedStyle==="function")navAria();
+  const b=document.querySelector('.tabs [aria-selected="true"]');if(!b||!navSide()||document.documentElement.classList.contains("compact"))return;
+  const t=b.dataset.tabbtn,src=t==="char"?document.querySelector('.secNav[aria-label="Character sections"]'):t==="news"?null:$("pageNav");
+  const links=src&&!src.hidden?[...src.querySelectorAll("a")].filter(a=>!a.hidden):[];if(links.length<2)return;
+  const d=document.createElement("div");d.className="navSubs";d.setAttribute("aria-label",`${b.querySelector("span").textContent} sections`);
+  d.innerHTML=links.map((a,i)=>`<a href="${esc(a.getAttribute("href")||"#")}" data-navsub="${i}">${esc(a.textContent)}</a>`).join("");
+  d._src=links;b.after(d);navSubSpy()}
+// the Character tab's section links (fixed in the page): a card your job hasn't (Sage) or that's hidden leaves its link out, on the
+// page and in the sidebar
+let SEC_SHOWN="";
+function secNavSync(){const nav=document.querySelector('.secNav[aria-label="Character sections"]');if(!nav)return;
+  const as=[...nav.querySelectorAll("a[data-sec]")];as.forEach(a=>{const el=$(a.dataset.sec);a.hidden=!el||!!el.closest("[hidden]")});
+  const k=as.map(a=>a.hidden?0:1).join("");if(k!==SEC_SHOWN){SEC_SHOWN=k;if(typeof navSubs==="function")navSubs()}}
+function navSubSpy(){const d=document.querySelector(".tabs .navSubs");if(!d)return;d.querySelectorAll("a").forEach((a,i)=>a.toggleAttribute("aria-current",!!d._src[i]&&d._src[i].hasAttribute("aria-current")))}
+(function setupNav(){
+  const tabs=document.querySelector(".tabs");
+  tabs.addEventListener("click",e=>{
+    const sub=e.target.closest("[data-navsub]");if(sub){e.preventDefault();const d=sub.parentNode,a=d._src&&d._src[+sub.dataset.navsub];if(a)a.click();return}
+    const g=e.target.closest(".navGrp");
+    if(!g){if(e.target.closest("[data-tabbtn]"))navClose();return}
+    const sec=g.parentNode;
+    // the sidebar: the heading folds or unfolds its group in place
+    if(navSide()){if(document.documentElement.classList.contains("compact"))return;
+      if(sec.querySelector('[aria-selected="true"]'))sec.classList.toggle("shut");else sec.classList.toggle("exp");navAria();
+      try{localStorage.setItem(KEY_NAVOPEN,JSON.stringify([...document.querySelectorAll(".tabs .navSec.exp")].map(s=>s.querySelector(".navGrp").textContent)))}catch(e){}
+      return}
+    const open=!sec.classList.contains("open");navClose(sec);if(open)NAV_OPENED=Date.now();sec.classList.toggle("open",open);g.setAttribute("aria-expanded",String(open));
+    // fixed under its heading, as the row along the top scrolls (and would clip it)
+    if(open){const r=g.getBoundingClientRect(),m=sec.querySelector(".navItems");
+      m.style.left=`${Math.round(Math.max(8,Math.min(r.left,innerWidth-m.offsetWidth-8)))}px`;m.style.top=`${Math.round(r.bottom+6)}px`}});
+  {let open=[];try{open=JSON.parse(localStorage.getItem(KEY_NAVOPEN))||[]}catch(e){}
+   document.querySelectorAll(".tabs .navSec").forEach(s=>s.classList.toggle("exp",open.includes(s.querySelector(".navGrp").textContent)))}
+  document.addEventListener("pointerdown",e=>{if(!e.target.closest(".tabs .navSec"))navClose()},true);
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")navClose()});
+  addEventListener("resize",()=>{navClose();navSubs()});
+  // scrolling moves a menu's heading away from it: the menu closes, but not for the scroll that brought the heading into view to open it
+  const onScroll=()=>{if(Date.now()-NAV_OPENED>400)navClose()};
+  tabs.addEventListener("scroll",onScroll,{passive:true});
+  addEventListener("scroll",()=>{if(navTop())onScroll()},{passive:true});
+  if(typeof matchMedia==="function")matchMedia("(min-width:1024px)").addEventListener("change",()=>{navClose();navSubs()});
+  // the compact sidebar switched: the nav changes shape (the page's other classes, as scrolling's, don't)
+  {const cls=document.documentElement.classList,shape=()=>String(cls.contains("compact"));let was=shape();
+   if(typeof MutationObserver==="function")new MutationObserver(()=>{if(shape()===was)return;was=shape();navClose();navSubs()}).observe(document.documentElement,{attributes:true,attributeFilter:["class"]})}
+  navSubs();
+  {let raf=0;addEventListener("scroll",()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;navSubSpy()})},{passive:true})}
 })();
 // ---- hints: the help text under the cards, off by default, per device like full width ----
 (function setupHints(){
