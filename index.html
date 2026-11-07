@@ -26,28 +26,32 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <button type="button" class="searchBtn" id="searchBtn" title="Search monsters, items, maps and tabs (Ctrl+K or /)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>Search</span><kbd>/</kbd></button>
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button type="button" role="tab" data-tabbtn="home" title="Home"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9v11h5v-6h4v6h5V9"/></svg><span>Home</span></button>
-      <button type="button" class="navGrp" aria-expanded="true" title="Show or hide the Plan tabs"><span>Plan</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-      <button type="button" role="tab" data-tabbtn="char" title="Character"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg><span>Character</span></button>
-      <button type="button" role="tab" data-tabbtn="track" title="Session"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Session</span></button>
-      <button type="button" class="navGrp" aria-expanded="true" title="Show or hide the Game data tabs"><span>Game data</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-      <button type="button" role="tab" data-tabbtn="maps" title="Monsters &amp; maps"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Monsters &amp; maps</span></button>
-      <button type="button" role="tab" data-tabbtn="items" title="Item info"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><span>Item info</span></button>
-      <button type="button" role="tab" data-tabbtn="equip" title="Equipment"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3z"/></svg><span>Equipment</span></button>
-      <button type="button" role="tab" data-tabbtn="cards" title="Cards"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>Cards</span></button>
-      <button type="button" role="tab" data-tabbtn="affix" title="Affixes: items that add random options to gear"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="m12 8 1.2 2.8L16 12l-2.8 1.2L12 16l-1.2-2.8L8 12l2.8-1.2z"/></svg><span>Affixes</span></button>
-      <button type="button" role="tab" data-tabbtn="recipes" title="Recipes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg><span>Recipes</span></button>
-      <button type="button" role="tab" data-tabbtn="mem" title="Memorial dungeons"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21 8 9l4-6 4 6z"/></svg><span>Memorial dungeons</span></button>
-      <button type="button" role="tab" data-tabbtn="star" title="Stellar weapons"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Stellar weapons</span></button>
-      <button type="button" class="navGrp" aria-expanded="true" title="Show or hide the Reference tabs"><span>Reference</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-      <button type="button" role="tab" data-tabbtn="news" title="What's new"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="2.5"/></svg><span>What's new</span></button>
-      <button type="button" role="tab" data-tabbtn="roadmap" title="Roadmap"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Roadmap</span></button>
-      <button type="button" role="tab" data-tabbtn="market" title="Market"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="M15.5 9.5A6 6 0 1 1 9.5 15.5"/></svg><span>Market</span></button>
-      <button type="button" role="tab" data-tabbtn="ref" title="EXP &amp; formulas"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg><span>EXP &amp; formulas</span></button>
-      <button type="button" class="navGrp" aria-expanded="true" title="Show or hide the Simulators tabs"><span>Simulators</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-      <button type="button" role="tab" data-tabbtn="brew" title="Brewing simulator"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v5.3a6.5 6.5 0 1 0 4 0V3"/><path d="M6 15.5h12"/></svg><span>Brewing</span></button>
-      <button type="button" role="tab" data-tabbtn="cook" title="Cooking simulator"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M2 10h2M20 10h2M9.5 3.5c-.8.8-.8 1.7 0 2.5M14.5 3.5c-.8.8-.8 1.7 0 2.5"/></svg><span>Cooking</span></button>
-      <button type="button" role="tab" data-tabbtn="skilltree" title="Skill tree"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M12 7v5M12 12l-6 5M12 12l6 5"/></svg><span>Skill tree</span></button>
-      <button type="button" role="tab" data-tabbtn="stylist" title="Stylist: every job's clothes colours, hair styles and hair colours"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg><span>Stylist</span></button>
+      <div class="navSec"><button type="button" class="navGrp" aria-expanded="false" aria-haspopup="true" title="Plan tabs"><span>Plan</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="navItems" role="group" aria-label="Plan">
+        <button type="button" role="tab" data-tabbtn="char" title="Character"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg><span>Character</span></button>
+        <button type="button" role="tab" data-tabbtn="track" title="Session"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Session</span></button>
+      </div></div>
+      <div class="navSec"><button type="button" class="navGrp" aria-expanded="false" aria-haspopup="true" title="Game data tabs"><span>Game data</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="navItems" role="group" aria-label="Game data">
+        <button type="button" role="tab" data-tabbtn="maps" title="Monsters &amp; maps"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Monsters &amp; maps</span></button>
+        <button type="button" role="tab" data-tabbtn="items" title="Item info"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><span>Item info</span></button>
+        <button type="button" role="tab" data-tabbtn="equip" title="Equipment"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3z"/></svg><span>Equipment</span></button>
+        <button type="button" role="tab" data-tabbtn="cards" title="Cards"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>Cards</span></button>
+        <button type="button" role="tab" data-tabbtn="affix" title="Affixes: items that add random options to gear"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="m12 8 1.2 2.8L16 12l-2.8 1.2L12 16l-1.2-2.8L8 12l2.8-1.2z"/></svg><span>Affixes</span></button>
+        <button type="button" role="tab" data-tabbtn="recipes" title="Recipes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3"/><path d="M7.5 15h9"/></svg><span>Recipes</span></button>
+        <button type="button" role="tab" data-tabbtn="mem" title="Memorial dungeons"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9z"/><path d="M2 9h20M12 21 8 9l4-6 4 6z"/></svg><span>Memorial dungeons</span></button>
+        <button type="button" role="tab" data-tabbtn="star" title="Stellar weapons"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Stellar weapons</span></button>
+      </div></div>
+      <div class="navSec"><button type="button" class="navGrp" aria-expanded="false" aria-haspopup="true" title="Reference tabs"><span>Reference</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="navItems" role="group" aria-label="Reference">
+        <button type="button" role="tab" data-tabbtn="news" title="What's new"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="2.5"/></svg><span>What's new</span></button>
+        <button type="button" role="tab" data-tabbtn="roadmap" title="Roadmap"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Roadmap</span></button>
+        <button type="button" role="tab" data-tabbtn="market" title="Market"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="M15.5 9.5A6 6 0 1 1 9.5 15.5"/></svg><span>Market</span></button>
+        <button type="button" role="tab" data-tabbtn="ref" title="EXP &amp; formulas"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg><span>EXP &amp; formulas</span></button>
+      </div></div>
+      <div class="navSec"><button type="button" class="navGrp" aria-expanded="false" aria-haspopup="true" title="Simulators tabs"><span>Simulators</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="navItems" role="group" aria-label="Simulators">
+        <button type="button" role="tab" data-tabbtn="brew" title="Brewing simulator"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v5.3a6.5 6.5 0 1 0 4 0V3"/><path d="M6 15.5h12"/></svg><span>Brewing</span></button>
+        <button type="button" role="tab" data-tabbtn="cook" title="Cooking simulator"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M2 10h2M20 10h2M9.5 3.5c-.8.8-.8 1.7 0 2.5M14.5 3.5c-.8.8-.8 1.7 0 2.5"/></svg><span>Cooking</span></button>
+        <button type="button" role="tab" data-tabbtn="skilltree" title="Skill tree"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M12 7v5M12 12l-6 5M12 12l6 5"/></svg><span>Skill tree</span></button>
+        <button type="button" role="tab" data-tabbtn="stylist" title="Stylist: every job's clothes colours, hair styles and hair colours"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg><span>Stylist</span></button>
+      </div></div>
     </nav>
     <div class="sideFoot">
       <button type="button" class="iconBtn" id="sideBtn" aria-pressed="false" title="Shrink the sidebar to icons"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 10l-2 2 2 2"/></svg><span>Compact sidebar</span></button>
@@ -63,15 +67,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   </aside>
 <main class="main">
   <div class="ctxBar" aria-label="Current session"><div class="ctxIn">
-    <span class="live" aria-hidden="true"></span><b id="title">Poring Planner</b><span class="ctxSub" id="subtitle"></span>
     <span class="ctxRate" id="ctxRate" hidden title="EXP %/hr between your entries this session; the number is the session average"><svg class="spark" id="spark" viewBox="0 0 72 22" aria-hidden="true"></svg><b id="ctxRateV"></b></span>
-    <form class="quickLog" id="quickLog" autocomplete="off" aria-label="Log EXP">
-      <span class="qlLbl">Log EXP</span>
-      <input id="qlInput" placeholder="17.9 63" aria-label="EXP %, then job % (optional)" aria-describedby="qlHelp" enterkeyhint="done">
-      <button type="submit" class="primary small">Log</button>
-      <kbd class="qlKey" title="Press L on any tab to log">L</kbd>
-      <span class="qlHelp" id="qlHelp">EXP % then job %. Add a time (15:05) to log it then, or "died" for EXP after a death. Logged at the level of your last entry.</span>
-    </form>
     <span id="pauseNote" hidden></span>
   </div></div>
 <div class="wrap">
@@ -79,14 +75,13 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="eyebrow" id="heroGrp"></div><h1 id="heroTitle"></h1><p id="heroDesc"></p>
   </header>
   <nav class="secNav pageNav" id="pageNav" aria-label="Sections on this tab" hidden></nav>
-  <section class="card homeNewsCard" id="homeNews" data-tab="home" aria-labelledby="homeNewsTitle" hidden></section>
   <section class="homeHero" data-tab="home" aria-labelledby="homeTitle">
-    <a href="#Roadmap" class="homeNext" id="homeNext" data-gotab="roadmap"></a>
-    <h1 id="homeTitle">Everything for Ragnarok Zero, in one place</h1>
-    <p>Look up any monster, item, map, gear, card, skill or recipe from the game client. Plan your build, skills and farming spots, work out memorial dungeon and ★ weapon costs, roll brewing and cooking, and keep up with prices and the roadmap. Enter your character once and every tab uses your numbers. No login: your data stays in this browser.</p>
-    <div class="bar homeActs"><button type="button" class="primary" id="homeSearch">Search everything <kbd>/</kbd></button><button type="button" data-gotab="char" id="homeCharBtn">Set up your character</button><button type="button" id="homeNewsBtn" data-gotab="news">What's new</button></div>
-    <div class="homeCounts" id="homeCounts"></div>
+    <h1 id="homeTitle">Everything for Ragnarok&nbsp;Zero, in one place</h1>
+    <p class="hint">Plan your build and farming spots, and look up anything in the game. Your data stays in this browser.</p>
+    <label class="homeSearchBar"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="homeSearch" type="search" placeholder="Search monsters, items, maps, gear and tabs" autocomplete="off" spellcheck="false" aria-label="Search everything"><kbd>/</kbd></label>
+    <div class="bar homeActs"><button type="button" data-gotab="char" id="homeCharBtn">Set up your character</button></div>
   </section>
+  <section class="card homeNewsCard" id="homeNews" data-tab="home" aria-labelledby="homeNewsTitle" hidden></section>
   <section class="startCard" id="startCard" hidden aria-labelledby="startTitle">
     <div class="startHead"><div><div class="eyebrow">Get started</div><h2 id="startTitle">Set up once, and every tab uses your numbers</h2></div><button type="button" class="iconX" id="startHide" aria-label="Hide get started" title="Hide this">×</button></div>
     <ol class="steps">
@@ -97,11 +92,6 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   <section class="card" id="homeToolsCard" data-tab="home">
     <h2>Everything in Poring Planner</h2>
     <div class="homeTools" id="homeTools"></div>
-  </section>
-  <section class="card" id="homeNowCard" data-tab="home">
-    <div class="bar"><h2 class="grow">Pick up where you left off</h2><span class="note" id="homeNowNote"></span></div>
-    <div class="tiles homeTiles" id="homeTiles"></div>
-    <div class="spotCol" id="homeSpots"></div>
   </section>
   <section class="card switchCard" id="acctCard" data-tab="char">
     <div class="bar acct">
@@ -469,6 +459,10 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     </div>
     <div class="note hint">A session is one farming run: monsters, map and EXP log.</div>
   </section>
+  <section class="card" id="homeNowCard" data-tab="track">
+    <div class="bar"><h2 class="grow">At a glance</h2><span class="note" id="homeNowNote"></span></div>
+    <div class="tiles homeTiles" id="homeTiles"></div>
+  </section>
 
   <section class="tiles" aria-label="Summary" data-tab="track">
     <div class="tile now"><div class="k">Current level</div><div class="v" id="tCurLv">–</div><div class="s" id="tCurLvS"></div></div>
@@ -609,27 +603,28 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 
   <section class="card" id="mapCard" data-tab="maps">
     <div class="bar"><h2 class="grow">Map</h2></div>
-    <div class="form c211">
-      <label>Map<input id="mapInput" list="mapList" placeholder="e.g. gef_dun01, Sphinx B5F or a town"></label>
-      <label class="charOnly" title="How many monsters attack you together on this map. It counts for every monster on the map, aggressive or not, in place of the Character tab's number. Their hits add up, and from the 3rd one your FLEE drops 10% and DEF 5% for each past the 2nd. Room dungeons (one map cut into small rooms: Labyrinth Forest 1F / 3F, Sunken Ship, Kunlun Chess Terrace, Sphinx B5F) start at 3. Clear it to go back to the default">Possible rampage here (monsters)<input id="mobbedIn" type="number" min="1" max="12" step="1"></label>
-      <label class="charOnly"><span>&nbsp;</span><button type="button" id="mapFromMob">Use session monster's map</button></label>
+    <div class="bar">
+      <label class="grow">Map<input id="mapInput" list="mapList" placeholder="e.g. gef_dun01, Sphinx B5F or a town"></label>
+      <label class="charOnly"><span>&nbsp;</span><span class="bar"><button type="button" class="primary" id="mapToSess">Farm here</button><a href="#" id="mapBack" hidden></a></span></label>
     </div>
-    <div class="note hint charOnly">How many of this map's monsters fight you at once; blank = the Character tab's number.</div>
-    <div class="bar charOnly"><button type="button" class="primary" id="mapToSess" title="Makes this the current session's map, and its monsters the ones you hunt here (not bosses or skipped ones), weighted by their spawns like this planner">Farming this map now</button><span class="note" id="mapSessNote"></span></div>
     <datalist id="mapList"></datalist>
     <div class="note" id="mapName"></div>
-    <div id="mapRoute"></div>
     <div class="mapPics">
       <details class="more worldMore" id="worldMore" open><summary>World map <span class="note" id="worldSum"></span></summary><div class="worldMap" id="planWorld"></div></details>
+      <div class="naviPic" id="mapPicWrap" hidden><div class="mapPic" title="The map from the game client's map window. Click a red square to go to that map"><img id="mapPic" alt="" width="512" height="512"></div><div id="mapMarks"></div></div>
     </div>
+    <div id="mapRoute"></div>
     <div id="mapDun"></div>
     <div class="mapTop">
       <div class="calc" id="mapTiles"></div>
-      <div class="naviPic" id="mapPicWrap" hidden><div class="mapPic" title="The map from the game client's map window. Click a red square to go to that map"><img id="mapPic" alt="" width="512" height="512"></div><div id="mapMarks"></div></div>
     </div>
-    <div id="mapNavi"></div>
     <div id="mapConv"></div>
     <div class="scroll" id="mapTableWrap"><table id="mapTable"><thead><tr><th>Monster</th><th>Count</th><th>Share</th><th>Lv</th><th>Element</th><th title="Element table rate of your attack element (with the map's converter or bolt) against the monster">Element %</th><th>Size</th><th>Race</th><th>Your hit %</th><th>Sec / kill</th><th>Base EXP</th><th title="Farm without items against this monster alone: the share of the HP and SP you use that comes back with no HP or SP items. Hover for the breakdown">No items</th></tr></thead><tbody></tbody></table></div>
+    <details class="more charOnly" id="mobbedRow"><summary>Advanced <span class="note" id="mobbedSum"></span></summary>
+      <label class="bar">Monsters attacking you at the same time here <input class="w-sm" id="mobbedIn" type="number" min="1" max="12" step="1"></label>
+      <div class="note">Optional. Leave it blank to use Possible rampage from the Character tab. More attackers means more damage taken, and from 3 at once your FLEE and DEF drop. Dungeons cut into small rooms start at 3.</div>
+    </details>
+    <div id="mapNavi"></div>
     <details class="more mt" id="mapInfoMore"><summary>Every map <span class="note" id="mapInfoNote"></span></summary>
       <div class="bar">
         <label class="grow">Find a map<input id="mapInfoIn" type="search" placeholder="map code, name, a monster on it, or town"></label>
@@ -642,17 +637,12 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 
   <section class="card" id="mobCard" data-tab="maps">
     <div class="bar"><h2 class="grow">Monsters</h2><span class="note" id="mobNote"></span></div>
-    <div class="bar">
-      <label class="grow">Monster for this session<input id="mobInput" list="mobList" placeholder="Search any monster"></label>
-      <label>Level range<span class="bar"><input class="w-sm" id="minLv" type="number"> to <input class="w-sm" id="maxLv" type="number"></span></label>
-      <label><span>&nbsp;</span><span class="bar"><input type="checkbox" id="hideClosed"> Hide monsters with no open map</span></label>
-    </div>
-    <div class="bar" id="mobF" title="Narrows this table; the monster search above it finds every monster"></div>
+    <div class="bar" id="mobF"><label><span>&nbsp;</span><span class="bar"><input type="checkbox" id="hideClosed"> Hide monsters with no open map</span></label></div>
     <datalist id="mobList"></datalist>
     <div class="scroll tall"><table id="mobTable"><thead><tr>
       <th data-k="name">Monster</th><th data-k="lv">Lv</th><th data-k="el">Element</th><th data-k="size">Size</th><th data-k="race">Race</th><th data-k="hp">HP</th><th data-k="exp">Base EXP</th><th data-k="ratio" title="Base EXP per HP: how much EXP each point of damage earns">EXP / HP</th><th data-k="mult">Your hit %</th><th data-k="hitc">Hit chance</th><th data-k="uses">Uses / kill</th><th data-k="sec">Sec / kill</th><th data-k="epm">EXP / min</th><th data-k="dodge">Dodge %</th><th data-k="hpm">HP lost / min</th><th data-k="zk" title="Loot per kill less what your skills use up (catalysts, arrows, Mammonite zeny)">Zeny / kill</th><th data-k="zph" title="Net: loot less skill items, SP items, the ASPD potion and ground buffs">Zeny / hr</th><th data-k="topN">Best map</th><th></th>
     </tr><tr class="filters"><td><input data-f="name" placeholder="name"></td><td><input data-f="lv" placeholder="50-90"></td><td><input data-f="el" placeholder="fire"></td><td><input data-f="size" placeholder="L"></td><td><input data-f="race" placeholder="undead"></td><td><input data-f="hp" placeholder="<20000"></td><td><input data-f="exp" placeholder=">5000"></td><td><input data-f="ratio" placeholder=">1"></td><td><input data-f="mult" placeholder=">100"></td><td><input data-f="hitc" placeholder=">90"></td><td><input data-f="uses" placeholder="<=3"></td><td><input data-f="sec" placeholder="<5"></td><td><input data-f="epm" placeholder=""></td><td><input data-f="dodge" placeholder=">50"></td><td><input data-f="hpm" placeholder="<500"></td><td><input data-f="zk" placeholder=">20"></td><td><input data-f="zph" placeholder=">10000"></td><td><input data-f="topN" placeholder="map"></td><td><button type="button" class="small" id="clearF">Clear</button></td></tr></thead><tbody></tbody></table></div>
-    <div class="note hint">Click a monster for its drops, skills and spawns. Filters: &lt;350, &gt;=2, 100-200, =86, text, "-" for blank, "or".</div>
+    <div class="note hint">Click a monster for its drops, skills and spawns, and Farming it now to add it to your session. Find one by name or level in the row under the headings. Filters: &lt;350, &gt;=2, 100-200, =86, text, "-" for blank, "or".</div>
   </section>
 
   <div class="charLayout" data-tab="news">
@@ -759,17 +749,11 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   <section class="card" id="itemCard" data-tab="items">
     <div class="bar"><h2 class="grow">Item info</h2><span class="note" id="itemCount"></span></div>
     <div class="bar">
-      <label title="Monster drops, or every item in the game client (gear and cards are on their own tabs), or one of its categories">Items<select id="itemShow"></select></label>
+      <label title="Monster drops, or every item in the game client (gear and cards too), or one of its categories">Items<select id="itemShow"></select></label>
       <label title="Monsters that drop it (MVPs from the full drop lists, for gear and cards), or a quest">Where to get<select id="itemFrom"></select></label>
-      <label title="The name a card gives the gear it's in (Bloody is the Hydra Card, of Health the Verit Card), or a whole name from the equipment window">Find card by prefix<input id="itemCardQ" type="search" placeholder="Bloody, of Health…"></label>
     </div>
-    <div class="note" id="itemCardHits" hidden></div>
     <div class="scroll tall"><table id="itemTable"><thead><tr><th data-sk="name">Item</th><th data-sk="group">Group</th><th data-sk="npc">NPC pays</th><th data-sk="pl">Players pay</th><th data-sk="best" title="the monster with the best drop chance; sorts and filters by that chance, or by its name">Best drop</th><th data-sk="nz" title="what an NPC pays for it × your drop chance, at the monster where that comes to most">NPC z / kill</th><th data-sk="sp" title="the most of one monster that drops it on one open map, bosses left out; filters by count, map or monster">Spawns</th><th data-sk="cnt" title="how many monsters drop it">Dropped by</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><select data-tf="group" aria-label="Auto-loot group"></select></td><td><input type="search" data-tf="npc" placeholder=">1000"></td><td><input type="search" data-tf="pl" placeholder="-"></td><td><input type="search" data-tf="best" placeholder=">1"></td><td><input type="search" data-tf="nz" placeholder=">1"></td><td><input type="search" data-tf="sp" placeholder=">20"></td><td><input type="search" data-tf="cnt" placeholder=">5"></td></tr></thead><tbody></tbody></table></div>
-    <div class="note hint">Filter the list in the row under its headings. Click an item to see every monster that drops it, under the list.</div>
-    <div class="itemSel" id="itemSel">
-      <div class="calc" id="itemTiles"></div>
-      <div id="itemDroppers" hidden><div class="scroll"><table id="itemDropTable"><thead><tr><th data-sk="name">Dropped by</th><th data-sk="lv">Lv</th><th data-sk="ch">Chance</th><th data-sk="your">Your chance</th><th data-sk="nz" title="what an NPC pays for it × your chance">NPC z / kill</th><th data-sk="z">Zeny / kill from it</th><th data-sk="sp" title="how many of it spawn on its best open map">Spawns</th><th data-sk="map">Best open map</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><input type="search" data-tf="lv" placeholder="30-60"></td><td><input type="search" data-tf="ch" placeholder=">1"></td><td><input type="search" data-tf="your" placeholder=">1"></td><td><input type="search" data-tf="nz" placeholder=">1"></td><td><input type="search" data-tf="z" placeholder=">1"></td><td><input type="search" data-tf="sp" placeholder=">20"></td><td><input type="search" data-tf="map" placeholder="map"></td></tr></thead><tbody></tbody></table></div></div>
-    </div>
+    <div class="note hint">Filter the list in the row under its headings. Click an item for its details: every monster that drops it, what a kill brings from it, and where they spawn.</div>
   </section>
 
   <section class="card" id="eqDbCard" data-tab="equip">
@@ -990,7 +974,15 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 <script src="data/essences.js"></script>
 <script src="data/affixitems.js"></script>
 <script src="build.js"></script>
-<button type="button" class="fab" id="qlFab" aria-label="Log EXP" aria-expanded="false" aria-controls="quickLog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+<!-- Log EXP from any tab: the + button (or L) opens it -->
+<form class="quickLog" id="quickLog" autocomplete="off" aria-label="Log EXP">
+  <span class="qlLbl">Log EXP</span>
+  <input id="qlInput" placeholder="17.9 63" aria-label="EXP %, then job % (optional)" aria-describedby="qlHelp" enterkeyhint="done">
+  <button type="submit" class="primary small">Log</button>
+  <kbd class="qlKey" title="Press L on any tab to log">L</kbd>
+  <span class="qlHelp" id="qlHelp">EXP % then job %. Add a time (15:05) to log it then, or "died" for EXP after a death. Logged at the level of your last entry.</span>
+</form>
+<button type="button" class="fab" id="qlFab" aria-label="Log EXP" title="Log EXP (L)" aria-expanded="false" aria-controls="quickLog"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
 <dialog class="jump" id="jump" aria-label="Search">
   <div class="jumpBox"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="jumpInput" placeholder="Search monsters, items, maps, tabs…" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="jumpList" aria-autocomplete="list"><kbd>Esc</kbd></div>
   <div class="jumpList" id="jumpList" role="listbox"></div>

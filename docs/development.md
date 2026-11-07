@@ -43,7 +43,7 @@ Plain scripts that `index.html` loads in this order. They share one global scope
 | `stellar.js` | The Stellar weapons tab: the ★ weapons by weapon type, the certificates each still needs and the monster that gets you them fastest, and the Activation routes. |
 | `affixitems.js` | The Affixes tab: the items that add affixes to gear (`CLIENT.upgrades`), the gear each one works on, and the affixes players saw them add (`data/affixitems.js`). |
 | `shared.js` | Shared prices and cloud backup: the Discord login (through Supabase, `SHARED` at the top holds its address and public key), the Market tab's shared prices and Share button, and the Account tab's cloud backup. Hidden until `SHARED` is filled in; see [Shared prices](shared-prices.md). |
-| `start.js` | Tabs and their headings, collapsible cards, the Character tab's section links, the get started card's buttons, the search (Ctrl+K), the sidebar's Compact button and its Settings menu (Hints / Theme / Full width), and the first render. |
+| `start.js` | Tabs and their headings, the main nav's levels (the sidebar's groups, menus and the open tab's sections; menus along the top on narrow windows), collapsible cards, the Character tab's section links, the get started card's buttons, the search (Ctrl+K), the sidebar's Compact button and its Settings menu (Hints / Theme / Full width), and the first render. |
 
 ### `data/`
 
@@ -139,7 +139,7 @@ node tests/model.test.mjs    # damage and tracker maths, loaded with a stand-in 
 node tests/stamp.test.mjs    # index.html carries no ?v= stamps, and the deploy stamps every file
 ```
 
-`tests/browser/smoke.mjs` opens the real page in Chromium: every tab shows only its own panels, Ctrl+K search opens a monster's details, a details link (`#item/909`) opens its popup, the theme in the Settings menu cycles and the sidebar follows it, the account and session pickers sit on the Character and Session tabs with their + New buttons, and no tab scrolls sideways at phone width. It fails on any script error. It needs Playwright, so it isn't a `*.test.mjs` file:
+`tests/browser/smoke.mjs` opens the real page in Chromium: every tab shows only its own panels, Ctrl+K search opens a monster's details, a details link (`#item/909`) opens its popup, the theme in the Settings menu cycles and the sidebar follows it, the account and session pickers sit on the Character and Session tabs with their + New buttons, the main nav (the sidebar's sections and group menus, the menus along the top on a phone), and no tab scrolls sideways at phone width. It fails on any script error. It needs Playwright, so it isn't a `*.test.mjs` file:
 
 ```sh
 npm i --no-save playwright && npx playwright install chromium && node tests/browser/smoke.mjs

@@ -52,14 +52,43 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
 .tabs .navGrp:hover{color:var(--side-fg);background:none}
 /* a sidebar group's heading folds its tabs away (saved per device); the open tab stays showing */
 .navChev{width:13px;height:13px;transition:transform .15s}
-.navGrp[aria-expanded="false"] .navChev{transform:rotate(-90deg)}
-@media (min-width:1024px){:root:not(.compact) .tabs button.navHid:not([aria-selected="true"]){display:none}}
 .tabs button{position:relative;display:flex;align-items:center;gap:11px;width:100%;border:0;background:none;border-radius:9px;padding:8px 12px;color:var(--side-fg);opacity:.78;font-weight:500;text-align:left;white-space:nowrap;transition:background .15s,opacity .15s,color .15s}
 .tabs button:hover{opacity:1;background:var(--side-hover)}
 .tabs button[aria-selected="true"]{opacity:1;color:var(--side-strong);background:var(--side-on);font-weight:600}
 .tabs button[aria-selected="true"]::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--brand)}
 .tabs button[aria-selected="true"] .ic{color:var(--side-on-ic)}
 .ic{flex:none;width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+/* ---- the main nav's levels (js/start.js setupNav): groups (.navSec: a heading and its tabs), the open tab's sections (.navSubs) ---- */
+.navSec{display:flex;flex-direction:column}
+.navItems{display:flex;flex-direction:column;gap:2px}
+.navChev{transition:transform .15s}
+.navSubs{display:flex;flex-direction:column;gap:1px;margin:2px 0 6px 23px;padding-left:10px;border-left:1px solid var(--side-line)}
+.navSubs a{display:block;padding:4px 10px;border-radius:7px;color:var(--side-muted);font-size:12.5px;font-weight:500;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.navSubs a:hover{color:var(--side-fg);background:var(--side-hover)}
+.navSubs a[aria-current]{color:var(--side-on-ic);background:var(--side-on)}
+@media (min-width:1024px){
+  /* a desktop window: the sidebar. The open tab's group is listed with its sections; another group folds to its heading, which
+     unfolds it in place (.exp; .shut folds the open tab's group) */
+  :root:not(.compact) .navSec:not(:has([aria-selected="true"])):not(.exp)>.navItems,:root:not(.compact) .navSec.shut>.navItems{display:none}
+  :root:not(.compact) .navSec:not(:has([aria-selected="true"])):not(.exp)>.navGrp .navChev,:root:not(.compact) .navSec.shut>.navGrp .navChev{transform:rotate(-90deg)}
+  /* the sections are in the sidebar, so not again beside or above the cards */
+  :root:not(.compact) .wrap.hasPageNav{display:flex}
+  :root:not(.compact) #pageNav,:root:not(.compact) .secNav[aria-label="Character sections"]{display:none}
+}
+/* a narrower window or a phone: Home and a menu for each group along the top */
+@media (max-width:1023px){
+  .navSec{display:block}
+  .tabs .navSec>.navGrp{display:flex;font-size:inherit;font-weight:500;letter-spacing:0;text-transform:none;justify-content:flex-start;gap:4px;padding:7px 8px 7px 12px;color:var(--muted)}
+  .tabs .navSec>.navGrp:hover,.tabs .navSec.open>.navGrp{color:var(--fg);background:var(--grid)}
+  .tabs .navSec:has([aria-selected="true"])>.navGrp{color:var(--accent);background:var(--accent-soft)}
+  .navSec.open>.navGrp .navChev{transform:rotate(180deg)}
+  .navSec>.navItems{display:none;position:fixed;z-index:40;min-width:220px;max-width:calc(100vw - 16px);padding:6px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-pop)}
+  .navSec.open>.navItems{display:flex}
+  .tabs .navItems button{width:100%;justify-content:flex-start}
+  .navItems .ic{display:inline-block!important}
+  .tabs .navGrp .navChev{display:inline-block!important}
+  .navSubs{display:none}
+}
 .sideFoot{margin-top:auto;display:flex;flex-direction:column;gap:2px;padding-top:12px;border-top:1px solid var(--side-line)}
 .iconBtn{display:flex;align-items:center;gap:11px;border:0;background:none;padding:7px 12px;border-radius:9px;color:var(--side-muted);font-weight:500;font-size:13px;text-align:left}
 .iconBtn:hover{color:var(--side-fg);background:var(--side-hover);border:0}
@@ -73,16 +102,15 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
 .wrap{width:100%;max-width:1180px;margin:0 auto;padding:0 36px 72px;display:flex;flex-direction:column;gap:20px;min-width:0}
 /* the session you're on, pinned over every tab */
 .main{min-width:0}
-.ctxIn{max-width:1180px;margin:0 auto;padding:12px 36px;display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap}
+/* the top bar: your EXP rate and the Log EXP box, on the right */
+.ctxIn{max-width:1180px;margin:0 auto;padding:12px 36px;display:flex;align-items:center;justify-content:flex-end;gap:6px 10px;flex-wrap:wrap}
 :root.wide .ctxIn{max-width:none}
+/* the top bar shows only with something in it: your EXP %/hr line or the paused note */
+.ctxBar:not(:has(#ctxRate:not([hidden]),#pauseNote:not([hidden]))){display:none}
 .ctxBar{position:sticky;top:0;z-index:6;font-size:13px;
   background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
 .ctxBar b{font-weight:600}
-.ctxSub{flex:1 1 0;min-width:0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ctxSub:not(:empty)::before{content:"—";margin-right:8px;color:var(--line-strong)}
-.live{width:8px;height:8px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 22%,transparent)}
 #pauseNote{flex-basis:100%;color:var(--warn);font-weight:600;font-size:12.5px}
-.app:has(#pauseNote:not([hidden])) .live{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 22%,transparent)}
 .pageHead{display:flex;flex-direction:column;gap:6px;padding:26px 0 6px}
 .eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:var(--brand);-webkit-background-clip:text;background-clip:text;color:transparent;width:fit-content}
 .pageHead h1{font-size:2.35rem;font-weight:800;letter-spacing:-.035em;line-height:1.05}
@@ -125,9 +153,7 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
   .app{background:radial-gradient(700px 300px at 80% -100px,var(--glow-a),transparent 70%)}
   .ctxBar{position:static;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;border:0}
   .ctxIn{padding:10px 16px 0}
-  .ctxSub{flex-basis:100%;padding-left:18px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.ctxSub::before{display:none}
   .pageHead{padding-top:14px}.pageHead h1{font-size:1.85rem}
-  .tabs .navGrp{display:none}
   .main{grid-column:1/-1}
   .wrap{padding:0 16px 48px;gap:16px}
 }
@@ -319,7 +345,7 @@ td .map{cursor:default}
 #cmpTable th:nth-child(3),#cmpTable td:nth-child(1),#cmpTable td:nth-child(3){white-space:normal;text-align:left;min-width:120px;max-width:180px;line-height:1.35}
 #cmpTable td:nth-child(1){max-width:150px}#cmpTable .filters input{min-width:40px}
 #huntTable td.mainmobs{white-space:normal;min-width:200px;line-height:1.35;text-align:left}
-#itemTable td.name,#itemDroppers td.name{text-align:left}
+#itemTable td.name{text-align:left}
 #huntTable a.hpick{text-decoration:none;color:var(--fg)}
 #huntTable .hpick.off{color:var(--muted);text-decoration:line-through}
 #huntTable .drop.off a{color:var(--muted)}
@@ -513,11 +539,11 @@ table.formulas td.chg{background:var(--accent-soft)}
 .qlKey{font-family:var(--mono);font-size:11px;padding:1px 6px;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;color:var(--muted);background:var(--surface)}
 .qlHelp{display:none}
 .quickLog:focus-within .qlKey{display:none}
-.fab{display:none}
-@media (max-width:1023px){
+/* the + button, bottom right on any tab (or L), opens Log EXP: a sheet from the bottom on a phone, a pop-up above the button on a desktop */
+@media all{
   .quickLog{position:fixed;left:0;right:0;bottom:0;z-index:40;margin:0;flex-wrap:wrap;gap:10px;padding:18px 16px calc(18px + env(safe-area-inset-bottom));
     background:var(--surface);border-radius:20px 20px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.18);transform:translateY(110%);visibility:hidden;transition:transform .25s cubic-bezier(.2,.7,.2,1),visibility .25s}
-  .qlOpen .quickLog{transform:none;visibility:visible}
+  body:has(.app.qlOpen) .quickLog{transform:none;visibility:visible}
   .app::after{content:"";position:fixed;inset:0;z-index:35;background:rgba(10,8,20,.45);opacity:0;pointer-events:none;transition:opacity .25s}
   .app.qlOpen::after{opacity:1}
   .qlLbl{flex-basis:100%;font-family:var(--display);font-size:1.1rem;font-weight:700;color:var(--fg)}
@@ -532,8 +558,16 @@ table.formulas td.chg{background:var(--accent-soft)}
   .fab .ic{width:24px;height:24px;stroke-width:2.2}
   .fab:hover{background:var(--brand-btn);filter:brightness(1.07)}
   body:has(.app.qlOpen) .fab{opacity:0;pointer-events:none}
-  /* clear of the Character tab's bottom dock */
+  /* clear of the Character tab's bottom dock (narrower than 1360px) */
   body:has(.charLayout:not([hidden])) .fab{bottom:calc(92px + env(safe-area-inset-bottom))}
+}
+@media (min-width:1360px){body:has(.charLayout:not([hidden])) .fab{bottom:calc(18px + env(safe-area-inset-bottom))}}
+@media (min-width:1024px){
+  .quickLog{left:auto;right:18px;bottom:84px;width:min(400px,calc(100vw - 36px));border-radius:16px;padding:16px;box-shadow:var(--shadow-pop);transform:translateY(12px);opacity:0;transition:transform .2s,opacity .2s,visibility .2s}
+  body:has(.app.qlOpen) .quickLog{opacity:1}
+  .app::after{background:rgba(10,8,20,.18)}
+  .quickLog input{font-size:14px;padding:8px 12px}
+  .quickLog button{padding:8px 16px;font-size:14px}
 }
 
 /* ---- get started ---- */
@@ -559,29 +593,38 @@ table.formulas td.chg{background:var(--accent-soft)}
 .startCard.offTab{display:none}
 
 /* ---- Home tab ---- */
-.homeHero{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:34px 0 10px}
-.homeHero h1{font-size:2.7rem;font-weight:800;letter-spacing:-.04em;line-height:1.02;max-width:24ch}
+/* centred, like a search page: the update line, the title, the search bar and the button under it */
+.homeHero{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;padding:34px 0 10px;
+  /* the first screen, with the hero in its middle; What's new and the rest scroll up under it */
+  min-height:calc(100svh - 60px)}
+@media (max-width:1023px){.homeHero{min-height:calc(100svh - 160px)}}
+.homeHero h1{font-size:2.7rem;font-weight:800;letter-spacing:-.04em;line-height:1.02;max-width:24ch;text-wrap:balance}
+.homeHero .homeActs{justify-content:center}
 .homeHero p{margin:0;max-width:80ch;color:var(--muted);font-size:15px;line-height:1.6;text-wrap:pretty}
 .homeHero kbd{font-family:var(--mono);font-size:11px;padding:0 5px;margin-left:4px;border-radius:5px;border:1px solid currentColor;opacity:.6}
 .homeActs{margin-top:4px}
 .homeActs button{padding:8px 16px}
+.homeNewsHead .homeNext{margin-top:8px}
 .homeNext{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:5px 12px;border-radius:999px;font-size:12.5px;text-decoration:none;color:var(--fg);
   background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);transition:border-color .12s}
 .homeNext:hover{border-color:var(--accent)}
 .homeNext b{color:var(--accent);font-weight:650}
 .homeNext span{color:var(--muted)}
 .homeNext:empty{display:none}
-.homeCounts{display:flex;flex-wrap:wrap;gap:10px 30px;margin-top:10px;padding-top:16px;border-top:1px solid var(--line)}
-.homeCounts div{display:flex;flex-direction:column}
-.homeCounts b{font-family:var(--display);font-size:1.5rem;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.homeCounts span{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .tiles.homeTiles{grid-template-columns:repeat(4,minmax(0,1fr))}
 button.tile{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
 button.tile:hover{border-color:var(--accent)}
 .homeTools{display:flex;flex-direction:column;gap:18px}
 .toolGrp{display:flex;flex-direction:column;gap:8px}
 .toolGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
-.tool{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:12px;background:var(--raised);border:1px solid var(--line);text-align:left;font-weight:400;color:inherit}
+/* Home's search bar: a click or a key in it opens the search (Ctrl+K) with what's typed */
+.homeSearchBar{display:flex;flex-direction:row;align-items:center;gap:10px;font-weight:400;font-size:inherit;color:inherit;letter-spacing:0;text-transform:none;width:min(100%,600px);margin:8px 0 2px;text-align:left;padding:12px 18px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);box-shadow:var(--shadow);cursor:text}
+.homeSearchBar:hover,.homeSearchBar:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.homeSearchBar .ic{flex:none;width:20px;height:20px;color:var(--muted)}
+.homeSearchBar input{flex:1;min-width:0;border:0;background:none;padding:0;font-size:15.5px;box-shadow:none;outline:0}
+.homeSearchBar input:focus{box-shadow:none}
+.homeSearchBar kbd{font-family:var(--mono);font-size:11px;padding:1px 7px;border:1px solid var(--line-strong);border-radius:5px;color:var(--muted)}
+.tool{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:var(--raised);border:1px solid var(--line);text-align:left;font-weight:400;color:inherit}
 .tool:hover{border-color:var(--accent);background:var(--accent-soft)}
 .toolIc{flex:none;display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--accent-soft);color:var(--accent)}
 .toolIc .ic{width:18px;height:18px}
@@ -596,6 +639,8 @@ button.tile:hover{border-color:var(--accent)}
 
 /* hints off (sidebar button): the help text under the cards goes */
 .nohints .hint{display:none!important}
+/* the page description under each tab's heading is a hint too */
+.nohints #heroDesc{display:none}
 #hintBtn[aria-pressed="false"]{opacity:.7}
 
 /* ---- wide tables: the first column (rank and map in the hunters) stays put when you scroll sideways; column views beside the picker ---- */
@@ -686,6 +731,18 @@ button.tile:hover{border-color:var(--accent)}
   .jumpFoot span:last-child{display:none}
   .jump{margin-top:8vh}
   .jr{grid-template-columns:60px minmax(0,1fr);row-gap:1px}.jm{grid-column:2}
+}
+/* a narrower window with room for it: the brand, the group menus, search and settings in one row that stays at the top as you scroll.
+   A phone keeps two, the menus under the rest (the menus' row stays at the top) */
+@media (min-width:840px) and (max-width:1023px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{grid-column:1;grid-row:1;display:flex;flex-direction:row;align-items:center;gap:8px;position:sticky;top:0;z-index:7;height:auto;
+    padding:8px 16px;overflow:visible;background:var(--bg);color:var(--fg);box-shadow:inset 0 -1px 0 var(--line)}
+  .brand{order:1;padding:0 8px 0 0}
+  .tabs{order:2;flex:1;min-width:0;position:static;border:0;background:none;padding:0 4px}
+  .searchBtn{order:3;margin:0}
+  .sideFoot{order:4;margin:0;padding:0}
+  .main{grid-column:1}
 }
 
 /* ---- Where to farm: the best spots (by EXP and by zeny, side by side), then one ranking ---- */
@@ -859,7 +916,10 @@ details.more>.form{display:grid}
 #mapDun{margin:0 0 12px}
 #mapDun:empty{display:none}
 #mapDun h3{margin:0;font-size:1rem}
-.mapPics>.worldMore{flex:1 1 360px;max-width:640px;border-top:0;padding-top:0}
+/* the world map takes the width the map's picture (about a quarter of the card beside it) leaves; on a phone the picture goes under it */
+.mapPics>.worldMore{flex:1 1 400px;min-width:0;max-width:900px;border-top:0;padding-top:0}
+.mapPics>.naviPic{flex:0 0 auto;width:clamp(180px,26%,300px)}
+@media (max-width:600px){.mapPics>.naviPic{width:min(100%,320px)}}
 .mapTop{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start}
 .mapTop>#mapTiles{flex:1 1 360px;min-width:0}
 .mapTop>.mapPic,.mapTop>.naviPic{flex:none;width:min(100%,280px)}
@@ -959,7 +1019,7 @@ details.infoSec>summary:hover h3{color:var(--fg)}
 .usedTable td.mats .mat{display:block;white-space:nowrap}
 #cookTable :is(th,td).sel{background:var(--accent-soft)}
 /* the What's new tab: the update's heading, its floors (one row per monster, bars on one scale), bosses' cards, gear and events */
-.homeNewsCard{margin-top:20px;border-color:transparent;background:linear-gradient(160deg,var(--accent-soft),transparent 50%) padding-box,linear-gradient(var(--surface),var(--surface)) padding-box,var(--brand) border-box}
+.homeNewsCard{border-color:transparent;background:linear-gradient(160deg,var(--accent-soft),transparent 50%) padding-box,linear-gradient(var(--surface),var(--surface)) padding-box,var(--brand) border-box}
 .homeNewsHead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
 .homeNewsHead h2{margin:6px 0;font-family:var(--display);font-size:1.9rem;font-weight:800;letter-spacing:-.03em;line-height:1.05}
 .homeNewsHead p{margin:0;max-width:75ch;color:var(--muted);line-height:1.6;text-wrap:pretty}
@@ -1150,4 +1210,3 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 .affDetails{margin-top:4px}.affDetails summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent);padding:2px 0}.affDetails .scroll{margin-top:6px}
 #affixGear .scroll{max-height:420px;overflow:auto}
 /* Item info: the item picked in the list, under it */
-.itemSel{display:flex;flex-direction:column;gap:12px;scroll-margin-top:72px}
