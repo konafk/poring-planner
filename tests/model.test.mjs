@@ -3016,9 +3016,12 @@ t("equipment window: gear named as the game shows it, and the job's look (Bards 
 
 t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {
   // Cooking from the client's cookbooks (60 dishes, Lv 1–10) in place of the database's 29, the Tip Box's 6 potions and 4 fruit juices,
-  // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts, and the client's 47 NPC crafts (the 2 Februs offers on Global, the Hat Maker's 2, 33 hat quests, the Quartermaster's two helms and Helm Scroll,
-  // Jade's 3 Gemstone swaps, Puchuchartan's 4 elemental ores, Oridecon and Elunium at Tadde, Kantstaff and Christopher Gillenlow, whose Oridecon replaces the database's)
-  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length-1+60+10+18+53`), run(`RECIPE_LIST.length`));
+  // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts, and the client's 48 NPC crafts (the 2 Februs offers on Global, the Hat Maker's 2, 33 hat quests, the Quartermaster's two helms and Helm Scroll,
+  // Jade's 3 Gemstone swaps, Puchuchartan's 4 elemental ores, Oridecon and Elunium at Tadde, Kantstaff and Christopher Gillenlow, whose Oridecon replaces the database's,
+  // and Yakt's Blacksmith Blessing)
+  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length-1+60+10+18+54`), run(`RECIPE_LIST.length`));
+  assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===6635))`), "Yakt (Exchange with Zelstar) · moc_para01 22,35");    // Blacksmith Blessing
+  assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===6635).mats)`), "[[1002357,30],[25399,10]]");
   assert.equal(run(`RECIPE_LIST.filter(r=>r.id===984).map(recipeNpc).join("|")`), "Tadde (Process refining stones) · izlude 145,122|Kantstaff (Process refining stones) · prt_mk 153,162|Christopher Gillenlow (Make Oridecon) · prontera 179,184");  // Oridecon: no database row
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===985).mats)`), "[[757,5]]");                                     // Elunium
   assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Headgear").length`), 39);

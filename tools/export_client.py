@@ -103,6 +103,12 @@ EXCHANGES.update({993: (*SHAMAN, [[947, 15]], "Elemental Fusion", "Misc"),
 TADDE, KANT, GILL = ("Tadde", "izlude 145,122"), ("Kantstaff", "prt_mk 153,162"), ("Christopher Gillenlow", "prontera 179,184")
 EXCHANGES.update({984: (*TADDE, [[756, 5]], "Process refining stones", "Forging"),
                   985: (*TADDE, [[757, 5]], "Process refining stones", "Forging")})
+# Yakt, the Raid Manager (navi_npc.lub: moc_para01 22,35, the Eden Group's headquarters), trades Blacksmith Blessing Powder ("I'll
+# exchange Blacksmith Blessing Powder", "You can exchange 30 Blacksmith Blessing Powder for a Reward Box") with a choice of "Exchange
+# with Goblin Coin Shard" or "Exchange with Zelstar". The Zelstar shop as seen in game (the user's screenshot, 7 November 2026): 1
+# Blacksmith Blessing for 30 Blacksmith Blessing Powder and 10 Zelstar, no zeny. The Goblin Coin Shard cost isn't known yet: left out
+YAKT = ("Yakt", "moc_para01 22,35")
+EXCHANGES.update({6635: (*YAKT, [[1002357, 30], [25399, 10]], "Exchange with Zelstar", "Misc")})
 # a second NPC for an item EXCHANGES already has: [(item id, (NPC, where, what it takes, its menu, category))]
 EXCHANGES_ALSO = [(984, (*KANT, [[756, 5]], "Process refining stones", "Forging")),
                   (985, (*KANT, [[757, 5]], "Process refining stones", "Forging")),
