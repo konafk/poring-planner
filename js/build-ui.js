@@ -310,7 +310,7 @@ function renderStones(){const b=gearSet(),sel=b.stones||{},ring=(b.special||{}).
     return `<tr><td>Costume ${lo}</td><td><div class="itemBox">${itemIcon(cos[z.k])}<input class="item" data-costume="${z.k}" list="cos_${z.k}" placeholder="none" title="The costume the ${lo} stone goes on" aria-label="Costume ${lo}" value="${esc(costumeName(cos[z.k]))}"></div></td>
     <td><div class="itemBox">${itemIcon(sel[z.k])}<select data-stone="${z.k}" aria-label="Costume ${lo} stone"><option value="">no stone</option>${all.filter(x=>x.slot===z.k)
     .map(x=>`<option value="${x.id}"${+sel[z.k]===x.id?" selected":""}>${esc(x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""))}: ${esc(stoneFx(x))}</option>`).join("")}</select></div></td><td></td></tr>`}).join("")+
-    `<tr><td>Shield</td><td><div class="itemBox">${iconHtml("gear",sh)}<select data-shadow="shield" aria-label="Shadow shield"><option value="">none</option>${shadowShields().map(x=>`<option value="${x.id}"${+sh===x.id?" selected":""}>${esc(x.name)}: ${esc(stoneFx({b:(x.g||[]).flatMap(g=>g.b||[])}))}</option>`).join("")}</select></div></td><td></td><td></td></tr>
+    `<tr><td>Shadow shield</td><td><div class="itemBox">${iconHtml("gear",sh)}<select data-shadow="shield" aria-label="Shadow shield"><option value="">none</option>${shadowShields().map(x=>`<option value="${x.id}"${+sh===x.id?" selected":""}>${esc(x.name)}: ${esc(stoneFx({b:(x.g||[]).flatMap(g=>g.b||[])}))}</option>`).join("")}</select></div></td><td></td><td></td></tr>
     <tr><td>Accessory right</td><td><div class="itemBox">${itemIcon(ring&&24966)}<select data-ringon="1" aria-label="Accessory right"><option value="">none</option><option value="1"${ring?" selected":""}>Taming Ring</option></select></div></td><td><div class="itemBox">${itemIcon(ring)}<select data-ring="1" aria-label="Taming Ring pet egg" title="${ring?"The pet egg sealed in the ring":"Picking an egg puts the Taming Ring on"}"><option value="">no egg</option>${eggs.map(x=>`<option value="${x.id}"${+ring===x.id?" selected":""}>${esc(x.name)}: ${esc([x.b.length?stoneFx({b:x.b}):"",x.off||""].filter(Boolean).join(", "))}</option>`).join("")}</select></div></td><td></td></tr>`;renderSpecialOwn()}
 // other special equipment: rows {on, name, opts} in b.special.own, each with up to OPT_MAX effects from the full affix list
 const specialOwn=()=>{const b=gearSet();b.special=b.special||{};if(!Array.isArray(b.special.own))b.special.own=[];return b.special.own};
@@ -440,15 +440,35 @@ function wornOf(L){const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,co
   const shown=k=>{for(const w of [cos,gear])if(w[k])return ["upper","middle","lower"].find(s=>slotsOf(w[k]).includes(s))===k?w[k]:null;return null};
   const r=look(cos.garment||gear.garment);
   return {head:["lower","upper","middle"].map(shown).map(look).filter(x=>x&&x[0]==="h").map(x=>x[1]),robe:r&&r[0]==="r"?r[1]:null}}
+// what a gear set (gearSet's) wears, as a look's {gear, cos}: its headgear and garment (one that's a costume, "[Costume] ...", with the
+// costumes) and the costumes in Special equipment, each in every slot it takes, a later one taking off what was in them. Pieces the
+// client has no look for are left out
+function wornFromSet(b){const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,w={gear:{},cos:{}};if(!CL||!b)return w;
+  const cosSlots=id=>(typeof COSTUMES!=="undefined"&&COSTUMES[id])||CL.cos[id];
+  const put=(kind,id)=>{const c=w[kind],sl=(kind==="cos"?cosSlots(id):CL.gear[id])||[];
+    sl.forEach(k=>{const o=c[k];if(o)Object.keys(c).forEach(s=>{if(c[s]===o)delete c[s]})});
+    sl.forEach(k=>{if(["upper","middle","lower","garment"].includes(k))c[k]=id})};
+  const ids=a=>[...new Set(a.map(x=>+x).filter(x=>x&&CL.items[x]))];
+  ids(["headTop","headMid","headLow","garment"].map(k=>((b.gear||{})[k]||{}).id)).forEach(id=>put(cosSlots(id)?"cos":"gear",id));
+  ids(Object.values((b.special||{}).costume||{})).forEach(id=>put("cos",id));
+  return w}
+// the body a look is drawn with (data/sprites.js): the job's own (a Novice's for a job with no look), its transcendent look (trans, a 2nd
+// job's), riding the Halter Lead's mount (ride), or both, where the client has it. set: the body per gender; pal: its clothes colours'
+// set; key: "<job>", "<job>+", "<job>~" or "<job>+~", as the garment sheets and animated looks name it
+const LOOK_SETS={"":"body","+":"trans","~":"ride","+~":"rideTrans"};
+function lookBody(job,trans,ride){const S=JOB_SPRITES,j=S.body[job]?job:"Novice",t=!!(trans&&EW_TRANS[j]&&(S.trans||{})[j]);
+  const r=!!(ride&&(S[t?"rideTrans":"ride"]||{})[j]),sfx=(t?"+":"")+(r?"~":""),set=LOOK_SETS[sfx];
+  return {job:j,trans:t,ride:r,key:j+sfx,set:S[set][j],pal:set+"Pal"}}
 // a job's look as a canvas placed from the feet (in an .ewFeet), painted by drawLook once the sheets load: L is a look like state.look
 // ({sex, hair, color, dye}, cos: the costumes worn and gear: the normal headgear and garment, each {upper, middle, lower, garment: item
-// id}), trans a 2nd job's transcendent look. A job with no look of its own (or no look for the gender) takes the Novice's, or its one gender's
+// id}, ride: on the Halter Lead's mount), trans a 2nd job's transcendent look. A job with no look of its own (or no look for the gender)
+// takes the Novice's, or its one gender's
 function lookCanvas(job,L,trans){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";
-  const tj=trans&&EW_TRANS[job]&&S.trans&&S.trans[job],bj=tj||S.body[job]||S.body.Novice,sex=bj[L.sex]?L.sex:Object.keys(bj)[0],b=bj[sex],
-    hs=S.head[sex]||{},hair=hs[L.hair]?L.hair:1,h=hs[hair],pk=tj?"transPal":"bodyPal",pj=tj||S.body[job]?job:"Novice";
+  const lb=lookBody(job,trans,L.ride),bj=lb.set,sex=bj[L.sex]?L.sex:Object.keys(bj)[0],b=bj[sex],
+    hs=S.head[sex]||{},hair=hs[L.hair]?L.hair:1,h=hs[hair],pk=lb.pal,pj=lb.job;
   // what it wears (wornOf): headgear on the head anchor, the garment from the feet on this body's garment sheet, behind the body unless
   // the client draws it on top
-  const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,w=wornOf(L),rk=tj?job+"+":S.body[job]?job:"Novice";
+  const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,w=wornOf(L),rk=lb.key;
   const acc=w.head.map(v=>(CL.head.at[v]||{})[sex]).filter(Boolean),rs=w.robe&&CL.robe.bodies[rk],ra=rs&&(rs.at[w.robe]||{})[sex];
   // body and head go into one canvas at the sprites' own size, which the page then scales: as separate boxes each rounded to the
   // screen's pixels on its own, so at some zooms the head sat a pixel off the body
@@ -457,7 +477,7 @@ function lookCanvas(job,L,trans){const S=typeof JOB_SPRITES!=="undefined"&&JOB_S
   const at=(p,x,y)=>[...p.slice(0,4),x-l,y-t].join(","),bp=((S[pk]||{})[pj]||{})[sex],dye=bp&&L.dye<bp.c.length?L.dye:0,color=L.color<ewColors(sex,hair)?L.color:0;
   return `<canvas class="ewPic" width="${r-l}" height="${bt-t}" style="left:${l}px;top:${t}px" data-body="${at(b,b[4],b[5])}" data-pal="${pk},${pj},${sex}" data-dye="${dye}"${h?` data-head="${at(h,b[6]+h[4],b[7]+h[5])}" data-hair="${sex},${hair},${color}"`:""}`+
     `${acc.length?` data-acc="${acc.map(a=>at(a,b[6]+a[4],b[7]+a[5])).join(";")}"`:""}${ra?` data-robe="${rk},${at(ra,ra[4],ra[5])},${CL.robe.top.includes(w.robe)?1:0}"`:""}></canvas>`}
-function lookHtml(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";const tj=ewTrans(S),bj=(state.look.trans&&tj)||S.body[state.job]||S.body.Novice,sex=ewSex(bj),hs=S.head[sex]||{};
+function lookHtml(worn){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";const tj=ewTrans(S),bj=(state.look.trans&&tj)||S.body[state.job]||S.body.Novice,sex=ewSex(bj),hs=S.head[sex]||{};
   const one=Object.keys(bj).length<2,hair=hs[state.look.hair]?state.look.hair:1,nc=ewColors(sex,hair),color=state.look.color<nc?state.look.color:0;
   const pal=S.hairPal&&S.hairPal[sex]&&S.hairPal[sex][hair],swatch=pal?pal.c[color].substr(pal.k*6,6):"";
   // clothes colour 0 is undyed, 1 and up the client's dyes for this body
@@ -466,12 +486,14 @@ function lookHtml(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)
   // Coupon, 7622), and clothes color a Clothing Dye Coupon or Clothing Dye Coupon II (6046, 6047), the transcendent look's too
   const hairTip="changing it after character creation takes a paid KP shop item, such as a New Style Coupon";
   const dyeTip="a Clothing Dye Coupon or Clothing Dye Coupon II (KP shop) changes it, on the transcendent look too. The dye stays through a job change, but can look different on the new job";
-  return `<div class="ewStage"><div class="ewFeet">${lookCanvas(state.job,state.look,state.look.trans)}</div></div>
+  return `<div class="ewStage"><div class="ewFeet">${lookCanvas(state.job,{...state.look,...worn},state.look.trans)}</div></div>
     <div class="ewLook"><button type="button" class="small" data-ewsex="" ${one?`disabled title="${esc(state.job)}s are ${sex==="f"?"female":"male"} only"`:`title="Gender: ${sex==="f"?"female":"male"}"`} aria-label="Gender">${sex==="f"?"♀":"♂"}</button>
       <button type="button" class="small" data-ewhair="-1" aria-label="Previous hair style" title="Hair style: ${hairTip}">◀</button><span title="Hair style: ${hairTip}"><span class="ewHairW">Hair </span>${hair}</span><button type="button" class="small" data-ewhair="1" aria-label="Next hair style" title="Hair style: ${hairTip}">▶</button></div>
       ${nc>1?`<div class="ewLook"><button type="button" class="small" data-ewcolor="-1" aria-label="Previous hair color" title="Hair color: ${hairTip}">◀</button><span title="Hair color ${color} of 0–${nc-1}: ${hairTip}"><span class="ewSwatch" style="background:#${swatch}"></span><span class="ewHairW">Color </span>${color}</span><button type="button" class="small" data-ewcolor="1" aria-label="Next hair color" title="Hair color: ${hairTip}">▶</button></div>`:""}
       ${nd>1?`<div class="ewLook"><button type="button" class="small" data-ewdye="-1" aria-label="Previous clothes color" title="Clothes color: ${dyeTip}">◀</button><span title="Clothes color ${dye} of 0–${nd-1} (0 undyed): ${dyeTip}"><span class="ewSwatch" style="background:#${dyeSwatch}"></span><span class="ewHairW">Dye </span>${dye}</span><button type="button" class="small" data-ewdye="1" aria-label="Next clothes color" title="Clothes color: ${dyeTip}">▶</button></div>`:""}
       ${tj?`<div class="ewLook"><button type="button" class="small ewTrans" data-ewtrans="" aria-pressed="${!!state.look.trans}" title="${esc(`${EW_TRANS[state.job]} look: Ragnarok Zero has no transcendent jobs, so a ${state.job} can look like a ${EW_TRANS[state.job]}. A Costume Change Ticket switches the look in game`)}">Trans</button></div>`:""}`}
+// what the character in the window wears, as in game: on Normal Equip its headgear and garment, on Special Equip the costumes over them
+function ewWorn(b,sp){const w=wornFromSet(b);if(!sp)w.cos={};return w}
 function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),sp=EW_TAB==="special";
   const gearSlot=(k,right)=>{const g=b.gear[k],it=g&&g.id&&BUILD.item(g.id),s=BUILD.SLOTS.find(x=>x.k===k);
     return ewSlot(k,k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label,it?gameName(g):"",iconHtml("gear",it&&it.id),right)};
@@ -483,7 +505,7 @@ function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),
   const ring=()=>{const id=(b.special||{}).ring,x=id&&(typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[]).find(e=>e.id===+id);
     return ewSlot("ring","Taming Ring",x?`Taming Ring [${x.name}]`:id?"Taming Ring":"",itemIcon(id&&24966),false)};
   // the shadow shield in the shield's place, as in game; other special equipment you wear in the right column's free slots
-  const shield=()=>{const it=BUILD.item((b.special||{}).shield);return ewSlot("shield","Shield",it?it.name:"",iconHtml("gear",it&&it.id),true)};
+  const shield=()=>{const id=(b.special||{}).shield,it=id&&BUILD.item(id);return ewSlot("shield","Shadow shield",it?it.name:"",iconHtml("gear",it&&it.id),true)};
   const own=((b.special||{}).own||[]).map((x,j)=>({x,j})).filter(o=>o.x.on!==false&&(o.x.name||"").trim()).slice(0,3),ownSlot=n=>own[n]?ewSlot("own"+own[n].j,"Special equipment",own[n].x.name.trim(),iconHtml("gear",null),true):ewNone(true);
   const L=sp?[stone("upper"),stone("lower"),ewNone(),stone("garment"),ring()]:EW_L.map(k=>gearSlot(k,false));
   const R=sp?[stone("middle",true),ownSlot(0),shield(),ownSlot(1),ownSlot(2)]:EW_R.map(k=>gearSlot(k,true));
@@ -491,7 +513,7 @@ function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),
   const ammo=!sp&&(b.gear.ammo&&b.gear.ammo.id||gearChoices("weapon").some(it=>BUILD.WTYPE[it.type]==="Bow"))?`<div class="ewAmmo">${gearSlot("ammo",false)}</div>`:"";
   const html=`<div class="ewHead"><span>Equipped Items</span>${i>=0?`<span class="ewSet">Set ${i+1}</span>`:""}</div>
     <div class="ewTabs" role="tablist">${[["normal","Normal Equip"],["special","Special Equip"]].map(([k,t])=>`<button type="button" role="tab" data-ewtab="${k}" aria-selected="${EW_TAB===k}">${t}</button>`).join("")}</div>
-    <div class="ewBody"><div class="ewCol">${L.join("")}</div><div class="ewChar">${lookHtml()}</div><div class="ewCol">${R.join("")}</div>${ammo}</div>`;
+    <div class="ewBody"><div class="ewCol">${L.join("")}</div><div class="ewChar">${lookHtml(ewWorn(b,sp))}</div><div class="ewCol">${R.join("")}</div>${ammo}</div>`;
   // the button you pressed keeps focus through the redraw
   const a=document.activeElement,f=a&&el.contains(a)?["ewtab","ewsex","ewhair","ewcolor","ewdye","ewtrans","ewslot"].map(k=>a.dataset[k]!=null?`[data-${k}="${a.dataset[k]}"]`:null).find(Boolean):null;
   if(renderEquipWin.html===html)return;renderEquipWin.html=html;el.innerHTML=html;drawLook(el);if(f)el.querySelector(f)?.focus()}

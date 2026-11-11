@@ -36,7 +36,10 @@ function charOutTiles(){const m=calcMob(),tile=(k,v,sub)=>`<div class="tile out"
     if(r&&isFinite(r.secT))return tile(`on ${esc(mapName(mp)||mapCode(mp))}`,`${r.secT.toFixed(1)}s`,`a kill: ${r.sec.toFixed(1)}s fighting + ${(r.secT-r.sec).toFixed(1)}s walking${r.sell>0.05?" and selling":""}`)+
       tile("EXP / min",fmtN(r.epm),`${fmtN(r.epk)} EXP a kill`)+tile("Zeny / hr",fmtN(r.net),"net: loot after HP and SP items")}
   const r=mobRow(m,walkSec());if(!r||!isFinite(r.tot))return `<div class="tile out wide"><div class="k">vs ${esc(m.name)}</div><div class="v mono">can't hurt it</div><div class="s">Check your attack and its element</div></div>`;
+  // damage per second while fighting it, with the element the EXP/min picks (none for Spell Fist, which has no single damage per use)
+  const dps=withEl(r.el2,()=>dpsOf(m));
   return tile(`vs ${esc(m.name)}`,`${r.tot.toFixed(1)}s`,`a kill: ${r.sec.toFixed(1)}s fighting + ${(r.tot-r.sec).toFixed(1)}s walking`)+
+    (dps!=null&&isFinite(dps)?tile("Damage / s",fmtN(Math.round(dps)),`vs its ${fmtN(m.hp)} HP, misses included`):"")+
     tile("EXP / min",m.expUnknown?"?":fmtN(r.epm),m.expUnknown?"no EXP data for it yet":`job ${fmtN(r.jpm)} / min`)+
     tile("Zeny / hr",fmtN(r.zph),"loot after skill and SP items")}
 function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();

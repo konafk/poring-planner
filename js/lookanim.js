@@ -25,22 +25,22 @@ const LOOK_ACTS=[["stand","Stand"],["walk","Walk"],["sit","Sit"],["attack","Atta
 function lookLayers(g,src,p,fr,ox,oy){for(const [i,x,y,m,sx,sy] of fr[0]){const [X,Y,w,h]=p.img[i],W=Math.max(1,Math.round(w*Math.abs(sx))),H=Math.max(1,Math.round(h*Math.abs(sy)));
   const l=ox+x-Math.floor(W/2),t=oy+y-Math.floor(H/2);
   if(m){g.save();g.translate(l+W,t);g.scale(-1,1);g.drawImage(src,X,Y,w,h,0,0,W,H);g.restore()}else g.drawImage(src,X,Y,w,h,l,t,W,H)}}
-// the look o ({job, trans, sex, hair, color, dye, worn: wornOf's}) doing act facing dir, t ms into the action, drawn on the canvas g with
+// the look o ({job, trans, ride, sex, hair, color, dye, worn: wornOf's}) doing act facing dir, t ms into the action, drawn on the canvas g with
 // the feet at (fx, fy). The body's frame follows the time; on standing and sitting the head and what's on it look straight ahead (frame 0,
 // the client turns them with the head), else they follow the body's frame. Each attaches by its anchor to the body's; a garment goes
 // behind the body, over it when you see the back (NW, N, NE) or for the garments the client always draws on top. Returns false while a
 // piece the look needs is still loading (onload is called when it's in)
-function lookAnimDraw(g,o,act,dir,t,fx,fy,onload){const S=JOB_SPRITES,tj=o.trans&&EW_TRANS[o.job]&&S.trans&&S.trans[o.job],bj=tj||S.body[o.job]||S.body.Novice;
-  const sex=bj[o.sex]?o.sex:Object.keys(bj)[0],bodyKey=`body/${tj?o.job+"+":S.body[o.job]?o.job:"Novice"}-${sex}`;
+function lookAnimDraw(g,o,act,dir,t,fx,fy,onload){const S=JOB_SPRITES,lb=lookBody(o.job,o.trans,o.ride),bj=lb.set;
+  const sex=bj[o.sex]?o.sex:Object.keys(bj)[0],bodyKey=`body/${lb.key}-${sex}`;
   const body=lookPiece(bodyKey,onload),hairN=(S.head[sex]||{})[o.hair]?o.hair:1,hair=lookPiece(`hair/${hairN}-${sex}`,onload);
   if(!body||!hair)return false;
-  const pk=tj?"transPal":"bodyPal",pj=tj||S.body[o.job]?o.job:"Novice",bp=((S[pk]||{})[pj]||{})[sex],dye=bp&&o.dye<bp.c.length?o.dye:0;
+  const pk=lb.pal,pj=lb.job,bp=((S[pk]||{})[pj]||{})[sex],dye=bp&&o.dye<bp.c.length?o.dye:0;
   const hpal=S.hairPal[sex][hairN],color=o.color<hpal.c.length?o.color:0;
   const bd=body.act[act][dir],n=bd.f.length;if(!n)return true;
   const still=act==="stand"||act==="sit",fi=still?0:Math.floor(t/(Math.max(1,bd.d)*25))%n,bf=bd.f[fi],ba=bf[1]||[0,0];
   const at=(p,a)=>{const d=p.act[a][dir],k=d.f.length;return k?d.f[still?0:fi%k]:null};
   const attach=(p,fr)=>{const a=fr[1]||ba;return [fx+ba[0]-a[0],fy+ba[1]-a[1]]};
-  const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,rv=o.worn.robe,rkey=rv&&`robe/${rv}-${tj?o.job+"+":S.body[o.job]?o.job:"Novice"}-${sex}`;
+  const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,rv=o.worn.robe,rkey=rv&&`robe/${rv}-${lb.key}-${sex}`;
   const robe=rkey&&lookPiece(rkey,onload),rf=robe&&at(robe,act),top=rv&&(CL.robe.top.includes(rv)||dir>=3&&dir<=5);
   const heads=o.worn.head.map(v=>lookPiece(`head/${v}-${sex}`,onload));
   const drawRobe=()=>{if(rf)lookLayers(g,robe.im,robe,rf,...attach(robe,rf))};
