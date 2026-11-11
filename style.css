@@ -84,6 +84,8 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
   .navSec.open>.navGrp .navChev{transform:rotate(180deg)}
   .navSec>.navItems{display:none;position:fixed;z-index:40;min-width:220px;max-width:calc(100vw - 16px);padding:6px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-pop)}
   .navSec.open>.navItems{display:flex}
+  /* open as a popover (js/start.js navPop): undo the browser's popover look, the script places it */
+  .navSec>.navItems[popover]{inset:auto;margin:0;width:auto;height:auto;max-height:calc(100dvh - 16px);overflow:auto;color:var(--fg)}
   .tabs .navItems button{width:100%;justify-content:flex-start}
   .navItems .ic{display:inline-block!important}
   .tabs .navGrp .navChev{display:inline-block!important}

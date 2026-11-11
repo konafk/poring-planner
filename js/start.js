@@ -264,7 +264,13 @@ function navBig(){return typeof matchMedia==="function"&&matchMedia("(min-width:
 function navSide(){return navBig()}
 function navTop(){return !navBig()}
 let NAV_OPENED=0;
-function navClose(except){document.querySelectorAll(".tabs .navSec.open").forEach(s=>{if(s===except)return;s.classList.remove("open");s.querySelector(".navGrp").setAttribute("aria-expanded","false")})}
+function navClose(except){document.querySelectorAll(".tabs .navSec.open").forEach(s=>{if(s===except)return;s.classList.remove("open");s.querySelector(".navGrp").setAttribute("aria-expanded","false");navPop(s.querySelector(".navItems"),false)})}
+// an open menu along the top goes in the top layer (a manual popover): the row it hangs from scrolls sideways, and iOS Safari clips a
+// fixed child of a scrolling box to that box, so the menu showed as a sliver under the row. Only while open: the sidebar's groups are
+// the same elements, and a popover that isn't showing is hidden
+function navPop(m,on){if(!m||typeof m.showPopover!=="function")return;
+  if(on){m.setAttribute("popover","manual");try{m.showPopover()}catch(e){}}
+  else if(m.hasAttribute("popover")){try{m.hidePopover()}catch(e){}m.removeAttribute("popover")}}
 // the open tab's sections under it in the sidebar: copies of the page's section links (Character's own, or the other tabs'); a click goes
 // through the page's link, so it jumps and opens a folded card the same way, and the one you're reading is marked as there
 // each group heading's aria-expanded: is its group showing (the sidebar) or its menu open (along the top)
@@ -300,7 +306,7 @@ function navSubSpy(){const d=document.querySelector(".tabs .navSubs");if(!d)retu
       return}
     const open=!sec.classList.contains("open");navClose(sec);if(open)NAV_OPENED=Date.now();sec.classList.toggle("open",open);g.setAttribute("aria-expanded",String(open));
     // fixed under its heading, as the row along the top scrolls (and would clip it)
-    if(open){const r=g.getBoundingClientRect(),m=sec.querySelector(".navItems");
+    if(open){const r=g.getBoundingClientRect(),m=sec.querySelector(".navItems");navPop(m,true);
       m.style.left=`${Math.round(Math.max(8,Math.min(r.left,innerWidth-m.offsetWidth-8)))}px`;m.style.top=`${Math.round(r.bottom+6)}px`}});
   {let open=[];try{open=JSON.parse(localStorage.getItem(KEY_NAVOPEN))||[]}catch(e){}
    document.querySelectorAll(".tabs .navSec").forEach(s=>s.classList.toggle("exp",open.includes(s.querySelector(".navGrp").textContent)))}

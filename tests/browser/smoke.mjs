@@ -156,8 +156,14 @@ try {
     assert.equal(await page.isVisible('.navSec:has([data-tabbtn="items"]) > .navGrp'), true);
     assert.equal(await page.isVisible('[data-tabbtn="items"]'), false);
     await page.click('.navSec:has([data-tabbtn="items"]) > .navGrp');
+    // the menu is in the top layer, so the sideways-scrolling row can't clip it (iOS Safari did), and placed under its heading
+    assert.equal(await page.$eval('.navSec:has([data-tabbtn="items"]) > .navItems', m => m.matches(":popover-open")), true);
+    const [hd, mn] = await Promise.all(['.navSec:has([data-tabbtn="items"]) > .navGrp', '.navSec:has([data-tabbtn="items"]) > .navItems']
+      .map(s => page.$eval(s, e => { const r = e.getBoundingClientRect(); return { bottom: r.bottom, top: r.top, h: r.height }; })));
+    assert.ok(mn.top >= hd.bottom && mn.top - hd.bottom < 12 && mn.h > 100, JSON.stringify({ hd, mn }));
     await page.click('[data-tabbtn="items"]');
     assert.equal(await page.getAttribute('[data-tabbtn="items"]', "aria-selected"), "true");
+    assert.equal(await page.locator("[popover]").count(), 0);
     assert.equal(await page.locator(".navSubs").count(), 0);
     assert.deepEqual(errs, []);
     await page.close();
