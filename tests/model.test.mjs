@@ -639,9 +639,11 @@ t("roadmap: regions open on their update's day, or after its month when the day 
   assert.ok(!run(`isClosed("tow_d01")`) && run(`isClosed("gl_chu")`));
   assert.ok(run(`isClosed("iz_d03")&&isClosed("iz_d04")`) && !run(`isClosed("iz_d02")`)); // Byalan 4F & 5F: 12 November
   assert.equal(run(`regionOf("iz_dun04").id`), "by");
-  assert.equal(run(`mapArrives("iz_d04")`), "Byalan Dungeon 4F & 5F update, 12 Nov 2026");
+  assert.equal(run(`mapArrives("iz_d04")`), "Level 80 & Ant Hell update, 12 Nov 2026");
+  assert.ok(run(`isClosed("bea_d01")`) && !run(`isClosed("bea_d02")`));            // Western Cave Karu: 12 November too
   run(`ROADMAP_TODAY="2026-11-12"`);
-  assert.ok(!run(`isClosed("iz_d03")||isClosed("iz_d04")`));
+  assert.ok(!run(`isClosed("iz_d03")||isClosed("iz_d04")||isClosed("bea_d01")`));
+  assert.equal(run(`capTxt(capNow())`), "Base 80 / Job 70");                       // the 12 November update raises it
   run(`ROADMAP_TODAY="2026-11-01"`);
   assert.equal(run(`capTxt(capNow())`), "Base 70 / Job 70");
   assert.equal(run(`mapArrives("tow_d01")`), "");
@@ -1300,8 +1302,7 @@ t("spawn counts come from the client's navigation table (normal channels)", () =
   assert.equal(run(`Object.values(SPAWN).flat().filter(x=>!(x[1]>0)&&x[1]!==null).length`), 0);
   // maps the client doesn't list yet: which monsters come, but no count (no estimate), and only on the roadmap's regions
   assert.equal(sp(1045, "iz_d03"), JSON.stringify(["iz_d03", null]));      // Marc on Undersea Cave 4F
-  // (Western Cave Karu, bea_d01, isn't in the client either but isn't on the roadmap: open, counts ?)
-  assert.ok(run(`Object.values(SPAWN).flat().filter(x=>x[1]===null&&x[0]!=="bea_d01").every(x=>regionOf(x[0]))`));
+  assert.ok(run(`Object.values(SPAWN).flat().filter(x=>x[1]===null).every(x=>regionOf(x[0]))`));  // Western Cave Karu (bea_d01) too
   assert.equal(run(`Object.values(SPAWN).flat().filter(x=>x[1]===null&&x.length!==2).length`), 0);
   assert.equal(run(`spN(null)+" "+spN(30)`), "? 30");
   assert.ok(run(`mapStats("iz_d03",0)`) == null);                          // nothing to weight by: out of the map rankings
