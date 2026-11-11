@@ -74,6 +74,21 @@ document.addEventListener("click",async e=>{const a=e.target.closest&&e.target.c
 const recipeMade=r=>`${itemName(r.id)}${r.n>1?` ×${fmtN(r.n)}`:""}`;
 // "10 × Iron, 1 × Steel" with icons, each opening its details
 const recipeMats=r=>r.mats.map(([id,n])=>`<span class="mat">${itemIcon(id,1,"il")}<span class="mono">${fmtN(n)}×</span> <a href="#" data-info="item:${id}">${esc(itemName(id))}</a></span>`).join("");
+// the Forging category's notes, from the Tip Box's weapon crafting and Blacksmith ranking guides (data/tipbox.js TIPBOX_FORGING): the anvil
+// to carry and the hammer each forge uses up (an item the client doesn't have, Emperium Anvil, as plain text; the guide's own name in the
+// title where the item's is another: its Steel Hammer is the Iron Hammer), what a ranked or unranked Blacksmith's weapons come with,
+// and the ranking points
+const forgeTool=([id,name])=>id==null?`<span class="mat" title="The client has no item by this name yet">${esc(name)}</span>`
+  :`<span class="mat"${itemName(id)!==name?` title="The guide calls it ${esc(name)}"`:""}>${itemIcon(id,1,"il")}<a href="#" data-info="item:${id}">${esc(itemName(id))}</a></span>`;
+const orList=a=>a.length>1?`${a.slice(0,-1).join(", ")} or ${a[a.length-1]}`:a.join("");
+function forgeNotesHtml(g){
+  return `<p>Carry one anvil: ${orList(g.anvils.map(forgeTool))}. Each forge uses up one hammer: ${orList(g.hammers.map(forgeTool))}. The game then lists the weapons your materials can make.</p>
+    <div class="forgeCols"><div><div class="affHead">Blacksmith ranking</div>
+      <table class="affTable"><thead><tr><th>Blacksmith</th><th>Their crafted weapons</th></tr></thead><tbody>${g.ranks.map(([who,what])=>`<tr><td>${esc(who)}</td><td>${esc(what)}</td></tr>`).join("")}</tbody></table>
+      <div class="note"><span class="mono">${esc(g.command)}</span> in the game's chat shows the top 10. <a href="#" data-gotab="affix" data-goto="affixGearCard">The forged weapons' random options</a> are on the Affixes tab.</div></div>
+    <div><div class="affHead">Ranking points</div>
+      <table class="affTable"><thead><tr><th>Points</th><th>For</th></tr></thead><tbody>${g.points.map(([n,what])=>`<tr><td class="mono">${fmtN(n)}</td><td>${esc(what)}</td></tr>`).join("")}</tbody></table>
+      <div class="note">The guide doesn't name the additional materials. ${itemIcon(1000,1,"il")}<a href="#" data-info="item:1000">${esc(itemName(1000))}</a>'s in-game text only says it makes a crafted weapon more durable; what extra materials add on Global hasn't been reported yet.</div></div></div>`}
 const RECIPEDB_D={q:"",cat:""};
 const recipeDbF=()=>({...RECIPEDB_D,...state.recipeDb});
 TABLES.recipeTable={def:["name",1],cols:{name:{t:r=>recipeMade(r)},cat:{t:r=>r.cat},lv:{n:r=>r.lv},n:{n:r=>r.n},
@@ -85,6 +100,7 @@ function renderRecipes(){const f=recipeDbF();
   // the category buttons, each with how many of its recipes the search leaves
   const byQ=RECIPE_LIST.filter(r=>recipeOk(r,{...f,cat:""}));
   $("recipeCats").innerHTML=[["","All"],...RECIPE_CATS.map(c=>[c,c])].map(([v,n])=>`<button type="button" role="radio" data-rcat="${esc(v)}" aria-checked="${f.cat===v}">${esc(n)} <span class="note">${byQ.filter(r=>!v||r.cat===v).length}</span></button>`).join("");
+  const fg=$("recipeForge");if(fg&&typeof TIPBOX_FORGING!=="undefined"){fg.hidden=f.cat!=="Forging";if(!fg.hidden&&!fg.dataset.drawn){$("recipeForgeBody").innerHTML=forgeNotesHtml(TIPBOX_FORGING);fg.dataset.drawn="1"}}
   const rows=tableRows("recipeTable",byQ.filter(r=>recipeOk(r,f)));
   $("recipeCount").textContent=`${rows.length} of ${RECIPE_LIST.length} recipes`;
   $("recipeTable").tBodies[0].innerHTML=rows.map(r=>{const w=recipeWorth(r);

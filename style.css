@@ -1011,6 +1011,13 @@ details.infoSec>summary:hover h3{color:var(--fg)}
 /* Recipes tab: the category buttons wrap on a phone; each material on its own line */
 #recipeCats{flex-wrap:wrap}
 #recipeCats .note{margin-left:2px}
+/* the Forging category's notes: the tools as a sentence, the ranking and its points side by side (stacked on a phone) */
+#recipeForge{margin-top:10px}#recipeForge[hidden]{display:none}#recipeForge p{margin:4px 0 12px;line-height:1.9}
+#recipeForge .mat{white-space:nowrap}
+#recipeForge table{width:100%}#recipeForge :is(th,td){text-align:left;white-space:normal;font-family:var(--body)}
+#recipeForge td:first-child{white-space:nowrap;width:1%}#recipeForge td.mono{font-family:var(--mono);text-align:right}
+.forgeCols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}.forgeCols .note{margin-top:6px}
+@media (max-width:720px){.forgeCols{grid-template-columns:minmax(0,1fr)}}
 .dbTable td.mats{white-space:normal;min-width:200px;line-height:1.9}
 .dbTable td.mats .mat{display:block;white-space:nowrap}
 /* the details popup: the recipes that use an item, each made item's line and its other materials wrapping */
