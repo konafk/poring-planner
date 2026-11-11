@@ -521,7 +521,7 @@ table.formulas td.chg{background:var(--accent-soft)}
   /* the dock shows only the outcome; a message (no monster yet) spans it with its line showing */
   .sumCard .tile.det{display:none}
   .sumCard .tile.wide{grid-column:1/-1}.sumCard .tile.wide .s{display:block;font-size:12px}
-  .sumCard .calc{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .sumCard .calc{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px} /* its 3 or 4 tiles in one row */
   .sumCard .tile{padding:7px 10px}
   .sumCard .tile .v{font-size:1rem}
   .charMain :is(#charCard,#buildPanel,#statPanel,#eqPanel,#atkPanel,#cardRow,#sagePanel,#weightPanel,#skillCard,#recCard,#gearCmpCard,#backupCard){scroll-margin-top:108px}
@@ -819,7 +819,7 @@ details.more>.form{display:grid}
 .ewTabs button:last-child{border-right:0}
 .ewTabs button[aria-selected="true"]{background:var(--ew-bg);color:var(--fg);font-weight:600}
 .ewBody{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px;padding:8px}
-.ewCol{display:flex;flex-direction:column;gap:5px}
+.ewCol{display:flex;flex-direction:column;gap:5px;position:relative;z-index:1} /* over a wide garment or headgear on the character */
 .ewSlot{display:flex;align-items:center;gap:6px;min-height:36px;padding:3px 7px;border:0;border-radius:9px;background:var(--ew-slot);color:var(--fg);font-size:12px;font-weight:500;line-height:1.2;text-align:left;cursor:pointer}
 .ewSlot.r{flex-direction:row-reverse;text-align:right}
 .ewSlot:hover{background:var(--ew-slot-hover);border:0}

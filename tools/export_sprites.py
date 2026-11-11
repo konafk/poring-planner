@@ -14,7 +14,7 @@ clothes colour's palette (data\\palette\\몸) and each hair colour's (data\\pale
 Writes data/sprites.js: the body sheet and the hair sheet (each sprite cropped to what it draws, packed in rows, as indices) as data:
 URLs, since the page reads their pixels to colour them, which a browser only allows for an image from the page's own site and never
 for a file opened from disk; per job and gender the body's place on the sheet, where it draws from the feet, its head anchor and its
-clothes colours (body, and trans for the transcendent look); per gender and hair style the head's place, where it draws from the
+clothes colours (body, trans for the transcendent look, ride and rideTrans the same riding the Halter Lead's mount); per gender and hair style the head's place, where it draws from the
 anchor and its hair colours.
 
 Also writes img/job-icons.png, each job's icon from the client (data\\texture\\유저인터페이스\\uirenewal\\jobicon\\big\\icon_job_<job id>.bmp,
@@ -34,6 +34,22 @@ ONE_SEX = {"Bard": "m", "Dancer": "f"}
 TRANS = {"Knight": "로드나이트", "Crusader": "팔라딘", "Wizard": "하이위저드", "Sage": "프로페서", "Hunter": "스나이퍼", "Bard": "클라운",
          "Dancer": "집시", "Priest": "하이프리", "Monk": "챔피온", "Blacksmith": "화이트스미스", "Alchemist": "크리에이터",
          "Assassin": "어쌔신크로스", "Rogue": "스토커"}
+# the Halter Lead (item 12622) lets every job ride a mount of its branch: a Novice a Poring, a Swordsman a Peco Peco, the Knight and
+# Crusader branch a lion, Mages a fox, Archers an ostrich, Acolytes an alpaca, Merchants a boar and Thieves a Cerberus. Each mounted
+# body is its own sprite with its own clothes colours (data\\palette\\몸\\<name>_<남|여>_<n>.pal); RIDE_TRANS the transcendent look's
+RIDE = {"Novice": "노비스포링", "Swordsman": "페코검사", "Mage": "여우마법사", "Archer": "타조궁수", "Acolyte": "복사알파카",
+        "Merchant": "상인멧돼지", "Thief": "켈베로스도둑", "Knight": "사자기사", "Crusader": "사자크루세이더", "Wizard": "여우위저드",
+        "Sage": "여우세이지", "Hunter": "타조헌터", "Bard": "타조바드", "Dancer": "타조무희", "Priest": "프리스트알파카",
+        "Monk": "몽크알파카", "Blacksmith": "제철공멧돼지", "Alchemist": "연금술사멧돼지", "Assassin": "켈베로스어쎄신",
+        "Rogue": "켈베로스로그"}
+RIDE_TRANS = {"Knight": "사자로드나이트", "Crusader": "사자팔라딘", "Wizard": "여우하이위저드", "Sage": "여우프로페서",
+              "Hunter": "타조스나이퍼", "Bard": "타조크라운", "Dancer": "타조짚시", "Priest": "하이프리스트알파카",
+              "Monk": "챔피온알파카", "Blacksmith": "화이트스미스멧돼지", "Alchemist": "크리에이터멧돼지",
+              "Assassin": "켈베로스어쎄신크로스", "Rogue": "켈베로스스토커"}
+# every body a look can have: (key, job, sprite name, data/sprites.js set): the job's own ("Knight"), its transcendent look ("Knight+"),
+# mounted ("Knight~") and both ("Knight+~"); the other exporters draw garments and frames for each
+BODIES = ([(j, j, n, "body") for j, n in JOBS.items()] + [(j + "+", j, n, "trans") for j, n in TRANS.items()]
+          + [(j + "~", j, n, "ride") for j, n in RIDE.items()] + [(j + "+~", j, n, "rideTrans") for j, n in RIDE_TRANS.items()])
 # the client's job id for each, which names its job icon
 JOB_ID = {"Novice": 0, "Swordsman": 1, "Mage": 2, "Archer": 3, "Acolyte": 4, "Merchant": 5, "Thief": 6, "Knight": 7, "Priest": 8, "Wizard": 9,
           "Blacksmith": 10, "Hunter": 11, "Assassin": 12, "Crusader": 14, "Monk": 15, "Sage": 16, "Rogue": 17, "Alchemist": 18, "Bard": 19,
@@ -250,7 +266,8 @@ def main():
     client = sys.argv[sys.argv.index("--client") + 1] if "--client" in sys.argv else r"C:\Gravity\RagnarokZero"
     grf = Grf(os.path.join(client, "data.grf"))
     base = "data\\sprite\\인간족\\"
-    images, hair_images, bodies, trans, heads, body_pal, trans_pal, hair_pal, missing = [], [], {}, {}, {}, {}, {}, {}, []
+    images, hair_images, heads, hair_pal, missing = [], [], {}, {}, []
+    sets = {k: {} for k in ("body", "trans", "ride", "rideTrans")}; pals = {k: {} for k in sets}
 
     def take(path, into=images, indexed=False):
         if not grf.has(path + ".spr") or not grf.has(path + ".act"):
@@ -260,17 +277,16 @@ def main():
             missing.append(path); return None
         into.append(crop(img)); return len(into) - 1, anchor
 
-    for job, name in JOBS.items():
+    for _, job, nm, kind in BODIES:
         for s, ko in SEX.items():
             if ONE_SEX.get(job, s) != s:
                 continue
-            for into, pal, nm in [(bodies, body_pal, name), (trans, trans_pal, TRANS.get(job))]:
-                r = nm and take(f"{base}몸통\\{ko}\\{nm}_{ko}", images, True)
-                if r:
-                    # clothes colour n is data\\palette\\몸\\<name>_<남|여>_<n>.pal
-                    into.setdefault(job, {})[s] = r
-                    pal.setdefault(job, {})[s] = colours(images[r[0]], palettes(
-                        grf, f"{base}몸통\\{ko}\\{nm}_{ko}.spr", f"data\\palette\\몸\\{PAL_NAME.get(nm, nm)}_{ko}_{{}}.pal"))
+            r = take(f"{base}몸통\\{ko}\\{nm}_{ko}", images, True)
+            if r:
+                # clothes colour n is data\\palette\\몸\\<name>_<남|여>_<n>.pal
+                sets[kind].setdefault(job, {})[s] = r
+                pals[kind].setdefault(job, {})[s] = colours(images[r[0]], palettes(
+                    grf, f"{base}몸통\\{ko}\\{nm}_{ko}.spr", f"data\\palette\\몸\\{PAL_NAME.get(nm, nm)}_{ko}_{{}}.pal"))
     for s, ko in SEX.items():
         n = 1
         while grf.has(f"{base}머리통\\{ko}\\{n}_{ko}.spr"):
@@ -290,11 +306,11 @@ def main():
     out = {"jobData": "data:image/png;base64," + base64.b64encode(data).decode(),
            "hairData": "data:image/png;base64," + base64.b64encode(hdata).decode(),
            # [x, y, w, h on the sheet, left, top from the feet, head anchor x, y from the feet]
-           "body": body(bodies),
-           # the same for a 2nd job's transcendent look
-           "trans": body(trans),
+           "body": body(sets["body"]),
+           # the same for a 2nd job's transcendent look, riding the Halter Lead's mount, and both
+           "trans": body(sets["trans"]), "ride": body(sets["ride"]), "rideTrans": body(sets["rideTrans"]),
            # per job and gender the clothes colours, as hairPal's
-           "bodyPal": body_pal, "transPal": trans_pal,
+           "bodyPal": pals["body"], "transPal": pals["trans"], "ridePal": pals["ride"], "rideTransPal": pals["rideTrans"],
            # [x, y, w, h on the hair sheet, left, top from the body's head anchor]
            "head": {s: {n: [*hat[i], *hair_images[i][:2], hair_images[i][3] - (a or (0, 0))[0], hair_images[i][4] - (a or (0, 0))[1]]
                         for n, (i, a) in g.items()} for s, g in heads.items()},
@@ -311,13 +327,14 @@ def main():
         f.write("// Job looks for the equipment window (tools/export_sprites.py, from the game client): the body and hair sheets as data:\n"
                 "// URLs, so the page can read their pixels even opened from disk (jobData, hairData); per job and gender (m/f) the body\n"
                 "// [x,y,w,h on the sheet, left,top from the feet, head anchor x,y from the feet], trans the same for a 2nd job's\n"
-                "// transcendent look (Knight as a Lord Knight); per gender and hair style the head [x,y,w,h on the hair sheet, left,top from\n"
-                "// the body's head anchor]. Both sheets hold palette indices (grey level = index); hairPal per gender and hair style, and\n"
-                "// bodyPal / transPal per job and gender, have the indices it draws (i, 2 hex digits each) with their colours (b, 6 hex\n"
+                "// transcendent look (Knight as a Lord Knight), ride riding the Halter Lead's mount and rideTrans both; per gender and hair\n"
+                "// style the head [x,y,w,h on the hair sheet, left,top from the body's head anchor]. Both sheets hold palette indices (grey\n"
+                "// level = index); hairPal per gender and hair style, and bodyPal / transPal / ridePal / rideTransPal per job and gender,\n"
+                "// have the indices it draws (i, 2 hex digits each) with their colours (b, 6 hex\n"
                 "// digits each), the indices the colours change (d), the swatch's place among those (k) and per colour their colours (c).\n")
         f.write("const JOB_SPRITES=" + json.dumps(out, separators=(",", ":"), ensure_ascii=False) + ";\n")
-    print(f"{sum(len(g) for g in bodies.values())} bodies, {sum(len(g) for g in trans.values())} transcendent "
-          f"({sum(len(p['c']) for d in (body_pal, trans_pal) for g in d.values() for p in g.values())} clothes colours), {sum(len(g) for g in heads.values())} hair styles "
+    print(", ".join(f"{sum(len(g) for g in sets[k].values())} {k}" for k in sets) + " bodies "
+          f"({sum(len(p['c']) for d in pals.values() for g in d.values() for p in g.values())} clothes colours), {sum(len(g) for g in heads.values())} hair styles "
           f"({sum(len(p['c']) for g in hair_pal.values() for p in g.values())} colours), sheets {SHEET_W} x {H} ({len(data)} bytes) and {SHEET_W} x {HH} ({len(hdata)} bytes), {len(icons)} job icons")
     if missing:
         print("not in the client: " + ", ".join(missing))

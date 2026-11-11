@@ -15,14 +15,14 @@ Bodies and hair keep palette indices (a grey sheet, grey level = index) so the p
 their sheets go in the data file as data: URLs (the page reads their pixels, refused for an image from a file opened from disk);
 headgear and garments are drawn in their own colours, from RGBA PNGs beside. One file a piece, loaded when the preview first shows it:
 data/looks/<kind>/<key>.js, which calls LOOKS_ADD("<kind>/<key>", {...}), and img/looks/<kind>/<key>.png for headgear and garments.
-Keys: body <job>-<m|f> (<job>+-<m|f> for the transcendent look), hair <style>-<m|f>, head <view>-<m|f>, robe <view>-<job>-<m|f>.
+Keys: body <job>-<m|f> (<job>+-<m|f> for the transcendent look, <job>~ / <job>+~ riding the Halter Lead's mount), hair <style>-<m|f>, head <view>-<m|f>, robe <view>-<job>-<m|f>.
 Writes data/looks/index.js too (LOOK_FILES: which keys exist). Standard library only.
 """
 import base64, hashlib, json, os, struct, sys, zlib
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import export_sprites  # noqa: E402
-from export_sprites import ROOT, JOBS, TRANS, SEX, ONE_SEX, spr_read, png_gray, pack  # noqa: E402
+from export_sprites import ROOT, BODIES, SEX, ONE_SEX, spr_read, png_gray, pack  # noqa: E402
 from export_minimaps import DesGrf  # noqa: E402
 from export_costume_sprites import png_rgba, LUA, ACC, ROBE  # noqa: E402
 from lua51 import run, call  # noqa: E402
@@ -141,10 +141,10 @@ def main():
 
     if only in (None, "body"):
         files["body"] = []
-        for job, name in list(JOBS.items()) + [(j + "+", n) for j, n in TRANS.items()]:
+        for key, job, name, _ in BODIES:
             for sx, ko in SEX.items():
-                if ONE_SEX.get(job.rstrip("+"), sx) == sx:
-                    put("body", f"{job}-{sx}", f"{BODY}몸통\\{ko}\\{name}_{ko}", True)
+                if ONE_SEX.get(job, sx) == sx:
+                    put("body", f"{key}-{sx}", f"{BODY}몸통\\{ko}\\{name}_{ko}", True)
     if only in (None, "hair"):
         files["hair"] = []
         for sx, ko in SEX.items():
@@ -166,13 +166,13 @@ def main():
             files["robe"] = []
             for view in sorted({v for k, v in looks["items"].values() if k == "r"}):
                 name = call(g["ReqRobSprName_V2"], [view, False])[0]
-                for job, body in list(JOBS.items()) + [(j + "+", n) for j, n in TRANS.items()]:
+                for key, job, body, _ in BODIES:
                     for sx, ko in SEX.items():
-                        if ONE_SEX.get(job.rstrip("+"), sx) == sx:
-                            put("robe", f"{view}-{job}-{sx}", f"{ROBE}{name}\\{ko}\\{body}_{ko}", False)
+                        if ONE_SEX.get(job, sx) == sx:
+                            put("robe", f"{view}-{key}-{sx}", f"{ROBE}{name}\\{ko}\\{body}_{ko}", False)
     with open(index_path, "w", encoding="utf-8", newline="\n") as f:
         f.write("// The Stylist's animated looks (tools/export_look_frames.py, from the game client): the pieces exported, by kind (body: <job>-<m|f>,\n"
-                "// \"<job>+\" the transcendent look; hair: <style>-<m|f>; head: <headgear view>-<m|f>; robe: <garment view>-<job>-<m|f>). Each is\n"
+                "// \"<job>+\" the transcendent look, \"<job>~\" / \"<job>+~\" riding the Halter Lead's mount; hair: <style>-<m|f>; head: <headgear view>-<m|f>; robe: <garment view>-<job>-<m|f>). Each is\n"
                 "// data/looks/<kind>/<key>.js, loaded when the preview first shows it.\n")
         f.write("const LOOK_FILES=" + json.dumps(files, separators=(",", ":")) + ";\n")
     for k, n in sizes.items():

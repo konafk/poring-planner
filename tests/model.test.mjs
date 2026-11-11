@@ -2790,7 +2790,12 @@ t("Skill tree: a 2nd job's points can go on its 1st-job skills", () => {
 
 t("Stylist: a saved look is cleaned, and drawn as the job's body allows", () => {
   const app = load({ stylist: { job: "Knight", sex: "x", hair: "abc", color: -3, dye: 2.6, trans: 1 } });
-  assert.equal(app("JSON.stringify(state.stylist)"), JSON.stringify({ job: "Knight", sex: "m", hair: 1, color: 0, dye: 3, trans: true, cos: {}, gear: {} }));
+  assert.equal(app("JSON.stringify(state.stylist)"), JSON.stringify({ job: "Knight", sex: "m", hair: 1, color: 0, dye: 3, trans: true, ride: false, cos: {}, gear: {} }));
+  // the Halter Lead's mount: a Lord Knight on a lion, with the mounted body's own clothes colours
+  app(`state.stylist.ride=true`);
+  assert.equal(app("JSON.stringify((({key,ride,dyes})=>({key,ride,dyes}))(styleOf()))"),
+    JSON.stringify({ key: "Knight+~", ride: true, dyes: app("JOB_SPRITES.rideTransPal.Knight.m.c.length") }));
+  app(`state.stylist.ride=false`);
   // the Knight's transcendent look has its own clothes colours; a number past the last falls back to the first
   assert.equal(app("JSON.stringify((({job,trans,sex,dye,dyes})=>({job,trans,sex,dye,dyes}))(styleOf()))"),
     JSON.stringify({ job: "Knight", trans: true, sex: "m", dye: 3, dyes: app("JOB_SPRITES.transPal.Knight.m.c.length") }));
@@ -2878,7 +2883,7 @@ t("Stylist costumes: worn by slot, drawn on the look from the client's sheets", 
   app(`state.job="Knight";const b=gearSet(C());b.gear={headTop:{id:2225},headMid:{id:2225},headLow:{id:2218},armor:{id:2301}};b.special={costume:{upper:5915,garment:480574}};
     state.look={sex:"m",hair:7,color:2,dye:1,trans:false};state.stylist={job:"Mage",cos:{lower:19683},gear:{}};styFromMine()`);
   assert.equal(app("JSON.stringify(state.stylist)"), JSON.stringify({ job: "Knight", sex: "m", hair: 7, color: 2, dye: 1, trans: false,
-    cos: { upper: 5915, garment: 480574 }, gear: { upper: 2225, middle: 2225, lower: 2218 } }));
+    ride: false, cos: { upper: 5915, garment: 480574 }, gear: { upper: 2225, middle: 2225, lower: 2218 } }));
   // the lists: costumes with a look in the client, by name; one with no look for this body is greyed out, not hidden
   assert.ok(app("STY_COS.cos.upper.length") > 300 && app("STY_COS.cos.garment.length") > 40);
   assert.equal(app(`STY_COS.cos.upper.every((id,i,a)=>!i||styCosName(a[i-1]).localeCompare(styCosName(id))<=0)`), true);
