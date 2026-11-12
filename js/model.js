@@ -1,19 +1,32 @@
 // ---- attack model ----
 let EL_OVR=null;
 const atkEl=()=>{const a=C().a;if(a.type==="spellfist")return EL_OVR||sfBolts()[0]||"Fire";return a.el==="W"?(EL_OVR||C().wElem):a.el};
-// elemental converters (Fire/Water/Earth/Wind) change the weapon element for basic attacks and weapon-element skills. One is on at
-// a time: c.convEl picks it, or "" to try each (and your weapon's own element) and take the best per monster / map
-const CONV_ELS=["Fire","Water","Earth","Wind"];
+// weapon endows: elemental converters (Fire/Water/Earth/Wind), Cursed Water (Shadow), the Lv.5 Aspersio Scroll (Holy) and an Assassin's
+// Enchant Poison change the weapon element for basic attacks and weapon-element skills. One is on at a time: c.convEl picks it, or "" to
+// try each (and your weapon's own element) and take the best per monster / map
+// items (bought from players, at what players pay for them: state.prices, as on the Market tab): what one use takes and how many minutes
+// it lasts (the client's text). Converters and Cursed Water last 20 minutes, so 3 an hour; the Aspersio Scroll casts Aspersio Lv 5 (180 s)
+// and uses up a Holy Water too, so 20 of each an hour. None on your weapon's own element
+const CONV_ITEMS={Fire:{ids:[12114],min:20},Water:{ids:[12115],min:20},Earth:{ids:[12116],min:20},Wind:{ids:[12117],min:20},
+  Shadow:{ids:[12020],min:20},Holy:{ids:[12217,523],min:3}};
+// skills: Enchant Poison (Assassin), 20 SP for 15 + 15 × Lv s; offered when the job has it (Lv 10 until you set a skill tree, else your level)
+const CONV_SKILL={Poison:"enchant-poison"};
+const convSkLv=el=>{const sl=CONV_SKILL[el],c=C();if(!sl||!skOf(state.job)[sl])return 0;return hasTree(c)?skLv(c,sl):10};
+const CONV_ALL=[...Object.keys(CONV_ITEMS),...Object.keys(CONV_SKILL)];
+const convEls=()=>CONV_ALL.filter(el=>CONV_ITEMS[el]||convSkLv(el)>0);
+const CONV_IDS=[...new Set(Object.values(CONV_ITEMS).flatMap(x=>x.ids))];
 const convOn=()=>!!C().converters&&C().a.el==="W";
-const convFixed=()=>CONV_ELS.includes(C().convEl)?C().convEl:"";
-const convAll=()=>[...new Set([C().wElem,...CONV_ELS])];
-const convLabel=by=>convFixed()?`${convFixed()} converter`:`best converter ${by}`;
-// converters are made by Sages and bought from players, at what players pay for them (state.prices, as on the Market tab). One lasts
-// 20 minutes (the client's text), so 3 an hour while the attack uses one: the element being tried (withEl), else the one you picked;
-// none on your weapon's own element
-const CONV_ID={Fire:12114,Water:12115,Earth:12116,Wind:12117};
-const convPrice=el=>state.prices[CONV_ID[el]]>0?state.prices[CONV_ID[el]]:0;
-const convCostHr=()=>{const el=EL_OVR||convFixed();return convOn()&&CONV_ID[el]&&el!==C().wElem?3*convPrice(el):0};
+const convFixed=()=>convEls().includes(C().convEl)?C().convEl:"";
+const convAll=()=>[...new Set([C().wElem,...convEls()])];
+const convName=el=>CONV_SKILL[el]?"Enchant Poison":el==="Shadow"?"Cursed Water":el==="Holy"?"Aspersio Scroll":`${el} converter`;
+const convWith=el=>el===C().wElem?`${el} (your weapon)`:/converter/.test(convName(el))?convName(el):`${el} (${convName(el)})`;
+const convLabel=by=>convFixed()?convName(convFixed()):`best weapon element ${by}`;
+const convUsesHr=el=>CONV_ITEMS[el]?60/CONV_ITEMS[el].min:0;
+const convPrice=el=>(CONV_ITEMS[el]||{ids:[]}).ids.reduce((t,id)=>t+(state.prices[id]>0?state.prices[id]:0),0);
+const convElNow=()=>convOn()?EL_OVR||convFixed():"";
+const convCostHr=()=>{const el=convElNow();return el&&CONV_ITEMS[el]&&el!==C().wElem?convUsesHr(el)*convPrice(el):0};
+// Enchant Poison's SP: 20 a cast, recast as it runs out (none when your weapon is Poison already)
+const convSpPerSec=()=>{const el=convElNow(),lv=el&&el!==C().wElem?convSkLv(el):0;return lv?20*spCostMul()/(15+15*lv):0};
 const elOptions=()=>C().a.type==="spellfist"?(sfBolts().length?sfBolts():[null]):convOn()?(convFixed()?[convFixed()]:convAll()):[null];
 const withEl=(el,fn)=>{const k=EL_OVR;EL_OVR=el;try{return fn()}finally{EL_OVR=k}};
 const elTag=el=>el&&(convOn()||C().a.type==="spellfist")?` <span class="el ${el}">${el}</span>`:"";
@@ -293,7 +306,7 @@ const ihrPer10=()=>{const l=skLv(C(),"increase-hp-recovery");return l>0?Math.flo
 const hpRegenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(hpRegen6()/6+ihrPer10()/10)*(1-poisonUp(m)))+consHPPerSec();
 // SP the attack itself costs per second (Spell Fist: its upkeep); defSP adds Energy Coat and Vitata's heals against the monster in play
 // Guillotine Fist spends all your SP (Max SP each use), whatever SP cost cuts you have
-const skillSPPerSec=()=>(C().a.asura?num(cf("maxSp")):(num(C().a.sp)+(fsUsed()?num(fsRow()[0])/FS_USES:0))*spCostMul())/useSec()+dlUpkeep();
+const skillSPPerSec=()=>(C().a.asura?num(cf("maxSp")):(num(C().a.sp)+(fsUsed()?num(fsRow()[0])/FS_USES:0))*spCostMul())/useSec()+dlUpkeep()+convSpPerSec();
 // HP you spend yourself per second: Martyr's Reckoning 9% of Max HP per attack, a.hpCost per use (Excruciating Palm)
 const selfHpPerSec=()=>{const a=C().a;return a.mr?0.09*num(cf("maxHp"))/useSec():num(a.hpCost)/useSec()};
 const spNeedPerSec=()=>isSF()?sgUpkeep()+defSP()+hsFullSP()*hsSustain():skillSPPerSec()+defSP();
