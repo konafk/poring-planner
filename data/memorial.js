@@ -43,8 +43,8 @@ const EXPEDITION=[
 {id:28540,name:"Expedition Ring",from:[28539,"Subjugation Team's Ring"],stones:{25472:3}},
 {id:28541,name:"Expedition Magic Ring",from:[28539,"Subjugation Team's Ring"],stones:{25474:3}}];
 // The two rungs after Expedition, not in the Global client yet: Contingent (base Lv 80, with the Izlude memorial of the Lutie update,
-// data/roadmap.js) and Conqueror (base Lv 90, not announced). From RagnaDex's memorial gear page (ragnadex.com/en/memorial/gear, as of
-// 22 September 2026, rAthena's Zero data), so no item ids and no Crimson Crystal id. The Equipment Enhancer makes each from its piece of
+// data/roadmap.js) and Conqueror (base Lv 90, not announced). As reported from other
+// Zero servers (rAthena's Zero data), so no item ids and no Crimson Crystal id. The Equipment Enhancer makes each from its piece of
 // the rung below, 50 crystals and Jellostones, in four branches: melee, ranged, magic and healing. Upgrading gives a new +0 piece: the
 // old one's refine, card and enchant are gone. LATER_RUNGS: rung: {crystals: [id, name, how many], lv, pieces: [{name, from: [id, name],
 // branch, stones: {Jellostone id: how many}}]}
@@ -114,7 +114,7 @@ const MEM_ENCHANT={
    shoes:memPool(7.58,3.57,4.90,4.90,4.90,4.90,[[50,4.90],[100,3.50],[200,2.60],[300,1.70],[400,0.80]]),
    armor:[...memPool(5.25,4.90,4.28,4.28,4.28,4.28,[[50,5.25],[100,5.25],[200,5.25],[300,3.50],[400,0.805]]),["essence",1.925]]}};
 // the Vegetable Enhancer's one enchant on the Poring Village Leek or Carrot you're wearing (Global's Navigation has the NPC; the cost
-// and lines are RagnaDex's, which gives no chances): VEGGIE_ENCHANT: gear [[id, name]], cost (zeny, [[id, name, how many]]), lines
+// and lines are as reported, with no chances): VEGGIE_ENCHANT: gear [[id, name]], cost (zeny, [[id, name, how many]]), lines
 const VEGGIE_ENCHANT={gear:[[19238,"Poring Village Leek"],[19239,"Poring Village Carrot"]],zeny:20000,mats:[[909,"Jellopy",50]],ok:70,
   lines:[...MEM_STATS.map(s=>s+" +1"),"MaxSP +10","MaxSP +25","MaxSP +50","MaxHP +100","MaxHP +200"]};
 // the Job Essences on +9 armor (names and effects in data/essences.js), % each by essence level: Subjugation Team armor rolls a 1st

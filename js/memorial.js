@@ -78,7 +78,7 @@ function renderMemorials(){
 const memEssences=g=>{const m=MEM_ESSENCE[g];return ESSENCES.filter(x=>x.tier===m.tier).map(x=>({x,v:m.lv[/Lv\.(\d)$/.exec(x.name)[1]]})).filter(e=>e.v)};
 const ENCH_HINT="One random enchant in card slot 4 for 100,000 zeny. Reset: 10,000,000 zeny (70%) or a Zelstar.";
 function renderEnchants(){const g=$("enchGear").value||"subjugation",veg=g==="veggie";$("enchPool").disabled=veg;
-  $("enchHint").textContent=veg?`One random line, on the one you're wearing, for ${fmtN(VEGGIE_ENCHANT.mats[0][2])} ${VEGGIE_ENCHANT.mats[0][1]} and ${fmtN(VEGGIE_ENCHANT.zeny)} zeny: ${VEGGIE_ENCHANT.ok}% success, a failure breaks it. A new line replaces the old one the same way. Lines from RagnaDex, which gives no chances.`:ENCH_HINT;
+  $("enchHint").textContent=veg?`One random line, on the one you're wearing, for ${fmtN(VEGGIE_ENCHANT.mats[0][2])} ${VEGGIE_ENCHANT.mats[0][1]} and ${fmtN(VEGGIE_ENCHANT.zeny)} zeny: ${VEGGIE_ENCHANT.ok}% success, a failure breaks it. A new line replaces the old one the same way. Lines as reported from other Zero servers, with no chances.`:ENCH_HINT;
   if(veg){$("enchFxHead").hidden=true;$("enchEssences").textContent="";
     $("enchRows").innerHTML=VEGGIE_ENCHANT.lines.map(l=>`<tr><td class="name">${esc(l)}</td><td>–</td></tr>`).join("");return}
   const p=$("enchPool").value||"low",rows=MEM_ENCHANT[g][p],armor=p==="armor";
