@@ -111,6 +111,22 @@ try {
     await page.close();
   });
 
+  await t("Monsters & maps switches the session Farm here goes to, or starts a new one", async () => {
+    const { page, errs } = await open();
+    await page.evaluate("C().mode='build';state.sessions.push({id:'sA',name:'Alpha',mobIds:[],entries:[]},{id:'sB',name:'Beta',mobIds:[],entries:[]});state.current='sA';save();renderAll()");
+    await goTab(page, "maps");
+    assert.ok(await page.isVisible("#mapSessSel"));
+    assert.equal(await page.inputValue("#mapSessSel"), "sA");
+    await page.selectOption("#mapSessSel", "sB");
+    assert.equal(await page.evaluate("state.current"), "sB");
+    assert.equal(await page.getAttribute('[data-tabbtn="maps"]', "aria-selected"), "true");     // stays on Monsters & maps
+    await page.selectOption("#mapSessSel", "+new");
+    assert.equal(await page.evaluate("state.sessions.length"), 3);
+    assert.equal(await page.evaluate("cur().name"), "New session");
+    assert.deepEqual(errs, []);
+    await page.close();
+  });
+
   await t("Where to farm: best spots by EXP and zeny, Farm here sets the session's map, one ranking at a time", async () => {
     const { page, errs } = await open();
     await page.evaluate("C().mode='build'");                           // the spots show once there's a character
