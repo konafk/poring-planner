@@ -120,6 +120,12 @@ function expGrowth(t){const ls=Object.keys(t).map(Number).filter(l=>t[l]>0&&t[l-
   return out.map(g=>({from:g.from,to:g.to,x:(t[g.to]/t[g.from-1])**(1/(g.to-g.from+1))}))}
 // "Lv 2–50 ×1.15 each · Lv 51 ×5 · …"
 const expGrowthTxt=t=>expGrowth(t).map(g=>`Lv ${g.from}${g.to>g.from?`–${g.to}`:""} ×${+g.x.toFixed(2)}${g.to>g.from?" each":""}`).join(" · ");
+// past the older table's last level (top): the newer table's next level against it, then how the rest grow, e.g. "Past Lv 70 of
+// Before 12 Nov 2026 (568,722,300): Current Lv 71 takes 577,729,800, ×1.02 that (+1.6%), then Lv 72–80 ×1.05 each. Lv 80: ×1.58 (+57.6%)"
+function expPastTxt(O,N,top,on,nn){const p=O[top],ls=Object.keys(N).map(Number).filter(l=>l>top&&N[l]>0).sort((a,b)=>a-b),f=ls[0],e=ls[ls.length-1];
+  const sub={};for(const l of ls)sub[l]=N[l];const rest=expGrowthTxt(sub);
+  return `Past Lv ${top} of ${on} (${fmtN(p)} EXP): ${nn} Lv ${f} takes ${fmtN(N[f])}, ×${+(N[f]/p).toFixed(2)} that (${expPct(N[f],p)})`+
+    (rest?`, then ${rest}`:"")+(e>f?`. Lv ${e}: ×${+(N[e]/p).toFixed(2)} (${expPct(N[e],p)})`:"")}
 // "+20.0%" / "−87.6%": e against p, "–" without both
 const expPct=(e,p)=>{if(!(e>0&&p>0))return "–";const v=(e/p-1)*100;return `${v<0?"−":"+"}${Math.abs(v).toFixed(1)}%`};
 function renderExp(){const c=C(),m=calcMob(),blv=num(c.baseLv),jl=num(c.jobLv),per=m?killExp(m):0,jper=m?killJobExp(m):0;
@@ -144,14 +150,20 @@ function renderExp(){const c=C(),m=calcMob(),blv=num(c.baseLv),jl=num(c.jobLv),p
     const [o,n]=vs.indexOf(v)<vs.indexOf(w)?[v,w]:[w,v],O=o.table,N=n.table,all=[...new Set([...lvs(O),...lvs(N)])].sort((a,b)=>a-b);
     let to=0,tn=0;const cell=x=>x>0?fmtN(x):"–";
     $("refBaseTable").tHead.innerHTML=`<tr><th>Lv</th><th>${esc(o.name)}</th><th>${esc(n.name)}</th><th title="${esc(n.name)} against ${esc(o.name)}">Change</th><th>Total, ${esc(o.name)}</th><th>Total, ${esc(n.name)}</th>${m?`<th>Kills of ${esc(m.name)} (${esc(v.name)})</th>`:""}</tr>`;
-    $("refBaseTable").tBodies[0].innerHTML=all.map(l=>{const a=O[l],b=N[l],ch=a>0&&b>0?b<a?"good":b>a?"bad":"muted":"muted";
-      const row=`<tr${sel(l)}><td>${l}</td><td>${cell(a)}</td><td>${cell(b)}</td><td class="${ch}">${a>0&&b>0?a===b?"same":expPct(b,a):a>0?"gone":"new"}</td><td>${a>0?fmtN(to):"–"}</td><td>${b>0?fmtN(tn):"–"}</td>${m?`<td>${kills(v.table[l])}</td>`:""}</tr>`;
+    // the levels the newer table adds past the older one's last: their Change is against that last level (Current Lv 71–80 against
+    // the Lv 70 before 12 November 2026), so you see how far past the old cap each one takes
+    const oTop=Math.max(0,...lvs(O).filter(l=>O[l]>0)),past=l=>!(O[l]>0)&&N[l]>0&&l>oTop&&O[oTop]>0;
+    const chg=(a,b,l)=>a>0&&b>0?(a===b?"same":expPct(b,a)):past(l)?`${expPct(b,O[oTop])} <span class="muted">vs Lv ${oTop}</span>`:a>0?"gone":"new";
+    $("refBaseTable").tBodies[0].innerHTML=all.map(l=>{const a=O[l],b=N[l],r=past(l)?O[oTop]:a,ch=r>0&&b>0?b<r?"good":b>r?"bad":"muted":"muted";
+      const tip=past(l)?` title="${esc(n.name)} Lv ${l} against Lv ${oTop}, the last level of ${esc(o.name)}"`:"";
+      const row=`<tr${sel(l)}><td>${l}</td><td>${cell(a)}</td><td>${cell(b)}</td><td class="${ch}"${tip}>${chg(a,b,l)}</td><td>${a>0?fmtN(to):"–"}</td><td>${b>0?fmtN(tn):"–"}</td>${m?`<td>${kills(v.table[l])}</td>`:""}</tr>`;
       if(a>0)to+=a;if(b>0)tn+=b;return row}).join("");
     // the levels both tables have, from Lv 1 without a gap: what reaching the level past them took in each
     let top=0,so=0,sn=0;while(O[top+1]>0&&N[top+1]>0){top++;so+=O[top];sn+=N[top]}
     const nt=lvs(N).length-lvs(O).length;
     $("expCmpNote").innerHTML=top?`Lv 1 → ${top+1}: <b>${fmtN(so)}</b> EXP (${esc(o.name)}) → <b>${fmtN(sn)}</b> (${esc(n.name)}), ${expPct(sn,so)}`+
-      (nt>0?`. ${esc(n.name)} goes ${nt} level${nt>1?"s":""} further`:nt<0?`. ${esc(o.name)} went ${-nt} level${nt<-1?"s":""} further`:""):"";
+      (nt>0?`. ${esc(n.name)} goes ${nt} level${nt>1?"s":""} further`:nt<0?`. ${esc(o.name)} went ${-nt} level${nt<-1?"s":""} further`:"")+
+      (past(oTop+1)?`<br>${esc(expPastTxt(O,N,oTop,o.name,n.name))}`:""):"";
     $("expCmpNote").hidden=!top;
     $("expGrowth").innerHTML=`<b>How each grows</b> (each level's EXP against the level before's):<br>${esc(o.name)}: ${esc(expGrowthTxt(O))}<br>${esc(n.name)}: ${esc(expGrowthTxt(N))}`;
   }

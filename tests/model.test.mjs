@@ -272,6 +272,14 @@ t("EXP tables tab: every table to pick from, oldest first, the current one last"
   // how each table grows, worked out from the numbers: the old one ×1.2 a level, the 12 November one in steps with a jump at 51, 61, 71
   assert.equal(run("expGrowthTxt(EXP_TABLE_LOG[0].table)"), "Lv 2–70 ×1.2 each");
   assert.equal(run("expGrowthTxt(EXP_TABLE)"), "Lv 2–50 ×1.15 each · Lv 51 ×5 · Lv 52–60 ×1.1 each · Lv 61 ×4 · Lv 62–70 ×1.1 each · Lv 71 ×3 · Lv 72–80 ×1.05 each");
+  // the levels the new table adds go against the old table's last level: Lv 71 is ×1.02 the old Lv 70, not ×3 (that's the new Lv 70)
+  assert.equal(run("expPastTxt(EXP_TABLE_LOG[0].table,EXP_TABLE,70,'Before 12 Nov 2026','Current')"),
+    "Past Lv 70 of Before 12 Nov 2026 (568,722,300 EXP): Current Lv 71 takes 577,729,800, ×1.02 that (+1.6%), then Lv 72–80 ×1.05 each. Lv 80: ×1.58 (+57.6%)");
+  run(`globalThis.getEl=document.getElementById;globalThis.expEls={refBaseTable:{tHead:{},tBodies:[{}]},expCmpNote:{}};
+    document.getElementById=id=>expEls[id]||getEl(id);state.expVer="cur";state.expCmp="0";renderExp();document.getElementById=getEl`);
+  const body = run("expEls.refBaseTable.tBodies[0].innerHTML"), chg = l => body.match(new RegExp(`<tr[^>]*><td>${l}</td>(?:<td[^>]*>.*?</td>){2}<td[^>]*>(.*?)</td>`))[1].replace(/<[^>]+>/g, "");
+  assert.deepEqual([70, 71, 80].map(chg), ["−66.1%", "+1.6% vs Lv 70", "+57.6% vs Lv 70"]);
+  assert.match(run("expEls.expCmpNote.innerHTML"), /Past Lv 70 of Before 12 Nov 2026/);
 });
 
 t("tracker: entries logged before the 12 November 2026 maintenance use the old EXP table", () => {
