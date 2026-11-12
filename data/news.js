@@ -37,7 +37,7 @@ const NEWS=[
     ["Reset Cat · 12 to 15 November",[[[],"Free stat and skill reset","Back in Payon (165, 49) for the level cap rise."]]]]},
   {id:"newsChanges12",sec:"other",name:"What changed",
    intro:"Read against the client's text before and after this maintenance.",
-   groups:[["Job Essences",[[[29404,29416],"","Hunter Essence: Blitz Beat damage +20% at Lv 1 and +40% at Lv 2, down from +40% and +80%."],[[29405,29417],"","Crusader Essence: Holy Cross damage +20%, up from +15%."],[[29561,29574],"","Alchemist Essence II: Mammonite damage +20%, down from +100%."],[[29566],"","Knight's Essence II Lv.2: Brandish Spear damage +20%, down from +40%."]]],
+   groups:[["Job Essences",[[[29404,29416],"","Hunter Essence: Blitz Beat damage +20% at Lv 1 and +40% at Lv 2, down from +40% and +80%."],[[29405,29417],"","Crusader Essence: Holy Cross damage +20%, up from +15%."],[[29561,29574],"","Alchemist Essence II: Mammonite damage +20%, down from +100%."],[[29566],"","Knight's Essence II Lv.2: Brandish Spear damage +20%, down from +40%."],[[],"Every other essence","No change: the other 53, Sage's among them, read the same as before."]]],
     ["Skills",[[[],"Falcon Eyes","Now HIT +3 a level (flat); the text said HIT +3% before. The planner always counted it as flat."]]],
     ["Channels",[[[],"Channels C and D","Next to the original, A and B. Most maps have the same monsters on each; Sunken Ship 1F has twice as many on C and D (104 Hydra, against 52)."]]]]},
   {id:"newsShop12",sec:"other",name:"Kafra Shop and new costumes",
