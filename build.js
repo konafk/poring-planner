@@ -16,6 +16,10 @@ const BUILD=(()=>{
   const DUAL_W=["Dagger","One-handed sword","One-handed axe"];
   const LEFT_ASPD={"Dagger":10,"One-handed sword":12,"One-handed axe":12};
   const dualOk=(job,right,left)=>job==="Assassin"&&DUAL_W.includes(right)&&DUAL_W.includes(left);
+  // weapons held in both hands: the Shield row (shield or left-hand weapon) stays empty while one is worn, as in the game.
+  // Instruments, whips, books, knuckles and one-handed staves leave the left hand free
+  const TWO_H=["Two-handed sword","Two-handed spear","Two-handed axe","Two-handed mace","Two-handed staff","Bow","Katar"];
+  const twoHanded=w=>TWO_H.includes(w);
   // the gear grid; "takes" lists the item slots (prontera equip_slot) that may go in it
   const SLOTS=[
     {k:"weapon",label:"Weapon",takes:["weapon"]},{k:"shield",label:"Shield",takes:["shield"]},
@@ -258,7 +262,9 @@ const BUILD=(()=>{
   function compute(b,job,aspdBase){
     const A=blank(),lv=Math.max(1,+b.baseLv||1),jobLv=Math.max(1,+b.jobLv||1),ctxBase={baseLv:lv,jobSlug:String(job).toLowerCase(),firstSlug:String(FIRST_OF[job]||job).toLowerCase(),refineSum:0};
     const gear=b.gear||{},worn=[];let wpn=null,wpnL=null,shield=false,weaponAtk=0,gearAtk=0,gearMatk=0,refAtk=0,refMatk=0,refDef=0,gearDef=0,gearMdef=0;
-    SLOTS.forEach(s=>{const g=gear[s.k];const it=g&&item(g.id);if(!it)return;const r=Math.max(0,+g.refine||0);
+    // a two-handed weapon leaves no hand for the Shield row: whatever is saved there doesn't count
+    const w0=gear.weapon&&item(gear.weapon.id),bothHands=!!w0&&twoHanded(WTYPE[w0.type]);
+    SLOTS.forEach(s=>{const g=gear[s.k];const it=g&&item(g.id);if(!it)return;if(s.k==="shield"&&bothHands){A.unmodelled.push(`${it.name}: not counted, ${w0.name} takes both hands`);return}const r=Math.max(0,+g.refine||0);
       if(s.k.startsWith("head")&&worn.some(w=>w.it===it&&w.slot.startsWith("head")))return; // a multi-slot headgear counts once (two of the same dagger or accessory are two items)
       worn.push({it,r,slot:s.k,cards:(g.cards||[]).map(item).filter(Boolean)});
       const [ra,rm,rd]=refineAt(it,r);
@@ -360,5 +366,5 @@ const BUILD=(()=>{
     for(const f of top)for(const cs of cardReadings(f.runs)){const r=read(f.it,cs),k=JSON.stringify(r);if(!seen.has(k)&&alts.length<ALT_MAX){seen.add(k);alts.push(r)}}
     return alts.length?{...best,alts}:best}
 
-  return {SLOTS,CARD_FOR,WTYPE,STAT6,FIRST_OF,SHIELD_ASPD,DUAL_W,LEFT_ASPD,dualOk,item,jobBonus,refineAt,status,raiseCost,statPoints,statSpent,vitDefAdd,compute,curve,parseOptions,OPTIONS,OPT_MAX,optRows,optLines,optBad,optGear,optChoices,STONE_SLOTS,stone,stonesWorn,tamingEgg,readCardNames,readGearName}})();
+  return {SLOTS,CARD_FOR,WTYPE,STAT6,FIRST_OF,SHIELD_ASPD,DUAL_W,LEFT_ASPD,dualOk,TWO_H,twoHanded,item,jobBonus,refineAt,status,raiseCost,statPoints,statSpent,vitDefAdd,compute,curve,parseOptions,OPTIONS,OPT_MAX,optRows,optLines,optBad,optGear,optChoices,STONE_SLOTS,stone,stonesWorn,tamingEgg,readCardNames,readGearName}})();
 if(typeof module!=="undefined")module.exports=BUILD;

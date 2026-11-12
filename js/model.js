@@ -80,9 +80,9 @@ const fsUsed=()=>fsAble()&&fsUseSec()<plainUseSec();
 // base-level skills: × BaseLv/100 only above Lv100, except the three Zero skills missing that check (blvBug, see game.js)
 // cart skills (Cart Revolution): +a.cart % per 8,000 cart weight, capped at a full 8,000 cart
 // shield skills (a.shw: Shield Boomerang, Rapid Smiting): + shield weight + 4 × shield refine %. Build mode reads the Shield row
-// (a left-hand weapon doesn't count); otherwise the Shield weight / refine boxes
-const shieldWR=(c=C())=>{if(c.mode==="build"){const g=((c.build&&c.build.gear)||{}).shield,it=g&&g.id&&BUILD.item(g.id);
-    return it&&(it.slot||[]).includes("shield")?{w:num(it.w),r:num(g.refine),name:it.name}:{w:0,r:0,name:""}}
+// (a left-hand weapon doesn't count, nor a shield under a two-handed weapon); otherwise the Shield weight / refine boxes
+const shieldWR=(c=C())=>{if(c.mode==="build"){const gear=(c.build&&c.build.gear)||{},g=gear.shield,it=g&&g.id&&BUILD.item(g.id),w=gear.weapon&&BUILD.item(gear.weapon.id);
+    return it&&(it.slot||[]).includes("shield")&&!(w&&BUILD.twoHanded(BUILD.WTYPE[w.type]))?{w:num(it.w),r:num(g.refine),name:it.name}:{w:0,r:0,name:""}}
   return {w:Math.max(0,num(c.shieldW)),r:Math.max(0,num(c.shieldRef))}};
 const shieldPct=(c=C())=>{const s=shieldWR(c);return s.w+4*s.r};
 // weapon-weight skills (a.wgt: Axe Boomerang): + weapon weight %, from the Weapon row in build mode, otherwise the Weapon weight box

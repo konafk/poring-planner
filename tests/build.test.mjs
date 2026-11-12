@@ -14,6 +14,7 @@ Object.assign(globalThis, {
     { id: 5, slug: "guard", name: "Guard", slot: ["shield"], refine: "armor", def: 3, g: [] },
     { id: 6, slug: "knife", name: "Knife", slot: ["weapon"], type: "dagger", wlv: 2, refine: "weapon", atk: 40, el: "fire", slots: 1, g: [] },
     { id: 7, slug: "ring", name: "Ring", slot: ["accessory_1", "accessory_2"], g: [{ b: [["matk", null, null, 10, 1]] }, { r: 7, b: [["int", null, null, 3]] }] },
+    { id: 8, slug: "claymore", name: "Claymore", slot: ["weapon"], type: "sword_2h", wlv: 3, refine: "weapon", atk: 180, g: [] },
     { id: 4, slug: "hat", name: "Hat", slot: ["head_upper", "head_middle"], refine: "armor", def: 1, g: [{ b: [["aspd_percent", null, null, 10]] }] },
   ],
   CARDS: [
@@ -119,6 +120,22 @@ t("a shield takes the job's shield penalty off base ASPD", () => {
   const on = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { shield: { id: 5 } } }, "Knight", aspdBase);
   assert.equal(BUILD.SHIELD_ASPD.Knight, 5);
   assert.equal(off.fields.aspd - on.fields.aspd, 5);
+});
+
+t("a two-handed weapon leaves no hand for the Shield row: a shield or left-hand weapon there doesn't count", () => {
+  assert.equal(BUILD.twoHanded("Two-handed sword"), true);
+  assert.equal(BUILD.twoHanded("Bow"), true);
+  assert.equal(BUILD.twoHanded("Katar"), true);
+  assert.equal(BUILD.twoHanded("One-handed sword"), false);
+  assert.equal(BUILD.twoHanded("Knuckle"), false);
+  const bare = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { weapon: { id: 8 } } }, "Knight", aspdBase);
+  const both = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { weapon: { id: 8 }, shield: { id: 5, refine: 4 } } }, "Knight", aspdBase);
+  assert.equal(both.shield, false);
+  assert.equal(both.fields.aspd, bare.fields.aspd);                         // no shield penalty
+  assert.equal(both.fields.defTxt, bare.fields.defTxt);                     // nor the shield's DEF
+  assert.ok(both.unmodelled.some(x => /Guard: not counted, Claymore takes both hands/.test(x)));
+  const one = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { weapon: { id: 1 }, shield: { id: 5 } } }, "Knight", aspdBase);
+  assert.equal(one.shield, true);                                           // a one-handed weapon still takes one
 });
 
 t("status formulas match the verified Zero formulas", () => {

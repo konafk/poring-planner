@@ -31,8 +31,8 @@ const aspdBase=(job,w)=>{const t=ASPD_T[job];if(!t||t[w]==null)return null;retur
 // with an Assassin's left-hand weapon, its delay comes off too (BUILD.LEFT_ASPD)
 const aspdBaseOf=(c,w=c.weapon,lw=c.lw)=>{const ab=aspdBase(state.job,w);return ab==null?null:ab-(BUILD.dualOk(state.job,w,lw)?BUILD.LEFT_ASPD[lw]:0)};
 // a shield (the tick box in status-window mode, the gear table in build mode) costs the job's shield penalty. It takes the left
-// hand, so it's never worn with an Assassin's second weapon
-const shieldPen=(c,w=c.weapon,lw=c.lw,sh=c.shield)=>sh&&!BUILD.dualOk(state.job,w,lw)?BUILD.SHIELD_ASPD[state.job]||0:0;
+// hand, so it's never worn with an Assassin's second weapon or a two-handed weapon
+const shieldPen=(c,w=c.weapon,lw=c.lw,sh=c.shield)=>sh&&!BUILD.twoHanded(w)&&!BUILD.dualOk(state.job,w,lw)?BUILD.SHIELD_ASPD[state.job]||0:0;
 const aspdStart=c=>{const ab=aspdBaseOf(c);return ab==null?null:ab-shieldPen(c)};
 // status-window mode: a change of weapon, left hand or shield moves the typed ASPD by what the base moves
 const aspdMove=(c,next)=>{const a0=aspdStart(c),a1=aspdStart(next);if(a0!=null&&a1!=null){c.aspd=Math.min(190,Math.round((num(c.aspd,150)+a1-a0)*10)/10);$("aspd").value=c.aspd}};
@@ -52,8 +52,11 @@ const numK=["lwAtk","jobLv","fctSec","normalPct","myElPct","ignDef","ignMdef","m
   $(k).addEventListener("input",e=>{const v=e.target.value;const c0=C();const before=(k==="baseLv"||k==="intTxt")?derived(c0):null;C()[k]=numK.includes(k)?(v===""?(k==="hitScale"?0.3:0):num(v)):v;if(k==="mobInterval"&&!(C()[k]>0))C()[k]=1.5;if(before){shiftByStats(c0,before);["atkTxt","matkTxt","hitTxt","fleeTxt","defTxt"].forEach(x=>{if(document.activeElement!==$(x))$(x).value=c0[x]})}save();renderAll()}));
 $("sellAt").addEventListener("input",e=>{const v=+e.target.value;C().sellAt=v>0?Math.min(90,v):70;save();renderAll()});
 ["weapon","wElem","nameType","lw","lwElem"].forEach(k=>$(k).addEventListener("change",e=>{const c=C();
-  if(k==="weapon"||k==="lw"){const next={...c,[k]:e.target.value};if(k==="lw"&&BUILD.dualOk(state.job,next.weapon,next.lw))next.shield=false;aspdMove(c,next);c.shield=next.shield;$("shield").checked=!!c.shield}
-  c[k]=e.target.value;save();renderAll();if(k==="weapon")renderSkills()}));
+  if(k==="weapon"||k==="lw"){const next={...c,[k]:e.target.value};if(k==="lw"&&BUILD.dualOk(state.job,next.weapon,next.lw))next.shield=false;
+    // a two-handed weapon takes both hands: the shield and the left-hand weapon come off
+    if(k==="weapon"&&BUILD.twoHanded(next.weapon)){next.shield=false;next.lw=""}
+    aspdMove(c,next);c.shield=next.shield;c.lw=next.lw;$("lw").value=c.lw||""}
+  c[k]=e.target.value;if(k==="weapon"||k==="lw")handsUi(c);save();renderAll();if(k==="weapon")renderSkills()}));
 $("shield").addEventListener("change",e=>{const c=C(),next={...c,shield:e.target.checked};if(next.shield)next.lw="";aspdMove(c,next);
   c.shield=next.shield;c.lw=next.lw;$("lw").value=c.lw||"";save();renderAll()});
 $("autoSp").addEventListener("change",e=>{C().autoSp=e.target.checked;save();renderAll()});

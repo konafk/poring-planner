@@ -832,6 +832,7 @@ details.more>.form{display:grid}
 .ewSlot:hover{background:var(--ew-slot-hover);border:0}
 .ewSlot.empty{background:var(--ew-slot-empty)}
 .ewSlot.none{cursor:default}
+.ewSlot.both{opacity:.5}
 .ewSlot .ico.none{width:24px;height:24px}
 .ewName{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .ewChar{display:flex;flex-direction:column;align-items:center;width:calc(52px*var(--ew-z))}
