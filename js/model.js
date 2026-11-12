@@ -668,7 +668,7 @@ const MAPMOBS={};
 Object.entries(SPAWN).forEach(([id,arr])=>{const m=MOBS.find(x=>x.id===+id);if(!m)return;arr.forEach(([mp,n])=>{(MAPMOBS[mp]=MAPMOBS[mp]||[]).push({m,n})})});
 
 // ---- tracker math ----
-function cumulative(e,base){let total=0;for(let l=base;l<e.lv;l++)total+=lvExp(l)||100;return total+(e.pct/100)*(lvExp(e.lv)||100)}
+function cumulative(e,base){let total=0;for(let l=base;l<e.lv;l++)total+=lvExp(l,e.t)||100;return total+(e.pct/100)*(lvExp(e.lv,e.t)||100)}
 // pausing: s.pauses=[{from,to}] (to missing while paused); paused time is left out of every rate, EXP gained is still counted
 // EXP % lost on death: 10%, halved by the shop's death penalty item
 const diePct=()=>state.dieItem?5:10;
@@ -679,7 +679,7 @@ const activeH=(s,a,b)=>(b-a-pausedMs(s,a,b))/36e5;
 const autoResume=(s,t)=>{const p=openPause(s);if(p&&t>=p.from)p.to=Math.max(p.from,t)};
 // a death (entry.died: the EXP % it cost) isn't negative EXP/hr: the drop to that entry is given back, up to the penalty. With the
 // Died button the entry before it is your EXP just before dying, so that pair adds nothing; a pasted death after EXP gained keeps the gain
-const deathBack=(e,q,base)=>{if(!e.died)return 0;const pen=e.died/100*(lvExp(e.lv)||100),d=cumulative(e,base)-cumulative(q,base);return e.t-q.t<=6e4?Math.min(pen,Math.max(0,-d)):pen};
+const deathBack=(e,q,base)=>{if(!e.died)return 0;const pen=e.died/100*(lvExp(e.lv,e.t)||100),d=cumulative(e,base)-cumulative(q,base);return e.t-q.t<=6e4?Math.min(pen,Math.max(0,-d)):pen};
 // EXP gained from es[i] to es[j] (sorted), with deaths given back; never below 0 across a death
 function gained(es,i,j,base){let x=0;for(let k=i+1;k<=j;k++){const d=cumulative(es[k],base)-cumulative(es[k-1],base);x+=es[k].died?Math.max(0,d+deathBack(es[k],es[k-1],base)):d}return x}
 function stats(s){
@@ -687,7 +687,7 @@ function stats(s){
   // the recent rate runs from the newest entry at least a minute (unpaused) before the last, so a death logged a second after your EXP doesn't blow it up
   const base=es[0].lv,n=es.length-1,last=es[n],pi=es.slice(0,-1).map((e,i)=>i).reverse().find(i=>activeH(s,es[i].t,last.t)>=1/60)??n-1,prev=es[pi];const hrs=(a,b)=>activeH(s,a.t,b.t);
   if(hrs(es[0],last)<=0)return null;
-  const avgRaw=gained(es,0,n,base)/hrs(es[0],last);const recRaw=hrs(prev,last)>0?gained(es,pi,n,base)/hrs(prev,last):0;const L=lvExp(last.lv)||100;
+  const avgRaw=gained(es,0,n,base)/hrs(es[0],last);const recRaw=hrs(prev,last)>0?gained(es,pi,n,base)/hrs(prev,last):0;const L=lvExp(last.lv,last.t)||100;
   return {es,last,prev,avgRaw,recRaw,avgPct:avgRaw/L*100,recPct:recRaw/L*100,L,recentMin:Math.round(hrs(prev,last)*60),spanMin:Math.round(hrs(es[0],last)*60),
     fullH:avgRaw>0?L/avgRaw:Infinity,nextH:avgRaw>0?L*(1-last.pct/100)/avgRaw:Infinity,deaths:es.filter(e=>e.died).length};
 }

@@ -521,7 +521,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   <section class="card" data-tab="track">
     <div class="bar"><h2 class="grow">Goal</h2><span class="note" id="goalNote"></span></div>
     <div class="bar">
-      <label>Reach base level<input class="w-lg" id="goalLv" type="number" min="2" max="80" value="71"></label>
+      <label>Reach base level<input class="w-lg" id="goalLv" type="number" min="2" max="80" value="80"></label>
       <label>Reach job level<input class="w-lg" id="goalJobLv" type="number" min="2" max="70" value="70"></label>
     </div>
     <div class="calc" id="goalTiles"></div>
@@ -646,6 +646,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   </section>
 
   <div class="charLayout" data-tab="news">
+  <div class="newsUpdates" id="newsUpdates" role="tablist" aria-label="Game updates" hidden></div>
   <div class="charMain" id="newsMain">
   <section class="card newsHeadCard" id="newsHead"></section>
   <section class="card" id="newsFloorsCard">

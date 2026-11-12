@@ -1076,6 +1076,13 @@ details.infoSec>summary:hover h3{color:var(--fg)}
 .newsHeadCard{display:flex;flex-direction:column;gap:8px}
 .newsHeadCard h2{font-family:var(--display);font-size:1.9rem;font-weight:800;letter-spacing:-.03em;line-height:1.05}
 .newsHeadCard p{margin:0;max-width:75ch;color:var(--muted);line-height:1.6;text-wrap:pretty}
+.newsUpdates{grid-column:1/-1;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);justify-self:start;max-width:100%}
+.newsUpdates::-webkit-scrollbar,.newsUpdates[hidden]{display:none}
+.newsUpdates button{flex:none;display:flex;align-items:baseline;gap:6px;border:0;background:none;border-radius:8px;padding:6px 12px;color:var(--muted);font:inherit;font-size:13px;font-weight:500;white-space:nowrap;cursor:pointer;transition:background .12s,color .12s}
+.newsUpdates button span{font-size:12px;opacity:.8}
+.newsUpdates button:hover{color:var(--fg)}
+.newsUpdates button[aria-selected="true"]{color:var(--accent);background:var(--accent-soft);font-weight:600}
+@media (max-width:1359px){.newsUpdates{order:-2;align-self:flex-start}}
 .newsTower{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .newsFloor{display:grid;grid-template-columns:56px minmax(0,1fr);border-top:1px solid var(--line)}
 .newsFloor:first-child{border-top:0}

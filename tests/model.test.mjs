@@ -256,8 +256,18 @@ t("job EXP per kill: gear counts for job EXP, an item's base-only EXP % doesn't"
   assert.equal(run(`killJobExp({exp:33361,job:6672})`), 2934);
 });
 
+t("tracker: entries logged before the 12 November 2026 maintenance use the old EXP table", () => {
+  const h = 36e5, old = Date.UTC(2026, 10, 11), now = Date.UTC(2026, 11, 1);
+  assert.equal(run("lvExp(50)"), 1731900); assert.equal(run(`lvExp(50,${old})`), 14834800); assert.equal(run(`lvExp(50,${now})`), 1731900);
+  assert.equal(run("lvExp(80)"), 896248000); assert.equal(run(`lvExp(75,${old})`), null);
+  run(`cur().entries=[{t:${old},lv:50,pct:10},{t:${old + h},lv:50,pct:20}];cur().pauses=[]`);
+  near(run("stats(cur())").avgRaw, 1483480);                                 // 10% of the old Lv 50's 14,834,800 in an hour
+  run(`cur().entries=[{t:${now},lv:50,pct:10},{t:${now + h},lv:50,pct:20}]`);
+  near(run("stats(cur())").avgRaw, 173190);                                  // the same 10% of the new 1,731,900
+});
+
 t("tracker: EXP rate across a level-up, with paused time left out", () => {
-  const h = 36e5, t0 = 1e12;
+  const h = 36e5, t0 = Date.UTC(2026, 11, 1);                          // after the 12 November 2026 EXP table
   run(`cur().entries=[{t:${t0},lv:10,pct:50},{t:${t0 + h},lv:11,pct:25}];cur().pauses=[]`);
   const exp = run("EXP_TABLE[10]") * 0.5 + run("EXP_TABLE[11]") * 0.25;
   let s = run("stats(cur())");
@@ -2413,7 +2423,7 @@ t("a session keeps the stats it was logged with", () => {
 });
 
 t("deaths: the EXP a death costs isn't negative EXP / hr", () => {
-  const t0 = 1e12, L = run("lvExp(30)"), st = es => run(`cur().entries=${JSON.stringify(es)};cur().pauses=[];stats(cur())`);
+  const t0 = 1e12, L = run(`lvExp(30,${t0})`), st = es => run(`cur().entries=${JSON.stringify(es)};cur().pauses=[];stats(cur())`);
   // the Died button: your EXP just before (20%), then a second later 10% less
   const b = st([{ t: t0, lv: 30, pct: 10 }, { t: t0 + 36e5, lv: 30, pct: 20 }, { t: t0 + 36e5 + 1000, lv: 30, pct: 10, died: 10 }]);
   near(b.avgRaw, 0.1 * L / ((36e5 + 1000) / 36e5));
@@ -2471,7 +2481,7 @@ t("max base level: the EXP Hunter ranks by net zeny, EXP gear lines are flagged"
   setup("Knight", { baseLv: 70 });                                             // 70 is no longer the max since the 12 November 2026 patch
   run("state.tsort={}");
   assert.equal(run("MAX_BASE_LV"), 80);
-  assert.equal(run("GOAL_TOP_LV"), 71);                                        // the EXP table stops at 70 until the EXP to 80 is out
+  assert.equal(run("GOAL_TOP_LV"), 80);                                        // the EXP table runs to 80 since the 12 November 2026 update
   assert.equal(run(`JSON.stringify(tblSort("bestTable"))`), '["epm",-1]');
   run("C().baseLv=MAX_BASE_LV");
   assert.equal(run(`JSON.stringify(tblSort("bestTable"))`), '["net",-1]');
