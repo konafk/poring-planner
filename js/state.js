@@ -227,8 +227,11 @@ const pct=(n,d=2)=>isFinite(n)?n.toFixed(d)+"%":"–";
 function fmtDur(h){if(!isFinite(h)||h<0)return "–";const m=Math.round(h*60),hh=Math.floor(m/60),mm=m%60;if(hh>=24){const d=Math.floor(hh/24);return `~${d}d ${hh%24}h ${mm}m\n~${hh}h ${mm}m`}return hh?`~${hh}h ${mm}m`:`~${mm}m`}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 const num=(v,d=0)=>{const x=+v;return isFinite(x)?x:d};
-// EXP to the next level; t (an entry's time): before the 12 November 2026 maintenance the old table applies, so logs from then keep their rates
-const lvExp=(lv,t)=>(t!=null&&t<EXP_TABLE_SINCE?EXP_TABLE_OLD:EXP_TABLE)[lv]||null;
+// the base EXP table in use at time t (an entry's time): the first one in EXP_TABLE_LOG still in use then, else the current one, so
+// entries logged before an update keep their rates. No t: the current table
+const expTableAt=t=>(t!=null&&EXP_TABLE_LOG.find(x=>t<x.until)||{table:EXP_TABLE}).table;
+// EXP to the next level, at time t (see expTableAt)
+const lvExp=(lv,t)=>expTableAt(t)[lv]||null;
 // the server's base level cap: raise it when a patch does. At it base EXP no longer counts, so the EXP Hunter ranks by zeny
 // (80 from the 12 November 2026 patch)
 const MAX_BASE_LV=80;

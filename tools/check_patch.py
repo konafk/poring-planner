@@ -295,7 +295,7 @@ def main():
     if "externalsettings" in b and "externalsettings" in a:
         x, y = tbl("externalsettings", "MaxLevelTable")
         if section("Level cap", [f"{k}: {x.get(k)} -> {y.get(k)}" for k in sorted(set(x) | set(y)) if x.get(k) != y.get(k)]):
-            found = True; print("  Extend data/exp.js's tables if the cap went past them.")
+            found = True; print("  Extend data/exp.js's tables if the cap went past them (a changed table: log the old one in EXP_TABLE_LOG first).")
     if "equipmentproperties" in b and "equipmentproperties" in a:
         found |= diff_gear(load(a["equipmentproperties"]), load(b["equipmentproperties"]), items)
     if "packageitem" in b:

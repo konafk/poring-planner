@@ -44,7 +44,8 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <button type="button" role="tab" data-tabbtn="news" title="What's new"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="2.5"/></svg><span>What's new</span></button>
         <button type="button" role="tab" data-tabbtn="roadmap" title="Roadmap"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Roadmap</span></button>
         <button type="button" role="tab" data-tabbtn="market" title="Market"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="M15.5 9.5A6 6 0 1 1 9.5 15.5"/></svg><span>Market</span></button>
-        <button type="button" role="tab" data-tabbtn="ref" title="EXP &amp; formulas"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg><span>EXP &amp; formulas</span></button>
+        <button type="button" role="tab" data-tabbtn="exp" title="EXP tables: base and job EXP per level, and every base table the game has used"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M6 17v-4M11 17V9M16 17V5"/></svg><span>EXP tables</span></button>
+        <button type="button" role="tab" data-tabbtn="ref" title="Formulas: party share, every formula, the element and size tables"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg><span>Formulas</span></button>
       </div></div>
       <div class="navSec"><button type="button" class="navGrp" aria-expanded="false" aria-haspopup="true" title="Simulators tabs"><span>Simulators</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="navItems" role="group" aria-label="Simulators">
         <button type="button" role="tab" data-tabbtn="brew" title="Brewing simulator"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v5.3a6.5 6.5 0 1 0 4 0V3"/><path d="M6 15.5h12"/></svg><span>Brewing</span></button>
@@ -312,7 +313,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
       <div class="note hint">Presets are max level. Fixed share of cast = the part DEX/INT can't cut (usually 20%).</div>
       <details class="note">
         <summary>How damage is worked out</summary>
-        <div class="mt">Area skills split time across targets. Full formulas: EXP &amp; formulas tab.</div>
+        <div class="mt">Area skills split time across targets. Full formulas: Formulas tab.</div>
       </details>
     </details>
     <details class="card sub" id="sagePanel" open>
@@ -884,24 +885,26 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="note hint">Search matches materials and NPCs too. Click any item for who drops it.</div>
   </section>
 
-  <section class="card" data-tab="ref">
-    <div class="bar"><h2 class="grow">EXP tables</h2><span class="note" id="refExpNote"></span></div>
-    <div class="row2">
-      <div class="build">
-        <h3>Base level</h3>
-        <div class="scroll tall"><table id="refBaseTable"><thead></thead><tbody></tbody></table></div>
-      </div>
-      <div class="build">
-        <div class="bar"><h3 class="grow">Job level</h3>
-          <div class="seg" role="radiogroup" aria-label="Job EXP table">
-            <button type="button" role="radio" data-reftier="novice">Novice</button>
-            <button type="button" role="radio" data-reftier="first">1st job</button>
-            <button type="button" role="radio" data-reftier="second">2nd job</button>
-          </div></div>
-        <div class="scroll tall"><table id="refJobTable"><thead></thead><tbody></tbody></table></div>
-      </div>
+  <section class="card" data-tab="exp" id="expBaseCard">
+    <div class="bar"><h2 class="grow">Base level</h2><span class="note" id="refExpNote"></span></div>
+    <div class="bar">
+      <label>Table<select id="expVer"></select></label>
+      <label>Compare with<select id="expCmp"></select></label>
     </div>
-    <div class="note hint">Your levels are highlighted; Total is from Lv 1.</div>
+    <div class="note" id="expCmpNote" hidden></div>
+    <div class="note" id="expGrowth"></div>
+    <div class="scroll tall"><table id="refBaseTable"><thead></thead><tbody></tbody></table></div>
+    <div class="note hint">Your level is highlighted; Total is from Lv 1. When the game changes the table, the one before stays here to compare with, and Session entries logged before the change keep using it (<a href="https://roz.mygnjoy.com/en/intro/guide/21" target="_blank" rel="noopener">official ↗</a>).</div>
+  </section>
+  <section class="card" data-tab="exp" id="expJobCard">
+    <div class="bar"><h2 class="grow">Job level</h2>
+      <div class="seg" role="radiogroup" aria-label="Job EXP table">
+        <button type="button" role="radio" data-reftier="novice">Novice</button>
+        <button type="button" role="radio" data-reftier="first">1st job</button>
+        <button type="button" role="radio" data-reftier="second">2nd job</button>
+      </div></div>
+    <div class="scroll tall"><table id="refJobTable"><thead></thead><tbody></tbody></table></div>
+    <div class="note hint">Your job level is highlighted; Total is from Job Lv 1.</div>
   </section>
   <section class="card" data-tab="ref">
     <div class="bar"><h2 class="grow">Party EXP (Even Share)</h2><span class="note" id="refPartyNote"></span></div>

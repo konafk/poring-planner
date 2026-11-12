@@ -18,7 +18,7 @@ const NEWS=[
  bosses:[],
  cards:[
   {id:"newsExp",sec:"lv80",name:"Level 80 and the new EXP table",
-   intro:"From the official EXP Table Guide, which the update notice points to. Job EXP didn't change. The EXP & formulas page's table and the tracker use the new numbers; entries you logged before this maintenance keep the old table, so their EXP/hr stays what it was.",
+   intro:"From the official EXP Table Guide, which the update notice points to. Job EXP didn't change. The EXP tables page (where you can compare the new table with the old one) and the tracker use the new numbers; entries you logged before this maintenance keep the old table, so their EXP/hr stays what it was.",
    groups:[["Base EXP, before and after",[[[],"Lv 1 to 70 in all","3,412,338,000 EXP before, 1,452,916,700 now: 57.4% less."],[[],"Lv 1 to 50","85.1% less: 89,008,500 before, 13,278,200 now. Lv 50 alone goes from 14,834,800 to 1,731,900."],[[],"Lv 51 to 60","70.1% less: 462,105,500 before, 138,006,900 now. Lv 51 now takes 5× what Lv 50 does."],[[],"Lv 61 to 70","54.5% less: 2,861,224,000 before, 1,301,631,600 now. Lv 70 goes from 568,722,300 to 192,576,600."],[[],"Lv 70 to 80","New: 6,370,373,000 EXP from Lv 70 to Lv 80, from 577,729,800 at Lv 71 to 853,569,600 at Lv 79."]]],
     ["Also with the cap",[[[],"Daily quests for Lv 80","A new daily quest tier for Lv 80, from the update notice. Like every daily quest, it resets at 4am."]]]]},
   {id:"newsDungeons",sec:"lv80",name:"Getting there",

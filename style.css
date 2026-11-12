@@ -447,7 +447,7 @@ table.cstats tbody tr,table.cmptab tbody tr{cursor:default}
 .sktip b{font-family:var(--display);font-weight:600}
 .sktip p{margin:0}
 @media (max-width:680px){.skgrid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}.sk.empty{display:none}}
-/* EXP & formulas tab: reference tables, rows aren't clickable */
+/* EXP tables and Formulas tabs: reference tables, rows aren't clickable */
 #refBaseTable tbody tr,#refJobTable tbody tr,#refFormulas tbody tr,#refElemTable tbody tr,#refSizeTable tbody tr,#refPartyTable tbody tr{cursor:default}
 #refFormulas td.f{white-space:normal;text-align:left;font-size:12.5px;min-width:260px}
 #refFormulas th:nth-child(2){text-align:left}

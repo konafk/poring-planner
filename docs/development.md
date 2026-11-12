@@ -33,7 +33,7 @@ Plain scripts that `index.html` loads in this order. They share one global scope
 | `events.js` | Input handlers, stats, the log form, accounts, sessions, backups, the share link and the column picker. |
 | `skills.js` | Skill trees, passives and buffs. |
 | `build-ui.js` | Build mode, consumables and the equipment stats rows. |
-| `ref.js` | The EXP & formulas tab, and the Character tab's Your gear vs other gear sets. |
+| `ref.js` | The EXP tables and Formulas tabs, and the Character tab's Your gear vs other gear sets. |
 | `gear-db.js` | The Equipment and Cards tabs (filters, effects text) and the Equip dialog that puts gear or a card in a gear set. |
 | `recipes.js` | The Recipes tab (with the Jellostones and Expedition upgrades from `data/memorial.js`), and the recipes that make or use each item (the details popup lists them). |
 | `info.js` | The details popup for a monster, item, piece of gear or card, opened from any name with `data-info="mob:<id>"` or `"item:<id>"`. |
@@ -70,7 +70,7 @@ Each table lives in its own file, so a re-export after a patch only touches that
 | `mstat.js` | Monster DEF/MDEF/ATK |
 | `elem.js` | Monster element, HIT/FLEE |
 | `sizes.js` | Monster size and race |
-| `exp.js` | EXP tables |
+| `exp.js` | EXP tables. `EXP_TABLE_LOG` keeps every base table the game used before, with the time each was replaced: when an update changes the table, add the current one to the end of the log before writing the new one, and never edit or drop a log entry (tracker entries logged while it was in use read their EXP from it, and the EXP tables tab compares it with the others). |
 | `equipment.js`, `cards.js`, `refine.js`, `skills.js` | Gear, refine and skill data for the build simulator. Written by `tools/export_prontera.py`. Each card's `affix` / `affixPos` is the name it gives the gear it's in, as the equipment window shows it ("Healing" for Vitata Card, `prefix`; "of Health" for Verit Card, `suffix`), added by `tools/export_cardnames.py`. |
 | `jobs.js` | Job bonus stats and base Max HP / SP per base level. Written by `tools/export_jobs.py`. |
 | `affixes.js` | Random options per pool (monster drop, MVP, forging, activation, Glast Heim), gear type and option slot, with min–max and whether it's a %. Written by `tools/export_affixes.py`. |

@@ -17,12 +17,13 @@
 - [Simulators](#simulators)
 - [Recipes](#recipes)
 - [Market](#market)
-- [EXP & formulas](#exp--formulas)
+- [EXP tables](#exp-tables)
+- [Formulas](#formulas)
 - [Tables everywhere](#tables-everywhere)
 
 ## Page layout
 
-The tabs come in levels: Home, then four groups, Plan (Character, Session), Game data (Monsters & maps, Item info, Equipment, Cards, Affixes, Recipes, Memorial dungeons, Stellar weapons), Reference (What's new, Roadmap, Market, EXP & formulas) and Simulators (Brewing, Cooking, Skill tree, Stylist). In a desktop window (1024px and wider) they sit in a sidebar on the left: the open tab's group lists its tabs, with the open tab's sections (its cards' headings) under it, the one you're reading marked; a click jumps to one. Every other group folds to its heading; click a heading to unfold or fold its group in place (the page remembers which you unfolded). With **Compact sidebar** every tab shows as an icon and the page keeps its own section links. In a narrower window or on a phone, Home and the four groups sit along the top, each group a menu of its tabs. A bar at the top of the page holds the Log EXP box; it says when the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
+The tabs come in levels: Home, then four groups, Plan (Character, Session), Game data (Monsters & maps, Item info, Equipment, Cards, Affixes, Recipes, Memorial dungeons, Stellar weapons), Reference (What's new, Roadmap, Market, EXP tables, Formulas) and Simulators (Brewing, Cooking, Skill tree, Stylist). In a desktop window (1024px and wider) they sit in a sidebar on the left: the open tab's group lists its tabs, with the open tab's sections (its cards' headings) under it, the one you're reading marked; a click jumps to one. Every other group folds to its heading; click a heading to unfold or fold its group in place (the page remembers which you unfolded). With **Compact sidebar** every tab shows as an icon and the page keeps its own section links. In a narrower window or on a phone, Home and the four groups sit along the top, each group a menu of its tabs. A bar at the top of the page holds the Log EXP box; it says when the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average.
 
 **Log EXP from any tab:** press the round **+** button at the bottom right, or **L** on any tab, and type in the Log EXP box it opens. It takes a line like the paste box does: `17.9` (EXP %), `17.9 63` (with job %), `15:05 17.9 63` (at that time), and `died` on the line for EXP after a death. The entry goes in at the level of your last one, and a level-up is picked up the same way as in the Log EXP card. On a phone the box opens as a sheet from the bottom, on a desktop as a pop-up above the button. At the max base level (70) base EXP no longer counts, so the box, the + button and **L** go away.
 
@@ -292,9 +293,15 @@ Once the site has a shared prices database ([setting it up](shared-prices.md)):
 - **Selling and DMs (optional, per item):** tick **DM** on a price you sell yourself (or on a copy). Buyers see **N sellers · DM** on the Market: each seller's copy, price and when, with a **DM** link to their Discord profile; no names show. Untick it and that listing goes at once.
 - The median counts each player once, and from 3 players on leaves out anyone over 3× or under ⅓ of it. Reports count for 30 days (the last 7 when 3 or more players reported lately). [How it keeps junk out](shared-prices.md#how-it-keeps-junk-out).
 
-## EXP & formulas
+## EXP tables
 
-- Base and job EXP tables for Base Lv 1–70 and Novice, 1st and 2nd job levels. Your level is highlighted, with kills per level for your monster and how much more EXP each level takes than the one before (e.g. +20.0%).
+- Base and job EXP tables for Base Lv 1–80 and Novice, 1st and 2nd job levels. Your level is highlighted, with kills per level for your monster and how much more EXP each level takes than the one before (e.g. +15.0%).
+- **Every base table the game has used** stays on the page. **Table** picks the one to show (the current one unless you pick another). **Compare with** puts a second one beside it, older first: each level's EXP in both, the change (−66.1% at Lv 70 from the table before 12 November 2026), and the total from Lv 1 in each. Above the table, what reaching the last level both share took in each.
+- **How it grows:** the multiple each level takes of the one before, worked out from the table's own numbers. Before 12 November 2026 every level took ×1.2 the one before. Since then it's ×1.15 a level up to Lv 50, then ×5 at Lv 51, ×1.1 a level to 60, ×4 at 61, ×1.1 a level to 70, ×3 at 71 and ×1.05 a level to 80.
+- Session entries logged before a table changed keep using the table they were logged under, so their EXP/hr stays what it was.
+
+## Formulas
+
 - **Party EXP (Even Share):** the bonus is +10% per extra member (2 members 110%, 3: 120% … 12: 210%), split evenly.
 - **EXP bonuses** add together. Gear EXP counts for both base and job; an item's "EXP +X%" goes in EXP bonus % (base only) and "Job EXP +X%" in Job EXP bonus % (job only).
 - Every formula the calculator uses, with your own numbers next to it.
