@@ -3120,7 +3120,8 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.equal(run(`itemName(25470)`), "Crimson Jellostone"); assert.equal(run(`itemName(15221)`), "Expedition's Armor");
   const memOk = q => run(`RECIPE_LIST.filter(r=>recipeOk(r,{q:${JSON.stringify(q)},cat:"Memorial"})).map(r=>r.id)`);
   assert.deepEqual([...memOk("poporing")], [25471]);                                                       // a fragment finds its stone
-  assert.ok(memOk("upgrader").length === 8);
+  assert.ok(memOk("equipment enhancer").length === 8);                                                // the NPC, by its client name
+  assert.deepEqual([...memOk("mysterious artisan")].sort(), [28568, 28569, 28570, 28571]);               // the Oath rings and earrings
   assert.match(run(`popItem("25465").body`), /Used in/); assert.match(run(`popGear(15221).body`), /Made from/);
   assert.doesNotMatch(run(`recipeWhere(RECIPE_LIST.find(r=>r.id===25470))`), /undefined| z</);         // no fee to show
   // a costume enchant stone: what it gives, its slot, and the box it comes out of at random

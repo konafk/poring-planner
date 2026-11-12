@@ -30,9 +30,9 @@ const JELLO=[
 {day:4,frag:[25468,"Deviling Jello Fragment"],stone:[25473,"Chaos Jellostone"]},
 {day:5,frag:[25469,"Angeling Jello Fragment"],stone:[25474,"Holy Jellostone"]}];
 const JELLO_PER_STONE=5,JELLO_CRAFT_DAYS=3,JELLO_BOX=[23649,"Jellopy Fragment Box"],JELLO_NPC=["Memory Craftsman's Workshop","prontera 48,227"];
-// Expedition gear (Ant Hell): the Upgrader (prt_in 118 34) makes it from a Subjugation Team piece, 50 Faintly Glowing Crystal and
+// Expedition gear (Ant Hell): the Equipment Enhancer (prt_in 118 34) makes it from a Subjugation Team piece, 50 Faintly Glowing Crystal and
 // Jellostones. EXPEDITION: id, name, from: [id, name], stones: {Jellostone id: how many}
-const EXPEDITION_CRYSTALS=[25424,"Faintly Glowing Crystal",50],EXPEDITION_NPC=["Upgrader","prt_in 118,34"];
+const EXPEDITION_CRYSTALS=[25424,"Faintly Glowing Crystal",50],EXPEDITION_NPC=["Equipment Enhancer","prt_in 118,34"];
 const EXPEDITION=[
 {id:15221,name:"Expedition's Armor",from:[15220,"Subjugation Team's Armor"],stones:{25470:2}},
 {id:15222,name:"Expedition's Robe",from:[15220,"Subjugation Team's Armor"],stones:{25471:2}},
@@ -43,10 +43,11 @@ const EXPEDITION=[
 {id:28540,name:"Expedition Ring",from:[28539,"Subjugation Team's Ring"],stones:{25472:3}},
 {id:28541,name:"Expedition Magic Ring",from:[28539,"Subjugation Team's Ring"],stones:{25474:3}}];
 // what the hard mode gems and Mithril Ore make: Thor's Flame (alberta_in 18 58, prt_in 64 68, morocc_in 74 35, payon 143 169,
-// geffen_in 102 176, aldeba_in 33 50) turns 10 Mithril Ore into a Mithril, and the Suspicious Craftsman (morocc_in 76 167) makes each
-// Oath ring and earring from 15 of its gem and 10 Mithril (or without the Mithril, in a week). MEM_CRAFTS: id, name, npc [name, map
+// geffen_in 102 176, aldeba_in 33 50) turns 10 Mithril Ore into a Mithril, and the Mysterious Artisan (morocc_in 76 167) makes each
+// Oath ring and earring from 15 of its gem and 10 Mithril, ready in a week, or at once for 10 more Mithril (its dialogue, client patch
+// of 12 November 2026, which names it; the amounts are filled in by the server, not in the client). MEM_CRAFTS: id, name, npc [name, map
 // x,y], mats [[id, name, how many]]
-const MEM_CRAFT_NPC=["Suspicious Craftsman","morocc_in 76,167"];
+const MEM_CRAFT_NPC=["Mysterious Artisan","morocc_in 76,167"];
 const MEM_CRAFTS=[
 {id:25430,name:"Mithril",npc:["Thor's Flame","prt_in 64,68"],mats:[[25429,"Mithril Ore",10]]},
 {id:28568,name:"Cursed Emerald Earring",npc:MEM_CRAFT_NPC,mats:[[25457,"Cursed Emerald",15],[25430,"Mithril",10]]},
@@ -80,8 +81,8 @@ const MEM_NPCS=[
 ["Memory Labyrinth Association Member","prt_fild06 37 197","lets you into Ant Hell (base Lv 70)"],
 ["Memory Craftsman's Workshop","prontera 48 227","makes a Jellostone from 5 of its Jello Fragment, after a 3-day wait (one at a time)"],
 ["Stone Transmuter","prt_in 118 28","turns a Jellostone you have spare into another with a Zelstar (KP shop)"],
-["Upgrader","prt_in 118 34","makes an Expedition piece from a Subjugation Team piece, 50 Faintly Glowing Crystal and Jellostones"],
+["Equipment Enhancer","prt_in 118 34","makes an Expedition piece from a Subjugation Team piece, 50 Faintly Glowing Crystal and Jellostones"],
 ["Enchant Association staff","prt_in 135 35","enchants Subjugation Team armor, garments and shoes (card slot 4)"],
 ["Enchant Association staff","prt_in 135 28","enchants Expedition armor, garments and shoes (card slot 4)"],
 ["Thor's Flame",["prt_in 64 68","alberta_in 18 58","morocc_in 74 35","payon 143 169","geffen_in 102 176","aldeba_in 33 50"],"turns 10 Mithril Ore into a Mithril"],
-["Suspicious Craftsman","morocc_in 76 167","makes the Oath rings and the earrings from 15 of their gem and 10 Mithril, in a week or at once for 10 more Mithril"]];
+["Mysterious Artisan","morocc_in 76 167","makes the Oath rings and the earrings from 15 of their gem and 10 Mithril, in a week or at once for 10 more Mithril"]];
