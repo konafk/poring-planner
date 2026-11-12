@@ -271,6 +271,8 @@ addEventListener("click",e=>{const d=DOWN_AT;if(!d||e.target.closest?.("input,te
   if(Math.hypot(e.clientX-d[0],e.clientY-d[1])>4&&String(getSelection()).trim()){e.preventDefault();e.stopPropagation()}},true);
 renderAccts();
 $("sessionSel").addEventListener("change",e=>openSession(e.target.value));
+// Monsters & maps: switch the session there, without going to the Session tab; "+ New session" starts one
+$("mapSessSel").addEventListener("change",e=>{const v=e.target.value;if(v==="+new"){openSession(newSess().id);showToast("New session: Farm here or Farming it now picks its monsters")}else if(v)openSession(v)});
 // rename: swap the session picker for a text box; Enter or leaving the box saves, Esc cancels
 // renameId pins the session being renamed, so a save that lands after a session switch still renames the right one
 let renameId=null;

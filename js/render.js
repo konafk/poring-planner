@@ -163,7 +163,9 @@ function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp
 function renderSessions(){const none=!state.sessions.length;
   $("sessionSel").innerHTML=none?'<option value="">No session yet</option>':state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===state.current?"selected":""}>${esc(s.name)}</option>`).join("");
   // nothing to rename or delete until logging EXP, Farm here or New session starts one
-  ["sessionSel","editSession","renameSession","delSession"].forEach(id=>$(id).disabled=none)}
+  ["sessionSel","editSession","renameSession","delSession"].forEach(id=>$(id).disabled=none);
+  // the Map card's own pick (Monsters & maps): the session Farm here and Farming it now go to, or a new one
+  $("mapSessSel").innerHTML=(none?'<option value="">No session yet</option>':state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===cur().id?"selected":""}>${esc(s.name)}</option>`).join(""))+'<option value="+new">+ New session</option>'}
 // ---- get started: its steps shown on Home until they're done (or hidden), each ticked off as you do it ----
 const KEY_START="rozero-farm-planner-start-hidden";
 // the character is set up: built from gear, or all six stats typed. Until then a monster's details leave out your numbers against it
