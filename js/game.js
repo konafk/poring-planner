@@ -87,7 +87,9 @@ const JOBS={
  "Dancer":{w:"Whip",p:[A2("Arrow Vulcan Lv10","phys",3000,1,"W",30,1,"Whip only, scales with base level. 1 arrow per use",Z(0.38,1.52,1.5,0.3,{blv:true,arrows:1})),A2("Slinging Arrow Lv5","phys",300,2,"W",15,1,"Whip only. +INT% per hit. 1 arrow per use",Z(0,0,0,0.3,{sadd:[["int",1]],arrows:1})),...ARCH,BASIC]},
  "Priest":{w:"One-handed mace",p:[A2("Magnus Exorcismus Lv10","magic",100,10,"Holy",58,4,"Costs a Blue Gemstone. 130% vs Demon, Undead and Shadow",Z(0.5,2,3,0.3,{consumes:[{item:"Blue Gemstone",qty:1}]})),...ACO,BASIC,
    // appended so saved preset indexes stay put: basic attacks with Duple Light on (see dlDmg in model.js)
-   A("Basic attack + Duple Light","auto",100,1,"W",0,0,0,1,"Each basic attack that hits adds a physical orb (1000% ATK at Lv10, its own hit roll) and, half the time, a magic orb (1600% MATK, Neutral, always hits). Recast every 6 min",{dl:true})]},
+   A("Basic attack + Duple Light","auto",100,1,"W",0,0,0,1,"Each basic attack that hits adds a physical orb (1000% ATK at Lv10, its own hit roll) and, half the time, a magic orb (1600% MATK, Neutral, always hits). Recast every 6 min",{dl:true}),
+   // Turn Undead (tuKill in model.js)
+   A2("Turn Undead Lv10","magic",30,1,"Holy",20,1,"Undead-element monsters only. 20% to kill it outright (2% a level), otherwise 30% MATK. Bosses aren't killed outright",Z(0.2,0.8,1.5,0.3,{tu:true}))]},
  "Monk":{w:"Knuckle",p:[A2("Throw Spirit Sphere Lv5","phys",1600,1,"W",28,1,"Uses 1 spirit sphere",Z(0,1,0.3,0.3)),A2("Occult Impaction Lv5","phys",500,1,"W",20,1,"Uses 1 spirit sphere. More vs high DEF",Z(0.2,0.8,0,0.3)),
    A2("Excruciating Palm","phys",800,1,"W",40,1,"Costs 200 HP",Z(0,0,1,0.3,{hpCost:200})),A2("Combo: Quadruple Blow + Raging Thrust","phys",2100,1,"W",16,1,"After a Triple Attack proc; Thrust uses a sphere. Quadruple Blow 500% (1000% with a knuckle) + Thrust (1600 + 5×STR)%",Z(0,0,0,0,{sadd:[["str",5]],wpct:{Knuckle:500}})),...ACO,BASIC,
    // appended so saved preset indexes stay put: the full combo, and Guillotine Fist (pctEff: (8 + SP/10) × 100%, all your SP)

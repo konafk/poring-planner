@@ -175,7 +175,7 @@ const hitPctOf=m=>{const a=C().a;if(a.falcon)return elemMult(m,"Neutral");if(a.t
 const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist"||C().a.falcon||C().a.mr)return 100;if(m.hit100==null)return Math.min(100,95+daSkill().hit);return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100+daSkill().hit))};
 function dmgPerHit(m){
   const a=C().a;if(a.type==="spellfist")return sfOn()?sfHit(m,atkEl()):hsHit(m,atkEl());if(a.mr)return mrHit(m);if(a.falcon==="assault")return faHit(m);if(a.falcon)return blitzHit(m,Math.round(num(a.hits,5)));
-  if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor((sumStat(cf("matkTxt"))*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
+  if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0||tuOff(m))return 0;const md=effMdef(m);return Math.max(1,Math.floor((sumStat(cf("matkTxt"))*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
   const P=atkParts(),d=physDmg(m,handAtk(m,P.weapon,C().weapon,atkEl(),frontAtk()));
   return dualHit()&&d>0?Math.max(1,Math.floor(d*handPct().right/100)):d}
 // one physical hit from a hand's ATK (handAtk: the post bonuses and element are in it), × skill %, then the full bonuses and DEF
@@ -243,16 +243,23 @@ const dpsOf=m=>{if(isSF())return null;return useAvg(m,perUse(m),procPerUse(m),pr
 // (3 when one of them crits for 420). Card auto-casts are averaged into each use that connects,
 // Shadow Spell into every use. Past KILL_EXACT hits the overkill is averaged instead (renewal: HP / μ + E[X²] / 2μ²)
 const KILL_EXACT=40;
+// Turn Undead (Priest, Zero skill text): only on Undead-element monsters; each cast kills it outright at the level's "Success Chance"
+// (2% a level), otherwise hits for 30% MATK Holy. Bosses are never killed outright (rAthena: status-immune; not checked in game).
+// Lv10 without a skill tree. A kill chance k on each use, N uses by damage alone: (1 − (1 − k)^N) / k uses on average
+const tuOff=m=>!!C().a.tu&&(m.el||"Neutral")!=="Undead";
+const tuLv=(c=C())=>!c.a.tu?0:hasTree(c)&&skLv(c,"turn-undead")>0?skLv(c,"turn-undead"):10;
+const tuKill=m=>{const lv=tuLv();if(!lv||m.boss||tuOff(m))return 0;const d=String((skRowOf("turn-undead",lv)||[])[7]||""),x=d.match(/Chance:\s*(\d+)%/i);return (x?+x[1]:2*lv)/100};
+const geoUses=(N,k)=>k>0?(1-Math.pow(1-k,N))/k:N;
 function usesPerKill(m){if(isSF()){const d=sfPerAttack(m);return d>0?Math.ceil(m.hp/d):Infinity}const per=perUse(m),proc=procPerUse(m),free=procFree(m);if(per<=0&&proc<=0&&free<=0)return Infinity;
   const cr=critChance(m),hc=hitChance(m)/100,L=leftDmg(m),sw=swMul(),da=sw-1,base=(per-L)/sw,O=[];
   [[cr,critMul()],[(1-cr)*hc,1]].forEach(([p,k])=>[[1-da,1],[da,2]].forEach(([q,n])=>O.push([p*q,(base*n+L)*k+proc+free])));O.push([(1-cr)*(1-hc),free]);
   const hit=O.filter(([p,d])=>p>0&&d>0),land=hit.reduce((t,[p])=>t+p,0);if(!(land>0))return Infinity;hit.forEach(o=>o[0]/=land);
-  const hp=m.hp,lo=Math.min(...hit.map(o=>o[1])),hi=Math.max(...hit.map(o=>o[1]));
-  if(hi-lo<1e-9)return Math.ceil(hp/hi)/land;
+  const hp=m.hp,lo=Math.min(...hit.map(o=>o[1])),hi=Math.max(...hit.map(o=>o[1])),k=tuKill(m);
+  if(hi-lo<1e-9)return geoUses(Math.ceil(hp/hi),k)/land;
   // hits that land: the chance each number of them leaves it alive, summed
-  if(hp/lo>KILL_EXACT){const mu=hit.reduce((t,[p,d])=>t+p*d,0),m2=hit.reduce((t,[p,d])=>t+p*d*d,0);return Math.max(Math.ceil(hp/hi),hp/mu+m2/(2*mu*mu))/land}
+  if(hp/lo>KILL_EXACT){const mu=hit.reduce((t,[p,d])=>t+p*d,0),m2=hit.reduce((t,[p,d])=>t+p*d*d,0);return geoUses(Math.max(Math.ceil(hp/hi),hp/mu+m2/(2*mu*mu)),k)/land}
   let dist=new Map([[0,1]]),n=0;while(dist.size){dist.forEach(p=>n+=p);const nx=new Map();
-    dist.forEach((p,s)=>hit.forEach(([q,d])=>{const t=Math.round(s+d);if(t<hp)nx.set(t,(nx.get(t)||0)+p*q)}));dist=nx}
+    dist.forEach((p,s)=>hit.forEach(([q,d])=>{const t=Math.round(s+d);if(t<hp)nx.set(t,(nx.get(t)||0)+p*q*(1-k))}));dist=nx}
   return n/land}
 // SP: a use costs SP; natural regen is 1 + MaxSP/100 + INT/6 per 8s, + (INT − 120)/2 + 4 from INT 120 (roz.prontera.info), unless typed
 // "SP Recovery +x%" from gear (Eggyra, Sohee, Merman Cards…) raises it by x%; a typed regen already has it
