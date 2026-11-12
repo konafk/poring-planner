@@ -1289,7 +1289,7 @@ t("recovery items: three accounts load, switch and keep their own settings", () 
 
 t("spawn counts come from the client's navigation table (normal channels)", () => {
   const sp = (id, mp) => run(`JSON.stringify((SPAWN[${id}]||[]).find(x=>x[0]==="${mp}"))`);
-  assert.equal(sp(1002, "prt_f08"), JSON.stringify(["prt_f08", 20, 30]));  // Poring: 20 on prt_fild08, 30 on the PvP channel
+  assert.equal(sp(1002, "prt_f08"), JSON.stringify(["prt_f08", 87, 131]));  // Poring: 87 on prt_fild08, 131 on the PvP channel (20 / 30 before the 12 November 2026 patch)
   assert.equal(sp(1169, "mjo_d03"), JSON.stringify(["mjo_d03", 78, 78]));  // Skel Worker on mjo_dun03
   assert.equal(sp(1013, "maz_d03"), JSON.stringify(["maz_d03", 20, 20]));  // Wolf on prt_maze03: missing before
   assert.equal(sp(1045, "bea_d02"), JSON.stringify(["bea_d02", 30, 30]));  // Marc on North Cave (Luanda) since the patch
@@ -1301,12 +1301,13 @@ t("spawn counts come from the client's navigation table (normal channels)", () =
   assert.equal(sp(1087, "gef_fild03"), JSON.stringify(["gef_fild03", 1, 1]));    // Orc Hero, from b_gef_f03 / b_gef_f03_z
   assert.equal(run(`Object.values(SPAWN).flat().filter(x=>!(x[1]>0)&&x[1]!==null).length`), 0);
   // maps the client doesn't list yet: which monsters come, but no count (no estimate), and only on the roadmap's regions
-  assert.equal(sp(1045, "iz_d03"), JSON.stringify(["iz_d03", null]));      // Marc on Undersea Cave 4F
-  assert.ok(run(`Object.values(SPAWN).flat().filter(x=>x[1]===null).every(x=>regionOf(x[0]))`));  // Western Cave Karu (bea_d01) too
+  assert.equal(sp(1117, "gl_chu"), JSON.stringify(["gl_chu", null]));      // Evil Druid in Glast Heim's Chivalry
+  assert.equal(sp(1045, "iz_d03"), JSON.stringify(["iz_d03", 40, 40]));    // Marc on Undersea Cave 4F: counted since the 12 November 2026 patch
+  assert.ok(run(`Object.values(SPAWN).flat().filter(x=>x[1]===null).every(x=>regionOf(x[0]))`));
   assert.equal(run(`Object.values(SPAWN).flat().filter(x=>x[1]===null&&x.length!==2).length`), 0);
   assert.equal(run(`spN(null)+" "+spN(30)`), "? 30");
-  assert.ok(run(`mapStats("iz_d03",0)`) == null);                          // nothing to weight by: out of the map rankings
-  assert.equal(run(`MAPMOBS.prt_f08.find(x=>x.m.id===1002).n`), 20);      // the app uses the normal-channel count
+  assert.ok(run(`mapStats("gl_chu",0)`) == null);                          // nothing to weight by: out of the map rankings
+  assert.equal(run(`MAPMOBS.prt_f08.find(x=>x.m.id===1002).n`), 87);      // the app uses the normal-channel count
 });
 
 t("gear CRIT against a race only counts against that race", () => {
@@ -2467,9 +2468,10 @@ t("HP lost: casters and ranged attackers still take hits; Vitata's Heal covers i
 });
 
 t("max base level: the EXP Hunter ranks by net zeny, EXP gear lines are flagged", () => {
-  setup("Knight", { baseLv: 69 });
+  setup("Knight", { baseLv: 70 });                                             // 70 is no longer the max since the 12 November 2026 patch
   run("state.tsort={}");
-  assert.equal(run("MAX_BASE_LV"), 70);
+  assert.equal(run("MAX_BASE_LV"), 80);
+  assert.equal(run("GOAL_TOP_LV"), 71);                                        // the EXP table stops at 70 until the EXP to 80 is out
   assert.equal(run(`JSON.stringify(tblSort("bestTable"))`), '["epm",-1]');
   run("C().baseLv=MAX_BASE_LV");
   assert.equal(run(`JSON.stringify(tblSort("bestTable"))`), '["net",-1]');

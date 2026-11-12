@@ -351,12 +351,12 @@ function renderCompare(){
   $("cmpTable").querySelector("tbody").innerHTML=rows.join("")||`<tr><td colspan="10" class="name muted">${all.length?"No sessions match the filters.":"Sessions with 2+ entries show up here."}</td></tr>`;
 }
 function renderGoal(s,st){
-  const tiles=$("goalTiles"),goal=Math.min(MAX_BASE_LV,num(state.goalLv)||MAX_BASE_LV);$("goalLv").max=MAX_BASE_LV;if(document.activeElement!==$("goalLv"))$("goalLv").value=goal;
+  const tiles=$("goalTiles"),goal=Math.min(MAX_BASE_LV,num(state.goalLv)||GOAL_TOP_LV);$("goalLv").max=MAX_BASE_LV;if(document.activeElement!==$("goalLv"))$("goalLv").value=goal;
   if(!st||st.avgRaw<=0){tiles.innerHTML='<div class="note">Log 2+ entries with EXP going up to see goal estimates.</div>';$("goalNote").textContent="";return}
   const curLv=st.last.lv;
   if(goal<=curLv){tiles.innerHTML=`<div class="note">You're already Lv ${curLv}. Pick a higher level.</div>`;$("goalNote").textContent="";return}
   let need=lvExp(curLv)?lvExp(curLv)*(1-st.last.pct/100):null;for(let l=curLv+1;l<goal&&need!=null;l++)need=lvExp(l)?need+lvExp(l):null;
-  if(need==null){tiles.innerHTML=`<div class="note">The EXP table doesn't cover every level up to Lv ${goal}, so pick a lower goal.</div>`;$("goalNote").textContent="";return}
+  if(need==null){tiles.innerHTML=`<div class="note">The EXP each level needs is only known up to Lv ${GOAL_TOP_LV-1} so far, so pick a goal up to Lv ${GOAL_TOP_LV}.</div>`;$("goalNote").textContent="";return}
   const hrs=need/st.avgRaw;
   $("goalNote").textContent=`at your ${pct(st.avgPct)}/hr average`;
   tiles.innerHTML=`<div class="tile"><div class="k">EXP still needed</div><div class="v mono">${fmtN(need)}</div><div class="s">from Lv ${curLv} ${st.last.pct.toFixed(1)}% to Lv ${goal}</div></div>
