@@ -1500,6 +1500,22 @@ t("Duple Light: a physical orb per hit (own hit roll) and a magic orb half the t
   assert.equal(run(`dlDmg(${MOB})`), 0);
 });
 
+t("Turn Undead: Undead element only, 20% to kill outright at Lv10, otherwise 30% MATK; bosses only take the damage", () => {
+  const tu = JSON.parse(run(`JSON.stringify(JOBS.Priest.p.find(p=>p.tu))`));
+  setup("Priest", { matkTxt: "200+100", intTxt: "", st: {}, maxSp: 300, a: tu });
+  assert.equal(run(`dmgPerHit(${MOB})`), 0);                                // Water: can't be used
+  assert.equal(run(`usesPerKill(${MOB})`), Infinity);
+  const und = MOB.replace("el:'Water'", "el:'Undead'"), d = run(`dmgPerHit(${und})`), N = Math.ceil(10000 / d);
+  assert.ok(d > 0 && N > 1);
+  near(run(`tuKill(${und})`), 0.2);
+  near(run(`usesPerKill(${und})`), (1 - 0.8 ** N) / 0.2);                    // each cast may end it early
+  const boss = und.replace("drops:[]", "drops:[],boss:1");
+  assert.equal(run(`usesPerKill(${boss})`), N);
+  run("C().skills={'turn-undead':3}");                                       // a skill tree at Lv3: 6%
+  near(run(`tuKill(${und})`), 0.06);
+  run("C().skills={}");
+});
+
 t("Blitz Beat: falcon hits that always land, ignore DEF and bonuses; auto Blitz on basic attacks", () => {
   const blitz = JSON.parse(run(`JSON.stringify(JOBS.Hunter.p.find(p=>p.falcon))`));
   setup("Hunter", { atkTxt: "100+150", wAtk: 120, weapon: "Bow", wElem: "Neutral", hitTxt: "1", crit: 0, jobLv: 50, dmgBonus: 50,
