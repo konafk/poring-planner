@@ -18,7 +18,7 @@ function infoPrice(id){const npc=NPCSELL[id]!=null||state.npcPrices[id]!=null?np
 // the box to type what players pay, in the popup's bottom bar, only where that price counts: a drop of a monster the farm tables know
 // (zeny per kill), a recipe material (the Recipes tab's worth), an HP / SP item or an elemental converter (their costs), or one
 // already priced (so it can be cleared)
-const priceCounts=id=>!!(ITEM_DROPS[id]||RECIPES_USING[id]||typeof RECOVERY!=="undefined"&&RECOVERY[id]||Object.values(CONV_ID).includes(+id)||state.prices[id]>0);
+const priceCounts=id=>!!(ITEM_DROPS[id]||RECIPES_USING[id]||typeof RECOVERY!=="undefined"&&RECOVERY[id]||CONV_IDS.includes(+id)||state.prices[id]>0);
 const infoPriceBox=id=>!priceCounts(id)?"":`<label class="infoPay">Players pay<input class="w-lg" type="number" min="0" data-infoprice="${id}" value="${state.prices[id]>0?state.prices[id]:""}" placeholder="0"></label>`;
 // the monsters the farm tables know that drop it, best chance first: the chance (and yours, with your drop bonus and the level penalty),
 // the zeny a kill brings from it (what an NPC or players pay, the way the farm tables count it), affixes a gear drop comes with, and

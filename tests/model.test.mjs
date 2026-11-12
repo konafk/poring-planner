@@ -1616,7 +1616,7 @@ t("auto-cast spells from cards work on any job's basic attacks", () => {
 t("elemental converter: one element picked, or the best per monster / map", () => {
   setup("Knight", { atkTxt: "150+200", wAtk: 0, wElem: "Neutral", weapon: "Two-handed sword", hitTxt: "300", st: {}, autoSp: false, potOn: false, cons: [], converters: true, convEl: "",
     a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
-  assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Neutral", "Fire", "Water", "Earth", "Wind"]));   // auto: your weapon and each converter
+  assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Neutral", "Fire", "Water", "Earth", "Wind", "Shadow", "Holy"]));   // auto: your weapon, each converter, Cursed Water, Aspersio Scroll
   const jakk = `MOBS.find(m=>m.name==="Jakk")`;
   assert.equal(run(`elemMult(${jakk},"Fire")`), 0);                          // Fire 2 takes nothing from Fire
   assert.equal(run(`mobRow(${jakk},0).el2`), "Water");
@@ -1638,6 +1638,29 @@ t("elemental converter: one element picked, or the best per monster / map", () =
   assert.equal(run(`convCostHr()`), 0);
   assert.equal(run(`JSON.stringify(elOptions())`), "[null]");
   run(`delete state.prices[12114]`);
+  // Cursed Water (Shadow) lasts 20 min like a converter; the Aspersio Scroll casts Aspersio Lv 5 (180 s) and uses up a Holy Water: 20 of each an hour
+  run(`state.prices[12020]=1000;state.prices[12217]=300;state.prices[523]=200;C().converters=true`);
+  near(run(`withEl("Shadow",()=>convCostHr())`), 3000);
+  near(run(`withEl("Holy",()=>convCostHr())`), 20 * 500);
+  assert.ok(run(`CONV_IDS.includes(12020)&&CONV_IDS.includes(523)`));
+  assert.equal(run(`convEls().includes("Poison")`), false);                // Enchant Poison is an Assassin skill
+  run(`delete state.prices[12020];delete state.prices[12217];delete state.prices[523]`);
+});
+
+t("Enchant Poison: an Assassin's Poison weapon, for SP rather than zeny", () => {
+  setup("Assassin", { atkTxt: "150+200", wAtk: 0, wElem: "Neutral", weapon: "Katar", hitTxt: "300", st: {}, autoSp: false, potOn: false, cons: [], converters: true, convEl: "", skills: {},
+    a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  assert.ok(run(`convEls().includes("Poison")`));
+  assert.ok(run(`elOptions().includes("Poison")`));
+  assert.equal(run(`withEl("Poison",()=>convCostHr())`), 0);
+  near(run(`withEl("Poison",()=>convSpPerSec())`), 20 / 165);              // Lv 10 with no skill tree set: 20 SP every 165 s
+  assert.equal(run(`withEl("Fire",()=>convSpPerSec())`), 0);
+  assert.ok(run(`withEl("Poison",()=>skillSPPerSec())`) > run(`withEl("Fire",()=>skillSPPerSec())`));
+  run(`C().convEl="Poison"`);
+  assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Poison"]));
+  near(run(`convSpPerSec()`), 20 / 165);
+  run(`C().wElem="Poison"`);                                                 // a Poison weapon already: nothing to cast
+  assert.equal(run(`convSpPerSec()`), 0);
 });
 
 t("ASPD potion and buffs from others (RO樂園攻速計算機 values)", () => {
