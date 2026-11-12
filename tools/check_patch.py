@@ -232,6 +232,7 @@ def named_dict(t, key):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # folder names are Korean; a Windows console's code page can't print them
     arg = lambda f: sys.argv[sys.argv.index(f) + 1] if f in sys.argv else None
     client = arg("--client") or r"C:\Gravity\RagnarokZero"
     rows = patch_list()

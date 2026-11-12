@@ -41,7 +41,9 @@ GIVEN_FIX = {"charge-attack", "shrink", "sight-blaster", "create-elemental-conve
 # the description and each level's line, applied while prontera still has the old text
 CLIENT_TEXT = {"cart-boost": [("While Geneticist Cart Boost", "While Cart Boost")], "hindsight": [("Frost Driver", "Frost Diver")],
                "stone-curse": [("Petrification chance", "Catalyst consumption: On use, Petrification chance", range(1, 6)),
-                               ("Petrification chance", "Catalyst consumption: On success, Petrification chance", range(6, 11))]}
+                               ("Petrification chance", "Catalyst consumption: On success, Petrification chance", range(6, 11))],
+               # the 12 November 2026 patch: Falcon Eyes gives flat HIT (+3 a level), not HIT %
+               "falcon-eyes": [(f"HIT +{3 * n}%", f"HIT +{3 * n}", [n]) for n in range(1, 11)]}
 
 
 def client_text(slug, desc, lv):

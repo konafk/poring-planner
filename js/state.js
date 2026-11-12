@@ -229,7 +229,10 @@ function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;","
 const num=(v,d=0)=>{const x=+v;return isFinite(x)?x:d};
 const lvExp=lv=>EXP_TABLE[lv]||null;
 // the server's base level cap: raise it when a patch does. At it base EXP no longer counts, so the EXP Hunter ranks by zeny
-const MAX_BASE_LV=70;
+// (80 from the 12 November 2026 patch; data/exp.js stops at 70 until the EXP to 80 is published)
+const MAX_BASE_LV=80;
+// the highest base level a goal can be worked out to: one past the EXP table's last level, at most the cap
+const GOAL_TOP_LV=Math.min(MAX_BASE_LV,Math.max(...Object.keys(EXP_TABLE).map(Number))+1);
 const atMaxLv=()=>num(C().baseLv)>=MAX_BASE_LV;
 // Even Share: a kill gives the party 100% + 10% per member beyond the first, split evenly (110% for 2, 120% for 3 ... 210% for 12),
 // for base and job EXP alike. Checked in game with +20% EXP: Boulder Dwarf Captain (32,822) → 15,753 each for 3 members, 12,800 for 4;
