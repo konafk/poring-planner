@@ -16,15 +16,15 @@ function newsFloors(n){
     return `<div class="newsFloor${tag.startsWith("B")?" under":""}"><div class="newsTag mono">${esc(tag)}</div><div class="newsRows">
       <a href="#" class="newsMap" data-navito="${esc(mp)}">${esc(mapName(mp)||mapCode(mp))} <span class="mono">${esc(mapCode(mp))}</span></a>${mobs}${bs?`<div class="newsBosses">${bs}</div>`:""}</div></div>`}).join("")}
 // the tab: the update's head, then its sections (Clock Tower, an event, ...), each its heading and cards. The newest update shows
-// first; a tab per update above its head goes back to an earlier one (NEWS_PICK: its date, for this visit only)
+// first; the row of tabs at the top of the page goes back to an earlier one (NEWS_PICK: its date, for this visit only)
 let NEWS_PICK=null;
 function renderNews(){
   const n=NEWS.find(x=>x.when===NEWS_PICK)||NEWS[0];if(!n)return;const u=newsUpdate(n),secs=n.sections||[];
-  const pick=NEWS.length>1?`<div class="newsPick" role="tablist" aria-label="Game updates">${NEWS.map(x=>{const xu=newsUpdate(x);
-    return `<button type="button" role="tab" aria-selected="${x===n}" data-newspick="${esc(x.when)}"><b>${esc(x.name)}</b><span>${esc(xu?upWhen(xu):x.when)}</span></button>`}).join("")}</div>`:"";
-  $("newsHead").innerHTML=`${pick}<div class="eyebrow">${esc(u?upWhen(u):n.when)} · game update</div><h2>${esc(n.name)}</h2><p>${esc(n.intro)}</p>`;
-  $("newsHead").querySelectorAll("[data-newspick]").forEach(b=>b.addEventListener("click",()=>{if(b.dataset.newspick===n.when)return;
-    NEWS_PICK=b.dataset.newspick;renderNews();$("newsHead").scrollIntoView({block:"nearest"});$("newsHead").querySelector(`[data-newspick="${NEWS_PICK}"]`)?.focus()}));
+  const tabs=$("newsUpdates");tabs.hidden=NEWS.length<2;
+  tabs.innerHTML=NEWS.map(x=>`<button type="button" role="tab" aria-selected="${x===n}" data-newspick="${esc(x.when)}">${esc(x.name)}<span>${+x.when.slice(8)} ${MONTHS[+x.when.slice(5,7)-1]}</span></button>`).join("");
+  tabs.querySelectorAll("[data-newspick]").forEach(b=>b.addEventListener("click",()=>{if(b.dataset.newspick===n.when)return;
+    NEWS_PICK=b.dataset.newspick;renderNews();$("newsUpdates").querySelector(`[data-newspick="${NEWS_PICK}"]`)?.focus()}));
+  $("newsHead").innerHTML=`<div class="eyebrow">${esc(u?upWhen(u):n.when)} · game update</div><h2>${esc(n.name)}</h2><p>${esc(n.intro)}</p>`;
   const floorTitle=n.floorTitle||"The tower, floor by floor";$("newsFloorsCard").querySelector("h2").textContent=floorTitle;
   $("newsTower").innerHTML=newsFloors(n);$("newsTowerNote").textContent=[n.floorNote,n.bossNote].filter(Boolean).join(" ");
   // the card with bossGroup lists the field bosses' cards first: the client's text, which floor and boss
