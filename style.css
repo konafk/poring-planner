@@ -427,7 +427,9 @@ table.cstats tbody tr,table.cmptab tbody tr{cursor:default}
 .skgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
 /* like the game's skill window: name, then icon, then level, centred; names get two lines (the tooltip has them whole) */
 .sk{border:1px solid var(--line);border-radius:8px;padding:5px 4px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:3px;min-width:0;text-align:center;background:var(--surface)}
-.sk:not(.on)>.ico{opacity:.55}
+.sk:not(.on)>.skico>.ico{opacity:.55}
+.sk .skico{border:0;background:none;padding:0;line-height:0;cursor:pointer;border-radius:4px}
+.sk .skico:hover>.ico{opacity:1}
 .sk.empty{border:0;background:none}
 .sk.on{border-color:color-mix(in srgb,var(--accent) 55%,transparent);background:var(--accent-soft)}
 .sk.pas .nm{font-style:italic}
@@ -444,6 +446,9 @@ table.cstats tbody tr,table.cmptab tbody tr{cursor:default}
 #skillCard,#skpCard{position:relative}
 .sktip{position:absolute;z-index:3;pointer-events:none;width:max-content;max-width:min(360px,calc(100% - 16px));background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;box-shadow:var(--shadow-pop);display:flex;flex-direction:column;gap:4px}
 .sktip[hidden]{display:none}
+.sktip.pin{pointer-events:auto;user-select:text;border-color:var(--accent)}
+.sktip .skActs{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.sktip .skUnpin{margin-left:auto;align-self:flex-start}
 .sktip b{font-family:var(--display);font-weight:600}
 .sktip p{margin:0}
 @media (max-width:680px){.skgrid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}.sk.empty{display:none}}

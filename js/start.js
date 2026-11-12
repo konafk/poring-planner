@@ -364,6 +364,8 @@ if(VIEW&&VIEW.toast)showToast(String(VIEW.toast));
 (function tripLoop(){tickTrip();setTimeout(tripLoop,1000)})();
 loadShareLink();addEventListener("hashchange",loadShareLink);
 if(INFO_AT)openInfo(...INFO_AT);
+// a skill link (#skill/knight/bowling-bash): the Skill tree tab on that job, its details pinned
+if(SKILL_AT)openSkill(...SKILL_AT);
 // ---- phones: the Log EXP + button slides away while you scroll down (it sat over the Farm here buttons) and back when you scroll up ----
 (function fabScroll(){if(typeof scrollY!=="number"||typeof requestAnimationFrame!=="function")return;let y=scrollY,raf=0;
   addEventListener("scroll",()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const d=scrollY-y;
