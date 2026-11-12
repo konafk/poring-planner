@@ -139,11 +139,11 @@ const tallyTxt=(x,trees,ti)=>x.from?`${x.used} / ${x.pts} (${x.from} of ${trees[
 function treesHtml(job,L,jobLv){const trees=treesOf(job),T=treeTally(job,L,jobLv);
   return trees.length?trees.map((t,ti)=>{const rows=Math.ceil((Math.max(0,...t.skills.map(s=>s.slot))+1)/7);
     const cells=Array.from({length:rows*7},(_,i)=>{const s=t.skills.find(x=>x.slot===i);if(!s)return '<div class="sk empty"></div>';const lv=L[s.slug]||0;
-      return `<div class="sk${lv?" on":""}${s.passive?" pas":""}${s.free?" quest":""}" data-sk="${s.slug}">${s.nov&&s.def?'<span class="qtag" title="Learned as a Novice (Lv 9 to change job): no points of this job">Novice</span>':s.def?'<span class="qtag" title="Given at the job change: no skill points">Job</span>':s.free?'<span class="qtag" title="Quest skill: no skill points">Quest</span>':""}${iconHtml("skill",s.slug)}<button type="button" class="nm" data-act="max"${s.def?" disabled":""}>${esc(s.name)}</button>
+      return `<div class="sk${lv?" on":""}${s.passive?" pas":""}${s.free?" quest":""}" data-sk="${s.slug}">${s.nov&&s.def?'<span class="qtag" title="Learned as a Novice (Lv 9 to change job): no points of this job">Novice</span>':s.def?'<span class="qtag" title="Given at the job change: no skill points">Job</span>':s.free?'<span class="qtag" title="Quest skill: no skill points">Quest</span>':""}<button type="button" class="skico" data-pin aria-label="${esc(s.name)}: details to copy or share">${iconHtml("skill",s.slug)}</button><button type="button" class="nm" data-act="max"${s.def?" disabled":""}>${esc(s.name)}</button>
         <div class="lv"><button type="button" data-act="dn" aria-label="Lower"${s.def?" disabled":""}>−</button><span class="mono">${num(lv)}/${s.max}</span><button type="button" data-act="up" aria-label="Raise"${s.def?" disabled":""}>+</button></div></div>`}).join("");
     return `<div class="tree"><div class="bar"><b>${esc(t.job)}</b><span class="note${T[ti].over?" bad":""}">${tallyTxt(T[ti],trees,ti)} points</span></div><div class="skgrid">${cells}</div></div>`}).join(""):'<div class="note">No skill tree data for this job.</div>'}
 function renderSkills(){const c=C(),L=learned(c),S=skOf(state.job);
-  $("skillTrees").innerHTML=treesHtml(state.job,L,c.jobLv);
+  $("skillTrees").innerHTML=treesHtml(state.job,L,c.jobLv);if(SK_TIP.pin&&!S[SK_TIP.pin]){SK_TIP.pin=null;$("skTip").hidden=true}
   const buffs=Object.keys(SK_BUFF).filter(k=>S[k]&&skLv(c,k)>0);
   $("buffList").innerHTML=buffs.length?`<span class="note">Self-buffs while farming (read your status window with them off):</span> `+buffs.map(k=>`<label class="bar"><input type="checkbox" data-buff="${k}" ${(c.buffs||{})[k]?"checked":""}> ${iconHtml("skill",k,1,"il")}${esc(S[k].name)} <span class="muted">${esc(skRow(S[k],skLv(c,k))[7].replace(/(?:,\s*)?Duration:?\s*[^,]*,?\s*/i,""))}</span>${SK_BUFF[k].w&&!SK_BUFF[k].w.includes(c.weapon)?` <span class="warnc">(needs ${esc(SK_BUFF[k].w.join(" / "))})</span>`:""}</label>`).join(""):"";
   ROOTQ("#preset option").forEach(o=>{const p=JOBS[state.job].p[+o.value];if(!p)return;const r=levelPreset(p,c);o.textContent=r.s&&(hasTree(c)||r.named)?(r.lv?r.a.name:`${p.name} (not learned)`):p.name})}
@@ -152,22 +152,58 @@ function renderSkills(){const c=C(),L=learned(c),S=skOf(state.job);
 function showSkTipIn(tip,card,job,L,cell){const t=$(tip.id),s=cell&&skOf(job)[cell.dataset.sk];tip.slug=s?s.slug:null;if(!s){t.hidden=true;return}
   const S=skOf(job),lv=L[s.slug]||0,fx=l=>skRow(s,l)[7],line=l=>fx(l)?`<div><span class="note">Lv ${l}${l>lv?" (next)":""}:</span> ${esc(fx(l))}</div>`:"",
     pre=(s.pre||[]).filter(([p])=>S[p]).map(([p,n])=>`<span class="${(L[p]||0)>=n?"":"warnc"}">${esc(S[p].name)} Lv ${n}</span>`);
-  t.innerHTML=`<div class="bar">${iconHtml("skill",s.slug)}<b>${esc(s.name)}</b><span class="note">${s.passive?"Passive":"Active"}${s.nov&&s.def?" · Learned as a Novice, no points":s.def?" · Given at the job change":s.free?" · Quest skill, no points":""} · Lv ${lv}/${s.max}</span></div>`+
-    (s.desc?`<p>${esc(s.desc)}</p>`:"")+(pre.length?`<div><span class="note">Needs:</span> ${pre.join(", ")}</div>`:"")+(lv?line(lv):"")+(lv<s.max?line(lv+1):"");
-  t.hidden=false;const box=$(card).getBoundingClientRect(),r=cell.getBoundingClientRect(),h=t.offsetHeight,
+  t.innerHTML=`<div class="bar">${iconHtml("skill",s.slug)}<b>${esc(s.name)}</b><span class="note">${s.passive?"Passive":"Active"}${s.nov&&s.def?" · Learned as a Novice, no points":s.def?" · Given at the job change":s.free?" · Quest skill, no points":""} · Lv ${lv}/${s.max}</span>${tip.pin===s.slug?'<button type="button" class="small skUnpin" data-skunpin aria-label="Close">✕</button>':""}</div>`+
+    (s.desc?`<p>${esc(s.desc)}</p>`:"")+(pre.length?`<div><span class="note">Needs:</span> ${pre.join(", ")}</div>`:"")+(lv?line(lv):"")+(lv<s.max?line(lv+1):"")+
+    (tip.pin===s.slug?`<div class="skActs"><button type="button" class="small" data-skcopy="name">Copy name</button>${s.desc?'<button type="button" class="small" data-skcopy="desc">Copy description</button>':""}<a class="infoShare" href="${esc(skillUrl(job,s.slug))}" data-skshare title="Copy a link that opens this skill on the Skill tree tab">${SHARE_IC}<span>Share</span></a></div>`
+      :'<div class="note">Click its icon to copy or share</div>');
+  t.classList.toggle("pin",tip.pin===s.slug);t.hidden=false;const box=$(card).getBoundingClientRect(),r=cell.getBoundingClientRect(),h=t.offsetHeight,
     up=r.bottom+h+8>innerHeight&&r.top-h-8>0;
   t.style.left=Math.max(8,Math.min(r.left-box.left,box.width-t.offsetWidth-8))+"px";t.style.top=(up?r.top-box.top-h-6:r.bottom-box.top+6)+"px"}
 // hover, focus and the − / + / name buttons of a tree; act(slug, "up" | "dn" | "max") changes the level and redraws, and returns why it couldn't
-function wireTree(gridId,tip,card,job,L,act){const g=$(gridId),show=cell=>showSkTipIn(tip,card,job(),L(),cell);
+// A click on a skill's icon (or its box) pins its details: they stay put, with Copy name, Copy description and Share, until ✕, Esc,
+// a click elsewhere or another skill's icon
+function wireTree(gridId,tip,card,job,L,act){const g=$(gridId),t=$(tip.id),cellOf=slug=>g.querySelector(`[data-sk="${slug}"]`),
+    show=cell=>{if(tip.pin&&(!cell||cell.dataset.sk!==tip.pin))return;showSkTipIn(tip,card,job(),L(),cell)},
+    unpin=()=>{if(!tip.pin)return;const c=cellOf(tip.pin);tip.pin=null;showSkTipIn(tip,card,job(),L(),null);if(c&&t.contains(document.activeElement))c.querySelector("[data-pin]").focus()};
+  tip.pinAt=slug=>{tip.pin=slug;const c=cellOf(slug);showSkTipIn(tip,card,job(),L(),c);return c};
   g.addEventListener("mouseover",e=>{const cell=e.target.closest("[data-sk]");if(cell&&cell.dataset.sk!==tip.slug)show(cell)});
   g.addEventListener("mouseleave",()=>show(null));
   g.addEventListener("focusin",e=>show(e.target.closest("[data-sk]")));
-  g.addEventListener("focusout",e=>{if(!g.contains(e.relatedTarget))show(null)});
-  g.addEventListener("click",e=>{const b=e.target.closest("[data-act]");if(!b)return;const slug=b.closest("[data-sk]").dataset.sk;act(slug,b.dataset.act);show(g.querySelector(`[data-sk="${slug}"]`))})}
+  g.addEventListener("focusout",e=>{if(!g.contains(e.relatedTarget)&&!t.contains(e.relatedTarget))show(null)});
+  g.addEventListener("click",e=>{const cell=e.target.closest("[data-sk]");if(!cell)return;const slug=cell.dataset.sk,b=e.target.closest("[data-act]");
+    // from the keyboard, on to its buttons
+    if(!b){if(tip.pin===slug)unpin();else{tip.pinAt(slug);if(!e.detail)t.querySelector("button").focus()}return}
+    if(tip.pin&&tip.pin!==slug)tip.pin=null;act(slug,b.dataset.act);show(cellOf(slug))});
+  t.addEventListener("click",async e=>{const s=skOf(job())[tip.pin];if(!s)return;
+    if(e.target.closest("[data-skunpin]")){unpin();return}
+    const cp=e.target.closest("[data-skcopy]");if(cp){const what=cp.dataset.skcopy==="name"?"Name":"Description";copyText(what==="Name"?s.name:s.desc,`${what} copied`);return}
+    const sh=e.target.closest("[data-skshare]");if(!sh||e.ctrlKey||e.metaKey||e.shiftKey||e.button)return;e.preventDefault();
+    if(navigator.share&&matchMedia("(pointer:coarse)").matches){try{await navigator.share({title:`${s.name} · Poring Planner`,url:sh.href});return}catch(err){if(err&&err.name==="AbortError")return}}
+    copyText(sh.href,"Link copied")});
+  // (a button the click redrew away was in the tree)
+  document.addEventListener("click",e=>{if(tip.pin&&e.target.isConnected&&!t.contains(e.target)&&!g.contains(e.target))unpin()});
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&tip.pin)unpin()})}
+const SHARE_IC='<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>';
+// to the clipboard, saying so; where the clipboard is refused, the older copy command, else a box to copy it from
+async function copyText(txt,said){try{await navigator.clipboard.writeText(txt);showToast(said,2500);return}catch(err){}
+  const a=document.createElement("textarea"),f=document.activeElement;a.value=txt;a.setAttribute("readonly","");a.style.cssText="position:fixed;top:0;left:0;opacity:0";
+  document.body.append(a);a.select();let ok=false;try{ok=document.execCommand("copy")}catch(e){}a.remove();if(f&&f.focus)f.focus();
+  if(ok)showToast(said,2500);else try{prompt("Copy this:",txt)}catch(e){showToast("This browser won't copy. Select the text to copy it.")}}
+// a link to a skill: #skill/knight/bowling-bash opens the Skill tree tab on that job with the skill's details pinned
+const skillUrl=(job,slug)=>location.origin+location.pathname+location.search+`#skill/${job.toLowerCase()}/${slug}`;
+function hashSkill(h){const m=/^#skill\/([a-z]+)\/([a-z0-9-]+)$/i.exec(h||"");if(!m)return null;
+  const job=Object.keys(SKILLS).find(j=>j.toLowerCase()===m[1].toLowerCase());return job&&skOf(job)[m[2]]?[job,m[2]]:null}
+// read before start.js puts the open tab's link in the address bar
+const SKILL_AT=hashSkill(location.hash);
+// after the tab link's own handler (which scrolls to the top) and once the page has its layout: scroll to it, then pin (placed where it now is)
+function openSkill(job,slug){skPlan().job=job;SKP_TIP.pin=null;$("skpNote").textContent="";save();showTab("skilltree");
+  const go=()=>setTimeout(()=>{const c=$("skpTrees").querySelector(`[data-sk="${slug}"]`);if(!c||skPlan().job!==job)return;c.scrollIntoView({block:"center"});SKP_TIP.pinAt(slug)});
+  if(document.readyState==="complete")go();else addEventListener("load",go,{once:true})}
+addEventListener("hashchange",()=>{const x=hashSkill(location.hash);if(x)openSkill(...x)});
 // − / + / name: one level down or up; the name maxes it, or clears it when it's maxed
 function stepSkill(c,slug,act,job){const s=skOf(job)[slug],lv=skLv(c,slug,job);
   if(act==="up")raiseSkill(c,slug,lv+1,job);else if(act==="dn")return lowerSkill(c,slug,lv-1,job);else if(lv<s.max)raiseSkill(c,slug,s.max,job);else return lowerSkill(c,slug,0,job);return null}
-const SK_TIP={id:"skTip",slug:null};
+const SK_TIP={id:"skTip",slug:null,pin:null};
 wireTree("skillTrees",SK_TIP,"skillCard",()=>state.job,()=>learned(C()),(slug,act)=>{const c=C(),why=stepSkill(c,slug,act,state.job);
   $("skillNote").textContent=why?why.join(" · "):"";refreshPreset(c);save();renderSkills();syncChar();renderAll()});
 $("skReset").addEventListener("click",()=>{const c=C();c.skills={};c.buffs={};refreshPreset(c);$("skillNote").textContent="";save();renderSkills();syncChar();renderAll()});
@@ -180,7 +216,7 @@ const SKP_OK=new WeakSet();
 const skPlan=()=>{if(SKP_OK.has(state.skPlan))return state.skPlan;const p=state.skPlan=objOr(state.skPlan);SKP_OK.add(p);if(!SKILLS[p.job])p.job=SKILLS[state.job]?state.job:"Novice";p.jobLv=objOr(p.jobLv);p.skills=objOr(p.skills);
   p.skills=Object.fromEntries(Object.entries(p.skills).filter(([j])=>SKILLS[j]).map(([j,L])=>[j,Object.fromEntries(Object.entries(objOr(L)).filter(([k,v])=>skOf(j)[k]&&+v>0).map(([k,v])=>[k,Math.min(skOf(j)[k].max,Math.round(+v))]))]));return p};
 const planOf=()=>{const p=skPlan();return {skills:grantSkills(p.skills[p.job]||(p.skills[p.job]={}),p.job)}};
-const SKP_TIP={id:"skpTip",slug:null};
+const SKP_TIP={id:"skpTip",slug:null,pin:null};
 // the Job picker: each job's look and icon (classPicker, js/build-ui.js), made the first time the tab draws
 let skpPick=null;
 // fresh: the Job button's looks get new random hair (each time the tab opens)
@@ -190,6 +226,8 @@ function renderSkPlan(fresh){const p=skPlan(),job=p.job,L=planOf().skills,trees=
   // a 2nd job: who changes you to it and where (data/jobmasters.js)
   const jm=JOB_MASTERS[job];$("skpMaster").hidden=!jm;$("skpMaster").innerHTML=jm?`Job change: <b>${esc(jm[0])}</b>, ${esc(jm[1])} ${naviTag(jm[2])}`:"";
   $("skpTrees").innerHTML=treesHtml(job,L,jl);$("skpTip").hidden=true;SKP_TIP.slug=null;
+  // a pinned skill's details stay pinned (with its new level) while it's this job's
+  if(skOf(job)[SKP_TIP.pin])SKP_TIP.pinAt(SKP_TIP.pin);else SKP_TIP.pin=null;
   // what the plan takes: points per tree and the job level each tree needs (one point a job level after the first)
   // a 1st-job tree that borrows the 2nd job's points is full, and the 2nd job's job level counts what it lent
   const T=treeTally(job,L,jl),parts=trees.map((t,ti)=>{const x=T[ti];if(x.pts==null)return "";const left=x.pts-x.n,own=x.used-x.from;
