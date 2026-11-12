@@ -15,10 +15,17 @@ function newsFloors(n){
     const bs=(boss[mp]||[]).map(([nm,lv,id])=>`<a href="#" class="pill newsBoss"${MOB_BY_ID.has(id)?` data-info="mob:${id}"`:""}>${mobIcon(id,.7,"il")}${esc(nm)} <span class="mono">Lv ${lv}</span></a>`).join("");
     return `<div class="newsFloor${tag.startsWith("B")?" under":""}"><div class="newsTag mono">${esc(tag)}</div><div class="newsRows">
       <a href="#" class="newsMap" data-navito="${esc(mp)}">${esc(mapName(mp)||mapCode(mp))} <span class="mono">${esc(mapCode(mp))}</span></a>${mobs}${bs?`<div class="newsBosses">${bs}</div>`:""}</div></div>`}).join("")}
-// the tab: the update's head, then its sections (Clock Tower, an event, ...), each its heading and cards
+// the tab: the update's head, then its sections (Clock Tower, an event, ...), each its heading and cards. The newest update shows
+// first; a tab per update above its head goes back to an earlier one (NEWS_PICK: its date, for this visit only)
+let NEWS_PICK=null;
 function renderNews(){
-  const n=NEWS[0];if(!n)return;const u=newsUpdate(n),secs=n.sections||[];
-  $("newsHead").innerHTML=`<div class="eyebrow">${esc(u?upWhen(u):n.when)} · game update</div><h2>${esc(n.name)}</h2><p>${esc(n.intro)}</p>`;
+  const n=NEWS.find(x=>x.when===NEWS_PICK)||NEWS[0];if(!n)return;const u=newsUpdate(n),secs=n.sections||[];
+  const pick=NEWS.length>1?`<div class="newsPick" role="tablist" aria-label="Game updates">${NEWS.map(x=>{const xu=newsUpdate(x);
+    return `<button type="button" role="tab" aria-selected="${x===n}" data-newspick="${esc(x.when)}"><b>${esc(x.name)}</b><span>${esc(xu?upWhen(xu):x.when)}</span></button>`}).join("")}</div>`:"";
+  $("newsHead").innerHTML=`${pick}<div class="eyebrow">${esc(u?upWhen(u):n.when)} · game update</div><h2>${esc(n.name)}</h2><p>${esc(n.intro)}</p>`;
+  $("newsHead").querySelectorAll("[data-newspick]").forEach(b=>b.addEventListener("click",()=>{if(b.dataset.newspick===n.when)return;
+    NEWS_PICK=b.dataset.newspick;renderNews();$("newsHead").scrollIntoView({block:"nearest"});$("newsHead").querySelector(`[data-newspick="${NEWS_PICK}"]`)?.focus()}));
+  const floorTitle=n.floorTitle||"The tower, floor by floor";$("newsFloorsCard").querySelector("h2").textContent=floorTitle;
   $("newsTower").innerHTML=newsFloors(n);$("newsTowerNote").textContent=[n.floorNote,n.bossNote].filter(Boolean).join(" ");
   // the card with bossGroup lists the field bosses' cards first: the client's text, which floor and boss
   const bossRows=()=>n.bosses.map(([nm,lv,mp,card])=>{const c=itemInfo(card),fl=(n.floors.find(f=>f[0]===mp)||[])[1];return [[card],`${nm} Card`,`${fl?fl+", ":""}from ${nm} (Lv ${lv}).${c&&c.t?" "+c.t:""}`]});
@@ -39,7 +46,7 @@ function renderNews(){
   document.querySelectorAll(".newsCollabCard").forEach(foldCard);
   // the quick nav: each section, its cards under it (shown for the section you're reading, or opened with its toggle)
   $("newsNav").innerHTML=`<span class="secHead">On this page</span>`+secs.map(([k,nm,,floors])=>{
-    const subs=[...(floors?[["newsFloorsCard","The tower, floor by floor"]]:[]),...(n.cards||[]).filter(cb=>cb.sec===k).map(cb=>[cb.id,cb.name])];
+    const subs=[...(floors?[["newsFloorsCard",floorTitle]]:[]),...(n.cards||[]).filter(cb=>cb.sec===k).map(cb=>[cb.id,cb.name])];
     return `<div class="newsNavGrp"><div class="newsNavRow"><a href="#" class="newsNavSec" data-newsto="newsSec-${esc(k)}">${esc(nm)}</a>${subs.length?`<button type="button" class="newsNavTog" aria-expanded="false" aria-label="${esc(nm)}: its parts"></button>`:""}</div>
       <div class="newsNavSubs">${subs.map(([id,t])=>`<a href="#" class="newsNavSub" data-newsto="${esc(id)}">${esc(t)}</a>`).join("")}</div></div>`}).join("");
   newsSpy()}

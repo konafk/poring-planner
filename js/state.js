@@ -227,9 +227,10 @@ const pct=(n,d=2)=>isFinite(n)?n.toFixed(d)+"%":"–";
 function fmtDur(h){if(!isFinite(h)||h<0)return "–";const m=Math.round(h*60),hh=Math.floor(m/60),mm=m%60;if(hh>=24){const d=Math.floor(hh/24);return `~${d}d ${hh%24}h ${mm}m\n~${hh}h ${mm}m`}return hh?`~${hh}h ${mm}m`:`~${mm}m`}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 const num=(v,d=0)=>{const x=+v;return isFinite(x)?x:d};
-const lvExp=lv=>EXP_TABLE[lv]||null;
+// EXP to the next level; t (an entry's time): before the 12 November 2026 maintenance the old table applies, so logs from then keep their rates
+const lvExp=(lv,t)=>(t!=null&&t<EXP_TABLE_SINCE?EXP_TABLE_OLD:EXP_TABLE)[lv]||null;
 // the server's base level cap: raise it when a patch does. At it base EXP no longer counts, so the EXP Hunter ranks by zeny
-// (80 from the 12 November 2026 patch; data/exp.js stops at 70 until the EXP to 80 is published)
+// (80 from the 12 November 2026 patch)
 const MAX_BASE_LV=80;
 // the highest base level a goal can be worked out to: one past the EXP table's last level, at most the cap
 const GOAL_TOP_LV=Math.min(MAX_BASE_LV,Math.max(...Object.keys(EXP_TABLE).map(Number))+1);

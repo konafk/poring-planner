@@ -1076,6 +1076,10 @@ details.infoSec>summary:hover h3{color:var(--fg)}
 .newsHeadCard{display:flex;flex-direction:column;gap:8px}
 .newsHeadCard h2{font-family:var(--display);font-size:1.9rem;font-weight:800;letter-spacing:-.03em;line-height:1.05}
 .newsHeadCard p{margin:0;max-width:75ch;color:var(--muted);line-height:1.6;text-wrap:pretty}
+.newsPick{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin:-4px 0 6px;scrollbar-width:none}
+.newsPick button{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:1px;border:0;background:none;padding:6px 12px 8px;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--muted);cursor:pointer;font:inherit;font-size:.85rem;text-align:left}
+.newsPick button span{font-size:.75rem}.newsPick button:hover{color:var(--fg)}
+.newsPick button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--brand)}
 .newsTower{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .newsFloor{display:grid;grid-template-columns:56px minmax(0,1fr);border-top:1px solid var(--line)}
 .newsFloor:first-child{border-top:0}
