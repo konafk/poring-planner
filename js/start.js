@@ -189,6 +189,7 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
     {k:"Action",name:"Log EXP",meta:"+ button · L",run:()=>openQuickLog(true),ok:()=>!atMaxLv()},
     {k:"Action",name:"Switch theme",meta:"auto → light → dark",run:()=>$("themeBtn").click()},
     {k:"Action",name:"Show or hide hints",meta:"help text under the cards",run:()=>$("hintBtn").click()},
+    {k:"Action",name:"Show or hide future content",meta:"Contingent and Conqueror gear",run:()=>$("futureBtn").click()},
     {k:"Action",name:"New session",meta:"Session tab",run:()=>$("newSession").click()}];
   let ALL=null;
   // gear and cards are listed once, as Gear or Card (with what drops them), not again as an Item

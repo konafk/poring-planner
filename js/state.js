@@ -155,10 +155,11 @@ state.mobbed=Object.fromEntries(Object.entries(numMap(state.mobbed)).map(([k,v])
 // all: list the less used recovery items too
 state.recovery={discount:!(state.recovery&&state.recovery.discount===false),all:!!(state.recovery&&state.recovery.all===true)};
 // the Memorial dungeons tab's Jellostone tracker (memorial.js): whole counts of 0 or more by fragment / stone id, the stone crafting
-// ({id, due: ms}), the Expedition pieces you want (item ids) and your Faintly Glowing Crystals
+// ({id, due: ms}), the upgrades you want (MEM_LADDER keys: an Expedition piece's item id, a Contingent or Conqueror piece's name)
+// and your Faintly Glowing Crystals
 {const j=objOr(state.jello),cnt=(o,ids)=>Object.fromEntries(Object.entries(numMap(o)).filter(([k,v])=>ids.includes(+k)&&v>=0).map(([k,v])=>[k,Math.round(v)]).filter(([,v])=>v>0)),
   stones=JELLO.map(x=>x.stone[0]),c=objOr(j.craft);
-  state.jello={frag:cnt(j.frag,JELLO.map(x=>x.frag[0])),stone:cnt(j.stone,stones),want:[...new Set((Array.isArray(j.want)?j.want:[]).map(Number))].filter(id=>EXPEDITION.some(x=>x.id===id)),
+  state.jello={frag:cnt(j.frag,JELLO.map(x=>x.frag[0])),stone:cnt(j.stone,stones),want:[...new Set((Array.isArray(j.want)?j.want:[]).map(k=>/^\d+$/.test(k)?+k:k))].filter(k=>MEM_LADDER.some(x=>x.key===k)),
     crystals:Number.isFinite(+j.crystals)&&+j.crystals>0?Math.round(+j.crystals):0,...(stones.includes(+c.id)&&Number.isFinite(+c.due)?{craft:{id:+c.id,due:+c.due}}:{})}}
 // the Stellar tab (stellar.js): certificates you have by ★ weapon id (whole counts above 0) and your weapon's refine (0 to 20)
 {const t=objOr(state.stellar),r=Math.round(+t.refine);

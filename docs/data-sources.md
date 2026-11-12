@@ -16,7 +16,7 @@ The numbers are estimates. Skill values and formulas follow the sources below an
 - Costume enchant stones and their sets: the stones' item descriptions (Global client text)
 - Job Essences (`data/essences.js`): their item descriptions in the client's `System\iteminfo_enUS.lub`; that they go on +9 armor from the Enchant Staff's dialogue in `data.grf`
 - Taming Ring pet egg enchants: the eggs' item descriptions (Global client text)
-- Memorial dungeons, Jellostones, the Expedition upgrades and the memorial gear's enchants (`data/memorial.js`): made by hand; item names and ids as the Global client has them
+- Memorial dungeons, Jellostones, the Expedition upgrades and the memorial gear's enchants (`data/memorial.js`): made by hand; item names and ids as the Global client has them. The Contingent and Conqueror upgrades (`LATER_RUNGS`) and the Vegetable Enhancer's cost and lines (`VEGGIE_ENCHANT`) aren't in the Global client, so they're as reported from other Zero servers (rAthena's Zero data); the Vegetable Enhancer's spot is from Global's Navigation
 - Every item in the game client that isn't gear or a card (Item info's All items): the community database's item catalog, read from the Global client
 - Stellar weapons and the Activation System (`data/stellar.js`): the Taiwan server's Activation System; the ★ weapons from the official client
 - Items that add affixes (the Affixes tab): which gear each one works on is the client's `lapineupgradebox_data.lub` (`upgrades` in `data/client.js`); what they roll is players' reports (`data/affixitems.js`), since the client doesn't have it
