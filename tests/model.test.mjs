@@ -3261,9 +3261,13 @@ t("Jellostones: Contingent and Conqueror pieces count by name, with their own cr
   assert.ok(run(`LATER_RUNGS.conqueror.pieces.every(x=>LATER_RUNGS.contingent.pieces.some(c=>c.name===x.from[1]))`)); // each from a Contingent one
   // Expedition's Armor, then Contingent Mail (4 Crimson) and Conqueror's Mail (6 Crimson): 12 Crimson Jellostones in all
   run(`state.jello={frag:{},stone:{},want:[15221,"Contingent Mail","Conqueror's Mail"],crystals:0}`);
+  assert.equal(run(`SHOW_FUTURE`), false);                                        // future content is hidden by default: only the Expedition piece counts
+  assert.equal(run(`jelloNeed()[25470]`), 2);
+  run(`SHOW_FUTURE=true`);
   assert.equal(run(`jelloNeed()[25470]`), 12);
   assert.equal(run(`JSON.stringify(memCrystals().map(([c,n])=>[c[1],n]))`), JSON.stringify([["Faintly Glowing Crystal", 50], ["Crystal of Blue Light", 50], ["Crimson Crystal", 50]]));
   // a saved want list keeps Expedition ids (even as text) and later pieces' names, and drops what isn't an upgrade
+  run(`SHOW_FUTURE=false`);
   const r = load({ jello: { want: ["15221", "Contingent Mail", "Nope", 909] } });
   assert.equal(r(`JSON.stringify(state.jello.want)`), JSON.stringify([15221, "Contingent Mail"]));
 });

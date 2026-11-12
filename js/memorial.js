@@ -4,8 +4,12 @@
 // due: ms} or none, want [MEM_LADDER keys], crystals (Faintly Glowing Crystals you have) ----
 const DAY_MS=864e5,WEEKDAY=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const jello=()=>state.jello;
-// the upgrades you want (MEM_LADDER rows)
-const memWanted=()=>MEM_LADDER.filter(x=>jello().want.includes(x.key));
+// future content: the Contingent and Conqueror gear, not out on Global yet. Hidden by default, per device like full width (Settings
+// menu): while hidden, the card is too (the root's "future" class) and its ticked pieces stay saved but don't count
+const KEY_FUTURE="rozero-farm-planner-future";
+let SHOW_FUTURE=(()=>{try{return localStorage.getItem(KEY_FUTURE)==="1"}catch(e){return false}})();
+// the upgrades you want (MEM_LADDER rows), the later rungs only while future content shows
+const memWanted=()=>MEM_LADDER.filter(x=>jello().want.includes(x.key)&&(SHOW_FUTURE||typeof x.key==="number"));
 // Jellostones the wanted pieces take, by stone id
 function jelloNeed(){const n={};JELLO.forEach(j=>n[j.stone[0]]=0);
   memWanted().forEach(x=>Object.entries(x.stones).forEach(([id,k])=>n[id]+=k));return n}
@@ -48,7 +52,7 @@ function renderJello(){const J=jello(),now=Date.now(),wd=new Date(now).getDay(),
       <button type="button" class="small primary" data-jcollect>Collect</button> <button type="button" class="small danger" data-jcancel title="Give the ${JELLO_PER_STONE} fragments back">Cancel</button>`
     :`No stone crafting. One at a time, ${JELLO_CRAFT_DAYS} days each, at the Memory Craftsman's Workshop.`;
   const need=Object.values(jelloNeed()).reduce((a,b)=>a+b,0),miss=short.reduce((a,x)=>a+x.stones,0),fr=short.reduce((a,x)=>a+x.frags,0),rd=jelloReady(now);
-  const nPieces=J.want.length,crys=memCrystals(),fg=crys.find(([c])=>c===EXPEDITION_CRYSTALS),cry=fg?fg[1]:0;
+  const nPieces=memWanted().length,crys=memCrystals(),fg=crys.find(([c])=>c===EXPEDITION_CRYSTALS),cry=fg?fg[1]:0;
   $("jelloTiles").innerHTML=`<div class="tile"><div class="k">Jellostones short</div><div class="v mono">${nPieces?miss:"–"}</div><div class="s">${nPieces?`of ${need} for ${nPieces} piece${nPieces>1?"s":""}`:"tick the pieces you want below"}</div></div>
     <div class="tile"><div class="k">Fragments short</div><div class="v mono">${nPieces?fr:"–"}</div><div class="s">${JELLO_PER_STONE} make a stone</div></div>
     <div class="tile now"><div class="k">All stones by</div><div class="v mono">${rd==null?(nPieces?"now":"–"):rd===Infinity?"> 2 years":fmtD(rd)}</div><div class="s">${rd==null||rd===Infinity?"":`~${Math.ceil((rd-now)/DAY_MS)} days, a run a day from tomorrow`}</div></div>`;
@@ -106,5 +110,9 @@ $("expCard").addEventListener("change",e=>{const J=jello();
 $("laterCard").addEventListener("change",e=>{if(e.target.id==="laterRung"){renderLater();return}
   if(e.target.dataset.jwant){const J=jello(),k=e.target.dataset.jwant;J.want=J.want.filter(x=>x!==k);if(e.target.checked)J.want.push(k);jelloSave()}});
 $("enchCard").addEventListener("change",e=>{if(e.target.id==="enchGear"||e.target.id==="enchPool")renderEnchants()});
+(function setupFuture(){const btn=$("futureBtn");
+  const set=v=>{SHOW_FUTURE=v;document.documentElement.classList.toggle("future",v);btn.setAttribute("aria-pressed",String(v));btn.querySelector("span").textContent=`Future content: ${v?"shown":"hidden"}`};
+  set(SHOW_FUTURE);
+  btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.setItem(KEY_FUTURE,"1"):localStorage.removeItem(KEY_FUTURE)}catch(e){}renderJello();if(typeof pageNav==="function")pageNav(state.tab)})})();
 // keep the craft countdown current while the tab is open
 (function jelloLoop(){if(!$("jelloCard").hidden&&jello().craft)renderJello();setTimeout(jelloLoop,30000)})();

@@ -57,11 +57,12 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="sideFoot">
       <button type="button" class="iconBtn" id="sideBtn" aria-pressed="false" title="Shrink the sidebar to icons"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 10l-2 2 2 2"/></svg><span>Compact sidebar</span></button>
       <div class="menu setMenu">
-        <button type="button" class="iconBtn menuBtn" id="setBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="setMenu" title="Settings: hints, theme, full width"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></button>
+        <button type="button" class="iconBtn menuBtn" id="setBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="setMenu" title="Settings: hints, theme, full width, future content"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></button>
         <div class="menuList" id="setMenu" role="menu" aria-label="Settings" hidden>
         <button type="button" role="menuitem" data-keep id="hintBtn" aria-pressed="false" title="Show or hide the help text under the cards"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>Hints: off</span></button>
         <button type="button" role="menuitem" data-keep id="themeBtn" title="Colour theme: follows your device"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg><span>Theme: auto</span></button>
         <button type="button" role="menuitem" data-keep id="wideBtn" aria-pressed="false" title="Let the page use the whole window width"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg><span>Full width: off</span></button>
+        <button type="button" role="menuitem" data-keep id="futureBtn" aria-pressed="false" title="Show or hide gear that isn't out on Global yet (Contingent and Conqueror)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Future content: hidden</span></button>
         </div>
       </div>
     </div>
@@ -682,7 +683,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="note hint">Tick pieces to count the Jellostones they need. A set bonus needs all four pieces. Upgrading gives a new +0 piece: the old one's refine, card and enchant are lost.</div>
   </section>
 
-  <section class="card" id="laterCard" data-tab="mem">
+  <section class="card future" id="laterCard" data-tab="mem">
     <div class="bar"><h2 class="grow">Contingent and Conqueror upgrades</h2>
       <label>Rung<select id="laterRung"><option value="contingent">Contingent (base Lv 80)</option><option value="conqueror">Conqueror (base Lv 90)</option></select></label></div>
     <div class="scroll"><table id="laterTable"><thead><tr><th>Want</th><th>Piece</th><th>Branch</th><th>Made from</th><th>Uses</th></tr></thead><tbody id="laterRows"></tbody></table></div>
