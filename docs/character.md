@@ -26,6 +26,10 @@ Thief's Double Attack (and so Assassin's and Rogue's) works only with a dagger i
 
 Put a dagger, one-handed sword or one-handed axe in the left hand. In Status window mode, use the Left hand fields; the "Wearing a shield" tick box (any job) and the Left hand swap each other out and move your typed ASPD by the shield or left-weapon penalty. In Build mode, use the "Shield / left hand" row.
 
+## Two-handed weapons
+
+A two-handed sword, spear, axe, mace or staff, a bow or a katar takes both hands, so no shield or left-hand weapon goes with it, as in game. In Build mode, putting one in the Weapon row takes the shield (or left-hand weapon) off and remembers it, and the Shield row stays closed until you change weapon; the equipment window shows the weapon in the shield slot too. Putting a shield on from the Equipment tab takes the two-handed weapon off. In Status window mode, picking a two-handed weapon unticks and closes "Wearing a shield" and the Left hand. A shield saved with a two-handed weapon from before doesn't count.
+
 Basic attacks hit with both hands: the right hand × Righthand Mastery (50 + 10 per level %), the left hand × Lefthand Mastery (30 + 10 per level %), each with its own weapon ATK, size penalty and element. The left hand counts status ATK once, Double Attack repeats only the right hand, and skills use the right hand only: its refine and size penalty, the cards of both hands, and status ATK once instead of twice. The left weapon costs a quarter of its delay in ASPD: −10 for a dagger and −12 for a one-handed sword or axe (rAthena renewal rules, whose Assassin ASPD table matches Zero's). Without a skill tree, both masteries count as Lv 5.
 
 ## Consumables

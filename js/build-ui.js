@@ -355,6 +355,11 @@ const memAll=(c,gear)=>Object.values(gear||{}).forEach(g=>memKeep(c,g));
 // put item id in row g, the one there now remembered first: as it last was if remembered, else +0 with no cards or affixes
 function gearPut(c,g,id){if(g.id===id)return;memKeep(c,g);const m=memOf(c)[id]||{};g.id=id;
   g.refine=num(m.refine);g.cards=[...(m.cards||[])];g.opts=JSON.parse(JSON.stringify(m.opts||[]));if(m.optsText)g.optsText=m.optsText;else delete g.optsText}
+// a two-handed weapon takes both hands, so it and the Shield row (shield or left-hand weapon) can't both be worn: putting one on
+// takes the other off, remembered, as the game does. k is the row just filled
+const twoHandOn=gear=>{const w=gear&&gear.weapon&&BUILD.item(gear.weapon.id);return !!w&&BUILD.twoHanded(BUILD.WTYPE[w.type])};
+function handsFree(c,gear,k){if(k!=="weapon"&&k!=="shield"||!twoHandOn(gear)||!(gear.shield&&gear.shield.id))return;
+  const off=k==="weapon"?"shield":"weapon";memKeep(c,gear[off]);delete gear[off]}
 // "+7 · Vitata Card · 2 affixes"
 const memTxt=m=>[num(m.refine)?`+${num(m.refine)}`:"",...(m.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean),
   ...(m.opts&&m.opts.length?[`${m.opts.length} affix${m.opts.length>1?"es":""}`]:[])].filter(Boolean).join(" · ");
@@ -387,7 +392,9 @@ function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};l
     const g=b.gear[s.k]||{},it=g.id&&BUILD.item(g.id),label=n=>{const x=BUILD.item(n);return x?labelOf(x,cards):""};
     const cardBoxes=it&&it.slots?Array.from({length:it.slots},(_,i)=>`<span class="cardBox">${iconHtml("card",g.cards&&g.cards[i],.5)}<input data-card="${i}" list="cl_${s.k}" placeholder="card" title="The card (Vitata), or the name it gives the item in game (Healing)" value="${esc(g.cards&&g.cards[i]?label(g.cards[i]):"")}"></span>`).join(""):"";
     const refinable=it&&s.k!=="ammo"; // every part: some accessories and headgear refine though the data has no schedule for them
-    return `<tr data-slot="${s.k}"><td>${s.k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label}</td><td><div class="itemBox">${iconHtml("gear",it&&it.id)}<input class="item" list="gl_${s.k}" placeholder="${items.length?"none":"no items for this job"}" title="The item, or its name from the equipment window (+7 Healing Shining Clip) or with its cards (+7 Shining Clip Vitata): sets the refine and cards too" value="${esc(it?labelOf(it,items):"")}"></div></td>
+    // under a two-handed weapon the Shield row is closed; a shield saved there before stays editable so it can be taken off
+    const both=s.k==="shield"&&twoHandOn(b.gear),w2=both&&BUILD.item(b.gear.weapon.id),off=both&&!it;
+    return `<tr data-slot="${s.k}"${both?' class="bothHands"':""}><td>${s.k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label}${both?`<div class="note">${it?"not counted: ":""}${esc(w2.name)} takes both hands</div>`:""}</td><td><div class="itemBox">${iconHtml("gear",it&&it.id)}<input class="item" list="gl_${s.k}" placeholder="${off?"two-handed weapon":items.length?"none":"no items for this job"}" title="${off?esc(`${w2.name} is two-handed: take it off to use a shield${state.job==="Assassin"?" or a left-hand weapon":""}`):"The item, or its name from the equipment window (+7 Healing Shining Clip) or with its cards (+7 Shining Clip Vitata): sets the refine and cards too"}" value="${esc(it?labelOf(it,items):"")}"${off?" disabled":""}></div></td>
       <td>${refinable?`<input class="ref" type="number" min="0" max="20" value="${num(g.refine)}">`:""}</td><td><div class="cards">${cardBoxes}</div></td>
       <td>${it?optBoxes(s.k,g,it):""}</td></tr>`}).join("");
   $("gearTable").tBodies[0].innerHTML=rows;$("gearLists").innerHTML=lists;renderStones();
@@ -496,6 +503,8 @@ function lookHtml(worn){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if
 function ewWorn(b,sp){const w=wornFromSet(b);if(!sp)w.cos={};return w}
 function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),sp=EW_TAB==="special";
   const gearSlot=(k,right)=>{const g=b.gear[k],it=g&&g.id&&BUILD.item(g.id),s=BUILD.SLOTS.find(x=>x.k===k);
+    // a two-handed weapon fills the shield slot too, as in game (a shield saved there before shows instead, not counted)
+    if(k==="shield"&&!it&&twoHandOn(b.gear))return ewSlot("weapon",`${s.label} (two-handed weapon)`,gameName(b.gear.weapon),iconHtml("gear",b.gear.weapon.id),right).replace('class="ewSlot','class="ewSlot both');
     return ewSlot(k,k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label,it?gameName(g):"",iconHtml("gear",it&&it.id),right)};
   // a costume slot: the costume with its stone, "[Costume] Chicken beak [STR Stone]" (or the stone alone, when no costume is picked)
   const stone=(k,right)=>{const id=(b.stones||{})[k],x=id&&(typeof STONES!=="undefined"?STONES:[]).find(s=>s.id===+id&&s.slot===k),
@@ -661,14 +670,14 @@ const readTxt=r=>{const it=BUILD.item(r.id),n=new Map();r.cards.forEach(id=>n.se
 function gearAlts(k,txt,r){GEAR_ALTS=r&&r.alts?{k,list:[r,...r.alts]}:null;const el=$("gearAlts");el.hidden=!GEAR_ALTS;
   el.innerHTML=GEAR_ALTS?`“${esc(txt)}” fits more than one reading. Filled in: ${esc(readTxt(r))}. Or use: ${r.alts.map((a,i)=>`<button type="button" class="small" data-gearalt="${i+1}">${esc(readTxt(a))}</button>`).join(" ")}`:""}
 $("gearAlts").addEventListener("click",e=>{const x=e.target.closest("[data-gearalt]");if(!x||!GEAR_ALTS)return;const c=C(),b=gearSet(c),k=GEAR_ALTS.k;
-  gearRead(c,b.gear[k]||(b.gear[k]={}),GEAR_ALTS.list[+x.dataset.gearalt]);gearAlts(k,"",null);save();renderGearTable();renderAll()});
+  gearRead(c,b.gear[k]||(b.gear[k]={}),GEAR_ALTS.list[+x.dataset.gearalt]);handsFree(c,b.gear,k);gearAlts(k,"",null);save();renderGearTable();renderAll()});
 $("gearTable").addEventListener("change",e=>{const tr=e.target.closest("tr[data-slot]");if(!tr)return;const k=tr.dataset.slot,c=C(),b=gearSet(c),g=b.gear[k]||(b.gear[k]={});
   if(e.target.classList.contains("item")){const v=e.target.value.trim();const id=GEAR_LISTS["g_"+k].get(v);
     // not on the list: read it as the equipment window names it, refine and cards included (they win over what the item last had)
     const r=id==null&&v?readGear(k,v):null;
     if(!v){memKeep(c,g);delete b.gear[k]}else if(id!=null)gearPut(c,g,id);
     else if(r)gearRead(c,g,r);else{e.target.value=g.id?e.target.defaultValue:"";return}
-    gearAlts(k,v,r);save();renderGearTable();renderAll();return}
+    if(v)handsFree(c,b.gear,k);gearAlts(k,v,r);save();renderGearTable();renderAll();return}
   // picking an option keeps its value; "remove" drops it. The rows replace any text typed before the lists
   if(e.target.dataset.opt!=null){const rows=BUILD.optRows(g.opts),i=+e.target.dataset.opt,v=e.target.value;
     if(!v)rows.splice(i,1);else rows[i]={k:v,v:rows[i]?rows[i].v:""};optSet(g,rows);save();renderGearTable();renderAll();

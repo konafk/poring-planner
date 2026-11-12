@@ -106,7 +106,7 @@ const placeLabel=(rows,it)=>rows[0]==="shield"&&(it.slot||[]).includes("weapon")
 function eqPut(c,i,rows,id){const s=setAt(c,i);if(!s.gear||typeof s.gear!=="object")s.gear={};
   rows.forEach(k=>{const old=s.gear[k];if(old&&old.id&&k.startsWith("head"))BUILD.SLOTS.forEach(x=>{if(x.k.startsWith("head")&&!rows.includes(x.k)&&s.gear[x.k]&&s.gear[x.k].id===old.id)delete s.gear[x.k]})});
   const g0=s.gear[rows[0]]||(s.gear[rows[0]]={});gearPut(c,g0,id);
-  rows.slice(1).forEach(k=>{const g=s.gear[k];if(g&&g.id!==id)memKeep(c,g);s.gear[k]=JSON.parse(JSON.stringify(g0))})}
+  rows.slice(1).forEach(k=>{const g=s.gear[k];if(g&&g.id!==id)memKeep(c,g);s.gear[k]=JSON.parse(JSON.stringify(g0))});handsFree(c,s.gear,rows[0])}
 // every card box card can go in: set, row, box and the card there now (a multi-slot headgear counts once)
 function cardTargets(c,card){const out=[];
   for(let i=-1;i<altN(c);i++){const s=i<0?c.build||{}:altOf(c,i),gear=s.gear||{},seen=[];
