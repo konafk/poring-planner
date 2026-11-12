@@ -1,4 +1,5 @@
-// ---- EXP & formulas tab: EXP tables, the formulas the calculator uses (with your numbers), element and size tables ----
+// ---- EXP tables tab: base and job EXP per level, every base table the game has used and two of them side by side. Formulas tab: the
+// formulas the calculator uses (with your numbers), party share, element and size tables ----
 const yours=f=>{try{const v=f();return v==null||v===""||(typeof v==="number"&&!isFinite(v))?"–":v}catch(e){return "–"}};
 // alts: the "Yours" values worked out with each other gear set (same rows, same order), each shown in a column of its own
 function refFormulas(alts=[]){const vals=[],c=C(),m=calcMob(),ok=STATS.every(k=>statVal(c,k)!=null),d=ok?derived(c):null,lv=num(c.baseLv),ab=aspdBaseOf(c);
@@ -105,18 +106,61 @@ function renderGearCmp(){const c=C(),T=$("gearCmpTable"),sets=gearCmpShown()?alt
       return `<td${b(v)}>${cmpFmt(v,dp)}<div class="d ${cls}">${same?"same":diff==null?"–":`${diff>0?"+":""}${cmpFmt(diff,dp)}${pc}`}</div></td>`};
     const h=g&&g!==grp?`<tr class="grp"><td colspan="${n}">${g==="m"?`vs ${esc(m.name)}`:`On ${esc(mapLabel(mp))}`}</td></tr>`:"";if(g)grp=g;
     return `${h}<tr><td class="name">${label}</td><td${b(a)}>${cmpFmt(a,dp)}</td>${oth.map(o=>cell(o[k])).join("")}</tr>`}).join("")}
-function renderRef(){const c=C(),m=calcMob(),blv=num(c.baseLv),jl=num(c.jobLv),per=m?killExp(m):0,jper=m?killJobExp(m):0;
-  const kills=(e,p=per)=>p>0?fmtN(Math.ceil(e/p)):"–",kh=m?`<th>Kills of ${esc(m.name)}</th>`:"";
+// every base EXP table, oldest first: the ones in EXP_TABLE_LOG, then the current one. key: what state.expVer / expCmp hold; name: for
+// the column heads; label: for the pickers, with the dates it was in use (each change came at a maintenance, dated in UTC)
+function expVersions(){const d=t=>new Date(t).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"}),L=EXP_TABLE_LOG;
+  const old=L.map((x,i)=>{const name=i?`${d(L[i-1].until)} – ${d(x.until)}`:`Before ${d(x.until)}`;return {key:String(i),table:x.table,name,label:name,note:x.note}});
+  return [...old,{key:"cur",table:EXP_TABLE,name:"Current",label:L.length?`Current (since ${d(L[L.length-1].until)})`:"Current"}]}
+// how a table grows: runs of levels where each level takes about the same multiple of the one before, and the single-level jumps
+// between them ([{from,to,x}], from Lv 2). The tables are rounded to 100 EXP, so the low levels wobble round their multiple: a level
+// stays in the run while its multiple is within 0.03 of the level before's, and a run's x is its average (geometric) multiple
+function expGrowth(t){const ls=Object.keys(t).map(Number).filter(l=>t[l]>0&&t[l-1]>0).sort((a,b)=>a-b),out=[];
+  for(const l of ls){const r=t[l]/t[l-1],g=out[out.length-1];
+    if(g&&g.to===l-1&&Math.abs(r-g.last)<=0.03){g.to=l;g.last=r}else out.push({from:l,to:l,last:r})}
+  return out.map(g=>({from:g.from,to:g.to,x:(t[g.to]/t[g.from-1])**(1/(g.to-g.from+1))}))}
+// "Lv 2–50 ×1.15 each · Lv 51 ×5 · …"
+const expGrowthTxt=t=>expGrowth(t).map(g=>`Lv ${g.from}${g.to>g.from?`–${g.to}`:""} ×${+g.x.toFixed(2)}${g.to>g.from?" each":""}`).join(" · ");
+// "+20.0%" / "−87.6%": e against p, "–" without both
+const expPct=(e,p)=>{if(!(e>0&&p>0))return "–";const v=(e/p-1)*100;return `${v<0?"−":"+"}${Math.abs(v).toFixed(1)}%`};
+function renderExp(){const c=C(),m=calcMob(),blv=num(c.baseLv),jl=num(c.jobLv),per=m?killExp(m):0,jper=m?killJobExp(m):0;
+  const kills=(e,p=per)=>e>0&&p>0?fmtN(Math.ceil(e/p)):"–",kh=m?`<th>Kills of ${esc(m.name)}</th>`:"";
   // EXP to next compared with the level before, e.g. the Lv 68 row says how much more Lv 68 → 69 takes than Lv 67 → 68
-  const inc=(e,p)=>{if(!(e>0&&p>0))return "–";const v=(e/p-1)*100;return `${v<0?"−":"+"}${Math.abs(v).toFixed(1)}%`},
-    ih='<th title="EXP to next compared with the level before">vs prev Lv</th>';
+  const ih='<th title="EXP to next compared with the level before">vs prev Lv</th>';
   $("refExpNote").textContent=m?(m.expUnknown?`no EXP data for ${m.name} yet`:`${fmtN(per)} base / ${fmtN(jper)} job EXP per ${m.name}`):"Pick a monster to see kills per level";
-  let tot=0;const base=Object.keys(EXP_TABLE).map(Number).sort((a,b)=>a-b).map(l=>{const e=EXP_TABLE[l],row=`<tr${l===blv?' class="sel"':""}><td>${l}</td><td>${fmtN(e)}</td><td>${inc(e,EXP_TABLE[l-1])}</td><td>${fmtN(tot)}</td>${m?`<td>${kills(e)}</td>`:""}</tr>`;tot+=e;return row}).join("");
-  $("refBaseTable").tHead.innerHTML=`<tr><th>Lv</th><th>EXP to next</th>${ih}<th>Total</th>${kh}</tr>`;$("refBaseTable").tBodies[0].innerHTML=base;
-  const tier=Object.hasOwn(JOB_EXP,state.refTier)?state.refTier:jobTier(),t=JOB_EXP[tier],mine=tier===jobTier();tot=0;
+  // the table picked (the current one unless you pick another) and the one it's compared with (none unless picked)
+  const vs=expVersions(),v=vs.find(x=>x.key===state.expVer)||vs[vs.length-1],w=vs.find(x=>x.key===state.expCmp&&x!==v)||null;
+  const opt=x=>`<option value="${esc(x.key)}">${esc(x.label)}</option>`;
+  $("expVer").innerHTML=vs.map(opt).join("");$("expVer").value=v.key;
+  $("expCmp").innerHTML=`<option value="">Nothing</option>`+vs.filter(x=>x!==v).map(opt).join("");$("expCmp").value=w?w.key:"";
+  $("expVer").disabled=$("expCmp").disabled=vs.length<2;
+  const lvs=t=>Object.keys(t).map(Number),sel=l=>l===blv?' class="sel"':"";
+  if(!w){let tot=0;const A=v.table;
+    $("refBaseTable").tHead.innerHTML=`<tr><th>Lv</th><th>EXP to next</th>${ih}<th>Total</th>${kh}</tr>`;
+    $("refBaseTable").tBodies[0].innerHTML=lvs(A).sort((a,b)=>a-b).map(l=>{const e=A[l],row=`<tr${sel(l)}><td>${l}</td><td>${fmtN(e)}</td><td>${expPct(e,A[l-1])}</td><td>${fmtN(tot)}</td>${m?`<td>${kills(e)}</td>`:""}</tr>`;tot+=e;return row}).join("");
+    $("expCmpNote").hidden=true;
+    $("expGrowth").innerHTML=`<b>How it grows</b> (each level's EXP against the level before's): ${esc(expGrowthTxt(A))}`;
+  }else{
+    // side by side, the older table first; Change is the newer one against the older. Kills are for the table you picked
+    const [o,n]=vs.indexOf(v)<vs.indexOf(w)?[v,w]:[w,v],O=o.table,N=n.table,all=[...new Set([...lvs(O),...lvs(N)])].sort((a,b)=>a-b);
+    let to=0,tn=0;const cell=x=>x>0?fmtN(x):"–";
+    $("refBaseTable").tHead.innerHTML=`<tr><th>Lv</th><th>${esc(o.name)}</th><th>${esc(n.name)}</th><th title="${esc(n.name)} against ${esc(o.name)}">Change</th><th>Total, ${esc(o.name)}</th><th>Total, ${esc(n.name)}</th>${m?`<th>Kills of ${esc(m.name)} (${esc(v.name)})</th>`:""}</tr>`;
+    $("refBaseTable").tBodies[0].innerHTML=all.map(l=>{const a=O[l],b=N[l],ch=a>0&&b>0?b<a?"good":b>a?"bad":"muted":"muted";
+      const row=`<tr${sel(l)}><td>${l}</td><td>${cell(a)}</td><td>${cell(b)}</td><td class="${ch}">${a>0&&b>0?a===b?"same":expPct(b,a):a>0?"gone":"new"}</td><td>${a>0?fmtN(to):"–"}</td><td>${b>0?fmtN(tn):"–"}</td>${m?`<td>${kills(v.table[l])}</td>`:""}</tr>`;
+      if(a>0)to+=a;if(b>0)tn+=b;return row}).join("");
+    // the levels both tables have, from Lv 1 without a gap: what reaching the level past them took in each
+    let top=0,so=0,sn=0;while(O[top+1]>0&&N[top+1]>0){top++;so+=O[top];sn+=N[top]}
+    const nt=lvs(N).length-lvs(O).length;
+    $("expCmpNote").innerHTML=top?`Lv 1 → ${top+1}: <b>${fmtN(so)}</b> EXP (${esc(o.name)}) → <b>${fmtN(sn)}</b> (${esc(n.name)}), ${expPct(sn,so)}`+
+      (nt>0?`. ${esc(n.name)} goes ${nt} level${nt>1?"s":""} further`:nt<0?`. ${esc(o.name)} went ${-nt} level${nt<-1?"s":""} further`:""):"";
+    $("expCmpNote").hidden=!top;
+    $("expGrowth").innerHTML=`<b>How each grows</b> (each level's EXP against the level before's):<br>${esc(o.name)}: ${esc(expGrowthTxt(O))}<br>${esc(n.name)}: ${esc(expGrowthTxt(N))}`;
+  }
+  const tier=Object.hasOwn(JOB_EXP,state.refTier)?state.refTier:jobTier(),t=JOB_EXP[tier],mine=tier===jobTier();let tot=0;
   ROOTQ("[data-reftier]").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.reftier===tier)));
   $("refJobTable").tHead.innerHTML=`<tr><th>Job Lv</th><th>Job EXP to next</th>${ih}<th>Total</th>${kh}</tr>`;
-  $("refJobTable").tBodies[0].innerHTML=t.map((e,i)=>{const row=`<tr${mine&&i+1===jl?' class="sel"':""}><td>${i+1}</td><td>${i+1<t.length?fmtN(e):"max"}</td><td>${i+1<t.length?inc(e,t[i-1]):"–"}</td><td>${fmtN(tot)}</td>${m?`<td>${i+1<t.length?kills(e,jper):"–"}</td>`:""}</tr>`;tot+=e;return row}).join("");
+  $("refJobTable").tBodies[0].innerHTML=t.map((e,i)=>{const row=`<tr${mine&&i+1===jl?' class="sel"':""}><td>${i+1}</td><td>${i+1<t.length?fmtN(e):"max"}</td><td>${i+1<t.length?expPct(e,t[i-1]):"–"}</td><td>${fmtN(tot)}</td>${m?`<td>${i+1<t.length?kills(e,jper):"–"}</td>`:""}</tr>`;tot+=e;return row}).join("");
+}
+function renderRef(){const c=C(),m=calcMob();
   renderPartyTable(m);
   // other gear sets (Build from gear): worked out only while this tab shows, since each runs the model again
   const sets=refShown()?altList(c).map(i=>({i,x:altChar(c,i)})):[],av=sets.map(s=>withSnap(s.x,()=>refFormulas().vals));
@@ -128,6 +172,8 @@ function renderRef(){const c=C(),m=calcMob(),blv=num(c.baseLv),jl=num(c.jobLv),p
   $("refSizeTable").tBodies[0].innerHTML=Object.entries(WEAPONS).map(([w,v])=>`<tr${w===c.weapon?' class="sel"':""}><td class="name">${esc(w)}</td>${v.map(x=>`<td class="${x>100?"good":x<100?"bad":"muted"}">${x}</td>`).join("")}</tr>`).join("");
 }
 // scroll each EXP table so your level is in view (only works while the tab is showing)
-const refScroll=()=>["refBaseTable","refJobTable"].forEach(id=>{const t=$(id),r=t.querySelector("tbody tr.sel"),w=t.parentElement;if(r&&w.clientHeight)w.scrollTop=Math.max(0,r.offsetTop-w.clientHeight/3)});
-ROOTQ("[data-reftier]").forEach(b=>b.addEventListener("click",()=>{state.refTier=b.dataset.reftier;save();renderRef();refScroll()}));
+const expScroll=()=>["refBaseTable","refJobTable"].forEach(id=>{const t=$(id),r=t.querySelector("tbody tr.sel"),w=t.parentElement;if(r&&w.clientHeight)w.scrollTop=Math.max(0,r.offsetTop-w.clientHeight/3)});
+ROOTQ("[data-reftier]").forEach(b=>b.addEventListener("click",()=>{state.refTier=b.dataset.reftier;save();renderExp();expScroll()}));
+$("expVer").addEventListener("change",e=>{state.expVer=e.target.value;save();renderExp();expScroll()});
+$("expCmp").addEventListener("change",e=>{state.expCmp=e.target.value;save();renderExp();expScroll()});
 $("refElv").addEventListener("change",e=>{state.refElv=+e.target.value;save();renderRef()});

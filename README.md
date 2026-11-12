@@ -29,13 +29,14 @@ It's a single page that runs entirely in your browser. There's no server, no log
 - **Skill tree** (Simulators): any job's skill tree without a character, picked from every class with its icon and look from the game client, with the points and job level it takes.
 - **Stylist** (Simulators): every job's clothes colours, hair styles and hair colours, and its headgear and costumes, drawn from the game client and animated (stand, walk, sit, attack, 8 directions), to try a look and put it on your character.
 - **Recipes:** every forging, brewing, arrow crafting, cooking, Mixture & Counteragent and Dye Making recipe, the Jellostone exchange and the Expedition upgrades, searchable by the item made or its materials, with what the materials are worth.
-- **EXP & formulas:** EXP tables, party share and every formula with your numbers.
+- **EXP tables:** base and job EXP per level, and every base table the game has used, to compare and see how each grows.
+- **Formulas:** party share and every formula with your numbers.
 - **Accounts:** separate characters per account, text backups and share links.
 
 ## Docs
 
 - [Character tab](docs/character.md): build mode, damage model, cards, buffs, consumables, skill items and weight
-- [Other tabs](docs/features.md): accounts and Backup, Session, Monsters & maps, Roadmap, Monster info, Maps, Item info, Equipment and Cards, Brewing and Cooking simulators, Recipes, Market, EXP & formulas, and how tables work
+- [Other tabs](docs/features.md): accounts and Backup, Session, Monsters & maps, Roadmap, Monster info, Maps, Item info, Equipment and Cards, Brewing and Cooking simulators, Recipes, Market, EXP tables, Formulas, and how tables work
 - [Shared prices and cloud backup](docs/shared-prices.md): the Discord login, how shared prices keep junk out, and setting up the database
 - [Development](docs/development.md): project layout, data export tools and tests
 - [Data sources](docs/data-sources.md): where the data and formulas come from

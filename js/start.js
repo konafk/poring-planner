@@ -20,7 +20,8 @@ const TAB_DESC={
   cook:"Every dish's chance with each cooking kit for your stats, cook mastery, and a run of tries rolled the server's way.",
   recipes:"What every forge, brew, arrow, cooking, NPC and memorial recipe uses up.",
   market:"What players posted on your server (Skadi, Odin or Loki), with each item's lowest price, median and sellers to DM; and on My market, your own items, posts and prices.",
-  ref:"EXP tables, party share, the element and size tables, and every formula with your numbers in it.",
+  exp:"Base and job EXP to each level, with kills of your monster per level. Every base table the game has used stays here: pick one and compare it with another.",
+  ref:"Party share, the element and size tables, and every formula with your numbers in it.",
 };
 function showHero(t){
   const b=document.querySelector(`[data-tabbtn="${t}"]`);if(!b)return;
@@ -29,8 +30,8 @@ function showHero(t){
 }
 // a link to a tab: #memorial-dungeons (its name, any case) or #mem (its key); the address bar always shows the open tab's link, in
 // lower case. A name goes before a key. The old Monster info and Maps tabs' links (#monster-info, #maps) open Monsters & maps,
-// the old Account tab's (#account) Character
-const OLD_TAB={"monster-info":"maps",mobinfo:"maps",mapinfo:"maps",account:"char",acct:"char"};
+// the old Account tab's (#account) Character, and the old EXP & formulas tab's (#exp-formulas) Formulas
+const OLD_TAB={"monster-info":"maps",mobinfo:"maps",mapinfo:"maps",account:"char",acct:"char","exp-formulas":"ref"};
 const tabSlug=t=>document.querySelector(`[data-tabbtn="${t}"] span`).textContent.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 function hashTab(){let h="";try{h=decodeURIComponent(location.hash.slice(1)).toLowerCase()}catch(e){}if(!h)return null;
   const bs=[...document.querySelectorAll("[data-tabbtn]")],b=bs.find(b=>tabSlug(b.dataset.tabbtn)===h)||bs.find(b=>b.dataset.tabbtn===h);
@@ -54,7 +55,7 @@ function showTab0(t,local){
   if(location.hash!=="#"+tabSlug(t)&&!location.hash.startsWith("#s="))try{history.replaceState(null,"",location.pathname+location.search+"#"+tabSlug(t))}catch(e){}
   // Where to farm (its best spots show on Home too) after the tab has drawn. At load renderAll draws it just after this
   if(DREW_ALL&&(t==="home"||t==="track"))farmLater();
-  if(t==="home")renderHome();if(t==="news")renderNews();if(t==="ref"){renderRef();refScroll()}
+  if(t==="home")renderHome();if(t==="news")renderNews();if(t==="ref")renderRef();if(t==="exp"){renderExp();expScroll()}
   if(t==="char")renderGearCmp();
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}

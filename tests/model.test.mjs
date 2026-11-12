@@ -256,6 +256,24 @@ t("job EXP per kill: gear counts for job EXP, an item's base-only EXP % doesn't"
   assert.equal(run(`killJobExp({exp:33361,job:6672})`), 2934);
 });
 
+t("EXP table log: oldest first, each dated, none is the current table", () => {
+  const log = run("EXP_TABLE_LOG.map(x=>({until:x.until,top:Math.max(...Object.keys(x.table).map(Number)),same:x.table===EXP_TABLE}))");
+  assert.ok(log.length >= 1);
+  log.forEach((x, i) => { assert.ok(Number.isFinite(x.until)); assert.ok(x.top >= 1); assert.equal(x.same, false); if (i) assert.ok(x.until > log[i - 1].until) });
+  assert.equal(run(`lvExp(70,${log[0].until - 1})`), 568722300); assert.equal(run(`lvExp(70,${log[log.length - 1].until})`), 192576600);
+});
+
+t("EXP tables tab: every table to pick from, oldest first, the current one last", () => {
+  const vs = run("JSON.stringify(expVersions().map(v=>[v.key,v.name,v.label,v.table===EXP_TABLE]))");
+  assert.deepEqual(JSON.parse(vs).slice(0, 1), [["0", "Before 12 Nov 2026", "Before 12 Nov 2026", false]]);
+  assert.deepEqual(JSON.parse(vs).at(-1), ["cur", "Current", "Current (since 12 Nov 2026)", true]);
+  assert.equal(run("expPct(192576600,568722300)"), "−66.1%"); assert.equal(run("expPct(5,0)"), "–");
+  run(`state.expVer="nope";state.expCmp="0";renderExp()`);                       // an unknown pick falls back to the current table
+  // how each table grows, worked out from the numbers: the old one ×1.2 a level, the 12 November one in steps with a jump at 51, 61, 71
+  assert.equal(run("expGrowthTxt(EXP_TABLE_LOG[0].table)"), "Lv 2–70 ×1.2 each");
+  assert.equal(run("expGrowthTxt(EXP_TABLE)"), "Lv 2–50 ×1.15 each · Lv 51 ×5 · Lv 52–60 ×1.1 each · Lv 61 ×4 · Lv 62–70 ×1.1 each · Lv 71 ×3 · Lv 72–80 ×1.05 each");
+});
+
 t("tracker: entries logged before the 12 November 2026 maintenance use the old EXP table", () => {
   const h = 36e5, old = Date.UTC(2026, 10, 11), now = Date.UTC(2026, 11, 1);
   assert.equal(run("lvExp(50)"), 1731900); assert.equal(run(`lvExp(50,${old})`), 14834800); assert.equal(run(`lvExp(50,${now})`), 1731900);

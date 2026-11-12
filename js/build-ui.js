@@ -7,7 +7,7 @@ const BUILT_IDS=["atkPct","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt",
 let BUILD_LAST=null;
 const buildOf=c=>{if(!c.build)c.build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{}};return c.build};
 // other gear sets, as many as you add (up to ALT_MAX; build.alts[i]: gear, stones, special like the build's own), worked out for the
-// gear comparison (Character tab) and the EXP & formulas tab only. c.gearEdit "alt0"…: the gear table edits that set instead of your gear
+// gear comparison (Character tab) and the Formulas tab only. c.gearEdit "alt0"…: the gear table edits that set instead of your gear
 const ALT_MAX=10;
 const altN=c=>{const b=c.build;return b&&Array.isArray(b.alts)?Math.min(ALT_MAX,b.alts.length):0};
 const altOf=(c,i)=>{const b=buildOf(c);if(!Array.isArray(b.alts))b.alts=[];let a=b.alts[i];if(!a||typeof a!=="object")a=b.alts[i]={};if(!a.gear||typeof a.gear!=="object")a.gear={};return a};
