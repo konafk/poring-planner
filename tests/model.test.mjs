@@ -658,17 +658,28 @@ t("roadmap: regions open on their update's day, or after its month when the day 
 });
 
 t("monsters with no EXP in the data are listed but left out of EXP averages", () => {
-  const myst = run(`MOBS.find(m=>m.name==="Mist")`);
-  assert.ok(myst.expUnknown && myst.exp === 0);
-  assert.equal(run(`fmtExp(MOBS.find(m=>m.name==="Mist"))`), "?");
-  assert.ok(run(`MAPMOBS.mjo_d03.some(x=>x.m.name==="Mist"&&x.n===39)`));
+  const gi = run(`MOBS.find(m=>m.name==="Giearth")`);
+  assert.ok(gi.expUnknown && gi.exp === 0);
+  assert.equal(run(`fmtExp(MOBS.find(m=>m.name==="Giearth"))`), "?");
+  assert.ok(run(`MAPMOBS.mjo_d03.some(x=>x.m.name==="Giearth"&&x.n===5)`));
   setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed spear", st: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
   const r = run(`mapStats0("mjo_d03",2)`);
-  assert.equal([...r.unkNames].sort().join(), "Cramp,Giearth,Mist");
+  assert.equal([...r.unkNames].sort().join(), "Cramp,Giearth");
   // only the monsters with known EXP make up EXP / kill
   const known = run(`MAPMOBS.mjo_d03.filter(x=>!x.m.boss&&!x.m.expUnknown).map(x=>x.m.name)`);
-  assert.ok(known.length && !known.includes("Mist"));
+  assert.ok(known.includes("Mist") && !known.includes("Giearth"));
   assert.ok(r.epk > 0 && isFinite(r.epm));
+});
+
+t("base EXP matches in-game kills: Mist, Skel Worker (Lv 70 Sage, +15%) and Clock Tower B2F (Lv 70 Priest, +10%)", () => {
+  run(`state.bonus=15`);
+  assert.equal(run(`killExp(MOBS.find(m=>m.name==="Mist"))`), 94937);
+  assert.equal(run(`killExp(MOBS.find(m=>m.name==="Skel Worker"))`), 69887);
+  // Clock Tower B2F, a Lv 70 Priest with +10% EXP
+  run(`state.bonus=10`);
+  assert.equal(run(`["Brilight","High Orc","Orc Archer"].map(n=>killExp(MOBS.find(m=>m.name===n))).join()`), "11085,21794,17883");
+  // Mist's job EXP isn't known yet
+  assert.ok(run(`(m=>!m.expUnknown&&m.jobUnknown)(MOBS.find(m=>m.name==="Mist"))`));
 });
 
 t("mini bosses are tagged apart from Boss class: Vocal is a mini boss, Owl Duke only Boss class", () => {
@@ -766,13 +777,13 @@ t("Zeny Hunter: net zeny per hour is loot less skill and item costs, and counts 
   const p = run(`huntMob0(${mob},2)`);
   near(p.cost, 2000 + p.hpZ); near(p.net, p.loot - 2000 - p.hpZ);
   run(`C().potOn=false`);
-  // Mist has no EXP in the data but still drops loot, so it counts towards zeny on its map
+  // Giearth has no EXP in the data but still drops loot, so it counts towards zeny on its map
   const map = run(`huntMap0("mjo_d03",2)`);
-  assert.ok(map.earn.some(x => x.m.name === "Mist") && map.epm > 0 && map.loot > 0);  // net can go below 0: this character loses ~4k HP/min there
+  assert.ok(map.earn.some(x => x.m.name === "Giearth") && map.epm > 0 && map.loot > 0);  // net can go below 0: this character loses ~4k HP/min there
   // monsters you skip are left out
-  const id = run(`MOBS.find(m=>m.name==="Mist").id`);
+  const id = run(`MOBS.find(m=>m.name==="Giearth").id`);
   run(`state.skipMobs=[${id}]`);
-  assert.ok(!run(`huntMap0("mjo_d03",2)`).earn.some(x => x.m.name === "Mist"));
+  assert.ok(!run(`huntMap0("mjo_d03",2)`).earn.some(x => x.m.name === "Giearth"));
   run(`state.skipMobs=[]`);
 });
 

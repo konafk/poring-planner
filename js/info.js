@@ -65,7 +65,7 @@ const MOB_SKILL_T=ms=>!ms?"–":ms>=36e5?`${+(ms/36e5).toFixed(1)}h`:ms>=6e4?`${
 function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobIds.includes(m.id),a=mobArrives(m),me=charSet();
   const sub=`Lv ${m.lv} · ${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${BOSS_PILL(m)}${m.agg?' <span class="pill">aggressive</span>':""}`;
   const tiles=infoTile("HP",m.hp==null?"?":fmtN(m.hp),`DEF ${m.def??"–"} · MDEF ${m.mdef??"–"} · ATK ${m.atkMin??"–"}–${m.atkMax??"–"}${m.hit100?` · 100% hit at ${m.hit100} HIT`:""}${m.flee95?` · 95% flee at ${m.flee95} FLEE`:""}`)
-    +infoTile("EXP",fmtExp(m),m.expUnknown?"no EXP data yet":`job ${fmtN(m.job)}${me?` · you get ${fmtN(killExp(m))} / ${fmtN(killJobExp(m))}`:""}`)
+    +infoTile("EXP",fmtExp(m),m.expUnknown?"no EXP data yet":`job ${m.jobUnknown?"?":fmtN(m.job)}${me?` · you get ${fmtN(killExp(m))} / ${m.jobUnknown?"?":fmtN(killJobExp(m))}`:""}`)
     +infoTile("Best map",om.length?esc(mapName(om[0][0])||mapCode(om[0][0])):"–",om.length?`${mapName(om[0][0])?mapCode(om[0][0])+" ":""}≈${spN(om[0][1])}`:a?`none open · comes with the ${esc(a)}`:"none open")
     +(me?infoTile(`You (${esc(state.job)})`,isFinite(r.sec)?r.sec.toFixed(1)+"s / kill":"can't hurt",`your hit ${Math.round(r.mult)}%${elTag(r.el2)} · ${Math.round(r.hitc)}% land · you dodge ${r.dodge??"–"}%`)
       +infoTile("Zeny / kill",hasLoot(m)?fmtN(r.zk):"–",`${m.drops.length&&m.drops.every(([,ch])=>ch==null)?"no published drop rates yet · ":""}${penNote(m)||"no drop level penalty"}${num(state.dropBonus)?` · drop rate +${num(state.dropBonus)}%`:""}`)
