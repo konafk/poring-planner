@@ -40,7 +40,7 @@ function charOutTiles(){const m=calcMob(),tile=(k,v,sub)=>`<div class="tile out"
   const dps=withEl(r.el2,()=>dpsOf(m));
   return tile(`vs ${esc(m.name)}`,`${r.tot.toFixed(1)}s`,`a kill: ${r.sec.toFixed(1)}s fighting + ${(r.tot-r.sec).toFixed(1)}s walking`)+
     (dps!=null&&isFinite(dps)?tile("Damage / s",fmtN(Math.round(dps)),`vs its ${fmtN(m.hp)} HP, misses included`):"")+
-    tile("EXP / min",m.expUnknown?"?":fmtN(r.epm),m.expUnknown?"no EXP data for it yet":`job ${fmtN(r.jpm)} / min`)+
+    tile("EXP / min",m.expUnknown?"?":fmtN(r.epm)+(m.expUnsure?"*":""),m.expUnknown?"no EXP data for it yet":`${m.expUnsure?"* EXP unconfirmed · ":""}job ${fmtN(r.jpm)} / min`)+
     tile("Zeny / hr",fmtN(r.zph),"loot after skill and SP items")}
 function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   // converters vs the monster you picked: the element-table rate of each one, and the one the EXP/min picks
@@ -500,7 +500,7 @@ function weightTile(m){const t=tripInfo(m,walkSec());if(!t)return "";const c=C()
   return `<div class="tile"><div class="k">Weight · sell at ${t.fell?70:fmtP(at)}%</div><div class="v mono">${v}</div><div class="s">${t.wk>0?`${t.wk.toFixed(1)} weight per kill`:"its drops weigh nothing"}${isFinite(t.kills)&&t.wk>0?` · ${fmtDur(t.min/60)} a trip + ${fmtN(num(c.townMin,3))} min to town`:""} · start at ${pctNow}%${t.fell?' · <span class="bad">no regen past 70% and you need SP, so you sell at 70%</span>':""}</div></div>`}
 // a monster's numbers for your character, for its details popup (js/info.js): EXP / min, per kill, defence, farming without items, weight
 function mobYouTiles(m){const r=mobRow(m,walkSec()),L=lvExp(num(C().baseLv))||null;
-  return `<div class="tile now"><div class="k">EXP / min</div><div class="v mono">${m.expUnknown?"?":r.epm?fmtN(r.epm):"–"}</div><div class="s">${m.expUnknown?"EXP unknown (no data yet) · ":""}${r.el2&&convOn()?`with ${r.el2} converter · `:""}${isFinite(r.sec)?r.sec.toFixed(1)+"s fight + "+walkSec().toFixed(1)+"s walk"+sellTxt(r.tot-r.sec-walkSec()," + "," selling"):"can't hurt it"}${L&&r.epm?` · ~${pct(r.epm*60/L*100)}/hr at Lv ${C().baseLv}`:""}</div></div>
+  return `<div class="tile now"><div class="k">EXP / min</div><div class="v mono">${m.expUnknown?"?":r.epm?fmtN(r.epm)+(m.expUnsure?"*":""):"–"}</div><div class="s">${m.expUnknown?"EXP unknown (no data yet) · ":m.expUnsure?"* EXP unconfirmed · ":""}${r.el2&&convOn()?`with ${r.el2} converter · `:""}${isFinite(r.sec)?r.sec.toFixed(1)+"s fight + "+walkSec().toFixed(1)+"s walk"+sellTxt(r.tot-r.sec-walkSec()," + "," selling"):"can't hurt it"}${L&&r.epm?` · ~${pct(r.epm*60/L*100)}/hr at Lv ${C().baseLv}`:""}</div></div>
    <div class="tile"><div class="k">Per kill</div><div class="v mono">${isFinite(r.uses)?r.uses.toFixed(1):"–"} uses</div><div class="s">${fmtN(withEl(r.el2,()=>dmgPerHit(m)))}${dualHit()?` + ${fmtN(withEl(r.el2,()=>leftDmg(m)))} left hand`:""} per hit · ${Math.round(r.hitc)}% land · ${fmtN(num(C().a.sp)*spCostMul()*r.uses/targets())} SP</div></div>
    <div class="tile" title="${esc(hpTip(r))}"><div class="k">Defence</div><div class="v mono">${r.hpm==null?"–":fmtN(r.hpm)}</div><div class="s">HP lost/min${r.hpm>0&&vitHeals()?" (your Heals cover it)":""}${r.pz>0.005?` · poisoned ${Math.round(r.pz*100)}%`:""}${crowdN(m)>1?` · rampage of ${fmtP(crowdN(m))}`:""} · you dodge ${r.dodge??"–"}% · DEF ${m.def??"–"} · MDEF ${m.mdef??"–"}</div></div>
 ${withEl(r.el2,()=>susTile(susMob(m,walkSec()),"vs "+esc(m.name)))}

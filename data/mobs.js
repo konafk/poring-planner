@@ -1,4 +1,4 @@
-// Monsters from the community database: [id, name, level, HP, base EXP, job EXP, boss]; names as the official Global client shows them where it spawns the monster (written by tools/export_mobnames.py); EXP null = it has no EXP for it yet (expUnknown). Boulder Dwarf Siege Trooper HP 53,518 from einh-guild.de (the database has 32,952). Whisper (1185), the Lv 34 one on Payon Cave 4F, HP 1,017 from rz.fharr.com (the database has none). Base EXP of Mist (82,554; job EXP not known yet, null) and Skel Worker (60,772; the database has 63,000) from in-game kills (2026-11-12, a Lv 70 Sage with +15% EXP: 94,937 and 69,887). Base EXP of the Clock Tower B2F Brilight (10,078), High Orc (19,813) and Orc Archer (16,258) from in-game kills (2026-11-12, a Lv 70 Priest with +10% EXP: 11,085, 21,794 and 17,883); the database had 3-5x that, so its job EXP (null now) and likely HP are for a different version
+// Monsters from the community database: [id, name, level, HP, base EXP, job EXP, boss]; names as the official Global client shows them where it spawns the monster (written by tools/export_mobnames.py); EXP null = it has no EXP for it yet (expUnknown). Boulder Dwarf Siege Trooper HP 53,518 from einh-guild.de (the database has 32,952). Whisper (1185), the Lv 34 one on Payon Cave 4F, HP 1,017 from rz.fharr.com (the database has none). Base EXP of Mist (82,554; job EXP not known yet, null) and Skel Worker (60,772; the database has 63,000) from in-game kills (2026-11-12, a Lv 70 Sage with +15% EXP: 94,937 and 69,887). Base EXP of the Clock Tower B2F Brilight (10,078), High Orc (19,813) and Orc Archer (16,258) from in-game kills (2026-11-12, a Lv 70 Priest with +10% EXP: 11,085, 21,794 and 17,883); the database had 3-5x that, so its job EXP is null now. Clock Tower HP from roztoday.com (2026-11-12): Brilight 16,798, High Orc 33,023, Orc Archer 27,097 (each exactly the kill EXP / 0.6), Penomena 39,278, Alarm 49,843 (the database had 88,720 / 103,962 / 94,836 / 99,350 / 50,000)
 const MOBS=[
 [1013,"Wolf",54,3534,2390,634],[1016,"Archer Skeleton",50,3280,1968,393],[1023,"Orc Warrior",52,3266,1959,391],[1026,"Munak",58,4644,2786,795],
 [1034,"Thara Frog",40,1950,1170,234],[1035,"Hunter Fly",63,5991,3594,718],[1036,"Ghoul",61,29630,26667,5332],[1037,"Side Winder",91,15958,9575,2387],
@@ -18,10 +18,10 @@ const MOBS=[
 [1155,"Petite (Earth)",86,23611,14167,0],[1156,"Petite (Sky)",86,15121,9072,1814],[1158,"Phen",52,1963,1645,0],[1163,"Raydric",85,128900,17340,0],
 [1164,"Requiem",106,129227,77537,0],[1165,"Sandman",79,11933,10738,2146],[1166,"Savage",70,9063,6524,1196],[1169,"Skel Worker",88,101288,60772,12000],
 [1170,"Sohee",64,5662,3397,679],[1177,"Zenorc",54,3320,2462,707],[1178,"Zerom",105,83926,57385,0],[1179,"Whisper",46,1830,1098,219],
-[1180,"Nine Tail",72,8719,5231,1046],[1188,"Bongun",59,4873,3308,828],[1189,"Orc Archer",78,94836,16258,null],[1191,"Mimic",56,1707,1024,204],
-[1192,"Wraith",77,16997,10199,2244],[1193,"Alarm",88,50000,29906,5981],[1194,"Arclouse",107,14944,9863,1973],[1195,"Rideword",74,10563,6337,0],
-[1198,"Dark Priest",98,31360,18063,3763],[1206,"Anolian",109,70850,51012,9352],[1207,"Sting",104,12000,7579,1515],[1211,"Brilight",75,88720,10078,null],
-[1213,"High Orc",85,103962,19813,null],[1216,"Penomena",86,99350,59610,11922],[1219,"Knight of Abyss",122,185457,80520,0],[1242,"Marin",40,1856,1113,329],
+[1180,"Nine Tail",72,8719,5231,1046],[1188,"Bongun",59,4873,3308,828],[1189,"Orc Archer",78,27097,16258,null],[1191,"Mimic",56,1707,1024,204],
+[1192,"Wraith",77,16997,10199,2244],[1193,"Alarm",88,49843,29906,5981],[1194,"Arclouse",107,14944,9863,1973],[1195,"Rideword",74,10563,6337,0],
+[1198,"Dark Priest",98,31360,18063,3763],[1206,"Anolian",109,70850,51012,9352],[1207,"Sting",104,12000,7579,1515],[1211,"Brilight",75,16798,10078,null],
+[1213,"High Orc",85,33023,19813,null],[1216,"Penomena",86,39278,59610,11922],[1219,"Knight of Abyss",122,185457,80520,0],[1242,"Marin",40,1856,1113,329],
 [1243,"Sasquatch",88,79950,47970,2719],[1248,"Cruiser",82,73800,44280,8180],[1249,"Mystcase",78,70200,42120,7781],[1254,"Raggler",57,3368,2592,729],
 [1255,"Neraid",98,21918,13876,4070],[1256,"Pest",89,15357,9664,2953],[1258,"Goblin Archer",66,5888,3690,1063],[1261,"Wild Rose",91,12776,7665,1533],
 [1262,"Mutant Dragon",84,276854,498337,113834,1],[1264,"Merman",60,2324,2230,304],[1265,"Cookie",70,31457,18874,3774],[1266,"Aster",60,4298,2579,809],
@@ -55,4 +55,8 @@ const MOBS=[
 const MINIBOSS=new Set([1088,1089,1090,1091,1092,1093,1096,1120,1262,1283,1299,1302,1515,1582]);
 // MVPs: the bosses that announce themselves and drop an MVP reward (the database's is_mvp). Boss class too, so the farming tables leave them out
 const MVP=new Set([1038,1039,1046,1059,1086,1087,1112,1115,1147,1150,1157,1159,1190,1251,1252,1272,1312,1373,1389,1418,1492,1511,1630,1688]);
-MOBS.forEach(m=>{m.mini=MINIBOSS.has(m.id);m.mvp=MVP.has(m.id)});
+// EXP not confirmed in game: the Clock Tower monsters still on the community database's EXP. Its Brilight, High Orc and Orc Archer were
+// 3-5x what they give in game (Clock Tower B2F kills, 2026-11-12), so the rest of the tower is shown as unconfirmed (expUnsure, a * after the EXP)
+// until someone checks them
+const EXP_UNSURE=new Set([1102,1111,1131,1179,1191,1193,1194,1195,1216,1269,1270,1377]);
+MOBS.forEach(m=>{m.mini=MINIBOSS.has(m.id);m.mvp=MVP.has(m.id);m.expUnsure=EXP_UNSURE.has(m.id)});

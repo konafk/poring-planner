@@ -678,6 +678,12 @@ t("base EXP matches in-game kills: Mist, Skel Worker (Lv 70 Sage, +15%) and Cloc
   // Clock Tower B2F, a Lv 70 Priest with +10% EXP
   run(`state.bonus=10`);
   assert.equal(run(`["Brilight","High Orc","Orc Archer"].map(n=>killExp(MOBS.find(m=>m.name===n))).join()`), "11085,21794,17883");
+  // their HP: base EXP is 60% of it
+  assert.equal(run(`["Brilight","High Orc","Orc Archer"].map(n=>(m=>Math.floor(m.hp*0.6)===m.exp)(MOBS.find(m=>m.name===n))).join()`), "true,true,true");
+  // the rest of the Clock Tower is on the database's EXP: shown with a * as unconfirmed; the ones checked in game aren't
+  assert.equal(run(`fmtExp(MOBS.find(m=>m.name==="Penomena"))`), "59,610*");
+  assert.equal(run(`["Brilight","High Orc","Orc Archer","Mist"].map(n=>fmtExp(MOBS.find(m=>m.name===n))).join(" ")`), "10,078 19,813 16,258 82,554");
+  assert.equal(run(`EXP_UNSURE.size`), run(`[...EXP_UNSURE].filter(id=>MOBS.some(m=>m.id===id&&!m.expUnknown)).length`));
   // Mist's job EXP isn't known yet
   assert.ok(run(`(m=>!m.expUnknown&&m.jobUnknown)(MOBS.find(m=>m.name==="Mist"))`));
 });
