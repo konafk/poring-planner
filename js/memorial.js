@@ -1,12 +1,18 @@
 // ---- Memorial dungeons tab: the Jellostone tracker (fragments and stones you have, the stone being crafted and when it's ready), the
-// Expedition pieces you want and what they still need, the memorial dungeons and their rewards, and the memorial gear's enchants
-// (data/memorial.js). Saved per account in state.jello: frag / stone {item id: count}, craft {id: Jellostone, due: ms} or none,
-// want [Expedition item ids], crystals (Faintly Glowing Crystals you have) ----
+// Expedition, Contingent and Conqueror pieces you want and what they still need, the memorial dungeons and their rewards, and the
+// memorial gear's enchants (data/memorial.js). Saved per account in state.jello: frag / stone {item id: count}, craft {id: Jellostone,
+// due: ms} or none, want [MEM_LADDER keys], crystals (Faintly Glowing Crystals you have) ----
 const DAY_MS=864e5,WEEKDAY=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const jello=()=>state.jello;
-// Jellostones the wanted Expedition pieces take, by stone id
+// the upgrades you want (MEM_LADDER rows)
+const memWanted=()=>MEM_LADDER.filter(x=>jello().want.includes(x.key));
+// Jellostones the wanted pieces take, by stone id
 function jelloNeed(){const n={};JELLO.forEach(j=>n[j.stone[0]]=0);
-  EXPEDITION.filter(x=>jello().want.includes(x.id)).forEach(x=>Object.entries(x.stones).forEach(([id,k])=>n[id]+=k));return n}
+  memWanted().forEach(x=>Object.entries(x.stones).forEach(([id,k])=>n[id]+=k));return n}
+// crystals the wanted pieces take: [[crystal [id, name], how many]], Faintly Glowing Crystal first
+const memCrystals=()=>{const m=new Map();memWanted().forEach(x=>m.set(x.crystals[1],[x.crystals,(m.has(x.crystals[1])?m.get(x.crystals[1])[1]:0)+x.crystals[2]]));return [...m.values()]};
+// the Uses cell of an upgrade: its crystals and Jellostones
+const memUses=x=>`<div>${x.crystals[2]} × ${memName(x.crystals)}</div>${Object.entries(x.stones).map(([id,k])=>`<div>${k} × ${memName(JELLO.find(j=>j.stone[0]===+id).stone)}</div>`).join("")}`;
 // what's still missing per type: stones (after the ones you have and the one crafting) and the fragments for them
 function jelloShort(){const J=jello(),need=jelloNeed();
   return JELLO.map(j=>{const s=j.stone[0],f=j.frag[0],stones=Math.max(0,need[s]-(J.stone[s]||0)-(J.craft&&J.craft.id===s?1:0));
@@ -42,16 +48,23 @@ function renderJello(){const J=jello(),now=Date.now(),wd=new Date(now).getDay(),
       <button type="button" class="small primary" data-jcollect>Collect</button> <button type="button" class="small danger" data-jcancel title="Give the ${JELLO_PER_STONE} fragments back">Cancel</button>`
     :`No stone crafting. One at a time, ${JELLO_CRAFT_DAYS} days each, at the Memory Craftsman's Workshop.`;
   const need=Object.values(jelloNeed()).reduce((a,b)=>a+b,0),miss=short.reduce((a,x)=>a+x.stones,0),fr=short.reduce((a,x)=>a+x.frags,0),rd=jelloReady(now);
-  const nPieces=J.want.length,cry=EXPEDITION_CRYSTALS[2]*nPieces;
+  const nPieces=J.want.length,crys=memCrystals(),fg=crys.find(([c])=>c===EXPEDITION_CRYSTALS),cry=fg?fg[1]:0;
   $("jelloTiles").innerHTML=`<div class="tile"><div class="k">Jellostones short</div><div class="v mono">${nPieces?miss:"–"}</div><div class="s">${nPieces?`of ${need} for ${nPieces} piece${nPieces>1?"s":""}`:"tick the pieces you want below"}</div></div>
     <div class="tile"><div class="k">Fragments short</div><div class="v mono">${nPieces?fr:"–"}</div><div class="s">${JELLO_PER_STONE} make a stone</div></div>
     <div class="tile now"><div class="k">All stones by</div><div class="v mono">${rd==null?(nPieces?"now":"–"):rd===Infinity?"> 2 years":fmtD(rd)}</div><div class="s">${rd==null||rd===Infinity?"":`~${Math.ceil((rd-now)/DAY_MS)} days, a run a day from tomorrow`}</div></div>`;
   $("expRows").innerHTML=EXPEDITION.map(x=>`<tr${J.want.includes(x.id)?' class="sel"':""}><td><input type="checkbox" data-jwant="${x.id}"${J.want.includes(x.id)?" checked":""} aria-label="Want ${esc(x.name)}"></td>
     <td class="name">${memName([x.id,x.name])}</td><td class="name">${memName(x.from)}</td>
-    <td class="name"><div>${EXPEDITION_CRYSTALS[2]} × ${memName(EXPEDITION_CRYSTALS)}</div>${Object.entries(x.stones).map(([id,k])=>`<div>${k} × ${memName(JELLO.find(j=>j.stone[0]===+id).stone)}</div>`).join("")}</td></tr>`).join("");
+    <td class="name">${memUses({...x,crystals:EXPEDITION_CRYSTALS})}</td></tr>`).join("");
   $("expCrystals").value=J.crystals||"";
-  $("expCryNote").textContent=nPieces?`${fmtN(cry)} ${EXPEDITION_CRYSTALS[1]} for them (${EXPEDITION_CRYSTALS[2]} each)${cry>(J.crystals||0)?`: ${fmtN(cry-(J.crystals||0))} to go`:": you have them"}.`:"";
-  renderEnchants()}
+  $("expCryNote").textContent=cry?`${fmtN(cry)} ${EXPEDITION_CRYSTALS[1]} for the Expedition pieces you want (${EXPEDITION_CRYSTALS[2]} each)${cry>(J.crystals||0)?`: ${fmtN(cry-(J.crystals||0))} to go`:": you have them"}.`:"";
+  renderLater();renderEnchants()}
+// the Contingent or Conqueror pieces, by the rung picked (data/memorial.js LATER_RUNGS), and the crystals the ones you want take
+function renderLater(){const J=jello(),r=LATER_RUNGS[$("laterRung").value]||LATER_RUNGS.contingent;
+  $("laterRows").innerHTML=r.pieces.map(x=>{const on=J.want.includes(x.name);
+    return `<tr${on?' class="sel"':""}><td><input type="checkbox" data-jwant="${esc(x.name)}"${on?" checked":""} aria-label="Want ${esc(x.name)}"></td>
+    <td class="name">${esc(x.name)}</td><td>${x.branch}</td><td class="name">${memName(x.from)}</td><td class="name">${memUses({...x,crystals:r.crystals})}</td></tr>`}).join("");
+  const later=memCrystals().filter(([c])=>c!==EXPEDITION_CRYSTALS);
+  $("laterCryNote").textContent=later.length?`For the Contingent and Conqueror pieces you want: ${later.map(([c,n])=>`${fmtN(n)} ${c[1]}`).join(", ")}.`:""}
 // an item with its icon, opening its details (a reward line with no item id, just its text)
 const memName=([id,name])=>id?`${itemIcon(id,1,"il")}${infoLink(infoKind(id),id,name)}`:esc(name);
 // an item in a reward list, with how many
@@ -63,7 +76,12 @@ function renderMemorials(){
     <td>${[].concat(at).map(a=>`<div>${naviTag(a)}</div>`).join("")}</td><td class="name">${esc(what)}</td></tr>`).join("")}
 // each Job Essence a gear's +9 armor rolls: {x: the essence, v: its %}
 const memEssences=g=>{const m=MEM_ESSENCE[g];return ESSENCES.filter(x=>x.tier===m.tier).map(x=>({x,v:m.lv[/Lv\.(\d)$/.exec(x.name)[1]]})).filter(e=>e.v)};
-function renderEnchants(){const g=$("enchGear").value||"subjugation",p=$("enchPool").value||"low",rows=MEM_ENCHANT[g][p],armor=p==="armor";
+const ENCH_HINT="One random enchant in card slot 4 for 100,000 zeny. Reset: 10,000,000 zeny (70%) or a Zelstar.";
+function renderEnchants(){const g=$("enchGear").value||"subjugation",veg=g==="veggie";$("enchPool").disabled=veg;
+  $("enchHint").textContent=veg?`One random line, on the one you're wearing, for ${fmtN(VEGGIE_ENCHANT.mats[0][2])} ${VEGGIE_ENCHANT.mats[0][1]} and ${fmtN(VEGGIE_ENCHANT.zeny)} zeny: ${VEGGIE_ENCHANT.ok}% success, a failure breaks it. A new line replaces the old one the same way. Lines from RagnaDex, which gives no chances.`:ENCH_HINT;
+  if(veg){$("enchFxHead").hidden=true;$("enchEssences").textContent="";
+    $("enchRows").innerHTML=VEGGIE_ENCHANT.lines.map(l=>`<tr><td class="name">${esc(l)}</td><td>–</td></tr>`).join("");return}
+  const p=$("enchPool").value||"low",rows=MEM_ENCHANT[g][p],armor=p==="armor";
   const line=(name,v,fx)=>`<tr><td class="name">${name}</td><td>${v}%</td>${armor?`<td class="name enchFx">${esc(fx)}</td>`:""}</tr>`;
   $("enchFxHead").hidden=!armor;
   $("enchRows").innerHTML=rows.map(([l,v])=>{if(l!=="essence")return line(esc(l),v,"");const es=memEssences(g),rest=Math.round((v-es.reduce((t,e)=>t+e.v,0))*1000)/1000;
@@ -83,8 +101,10 @@ $("jelloCard").addEventListener("click",e=>{const J=jello(),b=e.target.closest("
   if(d.jcollect!=null&&J.craft){J.stone[J.craft.id]=(J.stone[J.craft.id]||0)+1;delete J.craft;jelloSave();showToast("Jellostone collected");return}
   if(d.jcancel!=null&&J.craft){const j=JELLO.find(x=>x.stone[0]===J.craft.id);J.frag[j.frag[0]]=(J.frag[j.frag[0]]||0)+JELLO_PER_STONE;delete J.craft;jelloSave()}});
 $("expCard").addEventListener("change",e=>{const J=jello();
-  if(e.target.dataset.jwant){const id=+e.target.dataset.jwant;J.want=J.want.filter(x=>x!==id);if(e.target.checked)J.want.push(id);jelloSave();return}
+  if(e.target.dataset.jwant){const k=e.target.dataset.jwant,id=/^\d+$/.test(k)?+k:k;J.want=J.want.filter(x=>x!==id);if(e.target.checked)J.want.push(id);jelloSave();return}
   if(e.target.id==="expCrystals"){J.crystals=Math.max(0,Math.round(num(e.target.value)));jelloSave()}});
+$("laterCard").addEventListener("change",e=>{if(e.target.id==="laterRung"){renderLater();return}
+  if(e.target.dataset.jwant){const J=jello(),k=e.target.dataset.jwant;J.want=J.want.filter(x=>x!==k);if(e.target.checked)J.want.push(k);jelloSave()}});
 $("enchCard").addEventListener("change",e=>{if(e.target.id==="enchGear"||e.target.id==="enchPool")renderEnchants()});
 // keep the craft countdown current while the tab is open
 (function jelloLoop(){if(!$("jelloCard").hidden&&jello().craft)renderJello();setTimeout(jelloLoop,30000)})();
