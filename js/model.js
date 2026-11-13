@@ -882,6 +882,11 @@ function mapStats00(mp,w){
   return {mp,N,epm:exp/time*60,secT:time/n,sec:fight/n,walk:w,sell:time/n-fight/n-w,epk:exp/n,zg,zph:zg-hcHr,zcost:zc/time*3600+hcHr,hpm,hpi:hpiM,hpt:hpN?hpt/hpN:null,pz:hpN?pz/hpN:0,psn:hpN?psn/hpN:0,skip:skip.length,skipNames:skip,unk:unk.length,unkNames:unk,
     spHr,spZ,hpHr:hh.n,hpZ:hh.z,heal:hh.z+spZ,zb:zg-hcHr+spZ,net:zg-hcHr-hh.z,wk,wph:wt/time*3600,trip:wk>0&&room>0?room/wk*(time/n)/3600:null,sus:susCalc(sus)};
 }
+// damage per second on a map's mix with one converter: each monster's DPS weighted by the time spent fighting it (the monsters
+// mapStats counts). Null with Spell Fist (no single damage per use)
+function mapDps(mp,w,el){return withEl(el,()=>withMobbed(mp,()=>{let d=0,t=0;
+  (MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m)&&!x.m.expUnknown).forEach(({m,n:c})=>{const r=mobRow0(m,w);if(!isFinite(r.sec))return;
+    const v=dpsOf(m);if(v==null||!isFinite(v))return;d+=c*r.sec*v;t+=c*r.sec});return t?d/t:null}))}
 // best converter per monster (by EXP/min) and one converter per map
 function mobRow(m,w){let best=null;elOptions().forEach(el=>{const r=withEl(el,()=>mobRow0(m,w));r.el2=el;if(!best||r.epm>best.epm)best=r});return best}
 function mapStats(mp,w){let best=null;elOptions().forEach(el=>{const r=withEl(el,()=>mapStats0(mp,w));if(r){r.el2=el;if(!best||r.epm>best.epm)best=r}});return best}

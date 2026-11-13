@@ -138,6 +138,12 @@ try {
     assert.equal(await page.evaluate("sessMap(cur())"), mp);
     assert.ok(await page.isVisible("#toast"));
     assert.match(await page.textContent("#spots .spot"), /✓ farming/);
+    // Your numbers on the Character tab: the map's kill time, damage per second, EXP and zeny, then the time per attack and SP
+    await goTab(page, "char");
+    const keys = await page.$$eval("#charTiles .tile .k", ks => ks.map(k => k.textContent));
+    assert.deepEqual(keys.slice(1), ["Damage / s", "EXP / min", "Zeny / hr", "Time per attack", "SP use vs regen"]);
+    assert.match(await page.getAttribute("#charTiles .tile", "title"), /walk/);
+    await goTab(page, "track");
     assert.ok(await page.isVisible("#bestTable") && !await page.isVisible("#huntTable"));
     await page.click('[data-farmby="zeny"]');
     assert.ok(!await page.isVisible("#bestTable") && await page.isVisible("#huntTable"));
