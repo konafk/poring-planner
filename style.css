@@ -194,6 +194,11 @@ a{color:var(--accent);text-underline-offset:2px}
 .pickLbl{flex:none;width:4.5em}
 /* account and session pickers stay on one line with their buttons, down to phone width */
 .bar .pickLbl~.grow{flex-basis:0}
+/* Gear card: the sets wrap onto more lines rather than squeeze their names; what the set picked changes is one line, so the rows keep
+   their height as you pick sets */
+#gsetSeg{flex-wrap:wrap}
+#gsetSeg button{white-space:nowrap}
+#altNote{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:1.3em}
 
 /* ---- controls ---- */
 input,select,button,textarea{font:inherit;color:var(--fg)}

@@ -761,9 +761,10 @@ const SET_KEYS=["gear","stones","special"];
 const setCopy=b=>JSON.parse(JSON.stringify(Object.fromEntries(SET_KEYS.map(k=>[k,b[k]||{}]))));
 const gearTxt=g=>{const it=g&&g.id&&BUILD.item(g.id);if(!it)return "none";const n=(g.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean);
   return `${num(g.refine)?`+${num(g.refine)} `:""}${it.name}${n.length?` [${n.join(", ")}]`:""}`};
-// what set i changes: "Weapon: Pike → +7 Zweihander" per gear row (affixes count as a change too), then the special equipment
-function altDiff(c,i){const b=buildOf(c),a=altOf(c,i),g0=b.gear||{},g1=a.gear||{},same=(x,y)=>JSON.stringify(x||null)===JSON.stringify(y||null);
-  const rows=BUILD.SLOTS.filter(s=>!same(g0[s.k],g1[s.k])).map(s=>`${esc(s.label)}: ${esc(gearTxt(g0[s.k]))} → <b>${esc(gearTxt(g1[s.k]))}</b>${gearTxt(g0[s.k])===gearTxt(g1[s.k])?" (affixes)":""}`);
+// what set i changes: "Weapon: Pike → +7 Zweihander" per gear row (affixes count as a change too), then the special equipment.
+// short: only what the set has, "Weapon → +7 Zweihander"
+function altDiff(c,i,short){const b=buildOf(c),a=altOf(c,i),g0=b.gear||{},g1=a.gear||{},same=(x,y)=>JSON.stringify(x||null)===JSON.stringify(y||null);
+  const rows=BUILD.SLOTS.filter(s=>!same(g0[s.k],g1[s.k])).map(s=>short?`${esc(s.label)} → ${esc(gearTxt(g1[s.k]))}`:`${esc(s.label)}: ${esc(gearTxt(g0[s.k]))} → <b>${esc(gearTxt(g1[s.k]))}</b>${gearTxt(g0[s.k])===gearTxt(g1[s.k])?" (affixes)":""}`);
   // an empty list of other special equipment is the same as none (a set the table never showed has none)
   const sp=x=>{const o={...(x||{})};if(Array.isArray(o.own)&&!o.own.length)delete o.own;return o};
   if(!same(b.stones||{},a.stones||{})||!same(sp(b.special),sp(a.special)))rows.push("Special equipment");return rows}
@@ -773,12 +774,17 @@ function renderAltBar(c=C()){const i=altIdx(c),has=i>=0&&altSaved(c,i),list=altL
   $("gsetSeg").innerHTML=`<button type="button" role="radio" data-gset="mine" aria-checked="${i<0}"${mine?` title="You swapped on ${esc(mine)}"`:""}>My gear${mine?` (${esc(mine)})`:""}</button>`+Array.from({length:n},(_,k)=>
     `<button type="button" role="radio" data-gset="${k}" aria-checked="${k===i}" title="Set ${k+1}: another set of gear, worked out next to yours in Compare gear (bottom of this tab)">${esc(altName(c,k))}${altSaved(c,k)?" ●":""}</button>`).join("");
   $("altAdd").disabled=n>=ALT_MAX;$("altAdd").title=n>=ALT_MAX?`Up to ${ALT_MAX} other sets`:"Add another set of gear to compare with yours";
-  $("buildPanel").classList.toggle("altedit",i>=0);["altRename","altCopy","altSwap","altDel"].forEach(id=>$(id).hidden=i<0);$("altSwap").disabled=!has;
+  $("buildPanel").classList.toggle("altedit",i>=0);// the set's buttons stay put on your gear (greyed out), so the rows below don't move as you pick sets
+  ["altRename","altCopy","altSwap","altDel"].forEach(id=>$(id).disabled=i<0);$("altSwap").disabled=!has;
   $("memClear").hidden=!memN;$("memClear").textContent=`Forget remembered items (${memN})`;
-  $("altNote").innerHTML=(i>=0?`<b>Editing ${esc(altName(c,i))}.</b> The page still works with your gear. `+(has?`${altDiffTxt(c,i)} · side by side in Compare gear, at the bottom of this tab`:"Pick its gear below, or copy yours in and change a part.")
-    :list.length?list.map(k=>`${esc(altName(c,k))}: ${altDiffTxt(c,k)}`).join("<br>")+"<br>Side by side in Compare gear, at the bottom of this tab":"")
+  // one line, so the gear window below doesn't move as you pick a set: what the set changes (the full text on hover), or on your gear a
+  // pointer to Compare gear, which lists every set's changes
+  const note=$("altNote"),cmp="side by side in Compare gear, at the bottom of this tab";
+  note.innerHTML=i>=0?`<b>Editing ${esc(altName(c,i))}:</b> `+(has?altDiff(c,i,true).join(" · ")||"same as your gear":"empty. Pick its gear below, or copy yours in")
     // saved loadouts from before they became sets, that didn't fit in ALT_MAX sets (state.js loadoutsIn)
-    +(wait.length?`${i>=0||list.length?"<br>":""}<span class="bad">${wait.length} saved loadout${wait.length>1?"s":""} didn't fit in the ${ALT_MAX} sets: ${wait.map(esc).join(", ")}. Remove a set and ${wait.length>1?"they come":"it comes"} in as one.</span>`:"")}
+    :wait.length?`<span class="bad">${wait.length} saved loadout${wait.length>1?"s":""} didn't fit in the ${ALT_MAX} sets: ${wait.map(esc).join(", ")}. Remove a set and ${wait.length>1?"they come":"it comes"} in as one.</span>`
+    :list.length?`Your gear and ${list.length} other set${list.length>1?"s":""}, ${cmp}`:"";
+  note.title=i>=0?`${note.textContent}\nThe page still works with your gear. This set is ${cmp}.`:note.textContent}
 $("gsetSeg").addEventListener("click",e=>{const x=e.target.closest("[data-gset]");if(!x)return;const c=C();if(x.dataset.gset==="mine")delete c.gearEdit;else c.gearEdit="alt"+x.dataset.gset;save();renderGearTable();renderAll()});
 // add an empty set (its index, or −1 at ALT_MAX); remove set i, the ones after it moving up, its items remembered
 function altAdd(c){const b=buildOf(c);if(!Array.isArray(b.alts))b.alts=[];if(b.alts.length>=ALT_MAX)return -1;b.alts.push({gear:{}});return b.alts.length-1}
