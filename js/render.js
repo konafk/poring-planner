@@ -205,10 +205,13 @@ function renderTracker(){renderStart();
   const pz=openPause(s);$("pauseBtn").textContent=pz?"Resume":"Pause";$("pauseBtn").classList.toggle("primary",!!pz);$("pauseNote").hidden=!pz;
   if(pz)$("pauseNote").textContent=`Paused since ${fmtT(pz.from)}; time away isn't counted. Resume or log an entry when back.`;
   const ms=sessMobs(s),maps=sessMaps(s),auto=sessMapAuto(s),smp=sessMap(s);
-  {const sel=$("sessMapSel"),of=ms.length>1?x=>` · ${x[1]} of ${ms.length} monsters`:()=>"";sel.disabled=!maps.length;
-    sel.innerHTML=!maps.length?`<option value="">${ms.length?"No open map for these monsters":"Pick a monster first"}</option>`
-      :`<option value="">Auto: ${esc(mapLabel(auto))}</option>`+maps.map(x=>`<option value="${esc(x[0])}">${esc(mapLabel(x[0]))}${of(x)} · ≈${spN(x[2])} spawns</option>`).join("")
-      +(s.map&&smp===s.map&&!maps.some(x=>x[0]===s.map)?`<option value="${esc(s.map)}">${esc(mapLabel(s.map))} · not open</option>`:"");
+  // the session's monsters' maps, then every other open map (picking one of those farms it, with its monsters: farmMap)
+  {const sel=$("sessMapSel"),of=ms.length>1?x=>` · ${x[1]} of ${ms.length} monsters`:()=>"";
+    const other=Object.keys(MAPMOBS).filter(k=>!isClosed(k)&&!maps.some(x=>x[0]===k)).sort((a,b)=>mapLabel(a).localeCompare(mapLabel(b)));
+    sel.innerHTML=(!maps.length?`<option value="">${ms.length?"No open map for these monsters":"Pick a map"}</option>`
+      :`<option value="">Auto: ${esc(mapLabel(auto))}</option>`+maps.map(x=>`<option value="${esc(x[0])}">${esc(mapLabel(x[0]))}${of(x)} · ≈${spN(x[2])} spawns</option>`).join(""))
+      +(s.map&&smp===s.map&&!maps.some(x=>x[0]===s.map)?`<option value="${esc(s.map)}">${esc(mapLabel(s.map))} · not open</option>`:"")
+      +(other.length?`<optgroup label="Other open maps">${other.map(k=>`<option value="${esc(k)}">${esc(mapLabel(k))}</option>`).join("")}</optgroup>`:"");
     sel.value=s.map&&smp===s.map?s.map:""}
   // the folded part of the Log EXP card says what it's set to, so you know without opening it
   {const n=partyN(s),bits=[];
@@ -550,6 +553,8 @@ const huntLimTxt=rows=>{const n=rows.filter(r=>r.slow).length,lk=Object.keys(MAP
 // ---- render: Where to farm (the best spots, then one ranking by EXP or by zeny) ----
 // the top 3 maps by EXP (renderBest) and by zeny (renderHunt), with a Farm here button each
 let SPOT_EXP=[],SPOT_ZENY=[];
+// every map each ranking ranked (by EXP, by zeny), for the numbers on Where to farm's world map
+const FARM_RANKED={exp:[],zeny:[]};
 const top3=rows=>rows.filter(r=>r.rank<=3).sort((a,b)=>a.rank-b.rank);
 // the monsters Farm here hunts: the zeny table's picks on that map, else every monster there but bosses and skipped ones
 const farmIds=r=>r.earn?r.earn.map(x=>x.m.id):mapHuntIds(r.mp);
@@ -565,7 +570,24 @@ function renderSpots(){const max=atMaxLv(),sm=sessMap(cur());
     :'<div class="note">No open maps match.</div>'}</div>`;
   // at the max base level EXP no longer counts: only the zeny column
   $("spots").innerHTML=(max?"":col("Best for EXP",SPOT_EXP,r=>`<b>${fmtN(r.epm)}</b> EXP / min · ${fmtN(r.net)} z/hr net`))+col("Best for zeny",SPOT_ZENY,r=>`<b>${fmtN(r.net)}</b> z/hr net${r.epm!=null?` · ${fmtN(r.epm)} EXP / min`:""}`);
-  $("spots").classList.toggle("one",max)}
+  $("spots").classList.toggle("one",max);renderFarmWorld()}
+// Where to farm's world map: every spawn map (not towns), the session's lit; a click farms that map with its monsters (farmMap, as Farm here).
+// The maps the ranking shows (Show) carry their rank, the top 3 picked out; their box's tooltip gives the rank and the EXP / min or zeny / hr
+const WORLD_FARM_FOLD="Where to farm: world map";
+{const d=$("farmWorldMore");if(d){d.open=!(state.collapsed||{})[WORLD_FARM_FOLD];
+  d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[WORLD_FARM_FOLD])return;if(d.open)delete c[WORLD_FARM_FOLD];else c[WORLD_FARM_FOLD]=true;save()})}}
+const farmPick=k=>{if(!MAPMOBS[k]){showToast(`${mapName(k)||mapCode(k)} has no monsters to farm`);return}
+  farmMap(k);showToast(`Farming ${mapCode(k)} in "${cur().name}"${isClosed(k)?" (not open yet)":""}: log your EXP as you go`)};
+function renderFarmWorld(){const el=$("farmWorld");if(!el||typeof WORLDMAPS==="undefined")return;
+  const s=cur(),mp=MAPMOBS[sessMap(s)]?sessMap(s):null,z=state.farmBy==="zeny"||atMaxLv(),lim=num($("farmN").value,10);
+  worldMap(el,mp,farmPick,false);
+  const rk={};(FARM_RANKED[z?"zeny":"exp"]||[]).forEach(r=>{if(r.mp&&r.rank<=lim)rk[r.mp]=r});
+  el.querySelectorAll(".wmBox[data-wm],.wmDot[data-wm]").forEach(b=>{if(b.dataset.t0==null)b.dataset.t0=b.title;
+    const best=b.dataset.wm.split(",").map(k=>rk[k]).filter(Boolean).sort((a,c)=>a.rank-c.rank)[0];
+    if(b.classList.contains("wmDot")||!best){delete b.dataset.rank;b.classList.remove("top")}else{b.dataset.rank=best.rank;b.classList.toggle("top",best.rank<=3)}
+    b.title=b.dataset.t0+(best?`\n#${best.rank} ${z?`· ${fmtN(best.net)} z/hr net`:`· ${fmtN(best.epm)} EXP / min`}`:"")+"\nClick to farm here"});
+  const n=Object.keys(rk).length;
+  $("farmWorldSum").textContent=[mp&&`${mapName(mp)||mapCode(mp)} lit`,n&&`top ${n} by ${z?"zeny":"EXP"} numbered`].filter(Boolean).join(" · ")}
 // show the ranking picked (by EXP or by zeny) and only its options; More options' line says what they're set to
 function syncFarm(){const by=state.farmBy==="zeny"?"zeny":"exp",z=by==="zeny",maps=state.huntMode!=="mobs";
   // no character yet: a note in place of rankings worked out for a Novice
@@ -584,7 +606,7 @@ function renderBest(){
   // rank every open map by EXP / min (Net zeny / hr at the max level), then filter, keep the top N and sort by the picked column.
   // Projected is worked out before the calibration, as it's already scaled to your session
   rows.forEach(r=>{r.proj=st&&sameJob&&curEpm?st.avgPct*r.epm/curEpm:null;r.logged=cal.maps[r.mp]||null;if(k)calApply(r,k)});
-  rankRows(rows,max?r=>r.net:r=>r.epm);SPOT_EXP=top3(rows);
+  rankRows(rows,max?r=>r.net:r=>r.epm);SPOT_EXP=top3(rows);FARM_RANKED.exp=rows;
   const shown=sortRows("bestTable",filterRows("bestTable",rows).slice(0,lim));
   $("bestBasis").innerHTML=(max?`<b>Max level: EXP doesn't matter</b> · ranked by Net zeny / hr · `:"")+esc(`${state.job} · ${C().a.name||"attack"} · ${convOn()?convLabel("per map"):atkEl()} · walking ~${w.toFixed(1)}s/kill`+(curEpm&&st?` · compared with your session on ${mapCode(curMap)} at ${pct(st.avgPct)}/hr`:""))+(k?` · <b>calibrated ×${k.toFixed(2)}</b>`:"")+huntLimTxt(rows);
   $("calOn").checked=!!state.calOn;$("calOn").disabled=!cal.k&&!state.calOn;
@@ -924,8 +946,8 @@ function renderHunt(){
   // rank everything by net zeny / hr, then filter, keep the top N and sort by the picked column
   rankRows(rows,r=>r.net);
   // the best spots are maps: in single-monster mode they're worked out on their own
-  if(mode==="maps")SPOT_ZENY=top3(rows);
-  else{const mr=Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)&&!lvLocked(mp)).map(mp=>huntMap(mp,w,min)).filter(r=>r&&r.N>=min);rankRows(mr,r=>r.net);SPOT_ZENY=top3(mr)}
+  if(mode==="maps"){SPOT_ZENY=top3(rows);FARM_RANKED.zeny=rows}
+  else{const mr=Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)&&!lvLocked(mp)).map(mp=>huntMap(mp,w,min)).filter(r=>r&&r.N>=min);rankRows(mr,r=>r.net);SPOT_ZENY=top3(mr);FARM_RANKED.zeny=mr}
   const shown=sortRows("huntTable",filterRows("huntTable",rows).slice(0,lim));
   $("huntBasis").textContent=`${state.job} · ${C().a.name||"attack"} · ${convOn()?convLabel("by zeny"):atkEl()} · walking ~${w.toFixed(1)}s/kill`+(num(state.dropBonus)?` · drop rate +${num(state.dropBonus)}%`:"")+(num(C().baseLv)>39?` · drops −50% from monsters Lv ${num(C().baseLv)-40} and below`:"")+huntLvTxt();$("huntBasis").innerHTML+=huntLimTxt(rows);
   const sel=currentMap(),selMob=(calcMob()||{}).id;
