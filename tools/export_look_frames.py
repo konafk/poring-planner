@@ -28,7 +28,8 @@ from export_costume_sprites import png_rgba, LUA, ACC, ROBE  # noqa: E402
 from lua51 import run, call  # noqa: E402
 
 # the client's action types, by the keys js/lookanim.js's LOOK_ACTS names them with ("attack" is the first of the three attack
-# motions; riding the Halter Lead's mount, its frames are one still pose)
+# motions). Riding the Halter Lead's mount, ready, the three attacks and cast are each one still pose in the client's sprites, and
+# dead is one frame for every body
 ACTIONS = {"stand": 0, "walk": 1, "sit": 2, "pickup": 3, "ready": 4, "attack": 5, "hurt": 6, "dead": 8, "attack2": 10, "attack3": 11,
            "cast": 12}
 BODY = "data\\sprite\\인간족\\"
