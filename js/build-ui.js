@@ -777,14 +777,21 @@ function renderAltBar(c=C()){const i=altIdx(c),has=i>=0&&altSaved(c,i),list=altL
   $("buildPanel").classList.toggle("altedit",i>=0);// the set's buttons stay put on your gear (greyed out), so the rows below don't move as you pick sets
   ["altRename","altCopy","altSwap","altDel"].forEach(id=>$(id).disabled=i<0);$("altSwap").disabled=!has;
   $("memClear").hidden=!memN;$("memClear").textContent=`Forget remembered items (${memN})`;
-  // one line, so the gear window below doesn't move as you pick a set: what the set changes (the full text on hover), or on your gear a
-  // pointer to Compare gear, which lists every set's changes
-  const note=$("altNote"),cmp="side by side in Compare gear, at the bottom of this tab";
+  // one line, so the gear window below doesn't move as you pick a set: what the set changes, or on your gear a pointer to Compare gear,
+  // which lists every set's changes. Text that doesn't fit gets "more" (altNoteFit)
+  const note=$("altNote").querySelector(".altTxt"),cmp="side by side in Compare gear, at the bottom of this tab";
   note.innerHTML=i>=0?`<b>Editing ${esc(altName(c,i))}:</b> `+(has?altDiff(c,i,true).join(" · ")||"same as your gear":"empty. Pick its gear below, or copy yours in")
     // saved loadouts from before they became sets, that didn't fit in ALT_MAX sets (state.js loadoutsIn)
     :wait.length?`<span class="bad">${wait.length} saved loadout${wait.length>1?"s":""} didn't fit in the ${ALT_MAX} sets: ${wait.map(esc).join(", ")}. Remove a set and ${wait.length>1?"they come":"it comes"} in as one.</span>`
     :list.length?`Your gear and ${list.length} other set${list.length>1?"s":""}, ${cmp}`:"";
-  note.title=i>=0?`${note.textContent}\nThe page still works with your gear. This set is ${cmp}.`:note.textContent}
+  note.title=i>=0?`${note.textContent}\nThe page still works with your gear. This set is ${cmp}.`:note.textContent;altNoteFit()}
+// "more" under the sets, when its line doesn't fit: opens it to every line (and it stays open as you pick sets, until "less")
+let ALT_NOTE_OPEN=false;
+function altNoteFit(){const n=$("altNote"),t=n.querySelector(".altTxt"),m=$("altMore");n.classList.remove("open");const over=t.scrollWidth>t.clientWidth+1;
+  n.classList.toggle("open",ALT_NOTE_OPEN&&over);m.hidden=!over;m.textContent=ALT_NOTE_OPEN?"less":"more";m.setAttribute("aria-expanded",String(ALT_NOTE_OPEN))}
+$("altMore").addEventListener("click",()=>{ALT_NOTE_OPEN=!ALT_NOTE_OPEN;altNoteFit()});
+// a narrower page can cut the line where it fit before
+if(typeof ResizeObserver!=="undefined"){let w=0;new ResizeObserver(([e])=>{const x=Math.round(e.contentRect.width);if(x!==w){w=x;altNoteFit()}}).observe($("altNote"))}
 $("gsetSeg").addEventListener("click",e=>{const x=e.target.closest("[data-gset]");if(!x)return;const c=C();if(x.dataset.gset==="mine")delete c.gearEdit;else c.gearEdit="alt"+x.dataset.gset;save();renderGearTable();renderAll()});
 // add an empty set (its index, or −1 at ALT_MAX); remove set i, the ones after it moving up, its items remembered
 function altAdd(c){const b=buildOf(c);if(!Array.isArray(b.alts))b.alts=[];if(b.alts.length>=ALT_MAX)return -1;b.alts.push({gear:{}});return b.alts.length-1}
