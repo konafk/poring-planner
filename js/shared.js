@@ -123,18 +123,28 @@ const textHash=t=>{let h=2166136261;for(let i=0;i<t.length;i++){h^=t.charCodeAt(
 const acctsOf=t=>{try{const d=JSON.parse(t);return Array.isArray(d&&d.accounts)?d.accounts:[]}catch(e){return []}};
 const hasChar=t=>acctsOf(t).some(a=>{const d=a&&a.data;return !!d&&(!!d.job||Object.keys(d.chars||{}).length>0||(d.sessions||[]).some(s=>s&&(s.entries||[]).length))});
 // JSON with every object's keys in order, so two copies that differ only in key order read the same
+// what each browser keeps for itself, so sync doesn't send, compare or replace it: folded panels, the open tab, and the tables'
+// sorts, filters and columns (the Market's search included)
+const SYNC_LOCAL=["collapsed","tab","sort","dir","tsort","tfilt","filters","mobF","infoF","mkt","itemShow","hideClosed","minLv","maxLv","farmBy",
+  "mapAll","mapInfoOpen","hideCols","colsShown"];
 const stableTxt=v=>JSON.stringify(v,(k,x)=>x&&typeof x==="object"&&!Array.isArray(x)?Object.keys(x).sort().reduce((o,k)=>(o[k]=x[k],o),{}):x);
 // the accounts as the choice compares them: without each save's revision (every save bumps it, on every device) and without which
 // account is open, so two copies with the same accounts read the same
-const syncNorm=t=>acctsOf(t).map(a=>{const d=a&&a.data&&typeof a.data==="object"?{...a.data}:null;if(d)delete d.rev;return {id:a&&a.id,name:a&&a.name,data:d}});
+// and without what stays with each browser (SYNC_LOCAL)
+const syncNorm=t=>acctsOf(t).map(a=>{const d=a&&a.data&&typeof a.data==="object"?{...a.data}:null;if(d){delete d.rev;SYNC_LOCAL.forEach(k=>delete d[k])}return {id:a&&a.id,name:a&&a.name,data:d}});
+// the hash sync notes and checks: of the accounts as compared, so folding a panel, sorting a table (or a save that changes nothing)
+// sends nothing up
+const syncHash=t=>textHash(stableTxt(syncNorm(t)));
+// the accounts as they go up: without what stays with each browser
+const syncStrip=t=>{try{const d=JSON.parse(t);(d.accounts||[]).forEach(a=>{if(a&&a.data&&typeof a.data==="object")SYNC_LOCAL.forEach(k=>delete a.data[k])});return JSON.stringify(d)}catch(e){return t}};
 const syncSameData=(a,b)=>stableTxt(syncNorm(a))===stableTxt(syncNorm(b));
 // what to do: "up" (send this browser's), "down" (take the cloud's), "same" (note it as synced), "ask", or "none"
-function syncPlan({local,cloud,cloudAt,base}){const lh=textHash(local);
+function syncPlan({local,cloud,cloudAt,base}){const lh=syncHash(local);
   if(cloud==null)return hasChar(local)?"up":"none";
   if(base&&base.at===cloudAt)return base.h===lh?"none":"up";       // only this browser changed (or nothing did)
   if(cloud===local||syncSameData(cloud,local))return "same";
   if(!hasChar(local))return hasChar(cloud)?"down":"same";
-  if(base&&base.h===lh)return "down";                               // only the cloud changed
+  if(base&&(base.h===lh||base.h===textHash(local)))return "down";  // only the cloud changed (textHash: a sync noted before SYNC_LOCAL was left out)
   return "ask"}
 // a line about one side for the choice: accounts, characters (jobs) and the last logged entry
 function syncSummary(t){const as=acctsOf(t),jobs=[...new Set(as.flatMap(a=>Object.keys((a&&a.data&&a.data.chars)||{})))],
@@ -167,18 +177,22 @@ function syncDiff(ct,lt){const C=syncNorm(ct),L=syncNorm(lt),rows=[],multi=C.len
     const rest=[...new Set([...Object.keys(cd),...Object.keys(ld)])].filter(k=>!["job","chars","sessions"].includes(k)&&!same(cd[k],ld[k]));
     if(rest.length)rows.push({what:pre+"Other settings",cloud:"differ: "+rest.join(", "),local:"differ: "+rest.join(", ")})});
   return rows}
-async function syncUp(text){const data=await packShare(text);if(data.length>2e6){showToast("Your accounts are too big for the cloud backup.",6000);return false}
+async function syncUp(text){const data=await packShare(syncStrip(text));if(data.length>2e6){showToast("Your accounts are too big for the cloud backup.",6000);return false}
   const r=await sb("/rest/v1/backups?on_conflict=user_id&select=updated_at",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=representation"},body:JSON.stringify({user_id:AUTH.user.id,data})});
-  syncSave({uid:AUTH.user.id,at:Date.parse(r&&r[0]&&r[0].updated_at)||Date.now(),h:textHash(text)});CLOUD={at:SYNC.at,loaded:true};renderShared();return true}
-function syncDown(ctext,at){const err=writeAccounts(JSON.parse(ctext));if(err){showToast(err,6000);return}
-  syncSave({uid:AUTH.user.id,at,h:textHash(acctsText())});reloadView("Loaded your accounts from the cloud")}
+  syncSave({uid:AUTH.user.id,at:Date.parse(r&&r[0]&&r[0].updated_at)||Date.now(),h:syncHash(text)});CLOUD={at:SYNC.at,loaded:true};renderShared();return true}
+// taking the cloud's keeps this browser's own settings (SYNC_LOCAL) on each account it already has
+function syncDown(ctext,at){const d=JSON.parse(ctext),mine=new Map(acctsOf(acctsText()).map(a=>[a&&a.id,a&&a.data&&typeof a.data==="object"?a.data:{}]));
+  if(d&&Array.isArray(d.accounts))d.accounts.forEach(a=>{if(!a||!a.data||typeof a.data!=="object"||!mine.has(a.id))return;const m=mine.get(a.id);
+    SYNC_LOCAL.forEach(k=>{if(m[k]!==undefined)a.data[k]=m[k];else delete a.data[k]})});
+  const err=writeAccounts(d);if(err){showToast(err,6000);return}
+  syncSave({uid:AUTH.user.id,at,h:syncHash(acctsText())});reloadView("Loaded your accounts from the cloud")}
 async function syncCheck(){if(!AUTH||SYNC_ASK||SYNC_BUSY)return;SYNC_BUSY=true;
   try{const r=await sb("/rest/v1/backups?select=data,updated_at"),c=r&&r[0],local=acctsText(),at=c?Date.parse(c.updated_at):null;
     const base=SYNC&&SYNC.uid===AUTH.user.id?SYNC:null,cloud=c?(base&&base.at===at?null:await unpackShare(c.data)):null;
-    const plan=c&&base&&base.at===at?(base.h===textHash(local)?"none":"up"):syncPlan({local,cloud,cloudAt:at,base});
+    const plan=c&&base&&base.at===at?(base.h===syncHash(local)?"none":"up"):syncPlan({local,cloud,cloudAt:at,base});
     if(plan==="up")await syncUp(local);
     else if(plan==="down")syncDown(cloud,at);
-    else if(plan==="same")syncSave({uid:AUTH.user.id,at,h:textHash(local)});
+    else if(plan==="same")syncSave({uid:AUTH.user.id,at,h:syncHash(local)});
     else if(plan==="ask"){SYNC_ASK={cloud,at};renderSyncAsk()}}
   catch(e){}finally{SYNC_BUSY=false}}
 // the table of what differs under the two summaries (the first 12 rows)
@@ -198,7 +212,7 @@ $("syncAsk").addEventListener("click",async e=>{const b=e.target.closest("[data-
   $("syncAsk").hidden=true;if(k==="later"){showToast("Sync is paused until you choose (Account tab).");renderShared();return}
   SYNC_ASK=null;try{await syncUp(acctsText());showToast("Saved this browser's accounts to the cloud.")}catch(err){showToast("Couldn't save to the cloud: "+err.message,6000)}});
 // every 30 s: send this browser's changes up, after checking the cloud copy didn't change elsewhere (else syncCheck decides)
-async function syncTick(){setTimeout(syncTick,30000);if(!AUTH||SYNC_ASK||SYNC_BUSY||!SYNC||SYNC.uid!==AUTH.user.id||textHash(acctsText())===SYNC.h)return;
+async function syncTick(){setTimeout(syncTick,30000);if(!AUTH||SYNC_ASK||SYNC_BUSY||!SYNC||SYNC.uid!==AUTH.user.id||syncHash(acctsText())===SYNC.h)return;
   try{const r=await sb("/rest/v1/backups?select=updated_at"),at=r&&r[0]?Date.parse(r[0].updated_at):null;if(at===SYNC.at){SYNC_BUSY=true;try{await syncUp(acctsText())}finally{SYNC_BUSY=false}}else syncCheck()}catch(e){}}
 setTimeout(syncTick,30000);
 
