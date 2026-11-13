@@ -205,15 +205,15 @@ function renderTracker(){renderStart();
   const pz=openPause(s);$("pauseBtn").textContent=pz?"Resume":"Pause";$("pauseBtn").classList.toggle("primary",!!pz);$("pauseNote").hidden=!pz;
   if(pz)$("pauseNote").textContent=`Paused since ${fmtT(pz.from)}; time away isn't counted. Resume or log an entry when back.`;
   const ms=sessMobs(s),maps=sessMaps(s),auto=sessMapAuto(s),smp=sessMap(s);
-  // Farming on: the maps the session's monsters spawn on (Auto: where most of them do), then every other map. One of those hunts its
-  // monsters instead, as Farm here does
-  {const sel=$("sessMapSel"),of=ms.length>1?x=>` · ${x[1]} of ${ms.length} monsters`:()=>"",mine=new Set(maps.map(x=>x[0]));
-    const kept=s.map&&smp===s.map&&!mine.has(s.map)?`<option value="${esc(s.map)}">${esc(mapLabel(s.map))} · not open</option>`:"";
-    const rest=Object.keys(MAPMOBS).filter(mp=>!mine.has(mp)&&mp!==s.map).sort((a,b)=>isClosed(a)-isClosed(b)||mapLabel(a).localeCompare(mapLabel(b)));
-    sel.innerHTML=(maps.length?`<option value="">Auto: ${esc(mapLabel(auto))}</option>`+maps.map(x=>`<option value="${esc(x[0])}">${esc(mapLabel(x[0]))}${of(x)} · ≈${spN(x[2])} spawns</option>`).join("")
-        :`<option value="">${ms.length?"No open map for these monsters":"Pick a map"}</option>`)+kept
-      +`<optgroup label="${ms.length?"Other maps (hunts their monsters)":"Every map"}">${rest.map(mp=>`<option value="${esc(mp)}">${esc(mapLabel(mp))}${isClosed(mp)?" · not open":""}</option>`).join("")}</optgroup>`;
-    sel.value=s.map&&smp===s.map?s.map:""}
+  // Farming on: type a map's name or code. The suggestions put the maps the session's monsters spawn on first; any other map hunts its
+  // monsters instead, as Farm here does. Blank is Auto, the open map where most of them spawn
+  {const inp=$("sessMapIn"),of=ms.length>1?x=>` · ${x[1]} of ${ms.length} monsters`:()=>"",mine=new Set(maps.map(x=>x[0]));
+    const rest=Object.keys(MAPMOBS).filter(mp=>!mine.has(mp)).sort((a,b)=>isClosed(a)-isClosed(b)||mapLabel(a).localeCompare(mapLabel(b)));
+    const list=maps.map(x=>`<option value="${esc(mapLabel(x[0]))}">your monsters${of(x)} · ≈${spN(x[2])} spawns</option>`).join("")
+      +rest.map(mp=>`<option value="${esc(mapLabel(mp))}">${isClosed(mp)?"not open · ":""}hunts its monsters</option>`).join("");
+    if(inp._list!==list){inp._list=list;$("sessMapList").innerHTML=list}
+    inp.placeholder=auto?`Auto: ${mapLabel(auto)}`:"Type a map name or code";
+    if(document.activeElement!==inp)inp.value=s.map&&smp===s.map?mapLabel(s.map):""}
   // the folded part of the Log EXP card says what it's set to, so you know without opening it
   {const n=partyN(s),bits=[];
     if(n>1)bits.push(`party of ${n}`);if($("fTime").dataset.auto!=="1"||$("fDate").dataset.auto!=="1")bits.push("time set by hand");if(state.dieItem)bits.push("death item");

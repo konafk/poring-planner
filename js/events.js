@@ -303,10 +303,14 @@ const toggleSessMob=id=>{const s=sessNow(),auto=autoNamed(s);const i=s.mobIds.in
   if(s.map&&!sessOn(s,s.map))delete s.map;
   const nm=sessAutoName(s);if(auto&&nm)s.name=nm};
 // the session's map: blank is the auto pick; the name follows it while it's still the default
-$("sessMapSel").addEventListener("change",e=>{const v=e.target.value,s=sessNow(),auto=autoNamed(s);
+// what's typed in Farming on: "Prontera Field (prt_fild06)" as the suggestions write it, a code, or a map's full name
+const sessMapParse=e=>{const t=String(e||"").trim(),code=/\(([^()]+)\)\s*$/.exec(t),k=mapKey(code?code[1]:t);if(MAPMOBS[k])return k;
+  return Object.keys(MAPMOBS).find(mp=>(mapName(mp)||"").toLowerCase()===t.toLowerCase())||null};
+$("sessMapIn").addEventListener("change",e=>{const t=e.target.value.trim(),v=t?sessMapParse(t):"",s=sessNow(),auto=autoNamed(s);
+  if(v==null){showToast(`No map called "${t}"`);e.target.value="";renderAll();return}
   // a map none of the session's monsters spawn on: farm it, hunting its monsters (Farm here)
-  if(v&&!sessMaps(s).some(x=>x[0]===v)&&v!==s.map){farmMap(v);showToast(`Farming ${mapCode(v)} in "${cur().name}": log your EXP as you go`);return}
-  if(v)s.map=v;else delete s.map;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;save();renderAll()});
+  if(v&&!sessMaps(s).some(x=>x[0]===v)&&v!==s.map){e.target.blur();farmMap(v);showToast(`Farming ${mapCode(v)} in "${cur().name}": log your EXP as you go`);return}
+  if(v)s.map=v;else delete s.map;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;save();e.target.blur();renderAll()});
 $("mobList").innerHTML=MOBS.map(mobOpt).join("");
 // Element / Race / Size / Boss dropdowns: the Monsters card's narrow its table, before Hide monsters with no open map; saved per account
 const mobFSel=(k,label,opts)=>`<label>${label}<select data-mf="${k}">${opts.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("")}</select></label>`;

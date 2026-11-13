@@ -464,7 +464,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 
   <section class="card" id="farmCard" data-tab="track">
     <div class="bar"><h2 class="grow">Where to farm</h2><span class="note" id="bestBasis"></span><span class="note" id="huntBasis"></span></div>
-    <div class="bar farmOn"><label class="bar" title="The map you farm the session's monsters on: their spawn counts there weight the session's EXP, pace and loot. Auto: the open map where most of them spawn"><b>Farming on</b><select id="sessMapSel"></select></label></div>
+    <div class="bar farmOn"><label class="bar" title="The map you farm the session's monsters on: their spawn counts there weight the session's EXP, pace and loot. Auto: the open map where most of them spawn"><b>Farming on</b><input id="sessMapIn" list="sessMapList" autocomplete="off" spellcheck="false"></label><datalist id="sessMapList"></datalist></div>
     <div class="note noCharNote" id="farmNoChar">Set up your character to rank every open map by your EXP / min or zeny / hr. <a href="#" data-gotab="char">Open Character</a> · Until then, Monsters &amp; maps shows the game's own numbers.</div>
     <div class="spots" id="spots"></div>
     <div class="bar farmBar">
