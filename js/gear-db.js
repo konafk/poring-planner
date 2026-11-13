@@ -165,7 +165,7 @@ function drawEquip(){const c=C(),{kind,id}=EQ_DLG,it=BUILD.item(id),sets=[-1,...
   $("eqDlgTitle").textContent=`Equip ${it.name}`;$("eqDlgIco").innerHTML=iconHtml(kind==="item"?"gear":"card",id);
   const lv=kind==="item"&&it.lv>num(c.baseLv)?` · needs base Lv ${it.lv} (you're Lv ${num(c.baseLv)})`:"";
   $("eqDlgSub").textContent=(kind==="item"?`${gearKind(it)}${it.slots?` [${it.slots}]`:""}`:`${CARD_PART[cardPart(it)]||""} card`)+lv;
-  const mode=c.mode==="build"?"":`<div class="note">This switches the Character tab to <b>Build from gear</b>, so your stats are worked out from your gear. The status window values you typed come back if you switch back.</div>`;
+  const mode=c.mode==="build"?"":`<div class="note">This switches the Character tab to <b>Build from gear</b>; the status window values you typed come back if you switch back.</div>`;
   let body="";
   if(kind==="item"){const pl=eqPlaces(it,state.job);
     if(!pl.length)body=`<div class="note">This isn't something you wear.</div>`;

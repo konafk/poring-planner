@@ -41,7 +41,7 @@ const affixPoolRows=(pool,type)=>affixLists(pool,type).map((l,i)=>`<tr class="wa
 // a piece of gear's affixes, for its details: the pool it drops with, and what the items that add affixes to it roll
 function gearAffixHtml(id){const it=BUILD.item(id),p=gearAffixPool(it),out=[];
   if(p){const n=affixLists(...p).length;
-    out.push(`<div class="note">${AFF_POOL[p[0]]}: as ${AFF_TYPE[p[1]]||p[1]}, it can come with up to ${n} random affixes, one from each list (the community database's tables).</div>
+    out.push(`<div class="note">${AFF_POOL[p[0]]}: as ${AFF_TYPE[p[1]]||p[1]}, it can come with up to ${n} random affixes, one from each list.</div>
       <details class="affDetails"><summary>The ${n} lists</summary><div class="scroll"><table class="affTable"><thead><tr><th>Affix</th><th>Value</th></tr></thead><tbody>${affixPoolRows(...p)}</tbody></table></div></details>`)}
   Object.entries((typeof CLIENT!=="undefined"&&CLIENT.upgrades)||{}).filter(([u,ts])=>ts.includes(+id)&&AFFIX_ITEMS[u]).forEach(([u])=>{const rep=AFFIX_ITEMS[u];
     const rows=rep.slots?rep.slots.map((l,i)=>`<tr class="wayRow"><td colspan="2">${ORDINAL[i]} affix: one of these</td></tr>${affixRows(l)}`).join(""):affixRows(rep);

@@ -250,7 +250,7 @@ $("eqAdd").addEventListener("click",()=>{eqOf(C()).push({by:"race",t:RACES[0],ch
 $("eqFill").addEventListener("click",()=>{const c=C();if(!gearSaved(c))return;const rows=gearEqRows(c),had=eqOf(c).length;
   if(had&&!confirm(`Replace your ${had} Equipment stats line${had>1?"s":""} with the ${rows.length} your gear in Build from gear gives?`))return;
   c.eq=rows;save();renderEq();renderAll();
-  $("eqFillNote").textContent=rows.length?`Filled ${rows.length} line${rows.length>1?"s":""} from your gear. Procs and lines Build from gear lists under "Not counted" aren't included.`:"Your gear in Build from gear has no lines for this list."});
+  $("eqFillNote").textContent=rows.length?`Filled ${rows.length} line${rows.length>1?"s":""} from your gear (procs and "Not counted" lines left out).`:"Your gear in Build from gear has no lines for this list."});
 $("eqList").addEventListener("click",e=>{if(e.target.closest("[data-del]")==null)return;const i=+e.target.closest(".eqrow").dataset.i;eqOf(C()).splice(i,1);save();renderEq();renderAll()});
 $("eqList").addEventListener("change",e=>{const f=e.target.dataset.f;if(!f||f==="v")return;const r=eqOf(C())[+e.target.closest(".eqrow").dataset.i];r[f]=e.target.value;
   if(f==="by"){const T=EQ_TARGETS[r.by];const first=T&&T()[0];r.t=first==null?"":Array.isArray(first)?first[0]:first}save();renderEq();renderAll()});
@@ -652,10 +652,9 @@ function renderBuild(){const c=C(),on=c.mode==="build";
   if(on&&renderBuild.job!==state.job){renderBuild.job=state.job;renderGearTable()}if(!on)renderBuild.job=null;
   ROOTQ("[data-cmode]").forEach(x=>x.setAttribute("aria-checked",String(x.dataset.cmode===(on?"build":"status"))));
   $("buildPanel").hidden=!on;$("statNote").hidden=on;$("shieldRow").hidden=on;$("onTopWrap").hidden=on;$("addOnTop").checked=c.addOnTop!==false;BUILT_IDS.forEach(id=>{const el=$(id);el.disabled=on;if(on&&document.activeElement!==el)el.value=id.startsWith("st_")?(c.st||{})[id.slice(3)]??"":c[id]??""});
-  $("modeNote").textContent=on?"Stats below are worked out from your base stats, job level and gear.":"Type the numbers from your in-game status window.";
   // Build from gear has its own status window: the typed Status card keeps only SP regen, the one box it still takes
   {const p=$("statPanel"),sp=$("spRegen");p.querySelectorAll(".form,.form>label").forEach(x=>x.classList.toggle("buildOff",on&&!x.contains(sp)));
-    p.querySelector("summary .note").textContent=on?"SP regen: leave it on auto, or type the tick you measured":"what your status window shows, plus your weapon";
+    p.querySelector("summary .note").textContent=on?"leave it on auto, or type the tick you measured":"";
     p.querySelector("summary b").textContent=on?"SP regen":"Status"}
   if(!on)return;renderAltBar(c);renderLoadouts(c);renderEquipWin();const b=buildOf(c);renderStatWin(c);
   const r=BUILD_LAST;if(!r)return;const jb=r.jobBonus;
@@ -798,9 +797,7 @@ function renderLoadouts(c=C()){const L=loadoutsOf(c),at=loadoutAt(c),pick=$("loa
     pick.innerHTML=L.length?L.map((x,j)=>`<option value="${j}">${esc(loadoutName(x))}${j===at?" (in the table)":""}</option>`).join(""):`<option value="">No saved loadouts</option>`;
     pick.value=L[+was]&&was!==""?was:String(at>=0?at:L.length?0:"")}
   $("loadoutLoad").textContent=i>=0?`Load into set ${i+1}`:"Wear it";["loadoutLoad","loadoutDel"].forEach(id=>$(id).disabled=!L.length);
-  $("memClear").hidden=!memN;$("memClear").textContent=`Forget remembered items (${memN})`;
-  $("loadoutNote").innerHTML=(at>=0?`The table is loadout <b>${esc(loadoutName(L[at]))}</b>. `:"")+
-    `Gear you take off keeps its refine, cards and affixes: put it on again and they come back${memN?" (marked “remembered” in the item lists)":""}.`}
+  $("memClear").hidden=!memN;$("memClear").textContent=`Forget remembered items (${memN})`;  $("loadoutNote").innerHTML=at>=0?`The table is loadout <b>${esc(loadoutName(L[at]))}</b>.`:""}
 $("loadoutSave").addEventListener("click",()=>{const c=C(),L=loadoutsOf(c),at=loadoutAt(c),cur=L[+$("loadoutPick").value];
   const nm=prompt("Name this loadout",at>=0?loadoutName(L[at]):cur?loadoutName(cur):`Loadout ${L.length+1}`);if(nm==null||!nm.trim())return;
   const same=L.find(x=>String(x.name||"").toLowerCase()===nm.trim().toLowerCase());if(same&&setKey(same)!==setKey(gearSet(c))&&!confirm(`Replace loadout “${loadoutName(same)}” with the gear in the table?`))return;
