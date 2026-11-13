@@ -44,8 +44,8 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <button type="button" role="tab" data-tabbtn="news" title="What's new"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="2.5"/></svg><span>What's new</span></button>
         <button type="button" role="tab" data-tabbtn="roadmap" title="Roadmap"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Roadmap</span></button>
         <button type="button" role="tab" data-tabbtn="market" title="Market"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="6"/><path d="M15.5 9.5A6 6 0 1 1 9.5 15.5"/></svg><span>Market</span></button>
-        <button type="button" role="tab" data-tabbtn="exp" title="EXP tables: base and job EXP per level, and every base table the game has used"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M6 17v-4M11 17V9M16 17V5"/></svg><span>EXP tables</span></button>
-        <button type="button" role="tab" data-tabbtn="ref" title="Formulas: party share, every formula, the element and size tables"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg><span>Formulas</span></button>
+        <button type="button" role="tab" data-tabbtn="exp" title="EXP tables: base and job EXP per level, every base table the game has used, and party share"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M6 17v-4M11 17V9M16 17V5"/></svg><span>EXP tables</span></button>
+        <button type="button" role="tab" data-tabbtn="ref" title="Formulas: every formula, the element and size tables"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg><span>Formulas</span></button>
       </div></div>
       <div class="navSec"><button type="button" class="navGrp" aria-expanded="false" aria-haspopup="true" title="Simulators tabs"><span>Simulators</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="navItems" role="group" aria-label="Simulators">
         <button type="button" role="tab" data-tabbtn="brew" title="Brewing simulator"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v5.3a6.5 6.5 0 1 0 4 0V3"/><path d="M6 15.5h12"/></svg><span>Brewing</span></button>
@@ -904,7 +904,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="scroll tall"><table id="refJobTable"><thead></thead><tbody></tbody></table></div>
     <div class="note hint">Total is from Job Lv 1.</div>
   </section>
-  <section class="card" data-tab="ref">
+  <section class="card" data-tab="exp" id="expPartyCard">
     <div class="bar"><h2 class="grow">Party EXP (Even Share)</h2><span class="note" id="refPartyNote"></span></div>
     <div class="scroll"><table id="refPartyTable"><thead></thead><tbody></tbody></table></div>
   </section>

@@ -1,5 +1,5 @@
-// ---- EXP tables tab: base and job EXP per level, every base table the game has used and two of them side by side. Formulas tab: the
-// formulas the calculator uses (with your numbers), party share, element and size tables ----
+// ---- EXP tables tab: base and job EXP per level, every base table the game has used and two of them side by side, party share.
+// Formulas tab: the formulas the calculator uses (with your numbers), element and size tables ----
 const yours=f=>{try{const v=f();return v==null||v===""||(typeof v==="number"&&!isFinite(v))?"–":v}catch(e){return "–"}};
 // alts: the "Yours" values worked out with each other gear set (same rows, same order), each shown in a column of its own
 function refFormulas(alts=[]){const vals=[],c=C(),m=calcMob(),ok=STATS.every(k=>statVal(c,k)!=null),d=ok?derived(c):null,lv=num(c.baseLv),ab=aspdBaseOf(c);
@@ -171,9 +171,9 @@ function renderExp(){const c=C(),m=calcMob(),blv=num(c.baseLv),jl=num(c.jobLv),p
   ROOTQ("[data-reftier]").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.reftier===tier)));
   $("refJobTable").tHead.innerHTML=`<tr><th>Job Lv</th><th>Job EXP to next</th>${ih}<th>Total</th>${kh}</tr>`;
   $("refJobTable").tBodies[0].innerHTML=t.map((e,i)=>{const row=`<tr${mine&&i+1===jl?' class="sel"':""}><td>${i+1}</td><td>${i+1<t.length?fmtN(e):"max"}</td><td>${i+1<t.length?expPct(e,t[i-1]):"–"}</td><td>${fmtN(tot)}</td>${m?`<td>${i+1<t.length?kills(e,jper):"–"}</td>`:""}</tr>`;tot+=e;return row}).join("");
+  renderPartyTable(m);
 }
 function renderRef(){const c=C(),m=calcMob();
-  renderPartyTable(m);
   // other gear sets (Build from gear): worked out only while this tab shows, since each runs the model again
   const sets=refShown()?altList(c).map(i=>({i,x:altChar(c,i)})):[],av=sets.map(s=>withSnap(s.x,()=>refFormulas().vals));
   $("refFormulas").tHead.innerHTML=`<tr><th>Value</th><th>Formula</th><th>Yours</th>${sets.map(s=>`<th>Set ${s.i+1}</th>`).join("")}</tr>`;

@@ -307,10 +307,10 @@ Once the site has a shared prices database ([setting it up](shared-prices.md)):
 - **Every base table the game has used** stays on the page. **Table** picks the one to show (the current one unless you pick another). **Compare with** puts a second one beside it, older first: each level's EXP in both, the change (−66.1% at Lv 70 from the table before 12 November 2026), and the total from Lv 1 in each. Levels only the newer table has show their change against the older table's last level (Current Lv 71 is +1.6% vs the old Lv 70, Lv 80 +57.6%). Above the table, what reaching the last level both share took in each, and past the older table's last level, how the newer one's next level compares with it and how the rest grow.
 - **How it grows:** the multiple each level takes of the one before, worked out from the table's own numbers. Before 12 November 2026 every level took ×1.2 the one before. Since then it's ×1.15 a level up to Lv 50, then ×5 at Lv 51, ×1.1 a level to 60, ×4 at 61, ×1.1 a level to 70, ×3 at 71 and ×1.05 a level to 80.
 - Session entries logged before a table changed keep using the table they were logged under, so their EXP/hr stays what it was.
+- **Party EXP (Even Share):** the bonus is +10% per extra member (2 members 110%, 3: 120% … 12: 210%), split evenly, with your base and job EXP per kill of your monster for each party size.
 
 ## Formulas
 
-- **Party EXP (Even Share):** the bonus is +10% per extra member (2 members 110%, 3: 120% … 12: 210%), split evenly.
 - **EXP bonuses** add together. Gear EXP counts for both base and job; an item's "EXP +X%" goes in EXP bonus % (base only) and "Job EXP +X%" in Job EXP bonus % (job only).
 - Every formula the calculator uses, with your own numbers next to it.
 - **Other gear sets:** the formulas table gets a **Set N** column for each set from Build from gear (Character tab), with the values that differ from yours highlighted.
