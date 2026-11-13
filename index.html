@@ -461,6 +461,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div id="sessMobRow"><div class="note" id="sessMobHead"></div><div class="scroll"><table id="sessMobTable"><thead><tr><th>Monster</th><th>Spawns</th><th>Lv</th><th>Base EXP</th><th>Session</th></tr></thead><tbody></tbody></table></div></div>
     <details class="more worldMore" id="farmWorldMore" open><summary>World map <span class="note" id="farmWorldSum"></span></summary><div class="worldMap" id="farmWorld"></div></details>
     <div class="note noCharNote" id="farmNoChar">Set up your character to rank every open map by your EXP / min or zeny / hr. <a href="#" data-gotab="char">Open Character</a></div>
+    <details class="more farmFold" id="rankMore" open><summary>Best maps <span class="note" id="rankSum"></span></summary>
     <div class="spots" id="spots"></div>
     <div class="bar farmBar">
       <div class="seg" role="radiogroup" aria-label="Rank maps by">
@@ -496,6 +497,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <div class="scroll"><table id="huntTable"><thead><tr><th data-sk="rank">#</th><th data-sk="name">Map / monster</th><th data-sk="from" title="maps: the monsters you hunt there; monsters: its map and every drop">Earns from</th><th data-sk="net" title="Loot / hr less Costs / hr">Net zeny / hr</th><th data-sk="loot">Loot / hr</th><th data-sk="cost" title="HP items for the HP lost / min and SP items (priced in Recovery items), the ASPD potion and ground buffs. Hover a row for each">Costs / hr</th><th data-sk="kph">Kills / hr</th><th data-sk="zk">Zeny / kill</th><th data-sk="wk" title="weight of the drops you loot, a kill (with your drop bonus and the level penalty)">Weight / kill</th><th data-sk="wph" title="weight you pick up an hour. Hover a row for how soon you fill up">Weight / hr</th><th data-sk="epm">EXP / min</th><th data-sk="hpm">HP lost / min</th></tr><tr class="filters"><td><input type="search" data-tf="rank" placeholder="<=5"></td><td><input type="search" data-tf="name" placeholder="map or monster"></td><td><input type="search" data-tf="from" placeholder="card"></td><td><input type="search" data-tf="net" placeholder=">50000"></td><td><input type="search" data-tf="loot" placeholder=">50000"></td><td><input type="search" data-tf="cost" placeholder="<5000"></td><td><input type="search" data-tf="kph" placeholder=">300"></td><td><input type="search" data-tf="zk" placeholder=">100"></td><td><input type="search" data-tf="wk" placeholder="<5"></td><td><input type="search" data-tf="wph" placeholder="<2000"></td><td><input type="search" data-tf="epm" placeholder=">2000"></td><td><input type="search" data-tf="hpm" placeholder="<500"></td></tr></thead><tbody></tbody></table></div>
         <div class="note hint">Click a monster to skip or hunt it.</div>
     </div>
+    </details>
     <div class="note" id="closedNote"></div>
   </section>
 
