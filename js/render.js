@@ -205,10 +205,14 @@ function renderTracker(){renderStart();
   const pz=openPause(s);$("pauseBtn").textContent=pz?"Resume":"Pause";$("pauseBtn").classList.toggle("primary",!!pz);$("pauseNote").hidden=!pz;
   if(pz)$("pauseNote").textContent=`Paused since ${fmtT(pz.from)}; time away isn't counted. Resume or log an entry when back.`;
   const ms=sessMobs(s),maps=sessMaps(s),auto=sessMapAuto(s),smp=sessMap(s);
-  {const sel=$("sessMapSel"),of=ms.length>1?x=>` · ${x[1]} of ${ms.length} monsters`:()=>"";sel.disabled=!maps.length;
-    sel.innerHTML=!maps.length?`<option value="">${ms.length?"No open map for these monsters":"Pick a monster first"}</option>`
-      :`<option value="">Auto: ${esc(mapLabel(auto))}</option>`+maps.map(x=>`<option value="${esc(x[0])}">${esc(mapLabel(x[0]))}${of(x)} · ≈${spN(x[2])} spawns</option>`).join("")
-      +(s.map&&smp===s.map&&!maps.some(x=>x[0]===s.map)?`<option value="${esc(s.map)}">${esc(mapLabel(s.map))} · not open</option>`:"");
+  // Farming on: the maps the session's monsters spawn on (Auto: where most of them do), then every other map. One of those hunts its
+  // monsters instead, as Farm here does
+  {const sel=$("sessMapSel"),of=ms.length>1?x=>` · ${x[1]} of ${ms.length} monsters`:()=>"",mine=new Set(maps.map(x=>x[0]));
+    const kept=s.map&&smp===s.map&&!mine.has(s.map)?`<option value="${esc(s.map)}">${esc(mapLabel(s.map))} · not open</option>`:"";
+    const rest=Object.keys(MAPMOBS).filter(mp=>!mine.has(mp)&&mp!==s.map).sort((a,b)=>isClosed(a)-isClosed(b)||mapLabel(a).localeCompare(mapLabel(b)));
+    sel.innerHTML=(maps.length?`<option value="">Auto: ${esc(mapLabel(auto))}</option>`+maps.map(x=>`<option value="${esc(x[0])}">${esc(mapLabel(x[0]))}${of(x)} · ≈${spN(x[2])} spawns</option>`).join("")
+        :`<option value="">${ms.length?"No open map for these monsters":"Pick a map"}</option>`)+kept
+      +`<optgroup label="${ms.length?"Other maps (hunts their monsters)":"Every map"}">${rest.map(mp=>`<option value="${esc(mp)}">${esc(mapLabel(mp))}${isClosed(mp)?" · not open":""}</option>`).join("")}</optgroup>`;
     sel.value=s.map&&smp===s.map?s.map:""}
   // the folded part of the Log EXP card says what it's set to, so you know without opening it
   {const n=partyN(s),bits=[];
