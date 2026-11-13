@@ -603,6 +603,17 @@ t("cloud sync: which way it goes after a Discord login", () => {
   assert.equal(plan(mine, other, 9, { at: 5, h: h(mine) }), "down");      // only the cloud changed
   assert.equal(plan(mine, other, 9, { at: 5, h: "x" }), "ask");           // both changed
   assert.match(run(`syncSummary(${JSON.stringify(mine)})`), /^1 account · Sage/);
+  // a different save revision alone isn't a difference
+  const rev = r => acc({ rev: r, job: "Sage", chars: { Sage: {} }, sessions: [] });
+  assert.equal(plan(rev(3), rev(8), 9, { at: 5, h: "x" }), "same");
+  // what differs: the character's parts and each session's log
+  const a = acc({ job: "Sage", chars: { Sage: { baseLv: 60, eq: [] } }, sessions: [{ id: "s1", name: "GH", entries: [{ t: 1, lv: 1, pct: 1 }] }] });
+  const b = acc({ job: "Sage", chars: { Sage: { baseLv: 61, eq: [] } }, sessions: [{ id: "s1", name: "GH", entries: [{ t: 1, lv: 1, pct: 1 }, { t: 2, lv: 1, pct: 2 }] }] });
+  const d = run(`syncDiff(${JSON.stringify(a)},${JSON.stringify(b)})`);
+  assert.equal(JSON.stringify(d.map(r => r.what)), JSON.stringify(["Sage character", "Session “GH”"]));
+  assert.equal(d[0].cloud, "differs: stats");
+  assert.match(d[1].cloud, /^1 entry/); assert.match(d[1].local, /^2 entries/);
+  assert.equal(run(`syncDiff(${JSON.stringify(rev(1))},${JSON.stringify(rev(2))})`).length, 0);
 });
 
 t("Restore and the cloud sync write an all-accounts backup the same way", () => {

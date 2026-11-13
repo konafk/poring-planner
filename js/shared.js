@@ -122,11 +122,17 @@ const textHash=t=>{let h=2166136261;for(let i=0;i<t.length;i++){h^=t.charCodeAt(
 // an account has a character once it has a job picked, a character saved or a logged entry
 const acctsOf=t=>{try{const d=JSON.parse(t);return Array.isArray(d&&d.accounts)?d.accounts:[]}catch(e){return []}};
 const hasChar=t=>acctsOf(t).some(a=>{const d=a&&a.data;return !!d&&(!!d.job||Object.keys(d.chars||{}).length>0||(d.sessions||[]).some(s=>s&&(s.entries||[]).length))});
+// JSON with every object's keys in order, so two copies that differ only in key order read the same
+const stableTxt=v=>JSON.stringify(v,(k,x)=>x&&typeof x==="object"&&!Array.isArray(x)?Object.keys(x).sort().reduce((o,k)=>(o[k]=x[k],o),{}):x);
+// the accounts as the choice compares them: without each save's revision (every save bumps it, on every device) and without which
+// account is open, so two copies with the same accounts read the same
+const syncNorm=t=>acctsOf(t).map(a=>{const d=a&&a.data&&typeof a.data==="object"?{...a.data}:null;if(d)delete d.rev;return {id:a&&a.id,name:a&&a.name,data:d}});
+const syncSameData=(a,b)=>stableTxt(syncNorm(a))===stableTxt(syncNorm(b));
 // what to do: "up" (send this browser's), "down" (take the cloud's), "same" (note it as synced), "ask", or "none"
 function syncPlan({local,cloud,cloudAt,base}){const lh=textHash(local);
   if(cloud==null)return hasChar(local)?"up":"none";
   if(base&&base.at===cloudAt)return base.h===lh?"none":"up";       // only this browser changed (or nothing did)
-  if(cloud===local)return "same";
+  if(cloud===local||syncSameData(cloud,local))return "same";
   if(!hasChar(local))return hasChar(cloud)?"down":"same";
   if(base&&base.h===lh)return "down";                               // only the cloud changed
   return "ask"}
@@ -134,6 +140,33 @@ function syncPlan({local,cloud,cloudAt,base}){const lh=textHash(local);
 function syncSummary(t){const as=acctsOf(t),jobs=[...new Set(as.flatMap(a=>Object.keys((a&&a.data&&a.data.chars)||{})))],
   last=Math.max(0,...as.flatMap(a=>((a&&a.data&&a.data.sessions)||[]).flatMap(s=>(s&&s.entries||[]).map(e=>+e.t||0))));
   return `${as.length} account${as.length===1?"":"s"}${jobs.length?` · ${jobs.slice(0,4).join(", ")}${jobs.length>4?"…":""}`:" · no character"}${last?` · last logged ${agoTxt(last)}`:""}`}
+// the parts of a character, for saying which ones differ
+const CHAR_PART=k=>/^(eq|build|weapon|wElem|cards|ec|dmgBonus|nameType)$/.test(k)?"gear":/^(preset|a|sage|skills?)$/.test(k)?"skills":
+  /^(item|pot|autoSp|mobInterval|sellAt|townMin|curW|maxW)/.test(k)?"supplies":/^(baseLv|\w+Txt|aspd|maxHp|maxSp|spRegen|hpRegen6|hitScale|stats?|mode)$/.test(k)?"stats":"other";
+// what differs between the cloud's accounts (ct) and this browser's (lt): rows of {what, cloud, local}, the accounts' names
+// in front when there's more than one
+function syncDiff(ct,lt){const C=syncNorm(ct),L=syncNorm(lt),rows=[],multi=C.length>1||L.length>1,same=(a,b)=>stableTxt(a)===stableTxt(b);
+  const ents=s=>s&&Array.isArray(s.entries)?s.entries:[],
+    logTxt=s=>{const e=ents(s),last=Math.max(0,...e.map(x=>+x.t||0));return `${e.length} entr${e.length===1?"y":"ies"}${last?`, last ${agoTxt(last)}`:""}`},
+    acctTxt=a=>{const d=a.data||{},n=Object.keys(d.chars||{}).length,e=(d.sessions||[]).reduce((m,s)=>m+ents(s).length,0);return `${n} character${n===1?"":"s"}, ${e} entr${e===1?"y":"ies"}`};
+  [...new Set([...C,...L].map(a=>a.id))].forEach(id=>{const c=C.find(a=>a.id===id),l=L.find(a=>a.id===id),nm=String((l||c).name||id),pre=multi?nm+" › ":"";
+    if(!c||!l){rows.push({what:`Account “${nm}”`,cloud:c?acctTxt(c):"not there",local:l?acctTxt(l):"not there"});return}
+    if(c.name!==l.name)rows.push({what:"Account name",cloud:String(c.name),local:String(l.name)});
+    const cd=c.data||{},ld=l.data||{};
+    if((cd.job||"")!==(ld.job||""))rows.push({what:pre+"Job picked",cloud:cd.job||"none",local:ld.job||"none"});
+    const cc=cd.chars||{},lc=ld.chars||{};
+    [...new Set([...Object.keys(cc),...Object.keys(lc)])].forEach(j=>{const a=cc[j],b=lc[j];if(same(a,b))return;
+      if(!a||!b){rows.push({what:pre+j+" character",cloud:a?"saved":"not there",local:b?"saved":"not there"});return}
+      const parts=[...new Set([...new Set([...Object.keys(a),...Object.keys(b)])].filter(k=>!same(a[k],b[k])).map(CHAR_PART))];
+      rows.push({what:pre+j+" character",cloud:"differs: "+parts.join(", "),local:"differs: "+parts.join(", ")})});
+    const cs=Array.isArray(cd.sessions)?cd.sessions:[],ls=Array.isArray(ld.sessions)?ld.sessions:[],sid=s=>s&&String(s.id);
+    [...new Set([...cs,...ls].map(sid))].forEach(k=>{const a=cs.find(s=>sid(s)===k),b=ls.find(s=>sid(s)===k);if(same(a,b))return;
+      const what=`${pre}Session “${String((b||a).name||"Session")}”`;
+      if(a&&b&&same(ents(a),ents(b)))rows.push({what,cloud:"same log, other details differ",local:"same log, other details differ"});
+      else rows.push({what,cloud:a?logTxt(a):"not there",local:b?logTxt(b):"not there"})});
+    const rest=[...new Set([...Object.keys(cd),...Object.keys(ld)])].filter(k=>!["job","chars","sessions"].includes(k)&&!same(cd[k],ld[k]));
+    if(rest.length)rows.push({what:pre+"Other settings",cloud:"differ: "+rest.join(", "),local:"differ: "+rest.join(", ")})});
+  return rows}
 async function syncUp(text){const data=await packShare(text);if(data.length>2e6){showToast("Your accounts are too big for the cloud backup.",6000);return false}
   const r=await sb("/rest/v1/backups?on_conflict=user_id&select=updated_at",{method:"POST",headers:{Prefer:"resolution=merge-duplicates,return=representation"},body:JSON.stringify({user_id:AUTH.user.id,data})});
   syncSave({uid:AUTH.user.id,at:Date.parse(r&&r[0]&&r[0].updated_at)||Date.now(),h:textHash(text)});CLOUD={at:SYNC.at,loaded:true};renderShared();return true}
@@ -148,10 +181,16 @@ async function syncCheck(){if(!AUTH||SYNC_ASK||SYNC_BUSY)return;SYNC_BUSY=true;
     else if(plan==="same")syncSave({uid:AUTH.user.id,at,h:textHash(local)});
     else if(plan==="ask"){SYNC_ASK={cloud,at};renderSyncAsk()}}
   catch(e){}finally{SYNC_BUSY=false}}
+// the table of what differs under the two summaries (the first 12 rows)
+function syncDiffHtml(ct,lt){const rows=syncDiff(ct,lt),max=12;if(!rows.length)return "";
+  return `<div class="syncDiff"><span class="note">What differs</span><div class="sdRow sdHead"><span></span><span class="note">Cloud</span><span class="note">This browser</span></div>${
+    rows.slice(0,max).map(r=>`<div class="sdRow"><b>${esc(r.what)}</b><span>${esc(r.cloud)}</span><span>${esc(r.local)}</span></div>`).join("")}${
+    rows.length>max?`<span class="note">…and ${rows.length-max} more</span>`:""}</div>`}
 // the choice when both sides changed: what each holds, and Use the cloud's / Keep this browser's / Decide later
 function renderSyncAsk(){const el=$("syncAsk");if(!el)return;if(!SYNC_ASK){el.hidden=true;return}
   el.hidden=false;el.innerHTML=`<b>Your cloud backup and this browser have different accounts.</b>
     <div class="syncSides"><div><span class="note">Cloud (saved ${agoTxt(SYNC_ASK.at)})</span>${esc(syncSummary(SYNC_ASK.cloud))}</div><div><span class="note">This browser</span>${esc(syncSummary(acctsText()))}</div></div>
+    ${syncDiffHtml(SYNC_ASK.cloud,acctsText())}
     <div class="bar"><button type="button" data-syncask="cloud">Use the cloud's</button><button type="button" data-syncask="local">Keep this browser's</button><button type="button" class="small ghost" data-syncask="later">Decide later</button></div>
     <span class="note">The one you don't pick is replaced. Copy backup on the Account tab keeps a copy of this browser's first.</span>`}
 $("syncAsk").addEventListener("click",async e=>{const b=e.target.closest("[data-syncask]");if(!b||!SYNC_ASK)return;const k=b.dataset.syncask,a=SYNC_ASK;
