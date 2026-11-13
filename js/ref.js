@@ -76,8 +76,8 @@ function renderPartyTable(m){const s=cur(),n0=partyN(s),known=m&&!m.expUnknown,s
   $("refPartyTable").tBodies[0].innerHTML=Array.from({length:12},(_,i)=>i+1).map(n=>`<tr${n===n0?' class="sel"':""}><td>${n===1?"Solo":n}</td><td>${100+partyBonus(sz(n))}%</td><td>${partyPct(sz(n))}%</td>${known?`<td>${fmtN(killExp(m,sz(n)))}</td><td>${fmtN(killJobExp(m,sz(n)))}</td>`:""}</tr>`).join("")}
 // ---- your gear vs the other gear set: the numbers that decide a farming spot, against the monster you picked and on the map ----
 const refShown=()=>!$("refFormulas").closest("[data-tab]").hidden;
-// the map compared: the Map planner's, else the monster's best open map, else the session's (as the HP and SP items use)
-const cmpMap=()=>{let mp=mapKey(state.map);if(!MAPMOBS[mp])mp=mobMap(calcMob())||currentMap();return MAPMOBS[mp]?mp:null};
+// the map compared: the session's (Where to farm), else the monster's best open map (as the HP and SP items use)
+const cmpMap=()=>{let mp=currentMap();if(!MAPMOBS[mp])mp=mobMap(calcMob());return MAPMOBS[mp]?mp:null};
 function gearStats(){const m=calcMob(),w=walkSec(),mp=cmpMap(),o={atk:sumStat(cf("atkTxt")),matk:sumStat(cf("matkTxt")),hit:sumStat(cf("hitTxt")),flee:sumStat(cf("fleeTxt")),
     crit:num(cf("crit")),aspd:aspdEff(),hp:num(cf("maxHp")),sp:num(cf("maxSp"))};
   if(m){const r=mobRow(m,w);Object.assign(o,{dmg:withEl(r.el2,()=>dmgPerHit(m)+(dualHit()?leftDmg(m):0)),dps:withEl(r.el2,()=>dpsOf(m)),hitc:r.hitc,uses:r.uses,
@@ -91,11 +91,11 @@ const cmpFmt=(v,d)=>v==null||!isFinite(v)?"–":d?(+v).toFixed(d):fmtN(v);
 // the other gear sets (Build from gear) next to your gear, on the Character tab: worked out only while that tab shows, since each set runs
 // the model again. Each set's column shows its value and the change from your gear; the best of a row is bold
 const gearCmpShown=()=>!$("gearCmpCard").closest("[data-tab]").hidden;
-function renderGearCmp(){const c=C(),T=$("gearCmpTable"),sets=gearCmpShown()?altList(c).map(i=>({i,x:altChar(c,i)})):[];T.hidden=!sets.length;
-  if(!sets.length){$("gearCmpNote").textContent=!gearCmpShown()?"":c.mode!=="build"?"Switch to Build from gear above and set up another gear set to compare it with your gear here."
-    :"Press + Add set next to My gear above the gear table and set up the gear you want to compare with yours.";T.tHead.innerHTML=T.tBodies[0].innerHTML="";return}
+// With no other set yet it shows your gear's numbers alone
+function renderGearCmp(){const c=C(),T=$("gearCmpTable"),shown=gearCmpShown(),sets=shown?altList(c).map(i=>({i,x:altChar(c,i)})):[];T.hidden=!shown;
+  if(!shown){$("gearCmpNote").textContent="";T.tHead.innerHTML=T.tBodies[0].innerHTML="";return}
   const mine=gearStats(),oth=sets.map(s=>withSnap(s.x,gearStats)),m=calcMob(),mp=cmpMap(),n=sets.length+2;
-  $("gearCmpNote").innerHTML=sets.map(s=>`<b>Set ${s.i+1}</b>: ${altDiffTxt(c,s.i)}`).join("<br>")+(m?"":"<br>Pick a monster to compare damage, kill time and EXP / min");
+  $("gearCmpNote").innerHTML=sets.length?sets.map(s=>`<b>Set ${s.i+1}</b>: ${altDiffTxt(c,s.i)}`).join("<br>"):c.mode==="build"?"+ Add set above the gear table to compare another set with yours.":"";
   T.tHead.innerHTML=`<tr><th></th><th>Your gear</th>${sets.map(s=>`<th>Set ${s.i+1}</th>`).join("")}</tr>`;
   let grp="";
   T.tBodies[0].innerHTML=GEAR_CMP.filter(([k])=>mine[k]!=null||oth.some(o=>o[k]!=null)).map(([k,label,up,dp,g])=>{

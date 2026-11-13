@@ -128,20 +128,6 @@ function renderHome(){
   newsBanner();
   $("homeCharBtn").textContent=charSet(C())?"Open Character":"Set up your character";
 }
-// ---- Session's At a glance: your character, where you farm, and what the planner works out for you there; hidden for a new player
-// (the get started card is on Home) ----
-function renderNow(){
-  const c=C(),set=charSet(c),s=cur(),ms=sessMobs(s),smp=sessMap(s),max=atMaxLv();
-  $("homeNowCard").hidden=!set&&!ms.length;if($("homeNowCard").hidden)return;
-  const tile=(k,v,sub,tab,now)=>`<button type="button" class="tile${now?" now":""}" data-gotab="${tab}"><div class="k">${k}</div><div class="v">${esc(v)}</div><div class="s">${esc(sub)}</div></button>`;
-  // what the planner works out for your character on the map you're farming, not what you've logged
-  const est=set&&smp?mapStats(smp,walkSec()):null,why=!set?"Set up your character":!smp?"Farm a map for an estimate":"No estimate for this map";
-  $("homeTiles").innerHTML=
-    tile("Character",noChar()?"–":state.job,set?[c.baseLv&&`Base ${c.baseLv}`,c.jobLv&&`Job ${c.jobLv}`,c.a&&c.a.name].filter(Boolean).join(" · "):"Not set up yet","char",true)+
-    tile("Farming",smp?mapCode(smp):ms.length===1?ms[0].name:ms.length?`${ms.length} monsters`:"–",smp?mapName(smp):ms.length?s.name:"Pick a spot in Where to farm","maps",true)+
-    tile("EXP / min there",max?"Max level":est?fmtN(est.epm):"–",max?"EXP no longer counts":est?"planner estimate":why,"track")+
-    tile("Zeny / hr there",est?fmtN(est.net):"–",est?"net, planner estimate":why,"track");
-}
 // ---- collapsible cards: click a heading (or Enter/Space on it) to fold the card; saved by heading text ----
 function foldCard(card){const h=card.querySelector(":scope>h2, :scope>.bar>h2");if(!h||h.hasAttribute("aria-expanded"))return;
     if(!state.collapsed)state.collapsed={};

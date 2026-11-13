@@ -113,7 +113,7 @@ try {
 
   await t("Monsters & maps switches the session Farm here goes to, or starts a new one", async () => {
     const { page, errs } = await open();
-    await page.evaluate("C().mode='build';state.sessions.push({id:'sA',name:'Alpha',mobIds:[],entries:[]},{id:'sB',name:'Beta',mobIds:[],entries:[]});state.current='sA';save();renderAll()");
+    await page.evaluate("C().mode='build';buildOf(C()).base.str=30;state.sessions.push({id:'sA',name:'Alpha',mobIds:[],entries:[]},{id:'sB',name:'Beta',mobIds:[],entries:[]});state.current='sA';save();renderAll()");
     await goTab(page, "maps");
     assert.ok(await page.isVisible("#mapSessSel"));
     assert.equal(await page.inputValue("#mapSessSel"), "sA");
@@ -129,7 +129,7 @@ try {
 
   await t("Where to farm: best spots by EXP and zeny, Farm here sets the session's map, one ranking at a time", async () => {
     const { page, errs } = await open();
-    await page.evaluate("C().mode='build'");                           // the spots show once there's a character
+    await page.evaluate("C().mode='build';buildOf(C()).base.str=30");                           // the spots show once there's a character
     await goTab(page, "track");                         // Where to farm is on the Session tab
     await page.click("#newSession");                                   // a session first: its first Farm here would re-rank the spots
     assert.equal(await page.$$eval("#spots .spot", s => s.length), 6);              // top 3 by EXP, top 3 by zeny

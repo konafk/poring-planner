@@ -57,7 +57,6 @@ function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   {const m=convOn()&&calcMob();$("convInfo").innerHTML=m?`vs ${esc(m.name)} (${m.el||"Neutral"} ${m.elv||1}): ${convAll().map(el=>elRateHtml(el,elemMult(m,el))).join(" · ")} → ${convFixed()?`using ${convFixed()}`:`best ${esc(mobRow(m,walkSec()).el2)}`}`:""}
   if(typeof renderStatNote==="function")renderStatNote();
   const c=C(),a=c.a,p=JOBS[state.job].p[c.preset];
-  $("jobNote").textContent=`Settings are saved per job · ${Object.keys(state.chars).length} job${Object.keys(state.chars).length===1?"":"s"} set up`;
   $("atkSummary").textContent=a.type==="spellfist"?`· ${[sfOn()?`Spell Fist Lv ${G().sfLv}: ${Math.round(sfChance()*100)}% per attack, ${sfPct()}% MATK`:"",hsOnNow()?`Hindsight Lv ${hsLvN()}: ${Math.round(hsChance()*100)}% per attack, a Lv ${hsBoltLv()} bolt`:""].filter(Boolean).join(" · ")||"Spell Fist and Hindsight off"} with ${sfBolts().map(b=>({Fire:"Fire",Water:"Cold",Wind:"Lightning"})[b]).join(" / ")||"no"} bolts`:`· ${a.type==="magic"?"Magic":a.type==="auto"?"Basic attacks":"Physical"} ${a.pct}% × ${a.hits} ${atkEl()}${a.targets>1?` · ${a.targets} targets`:""}${p&&p.note?` · ${p.note}`:""}`;
   {const ac=AC(),s=acSpell(),basic=a.type==="auto"||a.type==="spellfist";$("acInfo").innerHTML=ac.on?(basic?`${s.pct}% × ${s.hits} ${s.el} MATK (Lv ${s.lv}), no SP`:'<span class="bad">only procs on basic attacks: pick a basic attack or Spell Fist</span>'):""}
   if(a.type==="spellfist")$("atkSummary").textContent+=` · each attack also lands its physical hit (ATK, weapon element)`;
@@ -138,8 +137,8 @@ const fmtQty=n=>n==null||!isFinite(n)?"–":n<10?n.toFixed(1):fmtN(n);
 const REC_SRC={disc:"Discount",npc:"NPC",player:"players"};
 // the item value a one-box amount (an item that heals a fixed amount) shows as its placeholder
 const REC_BASE={amt:"min",spAmt:"spMin"};
-// the map uses per hour are worked out on: the Map planner's, else the picked monster's best open map, else the session's. HP lost / min and SP short per hour there
-function recNeed(){let mp=mapKey(state.map);if(!MAPMOBS[mp])mp=mobMap(calcMob())||currentMap();if(!MAPMOBS[mp])return null;
+// the map uses per hour are worked out on: the session's (Where to farm), else the picked monster's best open map. HP lost / min and SP short per hour there
+function recNeed(){let mp=currentMap();if(!MAPMOBS[mp])mp=mobMap(calcMob());if(!MAPMOBS[mp])return null;
   const w=walkSec(),r=mapStats(mp,w);return {mp,hpm:r?r.hpi:null,loss:r?r.hpm:null,sp:r?mapSpShort(mp,w,r.el2):0}}
 function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp:recPick("sp")},ch={hp:recCheapest("hp"),sp:recCheapest("sp")};
   const opts=kind=>`<option value="auto">Auto (cheapest${ch[kind]?": "+esc(ch[kind].name):""})</option><option value="none">None</option>`+recItems(kind).filter(x=>recShown(x,R[kind==="hp"?"hpItem":"spItem"])).map(x=>`<option value="${x.id}">${esc(x.name)}${x.per==null?" (no price)":""}</option>`).join("")+'<option value="custom">Custom (type it)</option>';
@@ -171,10 +170,16 @@ function renderSessions(){const none=!state.sessions.length;
   $("mapSessSel").innerHTML=(none?'<option value="">No session yet</option>':state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===cur().id?"selected":""}>${esc(s.name)}</option>`).join(""))+'<option value="+new">+ New session</option>'}
 // ---- get started: its steps shown on Home until they're done (or hidden), each ticked off as you do it ----
 const KEY_START="rozero-farm-planner-start-hidden";
-// the character is set up: built from gear, or all six stats typed. Until then a monster's details leave out your numbers against it
-const charSet=(c=C())=>c.mode==="build"||STATS.every(k=>statVal(c,k)!=null);
+// the character is set up: built from gear once a base stat is raised or a piece of gear is on (a new character starts in build mode
+// with neither), or all six stats typed. Until then a monster's details leave out your numbers against it
+const charSet=(c=C())=>c.mode==="build"?!!c.build&&(Object.values(c.build.base||{}).some(v=>num(v)>1)||Object.values(c.build.gear||{}).some(g=>g&&g.id))
+  :STATS.every(k=>statVal(c,k)!=null);
 // no character yet: a new visitor who hasn't picked a job (state.noJob) or set one up; the calculators use a Novice meanwhile
 const noChar=()=>!!state.noJob&&!charSet();
+// Game data (Monsters & maps, the monster popup) can leave your character's numbers out, to look a monster or map up as the game has
+// it: the My numbers switch (state.hideMine, per account)
+const showMine=()=>charSet()&&state.hideMine!==true;
+const mineSwitch=()=>charSet()?`<label class="bar mineSw" title="Your kill time, damage, EXP and zeny against each monster"><input type="checkbox" data-mine${state.hideMine===true?"":" checked"}> My numbers</label>`:"";
 const NO_CHAR_TXT="Set up your character on the Character tab to see your kill time, EXP / min and zeny a kill";
 function renderStart(){const box=$("startCard"),c=C(),s=cur(),n=s.entries.length;
   // any session counts, so a new, empty session doesn't bring the card back; once both are done it stays away
@@ -191,7 +196,7 @@ function renderSpark(s,st){const box=$("ctxRate"),es=[...s.entries].sort((a,b)=>
   const line=r.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
   $("spark").innerHTML=`<polyline points="${line}" fill="none" stroke="url(#sparkG)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><defs><linearGradient id="sparkG"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-2)"/></linearGradient></defs>`+(r.length?`<circle cx="${X(r.length-1)}" cy="${Y(r[r.length-1])}" r="2.2" style="fill:var(--accent-2)"/>`:"");
   $("ctxRateV").textContent=`${pct(st.avgPct)}/hr`}
-function renderTracker(){renderStart();if(typeof renderNow==="function")renderNow();
+function renderTracker(){renderStart();
   // at the max base level base EXP stops counting, so the quick Log EXP box (the + button, L) goes away
   document.documentElement.classList.toggle("maxLv",atMaxLv());$("dieItem").checked=!!state.dieItem;$("dieBtn").textContent=`Died −${diePct()}%`;
   const s=cur(),st=stats(s);renderSpark(s,st);
@@ -479,7 +484,7 @@ const mobFOk=(m,f)=>(!f.el||m.el===f.el)&&(!f.race||m.race===f.race)&&(!f.size||
 const mobOpt=m=>`<option value="${esc(m.name)}">Lv ${m.lv} · ${fmtExp(m)} EXP${m.mvp?" · MVP":m.mini?" · mini boss":m.boss?" · boss":""}${MOB_VARIANT[m.id]?" · "+MOB_VARIANT[m.id]:""}</option>`;
 const isMagicAtk=()=>C().a.type==="magic"||C().a.type==="spellfist";
 function renderMobs(){
-  const w=walkSec(),me=charSet();
+  const w=walkSec(),me=showMine();$("mobMine").innerHTML=mineSwitch();
   const shown=m=>mobFOk(m,state.mobF)&&!(state.hideClosed&&!openMaps(m).length);
   const row=m=>{const om=openMaps(m);return {...m,om,topN:om.length?om[0][1]:0,ratio:m.hp>0?m.exp/m.hp:0,...mobRow(m,w)}};
   const F=state.filters,fOk=m=>Object.entries(F).every(([k,v])=>!v||matchF(v,colNum(m,k),colText(m,k)));
@@ -1030,7 +1035,7 @@ const WORLD_FOLD="Map planner: world map";
 const planPick=k=>{state.map=k;state.mapAll=null;save();renderMap()};
 const planPickAll=k=>{state.map=state.mapAll=k;save();renderMap()};
 function renderMap(){
-  let mp=mapKey(state.map);const mob=calcMob(),me=charSet();
+  let mp=mapKey(state.map);const mob=calcMob(),me=showMine();$("mapMine").innerHTML=mineSwitch();
   if(!MAPMOBS[mp]&&!isTown(mp))mp=mobMap(mob)||Object.keys(MAPMOBS).sort((a,b)=>mapCode(a).localeCompare(mapCode(b)))[0];
   const dun=mapDun(mp);
   if(document.activeElement!==$("mapInput"))$("mapInput").value=mp?mapCode(mp):"";$("mapName").textContent=mp?mapFactsTxt(mp):"";
@@ -1054,7 +1059,7 @@ function renderMap(){
   renderMapList();$("mapTableWrap").hidden=!MAPMOBS[mp];
   if(!MAPMOBS[mp]){$("mapTiles").innerHTML=`<div class="note">${isTown(mp)?"A town: no monsters.":"Pick a map to see its monsters."}</div>`;$("mapConv").innerHTML="";$("mapTable").querySelector("tbody").innerHTML="";return}
   const w=walkSec(),r=mapStats(mp,w);const L=lvExp(num(C().baseLv));const st=stats(cur());const L2=st?st.L:L;
-  $("mapTiles").innerHTML=!me?`<div class="note noCharNote">${NO_CHAR_TXT} on this map. <a href="#" data-gotab="char">Open Character</a></div>${isClosed(mp)?`<div class="note bad">This map is marked as not open yet${mapArrives(mp)?`: it comes with the ${esc(mapArrives(mp))}`:""}.</div>`:""}`
+  $("mapTiles").innerHTML=!me?`${charSet()?"":`<div class="note noCharNote">${NO_CHAR_TXT} on this map. <a href="#" data-gotab="char">Open Character</a></div>`}${isClosed(mp)?`<div class="note bad">This map is marked as not open yet${mapArrives(mp)?`: it comes with the ${esc(mapArrives(mp))}`:""}.</div>`:""}`
    :r?`<div class="tile now"><div class="k">Average EXP / min</div><div class="v mono">${fmtN(r.epm)}</div><div class="s">weighted by spawn counts${r.el2&&convOn()?` · with ${esc(convWith(r.el2))}`:""}${r.skip?` · skips ${r.skip} you can't hurt`:""}${r.unk?` · leaves out ${esc(r.unkNames.join(", "))} (EXP unknown)`:""}</div></div>
    <div class="tile" title="${esc(walkSrcTxt())}"><div class="k">Kills / hr</div><div class="v mono">${fmtN(3600/r.secT)}</div><div class="s">${r.sec.toFixed(1)}s fight + ${r.walk.toFixed(1)}s walk${sellTxt(r.sell," + "," selling")}</div></div>
    <div class="tile"><div class="k">EXP / hr</div><div class="v mono">${L2?pct(r.epm*60/L2*100):fmtN(r.epm*60)}</div><div class="s">${L2?`1 level in ${fmtDur(L2/(r.epm*60))}`:`set Base level 1–${MAX_BASE_LV} for %`}</div></div>

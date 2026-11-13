@@ -36,6 +36,7 @@
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.5;font-feature-settings:"cv11","ss01";-webkit-font-smoothing:antialiased}
 [hidden]{display:none!important}
+.buildOff{display:none!important} /* the typed Status card's boxes in Build from gear, which works them out */
 :root:not(.future) .future{display:none!important}
 
 /* ---- shell: sidebar + main column ---- */
@@ -619,7 +620,6 @@ table.formulas td.chg{background:var(--accent-soft)}
 .homeNext b{color:var(--accent);font-weight:650}
 .homeNext span{color:var(--muted)}
 .homeNext:empty{display:none}
-.tiles.homeTiles{grid-template-columns:repeat(4,minmax(0,1fr))}
 button.tile{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
 button.tile:hover{border-color:var(--accent)}
 .homeTools{display:flex;flex-direction:column;gap:18px}
@@ -639,7 +639,6 @@ button.tile:hover{border-color:var(--accent)}
 .toolTxt{display:flex;flex-direction:column;gap:2px;min-width:0}
 .toolTxt b{font-family:var(--display);font-weight:650;font-size:14.5px;letter-spacing:-.01em}
 .toolTxt span{font-size:12.5px;color:var(--muted);line-height:1.45}
-@media (max-width:900px){.tiles.homeTiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:600px){.homeHero{padding-top:20px}.homeHero h1{font-size:2rem}}
 @media (max-width:760px){.startCard{padding:14px}.startHead{margin-bottom:10px}.startHead h2{font-size:1.05rem}
   .steps{grid-template-columns:1fr;gap:8px}.steps li{flex-direction:row;align-items:center;padding:10px 12px}
@@ -698,10 +697,12 @@ button.tile:hover{border-color:var(--accent)}
 /* ---- no character yet: the Monsters & maps tables show the game's numbers only, not the ones worked out for a character ---- */
 #mobTable.noChar :is(th,td):is(:nth-child(n+9):nth-child(-n+15),:nth-child(17)),
 #mapTable.noChar :is(th,td):is(:nth-child(6),:nth-child(9),:nth-child(10),:nth-child(12)){display:none}
+.mineSw{gap:6px;font-size:12.5px;font-weight:500;color:var(--muted);white-space:nowrap}
 .noCharNote{padding:12px 14px;border:1px dashed var(--line-strong);border-radius:12px}
 #farmNoChar{display:none}
 #farmCard.noChar #farmNoChar{display:block}
-#farmCard.noChar>:not(.bar:first-child):not(#farmNoChar){display:none}
+#farmCard.noChar>:not(.bar:first-child):not(#farmNoChar):not(.farmOn){display:none}
+.farmOn{margin-bottom:10px}.farmOn select{min-width:min(100%,320px)}
 #farmCard.noChar>.bar:first-child>.note{display:none}
 #mapTable.noChar :is([data-sessmob],[data-skip]){display:none}
 /* max base level: no quick Log EXP */
