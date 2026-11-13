@@ -9,7 +9,8 @@ data/client.js's gear (those named "[Costume] ..." are costumes too) (normal gea
 System\\itemInfo_data.lub. A headgear's view is an accessory: data.grf's accessoryid.lub and accname.lub (compiled Lua, read with
 tools/lua51.py) name its sprite, data\\sprite\\악세사리\\<남|여>\\<남|여><name>.spr/.act, one per gender. A garment's view is a robe:
 spriterobeid.lub and spriterobename.lub name its folder, data\\sprite\\로브\\<name>\\<남|여>\\<body>_<남|여>.spr/.act, one per job (and
-transcendent look) and gender; spriterobename_f.lub's IsTopLayer says which robes the client draws over the body instead of behind it.
+transcendent look) and gender; spriterobename_f.lub's IsTopLayer says which robes the client draws over the headgear too when it draws
+them in front (from the back; facing you, its spreditinfo layer tables put every garment behind the body).
 Each is drawn as the game draws it standing and facing you (action 0, frame 0), in its own colours, like tools/export_sprites.py's
 bodies: a headgear placed from the body's head anchor (as hair is), a garment from the feet, moved by the body's anchor less its own.
 Many entries are DES-encoded; export_minimaps' DesGrf reads them.
@@ -18,7 +19,7 @@ Writes data/costumelooks.js (COSTUME_LOOKS: items {item id: ["h" | "r", view]}, 
 the headgear sheet with each view's [x, y, w, h on the
 sheet, left, top from the head anchor] per gender, and per body (job, "<job>+" for the transcendent look, "<job>~" riding the Halter
 Lead's mount, "<job>+~" both: export_sprites.BODIES) a garment sheet with each
-robe's [x, y, w, h, left, top from the feet] per gender, plus the robes drawn over the body), img/costume-head.png and
+robe's [x, y, w, h, left, top from the feet] per gender, plus the robes on the client's top layer), img/costume-head.png and
 img/costume-robe-<job>.png (RGBA, packed in rows). Standard library only.
 """
 import json, os, re, struct, sys, zlib
@@ -156,7 +157,7 @@ def main():
                 "// costumes only the gear data has, with their slots (the rest are data/costumes.js's); head: the headgear sheet and per view and gender (m/f) [x,y,w,h on the sheet, left,top from the\n"
                 "// body's head anchor]; robe.bodies: per job (\"<job>+\": its transcendent look, \"<job>~\"\n"
                 "// riding the Halter Lead's mount, \"<job>+~\" both) a garment sheet and per robe and gender\n"
-                "// [x,y,w,h, left,top from the feet]; robe.top: the robes drawn over the body (the rest go behind it). Sheets are RGBA.\n")
+                "// [x,y,w,h, left,top from the feet]; robe.top: the robes that, when drawn in front (seen from the back), go over the headgear too. Sheets are RGBA.\n")
         f.write("const COSTUME_LOOKS=" + json.dumps(out, separators=(",", ":"), ensure_ascii=False) + ";\n")
     print(f"{sum(i in costumes for i in items)} of {len(costumes)} costumes and {sum(i in gear for i in items)} of {len(gear)} normal headgear and garments have a look")
     if missing:

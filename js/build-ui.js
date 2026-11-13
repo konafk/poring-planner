@@ -477,8 +477,8 @@ function lookBody(job,trans,ride){const S=JOB_SPRITES,j=S.body[job]?job:"Novice"
 function lookCanvas(job,L,trans){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";
   const lb=lookBody(job,trans,L.ride),bj=lb.set,sex=bj[L.sex]?L.sex:Object.keys(bj)[0],b=bj[sex],
     hs=S.head[sex]||{},hair=hs[L.hair]?L.hair:1,h=hs[hair],pk=lb.pal,pj=lb.job;
-  // what it wears (wornOf): headgear on the head anchor, the garment from the feet on this body's garment sheet, behind the body unless
-  // the client draws it on top
+  // what it wears (wornOf): headgear on the head anchor, the garment from the feet on this body's garment sheet, behind the body: the
+  // look stands facing you, which the client always draws with the garment behind (its spreditinfo layer tables)
   const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,w=wornOf(L),rk=lb.key;
   const acc=w.head.map(v=>(CL.head.at[v]||{})[sex]).filter(Boolean),rs=w.robe&&CL.robe.bodies[rk],ra=rs&&(rs.at[w.robe]||{})[sex];
   // body and head go into one canvas at the sprites' own size, which the page then scales: as separate boxes each rounded to the
@@ -487,7 +487,7 @@ function lookCanvas(job,L,trans){const S=typeof JOB_SPRITES!=="undefined"&&JOB_S
   const l=Math.min(...parts.map(p=>p[4])),t=Math.min(...parts.map(p=>p[5])),r=Math.max(...parts.map(p=>p[4]+p[2])),bt=Math.max(...parts.map(p=>p[5]+p[3]));
   const at=(p,x,y)=>[...p.slice(0,4),x-l,y-t].join(","),bp=((S[pk]||{})[pj]||{})[sex],dye=bp&&L.dye<bp.c.length?L.dye:0,color=L.color<ewColors(sex,hair)?L.color:0;
   return `<canvas class="ewPic" width="${r-l}" height="${bt-t}" style="left:${l}px;top:${t}px" data-body="${at(b,b[4],b[5])}" data-pal="${pk},${pj},${sex}" data-dye="${dye}"${h?` data-head="${at(h,b[6]+h[4],b[7]+h[5])}" data-hair="${sex},${hair},${color}"`:""}`+
-    `${acc.length?` data-acc="${acc.map(a=>at(a,b[6]+a[4],b[7]+a[5])).join(";")}"`:""}${ra?` data-robe="${rk},${at(ra,ra[4],ra[5])},${CL.robe.top.includes(w.robe)?1:0}"`:""}></canvas>`}
+    `${acc.length?` data-acc="${acc.map(a=>at(a,b[6]+a[4],b[7]+a[5])).join(";")}"`:""}${ra?` data-robe="${rk},${at(ra,ra[4],ra[5])}"`:""}></canvas>`}
 // the look as drawn now: the body (the transcendent look's with Trans on), its gender, and the hair style, hair colour and clothes
 // colour that fit it (an out-of-range one shows as the first)
 function ewLookNow(){const S=JOB_SPRITES,tj=ewTrans(S),bj=(state.look.trans&&tj)||S.body[state.job]||S.body.Novice,sex=ewSex(bj),hs=S.head[sex]||{};
@@ -569,7 +569,7 @@ function costumeImg(key){const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LO
   if(!COS_IMG.has(key))COS_IMG.set(key,Object.assign(new Image(),{onload:()=>drawLook(document),src:`${s.file}?v=${s.v}`}));return COS_IMG.get(key)}
 // each look's canvas in root (lookCanvas, headCanvas): the body [x,y,w,h on the sheet, x,y in the canvas] from the job sheet, each index
 // coloured with the clothes colour's palette, then the head the same from the hair sheet with the hair colour's; once both sheets have
-// loaded. Costumes are drawn from their sheets as they are: a garment behind the body (or over it), headgear over the head
+// loaded. Costumes are drawn from their sheets as they are: a garment behind the body, headgear over the head
 function drawLook(root){const bp=ewPx(EW_SHEET),hp=ewPx(EW_HAIR);if(!bp||!hp)return;
   root.querySelectorAll("canvas.ewPic").forEach(c=>{const [k,j,s]=(c.dataset.pal||"").split(","),body=k&&((JOB_SPRITES[k]||{})[j]||{})[s];if(body||!c.dataset.body)paintLook(c,bp,hp,body)})}
 function paintLook(c,bp,hp,body){const g=c.getContext("2d");g.clearRect(0,0,c.width,c.height);
@@ -579,10 +579,9 @@ function paintLook(c,bp,hp,body){const g=c.getContext("2d");g.clearRect(0,0,c.wi
       if(rgb){img.data[o]=parseInt(rgb.slice(0,2),16);img.data[o+1]=parseInt(rgb.slice(2,4),16);img.data[o+2]=parseInt(rgb.slice(4),16);img.data[o+3]=255}}
     const pc=document.createElement("canvas");pc.width=w;pc.height=h;pc.getContext("2d").putImageData(img,0,0);g.drawImage(pc,l,t)};
   const sheet=(im,at)=>{if(!im||!im.complete||!im.naturalWidth)return;const [x,y,w,h,l,t]=at.map(Number);g.drawImage(im,x,y,w,h,l,t,w,h)};
-  const robe=c.dataset.robe&&c.dataset.robe.split(","),ri=robe&&costumeImg(robe[0]),top=robe&&robe[7]==="1";
-  if(robe&&!top)sheet(ri,robe.slice(1,7));
+  const robe=c.dataset.robe&&c.dataset.robe.split(",");
+  if(robe)sheet(costumeImg(robe[0]),robe.slice(1,7));
   if(c.dataset.body)paint(bp,c.dataset.body,ewPal(body,+c.dataset.dye));
-  if(robe&&top)sheet(ri,robe.slice(1,7));
   if(c.dataset.head){const [sex,n,color]=c.dataset.hair.split(",");paint(hp,c.dataset.head,ewPal(JOB_SPRITES.hairPal[sex][n],+color))}
   if(c.dataset.acc){const im=costumeImg("head");c.dataset.acc.split(";").forEach(a=>sheet(im,a.split(",")))}}
 $("equipWin").addEventListener("click",e=>{const t=e.target.closest("button");if(!t||t.disabled)return;const L=state.look;

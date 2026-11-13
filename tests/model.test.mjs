@@ -2956,7 +2956,7 @@ t("Stylist costumes: worn by slot, drawn on the look from the client's sheets", 
   const cos = "{upper:19930,middle:19794,lower:19794,garment:480574}";
   const html = app(`lookCanvas("Knight",{sex:"m",hair:1,color:0,dye:0,cos:${cos}})`);
   assert.equal((html.match(/data-acc="([^"]*)"/) || [])[1].split(";").length, 2);
-  assert.match(html, /data-robe="Knight,(-?\d+,){6}[01]"/);
+  assert.match(html, /data-robe="Knight(,-?\d+){6}"/);
   assert.match(app(`lookCanvas("Knight",{sex:"m",hair:1,color:0,dye:0,cos:${cos}},true)`), /data-robe="Knight\+,/);
   assert.doesNotMatch(app(`lookCanvas("Knight",{sex:"m",hair:1,color:0,dye:0})`), /data-acc|data-robe/);
   // the canvas grows to hold them: the wings are wider than the Knight

@@ -28,8 +28,9 @@ function lookLayers(g,src,p,fr,ox,oy){for(const [i,x,y,m,sx,sy] of fr[0]){const 
 // the look o ({job, trans, ride, sex, hair, color, dye, worn: wornOf's}) doing act facing dir, t ms into the action, drawn on the canvas g with
 // the feet at (fx, fy). The body's frame follows the time; on standing and sitting the head and what's on it look straight ahead (frame 0,
 // the client turns them with the head), else they follow the body's frame. Each attaches by its anchor to the body's; a garment goes
-// behind the body, over it when you see the back (NW, N, NE) or for the garments the client always draws on top. Returns false while a
-// piece the look needs is still loading (onload is called when it's in)
+// behind the body, as the client draws it facing you, and over it when you see the back (NW, N, NE): over the body and under the head,
+// or over the headgear too for the garments the client puts on its top layer (robe.top, IsTopLayer). Returns false while a piece the
+// look needs is still loading (onload is called when it's in)
 function lookAnimDraw(g,o,act,dir,t,fx,fy,onload){const S=JOB_SPRITES,lb=lookBody(o.job,o.trans,o.ride),bj=lb.set;
   const sex=bj[o.sex]?o.sex:Object.keys(bj)[0],bodyKey=`body/${lb.key}-${sex}`;
   const body=lookPiece(bodyKey,onload),hairN=(S.head[sex]||{})[o.hair]?o.hair:1,hair=lookPiece(`hair/${hairN}-${sex}`,onload);
@@ -41,13 +42,14 @@ function lookAnimDraw(g,o,act,dir,t,fx,fy,onload){const S=JOB_SPRITES,lb=lookBod
   const at=(p,a)=>{const d=p.act[a][dir],k=d.f.length;return k?d.f[still?0:fi%k]:null};
   const attach=(p,fr)=>{const a=fr[1]||ba;return [fx+ba[0]-a[0],fy+ba[1]-a[1]]};
   const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,rv=o.worn.robe,rkey=rv&&`robe/${rv}-${lb.key}-${sex}`;
-  const robe=rkey&&lookPiece(rkey,onload),rf=robe&&at(robe,act),top=rv&&(CL.robe.top.includes(rv)||dir>=3&&dir<=5);
+  const robe=rkey&&lookPiece(rkey,onload),rf=robe&&at(robe,act),back=dir>=3&&dir<=5,over=back&&CL.robe.top.includes(rv);
   const heads=o.worn.head.map(v=>lookPiece(`head/${v}-${sex}`,onload));
   const drawRobe=()=>{if(rf)lookLayers(g,robe.im,robe,rf,...attach(robe,rf))};
   g.imageSmoothingEnabled=false;
-  if(!top)drawRobe();
+  if(!back)drawRobe();
   lookLayers(g,lookTinted(bodyKey,body,`${pk},${pj},${sex},${dye}`,ewPal(bp,dye)),body,bf,fx,fy);
-  if(top)drawRobe();
+  if(back&&!over)drawRobe();
   const hf=at(hair,act);if(hf)lookLayers(g,lookTinted(`hair/${hairN}-${sex}`,hair,`${color}`,ewPal(hpal,color)),hair,hf,...attach(hair,hf));
   heads.forEach(h=>{const f=h&&at(h,act);if(f)lookLayers(g,h.im,h,f,...attach(h,f))});
+  if(over)drawRobe();
   return true}
