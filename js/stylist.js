@@ -59,11 +59,14 @@ function styAnimTick(now){STY_ANIM.raf=0;const c=$("styAnimCanvas");if(!c||$("st
 function styAnimRun(){if(!STY_ANIM.raf&&typeof performance!=="undefined")STY_ANIM.raf=setTimeout(()=>styAnimTick(performance.now()),40)}
 // under the preview: turn left or right, and the actions the look's body has (stand, walk, sit and attack until its file loads, and
 // those still, for a file exported before the rest were added); drawn again when that changes. An action the body lacks falls back
-// to standing
+// to standing. The actions go in rows of a kind, on one grid: moving about, the three attack motions (numbered), and the rest of a fight
+const STY_ACT_ROWS=[["Move",["stand","walk","sit","pickup"]],["Attack",["attack","attack2","attack3"]],["Battle",["ready","cast","hurt","dead"]]];
 function styAnimCtl(v,anim=true){const acts=lookActs(LOOKS[`body/${v.key}-${v.sex}`])||LOOK_ACTS.filter(([k])=>["stand","walk","sit","attack"].includes(k));
-  if(!acts.some(([k])=>k===STY_ANIM.act))STY_ANIM.act="stand";const n1=!acts.some(([k])=>k==="attack2");    // one attack: plain "Attack"
-  const html=anim?`<button type="button" class="small" data-styturn="1" aria-label="Turn left" title="Turn">⟲</button><span class="note styDir">${LOOK_DIRS[STY_ANIM.dir]}</span><button type="button" class="small" data-styturn="-1" aria-label="Turn right" title="Turn">⟳</button>`+
-    `<span class="seg" role="radiogroup" aria-label="Animation">${acts.map(([k,n])=>`<button type="button" role="radio" data-styact="${k}" aria-checked="${STY_ANIM.act===k}">${n1&&k==="attack"?"Attack":n}</button>`).join("")}</span>`:"";
+  if(!acts.some(([k])=>k===STY_ANIM.act))STY_ANIM.act="stand";const has=Object.fromEntries(acts);
+  const btn=k=>{const n=has[k],m=/^Attack (\d)$/.exec(n);return `<button type="button" role="radio" data-styact="${k}" aria-checked="${STY_ANIM.act===k}"${m?` aria-label="${n}" title="${n}"`:""}>${m?m[1]:n}</button>`};
+  const html=anim?`<span class="styTurn"><button type="button" class="small" data-styturn="1" aria-label="Turn left" title="Turn">⟲</button><span class="note styDir" title="Facing">${LOOK_DIRS[STY_ANIM.dir]}</span><button type="button" class="small" data-styturn="-1" aria-label="Turn right" title="Turn">⟳</button></span>`+
+    `<span class="seg styActs" role="radiogroup" aria-label="Animation">${STY_ACT_ROWS.map(([g,ks])=>{const on=ks.filter(k=>has[k]);
+      return on.length?`<span class="styActRow"><span class="styActLab">${g}</span>${on.map(btn).join("")}</span>`:""}).join("")}</span>`:"";
   if(STY_ANIM.ctl===html)return;STY_ANIM.ctl=html;
   const el=$("styAnimCtl"),a=document.activeElement,f=a&&el.contains(a)&&a.dataset.styact;el.innerHTML=html;
   if(f)el.querySelector(`[data-styact="${f}"]`)?.focus()}
