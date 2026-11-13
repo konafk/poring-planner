@@ -707,13 +707,10 @@ button.tile:hover{border-color:var(--accent)}
 .noCharNote{padding:12px 14px;border:1px dashed var(--line-strong);border-radius:12px}
 #farmNoChar{display:none}
 #farmCard.noChar #farmNoChar{display:block}
-#farmCard.noChar>:not(.bar:first-child):not(#farmNoChar):not(.farmOn):not(#farmWorldMore){display:none}
-/* the session's monsters (Hunting), each with × to take it out, and a search to add one */
-.sessMobs{gap:6px}
-.sessMob{display:inline-flex;align-items:center;gap:4px;padding:2px 4px 2px 8px;border:1px solid var(--line-strong);border-radius:999px;background:var(--raised);font-size:13px}
-.sessMob button{min-width:0;padding:0 6px;border:0;background:none;box-shadow:none;color:var(--muted);font-size:15px;line-height:1.2;cursor:pointer}
-.sessMob button:hover{color:var(--bad)}
-#sessMobIn{flex:1 1 180px;min-width:0;max-width:320px}
+#farmCard.noChar>:not(.bar:first-child):not(#farmNoChar):not(.farmOn):not(#sessMobRow):not(#farmWorldMore){display:none}
+/* the monsters on the session's map, each with + Session / − Session */
+#sessMobRow{margin-bottom:12px}#sessMobRow[hidden]{display:none}#sessMobHead{margin-bottom:6px}
+#sessMobRow>.scroll{max-width:720px}
 .farmOn{margin-bottom:10px}.farmOn>label{flex:0 1 auto;min-width:0;max-width:100%}.farmOn select{flex:1 1 220px;min-width:0;width:min(100%,420px)}
 #farmCard.noChar>.bar:first-child>.note{display:none}
 #mapTable.noChar :is([data-sessmob],[data-skip]){display:none}

@@ -154,12 +154,14 @@ try {
     const row = await page.getAttribute("#huntTable tbody [data-farm]", "data-farm");
     await page.click("#huntTable tbody [data-farm]");
     assert.equal(await page.evaluate("sessMap(cur())"), row);
-    // Hunting: a monster added by name joins the session, its × takes it out
-    await page.fill("#sessMobIn", "Poring");
-    await page.press("#sessMobIn", "Enter");
-    assert.ok(await page.evaluate("cur().mobIds.includes(1002)"));
-    await page.click('#sessMobChips [data-sessmobx="1002"]');
-    assert.ok(await page.evaluate("!cur().mobIds.includes(1002)"));
+    // the session's map lists all its monsters: − Session takes one out, + Session puts it back
+    const on = await page.evaluate("sessMap(cur())");
+    assert.equal(await page.$$eval("#sessMobTable tbody tr", r => r.length), await page.evaluate(`MAPMOBS[${JSON.stringify(on)}].length`));
+    const id = +(await page.getAttribute('#sessMobTable [data-sessmob]:text("− Session")', "data-sessmob"));
+    await page.click(`#sessMobTable [data-sessmob="${id}"]`);
+    assert.ok(await page.evaluate(`!cur().mobIds.includes(${id})`));
+    await page.click(`#sessMobTable [data-sessmob="${id}"]`);
+    assert.ok(await page.evaluate(`cur().mobIds.includes(${id})`));
     // the world map farms the box clicked, the ranking's maps numbered on it
     const wm = await page.getAttribute('#farmWorld .wmBox[data-rank="1"]', "data-wm");
     await page.click('#farmWorld .wmBox[data-rank="1"]');
