@@ -61,12 +61,19 @@ const vctFactor=()=>{const c=C();const dex=statVal(c,"dex");if(dex==null)return 
 const cardInGear=(c,ids)=>c.mode==="build"&&Object.values((c.build&&c.build.gear)||{}).some(g=>g&&(g.cards||[]).some(id=>ids.includes(+id)));
 // how many copies of these cards build mode's gear holds (every slot, both hands); 0 outside build mode
 const cardsInGear=(c,ids)=>c.mode!=="build"?0:Object.values((c.build&&c.build.gear)||{}).reduce((n,g)=>n+(g?(g.cards||[]).filter(id=>ids.includes(+id)).length:0),0);
+// the Cards rows under the attack: in build mode a card counts when it's slotted anywhere in your gear (its tick box follows),
+// in status window mode when it's ticked
+const CD_IDS={vitata:[4053],daSF:[4117],creamy:[4040],phen:[4077],bbfly:[4327],hfOn:[27266],dracOn:[27268],dpOn:[4171]};
+const cdOn=k=>C().mode==="build"?cardsInGear(C(),CD_IDS[k])>0:!!CRD()[k];
+// the +5 SP per kill cards, by the race they're for (names in KILL_SP)
+const KILL_SP_ID={Fish:4307,Plant:4289,Dragon:4180,Brute:4167,"Demi-Human":4329,Formless:4308,Undead:4274};
+const killSpOn=()=>C().mode==="build"?Object.keys(KILL_SP_ID).filter(r=>cardsInGear(C(),[KILL_SP_ID[r]])>0):CRD().killSp;
 // Phen (4077) and Bloody Butterfly (4327) Cards: casts can't be interrupted, variable cast +25% / +30%
-const PHEN=4077,BBFLY=4327;
-const noBreak=()=>{const cd=CRD();return !!(cd.phen||cd.bbfly)||cardInGear(C(),[PHEN,BBFLY])||consSum("no_break")>0};
+const noBreak=()=>cdOn("phen")||cdOn("bbfly")||consSum("no_break")>0;
 // fixed cast % cut: only the highest one counts (the box, or a consumable such as Challenge Drink)
 const fctPctEff=()=>Math.max(num(C().fctPct),-consSum("fct_percent"));
-const vctCards=()=>{const cd=CRD(),c=C();return (cd.phen&&!cardInGear(c,[PHEN])?25:0)+(cd.bbfly&&!cardInGear(c,[BBFLY])?30:0)};
+// their variable cast +%: build mode counts it from the gear's own lines
+const vctCards=()=>{const cd=CRD();return C().mode==="build"?0:(cd.phen?25:0)+(cd.bbfly?30:0)};
 // vk: share of the variable cast left (Foresight halves it)
 const castSec=(vk=1)=>{const c=C(),a=c.a,vp=num(c.vctPct)-vctCards();
   if(a.fct!=null||a.vct!=null)return Math.max(0,num(a.vct)*vctFactor()*(1-vp/100))*vk+Math.max(0,(num(a.fct)-num(c.fctSec))*(1-fctPctEff()/100));
@@ -207,7 +214,7 @@ const daLv=(c=C())=>c.a.type!=="auto"||c.weapon!=="Dagger"?0:hasTree(c)?skLv(c,"
 const daSkill=()=>{const lv=daLv();if(!lv)return {lv:0,ch:0,hit:0};const d=String((skRowOf("double-attack",lv)||[])[7]||""),m=d.match(/Chance:\s*(\d+)%/i),h=d.match(/HIT Bonus:\s*(\d+)%/i);
   return {lv,ch:(m?+m[1]:7*lv)/100,hit:h?+h[1]:lv}};
 // basic attacks hit twice (right hand only) at the higher of Double Attack's chance and Side Winder's (any weapon)
-const swMul=()=>C().a.type!=="auto"?1:1+Math.max(daSkill().ch,CRD().daSF?num(CRD().daPct)/100:0);
+const swMul=()=>C().a.type!=="auto"?1:1+Math.max(daSkill().ch,cdOn("daSF")?num(CRD().daPct)/100:0);
 const perUse=m=>{const a=C().a,h=a.sizeHits?a.sizeHits[{S:0,M:1,L:2}[m.size]??1]:num(a.hits,1);return dmgPerHit(m)*Math.max(0.01,h)*swMul()+leftDmg(m)};
 // crits (basic attacks only): chance = CRIT (doubled with a katar) − monster LUK × 0.2, always hit, × 1.4 × (1 + crit damage %)
 // m: the monster, for gear CRIT that only counts against its race (Cruiser Card: CRIT +7 vs Brute)
@@ -285,9 +292,9 @@ const hpRecPct=()=>{const c=C();return c.bx?num(c.bx.hpRec):0};
 const hpRegen6=()=>{if(num(C().hpRegen6)>0)return num(C().hpRegen6);const r=Math.floor((statVal(C(),"vit")||0)/5)+Math.max(1,Math.floor(num(cf("maxHp"))/200));
   return hpRecPct()?Math.floor(r*(1+hpRecPct()/100)):r};
 // gear "SP consumption +x%" (build mode) scales the SP each use costs
-// Vitata Card's +25% counts when ticked, unless build mode already has the card in your gear
+// Vitata Card's +25% counts when ticked; build mode counts it from the card's own line in your gear
 const vitInGear=c=>cardInGear(c,[4053]);
-const vitPct=()=>CRD().vitata&&!vitInGear(C())?num(CRD().spBonus):0;
+const vitPct=()=>C().mode!=="build"&&CRD().vitata?num(CRD().spBonus):0;
 // consumables' and buffs from others' lines the status window doesn't show (parseCons and PBUFF in build-ui.js): "SP consumption −x%" and HP / SP restored over time
 // (only your own rows make them; summed once per change of those rows, as regen is asked for on every monster)
 let CONS_SUM={k:null,v:{}};
@@ -364,7 +371,7 @@ const mobHitDmg=m=>{if(m.atkMin==null)return null;const {soft,hard}=defParts(),k
 // healsPerSec), so none; hpTakenPerMin is the damage before regen
 // d: defense(m) when the caller already has it
 const hpLossPerMin=(m,d=defense(m))=>d?d.hp*60:null;
-const vitHeals=()=>CRD().vitata&&healHpEff()>0;
+const vitHeals=()=>cdOn("vitata")&&healHpEff()>0;
 const hpItemsPerMin=(m,d=defense(m))=>d?vitHeals()?0:d.hp*60:null;
 const hpTakenPerMin=(m,d=defense(m))=>d?(d.taken+d.psn+d.self)*60:null;
 // pz: share of the time poisoned, psn: HP a minute it drains
@@ -392,7 +399,7 @@ const hsBoltLv=()=>Math.floor(hsLvN()/2);
 const hsHit=(m,el)=>hsBoltLv()*magicDmg(m,100,el);
 // the % one proc deals: Spell Fist's, or the Hindsight bolt's when Spell Fist is off
 const sgPct=()=>sfOn()?sfPct():100*hsBoltLv();
-const sgSpMult=()=>1+(CRD().vitata?num(CRD().spBonus):0)/100; // Vitata Card: +25% SP cost
+const sgSpMult=()=>1+(cdOn("vitata")?num(CRD().spBonus):0)/100; // Vitata Card: +25% SP cost
 const hsProcSP=()=>(10+2*hsBoltLv())*2/3*sgSpMult();
 // Double Bolt (needs Hindsight): (30 + 10 × Lv)% chance the auto-cast bolt fires again; recast every 90 s for 35 + 5 × Lv SP
 const dbLvN=()=>Math.min(5,Math.max(1,num(G().dbLv,5)));
@@ -400,13 +407,13 @@ const dbChance=()=>hsOnNow()&&G().dbOn?(30+10*dbLvN())/100:0;
 // Spell Fist upkeep: 76 SP plus a bolt every 300 s
 const sgUpkeep=()=>(sfOn()?(76+30)*sgSpMult()/300:0)+(hsOnNow()&&G().dbOn?(35+5*dbLvN())*sgSpMult()/90:0);
 // Side Winder Card: chance for a basic attack to hit twice; under Spell Fist the 2nd hit procs it too
-const daFactor=()=>CRD().daSF?1+num(CRD().daPct)/100:1;
+const daFactor=()=>cdOn("daSF")?1+num(CRD().daPct)/100:1;
 // Hunter Fly Card: each physical attack has a 5% chance to restore 100 HP/s for 5 s (refreshes, doesn't stack). Basic attacks
 // and Spell Fist swing at your ASPD, physical skills once per use; spells don't trigger it
 const physAtkPerSec=()=>{const t=C().a.type;return t==="auto"||t==="spellfist"?atkPerSec():t==="phys"&&!C().a.falcon?1/useSec():0};
-// copies worn: build mode counts them in the gear (and then they count as ticked), else the box (1–4) when ticked
+// copies worn: build mode counts them in the gear, status window mode the box (1–4) when ticked
 const HUNTER_FLY=27266,DRACULA=27268;
-const cardCopies=(id,on,n)=>{const g=cardsInGear(C(),[id]);return g>0?g:on?Math.min(4,Math.max(1,Math.round(num(n,1)))):0};
+const cardCopies=(id,on,n)=>C().mode==="build"?cardsInGear(C(),[id]):on?Math.min(4,Math.max(1,Math.round(num(n,1)))):0;
 const hfCards=()=>cardCopies(HUNTER_FLY,CRD().hfOn,CRD().hfN),dracCards=()=>cardCopies(DRACULA,CRD().dracOn,CRD().dracN);
 // k copies: each rolls on every attack until one procs, and the restore doesn't add up (not checked in game),
 // so the effect runs 1 − (1 − p)^(k × attacks in its window) of the time
@@ -416,11 +423,11 @@ const hfHpPerSec=()=>{const k=hfCards();if(!k)return 0;return procUptime(num(CRD
 // Dracula Card: each physical or magic attack has a 10% chance to restore 20 SP/s for 7 s (refreshes, doesn't stack); copies as Hunter Fly
 const dracSPPerSec=()=>{const cd=CRD(),k=dracCards();if(!k)return 0;const n=(isSF()||C().a.type==="auto"?atkPerSec():1/useSec())*7;return procUptime(num(cd.dracPct)/100,k,n)*num(cd.dracSp)};
 // Dark Priest Card (Sage only): 1 SP each time a physical attack hits, so crits and hits that land
-const dpSPPerSec=()=>{if(!CRD().dpOn||state.job!=="Sage")return 0;const r=physAtkPerSec();if(!r)return 0;const m=SG_MOB||calcMob();if(!m)return r;
+const dpSPPerSec=()=>{if(!cdOn("dpOn")||state.job!=="Sage")return 0;const r=physAtkPerSec();if(!r)return 0;const m=SG_MOB||calcMob();if(!m)return r;
   return r*withAtk(isSF()?BASIC:C().a,()=>{const cr=critChance(m),hc=hitChance(m)/100;return cr+(1-cr)*hc})};
 // +5 SP per kill (Nereid, Tri-Joint… Cards) when a melee physical attack kills that race: counted over the time spent fighting it.
 // Not with Spell Fist, where the killing blow is as likely to be the bolt
-const killSPPerSec=()=>{const cd=CRD(),m=SG_MOB||calcMob(),t=C().a.type;if(!m||!cd.killSp.includes(m.race)||isSF()||(t!=="auto"&&t!=="phys")||isRangedHit())return 0;
+const killSPPerSec=()=>{const cd=CRD(),m=SG_MOB||calcMob(),t=C().a.type;if(!m||!killSpOn().includes(m.race)||isSF()||(t!=="auto"&&t!=="phys")||isRangedHit())return 0;
   const f=rawFight(m);return isFinite(f)&&f>0?5/f:0};
 const cardSPPerSec=()=>dracSPPerSec()+dpSPPerSec()+killSPPerSec();
 // Energy Coat: damage cut and SP per hit taken (% of Max SP) depend on how full your SP is
@@ -441,7 +448,7 @@ function defense(m){
   const sf=isSF(),max=num(cf("maxSp")),ec=ecOn(),hpBack=hfHpPerSec()+hpRegenPerSec(m),regen=regenPerSec(m),up=sf?sgUpkeep():skillSPPerSec(),hs=sf?hsFullSP():0,spMul=sf?sgSpMult():spCostMul();
   // pz: share of the time you're poisoned, psn: HP a second it drains (Energy Coat doesn't cut it)
   const pz=poisonUp(m),psn=pz*poisonHpPerSec(),self=selfHpPerSec(); // self: HP your own attack spends
-  const band=i=>{const red=ec?EC_BANDS[i][0]:0,ecSP=ec?hits*EC_BANDS[i][1]/100*max:0,taken=raw*(1-red/100)*hits,hp=Math.max(0,taken+psn+self-hpBack),cd=CRD(),healSP=cd.vitata&&healHpEff()>0?hp/healHpEff()*num(cd.healSp)*spMul:0;return {i,red,ecSP,healSP,hp,taken,pz,psn,self,label:ec?EC_BANDS[i][2]:""}};
+  const band=i=>{const red=ec?EC_BANDS[i][0]:0,ecSP=ec?hits*EC_BANDS[i][1]/100*max:0,taken=raw*(1-red/100)*hits,hp=Math.max(0,taken+psn+self-hpBack),cd=CRD(),healSP=cdOn("vitata")&&healHpEff()>0?hp/healHpEff()*num(cd.healSp)*spMul:0;return {i,red,ecSP,healSP,hp,taken,pz,psn,self,label:ec?EC_BANDS[i][2]:""}};
   const cost=b=>up+b.ecSP+b.healSP;
   let b=null;for(let i=0;i<5;i++){const x=band(i);if(cost(x)+hs<=regen){b=x;break}}
   // fb: no band fits your regen, so SP items (or none) set it
@@ -454,7 +461,7 @@ const HEAL_DELAY=0.3;
 const healSec=()=>Math.max(HEAL_DELAY,1/atkPerSec());
 // HP one Vitata Heal gives you: the box, + "Heal received +x%" from consumables (Ale's Blessing)
 const healHpEff=()=>num(CRD().healHp)*(1+consSum("heal_pct")/100);
-const healsPerSec=m=>{const cd=CRD();if(!cd.vitata||!(healHpEff()>0))return 0;const hp=(defense(m)||{}).hp;return hp>0?hp/healHpEff():0};
+const healsPerSec=m=>{if(!cdOn("vitata")||!(healHpEff()>0))return 0;const hp=(defense(m)||{}).hp;return hp>0?hp/healHpEff():0};
 const healShare=m=>healsPerSec(m)*healSec();
 let SG_MOB=null; // monster the SP balance is worked out against
 const defSP=()=>{const m=SG_MOB||calcMob();const d=m?defense(m):null;return d?d.extra:0};
@@ -489,7 +496,7 @@ const skRowOf=(slug,lv)=>{for(const t of SKILLS[state.job]||[])for(const s of t.
 // formula, not checked in game), SP from Zero's skill data. Without it, Vitata's Heal Lv1 (the HP / SP boxes on the Cards card). null: no Heal
 function healOpt(){const lv=skLv(C(),"heal");
   if(lv>0){const r=skRowOf("heal",lv);return {name:`Heal Lv${lv}`,hp:(Math.floor((num(C().baseLv)+(statVal(C(),"int")||0))/5)*3*lv+sumStat(cf("matkTxt")))*(1+consSum("heal_pct")/100),sp:num(r?r[0]:10+3*lv)*spCostMul()}}
-  return CRD().vitata&&healHpEff()>0?{name:"Vitata's Heal Lv1",hp:healHpEff(),sp:num(CRD().healSp)*(isSF()?sgSpMult():spCostMul())}:null}
+  return cdOn("vitata")&&healHpEff()>0?{name:"Vitata's Heal Lv1",hp:healHpEff(),sp:num(CRD().healSp)*(isSF()?sgSpMult():spCostMul())}:null}
 // Indulge (Sage) at its learned level: 10% of Max HP for (10 × Lv)% of that as SP, less the Lv SP it costs (the 10% is classic RO's,
 // not checked in game). null: not learned, or it can't give SP back
 function indulgeOpt(){const lv=skLv(C(),"indulge");if(!(lv>0))return null;const hp=num(cf("maxHp"))*0.1,r=skRowOf("indulge",lv),sp=hp*lv/10-num(r?r[0]:lv)*spCostMul();
@@ -948,8 +955,7 @@ const huntCosts=(m,hpi)=>{const spHr=spItemsHr(m),spZ=spHr*spItemPrice(),other=h
 const huntOffOf=mp=>(state.huntOff||{})[mp];
 const killTot=(m,sec,walk)=>{const k=SG_MOB;SG_MOB=m;try{return tripTot(m,sec+walk,walk)}finally{SG_MOB=k}};
 const noTele=mp=>(state.noTele||[]).includes(mp);
-const CREAMY=4040;
-const creamyOn=()=>!!CRD().creamy||cardInGear(C(),[CREAMY]);
+const creamyOn=()=>cdOn("creamy");
 const canTele=()=>creamyOn()||skLv(C(),"teleport")>0;
 const teleSec=()=>state.teleSec==null?1:num(state.teleSec);
 // the Zeny Hunter's level filter: monsters outside its Lv range (state.huntMinLv / huntMaxLv, null = any), or with a drop level penalty

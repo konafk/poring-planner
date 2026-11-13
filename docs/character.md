@@ -51,10 +51,12 @@ Any job, Mages included, can add a spell from a card, weapon or scroll that proc
 
 ## Cards any job can slot
 
-- **Vitata:** SP cost +25%, and the Heal Lv1 you cast costs SP and time you aren't attacking. Heal covers the HP you lose (after Hunter Fly, HP regen and consumables), so no HP items are counted on top; HP lost / min still shows that HP. In build mode a Vitata Card in your gear already counts its SP cost.
+In build mode every card in this section and the two below follows your gear: its box ticks itself when the card is slotted anywhere, and is locked, so a tick left over from Status window mode doesn't count. In Status window mode you tick the ones you wear. The build mode gear table lists them as counted in the Cards rows rather than not counted.
+
+- **Vitata:** SP cost +25%, and the Heal Lv1 you cast costs SP and time you aren't attacking. Heal covers the HP you lose (after Hunter Fly, HP regen and consumables), so no HP items are counted on top; HP lost / min still shows that HP. In build mode the SP cost comes from the card's own line in your gear.
 - **Side Winder:** basic attacks hit twice some of the time, right hand only, with any weapon. With Double Attack learned and a dagger the higher of the two chances counts.
 - **Creamy:** Teleport Lv1, so Where to farm (by zeny) can teleport past monsters you skip. Its 10 SP a cast isn't counted.
-- **Phen / Bloody Butterfly:** casts can't be interrupted, variable cast +25% / +30%. Build mode reads them from your gear.
+- **Phen / Bloody Butterfly:** casts can't be interrupted, variable cast +25% / +30% (in build mode, from the card's own line in your gear).
 
 ## Interrupted casts
 
@@ -68,7 +70,7 @@ HP works the same way. Under Taking damage in Attack details, HP regen per 6 s l
 
 ## HP back from cards
 
-- **Hunter Fly:** physical attacks have a chance to restore HP every second for 5 s, so less HP lost per minute. Set how many copies you wear (1–4); build mode counts them in your gear and counts the card as on. Each copy rolls on every attack until one procs, but the restore doesn't add up, so the HP restore runs 1 − (1 − 5%)^(copies × attacks in 5 s) of the time (not checked in game).
+- **Hunter Fly:** physical attacks have a chance to restore HP every second for 5 s, so less HP lost per minute. Set how many copies you wear (1–4); build mode counts them in your gear. Each copy rolls on every attack until one procs, but the restore doesn't add up, so the HP restore runs 1 − (1 − 5%)^(copies × attacks in 5 s) of the time (not checked in game).
 
 Card HP keeps coming when you're overweight, unlike natural regen. "HP Recovery +x%" (Muka, Zombie, Wooden Golem, Merman) raises natural HP regen: build mode reads it from your gear, and in Status window mode you add an "HP recovery" line under Equipment stats.
 
