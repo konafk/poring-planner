@@ -142,7 +142,8 @@ try {
     await page.click('#bestTable th[data-sk="epm"]');
     await page.waitForFunction(() => document.querySelector("#bestTable tbody tr[data-map] td").textContent === "4");
     await page.click("#rankMore > summary");
-    assert.ok(!await page.isVisible("#spots") && !await page.isVisible("#bestTable") && await page.evaluate("state.collapsed['Where to farm: ranking']"));
+    await page.waitForFunction("!!(state.collapsed || {})['Where to farm: ranking']");   // the toggle event comes after the click
+    assert.ok(!await page.isVisible("#spots") && !await page.isVisible("#bestTable"));
     assert.match(await page.textContent("#rankSum"), /^EXP: .+ · zeny: .+ · ranked by EXP · top 10$/);
     await page.click("#rankMore > summary");
     const mp = await page.getAttribute("#spots .spot [data-farm]", "data-farm");
