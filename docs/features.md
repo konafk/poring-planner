@@ -44,7 +44,7 @@ The tabs come in levels: Home, then four groups, Plan (Character, Session), Game
 
 At the bottom of the sidebar, **Compact sidebar** shrinks it to its icons (hover an icon to see its tab's name), and **Settings** opens a menu that changes how the page looks. It stays open while you switch things, and Esc or a click elsewhere closes it:
 
-- **Hints:** shows short help lines under the cards, and the line under each tab's heading that says what the tab is for (off by default).
+- **Hints:** shows short help lines under the cards, and the line under each tab's heading that says what the tab is for (off by default). With hints off or on, a card's heading shows what the card is for when you hover it, instead of a grey line beside it.
 - **Theme:** switches between auto (follows your device), light and dark. The sidebar follows it.
 - **Full width:** lets the page use the whole window instead of stopping at 1180px. It only shows on very wide screens.
 - **Future content:** shows the gear that isn't out on Global yet, the Contingent and Conqueror upgrades on the Memorial dungeons tab (hidden by default). While it's hidden, pieces you ticked stay saved but don't count in the Jellostones.
