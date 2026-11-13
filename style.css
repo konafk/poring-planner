@@ -119,6 +119,12 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
 .eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:var(--brand);-webkit-background-clip:text;background-clip:text;color:transparent;width:fit-content}
 .pageHead h1{font-size:2.35rem;font-weight:800;letter-spacing:-.035em;line-height:1.05}
 .pageHead p{margin:4px 0 0;max-width:62ch;color:var(--muted);font-size:14.5px;text-wrap:pretty}
+/* a tab's only card: what its heading row held besides the heading (counts, notes, buttons) sits beside the title (soloFold) */
+.heroRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
+.heroRow h1{flex:1 1 auto}
+.heroBar:empty{display:none}
+.heroBar>.cardHead{margin:0;padding:0;border:0}
+.heroBar .note{font-size:12.5px}
 /* Full width (Settings menu): drop the 1180px cap on wide screens */
 :root.wide .wrap{max-width:none}
 @media (max-width:1480px){#wideBtn{display:none}}
