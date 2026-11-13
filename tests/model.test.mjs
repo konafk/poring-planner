@@ -614,6 +614,14 @@ t("cloud sync: which way it goes after a Discord login", () => {
   assert.equal(d[0].cloud, "differs: stats");
   assert.match(d[1].cloud, /^1 entry/); assert.match(d[1].local, /^2 entries/);
   assert.equal(run(`syncDiff(${JSON.stringify(rev(1))},${JSON.stringify(rev(2))})`).length, 0);
+  // which panels are folded stays with each browser: not compared, not hashed, not sent up
+  const fold = (r, c) => acc({ rev: r, collapsed: c, job: "Sage", chars: { Sage: {} }, sessions: [] });
+  assert.equal(plan(fold(1, { x: true }), fold(2, {}), 9, { at: 5, h: "x" }), "same");
+  assert.equal(run(`syncDiff(${JSON.stringify(fold(1, { x: true }))},${JSON.stringify(fold(1, {}))})`).length, 0);
+  assert.equal(run(`syncHash(${JSON.stringify(fold(1, { x: true }))})`), run(`syncHash(${JSON.stringify(fold(4, { y: false }))})`));
+  assert.ok(!run(`syncStrip(${JSON.stringify(fold(1, { x: true }))})`).includes("collapsed"));
+  // a sync noted before the folds were left out (the whole text's hash) still counts as this browser unchanged
+  assert.equal(plan(mine, other, 9, { at: 5, h: h(mine) }), "down");
 });
 
 t("Restore and the cloud sync write an all-accounts backup the same way", () => {
