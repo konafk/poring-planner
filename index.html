@@ -142,23 +142,17 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <div class="note" id="jobBonusNote"></div>
       </details>
       <details class="card sub" id="gsetFold" open>
-        <summary title="Gear sets to compare, saved loadouts and what you have on"><b>Gear</b></summary>
+        <summary title="Gear sets to compare and what you have on"><b>Gear</b></summary>
         <div class="bar">
           <div class="seg" role="radiogroup" aria-label="Which gear the table shows" id="gsetSeg"></div>
           <button type="button" class="small" id="altAdd">+ Add set</button>
+          <button type="button" class="small" id="altRename" title="Give this set a name (“Farm”, “Boss”)">Rename…</button>
           <button type="button" class="small" id="altCopy" title="Start this set from your gear, then change a part">Copy my gear to it</button>
           <button type="button" class="small" id="altSwap" title="Wear this set: it becomes your gear, and yours this set (swap again to go back)">Swap with my gear</button>
           <button type="button" class="small danger" id="altDel">Remove set</button>
-        </div>
-        <div class="note" id="altNote"></div>
-        <div class="bar">
-          <select id="loadoutPick" aria-label="Saved loadouts"></select>
-          <button type="button" class="small" id="loadoutLoad" title="Put this loadout in the table shown: its gear comes off and stays remembered">Wear it</button>
-          <button type="button" class="small" id="loadoutSave" title="Save the gear in the table under a name, to swap back to it later">Save as loadout…</button>
-          <button type="button" class="small danger" id="loadoutDel">Delete</button>
           <button type="button" class="small" id="memClear" title="Gear you take off keeps its refine, cards and affixes for when you put it on again" hidden>Forget remembered items</button>
         </div>
-        <div class="note" id="loadoutNote"></div>
+        <div class="note" id="altNote"></div>
         <div class="ewWrap" id="equipWin" aria-label="Equipped items"></div>
       </details>
       <details class="card sub" id="gearFold" open>
