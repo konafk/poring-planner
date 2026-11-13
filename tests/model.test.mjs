@@ -3060,6 +3060,17 @@ t("Item info: the Where to get filter, and other sources the farm tables don't h
   assert.equal(run(`otherSourcesHtml("507")`), "");                                                   // nothing beyond the table
 });
 
+t("My numbers: Monsters & maps and the monster popup can leave your character's numbers out", () => {
+  setup("Knight", { mode: "build", build: { base: { str: 50, agi: 1, vit: 1, int: 1, dex: 1, luk: 1 }, gear: {} } });
+  const pop = () => run(`popMob(MOBS.find(m=>m.id===1002))`);
+  assert.match(pop().body, /You \(Knight\)/); assert.match(pop().acts, /data-mine checked/);
+  run(`state.hideMine=true`);
+  assert.doesNotMatch(pop().body, /You \(Knight\)/); assert.match(pop().acts, /data-mine>/);   // the game's numbers only, the switch off
+  run(`delete state.hideMine`);
+  setup("Knight", {});                                                                                    // not set up: no switch to show
+  assert.doesNotMatch(pop().acts, /data-mine/);
+});
+
 t("details popup: a monster, an item, gear and a card, linked to each other", () => {
   assert.equal(run(`infoKind(909)`), "item");                                                        // Jellopy
   assert.equal(run(`infoKind(1168)`), "gear");                                                       // Zweihander

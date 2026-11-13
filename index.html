@@ -601,7 +601,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 
 
   <section class="card" id="mapCard" data-tab="maps">
-    <div class="bar"><h2 class="grow">Map</h2></div>
+    <div class="bar"><h2 class="grow">Map</h2><span id="mapMine"></span></div>
     <div class="bar">
       <label class="grow">Map<input id="mapInput" list="mapList" placeholder="e.g. gef_dun01, Sphinx B5F or a town"></label>
       <label class="charOnly" title="The session Farm here and a monster's Farming it now add to">Session<select id="mapSessSel"></select></label>
@@ -636,7 +636,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   </section>
 
   <section class="card" id="mobCard" data-tab="maps">
-    <div class="bar"><h2 class="grow">Monsters</h2><span class="note" id="mobNote"></span></div>
+    <div class="bar"><h2 class="grow">Monsters</h2><span class="note" id="mobNote"></span><span id="mobMine"></span></div>
     <div class="bar" id="mobF"><label><span>&nbsp;</span><span class="bar"><input type="checkbox" id="hideClosed"> Hide monsters with no open map</span></label></div>
     <datalist id="mobList"></datalist>
     <div class="scroll tall"><table id="mobTable"><thead><tr>

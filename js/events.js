@@ -322,6 +322,8 @@ $("mobTable").querySelector("thead").addEventListener("click",e=>{if(e.target.cl
   if(state.sort===th.dataset.k)state.dir*=-1;else{state.sort=th.dataset.k;state.dir=["name","el","size","race","sec","uses","hpm"].includes(th.dataset.k)?1:-1}save();renderMobs()});
 document.querySelectorAll("#mobTable .filters [data-f]").forEach(inp=>{inp.value=state.filters[inp.dataset.f]||"";inp.addEventListener("input",()=>{state.filters[inp.dataset.f]=inp.value;save();renderMobs()})});
 $("clearF").addEventListener("click",()=>{state.filters={};document.querySelectorAll("#mobTable .filters [data-f]").forEach(i=>i.value="");save();renderMobs()});
+// My numbers (Monsters & maps, the monster popup): show or leave out your character's numbers against monsters
+document.addEventListener("change",e=>{if(!e.target.matches||!e.target.matches("[data-mine]"))return;state.hideMine=!e.target.checked;save();renderAll();if($("infoDlg").open&&typeof drawInfo==="function")drawInfo()});
 $("hideClosed").checked=state.hideClosed;$("hideClosed").addEventListener("change",e=>{state.hideClosed=e.target.checked;save();renderMobs()});
 // Where to farm: rank by EXP (the EXP table) or by zeny (the zeny table), one Show and one Max sec / kill for both; closed regions
 const renderFarm=()=>rowPass(()=>{renderBest();if(state.tab==="track")renderHunt()});

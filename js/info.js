@@ -62,7 +62,7 @@ const recipeAct=id=>RECIPES_MAKING[id]||RECIPES_USING[id]?'<button type="button"
 // a monster's details: its numbers, then yours against it (with a character), its drops, skills and spawns. Everything the old
 // Monster info tab and the Monsters card's side panel showed
 const MOB_SKILL_T=ms=>!ms?"–":ms>=36e5?`${+(ms/36e5).toFixed(1)}h`:ms>=6e4?`${+(ms/6e4).toFixed(1)} min`:`${+(ms/1000).toFixed(1)}s`;
-function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobIds.includes(m.id),a=mobArrives(m),me=charSet(),dps=me?withEl(r.el2,()=>dpsOf(m)):null;
+function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobIds.includes(m.id),a=mobArrives(m),me=showMine(),dps=me?withEl(r.el2,()=>dpsOf(m)):null;
   const sub=`Lv ${m.lv} · ${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${BOSS_PILL(m)}${m.agg?' <span class="pill">aggressive</span>':""}`;
   const tiles=infoTile("HP",m.hp==null?"?":fmtN(m.hp),`DEF ${m.def??"–"} · MDEF ${m.mdef??"–"} · ATK ${m.atkMin??"–"}–${m.atkMax??"–"}${m.hit100?` · 100% hit at ${m.hit100} HIT`:""}${m.flee95?` · 95% flee at ${m.flee95} FLEE`:""}`)
     +infoTile("EXP",fmtExp(m),m.expUnknown?"no EXP data yet":`${m.expUnsure?"* unconfirmed, not checked in game yet · ":""}job ${m.jobUnknown?"?":fmtN(m.job)}${me?` · you get ${fmtN(killExp(m))} / ${m.jobUnknown?"?":fmtN(killJobExp(m))}`:""}`)
@@ -88,8 +88,8 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
   return {ico:mobIcon(m.id,2),title:m.name,sub,
     body:`<div class="calc">${tiles}</div>${infoSec("Drops",dropT)}${infoSec("Skills",skillT)}${infoSec("Spawns",mapT)}`,
     after:()=>{const w=$("infoMobWorld");if(w)worldMap(w,sp,k=>{$("infoDlg").close();openMap(k)})},
-    acts:inS?'<span class="pill up">In this session</span> <button type="button" data-infoact="unfarm">Remove from session</button>'
-      :`<button type="button" class="primary" data-infoact="farm">${s.mobIds.length?"Also killing it":"Farming it now"}</button>`}}
+    acts:(inS?'<span class="pill up">In this session</span> <button type="button" data-infoact="unfarm">Remove from session</button>'
+      :`<button type="button" class="primary" data-infoact="farm">${s.mobIds.length?"Also killing it":"Farming it now"}</button>`)+mineSwitch()}}
 
 // an HP / SP recovery item (data/recovery.js): what it heals with your changes, the price the Consumables card uses and the cost per HP / SP
 function infoHeal(id){if(!RECOVERY[id])return "";

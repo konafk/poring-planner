@@ -82,6 +82,8 @@ The game's auto return only takes you to town at a weight %; it doesn't sell or 
 
 ## Monsters & maps
 
+**My numbers:** once your character is set up, a **My numbers** switch on the Map and Monsters cards and in a monster's popup shows or leaves out your kill time, damage, EXP and zeny against each monster, for when you only want to look a monster or map up. The page remembers it.
+
 ### Where to farm
 
 The first card on the tab answers "where should I farm?" for your character.
