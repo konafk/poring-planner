@@ -701,8 +701,8 @@ button.tile:hover{border-color:var(--accent)}
 .noCharNote{padding:12px 14px;border:1px dashed var(--line-strong);border-radius:12px}
 #farmNoChar{display:none}
 #farmCard.noChar #farmNoChar{display:block}
-#farmCard.noChar>:not(.bar:first-child):not(#farmNoChar):not(.farmOn){display:none}
-.farmOn{margin-bottom:10px}.farmOn select{min-width:min(100%,320px)}
+#farmCard.noChar>:not(.bar:first-child):not(#farmNoChar):not(.farmOn):not(#farmWorldMore){display:none}
+.farmOn{margin-bottom:10px}.farmOn>label{flex:0 1 auto;min-width:0;max-width:100%}.farmOn select{flex:1 1 220px;min-width:0;width:min(100%,420px)}
 #farmCard.noChar>.bar:first-child>.note{display:none}
 #mapTable.noChar :is([data-sessmob],[data-skip]){display:none}
 /* max base level: no quick Log EXP */
@@ -992,6 +992,13 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 #infoDlg .worldMap{margin:8px 0}
 #infoDlg .worldMap button:disabled{opacity:1;pointer-events:none}
 .wmBox.on{border:2px solid #ff3b30;background:rgba(255,59,48,.3);box-shadow:0 0 0 2px rgba(255,255,255,.8)}
+/* Where to farm's world map: the ranking's maps carry their rank, the top 3 in the accent colour */
+#farmWorldMore{max-width:900px;margin:4px 0 12px}
+#farmWorld .wmBox[data-rank]{border-color:rgba(255,255,255,.85);background:rgba(255,255,255,.12)}
+#farmWorld .wmBox[data-rank]::after{content:attr(data-rank);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;min-width:1.5em;padding:0 3px;border-radius:999px;background:rgba(20,12,8,.85);color:#fff;font-size:clamp(9px,1.1cqw,12px);font-weight:700;line-height:1.5;text-align:center;pointer-events:none}
+#farmWorld .wmBox.top::after{background:var(--accent)}
+#farmWorld .wmBox.dun[data-rank]::after{top:0;left:100%}
+@container (max-width:560px){#farmWorld .wmBox[data-rank]:not(.top)::after{display:none}}
 .wmFloors{position:absolute;z-index:3;width:max-content;max-width:100%;margin:3px 0;padding:3px 0;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.35)}
 .wmFloors[hidden]{display:none}
 .wmFloorsHead{padding:2px 10px 4px;border-bottom:1px solid var(--line);margin-bottom:2px;font-size:12px;font-weight:600}

@@ -148,6 +148,15 @@ try {
     const row = await page.getAttribute("#huntTable tbody [data-farm]", "data-farm");
     await page.click("#huntTable tbody [data-farm]");
     assert.equal(await page.evaluate("sessMap(cur())"), row);
+    // the world map farms the box clicked, the ranking's maps numbered on it
+    const wm = await page.getAttribute('#farmWorld .wmBox[data-rank="1"]', "data-wm");
+    await page.click('#farmWorld .wmBox[data-rank="1"]');
+    assert.ok(wm.split(",").includes(await page.evaluate("sessMap(cur())")));
+    // Farming on lists every other open map too: picking one farms it with its monsters
+    const other = await page.$eval("#sessMapSel optgroup option", o => o.value);
+    await page.selectOption("#sessMapSel", other);
+    assert.equal(await page.evaluate("sessMap(cur())"), other);
+    assert.equal(await page.inputValue("#sessMapSel"), other);
     assert.deepEqual(errs, []);
     await page.close();
   });

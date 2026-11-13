@@ -461,7 +461,8 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 
   <section class="card" id="farmCard" data-tab="track">
     <div class="bar"><h2 class="grow">Where to farm</h2><span class="note" id="bestBasis"></span><span class="note" id="huntBasis"></span></div>
-    <div class="bar farmOn"><label class="bar" title="The map you farm the session's monsters on: their spawn counts there weight the session's EXP, pace and loot. Auto: the open map where most of them spawn"><b>Farming on</b><select id="sessMapSel"></select></label></div>
+    <div class="bar farmOn"><label class="bar" title="The map you farm the session's monsters on: their spawn counts there weight the session's EXP, pace and loot. Auto: the open map where most of them spawn. Under Other open maps: any map, hunting its monsters"><b>Farming on</b><select id="sessMapSel"></select></label></div>
+    <details class="more worldMore" id="farmWorldMore" open><summary>World map <span class="note" id="farmWorldSum"></span></summary><div class="worldMap" id="farmWorld"></div></details>
     <div class="note noCharNote" id="farmNoChar">Set up your character to rank every open map by your EXP / min or zeny / hr. <a href="#" data-gotab="char">Open Character</a></div>
     <div class="spots" id="spots"></div>
     <div class="bar farmBar">
@@ -473,7 +474,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <button type="button" role="radio" data-hunt="maps">Maps</button>
         <button type="button" role="radio" data-hunt="mobs">Single monsters</button>
       </div>
-      <label class="bar">Show<select id="farmN"><option>10</option><option>20</option><option>50</option></select></label>
+      <label class="bar">Show<select id="farmN"><option>10</option><option>20</option><option>50</option><option value="1000">All</option></select></label>
     </div>
     <details class="more" id="farmMore">
       <summary>More options <span class="note" id="farmMoreSum"></span></summary>

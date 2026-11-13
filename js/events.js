@@ -303,8 +303,10 @@ const toggleSessMob=id=>{const s=sessNow(),auto=autoNamed(s);const i=s.mobIds.in
   if(s.map&&!sessOn(s,s.map))delete s.map;
   const nm=sessAutoName(s);if(auto&&nm)s.name=nm};
 // the session's map: blank is the auto pick; the name follows it while it's still the default
-$("sessMapSel").addEventListener("change",e=>{const s=sessNow(),auto=autoNamed(s);
-  if(e.target.value)s.map=e.target.value;else delete s.map;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;save();renderAll()});
+// a map from Other open maps (none of the session's monsters spawn there): farm it, with its monsters, as Farm here does
+$("sessMapSel").addEventListener("change",e=>{const v=e.target.value,s=sessNow();
+  if(v&&!sessMaps(s).some(x=>x[0]===v)&&!(s.map===v&&sessOn(s,v))){farmMap(v);showToast(`Farming ${mapCode(v)} in "${cur().name}": log your EXP as you go`);return}
+  const auto=autoNamed(s);if(v)s.map=v;else delete s.map;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;save();renderAll()});
 $("mobList").innerHTML=MOBS.map(mobOpt).join("");
 // Element / Race / Size / Boss dropdowns: the Monsters card's narrow its table, before Hide monsters with no open map; saved per account
 const mobFSel=(k,label,opts)=>`<label>${label}<select data-mf="${k}">${opts.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("")}</select></label>`;
