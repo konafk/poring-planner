@@ -129,13 +129,15 @@ function renderHome(){
   $("homeCharBtn").textContent=charSet(C())?"Open Character":"Set up your character";
 }
 // ---- collapsible cards: click a heading (or Enter/Space on it) to fold the card; saved by heading text. A card that's the only
-// one showing on its tab doesn't fold (soloFold): its heading is just a heading, and it shows even if you folded it before ----
+// one showing on its tab doesn't fold (soloFold): it shows even if you folded it before, and its heading goes when it only says the
+// tab's name again (Roadmap, Item info, Brewing simulator…), the rest of its row (counts, buttons) staying ----
 function foldCard(card){const h=card.querySelector(":scope>h2, :scope>.bar>h2");if(!h||h.classList.contains("foldHead"))return;
     if(!state.collapsed)state.collapsed={};
     const head=h.parentElement===card?h:h.parentElement;head.classList.add("cardHead");h.classList.add("foldHead");const key=h.textContent.trim();
     const set=v=>{card.classList.toggle("collapsed",v);h.setAttribute("aria-expanded",String(!v))};
     const flip=()=>{if(card.classList.contains("solo"))return;const v=!card.classList.contains("collapsed");state.collapsed[key]=v;if(!v)delete state.collapsed[key];save();set(v)};
     card.foldSolo=solo=>{card.classList.toggle("solo",solo);
+      const tab=$("heroTitle").textContent.trim().toLowerCase(),name=key.toLowerCase();h.hidden=solo&&(name===tab||name.startsWith(tab+" "));
       if(solo){card.classList.remove("collapsed");h.removeAttribute("aria-expanded");h.removeAttribute("role");h.removeAttribute("tabindex")}
       else{h.tabIndex=0;h.setAttribute("role","button");set(!!state.collapsed[key])}};
     card.foldSolo(false);
