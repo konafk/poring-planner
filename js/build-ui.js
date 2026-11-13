@@ -484,21 +484,49 @@ function lookCanvas(job,L,trans){const S=typeof JOB_SPRITES!=="undefined"&&JOB_S
   const at=(p,x,y)=>[...p.slice(0,4),x-l,y-t].join(","),bp=((S[pk]||{})[pj]||{})[sex],dye=bp&&L.dye<bp.c.length?L.dye:0,color=L.color<ewColors(sex,hair)?L.color:0;
   return `<canvas class="ewPic" width="${r-l}" height="${bt-t}" style="left:${l}px;top:${t}px" data-body="${at(b,b[4],b[5])}" data-pal="${pk},${pj},${sex}" data-dye="${dye}"${h?` data-head="${at(h,b[6]+h[4],b[7]+h[5])}" data-hair="${sex},${hair},${color}"`:""}`+
     `${acc.length?` data-acc="${acc.map(a=>at(a,b[6]+a[4],b[7]+a[5])).join(";")}"`:""}${ra?` data-robe="${rk},${at(ra,ra[4],ra[5])},${CL.robe.top.includes(w.robe)?1:0}"`:""}></canvas>`}
-function lookHtml(worn){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";const tj=ewTrans(S),bj=(state.look.trans&&tj)||S.body[state.job]||S.body.Novice,sex=ewSex(bj),hs=S.head[sex]||{};
-  const one=Object.keys(bj).length<2,hair=hs[state.look.hair]?state.look.hair:1,nc=ewColors(sex,hair),color=state.look.color<nc?state.look.color:0;
-  const pal=S.hairPal&&S.hairPal[sex]&&S.hairPal[sex][hair],swatch=pal?pal.c[color].substr(pal.k*6,6):"";
+// the look as drawn now: the body (the transcendent look's with Trans on), its gender, and the hair style, hair colour and clothes
+// colour that fit it (an out-of-range one shows as the first)
+function ewLookNow(){const S=JOB_SPRITES,tj=ewTrans(S),bj=(state.look.trans&&tj)||S.body[state.job]||S.body.Novice,sex=ewSex(bj),hs=S.head[sex]||{};
+  const hair=hs[state.look.hair]?state.look.hair:1,nc=ewColors(sex,hair),color=state.look.color<nc?state.look.color:0;
   // clothes colour 0 is undyed, 1 and up the client's dyes for this body
-  const bp=ewBodyPal(),nd=bp?bp.c.length:0,dye=state.look.dye<nd?state.look.dye:0,dyeSwatch=bp?bp.c[dye].substr(bp.k*6,6):"";
-  // Ragnarok Zero has no zeny stylist (iRO's): a new style or color after character creation takes a paid KP shop item (New Style
-  // Coupon, 7622), and clothes color a Clothing Dye Coupon or Clothing Dye Coupon II (6046, 6047), the transcendent look's too
-  const hairTip="changing it after character creation takes a paid KP shop item, such as a New Style Coupon";
-  const dyeTip="a Clothing Dye Coupon or Clothing Dye Coupon II (KP shop) changes it, on the transcendent look too. The dye stays through a job change, but can look different on the new job";
-  return `<div class="ewStage"><div class="ewFeet">${lookCanvas(state.job,{...state.look,...worn},state.look.trans)}</div></div>
-    <div class="ewLook"><button type="button" class="small" data-ewsex="" ${one?`disabled title="${esc(state.job)}s are ${sex==="f"?"female":"male"} only"`:`title="Gender: ${sex==="f"?"female":"male"}"`} aria-label="Gender">${sex==="f"?"♀":"♂"}</button>
-      <button type="button" class="small" data-ewhair="-1" aria-label="Previous hair style" title="Hair style: ${hairTip}">◀</button><span title="Hair style: ${hairTip}"><span class="ewHairW">Hair </span>${hair}</span><button type="button" class="small" data-ewhair="1" aria-label="Next hair style" title="Hair style: ${hairTip}">▶</button></div>
-      ${nc>1?`<div class="ewLook"><button type="button" class="small" data-ewcolor="-1" aria-label="Previous hair color" title="Hair color: ${hairTip}">◀</button><span title="Hair color ${color} of 0–${nc-1}: ${hairTip}"><span class="ewSwatch" style="background:#${swatch}"></span><span class="ewHairW">Color </span>${color}</span><button type="button" class="small" data-ewcolor="1" aria-label="Next hair color" title="Hair color: ${hairTip}">▶</button></div>`:""}
-      ${nd>1?`<div class="ewLook"><button type="button" class="small" data-ewdye="-1" aria-label="Previous clothes color" title="Clothes color: ${dyeTip}">◀</button><span title="Clothes color ${dye} of 0–${nd-1} (0 undyed): ${dyeTip}"><span class="ewSwatch" style="background:#${dyeSwatch}"></span><span class="ewHairW">Dye </span>${dye}</span><button type="button" class="small" data-ewdye="1" aria-label="Next clothes color" title="Clothes color: ${dyeTip}">▶</button></div>`:""}
-      ${tj?`<div class="ewLook"><button type="button" class="small ewTrans" data-ewtrans="" aria-pressed="${!!state.look.trans}" title="${esc(`${EW_TRANS[state.job]} look: Ragnarok Zero has no transcendent jobs, so a ${state.job} can look like a ${EW_TRANS[state.job]}. A Costume Change Ticket switches the look in game`)}">Trans</button></div>`:""}`}
+  const bp=ewBodyPal(),nd=bp?bp.c.length:0,dye=state.look.dye<nd?state.look.dye:0;
+  return {S,tj,bj,sex,one:Object.keys(bj).length<2,hair,nh:ewHairs(sex),nc,color,bp,nd,dye}}
+// Ragnarok Zero has no zeny stylist (iRO's): a new style or color after character creation takes a paid KP shop item (New Style
+// Coupon, 7622), and clothes color a Clothing Dye Coupon or Clothing Dye Coupon II (6046, 6047), the transcendent look's too
+const EW_HAIR_TIP="Changing it after character creation takes a paid KP shop item, such as a New Style Coupon.";
+const EW_DYE_TIP="A Clothing Dye Coupon or Clothing Dye Coupon II (KP shop) changes it, on the transcendent look too. The dye stays through a job change, but can look different on the new job.";
+// which grid of choices is open under the Look panel (EW_PICK: "hair", "color", "dye" or null): a button per choice beats stepping
+// through 40-odd hair styles one at a time
+let EW_PICK=null;
+const ewChev='<svg class="ic ewChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+// the character in the window, wearing what the tab shows
+function lookHtml(worn){return typeof JOB_SPRITES==="undefined"?"":`<div class="ewStage"><div class="ewFeet">${lookCanvas(state.job,{...state.look,...worn},state.look.trans)}</div></div>`}
+// the Look panel beside the window: gender (M / F; the one a job doesn't have greyed out, Bards are male only and Dancers female), a 2nd
+// job's own look or its transcendent job's, then a button for hair style, hair colour and clothes dye that opens the grid of them all
+function ewLookCtl(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";const v=ewLookNow();
+  const pal=S.hairPal&&S.hairPal[v.sex]&&S.hairPal[v.sex][v.hair],swatch=pal?pal.c[v.color].substr(pal.k*6,6):"",dyeSwatch=v.bp?v.bp.c[v.dye].substr(v.bp.k*6,6):"";
+  const radio=(k,x,on,label,extra="")=>`<button type="button" role="radio" data-ew${k}="${x}" aria-checked="${on}"${extra}>${esc(label)}</button>`;
+  const sexBtn=s=>radio("sex",s,v.sex===s,s==="f"?"F":"M",v.one&&v.sex!==s?` disabled title="${esc(state.job)}s are ${v.sex==="f"?"female":"male"} only"`:` title="${s==="f"?"Female":"Male"}"`);
+  const row=(label,ctl)=>`<span class="ewLbl">${label}</span>${ctl}`;
+  const open=(k,label,val,sw)=>row(label,`<button type="button" class="small ewOpen" data-ewopen="${k}" aria-expanded="${EW_PICK===k}" aria-controls="ewPicker" aria-label="${label} ${val}: pick from all of them">${sw?`<span class="ewSwatch" style="background:#${sw}"></span>`:""}<span>${val}</span>${ewChev}</button>`);
+  return `<div class="ewSide"><div class="ewSideHead">Look</div><div class="ewRows">
+    ${row("Gender",`<span class="seg segSm" role="radiogroup" aria-label="Gender">${sexBtn("m")}${sexBtn("f")}</span>`)}
+    ${v.tj?row("Job look",`<span class="seg segSm" role="radiogroup" aria-label="Job look" title="${esc(`Ragnarok Zero has no transcendent jobs, so a ${state.job} can look like a ${EW_TRANS[state.job]}. A Costume Change Ticket switches the look in game`)}">${radio("trans",0,!state.look.trans,state.job)}${radio("trans",1,!!state.look.trans,EW_TRANS[state.job])}</span>`):""}
+    ${open("hair","Hair style",v.hair,"")}${v.nc>1?open("color","Hair color",v.color,swatch):""}${v.nd>1?open("dye","Clothes dye",v.dye,dyeSwatch):""}</div></div>`}
+// the open grid, across under the window and the Look panel: every hair style (in your hair colour, or its first where it has fewer), every
+// hair colour on your hair style, or every clothes colour on the whole look without its costumes. A pick shows on the character at
+// once and leaves the grid open to try the next
+function ewPicker(){const k=EW_PICK,S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!k||!S)return "";const v=ewLookNow();
+  const n={hair:v.nh,color:v.nc,dye:v.nd}[k];if(!(n>1))return "";
+  const opt=(x,on,pic,label)=>`<button type="button" class="styOpt" data-ewpick="${k},${x}" aria-pressed="${on}" title="${esc(label)}">${pic}<span class="mono">${x}</span></button>`;
+  const grid=k==="hair"?Array.from({length:n},(_,i)=>i+1).map(h=>opt(h,h===v.hair,headCanvas(v.sex,h,v.color<ewColors(v.sex,h)?v.color:0,2),`Hair style ${h}`))
+    :k==="color"?Array.from({length:n},(_,c)=>opt(c,c===v.color,headCanvas(v.sex,v.hair,c,2),`Hair color ${c}`))
+    :Array.from({length:n},(_,d)=>opt(d,d===v.dye,`<span class="ewStage"><span class="ewFeet">${lookCanvas(state.job,{...state.look,dye:d,cos:{},gear:{}},state.look.trans)}</span></span>`,d?`Clothes color ${d}`:"Clothes color 0: undyed"));
+  const [title,cur,lo]={hair:["Hair style",v.hair,1],color:["Hair color",v.color,0],dye:["Clothes dye",v.dye,0]}[k];
+  return `<div class="ewPicker" id="ewPicker" role="group" aria-label="${title}"><div class="ewPickHead"><b>${title}</b><span class="note">${cur} of ${lo}–${lo+n-1}${k==="dye"?" (0 undyed)":""}</span>
+      <button type="button" class="small ewPickX" data-ewclose="" aria-label="Close">✕</button></div>
+    <p class="note ewPickTip">${k==="dye"?EW_DYE_TIP:EW_HAIR_TIP}</p>
+    <div class="styGrid ${k==="dye"?"styLooks":"styHeads"} ewPickGrid">${grid.join("")}</div></div>`}
 // what the character in the window wears, as in game: on Normal Equip its headgear and garment, on Special Equip the costumes over them
 function ewWorn(b,sp){const w=wornFromSet(b);if(!sp)w.cos={};return w}
 function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),sp=EW_TAB==="special";
@@ -520,12 +548,13 @@ function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),
   const R=sp?[stone("middle",true),ownSlot(0),shield(),ownSlot(1),ownSlot(2)]:EW_R.map(k=>gearSlot(k,true));
   // arrows only for jobs that can hold a bow, or when some are set
   const ammo=!sp&&(b.gear.ammo&&b.gear.ammo.id||gearChoices("weapon").some(it=>BUILD.WTYPE[it.type]==="Bow"))?`<div class="ewAmmo">${gearSlot("ammo",false)}</div>`:"";
-  const html=`<div class="ewHead"><span>Equipped Items</span>${i>=0?`<span class="ewSet">Set ${i+1}</span>`:""}</div>
+  const html=`<div class="equipWin"><div class="ewHead"><span>Equipped Items</span>${i>=0?`<span class="ewSet">Set ${i+1}</span>`:""}</div>
     <div class="ewTabs" role="tablist">${[["normal","Normal Equip"],["special","Special Equip"]].map(([k,t])=>`<button type="button" role="tab" data-ewtab="${k}" aria-selected="${EW_TAB===k}">${t}</button>`).join("")}</div>
-    <div class="ewBody"><div class="ewCol">${L.join("")}</div><div class="ewChar">${lookHtml(ewWorn(b,sp))}</div><div class="ewCol">${R.join("")}</div>${ammo}</div>`;
-  // the button you pressed keeps focus through the redraw
-  const a=document.activeElement,f=a&&el.contains(a)?["ewtab","ewsex","ewhair","ewcolor","ewdye","ewtrans","ewslot"].map(k=>a.dataset[k]!=null?`[data-${k}="${a.dataset[k]}"]`:null).find(Boolean):null;
-  if(renderEquipWin.html===html)return;renderEquipWin.html=html;el.innerHTML=html;drawLook(el);if(f)el.querySelector(f)?.focus()}
+    <div class="ewBody"><div class="ewCol">${L.join("")}</div><div class="ewChar">${lookHtml(ewWorn(b,sp))}</div><div class="ewCol">${R.join("")}</div>${ammo}</div></div>${ewLookCtl()}${ewPicker()}`;
+  // the button you pressed keeps focus through the redraw, and the open grid its scroll
+  const a=document.activeElement,f=a&&el.contains(a)?["ewtab","ewsex","ewopen","ewpick","ewtrans","ewslot"].map(k=>a.dataset[k]!=null?`[data-${k}="${a.dataset[k]}"]`:null).find(Boolean):null;
+  if(renderEquipWin.html===html)return;renderEquipWin.html=html;const g=el.querySelector(".ewPickGrid"),top=g&&g.scrollTop;
+  el.innerHTML=html;drawLook(el);const g2=el.querySelector(".ewPickGrid");if(g2&&top)g2.scrollTop=top;if(f)el.querySelector(f)?.focus({preventScroll:true})}
 // a hair style on its own (the Stylist's hair grids), drawn k times its size, painted by drawLook like a look's canvas
 function headCanvas(sex,hair,color,k=1){const h=typeof JOB_SPRITES!=="undefined"&&(JOB_SPRITES.head[sex]||{})[hair];if(!h)return "";
   return `<canvas class="ewPic lookHead" width="${h[2]}" height="${h[3]}" style="width:${h[2]*k}px;height:${h[3]*k}px" data-head="${[...h.slice(0,4),0,0].join(",")}" data-hair="${sex},${hair},${color}"></canvas>`}
@@ -554,15 +583,18 @@ function paintLook(c,bp,hp,body){const g=c.getContext("2d");g.clearRect(0,0,c.wi
   if(c.dataset.acc){const im=costumeImg("head");c.dataset.acc.split(";").forEach(a=>sheet(im,a.split(",")))}}
 $("equipWin").addEventListener("click",e=>{const t=e.target.closest("button");if(!t||t.disabled)return;const L=state.look;
   if(t.dataset.ewtab){EW_TAB=t.dataset.ewtab;renderEquipWin();return}
-  if(t.dataset.ewtrans!=null){L.trans=!L.trans;save();renderEquipWin();return}
-  if(t.dataset.ewsex!=null){L.sex=L.sex==="f"?"m":"f";if(L.hair>ewHairs(L.sex))L.hair=1;save();renderEquipWin();return}
-  if(t.dataset.ewhair){const S=JOB_SPRITES.body[state.job]||JOB_SPRITES.body.Novice,n=ewHairs(ewSex(S));if(n)L.hair=(L.hair-1+ +t.dataset.ewhair+n)%n+1;save();renderEquipWin();return}
-  if(t.dataset.ewcolor){const S=JOB_SPRITES.body[state.job]||JOB_SPRITES.body.Novice,n=ewColors(ewSex(S),L.hair);if(n)L.color=((L.color<n?L.color:0)+ +t.dataset.ewcolor+n)%n;save();renderEquipWin();return}
-  if(t.dataset.ewdye){const p=ewBodyPal(),n=p?p.c.length:0;if(n)L.dye=((L.dye<n?L.dye:0)+ +t.dataset.ewdye+n)%n;save();renderEquipWin();return}
+  if(t.dataset.ewtrans){L.trans=t.dataset.ewtrans==="1";save();renderEquipWin();return}
+  if(t.dataset.ewsex){if(L.sex===t.dataset.ewsex)return;L.sex=t.dataset.ewsex;if(L.hair>ewHairs(L.sex))L.hair=1;save();renderEquipWin();return}
+  if(t.dataset.ewopen){EW_PICK=EW_PICK===t.dataset.ewopen?null:t.dataset.ewopen;renderEquipWin();
+    if(EW_PICK)$("ewPicker")?.scrollIntoView({block:"nearest",behavior:"smooth"});return}
+  if(t.dataset.ewclose!=null){const k=EW_PICK;EW_PICK=null;renderEquipWin();$("equipWin").querySelector(`[data-ewopen="${k}"]`)?.focus();return}
+  if(t.dataset.ewpick){const [k,x]=t.dataset.ewpick.split(",");L[k]=+x;save();renderEquipWin();return}
   const k=t.dataset.ewslot;if(!k)return;
   const to=EW_TAB==="special"?(k==="ring"?$("stoneRow").querySelector("[data-ringon]"):k==="shield"?$("stoneRow").querySelector("[data-shadow]"):k.startsWith("own")?$("specialOwn").querySelector(`[data-i="${k.slice(3)}"] [data-f=name]`):$("stoneRow").querySelector(`[data-costume="${k}"]`))
     :$("gearTable").querySelector(`tr[data-slot="${k}"] input.item`);
   if(to){const d=to.closest("details");if(d)d.open=true;to.scrollIntoView({block:"center",behavior:"smooth"});to.focus({preventScroll:true})}});
+// Escape closes the open grid, back to its button
+$("equipWin").addEventListener("keydown",e=>{if(e.key!=="Escape"||!EW_PICK)return;e.preventDefault();const k=EW_PICK;EW_PICK=null;renderEquipWin();$("equipWin").querySelector(`[data-ewopen="${k}"]`)?.focus()});
 // ---- class picker (the Skill tree's Job): a button with the job's look, icon and name that opens every job's in groups, like a list
 // of classes to pick from. Each job shows its male and female look side by side (a Bard only male, a Dancer only female), undyed, each
 // with a random hair style and colour, rolled each time you open the tab (the button and the list show the same). groups: [[heading,

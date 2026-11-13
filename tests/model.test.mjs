@@ -3109,9 +3109,16 @@ t("equipment window: gear named as the game shows it, and the job's look (Bards 
   const card = run(`(CARDS.find(c=>cardName(c)&&c.affixPos!=="suffix"&&!/^of /i.test(cardName(c)))||{}).id`);
   if (card) assert.equal(run(`gameName({id:${muf},refine:0,cards:[${card},${card}]})`), `Double ${run(`cardName(BUILD.item(${card}))`)} ${name}`);
   run(`state.look={sex:"m",hair:2};state.job="Dancer"`);
-  assert.match(run(`lookHtml()`), /disabled[^>]*>♀/);                    // a male look still draws a Dancer female
+  assert.match(run(`ewLookCtl()`), /data-ewsex="m" aria-checked="false" disabled/);   // a male look still draws a Dancer female
+  assert.match(run(`ewLookCtl()`), /data-ewsex="f" aria-checked="true"/);
+  assert.match(run(`lookHtml({})`), /data-pal="bodyPal,Dancer,f"/);
   run(`state.job="Knight"`);
-  assert.match(run(`lookHtml()`), /aria-label="Gender">♂/); assert.match(run(`lookHtml()`), /Hair <\/span>2</);
+  assert.match(run(`ewLookCtl()`), /data-ewsex="m" aria-checked="true" title/); assert.match(run(`ewLookCtl()`), /aria-label="Hair style 2: /);
+  assert.match(run(`ewLookCtl()`), /data-ewtrans="1" aria-checked="false">Lord Knight</);
+  // Hair opens a grid of every hair style, the one worn pressed
+  run(`EW_PICK="hair"`);
+  assert.match(run(`ewPicker()`), /data-ewpick="hair,2" aria-pressed="true"/); assert.match(run(`ewPicker()`), /data-ewpick="hair,1" aria-pressed="false"/);
+  run(`EW_PICK=null`); assert.equal(run(`ewPicker()`), "");
 });
 
 t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {

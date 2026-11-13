@@ -841,13 +841,31 @@ details.more>.form{display:grid}
 .ewStage::before{content:"";position:absolute;left:50%;bottom:calc(8px*var(--ew-z));width:calc(26px*var(--ew-z));height:calc(7px*var(--ew-z));transform:translateX(-50%);border-radius:50%;background:var(--ew-floor)}
 .ewFeet{position:absolute;left:50%;bottom:calc(12px*var(--ew-z));width:0;height:0;transform:scale(var(--ew-z));transform-origin:0 0}
 .ewFeet canvas{position:absolute;image-rendering:pixelated}
-.ewLook{display:flex;align-items:center;gap:3px;margin-top:4px;font-size:11px;color:var(--muted);white-space:nowrap}
-.ewLook button{min-height:0;padding:1px 6px;font-size:11px;line-height:1.4}
-.ewLook .ewTrans[aria-pressed="true"]{color:var(--accent);background:var(--accent-soft);border-color:var(--accent)}
+.seg.segSm{padding:2px;gap:1px}.seg.segSm button{min-height:0;padding:2px 10px;font-size:11.5px;line-height:1.4}
+/* the window and, on its right (under it when there's no room), the Look panel: gender, job look, and a button per hair style, hair
+   colour and clothes dye that opens its grid (.ewPicker) in the panel */
+.ewWrap{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;margin:10px 0}
+.ewWrap>.equipWin{flex:1 1 440px;max-width:560px;margin:0;min-width:0}
+.ewSide{flex:0 1 190px;min-width:170px;border:1px solid var(--ew-line);border-radius:7px;background:var(--ew-bg);box-shadow:var(--shadow);font-size:12px;overflow:hidden}
+.ewSideHead{padding:4px 10px;background:var(--ew-head);border-bottom:1px solid var(--ew-line);font-weight:600}
+.ewRows{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:6px 10px 10px}
+.ewLbl{margin-top:4px;font-size:11.5px;color:var(--muted)}
+.ewOpen{display:inline-flex;align-items:center;gap:4px;min-width:80px;min-height:0;padding:2px 4px 2px 8px;font-size:11.5px;line-height:1.4;white-space:nowrap}
+.ewOpen>span:not(.ewSwatch){flex:1;text-align:left}
+.ewChev{width:12px;height:12px;color:var(--muted);transition:transform .15s}
+.ewOpen[aria-expanded="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.ewOpen[aria-expanded="true"] .ewChev{transform:rotate(180deg);color:var(--accent)}
+.ewPicker{flex:1 1 100%;min-width:0;padding:6px 10px 10px;border:1px solid var(--ew-line);border-radius:7px;background:var(--ew-bg);box-shadow:var(--shadow);font-size:12px}
+.ewPickHead{display:flex;align-items:baseline;gap:8px}.ewPickHead .note{font-size:11px}
+.ewPickX{margin-left:auto;min-height:0;padding:0 6px;line-height:1.5}
+.ewPickTip{margin:2px 0 6px;font-size:11px}
+.ewPickGrid{max-height:300px;overflow:auto;padding:2px}
+.ewPickGrid.styHeads{grid-template-columns:repeat(auto-fill,minmax(60px,1fr))}
+.ewPickGrid.styHeads .styOpt{min-height:70px}
 .ewSwatch{display:inline-block;width:9px;height:9px;margin-right:3px;border:1px solid var(--ew-line);border-radius:2px;vertical-align:-1px}
 .ewAmmo{grid-column:1/-1;display:flex;justify-content:center}
 .ewAmmo .ewSlot{width:min(100%,260px)}
-@media (max-width:520px){.equipWin{--ew-z:1.5}.ewBody{padding:6px;gap:4px}.ewSlot{padding:3px 5px;gap:4px;font-size:11px}.ewLook button{padding:1px 4px}.ewHairW{display:none}}
+@media (max-width:520px){.equipWin{--ew-z:1.5}.ewBody{padding:6px;gap:4px}.ewSlot{padding:3px 5px;gap:4px;font-size:11px}}
 /* the class picker (the Skill tree's Job): a button with the job's look, client icon and name that opens every job's as a grid. The
    looks are the equipment window's (.ewStage / .ewFeet). A look reaches 91px above its feet (long hair) and 14px below (feet,
    shadow), so each stage leaves that much room, scaled, above and below where the feet stand */
@@ -879,6 +897,7 @@ details.more>.form{display:grid}
 .styPreview{--ew-z:1.5;width:272px;height:302px;position:relative;overflow:hidden;border:1px solid var(--line);border-radius:var(--r);background:var(--raised)}
 .styPreview .ewStage{display:block;height:100%;min-height:0}.styPreview .ewFeet{bottom:43px}.styPreview .ewStage::before{bottom:37px}
 .styCtl{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1 1 240px}
+.styOpts .seg button{padding:2px 14px;font-size:12.5px}
 .styOpts button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .styFold{margin-top:12px}
 .styGrid{display:grid;gap:6px}

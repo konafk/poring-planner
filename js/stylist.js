@@ -67,12 +67,12 @@ function renderStylist(){if(typeof JOB_SPRITES==="undefined")return;const v=styl
   const anim=typeof LOOK_FILES!=="undefined"&&LOOK_HAS[`body/${v.key}-${v.sex}`];
   $("styPreview").innerHTML=styStage(v.job,L,v.trans)+(anim?'<canvas id="styAnimCanvas" class="styAnim" width="180" height="200" hidden></canvas>':"");
   $("styAnimCtl").innerHTML=anim?`<button type="button" class="small" data-styturn="1" aria-label="Turn left" title="Turn">⟲</button><span class="note styDir">${LOOK_DIRS[STY_ANIM.dir]}</span><button type="button" class="small" data-styturn="-1" aria-label="Turn right" title="Turn">⟳</button>`+
-    LOOK_ACTS.map(([k,n])=>`<button type="button" class="small" data-styact="${k}" aria-pressed="${STY_ANIM.act===k}">${n}</button>`).join(""):"";
+    `<span class="seg" role="radiogroup" aria-label="Animation">${LOOK_ACTS.map(([k,n])=>`<button type="button" role="radio" data-styact="${k}" aria-checked="${STY_ANIM.act===k}">${n}</button>`).join("")}</span>`:"";
   if(anim)styAnimRun();
-  $("stySex").innerHTML=["m","f"].map(s=>`<button type="button" class="small" data-stysex="${s}" aria-pressed="${v.sex===s}"${v.one&&v.sex!==s?` disabled title="${esc(v.job)}s are ${v.sex==="f"?"female":"male"} only"`:""}>${s==="f"?"♀ Female":"♂ Male"}</button>`).join("")+
-    (v.canTrans?`<button type="button" class="small" data-stytrans="" aria-pressed="${v.trans}" title="${esc(`${EW_TRANS[v.job]} look: Ragnarok Zero has no transcendent jobs, so a ${v.job} can look like a ${EW_TRANS[v.job]}. A Costume Change Ticket switches the look in game`)}">${esc(EW_TRANS[v.job])} look</button>`:"")+
-    (v.canRide?`<button type="button" class="small" data-styride="" aria-pressed="${v.ride}" title="${esc(`Halter Lead: rides a ${STY_MOUNT[v.job]||"mount"}. The Halter Lead (from a Boarding Halter Box) lets every job ride a mount of its branch, with its own clothes colours`)}">Halter Lead</button>`:"");
-  $("stySum").textContent=`${styName(v)} · clothes colour ${v.dye} of 0–${v.dyes-1} · hair style ${v.hair} of 1–${v.hairs} · hair colour ${v.color} of 0–${v.colors-1}`;
+  $("stySex").innerHTML=`<span class="seg" role="radiogroup" aria-label="Gender">${["m","f"].map(s=>`<button type="button" role="radio" data-stysex="${s}" aria-checked="${v.sex===s}"${v.one&&v.sex!==s?` disabled title="${esc(v.job)}s are ${v.sex==="f"?"female":"male"} only"`:` title="${s==="f"?"Female":"Male"}"`}>${s==="f"?"F":"M"}</button>`).join("")}</span>`+
+    // a 2nd job's own look or its transcendent job's, side by side
+    (v.canTrans?`<span class="seg" role="radiogroup" aria-label="Look" title="${esc(`Ragnarok Zero has no transcendent jobs, so a ${v.job} can look like a ${EW_TRANS[v.job]}. A Costume Change Ticket switches the look in game`)}">${[[0,v.job],[1,EW_TRANS[v.job]]].map(([x,n])=>`<button type="button" role="radio" data-stytrans="${x}" aria-checked="${v.trans===!!x}">${esc(n)}</button>`).join("")}</span>`:"")+
+    (v.canRide?`<span class="seg" role="radiogroup" aria-label="Halter Lead" title="${esc(`Halter Lead: rides a ${STY_MOUNT[v.job]||"mount"}. The Halter Lead (from a Boarding Halter Box) lets every job ride a mount of its branch, with its own clothes colours`)}">${[[0,"On foot"],[1,"Halter Lead"]].map(([x,n])=>`<button type="button" role="radio" data-styride="${x}" aria-checked="${v.ride===!!x}">${n}</button>`).join("")}</span>`:"");
   // clothes colours on the whole look without its costumes (which can cover the clothes and reach past a tile; only the preview wears
   // them); hair styles (each in your hair colour, or its first where it has fewer) and hair colours as heads
   $("styDyes").innerHTML=Array.from({length:v.dyes},(_,d)=>styOpt("dye",d,d===v.dye,styStage(v.job,{...L,dye:d,cos:{},gear:{}},v.trans),d?`Clothes colour ${d}`:"Clothes colour 0: undyed")).join("");
@@ -84,7 +84,7 @@ function renderStylist(){if(typeof JOB_SPRITES==="undefined")return;const v=styl
 $("styCard").addEventListener("click",e=>{const b=e.target.closest("button");if(!b||b.disabled)return;const t=state.stylist,v=styleOf(),d=b.dataset;
   // a choice keeps the rest of the look as it's drawn now (a new gender or job starts from the hair and colours that fit it)
   const keep=()=>Object.assign(t,{job:v.job,sex:v.sex,hair:v.hair,color:v.color,dye:v.dye,trans:v.trans,ride:v.ride});
-  if(d.stysex){keep();t.sex=d.stysex}else if(d.stytrans!=null){keep();t.trans=!v.trans}else if(d.styride!=null){keep();t.ride=!v.ride}else if(d.stydye){keep();t.dye=+d.stydye}
+  if(d.stysex){keep();t.sex=d.stysex}else if(d.stytrans){keep();t.trans=d.stytrans==="1"}else if(d.styride){keep();t.ride=d.styride==="1"}else if(d.stydye){keep();t.dye=+d.stydye}
   else if(d.styhair){keep();t.hair=+d.styhair}else if(d.stycolor){keep();t.color=+d.stycolor}
   else if(d.styslot){STY_AT=d.styslot.split(",");renderStyCos(v);return}
   else if(d.styturn){STY_ANIM.dir=(STY_ANIM.dir+ +d.styturn+8)%8;renderStylist();return}
