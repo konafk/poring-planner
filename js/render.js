@@ -36,21 +36,24 @@ const eqMaxNote=()=>{const t=!atMaxLv()?"":num(C().jobLv)>=jobMax()?"Max level: 
 function crowdInfo(){const c=C(),m=calcMob();if(document.activeElement!==$("crowd"))$("crowd").value=c.crowd??"";
   if(!m){$("crowdInfo").textContent="";return}const n=crowdN(m),pz=poisonUp(m);
   $("crowdInfo").textContent=`vs ${m.name}: ${m.agg||m.assist?`${m.agg?"aggressive":"assists its kind"}, possible rampage of ${fmtP(n)}`:"fights you alone"}${n>2?` (FLEE −${Math.round((1-crowdFlee(n))*100)}%, DEF −${Math.round((1-crowdDef(n))*100)}%)`:""}${m.poison?` · poisons you ${Math.round(pz*100)}% of the time: −${fmtN(poisonHpPerSec())} HP/s, no HP or SP regen then`:""}`}
-// Your numbers starts with what you farm for: the time a kill takes, EXP and zeny on the session's map or monster (the bottom dock on
-// narrower screens shows only these). The attack's own numbers (per use, SP, walking) follow them
-function charOutTiles(){const m=calcMob(),tile=(k,v,sub)=>`<div class="tile out"><div class="k">${k}</div><div class="v mono">${v}</div><div class="s">${sub}</div></div>`;
+// Your numbers starts with what you farm for: the time a kill takes, damage per second, EXP and zeny on the session's map or monster
+// (the bottom dock on narrower screens shows only these). The attack's own numbers (time per attack or cast, SP) follow them; walking
+// is in the kill time's line, and where it comes from in its tooltip
+function charOutTiles(){const m=calcMob(),tile=(k,v,sub,tip)=>`<div class="tile out"${tip?` title="${esc(tip)}"`:""}><div class="k">${k}</div><div class="v mono">${v}</div><div class="s">${sub}</div></div>`;
+  const dpsTile=(d,sub)=>d!=null&&isFinite(d)?tile("Damage / s",fmtN(Math.round(d)),sub):"";
   const far='<a href="#session" data-gotab="track" data-goto="farmCard">Where to farm</a>';
   if(!charSet())return `<div class="tile out wide"><div class="k">Your numbers</div><div class="s">Fill in your stats below to see your kill time, EXP and zeny</div></div>`;
   if(!m)return `<div class="tile out wide"><div class="k">No monster picked</div><div class="s">Press "Farm here" in ${far} on the Session tab to see your kill time, EXP and zeny</div></div>`;
   // a whole map farmed (Farm here) and no one monster picked: the map's mix, the numbers Where to farm ranked it by
   {const ss=cur(),mp=sessMap(ss),r=!state.calcMobId&&sessMobs(ss).length>1&&mp?mapStats(mp,walkSec()):null;
-    if(r&&isFinite(r.secT))return tile(`on ${esc(mapName(mp)||mapCode(mp))}`,`${r.secT.toFixed(1)}s`,`a kill: ${r.sec.toFixed(1)}s fighting + ${(r.secT-r.sec).toFixed(1)}s walking${r.sell>0.05?" and selling":""}`)+
+    if(r&&isFinite(r.secT))return tile(`on ${esc(mapName(mp)||mapCode(mp))}`,`${r.secT.toFixed(1)}s`,`a kill: ${r.sec.toFixed(1)}s fighting + ${(r.secT-r.sec).toFixed(1)}s walking${r.sell>0.05?" and selling":""}`,walkSrcTxt())+
+      dpsTile(mapDps(mp,walkSec(),r.el2),"while fighting, averaged over the map's monsters, misses included")+
       tile("EXP / min",fmtN(r.epm),`${fmtN(r.epk)} EXP a kill`)+tile("Zeny / hr",fmtN(r.net),"net: loot after HP and SP items")}
   const r=mobRow(m,walkSec());if(!r||!isFinite(r.tot))return `<div class="tile out wide"><div class="k">vs ${esc(m.name)}</div><div class="v mono">can't hurt it</div><div class="s">Check your attack and its element</div></div>`;
   // damage per second while fighting it, with the element the EXP/min picks (none for Spell Fist, which has no single damage per use)
   const dps=withEl(r.el2,()=>dpsOf(m));
-  return tile(`vs ${esc(m.name)}`,`${r.tot.toFixed(1)}s`,`a kill: ${r.sec.toFixed(1)}s fighting + ${(r.tot-r.sec).toFixed(1)}s walking`)+
-    (dps!=null&&isFinite(dps)?tile("Damage / s",fmtN(Math.round(dps)),`vs its ${fmtN(m.hp)} HP, misses included`):"")+
+  return tile(`vs ${esc(m.name)}`,`${r.tot.toFixed(1)}s`,`a kill: ${r.sec.toFixed(1)}s fighting + ${(r.tot-r.sec).toFixed(1)}s walking`,walkSrcTxt())+
+    dpsTile(dps,`vs its ${fmtN(m.hp)} HP, misses included`)+
     tile("EXP / min",m.expUnknown?"?":fmtN(r.epm)+(m.expUnsure?"*":""),m.expUnknown?"no EXP data for it yet":`${m.expUnsure?"* EXP unconfirmed · ":""}job ${fmtN(r.jpm)} / min`)+
     tile("Zeny / hr",fmtN(r.zph),"loot after skill and SP items")}
 function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
@@ -113,9 +116,8 @@ function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
       ` · SP items ${sgItemsOn()?`${(sgItemsPerSec()*60).toFixed(1)}/min ≈ ${fmtN(sgItemsPerSec()*3600*spItemPrice())} z/hr`:"off (Hindsight off)"}`}
   if(state.job==="Sage"){const t=a.type;$("fsInfo").textContent=!G().fsOn?"":hasTree(c)&&!skLv(c,"foresight")?"not learned":t!=="magic"&&t!=="phys"||!(castSec(0)<castSec())?"only for attacks with a variable cast time"
     :fsUsed()?`saves ${(plainUseSec()-fsUseSec()).toFixed(2)} s per cast (${plainUseSec().toFixed(2)} → ${fsUseSec().toFixed(2)} s, its own cast included)`:`not worth it: ${fsUseSec().toFixed(2)} s per cast with it vs ${plainUseSec().toFixed(2)} s without`}
-  $("charTiles").innerHTML=charOutTiles()+`<div class="tile det"><div class="k">Per use</div><div class="v mono">${us.toFixed(2)}s</div><div class="s">${a.type==="auto"||a.type==="spellfist"?`ASPD ${aspdEff()}${c.potOn?" (potion)":""} · ${atkPerSec().toFixed(2)} hits/s${critChance()>0?` · ${Math.round(critChance()*100)}% crits`:""}`:`cast ${castSec().toFixed(2)}s${castSec()<num(a.cast)?` (base ${num(a.cast)}s)`:""}${fsUsed()?`, ${castSec(0.5).toFixed(2)}s with Foresight (+ ${(fsCastSec()/FS_USES).toFixed(2)}s a cast for Foresight's own)`:""}${castEff()>castSec()+0.005?` <span class="warnc">≈ ${castEff().toFixed(2)}s with hits interrupting it</span>`:""} + delay ${delaySec().toFixed(2)}s${castEff()+delaySec()<1/atkPerSec()?" · held by your attack interval (ASPD), not cast + delay":""}${critChance()>0?` · ${Math.round(critChance()*100)}% crits`:""}`} · ${atk}</div></div>
-   <div class="tile det ${need>reg&&!c.autoSp?"":"now"}"><div class="k">SP use vs regen</div><div class="v mono">${fmtN(need)} / ${fmtN(reg)}</div><div class="s">per minute · regen ${spRegen8()} per 8s${isrPer10()?` + ${isrPer10()} per 10s (Increase SP Recovery)`:""}${consSPPerSec()>0?` + ${fmtSig(consSPPerSec()*60)}/min from consumables`:""}${a.type==="spellfist"?(ips>0?` · ${(ips*60).toFixed(1)} SP items/min`:hsChance()>0&&hsSustain()<1?` · <span class="bad">Hindsight fires ${Math.round(hsSustain()*100)}% as often</span>`:""):need>reg?(c.autoSp?` · items cover ${fmtN(need-reg)}/min`:` · <span class="bad">you rest ${Math.round((1-1/rf)*100)}% of the time</span>`):""}</div></div>
-   <div class="tile det"><div class="k">Walking per kill</div><div class="v mono">${walkSec().toFixed(1)}s</div><div class="s">${esc(walkSrcTxt())}</div></div>`;
+  $("charTiles").innerHTML=charOutTiles()+`<div class="tile det"><div class="k">${a.type==="auto"||a.type==="spellfist"?"Time per attack":"Time per cast"}</div><div class="v mono">${us.toFixed(2)}s</div><div class="s">${a.type==="auto"||a.type==="spellfist"?`ASPD ${aspdEff()}${c.potOn?" (potion)":""} · ${atkPerSec().toFixed(2)} hits/s${critChance()>0?` · ${Math.round(critChance()*100)}% crits`:""}`:`cast ${castSec().toFixed(2)}s${castSec()<num(a.cast)?` (base ${num(a.cast)}s)`:""}${fsUsed()?`, ${castSec(0.5).toFixed(2)}s with Foresight (+ ${(fsCastSec()/FS_USES).toFixed(2)}s a cast for Foresight's own)`:""}${castEff()>castSec()+0.005?` <span class="warnc">≈ ${castEff().toFixed(2)}s with hits interrupting it</span>`:""} + delay ${delaySec().toFixed(2)}s${castEff()+delaySec()<1/atkPerSec()?" · held by your attack interval (ASPD), not cast + delay":""}${critChance()>0?` · ${Math.round(critChance()*100)}% crits`:""}`} · ${atk}</div></div>
+   <div class="tile det ${need>reg&&!c.autoSp?"":"now"}"><div class="k">SP use vs regen</div><div class="v mono">${fmtN(need)} / ${fmtN(reg)}</div><div class="s">per minute · regen ${spRegen8()} per 8s${isrPer10()?` + ${isrPer10()} per 10s (Increase SP Recovery)`:""}${consSPPerSec()>0?` + ${fmtSig(consSPPerSec()*60)}/min from consumables`:""}${a.type==="spellfist"?(ips>0?` · ${(ips*60).toFixed(1)} SP items/min`:hsChance()>0&&hsSustain()<1?` · <span class="bad">Hindsight fires ${Math.round(hsSustain()*100)}% as often</span>`:""):need>reg?(c.autoSp?` · items cover ${fmtN(need-reg)}/min`:` · <span class="bad">you rest ${Math.round((1-1/rf)*100)}% of the time</span>`):""}</div></div>`;
 }
 
 // items skills use up: casts per kill for this job's support skills and a price box for every item in play (c.supCasts, c.itemPrices,
