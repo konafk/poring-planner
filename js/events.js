@@ -308,6 +308,15 @@ $("sessMapSel").addEventListener("change",e=>{const v=e.target.value,s=sessNow()
   if(v&&!sessMaps(s).some(x=>x[0]===v)&&!(s.map===v&&sessOn(s,v))){farmMap(v);showToast(`Farming ${mapCode(v)} in "${cur().name}": log your EXP as you go`);return}
   const auto=autoNamed(s);if(v)s.map=v;else delete s.map;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;save();renderAll()});
 $("mobList").innerHTML=MOBS.map(mobOpt).join("");
+// Hunting (Where to farm, Session tab): add any monster to the session by name (names are unique: variants carry their id), take one
+// out with its ×
+const addSessMob=()=>{const inp=$("sessMobIn"),v=inp.value.trim().toLowerCase(),m=v&&MOBS.find(x=>x.name.toLowerCase()===v);if(!m)return;const id=m.id;inp.value="";
+  if(sessNow().mobIds.includes(id))return;toggleSessMob(id);state.calcMobId=null;save();renderAll();showToast(`${MOB_BY_ID.get(id).name} is in your session.`)};
+$("sessMobIn").addEventListener("input",e=>{if(!e.inputType||e.inputType==="insertReplacementText")addSessMob()});
+$("sessMobIn").addEventListener("change",addSessMob);
+$("sessMobIn").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addSessMob()}});
+$("sessMobChips").addEventListener("click",e=>{const b=e.target.closest("[data-sessmobx]");if(!b)return;const id=+b.dataset.sessmobx;
+  toggleSessMob(id);state.calcMobId=null;save();renderAll();showToast(`${MOB_BY_ID.get(id).name} is out of your session.`)});
 // Element / Race / Size / Boss dropdowns: the Monsters card's narrow its table, before Hide monsters with no open map; saved per account
 const mobFSel=(k,label,opts)=>`<label>${label}<select data-mf="${k}">${opts.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("")}</select></label>`;
 const MOBF_HTML=mobFSel("el","Element",[["","Any"],...AE.map(x=>[x,x])])+mobFSel("race","Race",[["","Any"],...RACES.map(x=>[x,x])])

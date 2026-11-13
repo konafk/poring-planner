@@ -154,6 +154,12 @@ try {
     const row = await page.getAttribute("#huntTable tbody [data-farm]", "data-farm");
     await page.click("#huntTable tbody [data-farm]");
     assert.equal(await page.evaluate("sessMap(cur())"), row);
+    // Hunting: a monster added by name joins the session, its × takes it out
+    await page.fill("#sessMobIn", "Poring");
+    await page.press("#sessMobIn", "Enter");
+    assert.ok(await page.evaluate("cur().mobIds.includes(1002)"));
+    await page.click('#sessMobChips [data-sessmobx="1002"]');
+    assert.ok(await page.evaluate("!cur().mobIds.includes(1002)"));
     // the world map farms the box clicked, the ranking's maps numbered on it
     const wm = await page.getAttribute('#farmWorld .wmBox[data-rank="1"]', "data-wm");
     await page.click('#farmWorld .wmBox[data-rank="1"]');

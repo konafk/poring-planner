@@ -89,6 +89,7 @@ The game's auto return only takes you to town at a weight %; it doesn't sell or 
 The first card on the tab answers "where should I farm?" for your character.
 
 - **Best spots:** the top 3 open maps by EXP / min and the top 3 by net zeny / hr, side by side, with their main monsters. **Farm here** makes a map the session's map (Monsters & maps stays on the map it shows) and its monsters the ones you hunt (for a zeny spot, the monsters the zeny ranking hunts there), and names a new session after it. The spot you're farming shows ✓ farming. At the max base level only the zeny spots show.
+- **Hunting** (at the top) shows the session's monsters, each with × to take it out of the session; type a monster's name in **Add a monster** to add it. Farm here fills it with a map's monsters.
 - **Farming on** lists the session's monsters' maps first, then **Other open maps**: every open spawn map. Picking one of those farms it, as Farm here does.
 - **World map** (under Farming on, folds): the game's Midgard and Nordfeld world maps with every spawn map boxed and the session's map lit. Click a box (or a dungeon, then its floor) to farm that map with its monsters. The maps the ranking below shows carry their rank (the top 3 in colour; on a narrow screen only those), and a box's tooltip gives its EXP / min or net zeny / hr.
 - **One ranking:** **By EXP** or **By zeny** switches the table under the spots; **Show** sets how many rows (10, 20, 50 or All). Every map row has its own **Farm here** too, and clicking anywhere else on a row opens the map in the Map planner.

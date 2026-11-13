@@ -224,6 +224,8 @@ function renderTracker(){renderStart();
       +(s.map&&smp===s.map&&!maps.some(x=>x[0]===s.map)?`<option value="${esc(s.map)}">${esc(mapLabel(s.map))} · not open</option>`:"")
       +(other.length?`<optgroup label="Other open maps">${other.map(k=>`<option value="${esc(k)}">${esc(mapLabel(k))}</option>`).join("")}</optgroup>`:"");
     sel.value=s.map&&smp===s.map?s.map:""}
+  // Hunting: the session's monsters, each with × to take it out
+  $("sessMobChips").innerHTML=ms.map(m=>`<span class="sessMob">${mobIcon(m.id,1,"il")}<a href="#" data-info="mob:${m.id}">${esc(m.name)}</a><button type="button" data-sessmobx="${m.id}" aria-label="Take ${esc(m.name)} out of the session" title="Take it out of the session">×</button></span>`).join("");
   // the folded part of the Log EXP card says what it's set to, so you know without opening it
   {const n=partyN(s),bits=[];
     if(n>1)bits.push(`party of ${n}`);if($("fTime").dataset.auto!=="1"||$("fDate").dataset.auto!=="1")bits.push("time set by hand");if(state.dieItem)bits.push("death item");
