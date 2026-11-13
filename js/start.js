@@ -89,7 +89,7 @@ const INFO_AT=hashInfo(location.hash);
 const PAGE_NAV_OFF=new Set(["home","char","news"]);
 let PAGE_SECS=[];
 const secHeading=el=>el.querySelector(":scope>h2, :scope>.bar>h2");
-function pageNav(t){const nav=$("pageNav");if(!nav)return;const wrap=nav.parentNode;
+function pageNav(t){soloFold();const nav=$("pageNav");if(!nav)return;const wrap=nav.parentNode;
   const shown=el=>!el.hidden&&getComputedStyle(el).display!=="none";
   // a card's heading, or the headings of the cards inside a row of them (the Session tab's charts)
   const secs=PAGE_NAV_OFF.has(t)?[]:[...wrap.children].filter(el=>el.dataset.tab&&shown(el)).flatMap(el=>{const h=secHeading(el);
@@ -128,14 +128,25 @@ function renderHome(){
   newsBanner();
   $("homeCharBtn").textContent=charSet(C())?"Open Character":"Set up your character";
 }
-// ---- collapsible cards: click a heading (or Enter/Space on it) to fold the card; saved by heading text ----
-function foldCard(card){const h=card.querySelector(":scope>h2, :scope>.bar>h2");if(!h||h.hasAttribute("aria-expanded"))return;
+// ---- collapsible cards: click a heading (or Enter/Space on it) to fold the card; saved by heading text. A card that's the only
+// one showing on its tab doesn't fold (soloFold): it shows even if you folded it before, and when its heading only says the tab's
+// name again (Roadmap, Item info, Brewing simulator…) the heading goes and the rest of its row (counts, buttons) moves up beside
+// the tab's title, back into the card when it's no longer the only one ----
+function foldCard(card){const h=card.querySelector(":scope>h2, :scope>.bar>h2");if(!h||h.classList.contains("foldHead"))return;
     if(!state.collapsed)state.collapsed={};
-    const head=h.parentElement===card?h:h.parentElement;head.classList.add("cardHead");const key=h.textContent.trim();
-    h.tabIndex=0;h.setAttribute("role","button");
-    const set=v=>{card.classList.toggle("collapsed",v);h.setAttribute("aria-expanded",String(!v))};set(!!state.collapsed[key]);
-    const flip=()=>{const v=!card.classList.contains("collapsed");state.collapsed[key]=v;if(!v)delete state.collapsed[key];save();set(v)};
+    const head=h.parentElement===card?h:h.parentElement;head.classList.add("cardHead");h.classList.add("foldHead");h.foldCard=card;const key=h.textContent.trim();
+    const set=v=>{card.classList.toggle("collapsed",v);h.setAttribute("aria-expanded",String(!v))};
+    const flip=()=>{if(card.classList.contains("solo"))return;const v=!card.classList.contains("collapsed");state.collapsed[key]=v;if(!v)delete state.collapsed[key];save();set(v)};
+    let spot=null;// where the heading row sits in the card while it's up by the tab's title
+    card.foldSolo=solo=>{card.classList.toggle("solo",solo);
+      const tab=$("heroTitle").textContent.trim().toLowerCase(),name=key.toLowerCase(),up=solo&&head!==h&&(name===tab||name.startsWith(tab+" "));
+      h.hidden=up;if(up&&!spot){spot=document.createComment("");head.before(spot);$("heroBar").append(head)}else if(!up&&spot){spot.replaceWith(head);spot=null}
+      if(solo){card.classList.remove("collapsed");h.removeAttribute("aria-expanded");h.removeAttribute("role");h.removeAttribute("tabindex")}
+      else{h.tabIndex=0;h.setAttribute("role","button");set(!!state.collapsed[key])}};
+    card.foldSolo(false);
     h.addEventListener("click",flip);h.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();flip()}})}
+function soloFold(){const cards=[...document.querySelectorAll(".foldHead")].map(h=>h.foldCard),solo=cards.filter(c=>c.getClientRects().length);
+  cards.forEach(c=>{const v=solo.length===1&&c===solo[0];if(c.classList.contains("solo")!==v)c.foldSolo(v)})}
 document.querySelectorAll(".card:not(#acctCard):not(#newsHead)").forEach(foldCard);
 // go to a card on the open tab, unfolding it
 function openCard(c){if(c.classList.contains("collapsed"))c.querySelector("h2[aria-expanded]")?.click();c.scrollIntoView({behavior:"smooth",block:"start"})}
