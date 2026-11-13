@@ -329,10 +329,10 @@ ROOTQ("[data-farmby]").forEach(b=>b.addEventListener("click",()=>{state.farmBy=b
 $("bestMin").addEventListener("input",renderBest);$("farmN").addEventListener("change",renderFarm);
 // max sec / kill: blank goes back to 60
 $("farmMaxSec").value=maxSecKill();$("farmMaxSec").addEventListener("input",e=>{state.maxSec=e.target.value===""?60:Math.max(0,num(e.target.value));save();renderFarm()});
-// Farm here (the best spots and every map row): the map becomes the session's, with the monsters you hunt there; the name follows
-// it while it's still the default. A capture listener, so the row under the button doesn't also open the map planner
+// Farm here (the best spots and every map row): the map becomes the session's, with the monsters you hunt there (Monsters & maps
+// keeps its own map, for looking things up); the name follows it while it's still the default. A capture listener, so the row under the button doesn't also open the map planner
 function farmMap(mp,ids){if(!MAPMOBS[mp])return;const s=sessNow(),auto=autoNamed(s);
-  if(!s.mobIds.length)s.job=state.job;s.mobIds=ids&&ids.length?ids:mapHuntIds(mp);s.map=mp;state.map=mp;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;state.calcMobId=null;save();renderAll()}
+  if(!s.mobIds.length)s.job=state.job;s.mobIds=ids&&ids.length?ids:mapHuntIds(mp);s.map=mp;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;state.calcMobId=null;save();renderAll()}
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-farm]");if(!b)return;e.preventDefault();e.stopPropagation();
   farmMap(b.dataset.farm,(b.dataset.ids||"").split(",").filter(Boolean).map(Number));showToast(`Farming ${mapCode(b.dataset.farm)} in "${cur().name}": log your EXP as you go`)},true);
 // possible rampage, aggressive or assisting monsters attacking you together: blank goes back to the default (model.js CROWD_D)

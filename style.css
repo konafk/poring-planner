@@ -700,7 +700,8 @@ button.tile:hover{border-color:var(--accent)}
 .noCharNote{padding:12px 14px;border:1px dashed var(--line-strong);border-radius:12px}
 #farmNoChar{display:none}
 #farmCard.noChar #farmNoChar{display:block}
-#farmCard.noChar>:not(.bar:first-child):not(#farmNoChar){display:none}
+#farmCard.noChar>:not(.bar:first-child):not(#farmNoChar):not(.farmOn){display:none}
+.farmOn{margin-bottom:10px}.farmOn select{min-width:min(100%,320px)}
 #farmCard.noChar>.bar:first-child>.note{display:none}
 #mapTable.noChar :is([data-sessmob],[data-skip]){display:none}
 /* max base level: no quick Log EXP */

@@ -137,8 +137,8 @@ const fmtQty=n=>n==null||!isFinite(n)?"–":n<10?n.toFixed(1):fmtN(n);
 const REC_SRC={disc:"Discount",npc:"NPC",player:"players"};
 // the item value a one-box amount (an item that heals a fixed amount) shows as its placeholder
 const REC_BASE={amt:"min",spAmt:"spMin"};
-// the map uses per hour are worked out on: the Map planner's, else the picked monster's best open map, else the session's. HP lost / min and SP short per hour there
-function recNeed(){let mp=mapKey(state.map);if(!MAPMOBS[mp])mp=mobMap(calcMob())||currentMap();if(!MAPMOBS[mp])return null;
+// the map uses per hour are worked out on: the session's (Where to farm), else the picked monster's best open map. HP lost / min and SP short per hour there
+function recNeed(){let mp=currentMap();if(!MAPMOBS[mp])mp=mobMap(calcMob());if(!MAPMOBS[mp])return null;
   const w=walkSec(),r=mapStats(mp,w);return {mp,hpm:r?r.hpi:null,loss:r?r.hpm:null,sp:r?mapSpShort(mp,w,r.el2):0}}
 function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp:recPick("sp")},ch={hp:recCheapest("hp"),sp:recCheapest("sp")};
   const opts=kind=>`<option value="auto">Auto (cheapest${ch[kind]?": "+esc(ch[kind].name):""})</option><option value="none">None</option>`+recItems(kind).filter(x=>recShown(x,R[kind==="hp"?"hpItem":"spItem"])).map(x=>`<option value="${x.id}">${esc(x.name)}${x.per==null?" (no price)":""}</option>`).join("")+'<option value="custom">Custom (type it)</option>';
