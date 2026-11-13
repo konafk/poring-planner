@@ -749,8 +749,8 @@ function pace0(s,same){
 // ---- a session's stats: the character as it was when you logged its entries (s.snap = {at, c}), so its fight time and the walking
 // worked out from it don't move when you change gear or stats afterwards (that only changes fight time). A session saved before
 // snapshots takes the stats you have when it's first worked out (est) ----
-// (gear bonuses, bx, are worked out again from the gear lines or Build from gear when it's used; the other gear sets, saved loadouts and remembered gear aren't kept)
-const charSnap=(c=C())=>{const o=JSON.parse(JSON.stringify(c));delete o.bx;delete o.gearEdit;if(o.build){delete o.build.alt;delete o.build.alts;delete o.build.loadouts;delete o.build.mem}if(o.sage)delete o.sage._note;return o};
+// (gear bonuses, bx, are worked out again from the gear lines or Build from gear when it's used; the other gear sets, their names and remembered gear aren't kept)
+const charSnap=(c=C())=>{const o=JSON.parse(JSON.stringify(c));delete o.bx;delete o.gearEdit;if(o.build){delete o.build.alt;delete o.build.alts;delete o.build.loadouts;delete o.build.setName;delete o.build.mem}if(o.sage)delete o.sage._note;return o};
 // A log with stats that change the session's fight time keeps the ones before in s.snapHist = [{t, c}] (oldest first; t: the newest entry
 // they cover), so the part of the session logged with them keeps its fight time: lowering ATK or MATK and logging again doesn't make
 // the walking of the hour before shrink. was: the entry times the session had before this log (the new entries take the new stats)

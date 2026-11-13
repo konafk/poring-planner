@@ -91,7 +91,7 @@ function cardDbOk(c,f){const q=String(f.q||"").trim().toLowerCase();if(f.slot&&c
 
 // ---- putting gear on: set i is your gear (−1) or other gear set i ----
 const setAt=(c,i)=>i<0?buildOf(c):altOf(c,i);
-const setLabel=i=>i<0?"My gear":`Set ${i+1}`;
+const setLabel=i=>i<0?"My gear":altName(C(),i);
 const slotLabel=k=>k==="acc1"?"Accessory 1":k==="acc2"?"Accessory 2":(BUILD.SLOTS.find(s=>s.k===k)||{}).label||k;
 // where item it can go for job: a list of places, each the gear rows it fills (a multi-slot headgear fills every row it covers;
 // an accessory goes in either; an Assassin's dagger, one-handed sword or axe in either hand)
@@ -118,7 +118,7 @@ function cardTargets(c,card){const out=[];
 // card id in card box j of set i's row (and in the other rows of that multi-slot headgear)
 function cardPut(c,i,row,j,id){const s=setAt(c,i),g=s.gear&&s.gear[row];if(!g||!g.id)return;g.cards=g.cards||[];while(g.cards.length<j)g.cards.push(null);g.cards[j]=id;
   if(row.startsWith("head"))BUILD.SLOTS.forEach(x=>{const h=s.gear[x.k];if(x.k!==row&&x.k.startsWith("head")&&h&&h.id===g.id)h.cards=[...g.cards]})}
-// the sets item / card id is in now: ["My gear", "Set 2"]
+// the sets item / card id is in now: ["My gear", "Set 2", "Boss"] (as text)
 function wornIn(c,id,card){const b=c.build;if(!b)return [];const has=s=>Object.values(s&&s.gear||{}).some(g=>g&&(card?(g.cards||[]).includes(id):g.id===id));
   return [-1,...Array.from({length:altN(c)},(_,i)=>i)].filter(i=>has(i<0?b:b.alts[i])).map(setLabel)}
 
@@ -130,7 +130,7 @@ TABLES.equipTable={def:["name",1],cols:{name:{t:r=>r.it.name},id:{n:r=>r.it.id,a
 TABLES.cardTable={def:["name",1],cols:{name:{t:r=>r.c.name},id:{n:r=>r.c.id,asc:1},part:{t:r=>CARD_PART[cardPart(r.c)]||"–"},nm:{t:r=>cardName(r.c)},from:{t:r=>fromTxt(r.c.id)},fx:{t:r=>r.fx.join(" ")}}};
 const EQ_SORTS=[["name:1","Name A–Z"],["name:-1","Name Z–A"],["lv:-1","Highest Lv"],["lv:1","Lowest Lv"],["atk:-1","Highest ATK"],["matk:-1","Highest MATK"],
   ["def:-1","Highest DEF"],["slots:-1","Most card slots"],["w:1","Lightest"],["id:1","ID"]];
-const wornPills=(c,id,card)=>wornIn(c,id,card).map(x=>` <span class="pill up">${x}</span>`).join("");
+const wornPills=(c,id,card)=>wornIn(c,id,card).map(x=>` <span class="pill up">${esc(x)}</span>`).join("");
 const eqBtn=(k,id,ok,why)=>`<button type="button" class="small" data-eq${k}="${id}"${ok?"":` disabled title="${esc(why)}"`}>Equip</button>`;
 function renderEquipDb(){const c=C(),f=eqDbF(),all=typeof EQUIP!=="undefined"?EQUIP:[];
   ROOTQ("[data-eqf]").forEach(x=>{if(document.activeElement!==x)x.value=f[x.dataset.eqf]??""});
@@ -171,12 +171,12 @@ function drawEquip(){const c=C(),{kind,id}=EQ_DLG,it=BUILD.item(id),sets=[-1,...
     if(!pl.length)body=`<div class="note">This isn't something you wear.</div>`;
     else if(!wearsJob(it,state.job))body=`<div class="note bad">A ${esc(state.job)} can't wear it (${esc(jobsTxt(it))}). Pick another job on the Character tab to equip it there.</div>`;
     else body=`<div class="note">Which gear set?</div><div class="eqPicks">${sets.map(i=>{const s=i<0?c.build||{}:altOf(c,i),g=s.gear||{};
-        return `<div class="eqSet"><b>${setLabel(i)}</b>${pl.map(rows=>`<button type="button" class="eqPick" data-set="${i}" data-rows="${rows.join(",")}"><span>${pl.length>1||rows.length>1?esc(placeLabel(rows,it))+": ":""}${rows.map(k=>gearNow(g[k])).filter((x,j,a)=>a.indexOf(x)===j).join(" / ")}</span><span class="to">→ ${esc(it.name)}</span></button>`).join("")}</div>`}).join("")}
+        return `<div class="eqSet"><b>${esc(setLabel(i))}</b>${pl.map(rows=>`<button type="button" class="eqPick" data-set="${i}" data-rows="${rows.join(",")}"><span>${pl.length>1||rows.length>1?esc(placeLabel(rows,it))+": ":""}${rows.map(k=>gearNow(g[k])).filter((x,j,a)=>a.indexOf(x)===j).join(" / ")}</span><span class="to">→ ${esc(it.name)}</span></button>`).join("")}</div>`}).join("")}
       ${altN(c)<ALT_MAX?`<div class="eqSet"><b>New set</b><button type="button" class="eqPick" data-new="1"><span>Add Set ${altN(c)+1} with only this on</span><span class="to">→ ${esc(it.name)}</span></button></div>`:""}</div>`}
   else{const ts=cardTargets(c,it),part=CARD_PART[cardPart(it)]||"gear";
     if(!cardPart(it))body=`<div class="note">This card doesn't go in gear.</div>`;
     else body=`<div class="note">Which gear set and card slot?</div><div class="eqPicks">${sets.map(i=>{const t=ts.filter(x=>x.set===i);
-        return `<div class="eqSet"><b>${setLabel(i)}</b>${t.length?t.map(x=>`<button type="button" class="eqPick" data-set="${i}" data-row="${x.row}" data-box="${x.box}"><span>${iconHtml("gear",x.it.id)}${esc(slotLabel(x.row))}: ${num(x.g.refine)?`+${num(x.g.refine)} `:""}${esc(x.it.name)} · slot ${x.box+1}: ${x.cur?esc((BUILD.item(x.cur)||{}).name||"?"):'<span class="muted">empty</span>'}</span><span class="to">→ ${esc(it.name)}</span></button>`).join("")
+        return `<div class="eqSet"><b>${esc(setLabel(i))}</b>${t.length?t.map(x=>`<button type="button" class="eqPick" data-set="${i}" data-row="${x.row}" data-box="${x.box}"><span>${iconHtml("gear",x.it.id)}${esc(slotLabel(x.row))}: ${num(x.g.refine)?`+${num(x.g.refine)} `:""}${esc(x.it.name)} · slot ${x.box+1}: ${x.cur?esc((BUILD.item(x.cur)||{}).name||"?"):'<span class="muted">empty</span>'}</span><span class="to">→ ${esc(it.name)}</span></button>`).join("")
           :`<span class="note">No ${esc(part.toLowerCase())} with a card slot. <a href="#" data-eqfind="${cardPart(it)}">Find one</a></span>`}</div>`}).join("")}</div>`}
   $("eqDlgBody").innerHTML=mode+body}
 // the Equipment tab's Type filter for a card's part: the gear it goes in, with a slot

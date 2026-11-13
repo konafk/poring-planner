@@ -95,8 +95,8 @@ const gearCmpShown=()=>!$("gearCmpCard").closest("[data-tab]").hidden;
 function renderGearCmp(){const c=C(),T=$("gearCmpTable"),shown=gearCmpShown(),sets=shown?altList(c).map(i=>({i,x:altChar(c,i)})):[];T.hidden=!shown;
   if(!shown){$("gearCmpNote").textContent="";T.tHead.innerHTML=T.tBodies[0].innerHTML="";return}
   const mine=gearStats(),oth=sets.map(s=>withSnap(s.x,gearStats)),m=calcMob(),mp=cmpMap(),n=sets.length+2;
-  $("gearCmpNote").innerHTML=sets.length?sets.map(s=>`<b>Set ${s.i+1}</b>: ${altDiffTxt(c,s.i)}`).join("<br>"):c.mode==="build"?"+ Add set above the gear table to compare another set with yours.":"";
-  T.tHead.innerHTML=`<tr><th></th><th>Your gear</th>${sets.map(s=>`<th>Set ${s.i+1}</th>`).join("")}</tr>`;
+  $("gearCmpNote").innerHTML=sets.length?sets.map(s=>`<b>${esc(altName(c,s.i))}</b>: ${altDiffTxt(c,s.i)}`).join("<br>"):c.mode==="build"?"+ Add set above the gear table to compare another set with yours.":"";
+  T.tHead.innerHTML=`<tr><th></th><th>Your gear</th>${sets.map(s=>`<th>${esc(altName(c,s.i))}</th>`).join("")}</tr>`;
   let grp="";
   T.tBodies[0].innerHTML=GEAR_CMP.filter(([k])=>mine[k]!=null||oth.some(o=>o[k]!=null)).map(([k,label,up,dp,g])=>{
     const a=mine[k],all=[a,...oth.map(o=>o[k])].filter(v=>v!=null&&isFinite(v)),tol=dp?0.5*10**-dp:0.5;
@@ -176,7 +176,7 @@ function renderExp(){const c=C(),m=calcMob(),blv=num(c.baseLv),jl=num(c.jobLv),p
 function renderRef(){const c=C(),m=calcMob();
   // other gear sets (Build from gear): worked out only while this tab shows, since each runs the model again
   const sets=refShown()?altList(c).map(i=>({i,x:altChar(c,i)})):[],av=sets.map(s=>withSnap(s.x,()=>refFormulas().vals));
-  $("refFormulas").tHead.innerHTML=`<tr><th>Value</th><th>Formula</th><th>Yours</th>${sets.map(s=>`<th>Set ${s.i+1}</th>`).join("")}</tr>`;
+  $("refFormulas").tHead.innerHTML=`<tr><th>Value</th><th>Formula</th><th>Yours</th>${sets.map(s=>`<th>${esc(altName(c,s.i))}</th>`).join("")}</tr>`;
   $("refFormulas").classList.toggle("withalt",sets.length>0);$("refFormulas").tBodies[0].innerHTML=refFormulas(av).html;renderGearCmp();
   const elv=Math.min(4,Math.max(1,num(state.refElv,1)));$("refElv").value=String(elv);const defs=Object.keys(ET),my=atkEl();
   $("refElemTable").tHead.innerHTML=`<tr><th>Attack ↓ / monster →</th>${defs.map(d=>`<th>${d} ${elv}</th>`).join("")}</tr>`;

@@ -171,13 +171,13 @@ function popGear(id){const it=BUILD.item(id),fx=fxOf(it),c=C(),txt=itemText(id),
   const stats=[it.lv?`Lv ${it.lv}+`:"",it.slots?`[${it.slots}] card slot${it.slots>1?"s":""}`:"no card slots",it.atk?`ATK ${it.atk}`:"",it.matk?`MATK ${it.matk}`:"",it.def?`DEF ${it.def}`:"",
     it.wlv?`weapon Lv ${it.wlv}`:"",it.el&&it.el!=="neutral"?`${fxCap(it.el)} element`:"",it.w!=null?`${it.w} weight`:""].filter(Boolean).join(" · ");
   const ok=eqPlaces(it,state.job).length&&wearsJob(it,state.job);
-  return {ico:iconHtml("gear",id,1.5),title:it.name,sub:`${esc(gearKind(it))} · #${id} · ${esc(jobsTxt(it))}${worn.map(x=>` <span class="pill up">${x}</span>`).join("")}`,
+  return {ico:iconHtml("gear",id,1.5),title:it.name,sub:`${esc(gearKind(it))} · #${id} · ${esc(jobsTxt(it))}${worn.map(x=>` <span class="pill up">${esc(x)}</span>`).join("")}`,
     body:`<div class="note mono">${esc(stats)}</div>${infoSec("Effects",fx.length?`<div class="infoList">${fx.map(x=>`<div>${esc(x)}</div>`).join("")}</div>`:"")}${infoSec("In-game text",txt&&`<div class="infoText">${esc(txt)}</div>`)}
       ${infoSec("Dropped by",infoDroppers(id))}${infoSec(ITEM_DROPS[id]?"Other sources":"Where to get",infoFrom(id))}${infoSec("Enchant and upgrade items",infoUpgradedBy(id))}${infoSec("Affixes",typeof gearAffixHtml==="function"?gearAffixHtml(id):"")}${infoRecipes(id)}${ITEM_DROPS[id]?infoPrice(id):""}`,
     acts:`<button type="button" class="primary" data-infoact="equip"${ok?"":` disabled title="${esc(eqPlaces(it,state.job).length?`A ${state.job} can't wear it`:"Not something you wear")}"`}>Equip</button><button type="button" data-infoact="equiptab">Equipment tab</button>${recipeAct(id)}${infoPriceBox(id)}`}}
 
 function popCard(id){const x=BUILD.item(id),fx=fxOf(x),c=C(),txt=itemText(id),worn=wornIn(c,x.id,true);
-  return {ico:iconHtml("card",id),title:x.name,sub:`${CARD_PART[cardPart(x)]||"–"} card · #${id}${cardName(x)?` · names gear "${esc(cardName(x))}"`:""}${notInGamePill(id)}${worn.map(w=>` <span class="pill up">${w}</span>`).join("")}`,
+  return {ico:iconHtml("card",id),title:x.name,sub:`${CARD_PART[cardPart(x)]||"–"} card · #${id}${cardName(x)?` · names gear "${esc(cardName(x))}"`:""}${notInGamePill(id)}${worn.map(w=>` <span class="pill up">${esc(w)}</span>`).join("")}`,
     body:`${infoSec("Effects",fx.length?`<div class="infoList">${fx.map(l=>`<div>${esc(l)}</div>`).join("")}</div>`:"")}${infoSec("In-game text",txt&&`<div class="infoText">${esc(txt)}</div>`)}
       ${infoSec("Dropped by",infoDroppers(id))}${infoSec(ITEM_DROPS[id]?"Other sources":"Where to get",infoFrom(id))}${ITEM_DROPS[id]?infoPrice(id):""}`,
     acts:`<button type="button" class="primary" data-infoact="equip"${cardPart(x)?"":' disabled title="Not a card that goes in gear"'}>Equip</button><button type="button" data-infoact="cardtab">Cards tab</button>${infoPriceBox(id)}`}}

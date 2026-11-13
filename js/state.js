@@ -65,6 +65,18 @@ KNOWN=knownOf(state);
 if(!JOBS[state.job])state.job="Novice";
 if(!state.chars||typeof state.chars!=="object")state.chars={};
 // per character: learned skill levels and the build-mode "Check against the game" values are numbers; anything else is dropped
+// other gear sets: build.alts, as many as you add up to ALT_MAX (build-ui.js); a set's name is at most SET_NAME_MAX characters
+const ALT_MAX=10,SET_NAME_MAX=30;
+// saved loadouts (build.loadouts: {name, gear, stones, special}) became named gear sets. Each comes in as a set of its own, or names the
+// set that already has the same gear (when that set has no name); the ones that don't fit in ALT_MAX sets wait in build.loadouts until a set is removed
+const canonJ=v=>JSON.stringify(v,(k,x)=>x&&typeof x==="object"&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
+function loadoutsIn(b){if(!Array.isArray(b.loadouts)){delete b.loadouts;return}if(!Array.isArray(b.alts))b.alts=[];
+  const key=s=>canonJ(["gear","stones","special"].map(k=>s[k]&&typeof s[k]==="object"?s[k]:{}));
+  b.loadouts=b.loadouts.filter(lo=>{if(!lo||typeof lo!=="object"||Array.isArray(lo))return false;const nm=String(lo.name||"").trim().slice(0,SET_NAME_MAX),same=b.alts.find(a=>key(a)===key(lo));
+    if(same){if(nm&&!String(same.name||"").trim())same.name=nm;return false}
+    if(b.alts.length>=ALT_MAX)return true;
+    b.alts.push({...(nm?{name:nm}:{}),...Object.fromEntries(["gear","stones","special"].map(k=>[k,lo[k]&&typeof lo[k]==="object"?lo[k]:{}]))});return false});
+  if(!b.loadouts.length)delete b.loadouts}
 const numMap=o=>Object.fromEntries(Object.entries(o&&typeof o==="object"?o:{}).map(([k,v])=>[k,v===""||v==null?NaN:+v]).filter(([,v])=>Number.isFinite(v)));
 for(const j in state.chars){let c=state.chars[j];if(!c||typeof c!=="object"){delete state.chars[j];continue}
   // "Try other gear" kept a copy of the character to go back to (c.trial.base): the copy is your character again, and the gear you were
@@ -77,7 +89,10 @@ for(const j in state.chars){let c=state.chars[j];if(!c||typeof c!=="object"){del
     if(b.alts!=null&&!Array.isArray(b.alts))delete b.alts;
     if(b.alts){b.alts=b.alts.map(a=>a&&typeof a==="object"&&!Array.isArray(a)?a:{gear:{}});const ed=/^alt(\d+)$/.exec(c.gearEdit||""),keep=ed?+ed[1]:-1;
       const empty=a=>!Object.keys(a.gear||{}).length&&!Object.values(a.stones||{}).some(Boolean)&&!(a.special&&(a.special.ring||a.special.shield||(a.special.own||[]).length||Object.values(a.special.costume||{}).some(Boolean)));
-      while(b.alts.length&&b.alts.length-1>keep&&empty(b.alts[b.alts.length-1]))b.alts.pop()}}
+      while(b.alts.length&&b.alts.length-1>keep&&empty(b.alts[b.alts.length-1]))b.alts.pop()}
+    // set names (build.alts[i].name; build.setName: the name of the set you swapped on as your gear) are text
+    (b.alts||[]).forEach(a=>{if(a.name!=null&&typeof a.name!=="string")delete a.name});if(b.setName!=null&&typeof b.setName!=="string")delete b.setName;
+    loadoutsIn(b)}
   if(c.gearEdit==="alt")c.gearEdit="alt0";
   // "HP back per minute" (hpRegen) became "HP regen per 6s" (hpRegen6, blank = worked out): a typed value carries over as 10 ticks a minute
   if(c.hpRegen!=null){const v=+c.hpRegen;if(v>0&&c.hpRegen6==null)c.hpRegen6=Math.max(1,Math.round(v/10));delete c.hpRegen}
