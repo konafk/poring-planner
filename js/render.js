@@ -214,6 +214,8 @@ function renderTracker(){renderStart();
     if(inp._list!==list){inp._list=list;$("sessMapList").innerHTML=list}
     inp.placeholder=auto?`Auto: ${mapLabel(auto)}`:"Type a map name or code";
     if(document.activeElement!==inp)inp.value=s.map&&smp===s.map?mapLabel(s.map):""}
+  // the world map under it, the farmed map lit: a box clicked farms that map (drawn while it's open)
+  if($("farmWorldMore").open)worldMap($("farmWorld"),smp||null,k=>sessMapPick(k));
   // the folded part of the Log EXP card says what it's set to, so you know without opening it
   {const n=partyN(s),bits=[];
     if(n>1)bits.push(`party of ${n}`);if($("fTime").dataset.auto!=="1"||$("fDate").dataset.auto!=="1")bits.push("time set by hand");if(state.dieItem)bits.push("death item");

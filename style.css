@@ -701,7 +701,8 @@ button.tile:hover{border-color:var(--accent)}
 .noCharNote{padding:12px 14px;border:1px dashed var(--line-strong);border-radius:12px}
 #farmNoChar{display:none}
 #farmCard.noChar #farmNoChar{display:block}
-#farmCard.noChar>:not(.bar:first-child):not(#farmNoChar):not(.farmOn){display:none}
+#farmCard.noChar>:not(.bar:first-child):not(#farmNoChar):not(.farmOn):not(.farmWorld){display:none}
+.farmWorld{margin-bottom:12px}.farmWorld .worldMap{max-width:900px;margin-top:8px}
 .farmOn{margin-bottom:10px}.farmOn>label{flex:1 1 auto;min-width:0;max-width:100%}.farmOn input{flex:1 1 auto;min-width:0;width:min(100%,420px);max-width:100%}
 #farmCard.noChar>.bar:first-child>.note{display:none}
 #mapTable.noChar :is([data-sessmob],[data-skip]){display:none}

@@ -306,11 +306,17 @@ const toggleSessMob=id=>{const s=sessNow(),auto=autoNamed(s);const i=s.mobIds.in
 // what's typed in Farming on: "Prontera Field (prt_fild06)" as the suggestions write it, a code, or a map's full name
 const sessMapParse=e=>{const t=String(e||"").trim(),code=/\(([^()]+)\)\s*$/.exec(t),k=mapKey(code?code[1]:t);if(MAPMOBS[k])return k;
   return Object.keys(MAPMOBS).find(mp=>(mapName(mp)||"").toLowerCase()===t.toLowerCase())||null};
-$("sessMapIn").addEventListener("change",e=>{const t=e.target.value.trim(),v=t?sessMapParse(t):"",s=sessNow(),auto=autoNamed(s);
+// the session's map (blank: Auto). A map none of its monsters spawn on is farmed as Farm here does, hunting its monsters
+function sessMapPick(v){const s=sessNow(),auto=autoNamed(s);
+  if(v&&!sessMaps(s).some(x=>x[0]===v)&&v!==s.map){farmMap(v);showToast(`Farming ${mapCode(v)} in "${cur().name}": log your EXP as you go`);return}
+  if(v)s.map=v;else delete s.map;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;save();renderAll()}
+$("sessMapIn").addEventListener("change",e=>{const t=e.target.value.trim(),v=t?sessMapParse(t):"";
   if(v==null){showToast(`No map called "${t}"`);e.target.value="";renderAll();return}
-  // a map none of the session's monsters spawn on: farm it, hunting its monsters (Farm here)
-  if(v&&!sessMaps(s).some(x=>x[0]===v)&&v!==s.map){e.target.blur();farmMap(v);showToast(`Farming ${mapCode(v)} in "${cur().name}": log your EXP as you go`);return}
-  if(v)s.map=v;else delete s.map;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;save();e.target.blur();renderAll()});
+  e.target.blur();sessMapPick(v)});
+// Where to farm's world map: folds, remembered like a card (state.collapsed); a box clicked farms that map
+const FARM_WORLD_FOLD="Where to farm: world map";
+{const d=$("farmWorldMore");d.open=!(state.collapsed||{})[FARM_WORLD_FOLD];
+  d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open)renderAll();if(d.open===!c[FARM_WORLD_FOLD])return;if(d.open)delete c[FARM_WORLD_FOLD];else c[FARM_WORLD_FOLD]=true;save()})}
 $("mobList").innerHTML=MOBS.map(mobOpt).join("");
 // Element / Race / Size / Boss dropdowns: the Monsters card's narrow its table, before Hide monsters with no open map; saved per account
 const mobFSel=(k,label,opts)=>`<label>${label}<select data-mf="${k}">${opts.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("")}</select></label>`;
