@@ -2,7 +2,7 @@
 // and costumes, to try styles on any job, standing or riding the Halter Lead's mount. Saved per account in state.stylist = {job, sex,
 // hair, color, dye, trans, ride, gear: the normal
 // headgear, cos: the costumes, each {upper, middle, lower, garment: item id}}; "Use as my look" copies the look (not what's worn) to the
-// equipment window's (state.look), "Start from my look" brings yours in ----
+// equipment window's (state.look), "Start from my look" brings yours in, "Share" copies a link to it ----
 // the look as it can be drawn: the job (yours, else Novice, when none is picked), its body (the transcendent one for a 2nd job with trans
 // on), riding the Halter Lead's mount (ride, each with its own clothes colours), the gender it has (Bards are male, Dancers female), and
 // how many hair styles, hair colours and clothes colours there are
@@ -92,7 +92,7 @@ function renderStylist(){if(typeof JOB_SPRITES==="undefined")return;const v=styl
   $("styColors").innerHTML=Array.from({length:v.colors},(_,c)=>styOpt("color",c,c===v.color,headCanvas(v.sex,v.hair,c,2),`Hair colour ${c}`)).join("");
   $("styDyeN").textContent=v.dyes;$("styHairN").textContent=v.hairs;$("styColorN").textContent=v.colors;
   if(typeof COSTUME_LOOKS!=="undefined")renderStyCos(v);
-  drawLook($("styCard"))}
+  $("styShare").href=styUrl();drawLook($("styCard"))}
 $("styCard").addEventListener("click",e=>{const b=e.target.closest("button");if(!b||b.disabled)return;const t=state.stylist,v=styleOf(),d=b.dataset;
   // a choice keeps the rest of the look as it's drawn now (a new gender or job starts from the hair and colours that fit it)
   const keep=()=>Object.assign(t,{job:v.job,sex:v.sex,hair:v.hair,color:v.color,dye:v.dye,trans:v.trans,ride:v.ride});
@@ -113,5 +113,31 @@ $("styCosQ").addEventListener("input",()=>renderStyCos(styleOf()));
 // each section folds away, remembered like a card (state.collapsed)
 [["styFoldCos","Stylist: costumes"],["styFoldDye","Stylist: clothes colours"],["styFoldHair","Stylist: hair styles"],["styFoldColor","Stylist: hair colours"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
   d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[key])return;if(d.open)delete c[key];else c[key]=true;save()})});
+// ---- a link to a look: #stylist/knight/f/h5/c3/d2/trans/ride/cu19930/hm2220 opens the Stylist tab on it: the job, gender, hair style
+// (h), hair colour (c), clothes colour (d), the transcendent look, the Halter Lead's mount, and what's worn by kind (c costume, h
+// headgear), slot (u upper, m middle, l lower, g garment) and item id. It's read as the look is drawn, so a piece the job can't wear
+// or a number past the last falls back as it does here. Opening one replaces the look being tried ----
+const STY_LINK_SLOT={u:"upper",m:"middle",l:"lower",g:"garment"};
+function styUrl(){const v=styleOf(),t=state.stylist,p=[v.job.toLowerCase(),v.sex,`h${v.hair}`,`c${v.color}`,`d${v.dye}`];
+  if(v.trans)p.push("trans");if(v.ride)p.push("ride");
+  STY_KINDS.forEach(([kd])=>STY_SLOTS.forEach(([k])=>{if(t[kd][k])p.push(`${kd==="cos"?"c":"h"}${k[0]}${t[kd][k]}`)}));
+  return location.origin+location.pathname+location.search+"#stylist/"+p.join("/")}
+function hashStyle(h){const m=/^#stylist\/([a-z]+)((?:\/[a-z0-9]+)*)\/?$/i.exec(h||"");if(!m||typeof JOB_SPRITES==="undefined")return null;
+  const job=Object.keys(JOB_SPRITES.body).find(j=>j.toLowerCase()===m[1].toLowerCase());if(!job)return null;
+  const s={job,sex:"m",hair:1,color:0,dye:0,trans:false,ride:false,cos:{},gear:{}};
+  for(const x of m[2].toLowerCase().split("/").filter(Boolean)){let r;
+    if(x==="m"||x==="f")s.sex=x;else if(x==="trans")s.trans=true;else if(x==="ride")s.ride=true;
+    else if((r=/^([hcd])(\d{1,3})$/.exec(x)))s[{h:"hair",c:"color",d:"dye"}[r[1]]]=Math.max(r[1]==="h"?1:0,+r[2]);
+    else if((r=/^([ch])([umlg])(\d{1,9})$/.exec(x))&&typeof COSTUME_LOOKS!=="undefined"){const kd=r[1]==="c"?"cos":"gear",k=STY_LINK_SLOT[r[2]],id=+r[3];
+      if(COSTUME_LOOKS.items[id]&&stySlotsOf(kd,id).includes(k)&&(kd==="cos"||k!=="garment"))s[kd][k]=id}}
+  return s}
+// read before start.js puts the open tab's link in the address bar; opened once the page is drawn (start.js)
+const STY_LINK=hashStyle(location.hash);
+function openStyle(s){state.stylist=s;save();showTab("stylist");scrollTo({top:0});showToast("Showing a shared look. Start from my look brings yours back")}
+addEventListener("hashchange",()=>{const s=hashStyle(location.hash);if(s)openStyle(s)});
+// Share: on a phone the system's share sheet, else the link copied (the link itself, for a right-click or a new tab, is the button's href)
+$("styShare").addEventListener("click",async e=>{if(e.ctrlKey||e.metaKey||e.shiftKey||e.button)return;e.preventDefault();const url=styUrl();
+  if(navigator.share&&matchMedia("(pointer:coarse)").matches){try{await navigator.share({title:`${styName(styleOf())} · Poring Planner`,url});return}catch(err){if(err&&err.name==="AbortError")return}}
+  copyText(url,"Link copied")});
 $("styUse").addEventListener("click",()=>{const v=styleOf();state.look={sex:v.sex,hair:v.hair,color:v.color,dye:v.dye,trans:v.trans};save();
   if(typeof renderEquipWin==="function")renderEquipWin();showToast("Your character's look in the equipment window is now this one")});

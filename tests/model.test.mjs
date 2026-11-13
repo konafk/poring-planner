@@ -2976,6 +2976,21 @@ t("Enchant Stone Craft Box: the costumes the official guide lists, any 5 for a r
   assert.ok(app("boxOf(104672).rows.every(r=>r[1]===1)"));                             // a stone box: one stone                                   // Bubble Gum 5ea Box: "containing 5"
 });
 
+t("Stylist share link: the look and what's worn, read back as it's drawn", () => {
+  const app = load({});
+  const hat = app(`Object.keys(COSTUME_LOOKS.gear).find(id=>COSTUME_LOOKS.items[id]&&stySlotsOf("gear",id).includes("upper"))`);
+  app(`state.stylist={job:"Knight",sex:"f",hair:5,color:3,dye:2,trans:true,ride:false,cos:{middle:19794,lower:19794,garment:480574},gear:{upper:${hat}}}`);
+  const url = app("styUrl()");
+  assert.match(url, new RegExp(`#stylist/knight/f/h5/c3/d2/trans/hu${hat}/cm19794/cl19794/cg480574$`));
+  const before = app("JSON.stringify(state.stylist)");
+  assert.equal(app(`JSON.stringify(hashStyle(${JSON.stringify(url.slice(url.indexOf("#")))}))`), before);
+  // case doesn't matter; a job with no look, a piece in a slot it doesn't take, a normal garment and unknown parts are left out
+  assert.equal(app(`hashStyle("#stylist/Nope/f")`), null);
+  assert.equal(app(`hashStyle("#skill/knight/bash")`), null);
+  assert.equal(app(`JSON.stringify(hashStyle("#STYLIST/Dancer/H0/cu19794/hg${hat}/zz9/ride"))`),
+    JSON.stringify({ job: "Dancer", sex: "m", hair: 1, color: 0, dye: 0, trans: false, ride: true, cos: {}, gear: {} }));
+});
+
 t("Stylist costumes: worn by slot, drawn on the look from the client's sheets", () => {
   const app = load({ stylist: { job: "Knight", cos: { upper: "19930", middle: -1, garment: 480574, weapon: 1101 } } });
   assert.equal(app("JSON.stringify(state.stylist.cos)"), JSON.stringify({ upper: 19930, garment: 480574 }));   // item ids by slot only
