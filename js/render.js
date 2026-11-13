@@ -582,22 +582,21 @@ function renderSpots(){const max=atMaxLv(),sm=sessMap(cur());
   // at the max base level EXP no longer counts: only the zeny column
   $("spots").innerHTML=(max?"":col("Best for EXP",SPOT_EXP,r=>`<b>${fmtN(r.epm)}</b> EXP / min · ${fmtN(r.net)} z/hr net`))+col("Best for zeny",SPOT_ZENY,r=>`<b>${fmtN(r.net)}</b> z/hr net${r.epm!=null?` · ${fmtN(r.epm)} EXP / min`:""}`);
   $("spots").classList.toggle("one",max);
-  // folded, the summary still names the best map of each
+  // folded, its line still names the best map of each, then the ranking below (syncFarm)
   const best=(rows,by)=>rows[0]?`${by}: ${mapName(rows[0].mp)||mapCode(rows[0].mp)}`:"";
-  $("spotsSum").textContent=[!max&&best(SPOT_EXP,"EXP"),best(SPOT_ZENY,"zeny")].filter(Boolean).join(" · ");
+  $("rankSum").dataset.best=[!max&&best(SPOT_EXP,"EXP"),best(SPOT_ZENY,"zeny")].filter(Boolean).join(" · ");
   renderFarmWorld()}
-// Where to farm's Best spots and Every map ranked fold, remembered like a card (state.collapsed). The ranking's top 3 are the best
-// spots' cards: while those show, the table in its own order with no filter on starts after them (it says so in its first row);
-// fold the best spots, filter or sort by another column to see them in the table
-const SPOTS_FOLD="Where to farm: best spots",RANK_FOLD="Where to farm: ranking";
-[["spotsMore",SPOTS_FOLD],["rankMore",RANK_FOLD]].forEach(([id,key])=>{const d=$(id);if(!d)return;d.open=!(state.collapsed||{})[key];
-  d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[key])return;if(d.open)delete c[key];else c[key]=true;save();
-    if(id==="spotsMore")rowPass(()=>{renderBest();if(state.tab==="track")renderHunt()})})});
-const inSpots=id=>{const [k,d]=tblSort(id),[k0,d0]=sortDef(id);return !(state.collapsed||{})[SPOTS_FOLD]&&k===k0&&d===d0&&!activeFilters(id).length};
+// Where to farm's Best maps (the best spots, then the ranking) folds, remembered like a card (state.collapsed). The ranking's top 3
+// are the best spots' cards just above it, so the table in its own order with no filter on starts after them (its first row says so);
+// sort by a column or filter it to see them in the table
+const RANK_FOLD="Where to farm: ranking";
+{const d=$("rankMore");if(d){d.open=!(state.collapsed||{})[RANK_FOLD];
+  d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[RANK_FOLD])return;if(d.open)delete c[RANK_FOLD];else c[RANK_FOLD]=true;save()})}}
+const inSpots=id=>{const [k,d]=tblSort(id),[k0,d0]=sortDef(id);return k===k0&&d===d0&&!activeFilters(id).length};
 // the rows the table shows (the top N, less the best spots' 3 while those show) and its first row saying where they went
 const spotRows=(id,rows,on,lim,head)=>{const top=filterRows(id,rows).slice(0,lim),n=on?top.filter(r=>r.rank<=3).length:0;
   if(!n)return {rows:sortRows(id,top),note:""};
-  return {rows:sortRows(id,top.filter(r=>r.rank>3)),note:`<tr class="spotsNote"><td colspan="18" class="name muted">#1–${n} are in ${head} above · fold Best spots to list them here</td></tr>`}};
+  return {rows:sortRows(id,top.filter(r=>r.rank>3)),note:`<tr class="spotsNote"><td colspan="18" class="name muted">#1–${n} are in ${head} above · sort by a column to list them here too</td></tr>`}};
 // Where to farm's world map: every spawn map (not towns), the session's lit; a click farms that map with its monsters (farmMap, as Farm here).
 // The maps the ranking shows (Show) carry their rank, the top 3 picked out; their box's tooltip gives the rank and the EXP / min or zeny / hr
 const WORLD_FARM_FOLD="Where to farm: world map";
@@ -622,7 +621,7 @@ function syncFarm(){const by=state.farmBy==="zeny"?"zeny":"exp",z=by==="zeny",ma
   ROOTQ("[data-farmby]").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.farmby===by)));
   $("bestWrap").hidden=z;$("huntWrap").hidden=!z;$("bestBasis").hidden=z;$("huntBasis").hidden=!z;$("huntModeSeg").hidden=!z;
   $("bestMinWrap").hidden=z;$("calWrap").hidden=z;["huntMinWrap","huntLvWrap","huntPenWrap","teleWrap"].forEach(id=>$(id).hidden=!z);$("huntAutoWrap").hidden=!z||!maps;
-  {const n=num($("farmN").value,10);$("rankSum").textContent=`by ${z?"zeny":"EXP"}${z&&!maps?", single monsters":""} · ${n>=1000?"all":"top "+n}`}
+  {const n=num($("farmN").value,10);$("rankSum").textContent=[$("rankSum").dataset.best,`ranked by ${z?"zeny":"EXP"}${z&&!maps?", single monsters":""} · ${n>=1000?"all":"top "+n}`].filter(Boolean).join(" · ")}
   const off=LOOT_GROUPS.filter(([g])=>!looted0(g)).map(([,n])=>n.toLowerCase());
   $("farmMoreSum").textContent=[`min ${num($(z?"huntMin":"bestMin").value)} monsters`,`max ${maxSecKill()||"∞ "}s / kill`,!z&&state.calOn&&"calibrated",
     z&&huntLvTxt().replace(/^ · hunting /,""),z&&maps&&state.huntAuto&&"best-paying only",off.length&&`not looting ${off.join(", ")}`].filter(Boolean).join(" · ")}

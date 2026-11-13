@@ -133,15 +133,18 @@ try {
     await goTab(page, "track");                         // Where to farm is on the Session tab
     await page.click("#newSession");                                   // a session first: its first Farm here would re-rank the spots
     assert.equal(await page.$$eval("#spots .spot", s => s.length), 6);              // top 3 by EXP, top 3 by zeny
-    // the ranking starts after the best spots' 3 (no map twice); folded, Best spots gives them back to the table
-    const ranks = () => page.$$eval("#bestTable tbody tr[data-map]", rs => rs.map(r => +r.cells[0].textContent));
-    assert.equal((await ranks())[0], 4);
+    // the ranking starts after the best spots' 3 (no map twice); sorted by a column, it lists them too. Best maps folds both
+    const first = () => page.$eval("#bestTable tbody tr[data-map] td", td => td.textContent);
+    assert.equal(await first(), "4");
     assert.match(await page.textContent("#bestTable tbody tr"), /#1–3 are in Best for EXP above/);
-    await page.click("#spotsMore > summary");
+    await page.click('#bestTable th[data-sk="rank"]');
     await page.waitForFunction(() => document.querySelector("#bestTable tbody tr[data-map] td").textContent === "1");
-    assert.ok(!await page.isVisible("#spots") && await page.evaluate("state.collapsed['Where to farm: best spots']"));
-    await page.click("#spotsMore > summary");
+    await page.click('#bestTable th[data-sk="epm"]');
     await page.waitForFunction(() => document.querySelector("#bestTable tbody tr[data-map] td").textContent === "4");
+    await page.click("#rankMore > summary");
+    assert.ok(!await page.isVisible("#spots") && !await page.isVisible("#bestTable") && await page.evaluate("state.collapsed['Where to farm: ranking']"));
+    assert.match(await page.textContent("#rankSum"), /^EXP: .+ · zeny: .+ · ranked by EXP · top 10$/);
+    await page.click("#rankMore > summary");
     const mp = await page.getAttribute("#spots .spot [data-farm]", "data-farm");
     await page.click("#spots .spot [data-farm]");
     assert.equal(await page.evaluate("sessMap(cur())"), mp);
