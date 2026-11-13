@@ -639,7 +639,12 @@ function classPicker(el,groups,onPick,mine){let cur=null,shown="",looks={};
   document.addEventListener("click",e=>{if(!el.contains(e.target))close()});
   el.addEventListener("focusout",e=>{if(e.relatedTarget&&!el.contains(e.relatedTarget))close()});
   return (job,fresh)=>{if(fresh)looks={};const html=`${look(job,mine?mine(job):lookOf(job))}${iconHtml("job",job)}<span class="cpName"><span class="cpLbl">Job</span>${esc(job)}</span><svg class="ic cpChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
-    cur=job;btn.setAttribute("aria-label",`Job: ${job}`);if(shown===html)return;shown=html;btn.innerHTML=html;drawLook(btn)}}
+    cur=job;btn.setAttribute("aria-label",`Job: ${job}`);if(shown===html)return;shown=html;btn.innerHTML=html;drawLook(btn);
+    // a look taller or wider than one on foot (riding the Halter Lead's mount) is drawn smaller, to fit the button: 94px above the
+    // feet and 47px to each side at the stage's scale (.7)
+    const cs=[...btn.querySelectorAll(".ewFeet canvas")],px=(c,k)=>parseFloat(c.style[k])||0;
+    const up=Math.max(...cs.map(c=>-px(c,"top"))),side=Math.max(...cs.map(c=>Math.max(-px(c,"left"),px(c,"left")+c.width))),k=Math.min(1,94/up,47/side);
+    if(k<1)btn.querySelectorAll(".ewFeet").forEach(f=>f.style.transform=`scale(${(.7*k).toFixed(3)})`)}}
 // Build from gear's Status, Gear, Equipment and Special equipment panels fold away, remembered like a card (state.collapsed)
 [["buildStatFold","Build from gear: status"],["gsetFold","Build from gear: gear sets"],["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
   d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[key])return;if(d.open)delete c[key];else c[key]=true;save()})});

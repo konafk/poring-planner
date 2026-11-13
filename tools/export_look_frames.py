@@ -6,9 +6,9 @@ each headgear and each garment, from your installed Ragnarok Zero client (offici
     python tools/export_look_frames.py --only body                      # one kind: body, hair, head or robe
 
 The sprites are the ones tools/export_sprites.py (bodies, hair) and tools/export_costume_sprites.py (headgear, garments, with the views
-in data/costumelooks.js) draw standing; here each one's SPR images go on a sheet and its ACT's frames are kept for four actions, in all
-8 directions (S, SW, W, NW, N, NE, E, SE): stand, walk, sit and attack (the client's action types 0, 1, 2 and 5, action = type x 8 +
-direction). A frame is its layers [image, x, y, mirror, scale x, scale y] from the sprite's origin and its anchor (where a head, headgear
+in data/costumelooks.js) draw standing; here each one's SPR images go on a sheet and its ACT's frames are kept for the actions in
+ACTIONS, in all 8 directions (S, SW, W, NW, N, NE, E, SE): stand, walk, sit, pick up, ready, the three attacks, cast, hurt and dead (the
+client's action types, action = type x 8 + direction; the two frozen poses are left out). A frame is its layers [image, x, y, mirror, scale x, scale y] from the sprite's origin and its anchor (where a head, headgear
 or garment attaches: the client draws each so its anchor is on the body's). The ACT's delay per action is in client ticks of 25 ms.
 
 Bodies and hair keep palette indices (a grey sheet, grey level = index) so the page colours them with any clothes or hair colour, and
@@ -27,7 +27,10 @@ from export_minimaps import DesGrf  # noqa: E402
 from export_costume_sprites import png_rgba, LUA, ACC, ROBE  # noqa: E402
 from lua51 import run, call  # noqa: E402
 
-ACTIONS = {"stand": 0, "walk": 1, "sit": 2, "attack": 5}
+# the client's action types, by the keys js/lookanim.js's LOOK_ACTS names them with ("attack" is the first of the three attack
+# motions; riding the Halter Lead's mount, its frames are one still pose)
+ACTIONS = {"stand": 0, "walk": 1, "sit": 2, "pickup": 3, "ready": 4, "attack": 5, "hurt": 6, "dead": 8, "attack2": 10, "attack3": 11,
+           "cast": 12}
 BODY = "data\\sprite\\인간족\\"
 
 

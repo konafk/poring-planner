@@ -19,7 +19,12 @@ function lookTinted(key,p,palKey,pal){const k=key+"|"+palKey;if(LOOK_TINT.has(k)
   g.putImageData(d,0,0);if(LOOK_TINT.size>40)LOOK_TINT.delete(LOOK_TINT.keys().next().value);LOOK_TINT.set(k,c);return c}
 // the directions as the client numbers them (0 facing you, then clockwise as seen from above), and the actions the preview plays
 const LOOK_DIRS=["S","SW","W","NW","N","NE","E","SE"];
-const LOOK_ACTS=[["stand","Stand"],["walk","Walk"],["sit","Sit"],["attack","Attack"]];
+// (keys as tools/export_look_frames.py's ACTIONS); a look shows the ones its body's file has. Attack 1, 2 and 3 are the client's three
+// attack motions (which one plays in game goes by the weapon); Dead plays once and stays down
+const LOOK_ACTS=[["stand","Stand"],["walk","Walk"],["sit","Sit"],["ready","Ready"],["pickup","Pick up"],["attack","Attack 1"],["attack2","Attack 2"],
+  ["attack3","Attack 3"],["cast","Cast"],["hurt","Hurt"],["dead","Dead"]];
+// the actions a body's file has, in LOOK_ACTS' order (null while it loads)
+const lookActs=p=>p?LOOK_ACTS.filter(([k])=>(p.act[k]||[]).some(d=>d.f.length)):null;
 // one frame's layers [image, x, y, mirror, scale x, scale y] drawn with the sprite's origin at (ox, oy), as the client does: each image
 // centred on its x, y, flipped when mirrored
 function lookLayers(g,src,p,fr,ox,oy){for(const [i,x,y,m,sx,sy] of fr[0]){const [X,Y,w,h]=p.img[i],W=Math.max(1,Math.round(w*Math.abs(sx))),H=Math.max(1,Math.round(h*Math.abs(sy)));
@@ -37,19 +42,20 @@ function lookAnimDraw(g,o,act,dir,t,fx,fy,onload){const S=JOB_SPRITES,lb=lookBod
   if(!body||!hair)return false;
   const pk=lb.pal,pj=lb.job,bp=((S[pk]||{})[pj]||{})[sex],dye=bp&&o.dye<bp.c.length?o.dye:0;
   const hpal=S.hairPal[sex][hairN],color=o.color<hpal.c.length?o.color:0;
-  const bd=body.act[act][dir],n=bd.f.length;if(!n)return true;
-  const still=act==="stand"||act==="sit",fi=still?0:Math.floor(t/(Math.max(1,bd.d)*25))%n,bf=bd.f[fi],ba=bf[1]||[0,0];
-  const at=(p,a)=>{const d=p.act[a][dir],k=d.f.length;return k?d.f[still?0:fi%k]:null};
+  // an action a piece's file doesn't have (exported before it was added) shows standing
+  const acts=p=>p.act[act]||p.act.stand,bd=acts(body)[dir],n=bd.f.length;if(!n)return true;
+  const still=act==="stand"||act==="sit",step=Math.floor(t/(Math.max(1,bd.d)*25)),fi=still?0:act==="dead"?Math.min(step,n-1):step%n,bf=bd.f[fi],ba=bf[1]||[0,0];
+  const at=p=>{const d=acts(p)[dir],k=d.f.length;return k?d.f[still?0:fi%k]:null};
   const attach=(p,fr)=>{const a=fr[1]||ba;return [fx+ba[0]-a[0],fy+ba[1]-a[1]]};
   const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,rv=o.worn.robe,rkey=rv&&`robe/${rv}-${lb.key}-${sex}`;
-  const robe=rkey&&lookPiece(rkey,onload),rf=robe&&at(robe,act),back=dir>=3&&dir<=5,over=back&&CL.robe.top.includes(rv);
+  const robe=rkey&&lookPiece(rkey,onload),rf=robe&&at(robe),back=dir>=3&&dir<=5,over=back&&CL.robe.top.includes(rv);
   const heads=o.worn.head.map(v=>lookPiece(`head/${v}-${sex}`,onload));
   const drawRobe=()=>{if(rf)lookLayers(g,robe.im,robe,rf,...attach(robe,rf))};
   g.imageSmoothingEnabled=false;
   if(!back)drawRobe();
   lookLayers(g,lookTinted(bodyKey,body,`${pk},${pj},${sex},${dye}`,ewPal(bp,dye)),body,bf,fx,fy);
   if(back&&!over)drawRobe();
-  const hf=at(hair,act);if(hf)lookLayers(g,lookTinted(`hair/${hairN}-${sex}`,hair,`${color}`,ewPal(hpal,color)),hair,hf,...attach(hair,hf));
-  heads.forEach(h=>{const f=h&&at(h,act);if(f)lookLayers(g,h.im,h,f,...attach(h,f))});
+  const hf=at(hair);if(hf)lookLayers(g,lookTinted(`hair/${hairN}-${sex}`,hair,`${color}`,ewPal(hpal,color)),hair,hf,...attach(hair,hf));
+  heads.forEach(h=>{const f=h&&at(h);if(f)lookLayers(g,h.im,h,f,...attach(h,f))});
   if(over)drawRobe();
   return true}

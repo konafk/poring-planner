@@ -2989,10 +2989,12 @@ t("Stylist animation: every frame of a look, drawn by anchors", () => {
   // every job's body (both genders where it has them) and every hair style has its frames; the pieces' list names their files
   assert.equal(run(`Object.keys(JOB_SPRITES.body).every(j=>Object.keys(JOB_SPRITES.body[j]).every(s=>LOOK_HAS["body/"+j+"-"+s]))`), true);
   assert.equal(run(`["m","f"].every(s=>Object.keys(JOB_SPRITES.head[s]).every(n=>LOOK_HAS["hair/"+n+"-"+s]))`), true);
-  // a piece: four actions in 8 directions, frames of layers [image, x, y, mirror, scale x, scale y] and the anchor
+  // a piece: its actions (stand, walk, sit and attack at least, all in LOOK_ACTS) in 8 directions, frames of layers [image, x, y,
+  // mirror, scale x, scale y] and the anchor
   const src = readFileSync(new URL("data/looks/body/Knight-m.js", root), "utf8");
   const p = JSON.parse(src.slice(src.indexOf(",") + 1, src.lastIndexOf(")")));
-  assert.deepEqual(Object.keys(p.act), ["stand", "walk", "sit", "attack"]);
+  const keys = JSON.parse(run(`JSON.stringify(LOOK_ACTS.map(([k])=>k))`));
+  assert.ok(["stand", "walk", "sit", "attack"].every(k => p.act[k]) && Object.keys(p.act).every(k => keys.includes(k)));
   assert.ok(Object.values(p.act).every(dirs => dirs.length === 8 && dirs.every(d => d.f.length > 0 && d.d > 0)));
   assert.ok(p.act.walk[0].f.length > 1 && p.act.walk[0].f.every(([ls, a]) => ls.length && a.length === 2 && ls.every(l => l.length === 6 && p.img[l[0]])));
   // drawn on a canvas stand-in: the body, then the hair attached by anchors; walking moves through the frames with the time
@@ -3007,6 +3009,16 @@ t("Stylist animation: every frame of a look, drawn by anchors", () => {
   const a = p.act.walk[0].f[0][1];
   assert.deepEqual(hairAt, [90 + a[0] - 0 - 5, 168 + a[1] + 70 - 5]);           // the hair's anchor on the body's, the image centred
   assert.deepEqual(later, p.img[p.act.walk[0].f[1][0][0][0]].slice(0, 4));        // 150 ms in: the second walking frame (100 ms each)
+  // the actions a body offers are those its file has frames for, in LOOK_ACTS' order; one it lacks draws standing, and Dead stops on
+  // its last frame where the others loop
+  const fr = (n, i0) => Array.from({ length: 8 }, () => ({ d: 4, f: Array.from({ length: n }, (_, i) => [[[i0 + i, 0, 0, 0, 1, 1]], [0, -70]]) }));
+  const anim = run(`(()=>{const P={img:Array.from({length:20},(_,i)=>[i,0,1,1]),act:{stand:${JSON.stringify(fr(1, 0))},dead:${JSON.stringify(fr(3, 10))},
+      walk:Array.from({length:8},()=>({d:4,f:[]}))},im:{naturalWidth:1,naturalHeight:1}};LOOKS["body/Knight-m"]=P;
+    const im=[];lookTinted=(k)=>k;const g={imageSmoothingEnabled:true,save(){},restore(){},translate(){},scale(){},drawImage:(i,...a)=>{if(i==="body/Knight-m")im.push(a[0])}};
+    const o={job:"Knight",trans:false,sex:"m",hair:1,color:0,dye:0,worn:{head:[],robe:null}};
+    for(const [a,t] of [["cast",0],["dead",0],["dead",250],["dead",5000]])lookAnimDraw(g,o,a,0,t,90,168);
+    return JSON.stringify([lookActs(P).map(([k])=>k),im])})()`);
+  assert.deepEqual(JSON.parse(anim), [["stand", "dead"], [0, 10, 12, 12]]);
 });
 
 t("Equipment and Cards tabs: in-game text, where to get it and the Where to get filter", () => {

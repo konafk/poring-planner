@@ -53,10 +53,20 @@ function styAnimTick(now){STY_ANIM.raf=0;const c=$("styAnimCanvas");if(!c||$("st
   const g=c.getContext("2d");g.clearRect(0,0,c.width,c.height);
   const ok=lookAnimDraw(g,o,STY_ANIM.act,STY_ANIM.dir,now-STY_ANIM.t0,c.width/2,c.height-32,styAnimRun);
   c.hidden=!ok;const s=$("styPreview").querySelector(".ewStage");if(s)s.hidden=ok;
-  if(ok)styAnimRun()}
+  styAnimCtl(v);if(ok)styAnimRun()}
 // the next frame in 40 ms (the client's frames last 100 ms or more), on a timer rather than animation frames, which some embedded
 // browsers hold back
 function styAnimRun(){if(!STY_ANIM.raf&&typeof performance!=="undefined")STY_ANIM.raf=setTimeout(()=>styAnimTick(performance.now()),40)}
+// under the preview: turn left or right, and the actions the look's body has (stand, walk, sit and attack until its file loads, and
+// those still, for a file exported before the rest were added); drawn again when that changes. An action the body lacks falls back
+// to standing
+function styAnimCtl(v,anim=true){const acts=lookActs(LOOKS[`body/${v.key}-${v.sex}`])||LOOK_ACTS.filter(([k])=>["stand","walk","sit","attack"].includes(k));
+  if(!acts.some(([k])=>k===STY_ANIM.act))STY_ANIM.act="stand";const n1=!acts.some(([k])=>k==="attack2");    // one attack: plain "Attack"
+  const html=anim?`<button type="button" class="small" data-styturn="1" aria-label="Turn left" title="Turn">⟲</button><span class="note styDir">${LOOK_DIRS[STY_ANIM.dir]}</span><button type="button" class="small" data-styturn="-1" aria-label="Turn right" title="Turn">⟳</button>`+
+    `<span class="seg" role="radiogroup" aria-label="Animation">${acts.map(([k,n])=>`<button type="button" role="radio" data-styact="${k}" aria-checked="${STY_ANIM.act===k}">${n1&&k==="attack"?"Attack":n}</button>`).join("")}</span>`:"";
+  if(STY_ANIM.ctl===html)return;STY_ANIM.ctl=html;
+  const el=$("styAnimCtl"),a=document.activeElement,f=a&&el.contains(a)&&a.dataset.styact;el.innerHTML=html;
+  if(f)el.querySelector(`[data-styact="${f}"]`)?.focus()}
 // one choice in a grid: its picture and number, pressed when it's the one in the look
 const styOpt=(k,n,on,pic,label)=>`<button type="button" class="styOpt" data-sty${k}="${n}" aria-pressed="${on}" title="${esc(label)}">${pic}<span class="mono">${n}</span></button>`;
 const styStage=(job,L,trans)=>`<span class="ewStage"><span class="ewFeet">${lookCanvas(job,L,trans)}</span></span>`;
@@ -66,8 +76,7 @@ function renderStylist(){if(typeof JOB_SPRITES==="undefined")return;const v=styl
   // the still look, then the animated one over it once its pieces load (where the client's frames were exported)
   const anim=typeof LOOK_FILES!=="undefined"&&LOOK_HAS[`body/${v.key}-${v.sex}`];
   $("styPreview").innerHTML=styStage(v.job,L,v.trans)+(anim?'<canvas id="styAnimCanvas" class="styAnim" width="180" height="200" hidden></canvas>':"");
-  $("styAnimCtl").innerHTML=anim?`<button type="button" class="small" data-styturn="1" aria-label="Turn left" title="Turn">⟲</button><span class="note styDir">${LOOK_DIRS[STY_ANIM.dir]}</span><button type="button" class="small" data-styturn="-1" aria-label="Turn right" title="Turn">⟳</button>`+
-    `<span class="seg" role="radiogroup" aria-label="Animation">${LOOK_ACTS.map(([k,n])=>`<button type="button" role="radio" data-styact="${k}" aria-checked="${STY_ANIM.act===k}">${n}</button>`).join("")}</span>`:"";
+  STY_ANIM.ctl=null;styAnimCtl(v,anim);
   if(anim)styAnimRun();
   $("stySex").innerHTML=`<span class="seg" role="radiogroup" aria-label="Gender">${["m","f"].map(s=>`<button type="button" role="radio" data-stysex="${s}" aria-checked="${v.sex===s}"${v.one&&v.sex!==s?` disabled title="${esc(v.job)}s are ${v.sex==="f"?"female":"male"} only"`:` title="${s==="f"?"Female":"Male"}"`}>${s==="f"?"F":"M"}</button>`).join("")}</span>`+
     // a 2nd job's own look or its transcendent job's, side by side
