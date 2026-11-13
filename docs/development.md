@@ -33,7 +33,7 @@ Plain scripts that `index.html` loads in this order. They share one global scope
 | `events.js` | Input handlers, stats, the log form, accounts, sessions, backups, the share link and the column picker. |
 | `skills.js` | Skill trees, passives and buffs. |
 | `build-ui.js` | Build mode, consumables and the equipment stats rows. |
-| `ref.js` | The EXP tables and Formulas tabs, and the Character tab's Your gear vs other gear sets. |
+| `ref.js` | The EXP tables and Formulas tabs, and the Character tab's Compare gear. |
 | `gear-db.js` | The Equipment and Cards tabs (filters, effects text) and the Equip dialog that puts gear or a card in a gear set. |
 | `recipes.js` | The Recipes tab (with the Jellostones and Expedition upgrades from `data/memorial.js`), and the recipes that make or use each item (the details popup lists them). |
 | `info.js` | The details popup for a monster, item, piece of gear or card, opened from any name with `data-info="mob:<id>"` or `"item:<id>"`. |

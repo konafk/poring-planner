@@ -116,7 +116,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   <div class="charLayout" data-tab="char">
   <div class="charMain">
   <section class="card" id="charCard">
-    <div class="bar"><h2 class="grow">Your character</h2><span class="note" id="jobNote"></span></div>
+    <div class="bar"><h2 class="grow">Your character</h2></div>
     <details class="card sub" id="basicsPanel" open>
       <summary><b>Job &amp; level</b> <span class="note">your job, the attack you farm with, your levels and EXP / drop bonuses</span></summary>
       <div class="form c7">
@@ -131,8 +131,8 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     </details>
     <div class="bar">
       <div class="seg" role="radiogroup" aria-label="Where your stats come from">
-        <button type="button" role="radio" data-cmode="status">Status window</button>
         <button type="button" role="radio" data-cmode="build">Build from gear</button>
+        <button type="button" role="radio" data-cmode="status">Status window</button>
       </div>
       <span class="note" id="modeNote"></span>
     </div>
@@ -427,7 +427,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   </section>
 
   <section class="card" id="gearCmpCard">
-    <div class="bar"><h2 class="grow">Your gear vs other gear sets</h2></div>
+    <div class="bar"><h2 class="grow">Compare gear</h2></div>
     <div class="note" id="gearCmpNote"></div>
     <div class="scroll"><table id="gearCmpTable" class="cmptab"><thead></thead><tbody></tbody></table></div>
   </section>
@@ -460,10 +460,6 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
       </div>
     </div>
     <div class="note hint">A session is one farming run: monsters, map and EXP log.</div>
-  </section>
-  <section class="card" id="homeNowCard" data-tab="track">
-    <div class="bar"><h2 class="grow">At a glance</h2><span class="note" id="homeNowNote"></span></div>
-    <div class="tiles homeTiles" id="homeTiles"></div>
   </section>
 
   <section class="tiles" aria-label="Summary" data-tab="track">

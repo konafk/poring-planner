@@ -5,7 +5,7 @@ const CHECKS=[["atk","ATK",F=>sumStat(F.atkTxt)],["matk","MATK",F=>sumStat(F.mat
   ["aspd","ASPD",F=>F.aspd],["def","DEF",F=>sumStat(F.defTxt)],["hp","Max HP",F=>F.maxHp],["sp","Max SP",F=>F.maxSp]];
 const BUILT_IDS=["atkPct","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lw","lwAtk","lwElem","crit","critDmg","rangePct","skillPct","vctPct","fctPct","acdPct","ignDef","ignMdef","st_str","st_agi","st_vit","st_dex","st_luk","weapon","wElem"];
 let BUILD_LAST=null;
-const buildOf=c=>{if(!c.build)c.build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{}};return c.build};
+const buildOf=c=>{if(!c.build)c.build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{}};const b=c.build;if(!b.base)b.base={str:1,agi:1,vit:1,int:1,dex:1,luk:1};if(!b.gear)b.gear={};return b};
 // other gear sets, as many as you add (up to ALT_MAX; build.alts[i]: gear, stones, special like the build's own), worked out for the
 // gear comparison (Character tab) and the Formulas tab only. c.gearEdit "alt0"…: the gear table edits that set instead of your gear
 const ALT_MAX=10;
@@ -255,13 +255,17 @@ $("eqList").addEventListener("click",e=>{if(e.target.closest("[data-del]")==null
 $("eqList").addEventListener("change",e=>{const f=e.target.dataset.f;if(!f||f==="v")return;const r=eqOf(C())[+e.target.closest(".eqrow").dataset.i];r[f]=e.target.value;
   if(f==="by"){const T=EQ_TARGETS[r.by];const first=T&&T()[0];r.t=first==null?"":Array.isArray(first)?first[0]:first}save();renderEq();renderAll()});
 $("eqList").addEventListener("input",e=>{if(e.target.dataset.f!=="v")return;eqOf(C())[+e.target.closest(".eqrow").dataset.i].v=e.target.value===""?"":num(e.target.value);save();renderAll()});
-// item picker labels: the name, plus the id when two items share a name
 const jobSlug=()=>state.job.toLowerCase();
 // gear lists the job family ("swordsman" covers Knight and Crusader), so a 2nd job also matches its 1st job
 const FIRST_OF=BUILD.FIRST_OF;
 const canWear=it=>!it.jobs||!it.jobs.length||it.jobs.includes(jobSlug())||(FIRST_OF[state.job]&&it.jobs.includes(FIRST_OF[state.job].toLowerCase()));
-const labelOf=(it,list)=>list.filter(x=>x.name===it.name).length>1?`${it.name} #${it.id}`:it.name;
-const pickList=(list)=>{const m=new Map();list.forEach(it=>m.set(labelOf(it,list),it.id));return m};
+// item picker labels: the name; when two items share a name, the slot count as the game writes it ("Arc Wand [1]", "Arc Wand [2]").
+// Copies alike in everything but the id (Damascus 1222 and 510137) share the label and the list keeps the first; the id is added only
+// when same-named, same-slot items differ
+const itemKey=it=>JSON.stringify({...it,id:0,slug:0,jobs:[...new Set(it.jobs||[])].sort()});
+const labelOf=(it,list)=>{const same=list.filter(x=>x.name===it.name);if(same.length<2)return it.name;
+  const n=it.slots||0,l=n?`${it.name} [${n}]`:it.name,k=itemKey(it);return same.some(x=>(x.slots||0)===n&&itemKey(x)!==k)?`${l} #${it.id}`:l};
+const pickList=(list)=>{const m=new Map();list.forEach(it=>{const l=labelOf(it,list);if(!m.has(l))m.set(l,it.id)});return m};
 let GEAR_LISTS={};
 // an Assassin's Shield row also takes a left-hand dagger, one-handed sword or one-handed axe
 const leftHandOk=it=>state.job==="Assassin"&&(it.slot||[]).includes("weapon")&&BUILD.DUAL_W.includes(BUILD.WTYPE[it.type]);
@@ -617,6 +621,10 @@ function renderBuild(){const c=C(),on=c.mode==="build";
   ROOTQ("[data-cmode]").forEach(x=>x.setAttribute("aria-checked",String(x.dataset.cmode===(on?"build":"status"))));
   $("buildPanel").hidden=!on;$("statNote").hidden=on;$("shieldRow").hidden=on;$("onTopWrap").hidden=on;$("addOnTop").checked=c.addOnTop!==false;BUILT_IDS.forEach(id=>{const el=$(id);el.disabled=on;if(on&&document.activeElement!==el)el.value=id.startsWith("st_")?(c.st||{})[id.slice(3)]??"":c[id]??""});
   $("modeNote").textContent=on?"Stats below are worked out from your base stats, job level and gear.":"Type the numbers from your in-game status window.";
+  // Build from gear has its own status window: the typed Status card keeps only SP regen, the one box it still takes
+  {const p=$("statPanel"),sp=$("spRegen");p.querySelectorAll(".form,.form>label").forEach(x=>x.classList.toggle("buildOff",on&&!x.contains(sp)));
+    p.querySelector("summary .note").textContent=on?"SP regen: leave it on auto, or type the tick you measured":"what your status window shows, plus your weapon";
+    p.querySelector("summary b").textContent=on?"SP regen":"Status"}
   if(!on)return;renderAltBar(c);renderLoadouts(c);renderEquipWin();const b=buildOf(c);renderStatWin(c);
   const r=BUILD_LAST;if(!r)return;const jb=r.jobBonus;
   $("jobBonusNote").textContent=`Job Lv ${r.fields.jobLv} bonus: `+BUILD.STAT6.map(k=>`${k.toUpperCase()} +${jb[k]}`).join(" · ")+(BUILD.curve(state.job,"hp",num(c.baseLv))==null?" · no HP/SP table for this job, type Max HP/SP after switching back":"");
@@ -703,7 +711,7 @@ $("gearTable").addEventListener("input",e=>{if(e.target.dataset.optv!=null){cons
   if(!e.target.classList.contains("ref"))return;const k=e.target.closest("tr").dataset.slot;const g=gearSet().gear[k];if(!g)return;
   g.refine=Math.max(0,Math.min(20,num(e.target.value)));save();renderAll()});
 // ---- other gear sets: + Add set adds one and Remove set takes it away; the gear table edits set i after "Set i" is picked. Your gear
-// stays what the page works with, and Your gear vs other gear sets (Character tab, ref.js) works them all out side by side. "Swap" makes a set your gear (and yours
+// stays what the page works with, and Compare gear (Character tab, ref.js) works them all out side by side. "Swap" makes a set your gear (and yours
 // that set), so you can switch back ----
 const altSaved=(c,i)=>c.mode==="build"&&!!(c.build&&Array.isArray(c.build.alts)&&c.build.alts[i])&&setSaved(c.build.alts[i]);
 // the sets with gear in them, by number
@@ -725,11 +733,11 @@ function altDiff(c,i){const b=buildOf(c),a=altOf(c,i),g0=b.gear||{},g1=a.gear||{
 const altDiffTxt=(c,i)=>{const d=altDiff(c,i);return d.length?d.join(" · "):"same as your gear"};
 function renderAltBar(c=C()){const i=altIdx(c),has=i>=0&&altSaved(c,i),list=altList(c),n=altN(c);
   $("gsetSeg").innerHTML=`<button type="button" role="radio" data-gset="mine" aria-checked="${i<0}">My gear</button>`+Array.from({length:n},(_,k)=>
-    `<button type="button" role="radio" data-gset="${k}" aria-checked="${k===i}" title="Another set of gear, worked out next to yours in Your gear vs other gear sets (bottom of this tab)">Set ${k+1}${altSaved(c,k)?" ●":""}</button>`).join("");
+    `<button type="button" role="radio" data-gset="${k}" aria-checked="${k===i}" title="Another set of gear, worked out next to yours in Compare gear (bottom of this tab)">Set ${k+1}${altSaved(c,k)?" ●":""}</button>`).join("");
   $("altAdd").disabled=n>=ALT_MAX;$("altAdd").title=n>=ALT_MAX?`Up to ${ALT_MAX} other sets`:"Add another set of gear to compare with yours";
   $("buildPanel").classList.toggle("altedit",i>=0);["altCopy","altSwap","altDel"].forEach(id=>$(id).hidden=i<0);$("altSwap").disabled=!has;
-  $("altNote").innerHTML=i>=0?`<b>Editing set ${i+1}.</b> The page still works with your gear. `+(has?`${altDiffTxt(c,i)} · compare in Your gear vs other gear sets, at the bottom of this tab`:"Pick its gear below, or copy yours in and change a part.")
-    :list.length?list.map(k=>`Set ${k+1}: ${altDiffTxt(c,k)}`).join("<br>")+"<br>Compare them in Your gear vs other gear sets, at the bottom of this tab":`Press + Add set for another set of gear, worked out next to yours in Your gear vs other gear sets, at the bottom of this tab.`}
+  $("altNote").innerHTML=i>=0?`<b>Editing set ${i+1}.</b> The page still works with your gear. `+(has?`${altDiffTxt(c,i)} · side by side in Compare gear, at the bottom of this tab`:"Pick its gear below, or copy yours in and change a part.")
+    :list.length?list.map(k=>`Set ${k+1}: ${altDiffTxt(c,k)}`).join("<br>")+"<br>Side by side in Compare gear, at the bottom of this tab":""}
 $("gsetSeg").addEventListener("click",e=>{const x=e.target.closest("[data-gset]");if(!x)return;const c=C();if(x.dataset.gset==="mine")delete c.gearEdit;else c.gearEdit="alt"+x.dataset.gset;save();renderGearTable();renderAll()});
 // add an empty set (its index, or −1 at ALT_MAX); remove set i, the ones after it moving up, its items remembered
 function altAdd(c){const b=buildOf(c);if(!Array.isArray(b.alts))b.alts=[];if(b.alts.length>=ALT_MAX)return -1;b.alts.push({gear:{}});return b.alts.length-1}

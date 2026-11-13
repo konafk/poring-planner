@@ -57,7 +57,6 @@ function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   {const m=convOn()&&calcMob();$("convInfo").innerHTML=m?`vs ${esc(m.name)} (${m.el||"Neutral"} ${m.elv||1}): ${convAll().map(el=>elRateHtml(el,elemMult(m,el))).join(" · ")} → ${convFixed()?`using ${convFixed()}`:`best ${esc(mobRow(m,walkSec()).el2)}`}`:""}
   if(typeof renderStatNote==="function")renderStatNote();
   const c=C(),a=c.a,p=JOBS[state.job].p[c.preset];
-  $("jobNote").textContent=`Settings are saved per job · ${Object.keys(state.chars).length} job${Object.keys(state.chars).length===1?"":"s"} set up`;
   $("atkSummary").textContent=a.type==="spellfist"?`· ${[sfOn()?`Spell Fist Lv ${G().sfLv}: ${Math.round(sfChance()*100)}% per attack, ${sfPct()}% MATK`:"",hsOnNow()?`Hindsight Lv ${hsLvN()}: ${Math.round(hsChance()*100)}% per attack, a Lv ${hsBoltLv()} bolt`:""].filter(Boolean).join(" · ")||"Spell Fist and Hindsight off"} with ${sfBolts().map(b=>({Fire:"Fire",Water:"Cold",Wind:"Lightning"})[b]).join(" / ")||"no"} bolts`:`· ${a.type==="magic"?"Magic":a.type==="auto"?"Basic attacks":"Physical"} ${a.pct}% × ${a.hits} ${atkEl()}${a.targets>1?` · ${a.targets} targets`:""}${p&&p.note?` · ${p.note}`:""}`;
   {const ac=AC(),s=acSpell(),basic=a.type==="auto"||a.type==="spellfist";$("acInfo").innerHTML=ac.on?(basic?`${s.pct}% × ${s.hits} ${s.el} MATK (Lv ${s.lv}), no SP`:'<span class="bad">only procs on basic attacks: pick a basic attack or Spell Fist</span>'):""}
   if(a.type==="spellfist")$("atkSummary").textContent+=` · each attack also lands its physical hit (ATK, weapon element)`;
@@ -171,8 +170,10 @@ function renderSessions(){const none=!state.sessions.length;
   $("mapSessSel").innerHTML=(none?'<option value="">No session yet</option>':state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===cur().id?"selected":""}>${esc(s.name)}</option>`).join(""))+'<option value="+new">+ New session</option>'}
 // ---- get started: its steps shown on Home until they're done (or hidden), each ticked off as you do it ----
 const KEY_START="rozero-farm-planner-start-hidden";
-// the character is set up: built from gear, or all six stats typed. Until then a monster's details leave out your numbers against it
-const charSet=(c=C())=>c.mode==="build"||STATS.every(k=>statVal(c,k)!=null);
+// the character is set up: built from gear once a base stat is raised or a piece of gear is on (a new character starts in build mode
+// with neither), or all six stats typed. Until then a monster's details leave out your numbers against it
+const charSet=(c=C())=>c.mode==="build"?!!c.build&&(Object.values(c.build.base||{}).some(v=>num(v)>1)||Object.values(c.build.gear||{}).some(g=>g&&g.id))
+  :STATS.every(k=>statVal(c,k)!=null);
 // no character yet: a new visitor who hasn't picked a job (state.noJob) or set one up; the calculators use a Novice meanwhile
 const noChar=()=>!!state.noJob&&!charSet();
 const NO_CHAR_TXT="Set up your character on the Character tab to see your kill time, EXP / min and zeny a kill";
@@ -191,7 +192,7 @@ function renderSpark(s,st){const box=$("ctxRate"),es=[...s.entries].sort((a,b)=>
   const line=r.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
   $("spark").innerHTML=`<polyline points="${line}" fill="none" stroke="url(#sparkG)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><defs><linearGradient id="sparkG"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-2)"/></linearGradient></defs>`+(r.length?`<circle cx="${X(r.length-1)}" cy="${Y(r[r.length-1])}" r="2.2" style="fill:var(--accent-2)"/>`:"");
   $("ctxRateV").textContent=`${pct(st.avgPct)}/hr`}
-function renderTracker(){renderStart();if(typeof renderNow==="function")renderNow();
+function renderTracker(){renderStart();
   // at the max base level base EXP stops counting, so the quick Log EXP box (the + button, L) goes away
   document.documentElement.classList.toggle("maxLv",atMaxLv());$("dieItem").checked=!!state.dieItem;$("dieBtn").textContent=`Died −${diePct()}%`;
   const s=cur(),st=stats(s);renderSpark(s,st);

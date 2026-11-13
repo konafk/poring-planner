@@ -23,6 +23,8 @@ const load = (save, raw) => {
     localStorage: { getItem: k => k in store ? store[k] : null, setItem: (k, v) => { store[k] = String(v) }, removeItem: k => { delete store[k] } },
   });
   for (const [, src] of html.matchAll(/<script src="([^"?]+)(?:\?v=[^"]*)?"><\/script>/g)) vm.runInContext(readFileSync(new URL(src, root), "utf8"), ctx, { filename: src });
+  // the page starts a new character in Build from gear; the tests' characters type their status window unless they say otherwise
+  vm.runInContext(`NEW_CHAR_MODE="status"`, ctx);
   return code => vm.runInContext(code, ctx);
 };
 const run = load();
@@ -3100,6 +3102,24 @@ t("details popup: a monster, an item, gear and a card, linked to each other", ()
   assert.match(run(`fromHtml(1306)`), /data-info="mob:\d+"/);                                         // Where to get links open the popup
 });
 
+t("a new character starts in Build from gear; a saved one with no mode stays on its status window", () => {
+  run(`NEW_CHAR_MODE="build";state.job="Knight";state.chars={}`);
+  assert.equal(run(`C().mode`), "build");
+  run(`state.chars={Knight:{baseLv:50}}`);
+  assert.notEqual(run(`C().mode`), "build");
+  run(`NEW_CHAR_MODE="status"`);
+});
+
+t("item lists: items sharing a name are told apart by their slot count, as the game writes it", () => {
+  setup("Mage", {});
+  const arc = run(`JSON.stringify(gearChoices("weapon").filter(x=>x.name==="Arc Wand").map(x=>labelOf(x,gearChoices("weapon"))).sort())`);
+  assert.equal(arc, JSON.stringify(["Arc Wand [1]", "Arc Wand [2]"]));
+  assert.equal(run(`labelOf({name:"Knife",id:1},[{name:"Knife",id:1}])`), "Knife");                       // one of its name: the name alone
+  assert.equal(run(`labelOf({name:"Axe",id:1,slots:3,atk:38},[{name:"Axe",id:1,slots:3,atk:38},{name:"Axe",id:2,slots:3,atk:38}])`), "Axe [3]");   // alike but the id: one label
+  assert.equal(run(`labelOf({name:"Axe",id:1,slots:3,atk:38},[{name:"Axe",id:1,slots:3,atk:38},{name:"Axe",id:2,slots:3,atk:40}])`), "Axe [3] #1");   // same slots, other stats: the id
+  assert.equal(run(`pickList([{name:"Axe",id:1,slots:3},{name:"Axe",id:2,slots:3}]).get("Axe [3]")`), 1);                     // the list keeps the first
+});
+
 t("equipment window: gear named as the game shows it, and the job's look (Bards male, Dancers female)", () => {
   setup("Novice", { mode: "build" });
   const muf = run(`EQUIP.find(x=>/muffler/i.test(x.name)).id`), name = run(`BUILD.item(${muf}).name`);
@@ -3475,7 +3495,8 @@ t("a new visitor starts with no session and no job picked", () => {
   assert.equal(again("state.sessions.length+' '+state.noJob"), "1 true");   // still no job until one is picked or set up
   assert.equal(load({ sessions: [], job: "Mage" })("state.sessions.length+' '+state.noJob+' '+state.current"), "0 undefined null");
   assert.equal(load({ job: "Mage", noJob: "yes" })("state.noJob"), undefined);
-  assert.equal(app("C().mode='build';noChar()"), false);                     // a character built from gear counts as set up
+  assert.equal(app("C().mode='build';noChar()"), true);                      // build mode with base stats all 1 and no gear: not yet
+  assert.equal(app("buildOf(C()).base.str=30;noChar()"), false);             // a raised stat (or a piece of gear) counts as set up
 });
 
 t("a monster's world map opens on the world with the most of its spawns", () => {
