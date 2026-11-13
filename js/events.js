@@ -300,7 +300,7 @@ const sessAutoName=s=>{const mp=sessMap(s),m=sessMobs(s)[0];return mp?mapLabel(m
 const autoNamed=s=>{const mp=sessMap(s);return s.name==="New session"||s.name===sessAutoName(s)||!!mp&&s.name===mapCode(mp)};
 const toggleSessMob=id=>{const s=sessNow(),auto=autoNamed(s);const i=s.mobIds.indexOf(id);
   if(i>=0)s.mobIds.splice(i,1);else{if(!s.mobIds.length)s.job=state.job;s.mobIds.push(id)}
-  if(s.map&&!sessOn(s,s.map))delete s.map;
+  if(s.map&&s.mobIds.length&&!sessOn(s,s.map))delete s.map;
   const nm=sessAutoName(s);if(auto&&nm)s.name=nm};
 // the session's map: blank is the auto pick; the name follows it while it's still the default
 // a map from Other open maps (none of the session's monsters spawn there): farm it, with its monsters, as Farm here does
@@ -308,6 +308,9 @@ $("sessMapSel").addEventListener("change",e=>{const v=e.target.value,s=sessNow()
   if(v&&!sessMaps(s).some(x=>x[0]===v)&&!(s.map===v&&sessOn(s,v))){farmMap(v);showToast(`Farming ${mapCode(v)} in "${cur().name}": log your EXP as you go`);return}
   const auto=autoNamed(s);if(v)s.map=v;else delete s.map;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;save();renderAll()});
 $("mobList").innerHTML=MOBS.map(mobOpt).join("");
+// the session's map's monsters (Where to farm, Session tab): + Session / − Session, as on the Map planner
+$("sessMobTable").querySelector("tbody").addEventListener("click",e=>{const b=e.target.closest("[data-sessmob]");if(!b)return;const id=+b.dataset.sessmob,inS=cur().mobIds.includes(id);
+  toggleSessMob(id);state.calcMobId=null;save();renderAll();showToast(`${MOB_BY_ID.get(id).name} is ${inS?"out of":"in"} your session.`)});
 // Element / Race / Size / Boss dropdowns: the Monsters card's narrow its table, before Hide monsters with no open map; saved per account
 const mobFSel=(k,label,opts)=>`<label>${label}<select data-mf="${k}">${opts.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("")}</select></label>`;
 const MOBF_HTML=mobFSel("el","Element",[["","Any"],...AE.map(x=>[x,x])])+mobFSel("race","Race",[["","Any"],...RACES.map(x=>[x,x])])

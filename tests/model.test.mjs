@@ -419,7 +419,11 @@ t("session map: auto is the best open map, a picked one wins while its monsters 
   run(`cur().map='no_such_map'`);
   assert.equal(run(`sessMap(cur())`), maps[0]);                      // a map none of them spawn on falls back to auto
   run(`cur().map=${JSON.stringify(maps[1])};toggleSessMob(1002)`);
-  assert.equal(run(`cur().map`), undefined);                         // removing its monsters drops the pick
+  assert.equal(run(`cur().map`), maps[1]);                           // taking out the last monster keeps the map, to pick from it again
+  assert.equal(run(`sessMap(cur())`), maps[1]);
+  const off = run(`MOBS.find(m=>!m.boss&&openMaps(m).length&&!(SPAWN[m.id]||[]).some(x=>x[0]===${JSON.stringify(maps[1])})).id`);
+  run(`toggleSessMob(${off})`);
+  assert.equal(run(`cur().map`), undefined);                         // a monster that doesn't spawn there drops the pick
 });
 
 t("Map planner's Farm here: the map's hunted monsters, and a picked map holds even when marked closed", () => {

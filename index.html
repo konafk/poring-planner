@@ -458,6 +458,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   <section class="card" id="farmCard" data-tab="track">
     <div class="bar"><h2 class="grow">Where to farm</h2><span class="note" id="bestBasis"></span><span class="note" id="huntBasis"></span></div>
     <div class="bar farmOn"><label class="bar" title="The map you farm the session's monsters on: their spawn counts there weight the session's EXP, pace and loot. Auto: the open map where most of them spawn. Under Other open maps: any map, hunting its monsters"><b>Farming on</b><select id="sessMapSel"></select></label></div>
+    <div id="sessMobRow"><div class="note" id="sessMobHead"></div><div class="scroll"><table id="sessMobTable"><thead><tr><th>Monster</th><th>Spawns</th><th>Lv</th><th>Base EXP</th><th>Session</th></tr></thead><tbody></tbody></table></div></div>
     <details class="more worldMore" id="farmWorldMore" open><summary>World map <span class="note" id="farmWorldSum"></span></summary><div class="worldMap" id="farmWorld"></div></details>
     <div class="note noCharNote" id="farmNoChar">Set up your character to rank every open map by your EXP / min or zeny / hr. <a href="#" data-gotab="char">Open Character</a></div>
     <div class="spots" id="spots"></div>

@@ -729,7 +729,8 @@ const sessMaps=s=>{const k={},tot={};sessMobs(s).forEach(m=>openMaps(m).forEach(
 const sessMapAuto=s=>(sessMaps(s)[0]||[])[0]||null;
 // a map you picked counts while one of the session's monsters spawns there, even one marked as not open
 const sessOn=(s,mp)=>sessMobs(s).some(m=>(SPAWN[m.id]||[]).some(x=>x[0]===mp));
-const sessMap=s=>s.map&&sessOn(s,s.map)?s.map:sessMapAuto(s);
+// (or while it has no monsters: you picked the map, then took them all out to choose again)
+const sessMap=s=>s.map&&(sessOn(s,s.map)||!s.mobIds.length&&MAPMOBS[s.map])?s.map:sessMapAuto(s);
 // the monsters you hunt on a map, as the Map planner and EXP Hunter count them: not bosses or the ones you skip (all of them if that's none)
 const mapHuntIds=mp=>{const all=MAPMOBS[mp]||[],h=all.filter(x=>!x.m.boss&&!isSkipped(x.m));return (h.length?h:all).map(x=>x.m.id)};
 // the map a monster is farmed on: the session's map when it's one of the session's monsters and spawns there, else its best open map

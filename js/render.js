@@ -218,12 +218,20 @@ function renderTracker(){renderStart();
   const ms=sessMobs(s),maps=sessMaps(s),auto=sessMapAuto(s),smp=sessMap(s);
   // the session's monsters' maps, then every other open map (picking one of those farms it, with its monsters: farmMap)
   {const sel=$("sessMapSel"),of=ms.length>1?x=>` · ${x[1]} of ${ms.length} monsters`:()=>"";
-    const other=Object.keys(MAPMOBS).filter(k=>!isClosed(k)&&!maps.some(x=>x[0]===k)).sort((a,b)=>mapLabel(a).localeCompare(mapLabel(b)));
+    const other=Object.keys(MAPMOBS).filter(k=>!isClosed(k)&&!maps.some(x=>x[0]===k)&&!(k===s.map&&smp===k)).sort((a,b)=>mapLabel(a).localeCompare(mapLabel(b)));
     sel.innerHTML=(!maps.length?`<option value="">${ms.length?"No open map for these monsters":"Pick a map"}</option>`
       :`<option value="">Auto: ${esc(mapLabel(auto))}</option>`+maps.map(x=>`<option value="${esc(x[0])}">${esc(mapLabel(x[0]))}${of(x)} · ≈${spN(x[2])} spawns</option>`).join(""))
-      +(s.map&&smp===s.map&&!maps.some(x=>x[0]===s.map)?`<option value="${esc(s.map)}">${esc(mapLabel(s.map))} · not open</option>`:"")
+      +(s.map&&smp===s.map&&!maps.some(x=>x[0]===s.map)?`<option value="${esc(s.map)}">${esc(mapLabel(s.map))}${isClosed(s.map)?" · not open":""}</option>`:"")
       +(other.length?`<optgroup label="Other open maps">${other.map(k=>`<option value="${esc(k)}">${esc(mapLabel(k))}</option>`).join("")}</optgroup>`:"");
     sel.value=s.map&&smp===s.map?s.map:""}
+  // the monsters on the session's map (and any the session hunts that don't spawn there), each with + Session / − Session
+  {const on=MAPMOBS[smp]?[...MAPMOBS[smp]].sort((a,b)=>(b.n??-1)-(a.n??-1)):[],ids=new Set(s.mobIds);
+    const rows=[...on,...ms.filter(m=>!on.some(x=>x.m.id===m.id)).map(m=>({m,n:null,off:true}))];
+    $("sessMobHead").innerHTML=!smp?`Pick a map in Farming on or on the world map to see its monsters.`
+      :`<b>Monsters on ${esc(mapName(smp)||mapCode(smp))}</b> · hunting ${ms.length} of ${on.length}`;
+    $("sessMobTable").closest(".scroll").hidden=!rows.length;
+    $("sessMobTable").querySelector("tbody").innerHTML=rows.map(({m,n,off})=>{const inS=ids.has(m.id);
+      return `<tr class="${inS?"sel":""}" style="${isSkipped(m)?"opacity:.55":""}"><td class="name">${mobIcon(m.id,1,"il")}<a href="#" data-info="mob:${m.id}">${esc(m.name)}</a>${BOSS_PILL(m)}${off?' <span class="note">not on this map</span>':""}</td><td>${off?"–":`≈${spN(n)}`}</td><td>${m.lv}</td><td>${fmtExp(m)}</td><td><button type="button" class="small${inS?"":" primary"}" data-sessmob="${m.id}">${inS?"− Session":"+ Session"}</button></td></tr>`}).join("")}
   // the folded part of the Log EXP card says what it's set to, so you know without opening it
   {const n=partyN(s),bits=[];
     if(n>1)bits.push(`party of ${n}`);if($("fTime").dataset.auto!=="1"||$("fDate").dataset.auto!=="1")bits.push("time set by hand");if(state.dieItem)bits.push("death item");
