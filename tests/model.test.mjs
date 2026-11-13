@@ -2070,6 +2070,30 @@ t("cards: Hunter Fly and Dracula copies (box or counted in the gear) roll on eve
   assert.equal(back.chars.Knight.cards.hfN, 2);
 });
 
+t("cards: in build mode every Cards row follows the gear, and its tick boxes don't count", () => {
+  const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
+  setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed sword", hitTxt: "300", aspd: 170, maxSp: 500, st: {}, skills: {}, a: AUTO });
+  // every box ticked, nothing in the gear: build mode counts none of them
+  run(`Object.assign(CRD(),{vitata:true,daSF:true,creamy:true,phen:true,bbfly:true,hfOn:true,dracOn:true,dpOn:true,killSp:["Brute"]});C().mode="build";C().build={gear:{}}`);
+  for (const k of ["vitata", "daSF", "creamy", "phen", "bbfly", "hfOn", "dracOn", "dpOn"]) assert.equal(run(`cdOn("${k}")`), false, k);
+  assert.equal(run("JSON.stringify(killSpOn())"), "[]"); assert.equal(run("hfCards()"), 0); assert.equal(run("noBreak()"), false); assert.equal(run("creamyOn()"), false);
+  assert.equal(run("vctCards()"), 0); assert.equal(run("vitPct()"), 0);
+  // the cards slotted, boxes unticked: each one counts
+  run(`Object.assign(CRD(),{vitata:false,daSF:false,creamy:false,phen:false,bbfly:false,hfOn:false,dracOn:false,dpOn:false,killSp:[]});
+    C().build={gear:{weapon:{id:1158,cards:[4117,4167,4171,4289]},garment:{cards:[4040]},shoes:{cards:[4077]},acc1:{cards:[4053]},acc2:{cards:[27266]}}}`);
+  for (const k of ["vitata", "daSF", "creamy", "phen", "dpOn", "hfOn"]) assert.equal(run(`cdOn("${k}")`), true, k);
+  assert.equal(run(`cdOn("bbfly")`), false);
+  assert.equal(run("JSON.stringify(killSpOn().sort())"), JSON.stringify(["Brute", "Plant"]));
+  assert.equal(run("daFactor()"), 1 + run("num(CRD().daPct)") / 100);           // Side Winder
+  assert.equal(run("noBreak()"), true); assert.equal(run("vctCards()"), 0);       // Phen's cast +% comes from the gear's own line
+  assert.equal(run("creamyOn()"), true); assert.equal(run("hfCards()"), 1);
+  assert.equal(run("vitPct()"), 0);                                               // Vitata's SP cost from the gear too
+  // status window mode: the boxes again
+  run(`C().mode="status"`);
+  assert.equal(run(`cdOn("daSF")`), false); assert.equal(run("JSON.stringify(killSpOn())"), "[]");
+  run(`CRD().phen=true`); assert.equal(run("vctCards()"), 25);
+});
+
 t("cards: a Sage's old Vitata, Hunter Fly and Side Winder settings move out of Sage options", () => {
   const app = load({ job: "Sage", current: "s1", sessions: [{ id: "s1", name: "t", mobIds: [], entries: [] }],
     chars: { Sage: { sage: { hsLv: 10, vitata: false, hfOn: true, hfHp: 120, daSF: true } }, Knight: { sage: { vitata: true } }, Wizard: { sage: { hsLv: 5 } } } });

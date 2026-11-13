@@ -1,6 +1,14 @@
 // ---- render: character ----
 // card tick boxes: a card's numbers only show while it's ticked
 const syncCardOpts=()=>ROOTQ(".cdItem").forEach(r=>{const b=r.querySelector('input[type="checkbox"][data-cd]'),o=r.querySelector(".cdOpts");if(b&&o)o.hidden=!b.checked});
+// in build mode the Cards rows follow your gear: a box is ticked when the card is slotted, and locked; Hunter Fly's and Dracula's
+// copies are the ones in your gear. Status window mode shows your own ticks
+const syncCardRows=()=>{const c=C(),b=c.mode==="build",cd=CRD(),ks=killSpOn(),why="Build mode: on when this card is slotted in your gear";
+  ROOTQ('input[type="checkbox"][data-cd]').forEach(i=>{i.checked=b?cdOn(i.dataset.cd):!!cd[i.dataset.cd];i.disabled=b;i.title=b?why:""});
+  [["hfN",HUNTER_FLY],["dracN",DRACULA]].forEach(([k,id])=>ROOTQ(`[data-cd="${k}"]`).forEach(i=>{i.disabled=b;
+    if(b)i.value=cardsInGear(c,[id]);else if(document.activeElement!==i)i.value=cd[k]??""}));
+  ROOTQ("[data-cdkill]").forEach(i=>{i.checked=ks.includes(i.dataset.cdkill);i.disabled=b;i.title=b?why:""});
+  syncCardOpts()};
 // status-window mode: a two-handed weapon closes the shield tick box and the left hand
 function handsUi(c){const both=BUILD.twoHanded(c.weapon);$("shield").checked=!!c.shield&&!both;$("shield").disabled=both;$("lw").disabled=both;
   $("shieldNote").textContent=both?`${c.weapon}: it takes both hands, so no shield${state.job==="Assassin"?" or left-hand weapon":""}`:`${state.job} shield penalty: ASPD −${BUILD.SHIELD_ASPD[state.job]??"?"}${state.job==="Assassin"?"; it replaces a left-hand weapon":""}. Ticking or unticking moves the ASPD above`}
@@ -14,10 +22,10 @@ const syncChar=()=>{
   const a=c.a;$("aType").value=a.type;$("aPct").value=a.pct;$("aHits").value=a.hits;$("aElem").value=a.el;$("aCast").value=a.cast;$("aDelay").value=a.delay;$("aSp").value=a.sp;$("aTargets").value=a.targets;$("aZeny").value=a.zeny||"";$("cartW").value=c.cartW||"";$("cartWrap").hidden=!num(a.cart);
   {const ac=AC();$("acSpell").innerHTML=Object.keys(AC_SPELLS).map(n=>`<option>${esc(n)}</option>`).join("");$("acOn").checked=!!ac.on;$("acSpell").value=ac.spell;$("acLv").value=ac.lv;$("acPct").value=ac.pct}
   $("bonus").value=state.bonus;$("jobBonus").value=num(state.jobBonus);
-  {const cd=CRD();ROOTQ("[data-cd]").forEach(i=>{const k=i.dataset.cd;if(i.type==="checkbox")i.checked=!!cd[k];else i.value=cd[k]??""})}
-  syncCardOpts();
+  {const cd=CRD();ROOTQ("[data-cd]").forEach(i=>{const k=i.dataset.cd;if(i.type!=="checkbox")i.value=cd[k]??""})}
   $("dpWrap").hidden=state.job!=="Sage";
-  {const ks=CRD().killSp;$("killSpBoxes").innerHTML=Object.entries(KILL_SP).map(([r,n])=>`<label class="bar"><input type="checkbox" data-cdkill="${esc(r)}"${ks.includes(r)?" checked":""}> <b>${esc(n)}</b> (${esc(r)})</label>`).join("")}
+  $("killSpBoxes").innerHTML=Object.entries(KILL_SP).map(([r,n])=>`<label class="bar"><input type="checkbox" data-cdkill="${esc(r)}"> <b>${esc(n)}</b> (${esc(r)})</label>`).join("");
+  syncCardRows();
   $("ecRow").hidden=!EC_JOBS.includes(state.job);{const e=ECO();ROOTQ("[data-ec]").forEach(i=>{const k=i.dataset.ec;if(i.type==="checkbox")i.checked=!!e[k];else i.value=e[k]??""})}
   $("sagePanel").hidden=state.job!=="Sage";if(state.job==="Sage"){const g=G();ROOTQ("[data-sg]").forEach(i=>{const k=i.dataset.sg;if(i.type==="checkbox")i.checked=!!g[k];else i.value=g[k]??""});ROOTQ("[data-sgbolt]").forEach(i=>i.checked=!!g.bolts[i.dataset.sgbolt])}STATS.forEach(k=>$("st_"+k).value=(c.st&&c.st[k])||"");renderStatNote();
   if(typeof secNavSync==="function")secNavSync();
@@ -80,20 +88,21 @@ function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   {const p=recPick("sp");$("spItemUse").innerHTML=p?`<b>${esc(p.name)}</b> (${fmtSig(p.avg)} SP, ${fmtSig(p.price)} z${p.auto?", cheapest":""})`:REC().spItem==="none"?'<span class="muted">no SP item (None): you rest</span>':""}
   $("itemInfo").textContent=c.autoSp?(ips>0?`≈ ${(ips*60).toFixed(1)} items/min · ${fmtN(ips*3600*spItemPrice())} z/hr`:"not needed: regen covers it"):"";
   const atk=a.type==="magic"||a.type==="spellfist"?`MATK ${fmtN(sumStat(c.matkTxt))}`:`ATK ${fmtN(sumStat(c.atkTxt))}`;
+  syncCardRows();
   {const cd=CRD(),m=calcMob(),k0=SG_MOB;SG_MOB=m;try{const hf=hfHpPerSec(),hs=m?healsPerSec(m):0,sh=m?healShare(m):0,parts=[];
     {const k=hfCards(),lbl=`Hunter Fly${k>1?` ×${k}`:""}${cardsInGear(c,[HUNTER_FLY])>0?" (from your gear)":""}`;
       const hp=[];if(k)hp.push(hf>0?`${lbl} heals ~${fmtN(hf*60)} HP/min`:`${lbl}: only physical attacks trigger it`);if(hpRecPct())hp.push(`HP recovery +${hpRecPct()}% from gear`);
       $("hpCardInfo").innerHTML=hp.join(" · ");
       $("hpInfo").textContent=`${fmtN(hpRegen6())} per 6s${ihrPer10()?` + ${ihrPer10()} per 10s (Increase HP Recovery)`:""}${consHPPerSec()>0?` + ${fmtSig(consHPPerSec()*60)}/min from consumables`:""} = ${fmtN(hpRegenPerSec(null)*60)} HP/min${hf>0?`, + ${fmtN(hf*60)} from Hunter Fly`:""}`}
-    if(cd.vitata)parts.push((vitInGear(c)?"Vitata SP cost from your gear":`SP cost +${num(cd.spBonus)}%`)+(hs>0?` · vs ${esc(m.name)}: Heal ${(hs*60).toFixed(1)} casts/min${sh>=1?` <span class="bad">(can't keep up: more than all of your time)</span>`:` (${Math.round(sh*100)}% of your time not attacking)`}`:""));
-    if(cd.creamy)parts.push("Creamy: Where to farm (by zeny) teleports past monsters you skip");
-    if(noBreak())parts.push(cd.phen||cd.bbfly?`casts aren't interrupted${vctCards()?` · cast +${vctCards()}%`:" · cast time from your gear"}`:"Phen / Bloody Butterfly in your gear: casts aren't interrupted");
-    if(cd.daSF)parts.push(a.type!=="auto"&&a.type!=="spellfist"?"Side Winder: only basic attacks":daSkill().ch>=num(cd.daPct)/100?"Side Winder: Double Attack's chance is higher, nothing added":`Side Winder: +${num(cd.daPct)}% hits`);
+    if(cdOn("vitata"))parts.push((vitInGear(c)?"Vitata SP cost from your gear":`SP cost +${num(cd.spBonus)}%`)+(hs>0?` · vs ${esc(m.name)}: Heal ${(hs*60).toFixed(1)} casts/min${sh>=1?` <span class="bad">(can't keep up: more than all of your time)</span>`:` (${Math.round(sh*100)}% of your time not attacking)`}`:""));
+    if(cdOn("creamy"))parts.push("Creamy: Where to farm (by zeny) teleports past monsters you skip");
+    if(cdOn("phen")||cdOn("bbfly"))parts.push(c.mode==="build"?"Phen / Bloody Butterfly in your gear: casts aren't interrupted":`casts aren't interrupted · cast +${vctCards()}%`);
+    if(cdOn("daSF"))parts.push(a.type!=="auto"&&a.type!=="spellfist"?"Side Winder: only basic attacks":daSkill().ch>=num(cd.daPct)/100?"Side Winder: Double Attack's chance is higher, nothing added":`Side Winder: +${num(cd.daPct)}% hits`);
     $("cardInfo").innerHTML=parts.join(" · ");
     const sp=[],dr=dracSPPerSec(),dp=dpSPPerSec(),ks=killSPPerSec();
     {const k=dracCards();if(k)sp.push(`Dracula${k>1?` ×${k}`:""}${cardsInGear(c,[DRACULA])>0?" (from your gear)":""} ~${fmtN(dr*60)} SP/min`)}
-    if(cd.dpOn&&state.job==="Sage")sp.push(dp>0?`Dark Priest ~${fmtN(dp*60)} SP/min`:"Dark Priest: only physical attacks");
-    if(cd.killSp.length)sp.push(!m?"pick a monster to see the SP per kill":ks>0?`vs ${esc(m.name)}: +5 SP a kill ≈ ${fmtN(ks*60)} SP/min`:`no +5 SP per kill vs ${esc(m.name)}${isSF()?" (not with Spell Fist)":isRangedHit()?" (melee only)":cd.killSp.includes(m.race)?"":` (${esc(m.race||"?")})`}`);
+    if(cdOn("dpOn")&&state.job==="Sage")sp.push(dp>0?`Dark Priest ~${fmtN(dp*60)} SP/min`:"Dark Priest: only physical attacks");
+    const kl=killSpOn();if(kl.length)sp.push(!m?"pick a monster to see the SP per kill":ks>0?`vs ${esc(m.name)}: +5 SP a kill ≈ ${fmtN(ks*60)} SP/min`:`no +5 SP per kill vs ${esc(m.name)}${isSF()?" (not with Spell Fist)":isRangedHit()?" (melee only)":kl.includes(m.race)?"":` (${esc(m.race||"?")})`}`);
     if(spRecPct())sp.push(`SP recovery +${spRecPct()}% from gear`);
     $("spCardInfo").innerHTML=sp.join(" · ")}finally{SG_MOB=k0}}
   if(ecOn()){const m=calcMob(),k0=SG_MOB;SG_MOB=m;try{const d=m?defense(m):null;

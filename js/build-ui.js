@@ -663,13 +663,14 @@ function renderBuild(){const c=C(),on=c.mode==="build";
   const ck=b.check||{},rows=CHECKS.map(([k,label,get])=>{const mine=get(r.fields),g=ck[k];const d=g!=null&&g!==""&&mine!=null?num(g)-mine:null;
     return `<label>${label}<span class="bar"><input data-ck="${k}" type="number" value="${esc(g??"")}" placeholder="${mine??"–"}" class="fill">${d==null?"":`<span class="${Math.abs(d)<0.5?"good":"bad"}">${d===0?"✓":(d>0?"+":"")+fmtP(+d.toFixed(1))}</span>`}</span></label>`}).join("");
   if(!$("checkGrid").contains(document.activeElement))$("checkGrid").innerHTML=rows;
-  // cards the Character tab's Cards rows model: they count once ticked there
+  // cards the Character tab's Cards rows model from your gear: listed as counted there, not as missing
   // the other gear set's own notes while the table shows it
   const un=editAlt(c)?(x=>x?withSnap(x,()=>BUILD_LAST.unmodelled):[])(altChar(c,altIdx(c))):r.unmodelled;
-  const inRow=x=>CARD_ROW.some(n=>x.startsWith(n+":")),tick=un.filter(inRow),rest=un.filter(x=>!inRow(x));
+  const inRow=x=>CARD_ROW.some(n=>x.startsWith(n+":"))&&(state.job==="Sage"||!x.startsWith("Dark Priest Card:")),
+    inRows=[...new Set(un.filter(inRow).map(x=>x.split(":")[0]))],rest=un.filter(x=>!inRow(x));
   $("buildNote").innerHTML=(rest.length?`<b>Not counted</b> (procs, conditional or unsupported lines):<br>${rest.map(esc).join("<br>")}`:"")+
-    (tick.length?`${rest.length?"<br>":""}<b>Tick in the Cards rows</b> (Character tab, under the attack) to count: ${tick.map(x=>esc(x.split(":")[0])).join(", ")}`:"")}
-const CARD_ROW=["Hunter Fly Card","Sidewinder Card","Creamy Card","Dracula Card","Dark Priest Card",...Object.values(KILL_SP).map(n=>n+" Card")];
+    (inRows.length?`${rest.length?"<br>":""}<b>Counted in the Cards rows</b> (Character tab, under the attack): ${inRows.map(esc).join(", ")}`:"")}
+const CARD_ROW=["Vitata Card","Phen Card","Bloody Butterfly Card","Hunter Fly Card","Sidewinder Card","Creamy Card","Dracula Card","Dark Priest Card",...Object.values(KILL_SP).map(n=>n+" Card")];
 // switching to build keeps a copy of the typed status-window values, and switching back restores them
 const SNAP_KEYS=["shield","atkPct","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lw","lwAtk","lwElem","crit","critDmg","rangePct","skillPct","vctPct","fctPct","acdPct","ignDef","ignMdef","weapon","wElem","st"];
 ROOTQ("[data-cmode]").forEach(x=>x.addEventListener("click",()=>{const c=C(),to=x.dataset.cmode,from=c.mode==="build"?"build":"status";if(to===from)return;
