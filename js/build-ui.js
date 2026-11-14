@@ -118,7 +118,8 @@ const AXE_MACE=["One-handed axe","Two-handed axe","One-handed mace","Two-handed 
 // Skill values are Zero's in-game skill text (data/skills.js), which differs from classic RO for several of them
 const PBUFF=[
   {k:"blessing",name:"Blessing",lv:[1,10,10],fx:l=>[["str",l],["int",l],["dex",l],["hit",2*l]]},
-  {k:"clementia",name:"Clementia (Priest)",lv:[1,70,50,"Priest Job Lv"],fx:j=>{const v=10+Math.floor(j/10);return [["str",v],["int",v],["dex",v]]},
+  // Clementia: Blessing Lv 10 (stats +10, HIT +20) and Job Lv / 10 on each: a Job Lv 70 Priest shows STR, INT, DEX +17 and HIT +27 (2026-11-14)
+  {k:"clementia",name:"Clementia (Priest)",lv:[1,70,50,"Priest Job Lv"],fx:j=>{const v=10+Math.floor(j/10);return [["str",v],["int",v],["dex",v],["hit",v+10]]},
     how:"Blessing Lv 10 + Priest Job Lv/10"},
   {k:"incAgi",name:"Increase AGI",lv:[1,10,10],fx:l=>[["agi",2+l],["aspd_percent",l]]},
   // Angelus on Zero: Max HP +50 and VIT-based DEF +5% per level (the VIT / 2 part of soft DEF), 30 s × level, the caster's whole party

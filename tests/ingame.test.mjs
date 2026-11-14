@@ -70,6 +70,37 @@ const sum = t => String(t).split("+").reduce((a, b) => a + +b, 0);
   console.log("ok Lv 73 Sage matches the status window");
 }
 
+// Lv 72 Priest, Job Lv 70, Crossbow Clan, screenshot 2026-11-14, with Clementia, Canto Candidus, Impositio Manus Lv 5, a Concentration
+// Potion, Mace Mastery Lv 10 and Meditation Lv 10: +9 Nordfeld Platinum Helm, Poring Village Leek, +9 Chain (3 Boulder Dwarf Captain
+// Cards), +9 Hunter's Cape (Nine Tail Card), +4 Nordfeld Soldier's Armor, +7 Hill Patrol Boots (Matyr Card), 2 Subjugation Team's Rings
+// (Kukre Card). The options are what Equipment Stats lists beyond the gear.
+// Status window: ATK 97+171, MATK 114+52, HIT 349, FLEE 366+1, DEF 65+265, CRIT 12, ASPD 185, Max HP 3765. Not compared: soft DEF
+// (65 in game, 66 here) and Max SP (1282 in game, 1278 here)
+{
+  const lines = [["dex", null, null, 1], ["agi", null, null, 1], ["hp", null, null, 30], ["sp", null, null, 10],   // Crossbow Clan
+    ["str", null, null, 17], ["int", null, null, 17], ["dex", null, null, 17], ["hit", null, null, 27],                // Clementia, Job Lv 70
+    ["agi", null, null, 19], ["aspd_percent", null, null, 17], ["atk", null, null, 25], ["matk", null, null, 25],     // Canto Candidus, Impositio Manus
+    ["aspd_mod", null, null, 4], ["crit", null, null, 10], ["sp_percent", null, null, 10]];                          // Concentration, Mace Mastery, Meditation
+  const r = BUILD.compute({ baseLv: 72, jobLv: 70, base: { str: 40, agi: 85, vit: 1, int: 24, dex: 20, luk: 1 }, extra: lines,
+    gear: { headTop: { id: id("nordfeld-platinum-helm-401510"), refine: 9 }, headLow: { id: id("poring-village-leek-19238") },
+            weapon: { id: id("chain-590071"), refine: 9, cards: [300944, 300944, 300944] },
+            garment: { id: id("hunter-s-cape-481000"), refine: 9, cards: [id("nine-tail-card-4159")] }, armor: { id: id("nordfeld-soldier-s-armor-450588"), refine: 4 },
+            shoes: { id: id("hill-patrol-boots-470466"), refine: 7, cards: [id("matyr-card-4097")], opts: "AGI +11, FLEE +25, MaxHP +650, MaxSP +174, ATK +21, ASPD +1, ASPD +1%" },
+            acc1: { id: id("subjugation-team-s-ring-28539"), cards: [id("kukre-card-4027")] }, acc2: { id: id("subjugation-team-s-ring-28539"), cards: [id("kukre-card-4027")] } } },
+    "Priest", () => 153);   // Priest mace: 153 (js/events.js ASPD_T)
+  const F = r.fields;
+  assert.deepEqual([F.st.str, F.st.agi, F.st.vit, F.intTxt, F.st.dex, F.st.luk], ["40+28", "85+49", "1+7", "24+33", "20+30", "1+2"]);
+  assert.equal(F.atkTxt, "97+171");
+  assert.equal(F.matkTxt, "114+52");
+  assert.equal(sum(F.hitTxt), 349);
+  assert.equal(F.fleeTxt, "366+1");
+  assert.equal(F.defTxt.split("+")[1], "265");
+  assert.equal(Math.floor(F.crit), 12);
+  assert.equal(F.aspd, 185);
+  assert.equal(F.maxHp, 3765);
+  console.log("ok Lv 72 Priest matches the status window");
+}
+
 // Max HP / SP: Zero's base tables (tools/export_jobs.py), job bonus to Job Lv 70, flat bonuses, then %.
 // Status windows with nothing equipped; clans and buffs go in as their bonus lines. 2026-10.
 {
