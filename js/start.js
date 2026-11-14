@@ -335,13 +335,15 @@ function navSubSpy(){const d=document.querySelector(".tabs .navSubs");if(!d)retu
   set(!document.documentElement.classList.contains("nohints"));
   btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.setItem(KEY_HINTS,"1"):localStorage.removeItem(KEY_HINTS)}catch(e){}});
 })();
-// ---- price boxes: the boxes to type what you pay (Consumables, converters, skill items, the details popup), shown by default, per device.
-// Hidden, prices typed before still count; the rest use NPC prices. The Market tab keeps its own ----
+// ---- price boxes: the boxes to type what you pay (Consumables, converters, skill items, the details popup), per device. Hidden for a
+// new player (index.html: no saved data on this device yet), shown for one who already had data, as they may have typed prices.
+// The choice is saved either way ("1" hidden, "0" shown). Hidden, prices typed before still count; the rest use NPC prices.
+// The Market tab keeps its own ----
 (function setupPrices(){
   const KEY="rozero-farm-planner-noprice",btn=$("priceBtn");
   const set=v=>{document.documentElement.classList.toggle("noprice",!v);btn.setAttribute("aria-pressed",String(v));btn.querySelector("span").textContent=`Price boxes: ${v?"shown":"hidden"}`};
   set(!document.documentElement.classList.contains("noprice"));
-  btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.removeItem(KEY):localStorage.setItem(KEY,"1")}catch(e){}});
+  btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{localStorage.setItem(KEY,v?"0":"1")}catch(e){}});
 })();
 // ---- colour theme: auto (follows the device) → light → dark, per device like full width ----
 (function setupTheme(){
