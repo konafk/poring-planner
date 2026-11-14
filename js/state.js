@@ -179,6 +179,8 @@ state.recovery={discount:!(state.recovery&&state.recovery.discount===false),all:
 // the Stellar tab (stellar.js): certificates you have by ★ weapon id (whole counts above 0) and your weapon's refine (0 to 20)
 {const t=objOr(state.stellar),r=Math.round(+t.refine);
   state.stellar={have:Object.fromEntries(Object.entries(numMap(t.have)).filter(([k,v])=>/^\d+$/.test(k)&&v>=1).map(([k,v])=>[k,Math.round(v)])),refine:Number.isFinite(r)?Math.min(20,Math.max(0,r)):0}}
+// the Daily quests tab's filters (dailies.js): only the dailies your level allows, hide the ones done today
+state.dailyMine=state.dailyMine===true;state.dailyHideDone=state.dailyHideDone===true;
 // the Recipes tab's Brewing and Cooking simulators (craftsim.js): the numbers you typed over your character's (whole numbers in range),
 // the recipe picked to roll (id) and how many tries (n); cooking's kit is the level it cooks at (11 to 13)
 {const t=objOr(state.craftSim),keep=(o,keys)=>Object.fromEntries(Object.entries(numMap(o)).filter(([k])=>keys[k]).map(([k,v])=>[k,Math.min(keys[k][1],Math.max(keys[k][0],Math.round(v)))]));

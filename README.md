@@ -18,6 +18,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 - **Home:** what the planner does, the next roadmap update, where you left off (your character, session, EXP/hr and the best maps for you right now) and a card for every tab.
 - **Character:** every 2nd job with Zero skill data, a build simulator that matches the status window, and a damage model covering elements, sizes, DEF, crits, dual wield, auto-casts, cards, buffs, consumables (HP / SP items included), skill items and weight. Up to 10 **other gear sets** (add or remove them as you need) are worked out next to your gear, so you can compare weapons or cards before you switch. Sets can be named ("Farm", "Boss") and swapped on as your gear, and gear you take off keeps its refine, cards and affixes for when you put it back on.
 - **Session:** an EXP tracker with EXP/hr, time to level, a progress chart, level goals and a sell timer.
+- **Daily quests:** every daily quest NPCs give, from the game client: the level it needs, what to hunt and where, with a tick for each one you've done today (per character, cleared at the 04:00 UTC reset).
 - **Monsters & maps:** Where to farm (the best spots, one map ranking by EXP or zeny, and a world map to pick any open map, with Farm here), a Map planner, a monster table, and a green / yellow / red check of whether you can farm a map with no HP or SP items.
 - **Memorial dungeons:** a Jellostone tracker (today's Poring Village fragment, the 3-day craft, when you'll have the stones for the Expedition, Contingent and Conqueror pieces you want), and the memorial dungeons' rewards and gear enchants.
 - **Stellar weapons:** the ★ Forging Certificates each weapon type needs to take a ★ weapon to ★★, the monster you'd get them from fastest at your kill speed, and what each Activation route costs and does to your refine (it's the Taiwan server's system; Global doesn't have it yet).
@@ -36,7 +37,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 ## Docs
 
 - [Character tab](docs/character.md): build mode, damage model, cards, buffs, consumables, skill items and weight
-- [Other tabs](docs/features.md): accounts and Backup, Session, Monsters & maps, Roadmap, Monster info, Maps, Item info, Equipment and Cards, Brewing and Cooking simulators, Recipes, Market, EXP tables, Formulas, and how tables work
+- [Other tabs](docs/features.md): accounts and Backup, Session, Daily quests, Monsters & maps, Roadmap, Monster info, Maps, Item info, Equipment and Cards, Brewing and Cooking simulators, Recipes, Market, EXP tables, Formulas, and how tables work
 - [Shared prices and cloud backup](docs/shared-prices.md): the Discord login, how shared prices keep junk out, and setting up the database
 - [Development](docs/development.md): project layout, data export tools and tests
 - [Data sources](docs/data-sources.md): where the data and formulas come from
