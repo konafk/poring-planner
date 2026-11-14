@@ -654,13 +654,16 @@ function colViews(id,box,apply){const views={All:null,...COL_VIEWS[id]},seg=docu
   // the big tables start on their Compact view, once per account (state.colsShown["view:<id>"]), so a view you pick after that sticks
   ["mobTable","bestTable","huntTable"].forEach(id=>{const k="view:"+id;if(state.colsShown[k])return;state.colsShown[k]=["Compact"];
     state.hideCols[id]=names(id).filter(n=>n&&!COL_VIEWS[id].Compact.includes(n))});
-  const apply=()=>{st.textContent=IDS.flatMap(id=>{const ns=names(id);return (state.hideCols[id]||[]).map(k=>ns.indexOf(k)).filter(i=>i>=0).map(i=>`#${id} tr>:nth-child(${i+1}){display:none}`)}).join("\n")};
+  // columns that are price boxes go with the other price boxes (Settings → Price boxes), and so do their show / hide ticks
+  const PRICE_COLS={recTable:["Price used"]};
+  const apply=()=>{st.textContent=IDS.flatMap(id=>{const ns=names(id);return [...(state.hideCols[id]||[]).map(k=>ns.indexOf(k)).filter(i=>i>=0).map(i=>`#${id} tr>:nth-child(${i+1}){display:none}`),
+    ...(PRICE_COLS[id]||[]).map(k=>ns.indexOf(k)).filter(i=>i>=0).map(i=>`.noprice #${id} tr>:nth-child(${i+1}){display:none}`)]}).join("\n")};
   IDS.forEach(id=>{const t=document.getElementById(id);if(!t||!t.tHead)return;
     const ths=[...t.tHead.rows[0].cells];
     // older saves kept column numbers: turn them into the names of the columns they pointed at
     state.hideCols[id]=(state.hideCols[id]||[]).map(k=>typeof k==="number"?ths[k-1]&&(ths[k-1].textContent||"").trim():k).filter(Boolean);const box=document.createElement("details");box.className="note";box.style.cssText="margin:2px 0";
     box.innerHTML=`<summary>Show / hide columns</summary><div class="bar colList">${ths.map((th,i)=>{const name=(th.textContent||"").trim();if(!name)return "";
-      return `<label class="bar"><input type="checkbox" data-col="${esc(name)}" ${(state.hideCols[id]||[]).includes(name)?"":"checked"}> ${esc(name)}</label>`}).join("")}
+      return `<label class="bar${(PRICE_COLS[id]||[]).includes(name)?" priceIn":""}"><input type="checkbox" data-col="${esc(name)}" ${(state.hideCols[id]||[]).includes(name)?"":"checked"}> ${esc(name)}</label>`}).join("")}
       <button type="button" class="small" data-allcols>Show all</button></div>`;
     const anchor=t.closest(".scroll")||t;anchor.parentNode.insertBefore(box,anchor);
     if(COL_VIEWS[id])colViews(id,box,apply);

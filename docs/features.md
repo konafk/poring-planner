@@ -49,6 +49,7 @@ At the bottom of the sidebar, **Compact sidebar** shrinks it to its icons (hover
 - **Theme:** switches between auto (follows your device), light and dark. The sidebar follows it.
 - **Full width:** lets the page use the whole window instead of stopping at 1180px. It only shows on very wide screens.
 - **Future content:** shows the gear that isn't out on Global yet, the Contingent and Conqueror upgrades on the Memorial dungeons tab (hidden by default). While it's hidden, pieces you ticked stay saved but don't count in the Jellostones.
+- **Price boxes:** shows the boxes where you type what you pay for an item: Zeny per use, the Custom HP / SP item's cost, the ASPD potion, converters, skill items, the HP & SP recovery items' Price used column and the details popup's Players pay (shown by default). Hidden, prices you typed still count and the rest use NPC (or Discount) prices. The Market tab keeps its own price boxes.
 
 All five are remembered in this browser, apart from your account data, so backups and share links don't carry them.
 

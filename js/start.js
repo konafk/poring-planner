@@ -26,8 +26,7 @@ const TAB_DESC={
 };
 function showHero(t){
   const b=document.querySelector(`[data-tabbtn="${t}"]`);if(!b)return;
-  const g=b.closest(".navSec");
-  $("heroGrp").textContent=g?g.querySelector(".navGrp").textContent:"";$("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
+  $("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
 }
 // a link to a tab: #memorial-dungeons (its name, any case) or #mem (its key); the address bar always shows the open tab's link, in
 // lower case. A name goes before a key. The old Monster info and Maps tabs' links (#monster-info, #maps) open Monsters & maps,
@@ -97,7 +96,7 @@ function pageNav(t){soloFold();const nav=$("pageNav");if(!nav)return;const wrap=
     return h?[[el,h]]:[...el.querySelectorAll(":scope>.card")].map(c=>[c,secHeading(c)]).filter(x=>x[1])});
   const on=secs.length>1;nav.hidden=!on;wrap.classList.toggle("hasPageNav",on);PAGE_SECS=on?secs.map(x=>x[0]):[];if(!on){nav.innerHTML="";if(typeof navSubs==="function")navSubs();return}
   secs.forEach(([el],i)=>{if(!el.id)el.id=`sec-${t}-${i}`});
-  nav.innerHTML=`<span class="secHead">On this tab</span>`+secs.map(([el,h])=>`<a href="#${el.id}" data-psec="${el.id}">${esc(h.textContent.trim())}</a>`).join("");
+  nav.innerHTML=secs.map(([el,h])=>`<a href="#${el.id}" data-psec="${el.id}">${esc(h.textContent.trim())}</a>`).join("");
   if(typeof navSubs==="function")navSubs();
   // beside the cards from the one under the heading down
   nav.style.gridRow=`2 / span ${Math.max(1,[...wrap.children].filter(el=>el!==nav&&!el.classList.contains("pageHead")&&shown(el)).length)}`;
@@ -187,6 +186,7 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
     {k:"Action",name:"Log EXP",meta:"+ button · L",run:()=>openQuickLog(true),ok:()=>!atMaxLv()},
     {k:"Action",name:"Switch theme",meta:"auto → light → dark",run:()=>$("themeBtn").click()},
     {k:"Action",name:"Show or hide hints",meta:"help text under the cards",run:()=>$("hintBtn").click()},
+    {k:"Action",name:"Show or hide price boxes",meta:"the boxes to type what you pay",run:()=>$("priceBtn").click()},
     {k:"Action",name:"Show or hide future content",meta:"Contingent and Conqueror gear",run:()=>$("futureBtn").click()},
     {k:"Action",name:"New session",meta:"Session tab",run:()=>$("newSession").click()}];
   let ALL=null;
@@ -238,7 +238,7 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
     if((e.key==="k"||e.key==="K")&&(e.ctrlKey||e.metaKey)){e.preventDefault();dlg.open?dlg.close():open()}
     else if(e.key==="/"&&!typing&&!e.ctrlKey&&!e.metaKey){e.preventDefault();open()}});
 })();
-// ---- Settings menu (sidebar): hints, theme and full width. The ⋯ menu code in events.js opens and closes it; its items keep it open ----
+// ---- Settings menu (sidebar): hints, theme, full width, future content and price boxes. The ⋯ menu code in events.js opens and closes it; its items keep it open ----
 // ---- full width: a per-device display choice kept outside the account saves (index.html applies it before the page draws) ----
 (function setupWide(){
   const KEY_WIDE="rozero-farm-planner-wide",btn=$("wideBtn");
@@ -330,6 +330,14 @@ function navSubSpy(){const d=document.querySelector(".tabs .navSubs");if(!d)retu
   const set=v=>{document.documentElement.classList.toggle("nohints",!v);btn.setAttribute("aria-pressed",String(v));btn.querySelector("span").textContent=`Hints: ${v?"on":"off"}`};
   set(!document.documentElement.classList.contains("nohints"));
   btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.setItem(KEY_HINTS,"1"):localStorage.removeItem(KEY_HINTS)}catch(e){}});
+})();
+// ---- price boxes: the boxes to type what you pay (Consumables, converters, skill items, the details popup), shown by default, per device.
+// Hidden, prices typed before still count; the rest use NPC prices. The Market tab keeps its own ----
+(function setupPrices(){
+  const KEY="rozero-farm-planner-noprice",btn=$("priceBtn");
+  const set=v=>{document.documentElement.classList.toggle("noprice",!v);btn.setAttribute("aria-pressed",String(v));btn.querySelector("span").textContent=`Price boxes: ${v?"shown":"hidden"}`};
+  set(!document.documentElement.classList.contains("noprice"));
+  btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.removeItem(KEY):localStorage.setItem(KEY,"1")}catch(e){}});
 })();
 // ---- colour theme: auto (follows the device) → light → dark, per device like full width ----
 (function setupTheme(){

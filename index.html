@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="style.css">
-<!-- full width, the compact sidebar, hints and the colour theme are per-device display choices: set them before the page draws so it doesn't jump -->
-<script>try{if(localStorage.getItem("rozero-farm-planner-wide")==="1")document.documentElement.classList.add("wide");if(localStorage.getItem("rozero-farm-planner-compact")==="1")document.documentElement.classList.add("compact");if(localStorage.getItem("rozero-farm-planner-hints")!=="1")document.documentElement.classList.add("nohints");var th=localStorage.getItem("rozero-farm-planner-theme");if(th==="light"||th==="dark")document.documentElement.dataset.theme=th}catch(e){}</script>
+<!-- full width, the compact sidebar, hints, price boxes and the colour theme are per-device display choices: set them before the page draws so it doesn't jump -->
+<script>try{if(localStorage.getItem("rozero-farm-planner-wide")==="1")document.documentElement.classList.add("wide");if(localStorage.getItem("rozero-farm-planner-compact")==="1")document.documentElement.classList.add("compact");if(localStorage.getItem("rozero-farm-planner-hints")!=="1")document.documentElement.classList.add("nohints");if(localStorage.getItem("rozero-farm-planner-noprice")==="1")document.documentElement.classList.add("noprice");var th=localStorage.getItem("rozero-farm-planner-theme");if(th==="light"||th==="dark")document.documentElement.dataset.theme=th}catch(e){}</script>
 <!-- until the scripts at the end have run (a few MB, slow on a phone) every tab's cards would show at once, then collapse into one tab
      when start.js hides the rest: a big layout shift. Until then the page shows only the Home hero (when Home opens: the address, or
      with none the saved tab) and nothing else in the page column, so the open tab's cards appear without moving anything -->
@@ -58,12 +58,13 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="sideFoot">
       <button type="button" class="iconBtn" id="sideBtn" aria-pressed="false" title="Shrink the sidebar to icons"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 10l-2 2 2 2"/></svg><span>Compact sidebar</span></button>
       <div class="menu setMenu">
-        <button type="button" class="iconBtn menuBtn" id="setBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="setMenu" title="Settings: hints, theme, full width, future content"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></button>
+        <button type="button" class="iconBtn menuBtn" id="setBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="setMenu" title="Settings: hints, theme, full width, future content, price boxes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></button>
         <div class="menuList" id="setMenu" role="menu" aria-label="Settings" hidden>
         <button type="button" role="menuitem" data-keep id="hintBtn" aria-pressed="false" title="Show or hide the help text under the cards"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>Hints: off</span></button>
         <button type="button" role="menuitem" data-keep id="themeBtn" title="Colour theme: follows your device"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg><span>Theme: auto</span></button>
         <button type="button" role="menuitem" data-keep id="wideBtn" aria-pressed="false" title="Let the page use the whole window width"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg><span>Full width: off</span></button>
         <button type="button" role="menuitem" data-keep id="futureBtn" aria-pressed="false" title="Show or hide gear that isn't out on Global yet (Contingent and Conqueror)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Future content: hidden</span></button>
+        <button type="button" role="menuitem" data-keep id="priceBtn" aria-pressed="true" title="Show or hide the boxes to type what you pay for items. Hidden, prices you typed still count and the rest use NPC prices"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><span>Price boxes: shown</span></button>
         </div>
       </div>
     </div>
@@ -75,7 +76,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   </div></div>
 <div class="wrap">
   <header class="pageHead">
-    <div class="eyebrow" id="heroGrp"></div><div class="heroRow"><h1 id="heroTitle"></h1><div class="heroBar" id="heroBar"></div></div><p id="heroDesc"></p>
+    <div class="heroRow"><h1 id="heroTitle"></h1><div class="heroBar" id="heroBar"></div></div><p id="heroDesc"></p>
   </header>
   <nav class="secNav pageNav" id="pageNav" aria-label="Sections on this tab" hidden></nav>
   <section class="homeHero" data-tab="home" aria-labelledby="homeTitle">
@@ -86,10 +87,10 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   </section>
   <section class="card homeNewsCard" id="homeNews" data-tab="home" aria-labelledby="homeNewsTitle" hidden></section>
   <section class="startCard" id="startCard" hidden aria-labelledby="startTitle">
-    <div class="startHead"><div><div class="eyebrow">Get started</div><h2 id="startTitle">Set up once, and every tab uses your numbers</h2></div><button type="button" class="iconX" id="startHide" aria-label="Hide get started" title="Hide this">×</button></div>
+    <div class="startHead"><div><h2 id="startTitle">Get started</h2></div><button type="button" class="iconX" id="startHide" aria-label="Hide get started" title="Hide this">×</button></div>
     <ol class="steps">
-      <li data-step="char"><span class="stepN" aria-hidden="true">1</span><div class="stepTxt"><b>Set up your character</b><span>Pick your job and type your six stats from the in-game status window.</span></div><button type="button" class="small" data-go="char">Open Character</button></li>
-      <li data-step="mob"><span class="stepN" aria-hidden="true">2</span><div class="stepTxt"><b>Pick where to farm</b><span>Press "Farm here" on one of the best spots for your character.</span></div><button type="button" class="small primary" data-go="farm">Find a spot</button></li>
+      <li data-step="char"><span class="stepN" aria-hidden="true">1</span><div class="stepTxt"><b>Set up your character</b></div><button type="button" class="small" data-go="char">Open Character</button></li>
+      <li data-step="mob"><span class="stepN" aria-hidden="true">2</span><div class="stepTxt"><b>Pick where to farm</b></div><button type="button" class="small primary" data-go="farm">Find a spot</button></li>
     </ol>
   </section>
   <section class="card" id="homeToolsCard" data-tab="home">
@@ -211,7 +212,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <label>LUK<input id="st_luk" inputmode="numeric"></label>
       </div>
       <div class="note" id="statNote"></div>
-      <div class="bar note" id="onTopWrap"><label class="check-top"><input type="checkbox" id="addOnTop"> <span>Status window typed <b>without</b> active skill buffs and items: add the Consumables card and Skills card buffs on top (untick if your numbers already include them)</span></label></div>
+      <div class="bar note" id="onTopWrap"><label class="check-top"><input type="checkbox" id="addOnTop"> <span>Add Consumables and Skills buffs on top <span class="muted">(untick if your status window already includes them)</span></span></label></div>
     </details>
     <details class="card sub" id="eqPanel" open>
       <summary title="% lines from Equipment Stats that the status window doesn't show"><b>Equipment stats</b></summary>
@@ -230,7 +231,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <label>Delay after (s)<input id="aDelay" type="number" step="0.1" min="0"></label>
         <label>SP per use<input id="aSp" type="number" step="1" min="0"></label>
         <label>Monsters hit per use<input id="aTargets" type="number" step="0.5" min="1"></label>
-        <label>Zeny per use<input id="aZeny" type="number" step="100" min="0" placeholder="0"></label>
+        <label class="priceIn">Zeny per use<input id="aZeny" type="number" step="100" min="0" placeholder="0"></label>
         <label id="cartWrap" hidden>Cart weight<input id="cartW" type="number" step="100" min="0" max="8000" placeholder="0 – 8000"></label>
         <label id="weaponWWrap" hidden title="Axe Boomerang adds the axe's weight to its damage %. Build mode reads it from the Weapon row">Weapon weight<input id="weaponW" type="number" step="1" min="0" placeholder="weight"></label>
         <label id="shieldWrap" hidden title="Shield Boomerang and Rapid Smiting add the shield's weight + 4 × its refine to their damage %. Build mode reads them from the Shield row">Shield weight / refine<span class="bar"><input class="fill" id="shieldW" type="number" step="1" min="0" placeholder="weight" aria-label="Shield weight"><input class="w-xs" id="shieldRef" type="number" step="1" min="0" max="20" placeholder="+0" aria-label="Shield refine"></span></label>
@@ -256,24 +257,24 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <span id="acInfo"></span>
       </div>
       <div class="cdList note" id="cardRow">
-        <div class="cdHead"><b>Cards any job can slot</b> <span class="muted">tick the ones you wear; in build mode they follow the cards in your gear</span></div>
-        <div class="cdItem" title="Vitata Card gives Heal Lv1, which you cast yourself: each cast costs SP (plus the card's SP cost) and time you aren't attacking. In build mode it's on when the card is in your gear, and the SP cost comes from there"><label class="bar"><input type="checkbox" data-cd="vitata"> <b>Vitata</b></label><span class="muted">you cast Heal Lv1 between kills; every skill costs more SP</span><span class="cdOpts">SP cost +<input class="w-xs" data-cd="spBonus" type="number">% · Heal: <input class="w-xs" data-cd="healSp" type="number"> SP → <input class="w-sm" data-cd="healHp" type="number"> HP</span></div>
-        <div class="cdItem" title="Side Winder Card: basic attacks hit twice this often (right hand only). With Double Attack learned and a dagger, the higher of the two chances counts (Double Attack Lv10: 70%); the card works with any weapon"><label class="bar"><input type="checkbox" data-cd="daSF"> <b>Side Winder</b></label><span class="muted">basic attacks sometimes hit twice (right hand only; with Spell Fist the 2nd hit procs it too)</span><span class="cdOpts"><input class="w-xs" data-cd="daPct" type="number">% chance</span></div>
-        <div class="cdItem" title="Creamy Card gives Teleport Lv1, so Where to farm (by zeny) can teleport past monsters you skip (without it, or the Teleport skill, it walks: Fly Wings cost too much). Its 10 SP a cast isn't counted"><label class="bar"><input type="checkbox" data-cd="creamy"> <b>Creamy</b></label><span class="muted">Teleport Lv1: Where to farm teleports past monsters you skip</span></div>
-        <div class="cdItem" title="Phen Card: casts can't be interrupted, variable cast +25%. Without it (or Bloody Butterfly) a hit that lands while you cast interrupts it and you start again. Build mode reads it from your gear"><label class="bar"><input type="checkbox" data-cd="phen"> <b>Phen</b></label><span class="muted">casts can't be interrupted; variable cast +25%</span></div>
-        <div class="cdItem" title="Bloody Butterfly Card: casts can't be interrupted, variable cast +30%. Build mode reads it from your gear"><label class="bar"><input type="checkbox" data-cd="bbfly"> <b>Bloody Butterfly</b></label><span class="muted">casts can't be interrupted; variable cast +30%</span></div>
+        <div class="cdHead"><b>Cards any job can slot</b></div>
+        <div class="cdItem" title="Vitata Card gives Heal Lv1, which you cast yourself: each cast costs SP (plus the card's SP cost) and time you aren't attacking. In build mode it's on when the card is in your gear, and the SP cost comes from there"><label class="bar"><input type="checkbox" data-cd="vitata"> <b>Vitata</b></label><span class="cdOpts">SP cost +<input class="w-xs" data-cd="spBonus" type="number">% · Heal: <input class="w-xs" data-cd="healSp" type="number"> SP → <input class="w-sm" data-cd="healHp" type="number"> HP</span></div>
+        <div class="cdItem" title="Side Winder Card: basic attacks hit twice this often (right hand only). With Double Attack learned and a dagger, the higher of the two chances counts (Double Attack Lv10: 70%); the card works with any weapon"><label class="bar"><input type="checkbox" data-cd="daSF"> <b>Side Winder</b></label><span class="cdOpts"><input class="w-xs" data-cd="daPct" type="number">% chance</span></div>
+        <div class="cdItem" title="Creamy Card gives Teleport Lv1, so Where to farm (by zeny) can teleport past monsters you skip (without it, or the Teleport skill, it walks: Fly Wings cost too much). Its 10 SP a cast isn't counted"><label class="bar"><input type="checkbox" data-cd="creamy"> <b>Creamy</b></label></div>
+        <div class="cdItem" title="Phen Card: casts can't be interrupted, variable cast +25%. Without it (or Bloody Butterfly) a hit that lands while you cast interrupts it and you start again. Build mode reads it from your gear"><label class="bar"><input type="checkbox" data-cd="phen"> <b>Phen</b></label></div>
+        <div class="cdItem" title="Bloody Butterfly Card: casts can't be interrupted, variable cast +30%. Build mode reads it from your gear"><label class="bar"><input type="checkbox" data-cd="bbfly"> <b>Bloody Butterfly</b></label></div>
         <div id="cardInfo"></div>
       </div>
       <div class="cdList note" id="hpCardRow">
-        <div class="cdHead"><b>Cards that give HP back</b> <span class="muted">in build mode Hunter Fly and HP Recovery +% cards (Muka, Zombie, Wooden Golem, Merman) follow your gear; in status window mode tick Hunter Fly and add an &quot;HP recovery&quot; line under Equipment stats</span></div>
-        <div class="cdItem" title="Hunter Fly Card: physical attacks (basic attacks, Spell Fist, physical skills) have a chance to restore HP every second for 5 s"><label class="bar"><input type="checkbox" data-cd="hfOn"> <b>Hunter Fly</b></label><span class="muted">physical attacks can restore HP for 5 s, so less HP lost</span><span class="cdOpts"><input class="w-xs" data-cd="hfPct" type="number">% chance · <input class="w-sm" data-cd="hfHp" type="number"> HP/s · <input class="w-2xs" data-cd="hfN" type="number" min="1" max="4" step="1" title="Copies in your weapons (1–4). Each copy rolls on every physical attack; the restore doesn't add up"> cards</span></div>
+        <div class="cdHead"><b>Cards that give HP back</b> <span class="muted hint">in build mode Hunter Fly and HP Recovery +% cards (Muka, Zombie, Wooden Golem, Merman) follow your gear; in status window mode tick Hunter Fly and add an &quot;HP recovery&quot; line under Equipment stats</span></div>
+        <div class="cdItem" title="Hunter Fly Card: physical attacks (basic attacks, Spell Fist, physical skills) have a chance to restore HP every second for 5 s"><label class="bar"><input type="checkbox" data-cd="hfOn"> <b>Hunter Fly</b></label><span class="cdOpts"><input class="w-xs" data-cd="hfPct" type="number">% chance · <input class="w-sm" data-cd="hfHp" type="number"> HP/s · <input class="w-2xs" data-cd="hfN" type="number" min="1" max="4" step="1" title="Copies in your weapons (1–4). Each copy rolls on every physical attack; the restore doesn't add up"> cards</span></div>
         <div id="hpCardInfo"></div>
       </div>
       <div class="cdList note" id="spCardRow">
-        <div class="cdHead"><b>Cards that give SP back</b> <span class="muted">in build mode every card here and SP Recovery +% cards (Eggyra, Sohee, Merman) follow your gear; in status window mode tick them and add an &quot;SP recovery&quot; line under Equipment stats</span></div>
-        <div class="cdItem" title="Dracula Card: physical and magic attacks have a chance to restore SP every second for 7 s"><label class="bar"><input type="checkbox" data-cd="dracOn"> <b>Dracula</b></label><span class="muted">physical and magic attacks can restore SP for 7 s</span><span class="cdOpts"><input class="w-xs" data-cd="dracPct" type="number">% chance · <input class="w-xs" data-cd="dracSp" type="number"> SP/s · <input class="w-2xs" data-cd="dracN" type="number" min="1" max="4" step="1" title="Copies in your weapons (1–4). Each copy rolls on every attack; the restore doesn't add up"> cards</span></div>
-        <div class="cdItem" id="dpWrap" title="Dark Priest Card, when a Sage wears it: 1 SP each time a physical attack hits (Spell Fist's physical hit too)"><label class="bar"><input type="checkbox" data-cd="dpOn"> <b>Dark Priest</b></label><span class="muted">a Sage gets 1 SP each time a physical attack hits (Spell Fist too)</span></div>
-        <div class="cdItem" title="Weapon cards: 5 SP when a melee physical attack kills a monster of that race. Not counted with Spell Fist or a bow, instrument or whip"><b>+5 SP per melee kill</b><span class="muted">weapon cards, per race killed:</span><span id="killSpBoxes" class="bar"></span></div>
+        <div class="cdHead"><b>Cards that give SP back</b> <span class="muted hint">in build mode every card here and SP Recovery +% cards (Eggyra, Sohee, Merman) follow your gear; in status window mode tick them and add an &quot;SP recovery&quot; line under Equipment stats</span></div>
+        <div class="cdItem" title="Dracula Card: physical and magic attacks have a chance to restore SP every second for 7 s"><label class="bar"><input type="checkbox" data-cd="dracOn"> <b>Dracula</b></label><span class="cdOpts"><input class="w-xs" data-cd="dracPct" type="number">% chance · <input class="w-xs" data-cd="dracSp" type="number"> SP/s · <input class="w-2xs" data-cd="dracN" type="number" min="1" max="4" step="1" title="Copies in your weapons (1–4). Each copy rolls on every attack; the restore doesn't add up"> cards</span></div>
+        <div class="cdItem" id="dpWrap" title="Dark Priest Card, when a Sage wears it: 1 SP each time a physical attack hits (Spell Fist's physical hit too)"><label class="bar"><input type="checkbox" data-cd="dpOn"> <b>Dark Priest</b></label></div>
+        <div class="cdItem" title="Weapon cards: 5 SP when a melee physical attack kills a monster of that race. Not counted with Spell Fist or a bow, instrument or whip"><b>+5 SP per melee kill</b><span id="killSpBoxes" class="bar"></span></div>
         <div id="spCardInfo"></div>
       </div>
       <div class="bar note" id="ecRow"><span title="The Mage quest skill: Wizards and Sages have it too">Energy Coat (Mage, Wizard, Sage):</span>
@@ -294,7 +295,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
           <label class="bar">monster swing every <input class="w-sm" id="mobInterval" type="number" step="0.1" placeholder="1.5">s</label>
           <label class="bar">× <input class="w-sm" id="hitScale" type="number" step="0.01" min="0" placeholder="0.3"> of swings reach you</label>
         </div>
-        <div class="mt">Defaults: a swing every 1.5 s, 0.3 of them reaching you. Change only if your HP loss doesn't match.</div>
+        <div class="mt hint">Change only if your HP loss doesn't match.</div>
       </details>
       <div class="form c4">
         <label>Fixed share of cast %<input id="fixedShare" type="number" step="1" min="0" max="100" placeholder="0"></label>
@@ -307,10 +308,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <label>Ignore DEF / MDEF %<span class="bar"><input class="fill" id="ignDef" type="number" step="1" placeholder="DEF"><input class="fill" id="ignMdef" type="number" step="1" placeholder="MDEF"></span></label>
       </div>
       <div class="note hint">Presets are max level. Fixed share of cast = the part DEX/INT can't cut (usually 20%).</div>
-      <details class="note">
-        <summary>How damage is worked out</summary>
-        <div class="mt">Area skills split time across targets. Full formulas: Formulas tab.</div>
-      </details>
+      <div class="note hint">Area skills split time across targets. Full formulas: Formulas tab.</div>
     </details>
     <details class="card sub" id="sagePanel" open>
       <summary title="Used by the Spell Fist and Hindsight attacks; Foresight by attacks with a cast time"><b>Sage options</b></summary>
@@ -359,19 +357,19 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="bar"><h2 class="grow">Consumables</h2><span class="note" id="recNote"></span></div>
     <details class="card sub" id="recPanel" open>
       <summary title="Potions, herbs and food bought to cover HP lost and SP short"><b>HP &amp; SP recovery items</b></summary>
-      <div class="bar note"><label class="bar" title="Saved for the whole account: a Merchant on the account with Discount Lv 10 (−24%) buys for the others. Covers recovery items, the ASPD potion, skill items and Custom HP / SP items. Off: the NPC price"><input type="checkbox" id="recDisc"> Buy with Discount <span class="muted">(Lv 10 on another character, this account; also for the ASPD potion and skill items)</span></label>
+      <div class="bar note"><label class="bar" title="Saved for the whole account: a Merchant on the account with Discount Lv 10 (−24%) buys for the others. Covers recovery items, the ASPD potion, skill items and Custom HP / SP items. Off: the NPC price"><input type="checkbox" id="recDisc"> Buy with Discount</label>
         <span id="mercNote"></span>
       </div>
       <div class="bar note" id="recSet">
         <label class="bar">HP item <select id="recHp"></select></label>
         <span id="recCustomHp" class="bar" hidden>
           <label class="bar">restores <input class="w-sm" id="itemHp" type="number"> HP</label>
-          <label class="bar">costs <input class="w-md" id="itemHpPrice" type="number"> z</label>
+          <label class="bar priceIn">costs <input class="w-md" id="itemHpPrice" type="number"> z</label>
         </span>
         <label class="bar">SP item <select id="recSp"></select></label>
         <span id="recCustom" class="bar" hidden>
           <label class="bar">restores <input class="w-sm" id="itemSp" type="number"> SP</label>
-          <label class="bar">costs <input class="w-md" id="itemPrice" type="number"> z</label>
+          <label class="bar priceIn">costs <input class="w-md" id="itemPrice" type="number"> z</label>
         </span>
       </div>
       <div class="bar note"><span>SP items:</span>
@@ -394,24 +392,23 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
       </div>
     </details>
     <details class="card sub" id="consPanel" open>
-      <summary><b>ASPD potion, food &amp; buffs</b> <span class="note">read your status window with these off; they add on top</span></summary>
+      <summary><b>ASPD potion, food &amp; buffs</b></summary>
       <div class="warnc" id="consOff" hidden>Not added: the status window box above says your numbers already include buffs and items.</div>
       <div class="bar note"><span>ASPD potion:</span>
         <label class="bar"><input type="checkbox" id="potOn"> using one</label>
         <span id="potIcon"></span><select id="potType" aria-label="Which potion"></select>
-        <label class="bar"><input class="w-md" id="potPrice" type="number" step="100"> z each</label>
+        <label class="bar priceIn"><input class="w-md" id="potPrice" type="number" step="100"> z each</label>
         <label class="bar">lasts <input class="w-xs" id="potMin" type="number" step="1"> min</label>
         <span id="potInfo"></span>
       </div>
-      <div class="bar note"><label class="bar" title="Consumes 1 World Tree Dew or Zelstar for a 1-hour buff"><input type="checkbox" id="yggOn"> Blessing of Yggdrasil</label>
-        <span class="muted">World Tree Dew or Zelstar (KP shop), lasts 1 hour: all stats +7, ATK +30, MATK +30, HIT +5, FLEE +5</span>
+      <div class="bar note"><label class="bar" title="Consumes 1 World Tree Dew or Zelstar (KP shop) for 1 hour: all stats +7, ATK +30, MATK +30, HIT +5, FLEE +5"><input type="checkbox" id="yggOn"> Blessing of Yggdrasil</label>
       </div>
       <div class="bar note"><label class="bar" title="The clan you joined at its Clan Master: a buff that stays on, so your status window always includes it. Counted in build mode">Clan <select id="clanSel"></select></label>
         <span class="muted" id="clanInfo"></span>
       </div>
       <div class="note hint">+ doesn't stack with Blessing of Yggdrasil (the higher counts); +% is a share of your total stat.</div>
       <table id="consStats" class="cstats"><thead><tr><th>Stat</th><th>+</th><th>+%</th></tr></thead><tbody></tbody></table>
-      <div class="note"><b>Other effects</b> (ATK, HIT, ASPD…)</div>
+      <div class="note"><b>Other effects</b></div>
       <div id="consList" class="eqlist"></div>
       <div class="bar"><button type="button" class="small" id="consAdd">+ Add</button><select id="consPreset" aria-label="Add an event item"></select><span class="note" id="consNote"></span></div>
       <div class="note"><b>Buffs from others</b></div>
@@ -434,7 +431,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   </section>
   </div>
   <aside class="charAside">
-    <nav class="secNav" aria-label="Character sections"><span class="secHead">On this tab</span><a href="#charCard" data-sec="charCard">Character</a><a href="#buildPanel" data-sec="buildPanel">Gear</a><a href="#statPanel" data-sec="statPanel">Stats</a><a href="#eqPanel" data-sec="eqPanel">Equipment stats</a><a href="#atkPanel" data-sec="atkPanel">Attack</a><a href="#cardRow" data-sec="cardRow">Cards</a><a href="#sagePanel" data-sec="sagePanel">Sage</a><a href="#weightPanel" data-sec="weightPanel">Weight</a><a href="#skillCard" data-sec="skillCard">Skills</a><a href="#recCard" data-sec="recCard">Consumables</a><a href="#gearCmpCard" data-sec="gearCmpCard">Gear sets</a><a href="#backupCard" data-sec="backupCard">Backup</a></nav>
+    <nav class="secNav" aria-label="Character sections"><a href="#charCard" data-sec="charCard">Character</a><a href="#buildPanel" data-sec="buildPanel">Gear</a><a href="#statPanel" data-sec="statPanel">Stats</a><a href="#eqPanel" data-sec="eqPanel">Equipment stats</a><a href="#atkPanel" data-sec="atkPanel">Attack</a><a href="#cardRow" data-sec="cardRow">Cards</a><a href="#sagePanel" data-sec="sagePanel">Sage</a><a href="#weightPanel" data-sec="weightPanel">Weight</a><a href="#skillCard" data-sec="skillCard">Skills</a><a href="#recCard" data-sec="recCard">Consumables</a><a href="#gearCmpCard" data-sec="gearCmpCard">Gear sets</a><a href="#backupCard" data-sec="backupCard">Backup</a></nav>
     <div class="sumCard" aria-label="Your numbers"><div class="secHead">Your numbers</div><div class="calc" id="charTiles"></div></div>
   </aside>
   </div>
@@ -620,7 +617,8 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="scroll" id="mapTableWrap"><table id="mapTable"><thead><tr><th>Monster</th><th>Count</th><th>Share</th><th>Lv</th><th>Element</th><th title="Element table rate of your attack element (with the map's converter or bolt) against the monster">Element %</th><th>Size</th><th>Race</th><th>Your hit %</th><th>Sec / kill</th><th>Base EXP</th><th title="Farm without items against this monster alone: the share of the HP and SP you use that comes back with no HP or SP items. Hover for the breakdown">No items</th></tr></thead><tbody></tbody></table></div>
     <details class="more charOnly" id="mobbedRow"><summary>Advanced <span class="note" id="mobbedSum"></span></summary>
       <label class="bar">Monsters attacking you at the same time here <input class="w-sm" id="mobbedIn" type="number" min="1" max="12" step="1"></label>
-      <div class="note">Blank = Possible rampage from the Character tab. From 3 at once your FLEE and DEF drop; dungeons cut into small rooms start at 3.</div>
+      <div class="note">Blank: Possible rampage from the Character tab.</div>
+      <div class="note hint">From 3 at once your FLEE and DEF drop; dungeons cut into small rooms start at 3.</div>
     </details>
     <div id="mapNavi"></div>
     <details class="more mt" id="mapInfoMore"><summary>Every map <span class="note" id="mapInfoNote"></span></summary>
@@ -715,8 +713,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   </section>
 
   <section class="card" id="starCard" data-tab="star">
-    <div class="bar"><h2 class="grow">★ Forging Certificates</h2><span class="pill down" title="Taiwan Zero data: the Activation System isn't on Global yet">Not open in game yet</span></div>
-    <div class="note"><b>Not open in game yet.</b> Taiwan Zero's costs, which may change on Global. The ★ weapons below are in Global's client already.</div>
+    <div class="bar"><h2 class="grow">★ Forging Certificates</h2><span class="pill down" title="Taiwan Zero's costs, which may change on Global. The ★ weapons below are in Global's client already">Not open in game yet</span></div>
     <div class="scroll mt"><table id="starTable"><thead><tr><th>★ weapon</th><th>Made from</th><th>You have</th><th>To go</th><th>Fastest for you</th><th>Certificates / hr</th><th>Time</th></tr></thead><tbody id="starRows"></tbody></table></div>
     <div class="note hint">★ to ★★ takes 100 ★ Forging Certificates, one per monster-drop copy.</div>
   </section>
@@ -740,7 +737,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
       <label title="Only gear with a copy priced at this refine or higher">Refine ≥<select id="mktRef"></select></label>
       <label title="Only copies with these in their slots: a card, a slot 4 enchant (STR +1) or a Taming Ring's egg. Separate several with commas">Card / enchant / egg<input class="w-xl" id="mktSlotQ" type="search" placeholder="Hydra, STR +1, Poring Egg"></label>
     </div>
-    <div class="bar mt mktOptBar" id="mktOptBar"><span class="note">Affix / slot options</span><span class="bar" id="mktOptF"></span></div>
+    <div class="bar mt mktOptBar" id="mktOptBar"><span class="bar" id="mktOptF"></span></div>
     <div class="bar mt mktItemChip" id="mktItemChip" hidden></div>
     <div class="mktList mt" id="mktList"></div>
     <div class="note hint">Lowest: the cheapest price a player posted; median: the middle of the players' prices, each player counted once.</div>
@@ -750,10 +747,10 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="bar"><h2 class="grow">My market</h2><button type="button" id="addOpen">+ Add item</button><div class="seg" role="radiogroup" aria-label="Game server" id="mineSrv" title="Each server has its own market, so each keeps its own prices"></div></div>
     <div class="mktShare mt" id="mktShare" hidden></div>
     <h3 class="mt">My posts</h3>
-    <div class="note">The last 30 days on this server.</div>
+    <div class="note hint">The last 30 days on this server.</div>
     <div class="mktList mt" id="postsList"></div>
     <h3 class="mt">My prices</h3>
-    <div class="note">Every zeny figure on the site uses these. Logged in, a price you change here is posted too.</div>
+    <div class="note">Logged in, a price you change here is posted too.</div>
     <div class="mktList mt" id="mineList"></div>
     <div class="note hint">Type 450k or 1.5m. DM: you sell it, so buyers can message you on Discord.</div>
   </section>
@@ -869,12 +866,12 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   </section>
   <section class="card" id="affixGearCard" data-tab="affix">
     <div class="bar"><h2 class="grow">Gear that drops with affixes</h2></div>
-    <div class="note">Dropped (or forged) weapons, armor, garments and shoes come with up to one random affix from each list.</div>
+    <div class="note hint">Dropped (or forged) weapons, armor, garments and shoes come with up to one random affix from each list.</div>
     <div id="affixGear"></div>
   </section>
   <section class="card" id="affixMoreCard" data-tab="affix">
     <div class="bar"><h2 class="grow">More items in the client</h2></div>
-    <div class="note">The client has these too, but no one has reported what they add yet.</div>
+    <div class="note hint">The client has these too, but no one has reported what they add yet.</div>
     <div id="affixMore"></div>
   </section>
 

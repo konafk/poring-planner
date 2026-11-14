@@ -42,7 +42,7 @@ function crowdInfo(){const c=C(),m=calcMob();if(document.activeElement!==$("crow
 function charOutTiles(){const m=calcMob(),tile=(k,v,sub,tip)=>`<div class="tile out"${tip?` title="${esc(tip)}"`:""}><div class="k">${k}</div><div class="v mono">${v}</div><div class="s">${sub}</div></div>`;
   const dpsTile=(d,sub)=>d!=null&&isFinite(d)?tile("Damage / s",fmtN(Math.round(d)),sub):"";
   const far='<a href="#session" data-gotab="track" data-goto="farmCard">Where to farm</a>';
-  if(!charSet())return `<div class="tile out wide"><div class="k">Your numbers</div><div class="s">Fill in your stats below to see your kill time, EXP and zeny</div></div>`;
+  if(!charSet())return `<div class="tile out wide"><div class="k">No stats yet</div><div class="s">Fill in your stats below to see your kill time, EXP and zeny</div></div>`;
   if(!m)return `<div class="tile out wide"><div class="k">No monster picked</div><div class="s">Press "Farm here" in ${far} on the Session tab to see your kill time, EXP and zeny</div></div>`;
   // a whole map farmed (Farm here) and no one monster picked: the map's mix, the numbers Where to farm ranked it by
   {const ss=cur(),mp=sessMap(ss),r=!state.calcMobId&&sessMobs(ss).length>1&&mp?mapStats(mp,walkSec()):null;
@@ -63,7 +63,7 @@ function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   if(!$("convItems").contains(document.activeElement))$("convItems").innerHTML=C().converters?(convFixed()?[convFixed()]:convEls()).map(el=>{
     if(!CONV_ITEMS[el])return `<span class="muted"><span class="el ${el}">${el}</span> Enchant Poison Lv ${convSkLv(el)}: 20 SP every ${15+15*convSkLv(el)} s</span>`;
     const ids=CONV_ITEMS[el].ids,hr=convUsesHr(el);
-    return `<span class="bar"><span class="el ${el}">${el}</span>${ids.map(id=>`<label class="bar"><a href="#" data-info="item:${id}" title="${esc(itemName(id))}">${itemIcon(id)}</a><input class="w-md" type="number" min="0" step="100" data-convprice="${id}" value="${state.prices[id]>0?state.prices[id]:""}" placeholder="price" aria-label="${esc(itemName(id))}: what players pay"> z</label>`).join("")}<span class="muted">${CONV_ITEMS[el].min} min, ${hr} / hr${convPrice(el)>0?`: ${fmtN(hr*convPrice(el))} z/hr`:""}</span></span>`}).join("")
+    return `<span class="bar"><span class="el ${el}">${el}</span>${ids.map(id=>`<label class="bar priceIn"><a href="#" data-info="item:${id}" title="${esc(itemName(id))}">${itemIcon(id)}</a><input class="w-md" type="number" min="0" step="100" data-convprice="${id}" value="${state.prices[id]>0?state.prices[id]:""}" placeholder="price" aria-label="${esc(itemName(id))}: what players pay"> z</label>`).join("")}<span class="muted">${CONV_ITEMS[el].min} min, ${hr} / hr${convPrice(el)>0?`: ${fmtN(hr*convPrice(el))} z/hr`:""}</span></span>`}).join("")
     +`<span class="muted">items from players</span>`:"";
   {const m=convOn()&&calcMob();$("convInfo").innerHTML=m?`vs ${esc(m.name)} (${m.el||"Neutral"} ${m.elv||1}): ${convAll().map(el=>elRateHtml(el,elemMult(m,el))).join(" · ")} → ${convFixed()?`using ${convFixed()}`:`best ${esc(mobRow(m,walkSec()).el2)}`}`:""}
   if(typeof renderStatNote==="function")renderStatNote();
@@ -127,9 +127,9 @@ function renderUseItems(){const c=C(),a=c.a,ui=useItems(),sup=supShown(),fb=Obje
   const ids=[...new Set([...ui.map(x=>x.id),...sup.flatMap(s=>s.items.map(([n])=>CONS_ID[n])),...fb.map(k=>CONS_ID[FIELD_ITEM[k]])])].filter(Boolean);
   const box=$("useItems"),key=ids.join()+"|"+sup.map(s=>s.key).join(),lab='class="bar"';
   if(box.dataset.key!==key){box.dataset.key=key;
-    const row=(h,x)=>`<div class="bar full"><span>${h}</span>${x}</div>`;
+    const row=(h,x,cls="")=>`<div class="bar full${cls}"><span>${h}</span>${x}</div>`;
     box.innerHTML=(sup.length?row("Support skills, casts per kill:",sup.map(s=>`<label ${lab} title="How many times you cast it per kill (e.g. 0.5 = every other kill); each cast uses ${esc(s.items.map(([n,q])=>`${n} ×${q}`).join(" + "))}. Its cast time isn't counted">${esc(s.name)} <input type="number" min="0" step="0.5" data-supk="${s.key}" class="w-xs" placeholder="0"></label>`).join("")):"")
-      +(ids.length?row("Skill item prices:",ids.map(id=>`<label ${lab} title="Blank: the NPC price, ${fmtN(consNpc(id))} z (rAthena; check it in game). Type what you pay, e.g. a market price">${esc(consName(id))} <input type="number" min="0" step="1" data-iprice="${id}" class="w-md" placeholder="${consNpc(id)}"> z</label>`).join("")):"")}
+      +(ids.length?row("Skill item prices:",ids.map(id=>`<label ${lab} title="Blank: the NPC price, ${fmtN(consNpc(id))} z (rAthena; check it in game). Type what you pay, e.g. a market price">${esc(consName(id))} <input type="number" min="0" step="1" data-iprice="${id}" class="w-md" placeholder="${consNpc(id)}"> z</label>`).join("")," priceIn"):"")}
   box.querySelectorAll("[data-supk]").forEach(i=>{if(document.activeElement!==i)i.value=supCasts(i.dataset.supk)||""});
   box.querySelectorAll("[data-iprice]").forEach(i=>{if(document.activeElement!==i){const v=(c.itemPrices||{})[i.dataset.iprice];i.value=v!=null&&v!==""?v:""}});
   box.hidden=!ids.length&&!sup.length;
@@ -302,7 +302,7 @@ function tickTrip(){const now=Date.now(),s=cur();
     if(!x.trip.rang){x.trip.rang=true;save();TRIP_RING={id:x.id,n:1,at:now};tripAlarm(x)}
     else if(TRIP_RING.id===x.id&&TRIP_RING.n<5&&now-TRIP_RING.at>=6e4){TRIP_RING.n++;TRIP_RING.at=now;if(state.tripSound!==false)tripBeep()}});
   const ph=tripPhase(s,now),el=$("tripClock");if(ph!==TRIP_PHASE)renderTripBtns(s);
-  if(ph==="none"){el.textContent="–";el.className="v mono";$("tripK").textContent="Next sell";$("tripS").textContent=TRIP_OK?"Press Start when you leave town":"Needs a trip length: see One trip";document.title=BASE_TITLE;return}
+  if(ph==="none"){el.textContent="–";el.className="v mono";$("tripK").textContent="Next sell";$("tripS").textContent=TRIP_OK?"Press Start when you leave town":"";document.title=BASE_TITLE;return}
   const due=tripDue(s),left=due-now,early=tripEarly();
   el.textContent=ph==="paused"?"Paused":left>0?fmtClock(left):"Sell now";el.className="v mono"+(ph==="due"?left>0?" warnc":" bad":"");
   $("tripK").textContent=ph==="due"?"Time to sell":"Next sell";
@@ -1084,7 +1084,7 @@ function worldMap(el,mp,pick,towns,all){
       ...WORLDMAPS.map((w,i)=>i!==here&&on(i).length?`${maps(on(i).length)} on the ${w.name} map.`:""),
       off.length?`Not on the game's world map: ${off.map(k=>`${mapName(k)||mapCode(k)}${mapArrives(k)?` (${mapArrives(k)})`:""}`).join(", ")}.`:""].filter(Boolean).join(" ");return}
   const nm=mp&&(all&&all.d?all.d.n:mapName(mp)||mapCode(mp)),wi=worldOf(mp);
-  el.querySelector(".wmNote").textContent=!mp?"Click a box to pick that map":wi===+el.dataset.w?"":wi>=0?`${nm} is on the ${WORLDMAPS[wi].name} map`:`${nm} isn't on the game's world map: ${mapArrives(mp)?`its region comes with the ${mapArrives(mp)}`:"the game doesn't draw it there"}`}
+  el.querySelector(".wmNote").textContent=!mp?"":wi===+el.dataset.w?"":wi>=0?`${nm} is on the ${WORLDMAPS[wi].name} map`:`${nm} isn't on the game's world map: ${mapArrives(mp)?`its region comes with the ${mapArrives(mp)}`:"the game doesn't draw it there"}`}
 // the Map planner's world map: folds, remembered like a card (state.collapsed)
 const WORLD_FOLD="Map planner: world map";
 {const d=$("worldMore");if(d){d.open=!(state.collapsed||{})[WORLD_FOLD];
