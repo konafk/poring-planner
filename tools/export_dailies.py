@@ -31,12 +31,16 @@ from export_spawns import DATA, lua_data  # noqa: E402
 NAVI_NPC = "data\\luafiles514\\lua files\\navigation\\navi_npc.lub"
 I18N = "data\\i18n\\sc\\"
 OUT = os.path.join(DATA, "dailies.js")
-# the quest log's ids for NPC quests (Payon to Pharos) and event quests; the rest are raids, attendance, memorial dungeon timers
-QUEST_IDS = [(21000, 23999), (1300000, 1300999)]
+# the quest log's ids for NPC quests (Payon to Pharos, Mjolnir, Sograt, Geffen's fields), Nordfeld's (Global's own town) and event
+# quests; the rest are raids, attendance, memorial dungeon timers
+QUEST_IDS = [(21000, 23999), (1000000, 1000999), (1300000, 1300999)]
+# a "- Pending" (or "- Waiting") entry that says to come back the next day, in the words the quest log uses besides "daily quest"
+AGAIN = re.compile(r"daily quest|accepted? (?:it |the quest )?again|come back (?:again )?(?:after dawn|tomorrow)|again tomorrow|"
+                   r"can be done daily|when the wait time expires", re.I)
 # daily-looking entries that aren't an NPC's daily: a story step, the town's thank-you buff, the Kumamon collaboration (ended
 # 2026-10-29: its NPCs are still in the client)
 SKIP = {21134, 23446, 23449}
-SKIP_TITLES = {"Trust of the Town"}
+SKIP_TITLES = {"Trust of the Town"}  # and titles in brackets: [Event], [Raid], [Guild], [Battle Pass], [MD]
 # the dailies of an NPC with more than one level line, or whose name another daily NPC shares, by "- Pending" id: the level and the line
 LEVELS = {
     # Junior Mage (Geffen): "you'll need to gain a bit more experience first" / Lv 55 when you first talk to him; "you'll need a bit
@@ -177,32 +181,46 @@ def main():
     rows = []
     for k in sorted(q):
         v, d = q[k], text(q[k])
-        if k in SKIP or not any(a <= k <= b for a, b in QUEST_IDS) or str(v.get("Title")) in SKIP_TITLES:
+        if k in SKIP or not any(a <= k <= b for a, b in QUEST_IDS) or str(v.get("Title")) in SKIP_TITLES or str(v.get("Title")).startswith("["):
             continue
-        if not (re.search(r"daily quest|accepted? (?:it |the quest )?again", d, re.I) or str(v.get("Summary", "")).startswith("Reset at 04")):
+        pending = re.search(r"\s-\s*(?:Pending|Waiting)$", str(v.get("Title")))
+        old = re.search(r"daily quest|accepted? (?:it |the quest )?again", d, re.I) or str(v.get("Summary", "")).startswith("Reset at 04")
+        if not (old or pending and AGAIN.search(d)):
             continue
-        who = giver(d)
+        # the NPC: the one the entry says it's from, else (a "- Pending" entry that only says to come back) the first NPC its tags place
+        who = giver(d) or (pending and next((n for n, mp, x, y in TAG.findall(d) if (x, y) != ("0", "0")), None))
         if not who:
             print(f"  {k} {v.get('Title')}: no NPC named, left out")
             continue
-        title = re.sub(r"^\(Daily\)\s*|\s*-\s*Pending$", "", str(v["Title"]))
-        # the hunt: the entry of the same title (or its "Again Today") just after this one (the one you retake every day), else just
-        # before it, else the nearest one before it with a task
+        title = re.sub(r"^\(Daily\)\s*|\s*-\s*(?:Pending|Waiting)$", "", str(v["Title"]))
+        # the hunt: the entry of the same title (or its "Again Today") just after this one (the one you retake every day), else before it
+        # (the nearest with a task: the Geffen bridges' "Return to Bridge Repairer Laon" comes after the repairs), else, for an entry found
+        # by its come-back wording, the one next to it whose tags put an NPC where this entry's NPC stands (Mjolnir's: "Argiope Cleanup -
+        # Pending", then "Mjolnir: Way Too Many, Even for Me"), else the nearest one before it with a task
         def usable(j):
-            return j in q and "Pending" not in str(q[j].get("Title")) and str(q[j].get("Title")) not in SKIP_TITLES and j not in SKIP
+            return (j in q and not re.search(r"Pending|Waiting", str(q[j].get("Title"))) and str(q[j].get("Title")) not in SKIP_TITLES
+                    and j not in SKIP)
+        spot = next(((mp, int(x), int(y)) for n, mp, x, y in TAG.findall(d) if n == who), None)
+        beside = lambda j: spot and any(mp == spot[0] and abs(int(x) - spot[1]) + abs(int(y) - spot[2]) <= 6 for _, mp, x, y in TAG.findall(text(q[j])))
         named = lambda j: re.sub(r"^\(Daily\)\s*|\s*Again Today$", "", str(q[j].get("Title"))) == title
         after = [j for j in range(k + 1, k + 4) if usable(j)]
         before = [j for j in range(k - 1, k - 7, -1) if usable(j)]
-        hunt = ([j for j in after[:2] if named(j)] or [j for j in before if named(j)][:1]
-                or [j for j in before[:1] if q[j].get("Summary") or text(q[j])])
+        hunt = ([j for j in after[:2] if named(j)] or sorted((j for j in before if named(j)), key=lambda j: not q[j].get("Summary"))[:1]
+                or (not old and [j for j in after[:1] + before[:1] if beside(j)][:1]) or [j for j in before[:1] if q[j].get("Summary") or text(q[j])])
         if not hunt:
             print(f"  {k} {title}: no hunt entry found, left out")
             continue
         main_q = q[hunt[0]]
+        # the task: the hunt's summary ("Defeat 10 Hunter Fly"); with none, or one that only names a thing ("Argiope 30", "Nordium
+        # Fragment"), the sentence of its text that says what to do, where it has one
         task = clean(main_q.get("Summary") or "")
+        said_ = [x.strip() for x in re.split(r"(?<=[.!])\s+", clean(text(main_q))) if x.strip()]
+        doing = next((x for x in said_ if re.search(r"\b(defeat|collect|bring|hunt|obtain|deliver|retrieve|sparring|requested|need)\b", x, re.I)), None)
         if not task or task.startswith("Reset at"):
-            said_ = [x.strip() for x in re.split(r"(?<=[.!])\s+", clean(text(main_q))) if x.strip()]
-            task = next((x for x in said_ if re.search(r"\b(defeat|collect|bring|hunt|obtain|deliver|retrieve)\b", x, re.I)), said_[0] if said_ else title)
+            task = doing or (said_[0] if said_ else title)
+        elif doing and not re.match(r"(?:defeat|collect|bring|hunt|obtain|deliver|retrieve|gather|talk|go|find|kill|eliminate|help|search|show|visit|"
+                                    r"investigate|give|clear|report|meet|take|check|observe|protect|escort)\b", task, re.I):
+            task = doing
         task = task.rstrip(".")
         # where the NPC stands: the spot the quest log gives for it, which the Navigation places an NPC at (within a few cells) when it's in
         # the game; with no spot in the quest log, the Navigation's NPC of that name, in the town the entry names
