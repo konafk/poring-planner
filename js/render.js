@@ -58,12 +58,12 @@ function charOutTiles(){const m=calcMob(),tile=(k,v,sub,tip)=>`<div class="tile 
     tile("Zeny / hr",fmtN(r.zph),"loot after skill and SP items")}
 function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   // weapon endows vs the monster you picked: the element-table rate of each one, and the one the EXP/min picks
-  // the items in use, each with its icon and what players pay for it (bought from players), and how many an hour; skills (Enchant Poison) with
-  // their SP. Not while you type in a price
+  // the items in use, each with its icon and what players pay for it (bought from players), and how many an hour; skills (Enchant Poison,
+  // the Sage's Endows) with their SP, and the Point an Endow uses up. Not while you type in a price
   if(!$("convItems").contains(document.activeElement))$("convItems").innerHTML=C().converters?(convFixed()?[convFixed()]:convEls()).map(el=>{
-    if(!CONV_ITEMS[el])return `<span class="muted"><span class="el ${el}">${el}</span> Enchant Poison Lv ${convSkLv(el)}: 20 SP every ${15+15*convSkLv(el)} s</span>`;
-    const ids=CONV_ITEMS[el].ids,hr=convUsesHr(el);
-    return `<span class="bar"><span class="el ${el}">${el}</span>${ids.map(id=>`<label class="bar priceIn"><a href="#" data-info="item:${id}" title="${esc(itemName(id))}">${itemIcon(id)}</a><input class="w-md" type="number" min="0" step="100" data-convprice="${id}" value="${state.prices[id]>0?state.prices[id]:""}" placeholder="price" aria-label="${esc(itemName(id))}: what players pay"> z</label>`).join("")}<span class="muted">${CONV_ITEMS[el].min} min, ${hr} / hr${convPrice(el)>0?`: ${fmtN(hr*convPrice(el))} z/hr`:""}</span></span>`}).join("")
+    const ids=convIds(el),hr=convUsesHr(el),lv=convIsSk(el)&&convSkLv(el),r=lv&&convSkRow(el,lv),min=convMin(el);
+    const sk=lv?`<span class="muted">${esc(convName(el))} Lv ${lv}: ${r.sp} SP every ${r.sec%60?r.sec+" s":r.sec/60+" min"}</span>`:"";
+    return `<span class="bar"><span class="el ${el}">${el}</span>${sk}${ids.map(id=>`<label class="bar priceIn"><a href="#" data-info="item:${id}" title="${esc(itemName(id))}">${itemIcon(id)}</a><input class="w-md" type="number" min="0" step="100" data-convprice="${id}" value="${state.prices[id]>0?state.prices[id]:""}" placeholder="price" aria-label="${esc(itemName(id))}: what players pay"> z</label>`).join("")}${ids.length?`<span class="muted">${lv?"":`${fmtN(min)} min, `}${fmtN(hr)} / hr${convPrice(el)>0?`: ${fmtN(hr*convPrice(el))} z/hr`:""}</span>`:""}</span>`}).join("")
     +`<span class="muted">items from players</span>`:"";
   {const m=convOn()&&calcMob();$("convInfo").innerHTML=m?`vs ${esc(m.name)} (${m.el||"Neutral"} ${m.elv||1}): ${convAll().map(el=>elRateHtml(el,elemMult(m,el))).join(" · ")} → ${convFixed()?`using ${convFixed()}`:`best ${esc(mobRow(m,walkSec()).el2)}`}`:""}
   if(typeof renderStatNote==="function")renderStatNote();
