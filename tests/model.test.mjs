@@ -1728,6 +1728,26 @@ t("Sage Endows: Fire, Water, Wind and Earth weapons for SP and a Point", () => {
   assert.equal(run(`convCostHr()`), 0);
   assert.equal(run(`convSpPerSec()`), 0);
   run(`delete state.prices[6360]`);
+  // the Lv box: with no skill tree it keeps its own level per element (Lv 0 hands the element back to the converter)
+  run(`C().skills={};C().wElem="Neutral";C().convEl="";state.prices[6360]=500`);
+  assert.equal(run(`setConvLv("Fire",2)`), null);
+  assert.equal(run(`convSkLv("Fire")+","+hasTree(C())+","+C().convLv.Fire`), "2,false,2");
+  near(run(`withEl("Fire",()=>convCostHr())`), 2000);                        // 15 minutes: 4 an hour
+  assert.equal(run(`convSkLv("Water")`), 5);                                 // the others stay at Lv 5
+  run(`setConvLv("Fire",0)`);
+  assert.equal(run(`convName("Fire")`), "Fire converter");
+  // with a skill tree it is the tree's level: raising it raises what it needs, and the tree refuses a lower level a learned skill needs
+  run(`C().skills={"endow-blaze":1}`);
+  run(`setConvLv("Fire",4)`);
+  assert.equal(run(`C().skills["endow-blaze"]+","+C().skills["study"]+","+C().skills["fire-bolt"]`), "4,5,1");
+  assert.equal(run(`convSkLv("Fire")`), 4);
+  run(`C().skills.volcano=1`);                                               // Volcano needs Endow Blaze Lv 2
+  assert.ok(run(`setConvLv("Fire",1)`)[0].includes("Volcano"));
+  assert.equal(run(`convSkLv("Fire")`), 4);
+  run(`delete C().skills.volcano;setConvLv("Fire",0)`);
+  assert.equal(run(`"endow-blaze" in C().skills`), false);
+  assert.equal(run(`convName("Fire")`), "Fire converter");
+  run(`delete state.prices[6360]`);
   // the Endow buff's extra element damage goes by its level: +1% a level, on Fire spells only
   for (const lv of [1, 3, 5]) {
     run(`C().skills={"endow-blaze":${lv}};C().buffs={"endow-blaze":true};SKFX=skillEffects(C())`);
