@@ -28,6 +28,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 - **Monster info, Item info, Market:** drops, NPC prices, and your market prices by category, kept per server (Skadi, Odin, Loki), and shared with other players after a Discord login. Item info can list every item in the game client too, costumes included, by category. Monster info has the monster table too. Every item shows its in-game icon, and every monster its sprite.
 - **Equipment, Cards:** every weapon, armor and card, filtered by type, job, level, card slots and ATK / MATK / DEF, with one click to put it in your gear or another gear set.
 - **Brewing** and **Cooking** (Simulators): each potion's or dish's chance for your stats and kit, what one costs you counting the failures, and a run of tries rolled the server's way.
+- **Refine** (Simulators): what a refine takes on average with the official rates: the tries, the ore, the zeny and the pieces a failure destroys, from a piece of your gear, with normal, Enriched or HD ore, or the cheapest mix at your prices.
 - **Skill tree** (Simulators): any job's skill tree without a character, picked from every class with its icon and look from the game client, with the points and job level it takes.
 - **Stylist** (Simulators): every job's clothes colours, hair styles and hair colours, and its headgear and costumes, drawn from the game client and animated (stand, walk, sit, attack, 8 directions), to try a look and put it on your character.
 - **Recipes:** every forging, brewing, arrow crafting, cooking, Mixture & Counteragent and Dye Making recipe, the Jellostone exchange and the Expedition upgrades, searchable by the item made or its materials, with what the materials are worth.
@@ -38,7 +39,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 ## Docs
 
 - [Character tab](docs/character.md): build mode, damage model, cards, buffs, consumables, skill items and weight
-- [Other tabs](docs/features.md): accounts and Backup, Session, Daily quests, Monsters & maps, Roadmap, Monster info, Monster skills, Maps, Item info, Equipment and Cards, Brewing and Cooking simulators, Recipes, Market, EXP tables, Formulas, and how tables work
+- [Other tabs](docs/features.md): accounts and Backup, Session, Daily quests, Monsters & maps, Roadmap, Monster info, Monster skills, Maps, Item info, Equipment and Cards, Brewing, Cooking and Refine simulators, Recipes, Market, EXP tables, Formulas, and how tables work
 - [Shared prices and cloud backup](docs/shared-prices.md): the Discord login, how shared prices keep junk out, and setting up the database
 - [Development](docs/development.md): project layout, data export tools and tests
 - [Data sources](docs/data-sources.md): where the data and formulas come from

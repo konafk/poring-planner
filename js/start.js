@@ -19,6 +19,7 @@ const TAB_DESC={
   affix:"The items that add a random option (affix) to gear: the gear each one works on, and the affixes players have seen it add.",
   cards:"Every card and what it does: filter by the gear it goes in, and slot it into your gear or another gear set.",
   brew:"Prepare Potion's chance for every potion with your stats, what a potion costs counting the failures, and a run of tries rolled the server's way.",
+  refcalc:"What a refine takes on average: the tries, the ore, the zeny and the pieces a failure destroys, with the official rates. Pick the ore for each try, or let it find the cheapest.",
   cook:"Every dish's chance with each cooking kit for your stats, cook mastery, and a run of tries rolled the server's way.",
   recipes:"What every forge, brew, arrow, cooking, NPC and memorial recipe uses up.",
   market:"What players posted on your server (Skadi, Odin or Loki), with each item's lowest price, median and sellers to DM; and on My market, your own items, posts and prices.",
@@ -61,7 +62,7 @@ function showTab0(t,local){
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
   // renderAll only draws these while their tab is showing; the big ones again only when something was saved since
-  if(t==="market")renderPrices();if(t==="items")redraw("items",renderItems);if(t==="equip")redraw("equip",renderEquipDb);if(t==="cards")redraw("cards",renderCardDb);if(t==="recipes")redraw("recipes",renderRecipes);if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="daily")renderDaily();if(t==="affix")renderAffixItems();if(t==="mskill")renderMsk();if(t==="skilltree")renderSkPlan(true);if(t==="stylist")renderStylist();
+  if(t==="market")renderPrices();if(t==="items")redraw("items",renderItems);if(t==="equip")redraw("equip",renderEquipDb);if(t==="cards")redraw("cards",renderCardDb);if(t==="recipes")redraw("recipes",renderRecipes);if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="daily")renderDaily();if(t==="affix")renderAffixItems();if(t==="mskill")renderMsk();if(t==="refcalc"){RC_PX_TYPE="";renderRefCalc()}if(t==="skilltree")renderSkPlan(true);if(t==="stylist")renderStylist();
   // the section links, once the tab's cards are drawn (a card can hide as it draws, as the Market's two panes do)
   pageNav(t);
 }

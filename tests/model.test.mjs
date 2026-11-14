@@ -3730,6 +3730,38 @@ t("monster skills: each skill with the monsters that use it, its kind, and the f
   assert.equal(load({ msk: { mob: 1039 } })("state.msk.mob"), 1039);
 });
 
+t("refine calculator: the official rates, the chain's tries and pieces destroyed, HD ore and the cheapest plan", () => {
+  // the tables: 10 rates per gear and ore, Enriched never below normal
+  assert.ok(run("Object.values(REFINE_RATES).every(r=>r.n.length===10&&r.e.length===10&&r.e.every((v,i)=>v>=r.n[i]))"));
+  const calc = o => JSON.parse(run(`JSON.stringify((r=>({tries:r.tries,broke:r.broke,chance:r.chance,fees:r.fees,ore:r.oreZ,pieces:r.pieceZ,unpriced:r.unpriced,plan:Object.values(r.plan).join("")}))(rcCalc({...state.refcalc,px:{},base:null,slot:"",${JSON.stringify(o).slice(1, -1)}})))`));
+  // armor +0 → +10 with Elunium: 22,731 tries and 4,960 pieces destroyed (as roz.prontera.info's calculator has it)
+  const a = calc({ type: "armor", from: 0, to: 10, plan: "n" });
+  assert.equal(Math.round(a.tries), 22731);
+  assert.equal(Math.round(a.broke), 4960);
+  near(a.fees, a.tries * 10000);
+  assert.deepEqual(a.unpriced, ["Elunium"]);                                     // no price known: none typed, no Market price
+  // from +9: the try to +10 comes 1 / its rate times, the piece makes it at that rate, and the rest is new pieces climbing from +0
+  const one = calc({ type: "armor", from: 9, to: 10, plan: "n" });
+  near(run(`rcCalc({...state.refcalc,type:"armor",from:9,to:10,plan:"n",px:{},base:null,slot:""}).steps[9].tries`), 1 / 0.09);
+  near(one.chance, 0.09);
+  // HD ore: only from +7 (the tries to +8, +9, +10), on armor and Lv 3–4 weapons; a failure goes down 1, so nothing breaks above +7
+  assert.equal(run("rcOpts('armor',7).join()+' '+rcOpts('armor',8).join()+' '+rcOpts('weapon_lv1',9).join()"), "n,e n,e,h n,e");
+  const hd = calc({ type: "weapon_lv4", from: 9, to: 10, plan: "nh" });
+  assert.equal(hd.plan.slice(7), "hhh");
+  assert.ok(hd.broke > 0 && hd.broke < calc({ type: "weapon_lv4", from: 9, to: 10, plan: "n" }).broke);   // only below +7, after falling back
+  // Phracon and Emveretarcon have an NPC price; a price typed wins over it
+  assert.equal(calc({ type: "weapon_lv1", from: 0, to: 1, plan: "n" }).ore, 200 / 0.9);
+  assert.equal(JSON.parse(run(`JSON.stringify(rcCalc({...state.refcalc,type:"weapon_lv1",from:0,to:1,plan:"n",px:{Phracon:100},base:null,slot:""}).oreZ)`)), 100 / 0.9);
+  // Cheapest: never dearer than a fixed plan at the same prices, and a piece's price counts for each one destroyed
+  const px = '{"Oridecon":5000,"Enriched Oridecon":50000,"HD Oridecon":100000}';
+  const total = plan => run(`rcCalc({...state.refcalc,type:"weapon_lv3",from:0,to:10,plan:"${plan}",px:${px},base:1000000,slot:""}).total`);
+  for (const plan of ["n", "e", "nh", "eh"]) assert.ok(total("best") <= total(plan) + 1e-6, plan);
+  near(run(`(r=>r.pieceZ-r.broke*1000000)(rcCalc({...state.refcalc,type:"weapon_lv3",from:0,to:10,plan:"n",px:${px},base:1000000,slot:""}))`), 0);
+  // saved settings: anything odd goes back to the defaults, and the target stays above the current refine
+  const fresh = load({ refcalc: { type: "weapon_lv9", from: 9, to: 3, plan: "x", steps: { 8: "h", 11: "h", 9: "q" }, px: { Oridecon: -1, Elunium: 7000.4 }, base: "5" } });
+  assert.equal(fresh("JSON.stringify(state.refcalc)"), JSON.stringify({ slot: "", type: "armor", from: 9, to: 10, plan: "n", steps: { 8: "h" }, px: { Elunium: 7000 }, base: null }));
+});
+
 t("a monster's world map opens on the world with the most of its spawns", () => {
   const most = rows => run(`worldMost(${JSON.stringify(rows)})`);
   assert.equal(most([["nrd_fild01", 50], ["prt_d02", 20], ["pay_f08", 8]]), 1);   // Nordfeld has more spawns, though Midgard has more maps
