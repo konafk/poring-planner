@@ -179,9 +179,9 @@ state.recovery={discount:!(state.recovery&&state.recovery.discount===false),all:
 // the Stellar tab (stellar.js): certificates you have by ★ weapon id (whole counts above 0) and your weapon's refine (0 to 20)
 {const t=objOr(state.stellar),r=Math.round(+t.refine);
   state.stellar={have:Object.fromEntries(Object.entries(numMap(t.have)).filter(([k,v])=>/^\d+$/.test(k)&&v>=1).map(([k,v])=>[k,Math.round(v)])),refine:Number.isFinite(r)?Math.min(20,Math.max(0,r)):0}}
-// the Daily quests tab's filters (dailies.js): only the dailies your level allows, hide the ones done today, and the range of daily
-// levels to show (from and to: whole numbers from 1, or null for no bound; from is never above to)
-state.dailyMine=state.dailyMine===true;state.dailyHideDone=state.dailyHideDone===true;
+// the Daily quests tab's filters (dailies.js): hide the ones done today, and the range of daily levels to show (from and to: whole
+// numbers from 1, or null for no bound; from is never above to). dailyMine (only the ones your level allows) is gone
+delete state.dailyMine;state.dailyHideDone=state.dailyHideDone===true;
 {const t=objOr(state.dailyLv),b=v=>{const x=Math.round(+v);return v!==""&&v!=null&&Number.isFinite(x)&&x>=1?x:null};let f=b(t.from),to=b(t.to);
   if(f!=null&&to!=null&&f>to)[f,to]=[to,f];state.dailyLv={from:f,to}}
 // the Recipes tab's Brewing and Cooking simulators (craftsim.js): the numbers you typed over your character's (whole numbers in range),
