@@ -2730,6 +2730,26 @@ t("a session keeps the stats it was logged with", () => {
   assert.deepEqual(back.sessions[0].snapHist.map(x => [x.t, x.c.atkTxt, "$d" in x]), [[t0 + 36e5, "100+300", false]]);
 });
 
+t("a session keeps the EXP bonus % it was logged with: raising it raises EXP / min instead of stretching the walking", () => {
+  setup("Knight", { atkTxt: "100+300", hitTxt: "400", wAtk: 0, weapon: "Two-handed spear", wElem: "Neutral", st: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  const t0 = 1e12, wolf = "MOBS.find(m=>m.id===1013)";
+  run(`state.bonus=15;state.sessions=[{id:'b',name:'b',job:'Knight',mobIds:[1013],entries:[{t:${t0},lv:30,pct:10},{t:${t0 + 36e5},lv:30,pct:15}]}];state.current='b';snapSession(cur())`);
+  assert.equal(run("cur().snap.bonus"), 15);
+  const w = run("walkSec()"), kph = run("sessionPace(cur()).kph"), epm = run(`mobRow0(${wolf},walkSec()).epm`);
+  run("state.bonus=115");                                                    // a Double EXP weekend: +100 on top of the gear's 15
+  near(run("walkSec()"), w);                                                 // the logged hour still took as many kills
+  near(run("sessionPace(cur()).kph"), kph);
+  near(run(`mobRow0(${wolf},walkSec()).epm`) / epm, run(`killExp(${wolf})`) / run(`withBonus(cur(),()=>killExp(${wolf}))`));
+  assert.ok(run(`mobRow0(${wolf},walkSec()).epm`) > epm * 1.8);
+  // logging during the weekend takes the new bonus for the session
+  run(`cur().entries.push({t:${t0 + 72e5},lv:30,pct:25});snapSession(cur(),[${t0},${t0 + 36e5}])`);
+  assert.equal(run("cur().snap.bonus"), 115);
+  // the bonus survives a share link
+  const back = JSON.parse(run("JSON.stringify(unpackState(packState(JSON.parse(JSON.stringify(state)))))"));
+  assert.equal(back.sessions[0].snap.bonus, 115);
+  run("state.bonus=0");
+});
+
 t("deaths: the EXP a death costs isn't negative EXP / hr", () => {
   const t0 = 1e12, L = run(`lvExp(30,${t0})`), st = es => run(`cur().entries=${JSON.stringify(es)};cur().pauses=[];stats(cur())`);
   // the Died button: your EXP just before (20%), then a second later 10% less

@@ -253,7 +253,7 @@ function renderTracker(){renderStart();
     $("tNextK").textContent=`To Lv ${st.last.lv+1}`;$("tNext").textContent=fmtDur(st.nextH);$("tNextS").textContent=`${(100-st.last.pct).toFixed(1)}% left`}
   const p=sessionPace(s);
   if(p){$("tPace").textContent=`${fmtN(p.kph)}/hr`;$("tPaceS").textContent=`${p.obs.toFixed(1)}s per kill`+(isFinite(p.fight)?(p.obs<p.fight?` · faster than the model's ${p.fight.toFixed(1)}s fight, so check your ATK/MATK`:` · ~${p.fight.toFixed(1)}s fighting + ~${p.walk.toFixed(1)}s walking`):"");
-    $("tPaceS").title=s.snap?`Fight time with the stats ${s.snap.est?"you had when this session was first worked out":`you had when you last logged (${fmtD(s.snap.at)} ${fmtT(s.snap.at)})`}${s.snapHist&&s.snapHist.length?", and for the entries before a change, the stats they were logged with":""}; changing them later doesn't move this session's walking`:""}
+    $("tPaceS").title=s.snap?`Fight time with the stats ${s.snap.est?"you had when this session was first worked out":`you had when you last logged (${fmtD(s.snap.at)} ${fmtT(s.snap.at)})`}${s.snapHist&&s.snapHist.length?", and for the entries before a change, the stats they were logged with":""}, and EXP bonus ${snapBonus(s)}% (the one you had then); changing them later doesn't move this session's walking`:""}
   else{$("tPace").textContent="–";$("tPaceS").textContent="Needs a monster and 2+ entries"}
   if(p){const zk=p.zk,gross=p.kph*zk,cost=itemsPerSec()*3600*spItemPrice()+hourCostHr()+p.kph*p.mix.avg(skillZeny);$("tZeny").textContent=fmtN(gross-cost);$("tZenyS").textContent=`${fmtN(gross)} z loot`+(cost>0?` − ${fmtN(cost)} z SP items, potions & skill items`:"")+` · ${fmtN(zk)} z/kill`}
   else{$("tZeny").textContent="–";$("tZenyS").textContent="Needs a monster and 2+ entries"}
@@ -384,7 +384,7 @@ function renderLog(s){
   $("setupNote").textContent=s.job&&s.job!==state.job?`This session was logged as ${s.job}. Switch Job to ${s.job} to see its pace and walking time.`:"";
 }
 function renderCompare(){
-  const all=state.sessions.map(s=>{const st=stats(s);if(!st)return null;const ms=sessMobs(s),mix=sessMix(s);const kph=mix&&st.avgRaw>0&&mix.avg(m=>m.exp)>0?st.avgRaw/mix.avg(m=>killExp(m,s)):null;return {s,st,ms,kph}}).filter(Boolean);
+  const all=state.sessions.map(s=>{const st=stats(s);if(!st)return null;const ms=sessMobs(s),mix=sessMix(s);const kph=mix&&st.avgRaw>0&&mix.avg(m=>m.exp)>0?st.avgRaw/withBonus(s,()=>mix.avg(m=>killExp(m,s))):null;return {s,st,ms,kph}}).filter(Boolean);
   const rows=tableRows("cmpTable",all).map(({s,st,ms,kph})=>
     `<tr data-sid="${esc(s.id)}" class="${s.id===state.current?"sel":""}"><td class="name">${esc(s.name)}</td><td class="name">${esc(s.job||"–")}</td><td class="name">${ms.length?ms.map(m=>esc(m.name)).join(", "):"–"}</td><td>${fmtD(st.es[0].t)} ${fmtT(st.es[0].t)}</td><td>${st.spanMin} min</td><td title="% of the EXP base Lv ${esc(st.last.lv)} needs, gained per hour"><b>${pct(st.avgPct)}</b> <span class="muted">at B${esc(st.last.lv)}</span></td><td>${fmtN(st.avgRaw/60)}</td><td>${kph?fmtN(kph):"–"}</td><td>${kph?(3600/kph).toFixed(1)+"s":"–"}</td><td>${st.deaths?`<span title="${st.deaths} death${st.deaths>1?"s":""} logged">💀 ${st.deaths}</span>`:"–"}</td></tr>`);
   $("cmpTable").querySelector("tbody").innerHTML=rows.join("")||`<tr><td colspan="10" class="name muted">${all.length?"No sessions match the filters.":"Sessions with 2+ entries show up here."}</td></tr>`;
