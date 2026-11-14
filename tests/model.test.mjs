@@ -3259,7 +3259,7 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.equal(run(`RECIPE_LIST.filter(r=>r.id===984).map(recipeNpc).join("|")`), "Tadde (Process refining stones) · izlude 145,122|Kantstaff (Process refining stones) · prt_mk 153,162|Christopher Gillenlow (Make Oridecon) · prontera 179,184");  // Oridecon: no database row
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===985).mats)`), "[[757,5]]");                                     // Elunium
   assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Headgear").length`), 39);
-  assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===716))`), "Jade (Gemstone Exchange) · payon 173,238");             // Red Gemstone
+  assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===716))`), "Jade (Gemstone Exchange, up to 100 per trade) · payon 173,238");  // Red Gemstone
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===716).mats)`), "[[717,2]]");
   assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===990))`), "Puchuchartan (Elemental Fusion) · umbala 219,188");    // Red Blood
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===990).mats)`), "[[904,20]]");

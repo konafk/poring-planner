@@ -38,8 +38,9 @@ const shopPrice=id=>SHOPS_OF[id]?Math.min(...SHOPS_OF[id].map(s=>s[2])):null;
 // what a material costs you to get: your Market price, else an NPC shop's, else what an NPC pays (the simulators' cost of a try)
 const buyPrice=id=>state.prices[id]>0?state.prices[id]:shopPrice(id)??matPrice(id);
 const worthNone=(r,w)=>w.unknown===r.mats.length&&!r.fee;
-// "(quest)" when the NPC's quest unlocks it, "(quest, Lv 40+)" when the quest has a level
-const recipeQuest=r=>r.swap?` (${r.swap})`:r.quest?` (quest${r.qlv?`, Lv ${r.qlv}+`:""})`:"";
+// "(quest)" when the NPC's quest unlocks it, "(quest, Lv 40+)" when the quest has a level; an exchange's menu, with the most it swaps
+// in one trade when the NPC says ("(Gemstone Exchange, up to 100 per trade)")
+const recipeQuest=r=>r.swap?` (${r.swap}${r.max?`, up to ${fmtN(r.max)} per trade`:""})`:r.quest?` (quest${r.qlv?`, Lv ${r.qlv}+`:""})`:"";
 // who makes it, for the recipes an NPC makes: "JavaDullihan · morocc_in 146,99", "Marienne (quest) · prt_in 49,172" when her quest unlocks them,
 // then who the quest starts with when that's someone else
 // the skill that makes it, for what a player crafts with a skill rather than at an NPC: Arrows (Arrow Crafting), Brewing (Prepare

@@ -88,6 +88,8 @@ JADE = ("Jade", "payon 173,238")
 EXCHANGES.update({716: (*JADE, [[717, 2]], "Gemstone Exchange", "Misc"),
                   715: (*JADE, [[716, 2]], "Gemstone Exchange", "Misc"),
                   717: (*JADE, [[715, 2]], "Gemstone Exchange", "Misc")})
+# the most an NPC swaps in one trade, by NPC: Jade's "Tell me an amount of 100 or less"
+EXCHANGE_MAX = {"Jade": 100}
 # Puchuchartan, the Utan shaman (Shaman's House, umbala 219,188, where the Umbala Guide points), fuses monster loot into elemental
 # ores once chief Karkatan allows it (for a Mr. Smile): 15 Horn, 20 Snail's Shell, 20 Scorpion Tail, 25 Rainbow Shell, from the shaman's lines
 # ("You need 20 Scorpion Tail from Scorpion"). The ritual can fail and the lines don't say how many ores it gives: written as one
@@ -419,7 +421,7 @@ def npc_recipes(grf, client):
     if later:
         print(f"  in the dialogue but not offered yet, left out: {later}")
     made = [r for (npc, i), r in sorted(out.items()) if npc not in offered or i in offered[npc]]
-    swaps = [{"cat": cat, "type": "npc", "id": i, "n": 1, "lv": None, "mats": mats, "npc": [npc, at], "swap": menu}
+    swaps = [{"cat": cat, "type": "npc", "id": i, "n": 1, "lv": None, "mats": mats, "npc": [npc, at], "swap": menu, "max": EXCHANGE_MAX.get(npc)}
              for i, (npc, at, mats, menu, cat) in [*EXCHANGES.items(), *EXCHANGES_ALSO]]
     return [{k: x for k, x in r.items() if x is not None or k == "lv"} for r in made + hat_quests(client, quests) + swaps]
 
