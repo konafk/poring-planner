@@ -1300,3 +1300,4 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 .mskMore{margin-top:4px;font-size:13px}.mskMore>summary{cursor:pointer;color:var(--accent);width:max-content}
 .mskMore .scroll{margin-top:6px}.mskHow td[rowspan]{vertical-align:top}
 #mskQ{min-width:180px}
+.mskOneT td,.mskOneT th{vertical-align:top;text-align:left}.mskOneT td[rowspan]{min-width:150px}.mskOneT td[rowspan] .pill{display:inline-block;margin-top:4px;white-space:nowrap}

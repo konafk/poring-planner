@@ -3652,6 +3652,13 @@ t("monster skills: each skill with the monsters that use it, its kind, and the f
   assert.deepEqual(shown(750, { q: "baphomet", kind: "", open: false }), [1039]);
   assert.equal(shown(750, { q: "", kind: "ail", open: false }), null);
   assert.equal(shown(750, { q: "poring", kind: "", open: false }), null);           // no Poring uses it
+  // a monster picked: only its skills, only it in each, open map or not; text then narrows its skills by name
+  assert.deepEqual(shown(750, { q: "", mob: 1039, kind: "", open: true }), [1039]);
+  assert.equal(shown(750, { q: "", mob: 1002, kind: "", open: false }), null);
+  assert.equal(shown(750, { q: "heal", mob: 1039, kind: "", open: false }), null);
+  const closed = run("mskMobs().find(x=>!mskOpen(x)).id");
+  assert.ok(run(`mskList().some(s=>(mskShown(s,{q:'',mob:${closed},kind:'',open:true})||[]).length)`));
+  assert.ok(run("mskMobs().length===Object.values(MOBSKILL).filter(l=>l.length).length"));
   // Hide monsters with no open map keeps only monsters that spawn on an open map
   assert.ok(run("mskList().every(s=>(mskShown(s,{q:'',kind:'',open:true})||[]).every(x=>openMaps(x.m).length>0))"));
   // a name two skills share shows the skill's id
@@ -3659,8 +3666,9 @@ t("monster skills: each skill with the monsters that use it, its kind, and the f
   // a monster's details link each skill to the tab
   assert.match(run("popMob(MOB_BY_ID.get(1039)).body"), /data-mskill="750"/);
   // saved filters: anything odd goes back to the defaults (Hide monsters with no open map on)
-  const fresh = load({ msk: { q: 5, kind: "nope!", open: "x" } });
-  assert.equal(fresh("JSON.stringify(state.msk)"), JSON.stringify({ q: "", kind: "", open: true }));
+  const fresh = load({ msk: { q: 5, mob: "1039", kind: "nope!", open: "x" } });
+  assert.equal(fresh("JSON.stringify(state.msk)"), JSON.stringify({ q: "", mob: null, kind: "", open: true }));
+  assert.equal(load({ msk: { mob: 1039 } })("state.msk.mob"), 1039);
 });
 
 t("a monster's world map opens on the world with the most of its spawns", () => {
