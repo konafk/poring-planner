@@ -73,13 +73,18 @@ const SK_PASSIVE={"sword-mastery":{w:["Dagger","One-handed sword"]},"two-handed-
 // self-buffs you can switch on; added on top of the status window like consumables
 const SK_BUFF={"two-hand-quicken":{w:["Two-handed sword"]},"spear-quicken":{w:["One-handed spear","Two-handed spear"]},"adrenaline-rush":{w:["One-handed axe","Two-handed axe","One-handed mace","Two-handed mace"]},
   "power-thrust":{},"improve-concentration":{},"increase-agility":{},"blessing":{},"angelus":{},"falcon-eyes":{},"fury":{},"impositio-manus":{},"endow-quake":{},"endow-tsunami":{},
-  "endow-tornado":{},"endow-blaze":{},"volcano":{},"deluge":{},"whirlwind":{},"battle-theme":{},"lady-luck":{},"focus-ballet":{},"perfect-tablature":{}};
+  "endow-tornado":{},"endow-blaze":{},"volcano":{},"deluge":{},"whirlwind":{},"battle-theme":{},"lady-luck":{},"focus-ballet":{},"perfect-tablature":{},"peco-peco-ride":{}};
 // ASPD the skill descriptions leave out, from the RO樂園攻速計算機 sheet ("增益"): potion/skill value (× AGI/200 into ASPD1) and ASPD %.
 // Study's "ASPD +x%" is really a potion/skill value: a flat 4 at any level on Zero (the sheet's Book of Evolution, books only).
 // Falcon Eyes is True Sight (SN_SIGHT, the sheet's 狙殺瞄準): its description leaves out the +5 to every stat
 const SK_ASPD={"two-hand-quicken":l=>[["aspd_mod",null,null,7],["aspd_percent",null,null,10]],"spear-quicken":l=>[["aspd_mod",null,null,7],["aspd_percent",null,null,10]],
   "adrenaline-rush":l=>[["aspd_mod",null,null,7],["aspd_percent",null,null,10]],"study":()=>[["aspd_mod",null,null,4]],
-  "falcon-eyes":l=>["str","agi","vit","int","dex","luk"].map(k=>[k,null,null,5])};
+  "falcon-eyes":l=>["str","agi","vit","int","dex","luk"].map(k=>[k,null,null,5]),
+  // riding a Peco Peco: potion/skill value −(50 − 10 × Cavalier Mastery level), nothing at Lv 5 (rAthena renewal status_base_amotion_pc: it joins the potion value × AGI/200); the client's
+  // Cavalier Mastery text gives the same steps as "ASPD: 60%" … "100%"
+  "peco-peco-ride":(l,c)=>{const v=50-10*cavLv(c);return v>0?[["aspd_mod",null,null,-v]]:[]}};
+const cavLv=c=>Math.min(5,skLv(c,"cavalier-mastery"));
+const rideTxt=c=>`riding: ASPD ${50+10*cavLv(c)}% (Cavalier Mastery Lv ${cavLv(c)})`;
 const SECOND=job=>!["Novice",...FIRST_JOBS].includes(job);
 // description -> effects: {mastery, pct (physical damage %), spCost, myEle {el: %} (your spells of that element), physEle {el: %} (your physical
 // attacks of that element), stat: bonus lines (shown in the status window)}
@@ -110,7 +115,7 @@ function skillFx(desc,c){const d=String(desc||""),o={mastery:0,pct:0,spCost:0,my
 function skillEffects(c){const out={mastery:[],pct:0,spCost:0,myEle:{},physEle:{},stat:[],buffStat:[]};if(!hasTree(c))return out;const S=skOf(state.job),w=c.weapon;
   const take=(slug,cond,isBuff)=>{const s=S[slug],lv=skLv(c,slug);if(!s||lv<=0)return;const off=cond.w&&!cond.w.includes(w);if(off&&!cond.any)return;const fx=skillFx(skRow(s,lv)[7],c);
     if(off){(isBuff?out.buffStat:out.stat).push(...fx.stat.filter(b=>cond.any.includes(b[0])));return}
-    if(SK_ASPD[slug]){if(slug==="study")fx.stat=fx.stat.filter(b=>b[0]!=="aspd_percent");fx.stat.push(...SK_ASPD[slug](lv))}
+    if(SK_ASPD[slug]){if(slug==="study")fx.stat=fx.stat.filter(b=>b[0]!=="aspd_percent");fx.stat.push(...SK_ASPD[slug](lv,c))}
     if(fx.mastery)out.mastery.push({v:fx.mastery,races:cond.races||null});out.pct+=fx.pct;out.spCost+=fx.spCost;for(const k in fx.myEle)out.myEle[k]=(out.myEle[k]||0)+fx.myEle[k];for(const k in fx.physEle)out.physEle[k]=(out.physEle[k]||0)+fx.physEle[k];
     // the data's bonus lines (s.g) only for what the level's description doesn't give: Improve Dodge Lv10 is FLEE +30 (+40 after
     // the 2nd job), not that plus its per-level lines; Hilt Binding's STR +1 is only a line
@@ -145,7 +150,7 @@ function treesHtml(job,L,jobLv){const trees=treesOf(job),T=treeTally(job,L,jobLv
 function renderSkills(){const c=C(),L=learned(c),S=skOf(state.job);
   $("skillTrees").innerHTML=treesHtml(state.job,L,c.jobLv);if(SK_TIP.pin&&!S[SK_TIP.pin]){SK_TIP.pin=null;$("skTip").hidden=true}
   const buffs=Object.keys(SK_BUFF).filter(k=>S[k]&&skLv(c,k)>0);
-  $("buffList").innerHTML=buffs.length?`<span class="note">Self-buffs while farming (read your status window with them off):</span> `+buffs.map(k=>`<label class="bar"><input type="checkbox" data-buff="${k}" ${(c.buffs||{})[k]?"checked":""}> ${iconHtml("skill",k,1,"il")}${esc(S[k].name)} <span class="muted">${esc(skRow(S[k],skLv(c,k))[7].replace(/(?:,\s*)?Duration:?\s*[^,]*,?\s*/i,""))}</span>${SK_BUFF[k].w&&!SK_BUFF[k].w.includes(c.weapon)?` <span class="warnc">(needs ${esc(SK_BUFF[k].w.join(" / "))})</span>`:""}</label>`).join(""):"";
+  $("buffList").innerHTML=buffs.length?`<span class="note">Self-buffs while farming (read your status window with them off):</span> `+buffs.map(k=>`<label class="bar"><input type="checkbox" data-buff="${k}" ${(c.buffs||{})[k]?"checked":""}> ${iconHtml("skill",k,1,"il")}${esc(S[k].name)} <span class="muted">${esc(k==="peco-peco-ride"?rideTxt(c):skRow(S[k],skLv(c,k))[7].replace(/(?:,\s*)?Duration:?\s*[^,]*,?\s*/i,""))}</span>${SK_BUFF[k].w&&!SK_BUFF[k].w.includes(c.weapon)?` <span class="warnc">(needs ${esc(SK_BUFF[k].w.join(" / "))})</span>`:""}</label>`).join(""):"";
   ROOTQ("#preset option").forEach(o=>{const p=JOBS[state.job].p[+o.value];if(!p)return;const r=levelPreset(p,c);o.textContent=r.s&&(hasTree(c)||r.named)?(r.lv?r.a.name:`${p.name} (not learned)`):p.name})}
 // hover or focus a skill: what it does, what it needs, and what its learned and next levels give
 // (one tooltip per tree: tip and card are its elements, job and L the tree it shows)
