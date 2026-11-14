@@ -425,13 +425,16 @@ const sfBolts=()=>["Fire","Water","Wind"].filter(b=>G().bolts[b]&&(state.job!=="
 const sfChance=()=>sfOn()?Math.min(10,Math.max(0,num(G().sfLv)))*5/100:0;
 // Spell Fist %: 100 × bolt Lv + 100 × Spell Fist Lv. The bolt is worked out first at 100% (its MDEF steps included), then × that %
 const sfPct=()=>100*Math.min(10,Math.max(1,num(G().boltLv,10)))+100*Math.min(10,Math.max(1,num(G().sfLv,10)));
-const sfHit=(m,el)=>Math.floor(magicDmg(m,100,el)*sfPct()/100);
-const magicDmg=(m,pct,el,addMatk=0)=>{const e=elemMult(m,el)/100;if(e<=0||pct<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor(((sumStat(cf("matkTxt"))+addMatk)*pct/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*e))};
+// gear's bolt damage % of the element's bolt (Fire Bolt, Cold Bolt, Lightning Bolt: Sage's Essence), added to the skill damage %
+// on Spell Fist and Hindsight procs; build mode only (bx.bolt), the typed Skill damage % box covers it otherwise
+const boltPct=el=>num(((C().bx||{}).bolt||{})[el]);
+const sfHit=(m,el)=>Math.floor(magicDmg(m,100,el,0,boltPct(el))*sfPct()/100);
+const magicDmg=(m,pct,el,addMatk=0,addSkill=0)=>{const e=elemMult(m,el)/100;if(e<=0||pct<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor(((sumStat(cf("matkTxt"))+addMatk)*pct/100*bonusMul(m,true)*(1+(num(C().skillPct)+addSkill)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*e))};
 // Hindsight: Lv × 2% chance per attack to auto-cast a bolt at half its level (100% MATK per hit); costs 2/3 of the bolt's SP
 const hsLvN=()=>Math.min(10,Math.max(0,num(G().hsLv)));
 const hsChance=()=>hsOnNow()?hsLvN()*2/100:0;
 const hsBoltLv=()=>Math.floor(hsLvN()/2);
-const hsHit=(m,el)=>hsBoltLv()*magicDmg(m,100,el);
+const hsHit=(m,el)=>hsBoltLv()*magicDmg(m,100,el,0,boltPct(el));
 // the % one proc deals: Spell Fist's, or the Hindsight bolt's when Spell Fist is off
 const sgPct=()=>sfOn()?sfPct():100*hsBoltLv();
 const sgSpMult=()=>1+(cdOn("vitata")?num(CRD().spBonus):0)/100; // Vitata Card: +25% SP cost

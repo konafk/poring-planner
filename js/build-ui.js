@@ -21,9 +21,11 @@ function applyBuild(){const c=C();if(c.mode!=="build"){BUILD_LAST=null;c.bx=eqTo
   // skill-specific gear lines count when the attack's name contains the skill
   const nm=String(c.a.name||"").toLowerCase(),match=o=>Object.entries(o).reduce((t,[k,v])=>t+(nm.includes(k.toLowerCase())?v:0),0);
   const top=o=>Object.entries(o).reduce((t,[k,v])=>nm.includes(k.toLowerCase())?Math.max(t,v):t,0); // fixed cast %: only the highest counts
+  // gear's bolt damage % (Sage's / Mage's Essence) also counts on Spell Fist and Hindsight procs: by element, the bolt each one uses
+  const ofSk=(o,n)=>Object.entries(o).reduce((t,[k,v])=>k.toLowerCase()===n?t+v:t,0),bolt={Fire:ofSk(A.skillOf,"fire bolt"),Water:ofSk(A.skillOf,"cold bolt"),Wind:ofSk(A.skillOf,"lightning bolt")};
   Object.assign(c,{atkTxt:F.atkTxt,matkTxt:F.matkTxt,hitTxt:F.hitTxt,fleeTxt:F.fleeTxt,defTxt:F.defTxt,intTxt:F.intTxt,wAtk:F.wAtk,crit:F.crit,critDmg:F.critDmg,
     atkPct:F.atkPct,rangePct:isRangedHit(c.a,F.weapon)?A.ranged:A.melee,skillPct:A.skill+match(A.skillOf),vctPct:F.vctPct+match(A.vctOf),fctPct:Math.max(F.fctPct,top(A.fctOf)),acdPct:F.acdPct,ignDef:F.ignDef,ignMdef:F.ignMdef,
-    weapon:F.weapon,wElem:F.wElem,lw:F.lw,lwAtk:F.lwAtk,lwElem:F.lwElem,st:{...(c.st||{}),...F.st},bx:{phys:A.phys,magic:A.magic,dist:{melee:A.melee,ranged:A.ranged},myEle:A.myEle,taken:A.taken,exp:A.exp,critRace:A.critRace,spCost:A.spCost,spRec:A.spRec,hpRec:A.hpRec,ign:A.ign}});
+    weapon:F.weapon,wElem:F.wElem,lw:F.lw,lwAtk:F.lwAtk,lwElem:F.lwElem,st:{...(c.st||{}),...F.st},bx:{phys:A.phys,magic:A.magic,dist:{melee:A.melee,ranged:A.ranged},myEle:A.myEle,taken:A.taken,exp:A.exp,critRace:A.critRace,spCost:A.spCost,spRec:A.spRec,hpRec:A.hpRec,ign:A.ign,bolt}});
   c.shield=r.shield;if(F.aspd!=null)c.aspd=F.aspd;if(F.maxHp!=null)c.maxHp=F.maxHp;if(F.maxSp!=null)c.maxSp=F.maxSp;
   // in-game Max HP / SP typed under "Check against the game" win: they include anything the build can't see (buffs, a stale job change)
   const ck=buildOf(c).check||{};if(num(ck.hp)>0)c.maxHp=num(ck.hp);if(num(ck.sp)>0)c.maxSp=num(ck.sp)}
