@@ -1294,3 +1294,12 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 .affDetails{margin-top:4px}.affDetails summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent);padding:2px 0}.affDetails .scroll{margin-top:6px}
 #affixGear .scroll{max-height:420px;overflow:auto}
 /* Item info: the item picked in the list, under it */
+/* Monster skills tab: the monsters as a wrapping row of chips, and each skill's When and how often under them */
+#mskTable td,#mskTable th{vertical-align:top;text-align:left}#mskTable td.mono{text-align:right}#mskTable tbody tr{cursor:default}
+#mskTable>tbody>tr>td:first-child{min-width:140px;max-width:220px}#mskTable>tbody>tr>td:first-child .pill{display:inline-block;margin-top:4px;white-space:nowrap}
+#mskTable td.l{white-space:normal;min-width:240px}
+.mskMobs{display:flex;flex-wrap:wrap;gap:2px 12px}
+.mskMore{margin-top:4px;font-size:13px}.mskMore>summary{cursor:pointer;color:var(--accent);width:max-content}
+.mskMore .scroll{margin-top:6px}.mskHow td[rowspan]{vertical-align:top}
+#mskQ{min-width:180px}
+.mskOneT td,.mskOneT th{vertical-align:top;text-align:left}.mskOneT td[rowspan]{min-width:150px}.mskOneT td[rowspan] .pill{display:inline-block;margin-top:4px;white-space:nowrap}
