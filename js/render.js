@@ -60,9 +60,12 @@ function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   // weapon endows vs the monster you picked: the element-table rate of each one, and the one the EXP/min picks
   // the items in use, each with its icon and what players pay for it (bought from players), and how many an hour; skills (Enchant Poison,
   // the Sage's Endows) with their SP, and the Point an Endow uses up. Not while you type in a price
+  // a job with the skill gets a Lv box in that element's place (– is Lv 0: not learned, so the converter), kept in step with the skill tree
   if(!$("convItems").contains(document.activeElement))$("convItems").innerHTML=C().converters?(convFixed()?[convFixed()]:convEls()).map(el=>{
-    const ids=convIds(el),hr=convUsesHr(el),lv=convIsSk(el)&&convSkLv(el),r=lv&&convSkRow(el,lv),min=convMin(el);
-    const sk=lv?`<span class="muted">${esc(convName(el))} Lv ${lv}: ${r.sp} SP every ${r.sec%60?r.sec+" s":r.sec/60+" min"}</span>`:"";
+    const ids=convIds(el),hr=convUsesHr(el),lv=convIsSk(el)&&convSkLv(el),r=lv&&convSkRow(el,lv),min=convMin(el),s=convSk(el);
+    const box=s?`<label class="bar" title="${hasTree(C())?"the level in your skill tree":"until you set a skill tree"}">${esc(s.name.trim())} Lv <select class="w-sm" data-convlv="${el}" aria-label="${esc(s.name.trim())} level">${
+      Array.from({length:s.max-convLvMin(el)+1},(_,i)=>i+convLvMin(el)).map(v=>`<option value="${v}"${v===convSkLv(el)?" selected":""}>${v||"–"}</option>`).join("")}</select></label>`:"";
+    const sk=box+(lv?`<span class="muted">${r.sp} SP every ${r.sec%60?r.sec+" s":r.sec/60+" min"}</span>`:"");
     return `<span class="bar"><span class="el ${el}">${el}</span>${sk}${ids.map(id=>`<label class="bar priceIn"><a href="#" data-info="item:${id}" title="${esc(itemName(id))}">${itemIcon(id)}</a><input class="w-md" type="number" min="0" step="100" data-convprice="${id}" value="${state.prices[id]>0?state.prices[id]:""}" placeholder="price" aria-label="${esc(itemName(id))}: what players pay"> z</label>`).join("")}${ids.length?`<span class="muted">${lv?"":`${fmtN(min)} min, `}${fmtN(hr)} / hr${convPrice(el)>0?`: ${fmtN(hr*convPrice(el))} z/hr`:""}</span>`:""}</span>`}).join("")
     +`<span class="muted">items from players</span>`:"";
   {const m=convOn()&&calcMob();$("convInfo").innerHTML=m?`vs ${esc(m.name)} (${m.el||"Neutral"} ${m.elv||1}): ${convAll().map(el=>elRateHtml(el,elemMult(m,el))).join(" · ")} → ${convFixed()?`using ${convFixed()}`:`best ${esc(mobRow(m,walkSec()).el2)}`}`:""}

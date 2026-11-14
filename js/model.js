@@ -12,11 +12,19 @@ const CONV_ITEMS={Fire:{ids:[12114],min:20},Water:{ids:[12115],min:20},Earth:{id
 // skills: Enchant Poison (Assassin), 20 SP for 15 + 15 × Lv s; the Sage's Endows (Endow Blaze Fire, Tsunami Water, Tornado Wind, Quake
 // Earth), 40 SP and a Point (Scarlet, Indigo, Yellow Wish, Lime Green) for 5 + 5 × Lv minutes. SP and how long it lasts come from the
 // skill's own level (its "Duration: 30 min" text). A job that has the skill casts it instead of buying that element's converter;
-// offered at the top level until you set a skill tree, else at your level (none when you haven't learned it)
+// the level is the skill tree's once you set one (the Weapon element card's Lv box raises or lowers it there, so both stay in step);
+// until then the card's own Lv box (c.convLv {el: Lv}), the top level by default. Lv 0: not learned, so that element's converter
 const CONV_SKILL={Poison:{sl:"enchant-poison"},Fire:{sl:"endow-blaze",ids:[6360]},Water:{sl:"endow-tsunami",ids:[6361]},
   Wind:{sl:"endow-tornado",ids:[6362]},Earth:{sl:"endow-quake",ids:[6363]}};
 const convSk=el=>CONV_SKILL[el]&&skOf(state.job)[CONV_SKILL[el].sl];
-const convSkLv=el=>{const s=convSk(el),c=C();if(!s)return 0;return hasTree(c)?Math.min(s.max,skLv(c,s.slug)):s.max};
+const convSkLv=el=>{const s=convSk(el),c=C();if(!s)return 0;if(hasTree(c))return Math.min(s.max,skLv(c,s.slug));
+  const v=(c.convLv||{})[el];return v==null||v===""?s.max:Math.max(0,Math.min(s.max,Math.round(num(v))))};
+// the Lv box: the lowest level it offers (0 only where a converter takes over) and setting it. With a skill tree it raises the skill (and
+// what it needs) or lowers it, which the tree refuses while a learned skill still needs it: returns why
+const convLvMin=el=>CONV_ITEMS[el]?0:1;
+function setConvLv(el,lv){const s=convSk(el),c=C();if(!s)return null;lv=Math.max(convLvMin(el),Math.min(s.max,Math.round(num(lv))));
+  if(!hasTree(c)){c.convLv={...(c.convLv||{}),[el]:lv};return null}
+  if(lv>skLv(c,s.slug)){raiseSkill(c,s.slug,lv);return null}return lowerSkill(c,s.slug,lv)}
 // the skill's SP and seconds per cast at a level
 const convSkRow=(el,lv)=>{const r=convSk(el).lv[lv-1]||[],m=String(r[7]||"").match(/Duration:\s*(\d+)\s*(sec|min)/i);
   return {sp:num(r[0]),sec:m?+m[1]*(/min/i.test(m[2])?60:1):0}};
