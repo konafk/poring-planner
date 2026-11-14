@@ -2,7 +2,8 @@
 // task, where it sends you and where the NPC stands, with a tick for each one you've done today. Every daily resets at 04:00 UTC+0, so
 // a "day" here runs from one 04:00 UTC to the next. The ticks are per character (C().daily: {day: that day as YYYY-MM-DD, done: [the
 // dailies' ids]}): a tick from an earlier day doesn't count, and goes the next time you tick one. The filters are per account
-// (state.dailyMine: only the ones your character's level allows; state.dailyHideDone: hide the ones done today). A daily whose NPC
+// (state.dailyMine: only the ones your character's level allows; state.dailyHideDone: hide the ones done today; state.dailyLv: the
+// range of daily levels to show). A daily whose NPC
 // the game's Navigation doesn't place yet (live false) is future content: its row shows only with Future content on ----
 const DAILY_RESET_H=4;
 // the day a time belongs to, in the game's daily reset: 03:59 UTC is still yesterday
@@ -14,6 +15,8 @@ const dailyDone=(c=C())=>{const d=c.daily;return d&&d.day===dailyDay()&&Array.is
 function dailyTick(id,on){const c=C(),done=dailyDone(c).filter(i=>i!==id);if(on)done.push(id);c.daily={day:dailyDay(),done};save()}
 // a daily your level allows: one with no level in the client counts as allowed
 const dailyLvOk=(q,lv=num(C().baseLv))=>q.lv==null||!(lv>0)||lv>=q.lv;
+// a daily in the level range picked (state.dailyLv): one with no level in the client always shows
+const dailyLvIn=(q,r=state.dailyLv)=>q.lv==null||!r||((r.from==null||q.lv>=r.from)&&(r.to==null||q.lv<=r.to));
 // a place in the quest log ("gef_dun02 106 132"), its map as players know it, and when a closed map opens
 const dailyMap=at=>mapKey(at.split(" ")[0]);
 const dailyPlace=(name,at)=>{const mp=dailyMap(at),soon=mapArrives(mp),nm=mapName(mp);
@@ -24,10 +27,10 @@ const dailyIn=ms=>{const h=Math.floor(ms/36e5),m=Math.ceil(ms%36e5/6e4);return h
 function renderDailyClock(){const n=dailyNext(),t=new Date(n).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
   $("dailyReset").textContent=`Resets at 04:00 UTC+0 (${t} your time) · in ${dailyIn(n-Date.now())}`}
 let DAILY_DREW="";
-function renderDaily(){const c=C(),lv=num(c.baseLv),done=new Set(dailyDone(c)),mine=state.dailyMine,hide=state.dailyHideDone;
+function renderDaily(){const c=C(),lv=num(c.baseLv),done=new Set(dailyDone(c)),mine=state.dailyMine,hide=state.dailyHideDone,range=state.dailyLv;
   DAILY_DREW=dailyDay();renderDailyClock();
   const rows=[...DAILIES].sort((a,b)=>(a.lv??999)-(b.lv??999)||a.npc[0].localeCompare(b.npc[0])||a.id-b.id);
-  const shown=rows.filter(q=>(!mine||dailyLvOk(q,lv))&&(!hide||!done.has(q.id)));
+  const shown=rows.filter(q=>(!mine||dailyLvOk(q,lv))&&(!hide||!done.has(q.id))&&dailyLvIn(q,range));
   $("dailyRows").innerHTML=shown.map(q=>{const off=q.live===false,ok=dailyLvOk(q,lv),d=done.has(q.id);
     return `<tr class="${off?"future":""}${d?" dailyDone":""}">
       <td><input type="checkbox" data-daily="${q.id}" ${d?"checked":""} aria-label="${esc(q.title)} done today"></td>
@@ -36,14 +39,17 @@ function renderDaily(){const c=C(),lv=num(c.baseLv),done=new Set(dailyDone(c)),m
         <div class="note">${esc(q.task)}</div>${(q.mobs||[]).length?`<div>${q.mobs.map(dailyMob).join(" · ")}</div>`:""}</td>
       <td class="name">${(q.where||[]).map(([n,at])=>dailyPlace(n,at)).join("")||'<span class="note">–</span>'}</td>
       <td class="name">${q.npc[1]?dailyPlace(q.npc[0],q.npc[1]):esc(q.npc[0])}</td></tr>`}).join("")
-    ||`<tr><td colspan="5" class="note">${mine||hide?"None left with these filters.":"No daily quests."}</td></tr>`;
+    ||`<tr><td colspan="5" class="note">${mine||hide||range.from!=null||range.to!=null?"None left with these filters.":"No daily quests."}</td></tr>`;
   const live=DAILIES.filter(q=>q.live!==false),left=live.filter(q=>dailyLvOk(q,lv)&&!done.has(q.id));
   $("dailyNote").textContent=`${done.size} done today · ${left.length} left${lv>0?` for your Lv ${lv} ${state.job}`:""}`;
-  $("dailyMine").checked=mine;$("dailyHide").checked=hide;
+  $("dailyMine").checked=mine;$("dailyHide").checked=hide;$("dailyLvFrom").value=range.from??"";$("dailyLvTo").value=range.to??"";
   $("dailyMineLv").textContent=lv>0?` (Lv ${lv})`:""}
 $("dailyCard").addEventListener("change",e=>{const id=e.target.dataset.daily;
   if(id!=null){dailyTick(+id,e.target.checked);renderDaily();return}
   if(e.target.id==="dailyMine"){state.dailyMine=e.target.checked;save();renderDaily()}
-  if(e.target.id==="dailyHide"){state.dailyHideDone=e.target.checked;save();renderDaily()}});
+  if(e.target.id==="dailyHide"){state.dailyHideDone=e.target.checked;save();renderDaily()}
+  if(e.target.id==="dailyLvFrom"||e.target.id==="dailyLvTo"){const b=v=>v.trim()===""?null:Math.max(1,Math.round(num(v,1)));
+    let f=b($("dailyLvFrom").value),t=b($("dailyLvTo").value);if(f!=null&&t!=null&&f>t)[f,t]=[t,f];
+    state.dailyLv={from:f,to:t};save();renderDaily()}});
 // while the tab is open: the countdown, and the ticks clear when the day turns
 (function dailyTimer(){setTimeout(()=>{if(TAB_ON==="daily"){if(DAILY_DREW!==dailyDay())renderDaily();else renderDailyClock()}dailyTimer()},30000)})();

@@ -3629,6 +3629,8 @@ t("daily quests: a day runs 04:00 to 04:00 UTC, ticks are per character and clea
   assert.equal(run("dailyDone().length"), 0);
   // the level filter: a daily with no level in the client always counts as allowed
   assert.equal(run("dailyLvOk({lv:80},79)+' '+dailyLvOk({lv:80},80)+' '+dailyLvOk({lv:null},1)"), "false true true");
+  // the level range: both ends count, an empty end is no bound, and a daily with no level always shows
+  assert.equal(run("[40,70,71].map(lv=>dailyLvIn({lv},{from:40,to:70}))+' '+dailyLvIn({lv:5},{from:null,to:10})+' '+dailyLvIn({lv:null},{from:40,to:70})"), "true,true,false true true");
   // every daily has an NPC, a task and, where it says where, a place the Navigation command can read
   assert.equal(run("DAILIES.filter(q=>!q.npc[0]||!q.task||(q.where||[]).some(([,at])=>at.split(' ').length!==3)).length"), 0);
 });
