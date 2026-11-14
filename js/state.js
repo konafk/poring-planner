@@ -184,6 +184,15 @@ state.recovery={discount:!(state.recovery&&state.recovery.discount===false),all:
 delete state.dailyMine;state.dailyHideDone=state.dailyHideDone===true;state.dailyHideNoLv=state.dailyHideNoLv===true;
 {const t=objOr(state.dailyLv),b=v=>{const x=Math.round(+v);return v!==""&&v!=null&&Number.isFinite(x)&&x>=1?x:null};let f=b(t.from),to=b(t.to);
   if(f!=null&&to!=null&&f>to)[f,to]=[to,f];state.dailyLv={from:f,to}}
+// the Refine calculator (refinecalc.js): the gear slot it started from, the type (armor or a weapon level), from (+0 to +9) and to (+1 to
+// +10, above from), the ore plan, the ore picked per try (by the refine it takes it to), the prices typed by ore name, and a new piece's
+// price (null: none typed)
+{const t=objOr(state.refcalc),T=["armor","weapon_lv1","weapon_lv2","weapon_lv3","weapon_lv4"],int=(v,lo,hi,d)=>Number.isInteger(v)&&v>=lo&&v<=hi?v:d,
+  zeny=v=>typeof v==="number"&&Number.isFinite(v)&&v>=0?Math.round(v):null,from=int(t.from,0,9,0);
+  state.refcalc={slot:typeof t.slot==="string"&&/^[a-zA-Z0-9]{1,12}$/.test(t.slot)?t.slot:"",type:T.includes(t.type)?t.type:"armor",from,to:Math.max(from+1,int(t.to,1,10,7)),
+    plan:["n","e","nh","eh","best","custom"].includes(t.plan)?t.plan:"n",
+    steps:Object.fromEntries(Object.entries(objOr(t.steps)).filter(([k,v])=>/^([1-9]|10)$/.test(k)&&["n","e","h"].includes(v))),
+    px:Object.fromEntries(Object.entries(objOr(t.px)).filter(([k,v])=>k.length<=40&&zeny(v)!=null).map(([k,v])=>[k,zeny(v)])),base:zeny(t.base)}}
 // the Monster skills tab's filters (mskills.js): the text typed, the monster picked (its id, or null for every monster), the kind
 // ("" for every kind) and Hide monsters with no open map (on unless you turn it off)
 {const t=objOr(state.msk);state.msk={q:typeof t.q==="string"?t.q.slice(0,100):"",mob:Number.isInteger(t.mob)&&t.mob>0?t.mob:null,kind:typeof t.kind==="string"&&/^[a-z]{2,4}$/.test(t.kind)?t.kind:"",open:t.open!==false}}

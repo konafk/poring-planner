@@ -52,6 +52,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
       <div class="navSec"><button type="button" class="navGrp" aria-expanded="false" aria-haspopup="true" title="Simulators tabs"><span>Simulators</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="navItems" role="group" aria-label="Simulators">
         <button type="button" role="tab" data-tabbtn="brew" title="Brewing simulator"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v5.3a6.5 6.5 0 1 0 4 0V3"/><path d="M6 15.5h12"/></svg><span>Brewing</span></button>
         <button type="button" role="tab" data-tabbtn="cook" title="Cooking simulator"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10h16v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5z"/><path d="M2 10h2M20 10h2M9.5 3.5c-.8.8-.8 1.7 0 2.5M14.5 3.5c-.8.8-.8 1.7 0 2.5"/></svg><span>Cooking</span></button>
+        <button type="button" role="tab" data-tabbtn="refcalc" title="Refine calculator: the tries, ore, zeny and pieces destroyed a refine takes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5 5 5-9 9-5-5z"/><path d="m12 7 5 5M3 21l3-3M17 3l4 4"/></svg><span>Refine</span></button>
         <button type="button" role="tab" data-tabbtn="skilltree" title="Skill tree"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M12 7v5M12 12l-6 5M12 12l6 5"/></svg><span>Skill tree</span></button>
         <button type="button" role="tab" data-tabbtn="stylist" title="Stylist: every job's clothes colours, hair styles and hair colours"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12"/></svg><span>Stylist</span></button>
       </div></div>
@@ -849,6 +850,16 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="note hint">Every try uses the materials, success or not. Classic formula, not measured on Zero Global.</div>
   </section>
 
+  <section class="card" id="refCalcCard" data-tab="refcalc">
+    <div class="bar"><h2 class="grow">Refine calculator</h2><span class="pill" title="Ragnarok Zero Global's official game guide: success rates, ores and fees from +1 to +10">Official rates</span></div>
+    <div class="bar dbF"><label title="A piece of your gear: its kind and refine">Your gear<select id="rcSlot"></select></label><label>Gear<select id="rcType"></select></label><label title="The refine it's at now">From<select id="rcFrom"></select></label><label title="The refine you want">To<select id="rcTo"></select></label><label title="The ore for each try. HD ore works from +7 on armor and Lv 3–4 weapons: a failure takes 1 off the refine instead of destroying the piece">Ore<select id="rcPlan"></select></label></div>
+    <div class="bar dbF mt" id="rcPx"></div>
+    <div class="calc mt" id="rcTiles"></div>
+    <div class="note mt" id="rcNote"></div>
+    <div class="scroll mt"><table id="rcTable" class="dbTable"><thead><tr><th class="l">Try</th><th class="l">Ore</th><th>Success</th><th class="l">On failure</th><th title="how many times you'll make this try, on average">Tries</th><th title="the Blacksmith's fee and the ore, for all its tries">Zeny</th></tr></thead><tbody id="rcRows"></tbody></table></div>
+    <div class="note hint">Every try costs the ore and the Blacksmith's fee. A failure with normal or Enriched ore destroys the piece, its cards and the ore; HD ore (from +7, armor and Lv 3–4 weapons) takes 1 off the refine instead and has the normal ore's rate. The rates, ores and fees are the official game guide's for +1 to +10; Global's guide has none above +10.</div>
+  </section>
+
   <section class="card" id="cookCard" data-tab="cook">
     <div class="bar"><h2 class="grow">Cooking simulator</h2><span class="pill" title="rAthena's cooking formula; not measured on Zero Global">Not measured in game</span><button type="button" id="cookMine" title="Empty the Base Lv, DEX and LUK boxes, so they take your character's numbers again">Use my character</button></div>
     <div class="bar dbF" id="cookIn"></div>
@@ -964,6 +975,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 <script src="data/equipment.js"></script>
 <script src="data/cards.js"></script>
 <script src="data/refine.js"></script>
+<script src="data/refinerates.js"></script>
 <script src="data/jobs.js"></script>
 <script src="data/consumables.js"></script>
 <script src="data/recovery.js"></script>
@@ -1046,6 +1058,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 <script src="js/dailies.js"></script>
 <script src="js/affixitems.js"></script>
 <script src="js/mskills.js"></script>
+<script src="js/refinecalc.js"></script>
 <script src="js/navi.js"></script>
 <script src="js/mapinfo.js"></script>
 <script src="js/news.js"></script>
