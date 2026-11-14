@@ -1485,6 +1485,24 @@ t("Spell Fist: the bolt at 100%, then × (100 × bolt Lv + 100 × Spell Fist Lv)
   assert.equal(run("sfPct()"), 800);
 });
 
+t("Sage's Essence: gear's bolt damage % counts on Spell Fist and Hindsight procs, by the bolt's element", () => {
+  const sg = (opts, name) => { const i = run(`JOBS.Sage.p.findIndex(p=>p.name===${JSON.stringify(name)})`);
+    setup("Sage", { mode: "build", baseLv: 50, jobLv: 40, build: { base: { str: 1, agi: 1, vit: 1, int: 60, dex: 1, luk: 1 }, gear: { armor: { id: 15221, refine: 0, opts } } },
+      cons: [], consStat: {}, pbuffs: {}, buffs: {}, skills: {}, sage: { sfLv: 10, boltLv: 10, bolts: { Fire: true, Water: true, Wind: true }, hsLv: 10, dbOn: false },
+      ec: { on: false }, cards: { daSF: false, vitata: false }, preset: i, a: JSON.parse(run(`JSON.stringify(JOBS.Sage.p[${i}])`)) }) };
+  sg([], "Spell Fist Lv10 + Hindsight Lv10");
+  const sf0 = run(`sfHit(${MOB},'Wind')`), hs0 = run(`hsHit(${MOB},'Wind')`), base = run(`magicDmg(${MOB},100,'Wind')`);
+  assert.equal(run("C().skillPct"), 0);
+  sg([{ k: "ess_29576", v: "" }], "Spell Fist Lv10 + Hindsight Lv10");      // Sage's Essence II Lv.2: Fire / Cold / Lightning Bolt +40%
+  assert.deepEqual(JSON.parse(run("JSON.stringify(C().bx.bolt)")), { Fire: 40, Water: 40, Wind: 40 });
+  assert.equal(run("C().skillPct"), 0);                                       // the attack isn't named after a bolt: only its procs take it
+  const sf = run(`sfHit(${MOB},'Wind')`), hs = run(`hsHit(${MOB},'Wind')`);
+  assert.ok(sf > sf0 && hs > hs0, `${sf} > ${sf0}, ${hs} > ${hs0}`);
+  assert.equal(sf, Math.floor(run(`magicDmg(${MOB},100,'Wind',0,40)`) * run("sfPct()") / 100));
+  assert.equal(hs, 5 * run(`magicDmg(${MOB},100,'Wind',0,40)`));
+  assert.equal(run(`magicDmg(${MOB},100,'Wind')`), base);                   // other magic (auto-casts) unchanged
+});
+
 t("Sage attacks: Spell Fist, Hindsight, or both, named with their levels", () => {
   const sage = { matkTxt: "300+200", intTxt: "", st: {}, aspd: 170, sage: { sfLv: 10, boltLv: 10, bolts: { Fire: true, Water: false, Wind: false }, hsLv: 10, dbOn: false },
     ec: { on: false }, cards: { daSF: false, vitata: false } };
