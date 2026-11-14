@@ -779,7 +779,7 @@ function sessMix(s,keep){const mp=sessMap(s);let list=sessMobs(s).map(m=>({m,w:s
 function pace0(s,same){
   // with this job's attack, monsters you can't hurt aren't being killed, so they're left out of the mix
   const st=stats(s);const mix=sessMix(s,same?m=>isFinite(bestFight(m)):null);if(!st||!mix||st.avgRaw<=0||!(mix.avg(m=>m.exp)>0))return null;
-  const kph=st.avgRaw/mix.avg(m=>killExp(m,s));const obs=3600/kph;const fight=same?mix.avg(bestFight):NaN;
+  const kph=st.avgRaw/withBonus(s,()=>mix.avg(m=>killExp(m,s)));const obs=3600/kph;const fight=same?mix.avg(bestFight):NaN;
   return {kph,obs,fight,walk:isFinite(fight)&&obs>=fight?obs-fight:null,mix,st};
 }
 // ---- a session's stats: the character as it was when you logged its entries (s.snap = {at, c}), so its fight time and the walking
@@ -795,16 +795,21 @@ const snapFight=(s,c)=>withSnap(c,()=>{const p=pace0(s,true);return p&&isFinite(
 const snapSession=(s,was)=>{if((s.job||state.job)!==state.job)return;was=Array.isArray(was)?was:[];const c=charSnap(),prev=s.snap,t=Math.max(-Infinity,...was);
   if(prev&&was.length>=2&&stats(s)&&JSON.stringify(prev.c)!==JSON.stringify(c)){const a=snapFight(s,prev.c),b=snapFight(s,c);
     if(a!=null&&(b==null||Math.abs(a-b)>1e-6)){const h=(s.snapHist||[]).filter(x=>x.t<t);h.push({t,c:prev.c});s.snapHist=h.slice(-SNAP_HIST_MAX)}}
-  s.snap={at:Date.now(),c}};
+  s.snap={at:Date.now(),c,bonus:num(state.bonus)}};
 // sessions of this job with a pace and no snapshot yet take the stats you have now, after renderAll has worked everything out
-const snapEst=()=>{let n=0;state.sessions.forEach(s=>{if(!s.snap&&(s.job||state.job)===state.job&&stats(s)){s.snap={at:Date.now(),c:charSnap(),est:true};n++}});if(n)save()};
+const snapEst=()=>{let n=0;state.sessions.forEach(s=>{if(!s.snap&&(s.job||state.job)===state.job&&stats(s)){s.snap={at:Date.now(),c:charSnap(),est:true,bonus:num(state.bonus)};n++}});if(n)save()};
 // the model with a copy of a session's snapshot swapped in: redoes what renderAll works out from it (not Hindsight auto: the snapshot
 // keeps the choice it had), then puts yours back as it was. Unlike build-ui.js withChar it leaves the snapshot untouched
 function withSnap(c,fn){const job=state.job,real=state.chars[job],k={SKFX,EFF,BUILD_LAST};state.chars[job]=JSON.parse(JSON.stringify(c));
   try{SKFX=skillEffects(C());sageFromTree(C());applyBuild();applyConsumables();return fn()}
   finally{state.chars[job]=real;SKFX=k.SKFX;EFF=k.EFF;BUILD_LAST=k.BUILD_LAST}}
-// what the walking depends on besides the snapshot: the entries, pauses, monsters, party and EXP bonus
-const calKey=s=>[s.snap?s.snap.at:0,...(s.snapHist||[]).map(x=>"h"+x.t),s.mobIds.join("."),sessMap(s),partyN(s),num(state.bonus),...s.entries.map(e=>`${e.t}:${e.lv}:${e.pct}:${e.died||0}`),...(s.pauses||[]).map(p=>`${p.from}-${p.to??""}`)].join("|");
+// the EXP bonus % a session was logged with (s.snap.bonus, saved with its stats): the walking is the logged EXP ÷ EXP per kill, so
+// raising EXP bonus % afterwards (a Double EXP weekend: +100) must not stretch the walking of what was logged before. Without a
+// snapshot it's the one you have now. withBonus runs fn with it in state.bonus, then puts yours back
+const snapBonus=s=>s&&s.snap&&Number.isFinite(s.snap.bonus)?s.snap.bonus:num(state.bonus);
+function withBonus(s,fn){const k=state.bonus;state.bonus=snapBonus(s);try{return fn()}finally{state.bonus=k}}
+// what the walking depends on besides the snapshot: the entries, pauses, monsters, party and the EXP bonus it was logged with
+const calKey=s=>[s.snap?s.snap.at:0,...(s.snapHist||[]).map(x=>"h"+x.t),s.mobIds.join("."),sessMap(s),partyN(s),snapBonus(s),...s.entries.map(e=>`${e.t}:${e.lv}:${e.pct}:${e.died||0}`),...(s.pauses||[]).map(p=>`${p.from}-${p.to??""}`)].join("|");
 // a session's pace with its own stats, worked out once and kept on it (s.walk = {key, sec, fight, kph}); null for another job's session
 // Until a session has a snapshot (one saved before them) it follows your stats; renderAll then gives it one (snapEst)
 function sessCal(s){if((s.job||state.job)!==state.job||!stats(s))return null;const key=calKey(s);if(s.walk&&s.walk.key===key)return s.walk;
