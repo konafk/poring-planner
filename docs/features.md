@@ -88,7 +88,9 @@ Every daily quest an NPC gives, from the game client: its quest log, its Navigat
 - **Lv:** the base level the NPC's dialogue asks for ("- This quest can be undertaken at Level 80 or higher. -"). In red when it's above your character's level; – when the dialogue gives none.
 - **Quest:** its name and the task as the quest log gives it, the one you take every day after the first, with the monsters it names (their level, and a click opens their details).
 - **Where to go** and **NPC:** the place and the NPC's spot, each with its `/navi` command to paste in the game's chat, and the update a closed map comes with.
-- **Done:** tick the ones you've done today. Ticks are per character, and clear at the reset. **Only the ones my level allows** hides the dailies above your level (one with no level stays), and **Hide the ones done today** the ticked ones; both are saved per account.
+- **Done:** tick the ones you've done today. Ticks are per character, and clear at the reset.
+- **Filters**, saved per account: **Lv** from–to shows only the dailies whose level is in that range (leave a box empty for no bound; a daily with no level still shows), **Hide the ones with no level** hides those, and **Hide the ones done today** the ticked ones.
+- Click a column's heading to sort by it, again for the other way; it starts by level, then NPC.
 - A daily whose NPC the game's Navigation doesn't place yet (it's in the client for a later update, or its event has ended) is marked **Not in game yet** and shows only with **Future content** on (Settings).
 
 ## Monsters & maps
