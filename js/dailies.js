@@ -26,10 +26,13 @@ const dailyMob=id=>{const m=MOB_BY_ID.get(id),c=CLIENT.mobLv&&CLIENT.mobLv[id],n
 const dailyIn=ms=>{const h=Math.floor(ms/36e5),m=Math.ceil(ms%36e5/6e4);return h?`${h}h ${m}m`:`${m}m`};
 function renderDailyClock(){const n=dailyNext(),t=new Date(n).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});
   $("dailyReset").textContent=`Resets at 04:00 UTC+0 (${t} your time) · in ${dailyIn(n-Date.now())}`}
-let DAILY_DREW="";
+// the list's columns to sort by (a header click; state.tsort.dailyTable): ties keep the default order, level then NPC
+let DAILY_DREW="",DAILY_DONE=new Set();
+TABLES.dailyTable={def:["lv",1],cols:{done:{n:q=>DAILY_DONE.has(q.id)?1:0},lv:{n:q=>q.lv,asc:1},title:{t:q=>q.title},
+  where:{t:q=>(q.where||[]).map(([n,at])=>mapName(dailyMap(at))||n).join(", ")},npc:{t:q=>q.npc[0]}}};
 function renderDaily(){const c=C(),lv=num(c.baseLv),done=new Set(dailyDone(c)),hide=state.dailyHideDone,range=state.dailyLv;
-  DAILY_DREW=dailyDay();renderDailyClock();
-  const rows=[...DAILIES].sort((a,b)=>(a.lv??999)-(b.lv??999)||a.npc[0].localeCompare(b.npc[0])||a.id-b.id);
+  DAILY_DREW=dailyDay();DAILY_DONE=done;renderDailyClock();
+  const rows=sortRows("dailyTable",[...DAILIES].sort((a,b)=>(a.lv??999)-(b.lv??999)||a.npc[0].localeCompare(b.npc[0])||a.id-b.id));
   const shown=rows.filter(q=>(!hide||!done.has(q.id))&&dailyLvIn(q,range));
   $("dailyRows").innerHTML=shown.map(q=>{const off=q.live===false,ok=dailyLvOk(q,lv),d=done.has(q.id);
     return `<tr class="${off?"future":""}${d?" dailyDone":""}">
@@ -49,5 +52,7 @@ $("dailyCard").addEventListener("change",e=>{const id=e.target.dataset.daily;
   if(e.target.id==="dailyLvFrom"||e.target.id==="dailyLvTo"){const b=v=>v.trim()===""?null:Math.max(1,Math.round(num(v,1)));
     let f=b($("dailyLvFrom").value),t=b($("dailyLvTo").value);if(f!=null&&t!=null&&f>t)[f,t]=[t,f];
     state.dailyLv={from:f,to:t};save();renderDaily()}});
+$("dailyTable").tHead.addEventListener("click",e=>{const th=e.target.closest("th[data-sk]");if(!th)return;
+  const k=th.dataset.sk,[k0,d0]=tblSort("dailyTable"),col=TABLES.dailyTable.cols[k];state.tsort.dailyTable=[k,k===k0?-d0:col.n&&!col.asc?-1:1];save();renderDaily()});
 // while the tab is open: the countdown, and the ticks clear when the day turns
 (function dailyTimer(){setTimeout(()=>{if(TAB_ON==="daily"){if(DAILY_DREW!==dailyDay())renderDaily();else renderDailyClock()}dailyTimer()},30000)})();
