@@ -44,7 +44,7 @@ Plain scripts that `index.html` loads in this order. They share one global scope
 | `stellar.js` | The Stellar weapons tab: the ★ weapons by weapon type, the certificates each still needs and the monster that gets you them fastest, and the Activation routes. |
 | `affixitems.js` | The Affixes tab: the items that add affixes to gear (`CLIENT.upgrades`), the gear each one works on, and the affixes players saw them add (`data/affixitems.js`). |
 | `shared.js` | Shared prices and cloud backup: the Discord login (through Supabase, `SHARED` at the top holds its address and public key), the Market tab's shared prices and Share button, and the Account tab's cloud backup. Hidden until `SHARED` is filled in; see [Shared prices](shared-prices.md). |
-| `start.js` | Tabs and their headings, the main nav's levels (the sidebar's groups, menus and the open tab's sections; menus along the top on narrow windows), collapsible cards, the Character tab's section links, the get started card's buttons, the search (Ctrl+K), the sidebar's Compact button and its Settings menu (Hints / Theme / Full width), and the first render. |
+| `start.js` | Tabs and their headings, the main nav's levels (the sidebar's groups, menus and the open tab's sections; menus along the top on narrow windows), collapsible cards, the Character tab's section links, the get started card's buttons, the search (Ctrl+K), the sidebar's Compact button and its Settings menu (Hints / Theme / Full width / Future content / Price boxes), and the first render. |
 
 ### `data/`
 

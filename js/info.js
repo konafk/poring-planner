@@ -19,7 +19,7 @@ function infoPrice(id){const npc=NPCSELL[id]!=null||state.npcPrices[id]!=null?np
 // (zeny per kill), a recipe material (the Recipes tab's worth), an HP / SP item or an elemental converter (their costs), or one
 // already priced (so it can be cleared)
 const priceCounts=id=>!!(ITEM_DROPS[id]||RECIPES_USING[id]||typeof RECOVERY!=="undefined"&&RECOVERY[id]||CONV_IDS.includes(+id)||state.prices[id]>0);
-const infoPriceBox=id=>!priceCounts(id)?"":`<label class="infoPay">Players pay<input class="w-lg" type="number" min="0" data-infoprice="${id}" value="${state.prices[id]>0?state.prices[id]:""}" placeholder="0"></label>`;
+const infoPriceBox=id=>!priceCounts(id)?"":`<label class="infoPay priceIn">Players pay<input class="w-lg" type="number" min="0" data-infoprice="${id}" value="${state.prices[id]>0?state.prices[id]:""}" placeholder="0"></label>`;
 // the monsters the farm tables know that drop it, best chance first: the chance (and yours, with your drop bonus and the level penalty),
 // the zeny a kill brings from it (what an NPC or players pay, the way the farm tables count it), affixes a gear drop comes with, and
 // the monster's best open map with its spawns (or when it comes). Every one of them: this is the item's list of droppers

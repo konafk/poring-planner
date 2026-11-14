@@ -664,6 +664,8 @@ button.tile:hover{border-color:var(--accent)}
 
 /* hints off (sidebar button): the help text under the cards goes */
 .nohints .hint{display:none!important}
+/* price boxes off (Settings): the boxes to type what you pay go; prices typed before still count. The Market tab keeps its own */
+.noprice .priceIn{display:none!important}
 /* the page description under each tab's heading is a hint too */
 .nohints #heroDesc{display:none}
 #hintBtn[aria-pressed="false"]{opacity:.7}

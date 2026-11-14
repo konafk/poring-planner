@@ -186,6 +186,7 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
     {k:"Action",name:"Log EXP",meta:"+ button · L",run:()=>openQuickLog(true),ok:()=>!atMaxLv()},
     {k:"Action",name:"Switch theme",meta:"auto → light → dark",run:()=>$("themeBtn").click()},
     {k:"Action",name:"Show or hide hints",meta:"help text under the cards",run:()=>$("hintBtn").click()},
+    {k:"Action",name:"Show or hide price boxes",meta:"the boxes to type what you pay",run:()=>$("priceBtn").click()},
     {k:"Action",name:"Show or hide future content",meta:"Contingent and Conqueror gear",run:()=>$("futureBtn").click()},
     {k:"Action",name:"New session",meta:"Session tab",run:()=>$("newSession").click()}];
   let ALL=null;
@@ -237,7 +238,7 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
     if((e.key==="k"||e.key==="K")&&(e.ctrlKey||e.metaKey)){e.preventDefault();dlg.open?dlg.close():open()}
     else if(e.key==="/"&&!typing&&!e.ctrlKey&&!e.metaKey){e.preventDefault();open()}});
 })();
-// ---- Settings menu (sidebar): hints, theme and full width. The ⋯ menu code in events.js opens and closes it; its items keep it open ----
+// ---- Settings menu (sidebar): hints, theme, full width, future content and price boxes. The ⋯ menu code in events.js opens and closes it; its items keep it open ----
 // ---- full width: a per-device display choice kept outside the account saves (index.html applies it before the page draws) ----
 (function setupWide(){
   const KEY_WIDE="rozero-farm-planner-wide",btn=$("wideBtn");
@@ -329,6 +330,14 @@ function navSubSpy(){const d=document.querySelector(".tabs .navSubs");if(!d)retu
   const set=v=>{document.documentElement.classList.toggle("nohints",!v);btn.setAttribute("aria-pressed",String(v));btn.querySelector("span").textContent=`Hints: ${v?"on":"off"}`};
   set(!document.documentElement.classList.contains("nohints"));
   btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.setItem(KEY_HINTS,"1"):localStorage.removeItem(KEY_HINTS)}catch(e){}});
+})();
+// ---- price boxes: the boxes to type what you pay (Consumables, converters, skill items, the details popup), shown by default, per device.
+// Hidden, prices typed before still count; the rest use NPC prices. The Market tab keeps its own ----
+(function setupPrices(){
+  const KEY="rozero-farm-planner-noprice",btn=$("priceBtn");
+  const set=v=>{document.documentElement.classList.toggle("noprice",!v);btn.setAttribute("aria-pressed",String(v));btn.querySelector("span").textContent=`Price boxes: ${v?"shown":"hidden"}`};
+  set(!document.documentElement.classList.contains("noprice"));
+  btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.removeItem(KEY):localStorage.setItem(KEY,"1")}catch(e){}});
 })();
 // ---- colour theme: auto (follows the device) → light → dark, per device like full width ----
 (function setupTheme(){

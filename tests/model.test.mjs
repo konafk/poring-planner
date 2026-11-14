@@ -3192,7 +3192,7 @@ t("details popup: a monster, an item, gear and a card, linked to each other", ()
   const ms = run(`popMob(MOBS.find(m=>m.skills&&m.skills.length))`);
   assert.match(ms.body, /<h3>Skills<\/h3><\/summary><div class="scroll"><table[^>]*><thead><tr><th>Skill<\/th><th>When<\/th>/);
   const i = run(`popItem("909")`);
-  assert.match(i.acts, /class="infoPay">Players pay<input[^>]*data-infoprice="909"/);                // a box for the player price, in the bottom bar
+  assert.match(i.acts, /class="infoPay priceIn">Players pay<input[^>]*data-infoprice="909"/);        // a box for the player price, in the bottom bar (Settings → Price boxes hides it)
   assert.match(i.body, /NPC pays 3 z/); assert.doesNotMatch(run(`popItem("1002996").body`), /no NPC price/);
   // only where the price counts: a recipe material yes; a box, a costume, an upgrade scroll no
   assert.match(run(`popItem("1002996").acts`), /data-infoprice/);

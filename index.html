@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="style.css">
-<!-- full width, the compact sidebar, hints and the colour theme are per-device display choices: set them before the page draws so it doesn't jump -->
-<script>try{if(localStorage.getItem("rozero-farm-planner-wide")==="1")document.documentElement.classList.add("wide");if(localStorage.getItem("rozero-farm-planner-compact")==="1")document.documentElement.classList.add("compact");if(localStorage.getItem("rozero-farm-planner-hints")!=="1")document.documentElement.classList.add("nohints");var th=localStorage.getItem("rozero-farm-planner-theme");if(th==="light"||th==="dark")document.documentElement.dataset.theme=th}catch(e){}</script>
+<!-- full width, the compact sidebar, hints, price boxes and the colour theme are per-device display choices: set them before the page draws so it doesn't jump -->
+<script>try{if(localStorage.getItem("rozero-farm-planner-wide")==="1")document.documentElement.classList.add("wide");if(localStorage.getItem("rozero-farm-planner-compact")==="1")document.documentElement.classList.add("compact");if(localStorage.getItem("rozero-farm-planner-hints")!=="1")document.documentElement.classList.add("nohints");if(localStorage.getItem("rozero-farm-planner-noprice")==="1")document.documentElement.classList.add("noprice");var th=localStorage.getItem("rozero-farm-planner-theme");if(th==="light"||th==="dark")document.documentElement.dataset.theme=th}catch(e){}</script>
 <!-- until the scripts at the end have run (a few MB, slow on a phone) every tab's cards would show at once, then collapse into one tab
      when start.js hides the rest: a big layout shift. Until then the page shows only the Home hero (when Home opens: the address, or
      with none the saved tab) and nothing else in the page column, so the open tab's cards appear without moving anything -->
@@ -58,12 +58,13 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="sideFoot">
       <button type="button" class="iconBtn" id="sideBtn" aria-pressed="false" title="Shrink the sidebar to icons"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 10l-2 2 2 2"/></svg><span>Compact sidebar</span></button>
       <div class="menu setMenu">
-        <button type="button" class="iconBtn menuBtn" id="setBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="setMenu" title="Settings: hints, theme, full width, future content"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></button>
+        <button type="button" class="iconBtn menuBtn" id="setBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="setMenu" title="Settings: hints, theme, full width, future content, price boxes"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></button>
         <div class="menuList" id="setMenu" role="menu" aria-label="Settings" hidden>
         <button type="button" role="menuitem" data-keep id="hintBtn" aria-pressed="false" title="Show or hide the help text under the cards"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span>Hints: off</span></button>
         <button type="button" role="menuitem" data-keep id="themeBtn" title="Colour theme: follows your device"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg><span>Theme: auto</span></button>
         <button type="button" role="menuitem" data-keep id="wideBtn" aria-pressed="false" title="Let the page use the whole window width"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg><span>Full width: off</span></button>
         <button type="button" role="menuitem" data-keep id="futureBtn" aria-pressed="false" title="Show or hide gear that isn't out on Global yet (Contingent and Conqueror)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Future content: hidden</span></button>
+        <button type="button" role="menuitem" data-keep id="priceBtn" aria-pressed="true" title="Show or hide the boxes to type what you pay for items. Hidden, prices you typed still count and the rest use NPC prices"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><span>Price boxes: shown</span></button>
         </div>
       </div>
     </div>
@@ -230,7 +231,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <label>Delay after (s)<input id="aDelay" type="number" step="0.1" min="0"></label>
         <label>SP per use<input id="aSp" type="number" step="1" min="0"></label>
         <label>Monsters hit per use<input id="aTargets" type="number" step="0.5" min="1"></label>
-        <label>Zeny per use<input id="aZeny" type="number" step="100" min="0" placeholder="0"></label>
+        <label class="priceIn">Zeny per use<input id="aZeny" type="number" step="100" min="0" placeholder="0"></label>
         <label id="cartWrap" hidden>Cart weight<input id="cartW" type="number" step="100" min="0" max="8000" placeholder="0 – 8000"></label>
         <label id="weaponWWrap" hidden title="Axe Boomerang adds the axe's weight to its damage %. Build mode reads it from the Weapon row">Weapon weight<input id="weaponW" type="number" step="1" min="0" placeholder="weight"></label>
         <label id="shieldWrap" hidden title="Shield Boomerang and Rapid Smiting add the shield's weight + 4 × its refine to their damage %. Build mode reads them from the Shield row">Shield weight / refine<span class="bar"><input class="fill" id="shieldW" type="number" step="1" min="0" placeholder="weight" aria-label="Shield weight"><input class="w-xs" id="shieldRef" type="number" step="1" min="0" max="20" placeholder="+0" aria-label="Shield refine"></span></label>
@@ -363,12 +364,12 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <label class="bar">HP item <select id="recHp"></select></label>
         <span id="recCustomHp" class="bar" hidden>
           <label class="bar">restores <input class="w-sm" id="itemHp" type="number"> HP</label>
-          <label class="bar">costs <input class="w-md" id="itemHpPrice" type="number"> z</label>
+          <label class="bar priceIn">costs <input class="w-md" id="itemHpPrice" type="number"> z</label>
         </span>
         <label class="bar">SP item <select id="recSp"></select></label>
         <span id="recCustom" class="bar" hidden>
           <label class="bar">restores <input class="w-sm" id="itemSp" type="number"> SP</label>
-          <label class="bar">costs <input class="w-md" id="itemPrice" type="number"> z</label>
+          <label class="bar priceIn">costs <input class="w-md" id="itemPrice" type="number"> z</label>
         </span>
       </div>
       <div class="bar note"><span>SP items:</span>
@@ -396,7 +397,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
       <div class="bar note"><span>ASPD potion:</span>
         <label class="bar"><input type="checkbox" id="potOn"> using one</label>
         <span id="potIcon"></span><select id="potType" aria-label="Which potion"></select>
-        <label class="bar"><input class="w-md" id="potPrice" type="number" step="100"> z each</label>
+        <label class="bar priceIn"><input class="w-md" id="potPrice" type="number" step="100"> z each</label>
         <label class="bar">lasts <input class="w-xs" id="potMin" type="number" step="1"> min</label>
         <span id="potInfo"></span>
       </div>
