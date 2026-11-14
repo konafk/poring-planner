@@ -77,10 +77,12 @@ $("ecRow").addEventListener("input",e=>{const i=e.target,k=i.dataset.ec;if(!k)re
 $("acOn").addEventListener("change",e=>{AC().on=e.target.checked;save();renderAll()});
 $("acSpell").addEventListener("change",e=>{AC().spell=e.target.value;save();renderAll()});
 ["acLv","acPct"].forEach(id=>$(id).addEventListener("input",e=>{AC()[id==="acLv"?"lv":"pct"]=num(e.target.value);save();renderAll()}));
-$("convSel").addEventListener("change",e=>{const v=e.target.value,c=C();c.converters=!!v;c.convEl=v==="auto"?"":v;save();renderAll()});
+// "Fire:item": the Fire converter for a Sage who has Endow Blaze; plain "Fire" is the Endow (or the converter without it)
+$("convSel").addEventListener("change",e=>{const v=e.target.value,c=C(),[el,src]=v.split(":");c.converters=!!v;c.convEl=v==="auto"?"":el;
+  if(v&&v!=="auto"&&convSkLv(el)>0)setConvItem(el,src==="item");save();renderAll()});
 // a converter's price: what players pay for it, the same price as the Market tab and its details popup
 // an element skill's Lv box (Enchant Poison, the Sage's Endows): the skill tree's level once you set one, so the Skills card follows
-$("convItems").addEventListener("change",e=>{const el=e.target.dataset.convlv;if(!el)return;const c=C(),why=setConvLv(el,e.target.value);e.target.blur();
+$("convItems").addEventListener("change",e=>{const el=e.target.dataset.convlv;if(!el)return;const c=C(),why=e.target.value==="item"?(setConvItem(el,true),null):setConvLv(el,e.target.value);e.target.blur();
   refreshPreset(c);save();renderSkills();syncChar();renderAll();if(why)$("convNote").textContent=why.join(" · ")});
 $("convItems").addEventListener("input",e=>{const id=e.target.dataset.convprice;if(!id)return;const v=num(e.target.value);if(v>0)state.prices[id]=v;else delete state.prices[id];save();renderAll()});
 // attack detail fields: editing makes the attack "Custom"

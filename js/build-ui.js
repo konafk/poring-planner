@@ -120,12 +120,16 @@ const PBUFF=[
   {k:"assumptio",name:"Assumptio (Priest)",lv:[1,5,5],fx:l=>[["def",50*l],["heal_pct",2*l]],how:"Zero: flat DEF, not classic's half damage"},
   {k:"canto",name:"Canto Candidus (Priest)",fx:()=>[["agi",19],["aspd_percent",17]]},
   {k:"riff",name:"Impressive Riff (Bard)",lv:[1,10,10],fx:l=>[["aspd_percent",l===10?17:1+2*(l-1)]],how:"Zero: 17% at Lv 10, not the description's 20%"},
-  {k:"adren",name:"Adrenaline Rush (from a Blacksmith)",w:AXE_MACE,lv:[1,5,5],fx:l=>[["aspd_mod",6],["aspd_percent",10],["hit",5+3*l]],how:"axes and maces; HIT +5 + 3 per level from Zero's skill text"}];
+  {k:"adren",name:"Adrenaline Rush (from a Blacksmith)",w:AXE_MACE,lv:[1,5,5],fx:l=>[["aspd_mod",6],["aspd_percent",10],["hit",5+3*l]],how:"axes and maces; HIT +5 + 3 per level from Zero's skill text"},
+  // a party Sage's Endow: your weapon's element (both hands) at no cost to you, and +1% a level to your spells of that element. One at
+  // a time (a new Endow replaces the old one); a converter or skill picked under Weapon element goes over it (see pEndow in model.js)
+  ...[["endowFire","Endow Blaze","Fire"],["endowWater","Endow Tsunami","Water"],["endowWind","Endow Tornado","Wind"],["endowEarth","Endow Quake","Earth"]]
+    .map(([k,name,el])=>({k,name:`${name} (from a Sage)`,el,lv:[1,5,5],fx:()=>[],eff:l=>`weapon element ${el}, ${el} spells +${l}%`}))];
 const pbuffOf=c=>{if(!c.pbuffs||typeof c.pbuffs!=="object")c.pbuffs={};return c.pbuffs};
 const pbLv=(b,o)=>b.lv?Math.min(b.lv[1],Math.max(b.lv[0],num(o.lv,b.lv[2]))):0;
 // what it does at level lv (the level you typed, else the default)
 const PB_LABEL={aspd_percent:v=>`ASPD +${v}%`,aspd_mod:v=>`potion/skill value ${v}`,hp:v=>`Max HP +${v}`,vit_def_percent:v=>`VIT DEF +${v}%`,heal_pct:v=>`Heal received +${v}%`};
-const pbEff=(b,lv=b.lv?b.lv[2]:0)=>b.eff||b.fx(lv).map(([t,v])=>PB_LABEL[t]?PB_LABEL[t](v):`${t.toUpperCase()} +${v}`).join(", ")+(b.how?` (${b.how})`:"");
+const pbEff=(b,lv=b.lv?b.lv[2]:0)=>(typeof b.eff==="function"?b.eff(lv):b.eff)||b.fx(lv).map(([t,v])=>PB_LABEL[t]?PB_LABEL[t](v):`${t.toUpperCase()} +${v}`).join(", ")+(b.how?` (${b.how})`:"");
 // a buff counts when ticked and it fits your weapon. It doesn't stack with the same buff switched on in your Skills card, and
 // Clementia replaces Blessing, Canto Candidus replaces Increase AGI
 const PB_SELF={blessing:"blessing",incAgi:"increase-agility",angelus:"angelus",impositio:"impositio-manus",adren:"adrenaline-rush"},PB_OVER={blessing:"clementia",incAgi:"canto"};
@@ -183,6 +187,9 @@ function renderAspdBuffs(){const c=C(),k=potKey(c),act=document.activeElement;$(
     <span class="note"><span data-pbeff>${esc(pbEff(b,pbLv(b,o)))}</span>${off?' · <span class="warnc">not with this weapon</span>':own?" · on in your Skills card, counted there":""}</span></div>`}).join("")}
 $("pbuffList").addEventListener("input",e=>{const f=e.target.dataset.f,row=e.target.closest("[data-pb]");if(!f||!row)return;const o=pbuffOf(C())[row.dataset.pb]||(pbuffOf(C())[row.dataset.pb]={});
   o[f]=f==="on"?e.target.checked:num(e.target.value);
+  // one Endow at a time: ticking one unticks the others
+  if(f==="on"&&o.on&&PBUFF.find(x=>x.k===row.dataset.pb).el)PBUFF.filter(x=>x.el&&x.k!==row.dataset.pb).forEach(x=>{const q=pbuffOf(C())[x.k];if(q)q.on=false;
+    const box=$("pbuffList").querySelector(`[data-pb="${x.k}"] [data-f="on"]`);if(box)box.checked=false});
   // the list isn't redrawn while you type in it, so the effect text follows the level here
   {const b=PBUFF.find(x=>x.k===row.dataset.pb),el=row.querySelector("[data-pbeff]");if(b&&el)el.textContent=pbEff(b,pbLv(b,o))}save();renderAll()});
 $("clanSel").innerHTML=`<option value="">none</option>`+Object.entries(CLANS).map(([k,x])=>`<option value="${k}">${esc(x.name)}</option>`).join("");

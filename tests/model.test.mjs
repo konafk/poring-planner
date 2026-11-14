@@ -1701,7 +1701,7 @@ t("Enchant Poison: an Assassin's Poison weapon, for SP rather than zeny", () => 
 t("Sage Endows: Fire, Water, Wind and Earth weapons for SP and a Point", () => {
   setup("Sage", { atkTxt: "150+200", wAtk: 0, wElem: "Neutral", weapon: "Book", hitTxt: "300", st: {}, autoSp: false, potOn: false, cons: [], converters: true, convEl: "", skills: {},
     a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
-  // the Endows take the converters' place; Cursed Water and the Aspersio Scroll stay items, and no Enchant Poison
+  // the Endows cast each element by default; Cursed Water and the Aspersio Scroll stay items, and no Enchant Poison
   assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Neutral", "Fire", "Water", "Earth", "Wind", "Shadow", "Holy"]));
   assert.equal(run(`convName("Fire")`), "Endow Blaze");
   assert.equal(run(`convName("Water")+","+convName("Wind")+","+convName("Earth")`), "Endow Tsunami,Endow Tornado,Endow Quake");
@@ -1711,16 +1711,20 @@ t("Sage Endows: Fire, Water, Wind and Earth weapons for SP and a Point", () => {
   const spm = run(`spCostMul()`);
   near(run(`withEl("Fire",()=>convSpPerSec())`), 40 * spm / 1800);
   assert.equal(run(`JSON.stringify(convIds("Fire"))`), "[6360]");
-  assert.equal(run(`withEl("Fire",()=>convCostHr())`), 0);                  // no price typed
+  // the Point Merchant sells the Points for 200 z: 2 an hour, a price you type for players doesn't count
+  near(run(`withEl("Fire",()=>convCostHr())`), 400);
   run(`state.prices[6360]=500`);
-  near(run(`withEl("Fire",()=>convCostHr())`), 1000);                        // 2 an hour
-  assert.ok(run(`CONV_IDS.includes(6360)&&CONV_IDS.includes(6363)`));
+  near(run(`withEl("Fire",()=>convCostHr())`), 400);
+  run(`state.recovery.discount=true`);                                      // Discount Lv 10 off the NPC: 152 z
+  near(run(`withEl("Fire",()=>convCostHr())`), 2 * 152);
+  run(`state.recovery.discount=false`);
+  assert.ok(!run(`CONV_IDS.includes(6360)`) && run(`CONV_IDS.includes(12114)`));   // no player price needed for the Points
   const jakk = `MOBS.find(m=>m.name==="Jakk")`;
   assert.equal(run(`mobRow(${jakk},0).el2`), "Water");
   // a skill tree with Endow Blaze Lv 1: 10 minutes, so 6 Points an hour; Endow Tsunami not learned falls back to the Water converter
   run(`C().skills={"endow-blaze":1};C().convEl="Fire"`);
   assert.equal(run(`convSkLv("Fire")`), 1);
-  near(run(`convCostHr()`), 3000);
+  near(run(`convCostHr()`), 1200);
   near(run(`convSpPerSec()`), 40 * run(`spCostMul()`) / 600);
   assert.equal(run(`convName("Water")`), "Water converter");
   assert.equal(run(`JSON.stringify(convIds("Water"))`), "[12115]");
@@ -1728,14 +1732,25 @@ t("Sage Endows: Fire, Water, Wind and Earth weapons for SP and a Point", () => {
   assert.equal(run(`convCostHr()`), 0);
   assert.equal(run(`convSpPerSec()`), 0);
   run(`delete state.prices[6360]`);
-  // the Lv box: with no skill tree it keeps its own level per element (Lv 0 hands the element back to the converter)
+  // the Lv box: with no skill tree it keeps its own level per element
   run(`C().skills={};C().wElem="Neutral";C().convEl="";state.prices[6360]=500`);
   assert.equal(run(`setConvLv("Fire",2)`), null);
   assert.equal(run(`convSkLv("Fire")+","+hasTree(C())+","+C().convLv.Fire`), "2,false,2");
-  near(run(`withEl("Fire",()=>convCostHr())`), 2000);                        // 15 minutes: 4 an hour
+  near(run(`withEl("Fire",()=>convCostHr())`), 800);                        // 15 minutes: 4 an hour
   assert.equal(run(`convSkLv("Water")`), 5);                                 // the others stay at Lv 5
-  run(`setConvLv("Fire",0)`);
+  // having Endow Blaze doesn't take the Fire converter away: switched to it, Fire costs a converter from players and no SP
+  run(`state.prices[12114]=1500;setConvItem("Fire",true)`);
   assert.equal(run(`convName("Fire")`), "Fire converter");
+  assert.equal(run(`convSkLv("Fire")`), 2);                                  // the Endow's level stays as it was
+  near(run(`withEl("Fire",()=>convCostHr())`), 4500);
+  assert.equal(run(`withEl("Fire",()=>convSpPerSec())`), 0);
+  assert.equal(run(`convName("Water")`), "Endow Tsunami");                   // the other elements keep their Endow
+  assert.ok(run(`convEls().includes("Fire")`));
+  run(`setConvLv("Fire",3)`);                                                // picking a level casts the Endow again
+  assert.equal(run(`convName("Fire")+","+convSkLv("Fire")`), "Endow Blaze,3");
+  run(`setConvItem("Shadow",true)`);                                         // nothing to switch where there's no skill
+  assert.equal(run(`"Shadow" in C().convItem`), false);
+  run(`delete state.prices[12114]`);
   // with a skill tree it is the tree's level: raising it raises what it needs, and the tree refuses a lower level a learned skill needs
   run(`C().skills={"endow-blaze":1}`);
   run(`setConvLv("Fire",4)`);
@@ -1744,8 +1759,9 @@ t("Sage Endows: Fire, Water, Wind and Earth weapons for SP and a Point", () => {
   run(`C().skills.volcano=1`);                                               // Volcano needs Endow Blaze Lv 2
   assert.ok(run(`setConvLv("Fire",1)`)[0].includes("Volcano"));
   assert.equal(run(`convSkLv("Fire")`), 4);
-  run(`delete C().skills.volcano;setConvLv("Fire",0)`);
-  assert.equal(run(`"endow-blaze" in C().skills`), false);
+  run(`setConvItem("Fire",true)`);                                           // the converter leaves the tree's level alone
+  assert.equal(run(`C().skills["endow-blaze"]+","+convName("Fire")`), "4,Fire converter");
+  run(`delete C().skills.volcano;C().skills["endow-blaze"]=0;setConvItem("Fire",false)`);   // not learned: the converter
   assert.equal(run(`convName("Fire")`), "Fire converter");
   run(`delete state.prices[6360]`);
   // the Endow buff's extra element damage goes by its level: +1% a level, on Fire spells only
@@ -1755,6 +1771,50 @@ t("Sage Endows: Fire, Water, Wind and Earth weapons for SP and a Point", () => {
     assert.equal(run(`SKFX.physEle.Fire||0`), 0);
   }
   run(`C().buffs={};SKFX=skillEffects(C())`);
+});
+
+t("Spell Fist hits with the bolt's element: the Weapon element picker and a party Endow leave it alone", () => {
+  setup("Sage", { atkTxt: "150+200", wAtk: 0, wElem: "Neutral", weapon: "Book", matkTxt: "200+100", intTxt: "80", hitTxt: "300", st: {}, autoSp: false, potOn: false, cons: [],
+    converters: true, convEl: "Water", skills: {}, preset: 0, sage: { bolts: { Fire: true, Water: false, Wind: false } } });
+  run(`C().a={...JOBS.Sage.p[0]}`);
+  assert.equal(run(`C().a.type`), "spellfist");
+  assert.equal(run(`convOn()`), false);
+  assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Fire"]));    // only the ticked bolts
+  assert.equal(run(`withEl("Fire",()=>atkEl()+","+convCostHr()+","+convSpPerSec())`), "Fire,0,0");
+  const jakk = `MOBS.find(m=>m.name==="Jakk")`;
+  const before = run(`withEl("Fire",()=>dmgPerHit(${jakk}))`);
+  run(`C().pbuffs={endowWater:{on:true,lv:5}}`);
+  assert.equal(run(`withEl("Fire",()=>atkEl())`), "Fire");
+  assert.equal(run(`withEl("Fire",()=>dmgPerHit(${jakk}))`), before);
+});
+
+t("Endows from a party Sage (Buffs from others): your weapon's element, free, and +Lv% to that element's spells", () => {
+  setup("Knight", { atkTxt: "150+200", wAtk: 0, wElem: "Neutral", weapon: "Two-handed sword", hitTxt: "300", st: {}, autoSp: false, potOn: false, cons: [], converters: false, convEl: "",
+    pbuffs: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  assert.equal(run(`atkEl()`), "Neutral");
+  run(`C().pbuffs={endowWater:{on:true,lv:3}}`);
+  assert.equal(run(`atkEl()+","+wElNow()`), "Water,Water");
+  assert.equal(run(`JSON.stringify(pEndow())`), JSON.stringify({ el: "Water", lv: 3, name: "Endow Tsunami (from a Sage)" }));
+  run(`C().pbuffs={endowFire:{on:true,lv:5},endowWater:{on:true}}`);         // the first ticked counts
+  assert.equal(run(`pEndow().el`), "Fire");
+  // with Weapon element on, the Endow is the free baseline and the items still compete; a fixed converter goes over it
+  run(`C().converters=true;state.prices[12115]=1500`);
+  assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Fire", "Water", "Earth", "Wind", "Shadow", "Holy"]));
+  assert.equal(run(`withEl("Fire",()=>convCostHr())`), 0);
+  assert.equal(run(`convWith("Fire")`), "Fire (Endow Blaze (from a Sage))");
+  run(`C().convEl="Water"`);
+  assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Water"]));
+  near(run(`withEl("Water",()=>convCostHr())`), 4500);
+  run(`delete state.prices[12115];C().converters=false;C().convEl=""`);
+  // +5% to Fire spells (an auto-cast Fire Bolt), not to Water ones
+  const mob = `MOBS.find(m=>m.name==="Poring")`;
+  run(`C().pbuffs={}`);
+  const fire0 = run(`bonusParts(${mob},true).post`), phys0 = run(`bonusParts(${mob},false).post`);
+  run(`C().pbuffs={endowFire:{on:true,lv:5}}`);
+  near(run(`withEl("Fire",()=>bonusParts(${mob},true).post)`), fire0 * 1.05);
+  near(run(`withEl("Water",()=>bonusParts(${mob},true).post)`), fire0);
+  near(run(`bonusParts(${mob},false).post`), phys0);
+  run(`C().pbuffs={}`);
 });
 
 t("ASPD potion and buffs from others (RO樂園攻速計算機 values)", () => {
