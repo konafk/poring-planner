@@ -3252,8 +3252,8 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   // Cooking from the client's cookbooks (60 dishes, Lv 1–10) in place of the database's 29, the Tip Box's 6 potions and 4 fruit juices,
   // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts, and the client's 48 NPC crafts (the 2 Februs offers on Global, the Hat Maker's 2, 33 hat quests, the Quartermaster's two helms and Helm Scroll,
   // Jade's 3 Gemstone swaps, Puchuchartan's 4 elemental ores, Oridecon and Elunium at Tadde, Kantstaff and Christopher Gillenlow, whose Oridecon replaces the database's,
-  // and Yakt's Blacksmith Blessing)
-  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length-1+60+10+18+54`), run(`RECIPE_LIST.length`));
+  // Yakt's Blacksmith Blessing, and Brewer Burkel's daily Nordfeld Beer)
+  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length-1+60+10+18+55`), run(`RECIPE_LIST.length`));
   assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===6635))`), "Yakt (Exchange with Zelstar) · moc_para01 22,35");    // Blacksmith Blessing
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===6635).mats)`), "[[1002357,30],[25399,10]]");
   assert.equal(run(`RECIPE_LIST.filter(r=>r.id===984).map(recipeNpc).join("|")`), "Tadde (Process refining stones) · izlude 145,122|Kantstaff (Process refining stones) · prt_mk 153,162|Christopher Gillenlow (Make Oridecon) · prontera 179,184");  // Oridecon: no database row
@@ -3307,6 +3307,10 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===12048).mats)`), "[[518,2],[509,10],[7452,1]]");   // Honey Herbal Tea: the book's 2 Honey
   assert.ok(run(`RECIPE_LIST.filter(r=>r.cat==="Cooking").every(r=>r.mats.every(([id])=>!/^#|Unknown/.test(itemName(id))&&!/ none"/.test(itemIcon(id))))`), "every ingredient has a name and an icon");
   assert.equal(run(`shopPrice(7472)`), 750); assert.equal(run(`shopPrice(12127)`), 2000);              // the Cooking Ingredient Trader
+  assert.equal(run(`shopPrice(717)`), 450); assert.equal(run(`SHOPS_OF[717][0][1].length`), 12);        // the Tool Dealers' Blue Gemstone
+  assert.equal(run(`shopPrice(107452)`), 3000);                                                          // Brewer Telsa's Nordfeld Beer,
+  assert.equal(run(`shopQuest(SHOPS_OF[107452][0][3])`), "after the Nordfeld: Special Beer! quest · ");  // after Burkel's quest
+  assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===107452))`), "Brewer Burkel (Nordfeld: Special Beer! daily quest) · nordfeld 205,142");
   assert.ok(run(`RECIPES.every(r=>RECIPE_CATS.includes(r.cat)&&r.mats.length&&r.mats.every(([id,n])=>RECIPE_ITEMN[id]&&n>0))`));
   assert.equal(run(`itemName(1301)`), "Axe");                                                          // a recipe's name for an item no monster drops
   const ok = (q, cat) => run(`RECIPES.filter(r=>recipeOk(r,{q:${JSON.stringify(q)},cat:${JSON.stringify(cat || "")}})).map(r=>r.id)`);

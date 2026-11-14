@@ -111,6 +111,10 @@ EXCHANGES.update({984: (*TADDE, [[756, 5]], "Process refining stones", "Forging"
 # Blacksmith Blessing for 30 Blacksmith Blessing Powder and 10 Zelstar, no zeny. The Goblin Coin Shard cost isn't known yet: left out
 YAKT = ("Yakt", "moc_para01 22,35")
 EXCHANGES.update({6635: (*YAKT, [[1002357, 30], [25399, 10]], "Exchange with Zelstar", "Misc")})
+# Brewer Burkel (nordfeld 205,142) brews one Nordfeld Beer a day for the quest log's "Nordfeld: Special Beer!" (quest 1000213: 5 Red Herb,
+# 5 Apple, 2 Gleaming Pebble, 2 Nordium Fragment; "please come back tomorrow"). After it Brewer Telsa sells more (data/shops.js)
+BURKEL = ("Brewer Burkel", "nordfeld 205,142")
+EXCHANGES.update({107452: (*BURKEL, [[507, 5], [512, 5], [1002995, 2], [1002996, 2]], "Nordfeld: Special Beer! daily quest", "Misc")})
 # a second NPC for an item EXCHANGES already has: [(item id, (NPC, where, what it takes, its menu, category))]
 EXCHANGES_ALSO = [(984, (*KANT, [[756, 5]], "Process refining stones", "Forging")),
                   (985, (*KANT, [[757, 5]], "Process refining stones", "Forging")),

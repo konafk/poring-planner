@@ -32,8 +32,11 @@ RECIPE_LIST.forEach(r=>{(RECIPES_MAKING[r.id]=RECIPES_MAKING[r.id]||[]).push(r);
 const matPrice=id=>state.prices[id]>0?state.prices[id]:NPCSELL[id]!=null||state.npcPrices[id]!=null?npcPays(id):null;
 // a recipe's materials' worth plus an NPC's fee: {z, unknown (how many materials have no price)}; none: nothing in it has a price
 const recipeWorth=r=>r.mats.reduce((a,[id,n])=>{const p=matPrice(id);if(p==null)a.unknown++;else a.z+=p*n;return a},{z:r.fee||0,unknown:0});
-// the NPC shops that sell it (data/shops.js): [[shop name, [[map, x, y], ...], price], ...], and the cheapest one's price
-const SHOPS_OF={};(typeof NPC_SHOPS!=="undefined"?NPC_SHOPS:[]).forEach(([name,at,items])=>items.forEach(([id,z])=>(SHOPS_OF[id]=SHOPS_OF[id]||[]).push([name,at,z])));
+// the NPC shops that sell it (data/shops.js): [[shop name, [[map, x, y], ...], price, the quest that opens it or undefined], ...],
+// and the cheapest one's price
+const SHOPS_OF={};(typeof NPC_SHOPS!=="undefined"?NPC_SHOPS:[]).forEach(([name,at,items,quest])=>items.forEach(([id,z])=>(SHOPS_OF[id]=SHOPS_OF[id]||[]).push([name,at,z,quest])));
+// "after the Nordfeld: Special Beer! quest · " for a shop a quest opens
+const shopQuest=q=>q?`after the ${q} quest · `:"";
 const shopPrice=id=>SHOPS_OF[id]?Math.min(...SHOPS_OF[id].map(s=>s[2])):null;
 // what a material costs you to get: your Market price, else an NPC shop's, else what an NPC pays (the simulators' cost of a try)
 const buyPrice=id=>state.prices[id]>0?state.prices[id]:shopPrice(id)??matPrice(id);
