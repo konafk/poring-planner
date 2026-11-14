@@ -45,7 +45,7 @@ function renderNews(){
     h.addEventListener("click",flip);h.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();flip()}})});
   document.querySelectorAll(".newsCollabCard").forEach(foldCard);
   // the quick nav: each section, its cards under it (shown for the section you're reading, or opened with its toggle)
-  $("newsNav").innerHTML=`<span class="secHead">On this page</span>`+secs.map(([k,nm,,floors])=>{
+  $("newsNav").innerHTML=secs.map(([k,nm,,floors])=>{
     const subs=[...(floors?[["newsFloorsCard",floorTitle]]:[]),...(n.cards||[]).filter(cb=>cb.sec===k).map(cb=>[cb.id,cb.name])];
     return `<div class="newsNavGrp"><div class="newsNavRow"><a href="#" class="newsNavSec" data-newsto="newsSec-${esc(k)}">${esc(nm)}</a>${subs.length?`<button type="button" class="newsNavTog" aria-expanded="false" aria-label="${esc(nm)}: its parts"></button>`:""}</div>
       <div class="newsNavSubs">${subs.map(([id,t])=>`<a href="#" class="newsNavSub" data-newsto="${esc(id)}">${esc(t)}</a>`).join("")}</div></div>`}).join("");

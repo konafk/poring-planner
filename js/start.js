@@ -26,8 +26,7 @@ const TAB_DESC={
 };
 function showHero(t){
   const b=document.querySelector(`[data-tabbtn="${t}"]`);if(!b)return;
-  const g=b.closest(".navSec");
-  $("heroGrp").textContent=g?g.querySelector(".navGrp").textContent:"";$("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
+  $("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
 }
 // a link to a tab: #memorial-dungeons (its name, any case) or #mem (its key); the address bar always shows the open tab's link, in
 // lower case. A name goes before a key. The old Monster info and Maps tabs' links (#monster-info, #maps) open Monsters & maps,
@@ -97,7 +96,7 @@ function pageNav(t){soloFold();const nav=$("pageNav");if(!nav)return;const wrap=
     return h?[[el,h]]:[...el.querySelectorAll(":scope>.card")].map(c=>[c,secHeading(c)]).filter(x=>x[1])});
   const on=secs.length>1;nav.hidden=!on;wrap.classList.toggle("hasPageNav",on);PAGE_SECS=on?secs.map(x=>x[0]):[];if(!on){nav.innerHTML="";if(typeof navSubs==="function")navSubs();return}
   secs.forEach(([el],i)=>{if(!el.id)el.id=`sec-${t}-${i}`});
-  nav.innerHTML=`<span class="secHead">On this tab</span>`+secs.map(([el,h])=>`<a href="#${el.id}" data-psec="${el.id}">${esc(h.textContent.trim())}</a>`).join("");
+  nav.innerHTML=secs.map(([el,h])=>`<a href="#${el.id}" data-psec="${el.id}">${esc(h.textContent.trim())}</a>`).join("");
   if(typeof navSubs==="function")navSubs();
   // beside the cards from the one under the heading down
   nav.style.gridRow=`2 / span ${Math.max(1,[...wrap.children].filter(el=>el!==nav&&!el.classList.contains("pageHead")&&shown(el)).length)}`;

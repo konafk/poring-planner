@@ -42,7 +42,7 @@ function crowdInfo(){const c=C(),m=calcMob();if(document.activeElement!==$("crow
 function charOutTiles(){const m=calcMob(),tile=(k,v,sub,tip)=>`<div class="tile out"${tip?` title="${esc(tip)}"`:""}><div class="k">${k}</div><div class="v mono">${v}</div><div class="s">${sub}</div></div>`;
   const dpsTile=(d,sub)=>d!=null&&isFinite(d)?tile("Damage / s",fmtN(Math.round(d)),sub):"";
   const far='<a href="#session" data-gotab="track" data-goto="farmCard">Where to farm</a>';
-  if(!charSet())return `<div class="tile out wide"><div class="k">Your numbers</div><div class="s">Fill in your stats below to see your kill time, EXP and zeny</div></div>`;
+  if(!charSet())return `<div class="tile out wide"><div class="k">No stats yet</div><div class="s">Fill in your stats below to see your kill time, EXP and zeny</div></div>`;
   if(!m)return `<div class="tile out wide"><div class="k">No monster picked</div><div class="s">Press "Farm here" in ${far} on the Session tab to see your kill time, EXP and zeny</div></div>`;
   // a whole map farmed (Farm here) and no one monster picked: the map's mix, the numbers Where to farm ranked it by
   {const ss=cur(),mp=sessMap(ss),r=!state.calcMobId&&sessMobs(ss).length>1&&mp?mapStats(mp,walkSec()):null;
@@ -302,7 +302,7 @@ function tickTrip(){const now=Date.now(),s=cur();
     if(!x.trip.rang){x.trip.rang=true;save();TRIP_RING={id:x.id,n:1,at:now};tripAlarm(x)}
     else if(TRIP_RING.id===x.id&&TRIP_RING.n<5&&now-TRIP_RING.at>=6e4){TRIP_RING.n++;TRIP_RING.at=now;if(state.tripSound!==false)tripBeep()}});
   const ph=tripPhase(s,now),el=$("tripClock");if(ph!==TRIP_PHASE)renderTripBtns(s);
-  if(ph==="none"){el.textContent="–";el.className="v mono";$("tripK").textContent="Next sell";$("tripS").textContent=TRIP_OK?"Press Start when you leave town":"Needs a trip length: see One trip";document.title=BASE_TITLE;return}
+  if(ph==="none"){el.textContent="–";el.className="v mono";$("tripK").textContent="Next sell";$("tripS").textContent=TRIP_OK?"Press Start when you leave town":"";document.title=BASE_TITLE;return}
   const due=tripDue(s),left=due-now,early=tripEarly();
   el.textContent=ph==="paused"?"Paused":left>0?fmtClock(left):"Sell now";el.className="v mono"+(ph==="due"?left>0?" warnc":" bad":"");
   $("tripK").textContent=ph==="due"?"Time to sell":"Next sell";
@@ -1084,7 +1084,7 @@ function worldMap(el,mp,pick,towns,all){
       ...WORLDMAPS.map((w,i)=>i!==here&&on(i).length?`${maps(on(i).length)} on the ${w.name} map.`:""),
       off.length?`Not on the game's world map: ${off.map(k=>`${mapName(k)||mapCode(k)}${mapArrives(k)?` (${mapArrives(k)})`:""}`).join(", ")}.`:""].filter(Boolean).join(" ");return}
   const nm=mp&&(all&&all.d?all.d.n:mapName(mp)||mapCode(mp)),wi=worldOf(mp);
-  el.querySelector(".wmNote").textContent=!mp?"Click a box to pick that map":wi===+el.dataset.w?"":wi>=0?`${nm} is on the ${WORLDMAPS[wi].name} map`:`${nm} isn't on the game's world map: ${mapArrives(mp)?`its region comes with the ${mapArrives(mp)}`:"the game doesn't draw it there"}`}
+  el.querySelector(".wmNote").textContent=!mp?"":wi===+el.dataset.w?"":wi>=0?`${nm} is on the ${WORLDMAPS[wi].name} map`:`${nm} isn't on the game's world map: ${mapArrives(mp)?`its region comes with the ${mapArrives(mp)}`:"the game doesn't draw it there"}`}
 // the Map planner's world map: folds, remembered like a card (state.collapsed)
 const WORLD_FOLD="Map planner: world map";
 {const d=$("worldMore");if(d){d.open=!(state.collapsed||{})[WORLD_FOLD];
