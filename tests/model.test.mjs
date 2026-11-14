@@ -1553,6 +1553,30 @@ t("Duple Light: a physical orb per hit (own hit roll) and a magic orb half the t
   assert.equal(run(`dlDmg(${MOB})`), 0);
 });
 
+t("Damage per hit low – high: Duple Light's orbs and Spell Fist's bolt on top of the hit", () => {
+  const dl = JSON.parse(run(`JSON.stringify(JOBS.Priest.p.find(p=>p.dl))`));
+  setup("Priest", { atkTxt: "100+150", wAtk: 0, wElem: "Neutral", matkTxt: "200+100", intTxt: "", hitTxt: "250", crit: 0, st: {}, maxSp: 300, a: dl });
+  const hc = run(`hitChance(${MOB})`) / 100;
+  const orb = (type, pct, el) => run(`withAtk({...C().a,dl:false,type:'${type}',pct:${pct},el:'${el}'},()=>dmgPerHit(${MOB}))`);
+  const base = run(`dmgPerHit(${MOB})`), p = orb("phys", 1000, "W"), m = orb("magic", 1600, "Neutral");
+  let r = run(`hitRange(${MOB})`);
+  near(r.lo, base);
+  near(r.hi, base + p + m);
+  near(r.avg, base + p * hc + m * 0.5);
+  near(r.avg, base + run(`dlDmg(${MOB})`));
+  run("C().a={...C().a,dl:false}");
+  assert.equal(run(`hitRange(${MOB})`), null);                              // a plain basic attack: every hit the same
+  const char = { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", matkTxt: "300+200", hitTxt: "220", crit: 0, aspd: 170, st: {}, intTxt: "",
+    sage: { sfLv: 10, boltLv: 10, bolts: { Fire: true, Water: false, Wind: false }, hsLv: 0 }, ec: { on: false }, cards: { daSF: false, vitata: false } };
+  setup("Sage", { ...char, preset: 0, a: JSON.parse(run("JSON.stringify(JOBS.Sage.p[0])")) });
+  const ph = run(`withAtk(BASIC,()=>withEl(null,()=>dmgPerHit(${MOB})))`), sf = run(`sfHit(${MOB},atkEl())`);
+  r = run(`hitRange(${MOB})`);
+  near(r.lo, ph);
+  near(r.hi, ph + sf);
+  near(r.avg, ph + 0.5 * sf);                                                // Spell Fist Lv10: half the swings
+  assert.ok(sf > ph);
+});
+
 t("Turn Undead: Undead element only, 20% to kill outright at Lv10, otherwise 30% MATK; bosses only take the damage", () => {
   const tu = JSON.parse(run(`JSON.stringify(JOBS.Priest.p.find(p=>p.tu))`));
   setup("Priest", { matkTxt: "200+100", intTxt: "", st: {}, maxSp: 300, a: tu });

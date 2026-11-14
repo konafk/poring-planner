@@ -5,6 +5,8 @@ const CHECKS=[["atk","ATK",F=>sumStat(F.atkTxt)],["matk","MATK",F=>sumStat(F.mat
   ["aspd","ASPD",F=>F.aspd],["def","DEF",F=>sumStat(F.defTxt)],["hp","Max HP",F=>F.maxHp],["sp","Max SP",F=>F.maxSp]];
 const BUILT_IDS=["atkPct","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lw","lwAtk","lwElem","crit","critDmg","rangePct","skillPct","vctPct","fctPct","acdPct","ignDef","ignMdef","st_str","st_agi","st_vit","st_dex","st_luk","weapon","wElem"];
 let BUILD_LAST=null;
+// today in UTC, "YYYY-MM-DD": event-limited gear options (a group's ev) count before the day their event ends
+const todayUtc=()=>new Date().toISOString().slice(0,10);
 const buildOf=c=>{if(!c.build)c.build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{}};const b=c.build;if(!b.base)b.base={str:1,agi:1,vit:1,int:1,dex:1,luk:1};if(!b.gear)b.gear={};return b};
 // other gear sets, as many as you add (up to ALT_MAX, state.js; build.alts[i]: gear, stones, special like the build's own, and a name), worked
 // out for the gear comparison (Character tab) and the Formulas tab only. c.gearEdit "alt0"…: the gear table edits that set instead of your gear
@@ -17,13 +19,13 @@ const altIdx=(c=C())=>{const m=c.mode==="build"&&/^alt(\d+)$/.exec(c.gearEdit||"
 const editAlt=(c=C())=>altIdx(c)>=0;
 const gearSet=(c=C())=>editAlt(c)?altOf(c,altIdx(c)):buildOf(c);
 function applyBuild(){const c=C();if(c.mode!=="build"){BUILD_LAST=null;c.bx=eqToBx(c);return}
-  const r=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,skills:learned(c),extra:[...consLines().lines,...(SKFX?[...SKFX.stat,...SKFX.buffStat]:[]),...aspdBuffLines(c)]},state.job,aspdBase);BUILD_LAST=r;const F=r.fields,A=r.acc;
+  const r=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,skills:learned(c),today:todayUtc(),extra:[...consLines().lines,...(SKFX?[...SKFX.stat,...SKFX.buffStat]:[]),...aspdBuffLines(c)]},state.job,aspdBase);BUILD_LAST=r;const F=r.fields,A=r.acc;
   // skill-specific gear lines count when the attack's name contains the skill
   const nm=String(c.a.name||"").toLowerCase(),match=o=>Object.entries(o).reduce((t,[k,v])=>t+(nm.includes(k.toLowerCase())?v:0),0);
   const top=o=>Object.entries(o).reduce((t,[k,v])=>nm.includes(k.toLowerCase())?Math.max(t,v):t,0); // fixed cast %: only the highest counts
   Object.assign(c,{atkTxt:F.atkTxt,matkTxt:F.matkTxt,hitTxt:F.hitTxt,fleeTxt:F.fleeTxt,defTxt:F.defTxt,intTxt:F.intTxt,wAtk:F.wAtk,crit:F.crit,critDmg:F.critDmg,
     atkPct:F.atkPct,rangePct:isRangedHit(c.a,F.weapon)?A.ranged:A.melee,skillPct:A.skill+match(A.skillOf),vctPct:F.vctPct+match(A.vctOf),fctPct:Math.max(F.fctPct,top(A.fctOf)),acdPct:F.acdPct,ignDef:F.ignDef,ignMdef:F.ignMdef,
-    weapon:F.weapon,wElem:F.wElem,lw:F.lw,lwAtk:F.lwAtk,lwElem:F.lwElem,st:{...(c.st||{}),...F.st},bx:{phys:A.phys,magic:A.magic,dist:{melee:A.melee,ranged:A.ranged},myEle:A.myEle,taken:A.taken,exp:A.exp,critRace:A.critRace,spCost:A.spCost,spRec:A.spRec,hpRec:A.hpRec,ign:A.ign}});
+    weapon:F.weapon,wElem:F.wElem,lw:F.lw,lwAtk:F.lwAtk,lwElem:F.lwElem,st:{...(c.st||{}),...F.st},bx:{phys:A.phys,magic:A.magic,dist:{melee:A.melee,ranged:A.ranged},myEle:A.myEle,taken:A.taken,exp:A.exp,drop:A.drop,critRace:A.critRace,spCost:A.spCost,spRec:A.spRec,hpRec:A.hpRec,ign:A.ign}});
   c.shield=r.shield;if(F.aspd!=null)c.aspd=F.aspd;if(F.maxHp!=null)c.maxHp=F.maxHp;if(F.maxSp!=null)c.maxSp=F.maxSp;
   // in-game Max HP / SP typed under "Check against the game" win: they include anything the build can't see (buffs, a stale job change)
   const ck=buildOf(c).check||{};if(num(ck.hp)>0)c.maxHp=num(ck.hp);if(num(ck.sp)>0)c.maxSp=num(ck.sp)}
@@ -82,7 +84,12 @@ const CONS_PRESETS=[
   {name:"Premium Course Meal",eff:"All stats +5, ATK/MATK +20"},
   {name:"Enriched Abrasive",eff:"CRIT +30"},
   {name:"Growth Elixir",eff:"Base/Job EXP +50%"},
-  {name:"Ale's Blessing",eff:"Recovery items +20%, Heal received +20%"}];
+  {name:"Ale's Blessing",eff:"Recovery items +20%, Heal received +20%"},
+  // Gatchaman collaboration (until the 26 November 2026 maintenance): Condor Joe's feathers, 60 minutes each (data/news.js)
+  {name:"Gorgeous Feather",eff:"CRIT +5, ASPD +1"},
+  {name:"Heavy Feather",eff:"ATK +4%, MATK +3%"},
+  {name:"Nimble Feather",eff:"HIT/FLEE +15"},
+  {name:"Sturdy Feather",eff:"Max HP/Max SP +3%"}];
 // stacking: stat food (the + column) and Blessing of Yggdrasil don't add up, the higher one counts per stat;
 // course meals, event drinks and other rows stack on top
 // clans (Ragnarok Zero Global; as iRO Wiki's Clan System has it): a buff that stays on while you're
@@ -235,7 +242,7 @@ function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}}
 // equipment; not consumables or buffs), one row per bonus. A bonus with different physical and magic values gets a row for each
 const setSaved=b=>{const sp=b.special||{};return Object.keys(b.gear||{}).length>0||Object.values(b.stones||{}).some(Boolean)||!!sp.ring||!!sp.shield||(sp.own||[]).length>0||Object.values(sp.costume||{}).some(Boolean)};
 const gearSaved=c=>setSaved(c.build||{});
-function gearEqRows(c){const A=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,skills:learned(c),extra:[]},state.job,aspdBase).acc,rows=[];
+function gearEqRows(c){const A=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,skills:learned(c),today:todayUtc(),extra:[]},state.job,aspdBase).acc,rows=[];
   const add=(by,t,v,ch="both")=>{v=Math.round(v*100)/100;if(v)rows.push({by,t,ch,v})};
   const both=(by,t,p,m)=>{if(p===m)add(by,t,p);else{add(by,t,p,"phys");add(by,t,m,"magic")}};
   ["race","size","ele","kind","group"].forEach(by=>new Set([...Object.keys(A.phys[by]),...Object.keys(A.magic[by])]).forEach(t=>both(by,t,A.phys[by][t]||0,A.magic[by][t]||0)));
