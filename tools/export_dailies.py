@@ -44,18 +44,28 @@ LEVELS = {
     21102: 55, 21105: 55, 21108: 80,
     # Serdin, the Tower Keeper (Al De Baran): "You should be at least Level 60" for the 1st floor, "Level 70" for the living clocks
     21287: 60, 21289: 70,
-    # Honest in the Morroc Ruins (another Honest stands in the Undersea Cave): Lv 60 after his and the Old Scholar's papyrus lines
+    # Honest in the Morroc Ruins (another Honest stands in the Undersea Cave): "We're not strong enough to handle this ourselves, so
+    # we'll have to ask other adventurers for help" / Lv 60, after his three dailies and the Old Scholar's lines. His other line, "If you
+    # were a little stronger, I might've grabbed onto your pant leg and begged you to help" / Lv 40, is for finding Maxim's team in the
+    # Pyramid, before the dailies
     21214: 60, 21216: 60, 21218: 60,
-    # Honest in the Undersea Cave: "If you were a little stronger, I might've ... begged you to help" / Lv 40, after asking you to find
-    # Maxim Leader's team
-    21238: 40,
+    # Honest in the Undersea Cave: "Uh... you're going down there? Be careful. It might be dangerous. You could end up getting hurt, like
+    # me." / Lv 50, his only line, before he asks you to find Maxim's party and then for the Swordfish and Marc
+    21238: 50,
+    # Maxim Leader in the Pyramid (another Maxim Leader stands in the Undersea Cave): "Oh? An adventurer, are you? ... it might be a bit
+    # dangerous up ahead" / Lv 40, his only line, before he asks for Memento from Mummy
+    21220: 40,
+    # Suerte (Pharos Lighthouse): "Hey, fancy seeing you in a place like this. Are you an adventurer too?" / Lv 30 before the ants
+    # (Pierre, Andre, Deniro); "there is something else I'd like to ask of you, but... I think that might be too much for now" / Lv 40
+    # before the Raggler
+    22509: 30, 22512: 40,
 }
 # monster names the quest log writes differently from the planner and the client's spawn list
 MOB_ALIAS = {"Petite (Flying)": 1156, "Petite (Ground)": 1155, "Flying Petite": 1156, "Boa": 1025, "Pirate Skel": 1071,
              "Wanderer": 1208, "Seeotter": 1323}
 # a word before a monster's name that's part of the name the quest uses ("Axe Goblin": not the planner's Goblin), unless it's one of these
 NOT_NAME = {"defeat", "hunt", "and", "the", "each", "of", "kill", "eliminate", "collect", "observe", "nearby", "or", "with", "from"}
-LEVEL_LINE = re.compile(r"(?:can be (?:undertaken|accepted|started)|requires|quest is (?:available )?for|is a quest for|need to be at least|"
+LEVEL_LINE = re.compile(r"(?:can be (?:undertaken|accepted|started)|requires|quest (?:is )?(?:available )?for|is a quest for|need to be at least|"
                         r"should be at least)\D{0,40}?(?:Level|Lv\.?)\s*(\d+)", re.I)
 TAG = re.compile(r"<NAVI>\[([^\]]+)\]<INFO>(\w+?)(?:\.gat)?,(\d+),(\d+)[^<]*</INFO></NAVI>")
 
