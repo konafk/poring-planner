@@ -3613,6 +3613,28 @@ t("a new visitor starts with no session and no job picked", () => {
   assert.equal(app("buildOf(C()).base.str=30;noChar()"), false);             // a raised stat (or a piece of gear) counts as set up
 });
 
+t("daily quests: a day runs 04:00 to 04:00 UTC, ticks are per character and clear when the day turns", () => {
+  const at = iso => Date.parse(iso);
+  assert.equal(run(`dailyDay(${at("2026-11-14T03:59:00Z")})`), "2026-11-13");   // before the reset: still yesterday
+  assert.equal(run(`dailyDay(${at("2026-11-14T04:00:00Z")})`), "2026-11-14");
+  assert.equal(run(`new Date(dailyNext(${at("2026-11-14T03:59:00Z")})).toISOString()`), "2026-11-14T04:00:00.000Z");
+  assert.equal(run(`new Date(dailyNext(${at("2026-11-14T04:00:00Z")})).toISOString()`), "2026-11-15T04:00:00.000Z");
+  const id = run("DAILIES[0].id");
+  run(`state.job="Mage";dailyTick(${id},true)`);
+  assert.equal(run("dailyDone().length"), 1);
+  assert.equal(run(`state.job="Acolyte";dailyDone().length`), 0);               // another character has its own ticks
+  run(`state.job="Mage";C().daily.day="2000-01-01"`);
+  assert.equal(run("dailyDone().length"), 0);                                    // yesterday's tick doesn't count today
+  run(`dailyTick(${id},true);dailyTick(${id},false)`);
+  assert.equal(run("dailyDone().length"), 0);
+  // the level filter: a daily with no level in the client always counts as allowed
+  assert.equal(run("dailyLvOk({lv:80},79)+' '+dailyLvOk({lv:80},80)+' '+dailyLvOk({lv:null},1)"), "false true true");
+  // the level range: both ends count, an empty end is no bound, and a daily with no level always shows
+  assert.equal(run("[40,70,71].map(lv=>dailyLvIn({lv},{from:40,to:70}))+' '+dailyLvIn({lv:5},{from:null,to:10})+' '+dailyLvIn({lv:null},{from:40,to:70})"), "true,true,false true true");
+  // every daily has an NPC, a task and, where it says where, a place the Navigation command can read
+  assert.equal(run("DAILIES.filter(q=>!q.npc[0]||!q.task||(q.where||[]).some(([,at])=>at.split(' ').length!==3)).length"), 0);
+});
+
 t("a monster's world map opens on the world with the most of its spawns", () => {
   const most = rows => run(`worldMost(${JSON.stringify(rows)})`);
   assert.equal(most([["nrd_fild01", 50], ["prt_d02", 20], ["pay_f08", 8]]), 1);   // Nordfeld has more spawns, though Midgard has more maps

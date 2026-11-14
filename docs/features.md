@@ -5,6 +5,7 @@
 - [Page layout](#page-layout)
 - [Accounts, sessions and Backup](#accounts-sessions-and-backup)
 - [Session (EXP tracker)](#session-exp-tracker)
+- [Daily quests](#daily-quests)
 - [Monsters & maps](#monsters--maps): Where to farm, Map planner, Monster table
 - [Memorial dungeons](#memorial-dungeons): Jellostones, Expedition upgrades, memorial dungeons and their gear's enchants
 - [Stellar weapons](#stellar-weapons): ★ Forging Certificates and Activation
@@ -23,7 +24,7 @@
 
 ## Page layout
 
-The tabs come in levels: Home, then four groups, Plan (Character, Session), Game data (Monsters & maps, Item info, Equipment, Cards, Affixes, Recipes, Memorial dungeons, Stellar weapons), Reference (What's new, Roadmap, Market, EXP tables, Formulas) and Simulators (Brewing, Cooking, Skill tree, Stylist). In a desktop window (1024px and wider) they sit in a sidebar on the left: the open tab's group lists its tabs, with the open tab's sections (its cards' headings) under it, the one you're reading marked; a click jumps to one. Every other group folds to its heading; click a heading to unfold or fold its group in place (the page remembers which you unfolded). With **Compact sidebar** every tab shows as an icon and the page keeps its own section links. In a narrower window or on a phone, Home and the four groups sit along the top, each group a menu of its tabs. A bar at the top of the page holds the Log EXP box; it says when the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average. Click a card's heading to fold the card away (the page remembers); a tab with only one card showing (Item info, Equipment, Roadmap, either Market pane…) doesn't fold it; when the card's heading only says the tab's name again it's dropped, and the rest of its row (counts, notes, buttons) sits beside the tab's title.
+The tabs come in levels: Home, then four groups, Plan (Character, Session, Daily quests), Game data (Monsters & maps, Item info, Equipment, Cards, Affixes, Recipes, Memorial dungeons, Stellar weapons), Reference (What's new, Roadmap, Market, EXP tables, Formulas) and Simulators (Brewing, Cooking, Skill tree, Stylist). In a desktop window (1024px and wider) they sit in a sidebar on the left: the open tab's group lists its tabs, with the open tab's sections (its cards' headings) under it, the one you're reading marked; a click jumps to one. Every other group folds to its heading; click a heading to unfold or fold its group in place (the page remembers which you unfolded). With **Compact sidebar** every tab shows as an icon and the page keeps its own section links. In a narrower window or on a phone, Home and the four groups sit along the top, each group a menu of its tabs. A bar at the top of the page holds the Log EXP box; it says when the session is paused. Once you've logged two entries it also shows a small line of your EXP %/hr between entries, with the session average. Click a card's heading to fold the card away (the page remembers); a tab with only one card showing (Item info, Equipment, Roadmap, either Market pane…) doesn't fold it; when the card's heading only says the tab's name again it's dropped, and the rest of its row (counts, notes, buttons) sits beside the tab's title.
 
 **Log EXP from any tab:** press the round **+** button at the bottom right, or **L** on any tab, and type in the Log EXP box it opens. It takes a line like the paste box does: `17.9` (EXP %), `17.9 63` (with job %), `15:05 17.9 63` (at that time), and `died` on the line for EXP after a death. The entry goes in at the level of your last one, and a level-up is picked up the same way as in the Log EXP card. On a phone the box opens as a sheet from the bottom, on a desktop as a pop-up above the button. At the max base level (70) base EXP no longer counts, so the box, the + button and **L** go away.
 
@@ -79,6 +80,18 @@ The game's auto return only takes you to town at a weight %; it doesn't sell or 
 - If the trip length can't be worked out (no monster picked, no Max Weight) or doesn't match what you see, type the minutes one trip takes.
 - It also shows how many town runs you make an hour.
 - In a background tab the browser can make it up to a minute late.
+
+## Daily quests
+
+Every daily quest an NPC gives, from the game client: its quest log, its Navigation and the NPCs' dialogue (`tools/export_dailies.py`). They all reset at 04:00 UTC+0; the card's heading counts down to the next reset in your time.
+
+- **Lv:** the base level the NPC's dialogue asks for ("- This quest can be undertaken at Level 80 or higher. -"). In red when it's above your character's level; – when the dialogue gives none.
+- **Quest:** its name and the task as the quest log gives it, the one you take every day after the first, with the monsters it names (their level, and a click opens their details).
+- **Where to go** and **NPC:** the place and the NPC's spot, each with its `/navi` command to paste in the game's chat, and the update a closed map comes with.
+- **Done:** tick the ones you've done today. Ticks are per character, and clear at the reset.
+- **Filters**, saved per account: **Lv** from–to shows only the dailies whose level is in that range (leave a box empty for no bound; a daily with no level still shows), **Hide the ones with no level** hides those, and **Hide the ones done today** the ticked ones.
+- Click a column's heading to sort by it, again for the other way; it starts by level, then NPC.
+- A daily whose NPC the game's Navigation doesn't place yet (it's in the client for a later update, or its event has ended) is marked **Not in game yet** and shows only with **Future content** on (Settings).
 
 ## Monsters & maps
 

@@ -4,6 +4,7 @@
 const TAB_DESC={
   home:"What the planner does, where you left off, and every tool in it.",
   char:"Your job, stats, gear and attack: everything the damage, EXP and zeny numbers work from. Back up or share the account at the bottom.",
+  daily:"Every daily quest NPCs give, from the game client: the level it needs, what to hunt and where, with a tick for each one you've done today. They reset at 04:00 UTC+0.",
   track:"Where to farm for your character, then log your EXP as you farm to see your real EXP/hr, when you'll level and how far your goals are.",
   maps:"Every map and monster: any map with its picture, NPCs and monsters, and every monster's drops, skills and spawns. With a character, your numbers against them.",
   star:"Not open in game yet (Taiwan Zero data). The ★ Forging Certificates each ★ weapon needs, where you'd farm its weapon fastest, and what Activation costs.",
@@ -60,7 +61,7 @@ function showTab0(t,local){
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
   // renderAll only draws these while their tab is showing; the big ones again only when something was saved since
-  if(t==="market")renderPrices();if(t==="items")redraw("items",renderItems);if(t==="equip")redraw("equip",renderEquipDb);if(t==="cards")redraw("cards",renderCardDb);if(t==="recipes")redraw("recipes",renderRecipes);if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="affix")renderAffixItems();if(t==="skilltree")renderSkPlan(true);if(t==="stylist")renderStylist();
+  if(t==="market")renderPrices();if(t==="items")redraw("items",renderItems);if(t==="equip")redraw("equip",renderEquipDb);if(t==="cards")redraw("cards",renderCardDb);if(t==="recipes")redraw("recipes",renderRecipes);if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="daily")renderDaily();if(t==="affix")renderAffixItems();if(t==="skilltree")renderSkPlan(true);if(t==="stylist")renderStylist();
   // the section links, once the tab's cards are drawn (a card can hide as it draws, as the Market's two panes do)
   pageNav(t);
 }

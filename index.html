@@ -29,6 +29,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
       <div class="navSec"><button type="button" class="navGrp" aria-expanded="false" aria-haspopup="true" title="Plan tabs"><span>Plan</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="navItems" role="group" aria-label="Plan">
         <button type="button" role="tab" data-tabbtn="char" title="Character"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="m13 19 6-6"/><path d="m16 16 4 4"/><path d="m19 21 2-2"/></svg><span>Character</span></button>
         <button type="button" role="tab" data-tabbtn="track" title="Session"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Session</span></button>
+        <button type="button" role="tab" data-tabbtn="daily" title="Daily quests: every daily, its level and where to go, and the ones you've done today"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="m9 15 2 2 4-4"/></svg><span>Daily quests</span></button>
       </div></div>
       <div class="navSec"><button type="button" class="navGrp" aria-expanded="false" aria-haspopup="true" title="Game data tabs"><span>Game data</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="navItems" role="group" aria-label="Game data">
         <button type="button" role="tab" data-tabbtn="maps" title="Monsters &amp; maps"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Monsters &amp; maps</span></button>
@@ -706,6 +707,13 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="note hint">Type a Where line in chat for the Navigation.</div>
   </section>
 
+  <section class="card" id="dailyCard" data-tab="daily">
+    <div class="bar"><h2 class="grow">Daily quests</h2><span class="note" id="dailyReset"></span></div>
+    <div class="bar note"><label class="bar" title="Show only the dailies whose level is in this range; leave a box empty for no bound. Dailies with no level show unless you hide them">Lv <input class="w-xs" id="dailyLvFrom" type="number" min="1" step="1" placeholder="from" aria-label="Lowest daily level to show"> to <input class="w-xs" id="dailyLvTo" type="number" min="1" step="1" placeholder="to" aria-label="Highest daily level to show"></label><label class="bar"><input type="checkbox" id="dailyNoLv"> <span>Hide the ones with no level</span></label><label class="bar"><input type="checkbox" id="dailyHide"> <span>Hide the ones done today</span></label><span class="grow"></span><span id="dailyNote"></span></div>
+    <div class="scroll mt"><table id="dailyTable"><thead><tr><th data-sk="done" title="Done today, for the character you're on">Done</th><th data-sk="lv" title="The base level the NPC's dialogue asks for">Lv</th><th data-sk="title">Quest</th><th data-sk="where">Where to go</th><th data-sk="npc">NPC</th></tr></thead><tbody id="dailyRows"></tbody></table></div>
+    <div class="note hint">From the game client: the quest log, its Navigation and the NPCs' dialogue. – in Lv: the dialogue gives no level. Ticks are per character and clear at the reset. Dailies the game doesn't have yet show with Future content on.</div>
+  </section>
+
   <section class="card" id="starCard" data-tab="star">
     <div class="bar"><h2 class="grow">★ Forging Certificates</h2><span class="pill down" title="Taiwan Zero data: the Activation System isn't on Global yet">Not open in game yet</span></div>
     <div class="note"><b>Not open in game yet.</b> Taiwan Zero's costs, which may change on Global. The ★ weapons below are in Global's client already.</div>
@@ -937,6 +945,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 <script src="data/navi.js"></script>
 <script src="data/roadmap.js"></script>
 <script src="data/news.js"></script>
+<script src="data/dailies.js"></script>
 <script src="data/loot.js"></script>
 <script src="data/items.js"></script>
 <script src="data/weights.js"></script>
@@ -1028,6 +1037,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 <script src="js/info.js"></script>
 <script src="js/memorial.js"></script>
 <script src="js/stellar.js"></script>
+<script src="js/dailies.js"></script>
 <script src="js/affixitems.js"></script>
 <script src="js/navi.js"></script>
 <script src="js/mapinfo.js"></script>
