@@ -169,7 +169,7 @@ const charDefault=job=>{const J=JOBS[job]||JOBS.Novice;const mag=J.p[0].type==="
   const c={baseLv:60,atkTxt:mag?"60+50":"120+200",matkTxt:mag?"100+200":"40+30",hitTxt:"300",fleeTxt:"250",aspd:170,defTxt:"40+60",maxHp:6000,maxSp:600,intTxt:mag?"60+10":"10",spRegen:0,weapon:J.w,wElem:"Neutral",
     preset:0,a:{...J.p[0]},dmgBonus:0,eq:[],
     nameType:MAGIC_JOBS.includes(job)?"magic":"phys", // name bonus defaults to the job's damage type
-    autoSp:false,itemSp:37,itemPrice:200,itemHp:175,itemHpPrice:180,potOn:false,potType:"",potPrice:2200,potMin:30,mobInterval:1.5,hitScale:0.3,hpRegen6:0,curW:0,maxW:0,sellAt:70,townMin:3};
+    autoSp:false,itemSp:37,itemPrice:200,itemHp:175,itemHpPrice:180,potOn:false,potType:"",mobInterval:1.5,hitScale:0.3,hpRegen6:0,curW:0,maxW:0,sellAt:70,townMin:3};
   if(job==="Sage")Object.assign(c,{matkTxt:"100+200",intTxt:"40+10",maxSp:800,maxHp:4000,sage:{hsLv:10},cards:{vitata:true},ec:{on:true}});
   return c};
 

@@ -842,9 +842,9 @@ t("Zeny Hunter: net zeny per hour is loot less skill and item costs, and counts 
   near(run(`huntMob0(${mob},2)`).loot, 750 * 3600 / sec);
   run(`state.dropBonus=0;C().a.zeny=100`);                              // Mammonite-style zeny per use comes off each kill
   near(run(`huntMob0(${mob},2)`).zk, 500 - 100 * run(`usesPerKill(${mob})`));
-  run(`C().a.zeny=0;C().potOn=true;C().potMin=30;C().potPrice=1000`);   // an ASPD potion every 30 min: 2,000 z/hr
+  run(`C().a.zeny=0;C().potOn=true;C().potType="conc"`);   // a Concentration Potion (1,200 z at a Tool Dealer) every 30 min: 2,400 z/hr
   const p = run(`huntMob0(${mob},2)`);
-  near(p.cost, 2000 + p.hpZ); near(p.net, p.loot - 2000 - p.hpZ);
+  near(p.cost, 2400 + p.hpZ); near(p.net, p.loot - 2400 - p.hpZ);
   run(`C().potOn=false`);
   // Giearth has no EXP in the data but still drops loot, so it counts towards zeny on its map
   const map = run(`huntMap0("mjo_d03",2)`);
@@ -1210,11 +1210,11 @@ t("Zeny Hunter level filter: monsters outside the Lv range, or with a drop penal
 
 t("Overcharge raises NPC sales; Buy with Discount (Lv 10 on the account) cuts NPC purchases", () => {
   const atk = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
-  setup("Blacksmith", { atkTxt: "100+300", st: {}, a: atk, skills: {}, itemPrice: 1000, potOn: true, potMin: 30, potPrice: 1000, cons: [] });
+  setup("Blacksmith", { atkTxt: "100+300", st: {}, a: atk, skills: {}, itemPrice: 1000, potOn: true, potType: "conc", cons: [] });
   const mob = "({id:-3,name:'Seller',lv:50,loot:100,drops:[[909,10]]})";
   run(`C().baseLv=50;state.dropBonus=0;state.prices={};state.npcPrices={}`);
   near(run(`zenyKill(${mob})`), 100);                                     // no skills learned
-  near(run(`potCostHr()`), 2000);
+  near(run(`potCostHr()`), 2400);
   run(`C().skills={overcharge:10,discount:10}`);
   assert.equal(run(`skRate("overcharge")`), 24);                          // Lv 10: 24% in Zero's skill data
   assert.equal(run(`(C().skills.overcharge=1,skRate("overcharge"))`), 7);  // Lv 1: 7%
@@ -1222,15 +1222,15 @@ t("Overcharge raises NPC sales; Buy with Discount (Lv 10 on the account) cuts NP
   near(run(`zenyKill(${mob})`), 124);                                     // NPC loot value +24%
   run(`state.prices={909:200};state.npcPrices={909:10}`);                 // a market price replaces the NPC price you'd get with Overcharge
   near(run(`zenyKill(${mob})`), 124 + (200 - Math.floor(10 * 1.24)) * 0.10);
-  near(run(`potCostHr()`), 2000);                                         // this character's own Discount doesn't count
+  near(run(`potCostHr()`), 2400);                                         // this character's own Discount doesn't count
   run(`state.recovery.discount=true`);                                    // Buy with Discount: −24% (Lv 10) on what you buy from NPCs
-  near(run(`potCostHr()`), 2000 * 0.76);
+  near(run(`potCostHr()`), 2400 * 0.76);
   run(`REC().spItem="custom"`);                                          // a Custom SP item (typed 1,000 z) takes it too
   near(run(`spItemPrice()`), 760);
   run(`C().skills={}`);                                                   // on any job, not only the Merchant line
-  near(run(`potCostHr()`), 2000 * 0.76);
+  near(run(`potCostHr()`), 2400 * 0.76);
   run(`state.recovery.discount=false`);                                   // off: NPC prices
-  near(run(`potCostHr()`), 2000);
+  near(run(`potCostHr()`), 2400);
   run(`state.prices={};state.npcPrices={};C().skills={};C().potOn=false`);
 });
 
@@ -1833,14 +1833,16 @@ t("buffs from others: Zero's Impositio Manus, Assumptio and Adrenaline Rush valu
   assert.deepEqual(JSON.parse(run(`JSON.stringify(BUILD_LAST.unmodelled)`)), []);
 });
 
-t("consumables: stat food as a row; an old save's stat table and food buffs become one", () => {
+t("consumables: cooking dishes; an old save's stat table and food buffs become dishes or a row", () => {
   setup("Knight", { atkTxt: "100+300", aspd: 160, weapon: "Two-handed sword", st: { str: "50", agi: "80", vit: "1", int: "1", dex: "40", luk: "1" }, intTxt: "1",
     potOn: false, cons: [], consStat: { str: { n: 10, p: 10 } }, pbuffs: { agiFood: { on: true, lv: 7 }, dexFood: { on: false, lv: 5 } }, buffs: {}, skills: {},
     a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
   assert.equal(run(`statVal(C(),"str")`), 50 + 10 + Math.floor(60 * 0.10));  // +10, then 10% of 60
   assert.equal(run(`statVal(C(),"agi")`), 87);                              // AGI food Lv 7 from an old save
   assert.equal(run(`JSON.stringify(C().pbuffs)`), "{}");
-  assert.equal(run(`JSON.stringify(C().cons)`), JSON.stringify([{ on: true, name: "Stat food", eff: "STR +10, STR +10%, AGI +7" }]));
+  // AGI +7 is a dish's (Steamed Alligator with Vegetable); STR +10 with +10% isn't, so it's a row
+  assert.equal(run(`JSON.stringify(C().food)`), JSON.stringify({ agi: 12087 }));
+  assert.equal(run(`JSON.stringify(C().cons)`), JSON.stringify([{ on: true, name: "Stat food", eff: "STR +10, STR +10%" }]));
   assert.equal(run(`"consStat" in C()`), false);
   assert.equal(run(`potCostHr()`), 0);                                       // consumables carry no zeny cost
   assert.equal(run(`PBUFF.some(b=>b.k==="bandage")`), false);               // Yggdrasil's Blessing (Battle Bandage) is gone
@@ -1863,15 +1865,15 @@ t("consumables: stat food as a row; an old save's stat table and food buffs beco
   assert.equal(run(`cf("hitTxt")`), run(`C().hitTxt`));
   run(`C().addOnTop=true`);
   // Blessing of Yggdrasil (Stappy, for Yggdrasil Dew or Zelstar, 1 hour): all stats +7, ATK/MATK +30, HIT/FLEE +5, no zeny
-  run(`C().cons=[];C().yggOn=true;applyConsumables()`);
+  run(`C().cons=[];C().food={};C().yggOn=true;applyConsumables()`);
   assert.equal(run(`statVal(C(),"luk")`), 8);
   assert.equal(run(`statVal(C(),"str")`), 57);
-  // stacking: a stat food row, Yggdrasil and a listed course meal all add up
-  run(`C().cons=[{on:true,name:"Stat food",eff:"STR +10, AGI +5"}];applyConsumables()`);
-  assert.equal(run(`statVal(C(),"str")`), 50 + 10 + 7); assert.equal(run(`statVal(C(),"agi")`), 80 + 5 + 7);
+  // stacking: a dish and Yggdrasil don't add, the higher counts; a listed course meal stacks on top
+  run(`C().food={str:12075,agi:12060};applyConsumables()`);                // Steamed Tongue STR +10, Steamed Bat Wing in Pumpkin AGI +5
+  assert.equal(run(`statVal(C(),"str")`), 60); assert.equal(run(`statVal(C(),"agi")`), 80 + 7);  // STR 50 + 10 (not 17); AGI dish 5 < 7
   run(`C().consItems={"Premium Course Meal":true};applyConsumables()`);
-  assert.equal(run(`statVal(C(),"str")`), 50 + 10 + 7 + 5);
-  run(`C().cons=[];C().consItems={};applyConsumables()`);
+  assert.equal(run(`statVal(C(),"str")`), 65);
+  run(`C().food={};C().cons=[];C().consItems={};applyConsumables()`);
   assert.equal(run(`sumStat(cf("hitTxt"))-sumStat(C().hitTxt)`), 5 + 7 + 2); // HIT +5, DEX +7, LUK +7
   assert.equal(run(`sumStat(cf("fleeTxt"))-sumStat(C().fleeTxt)`), 5 + 7 + 1); // FLEE +5, AGI +7, LUK +7
   assert.equal(run(`potCostHr()`), 0);

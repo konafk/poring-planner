@@ -68,7 +68,10 @@ const ocMul=()=>1+skRate("overcharge")/100;
 // a Merchant on the account with Discount Lv 10 (−24%) buying for every character. Recovery items use their measured Discount prices
 const DISC_LV10=24;
 const discMul=()=>recDisc()?1-DISC_LV10/100:1;
-const potOnlyHr=()=>C().potOn&&num(C().potMin)>0?60/num(C().potMin)*num(C().potPrice)*discMul():0;
+// the ASPD potion: the Tool Dealer's price for the one in use (data/shops.js), 30 minutes each (the user, 14 November 2026)
+const POT_MIN=30;
+const potPrice=(c=C())=>{const k=potKey(c);return k&&typeof shopPrice==="function"?shopPrice(ASPD_POT[k].id)||0:0};
+const potOnlyHr=()=>C().potOn?60/POT_MIN*potPrice()*discMul():0;
 // zeny per hour spent on the ASPD potion (consumables carry no price; Blessing of Yggdrasil takes Stappy's daily Yggdrasil Dew or a Zelstar)
 const potCostHr=()=>potOnlyHr();
 // zeny per hour that doesn't depend on kills: the ASPD potion, Sage ground buffs and the converter (SP items come on top, see huntCostHr)

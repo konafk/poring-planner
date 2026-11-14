@@ -37,11 +37,20 @@ const STAT6_UI=["str","agi","vit","int","dex","luk"];
 const rowsOf=(c,key)=>{if(!Array.isArray(c[key]))c[key]=[];return c[key]};
 const consOf=c=>rowsOf(c,"cons");
 const OWN_LISTS=[{list:"consList",add:"consAdd",note:"consNote",key:"cons",what:"Consumable"},{list:"pbuffOwn",add:"pbuffAdd",note:"pbuffNote",key:"pbuffOwn",what:"Buff"}];
+// cooking (data/cookbooks.js; each dish's stat from its text, data/itemtext.js): ten dishes per stat, +1 to +10, one per stat at a time.
+// c.food = {str: dish id}. A dish and Blessing of Yggdrasil don't add up: the higher one counts per stat
+let DISHES_=null;
+const dishes=()=>{if(DISHES_)return DISHES_;const o={};if(typeof COOKBOOKS==="undefined"||typeof ITEM_TEXT==="undefined")return o;
+  Object.values(COOKBOOKS).forEach(ds=>ds.forEach(([id])=>{const m=String(ITEM_TEXT[id]||"").match(/\b(STR|AGI|VIT|INT|DEX|LUK) \+(\d+)/);if(m)(o[m[1].toLowerCase()]=o[m[1].toLowerCase()]||[]).push([id,+m[2]])}));
+  Object.values(o).forEach(l=>l.sort((a,b)=>a[1]-b[1]));return DISHES_=o};
+const foodOf=c=>{if(!c.food||typeof c.food!=="object")c.food={};return c.food};
+const dishVal=(k,id)=>((dishes()[k]||[]).find(d=>d[0]===+id)||[])[1]||0;
 // older saves had a stat table for food (c.consStat: {str: {n, p}}: STR + and +%), and before it AGI / DEX food among the buffs from
-// others: what they held becomes one row in Consumables effects, "Stat food" ("STR +10, STR +10%, AGI +7"), once
-const foodToRow=c=>{const cs=c.consStat&&typeof c.consStat==="object"?c.consStat:{},pb=c.pbuffs||{};
+// others. Once: a stat's +1 to +10 (with no %) becomes that stat's dish; anything else one row in Consumables effects, "Stat food"
+const foodToRow=c=>{const cs=c.consStat&&typeof c.consStat==="object"?c.consStat:{},pb=c.pbuffs||{},fd=foodOf(c);
   [["agiFood","agi"],["dexFood","dex"]].forEach(([k,st])=>{if(!pb[k])return;if(pb[k].on){const o=cs[st]||(cs[st]={});o.n=num(o.n)+Math.min(10,Math.max(1,num(pb[k].lv,10)))}delete pb[k]});
-  const sg=v=>`${v>0?"+":""}${v}`,eff=STAT6_UI.flatMap(k=>{const o=cs[k]||{},n=num(o.n),p=num(o.p),K=k.toUpperCase();return [n?`${K} ${sg(n)}`:"",p?`${K} ${sg(p)}%`:""]}).filter(Boolean).join(", ");
+  const sg=v=>`${v>0?"+":""}${v}`,eff=STAT6_UI.flatMap(k=>{const o=cs[k]||{},n=num(o.n),p=num(o.p),K=k.toUpperCase(),d=!p&&(dishes()[k]||[]).find(x=>x[1]===n);
+    if(d){fd[k]=d[0];return []}return [n?`${K} ${sg(n)}`:"",p?`${K} ${sg(p)}%`:""]}).filter(Boolean).join(", ");
   if(eff)rowsOf(c,"cons").push({on:true,name:"Stat food",eff});delete c.consStat};
 // Blessing of Yggdrasil (Stappy, the Yggdrasil Staff's spirit, for 1 Yggdrasil Dew, up to 3 a day from Stappy, or 1 Zelstar; 1 hour, doesn't
 // stack): all stats +7, ATK +30, MATK +30, HIT +5, FLEE +5 (in-game Yggdrasil Staff tooltip; Stappy's lines in the client say the same).
@@ -95,7 +104,9 @@ const CONS_PRESETS=[
   {name:"Growth Elixir",id:105743,eff:"Base/Job EXP +50%"},
   {name:"Ale's Blessing",id:23608,eff:"Recovery items +20%, Heal received +20%"},
   // not an event item: Brewer Burkel's daily quest gives one, Brewer Telsa sells more for 3,000z (data/shops.js)
-  {name:"Nordfeld Beer",id:107452,eff:"Damage to Boulder Dwarves +10%",note:"counts only against Boulder Dwarves"}];
+  // the client: "ASPD increases slightly more for 30 minutes", on top of the ASPD potions and by AGI like them; how much isn't known yet
+  {name:"Agi Up Potion",id:102891,eff:"",info:"ASPD up a little, on top of an ASPD potion",note:"30 minutes; the amount isn't known yet, so it isn't counted"},
+  {name:"Nordfeld Beer",id:107452,eff:"Damage to Boulder Dwarves +10%"}];
 // they're listed with a tick each, like the buffs from others: the ticked ones by name (c.consItems). Older saves added one as a row of
 // its own in Consumables effects: a row that is exactly a listed item (same name and effect) becomes its tick, ticked if the row was
 const consItemsOf=c=>{if(c.consStat||(c.pbuffs&&(c.pbuffs.agiFood||c.pbuffs.dexFood)))foodToRow(c);
@@ -105,16 +116,16 @@ const consItemsOf=c=>{if(c.consStat||(c.pbuffs&&(c.pbuffs.agiFood||c.pbuffs.dexF
 // every row that counts: the listed items ticked, then your own rows in Consumables effects and Skill buffs ({on, name, eff, what})
 const ownRows=c=>[...CONS_PRESETS.filter(p=>consItemsOf(c)[p.name]).map(p=>({on:true,name:p.name,eff:p.eff,what:"Item"})),
   ...OWN_LISTS.flatMap(L=>rowsOf(c,L.key).filter(r=>r.on).map(r=>({...r,what:L.what})))];
-// stacking: Blessing of Yggdrasil, the listed items and your rows all add up (the stat table, whose food kept only the higher of it and
-// Yggdrasil per stat, is gone)
+// stacking: a cooked dish and Blessing of Yggdrasil don't add up, the higher one counts per stat; the listed items and your rows stack on top
 // clans (Ragnarok Zero Global; as iRO Wiki's Clan System has it): a buff that stays on while you're
 // a member, two stats +1, Max HP +30 and Max SP +10. It stacks with food and Blessing of Yggdrasil. It can't be switched off, so a
 // typed status window always has it: only build mode adds it
 const CLANS={sword:{name:"Sword Clan",st:["str","vit"]},archwand:{name:"Arch Wand Clan",st:["int","dex"]},goldenmace:{name:"Golden Mace Clan",st:["luk","int"]},crossbow:{name:"Crossbow Clan",st:["dex","agi"]}};
 const clanLines=c=>{const x=c.mode==="build"&&CLANS[c.clan];return x?[...x.st.map(k=>[k,null,null,1]),["hp",null,null,30],["sp",null,null,10]]:[]};
 const clanEff=x=>`${x.st.map(k=>k.toUpperCase()+" +1").join(", ")}, Max HP +30, Max SP +10`;
-const consLines=()=>{const lines=[],bad=[];
-  if(C().yggOn)YGG_FX.forEach(([t,v])=>lines.push([t,null,null,v]));
+const consLines=()=>{const lines=[],bad=[],ygg=Object.fromEntries(C().yggOn?YGG_FX:[]),fd=foodOf(C());
+  Object.entries(ygg).forEach(([t,v])=>{if(!STAT6_UI.includes(t))lines.push([t,null,null,v])});
+  STAT6_UI.forEach(k=>{const n=Math.max(dishVal(k,fd[k]),ygg[k]||0);if(n)lines.push([k,null,null,n])});
   lines.push(...clanLines(C()));
   ownRows(C()).forEach(r=>{const o=parseCons(r.eff);lines.push(...o.lines);bad.push(...o.bad.map(x=>`${r.name||r.what}: ${x}`))});return {lines,bad}};
 // ---- ASPD potions and buffs from others, from the RO樂園攻速計算機 sheet (2026-09-07, "增益"). "aspd_mod" is the sheet's potion/skill
@@ -187,7 +198,12 @@ function applyConsumables(){EFF=null;const c=C();if(!addOnTop(c))return;const li
 function renderCons(){const c=C(),it=consItemsOf(c);
   // the listed items: a tick, the item's icon (opens its details), the name, what it does
   $("consItems").innerHTML=CONS_PRESETS.map(p=>`<div class="eqrow" data-ci="${esc(p.name)}"><label class="bar pbName"><input type="checkbox" data-f="on" ${it[p.name]?"checked":""}><a href="#" data-info="item:${p.id}" title="${esc(p.name)}">${itemIcon(p.id)}</a>${esc(p.name)}</label>
-    <span class="note">${esc(p.eff)}${p.note?` · ${esc(p.note)}`:""}</span></div>`).join("");
+    <span class="note">${esc(p.eff||p.info||"")}${p.note?` · ${esc(p.note)}`:""}</span></div>`).join("");
+  // cooking: a dish per stat, its icon opening its details
+  const fd=foodOf(c);$("consFood").innerHTML=STAT6_UI.map(k=>{const id=+fd[k]||0,v=dishVal(k,id),K=k.toUpperCase();
+    return `<div class="eqrow" data-food="${k}"><label class="bar pbName">${v?`<a href="#" data-info="item:${id}" title="${esc(itemName(id))}">${itemIcon(id)}</a>`:""}${K} food
+      <select data-f="dish" aria-label="${K} dish"><option value="">none</option>${(dishes()[k]||[]).map(([d,n])=>`<option value="${d}"${d===id&&v?" selected":""}>${K} +${n} · ${esc(itemName(d))}</option>`).join("")}</select></label>
+      ${v?`<span class="note">${K} +${v} · the higher of this and Blessing of Yggdrasil counts</span>`:""}</div>`}).join("");
   OWN_LISTS.forEach(L=>$(L.list).innerHTML=rowsOf(c,L.key).map((r,i)=>`<div class="eqrow" data-i="${i}">
     <input type="checkbox" data-f="on" ${r.on?"checked":""} aria-label="Use it">
     <input data-f="name" value="${esc(r.name||"")}" placeholder="name" class="w-2xl">
@@ -214,6 +230,8 @@ $("addOnTop").addEventListener("change",e=>{C().addOnTop=e.target.checked;save()
 $("potType").addEventListener("change",e=>{C().potType=e.target.value;save();renderAll()});
 const consNote=()=>OWN_LISTS.forEach(L=>{const bad=rowsOf(C(),L.key).filter(r=>r.on).flatMap(r=>parseCons(r.eff).bad.map(x=>`${r.name||L.what}: ${x}`));
   $(L.note).innerHTML=bad.length?`<span class="bad">Not understood: ${bad.map(esc).join(", ")}</span>`:""});
+$("consFood").addEventListener("change",e=>{const row=e.target.closest("[data-food]");if(!row||e.target.dataset.f!=="dish")return;const fd=foodOf(C());
+  if(e.target.value)fd[row.dataset.food]=+e.target.value;else delete fd[row.dataset.food];save();renderCons();renderAll()});
 $("consItems").addEventListener("change",e=>{const row=e.target.closest("[data-ci]");if(!row||e.target.dataset.f!=="on")return;const it=consItemsOf(C());
   if(e.target.checked)it[row.dataset.ci]=true;else delete it[row.dataset.ci];save();renderAll()});
 OWN_LISTS.forEach(L=>{

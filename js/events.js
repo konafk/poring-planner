@@ -60,9 +60,9 @@ $("sellAt").addEventListener("input",e=>{const v=+e.target.value;C().sellAt=v>0?
 $("shield").addEventListener("change",e=>{const c=C(),next={...c,shield:e.target.checked};if(next.shield)next.lw="";aspdMove(c,next);
   c.shield=next.shield;c.lw=next.lw;$("lw").value=c.lw||"";save();renderAll()});
 $("autoSp").addEventListener("change",e=>{C().autoSp=e.target.checked;save();renderAll()});
-const potInfo=()=>{const c=C();$("potInfo").textContent=!c.potOn?"":c.mode!=="build"&&statVal(c,"agi")==null?"type your AGI above to count it (value × AGI/200)":`ASPD ${aspdEff()} · ~${fmtN(potOnlyHr())} z/hr`};
+// the potion's Tool Dealer price and 30 minutes each give its zeny per hour
+const potInfo=()=>{const c=C(),z=potPrice(c);$("potInfo").textContent=!z?"":c.potOn?(c.mode!=="build"&&statVal(c,"agi")==null?"type your AGI above to count it (value × AGI/200)":`ASPD ${aspdEff()} · ~${fmtN(potOnlyHr())} z/hr`):`${fmtN(z)} z at a Tool Dealer · ${POT_MIN} min`};
 $("potOn").addEventListener("change",e=>{C().potOn=e.target.checked;save();potInfo();renderAll()});
-["potPrice","potMin"].forEach(id=>$(id).addEventListener("input",e=>{C()[id]=num(e.target.value);save();potInfo();renderAll()}));
 $("yggOn").addEventListener("change",e=>{C().yggOn=e.target.checked;save();renderAll()});
 ROOTQ("#sagePanel").forEach(p=>p.addEventListener("input",e=>{const i=e.target;const g=G();
   if(i.dataset.sgbolt){g.bolts[i.dataset.sgbolt]=i.checked}else if(i.dataset.sg){const k=i.dataset.sg;g[k]=i.type==="checkbox"?i.checked:num(i.value)}else return;
