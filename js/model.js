@@ -69,7 +69,7 @@ const ocMul=()=>1+skRate("overcharge")/100;
 const DISC_LV10=24;
 const discMul=()=>recDisc()?1-DISC_LV10/100:1;
 const potOnlyHr=()=>C().potOn&&num(C().potMin)>0?60/num(C().potMin)*num(C().potPrice)*discMul():0;
-// zeny per hour spent on the ASPD potion (consumables carry no price; Blessing of Yggdrasil's items come from the KP shop)
+// zeny per hour spent on the ASPD potion (consumables carry no price; Blessing of Yggdrasil takes Stappy's daily Yggdrasil Dew or a Zelstar)
 const potCostHr=()=>potOnlyHr();
 // zeny per hour that doesn't depend on kills: the ASPD potion, Sage ground buffs and the converter (SP items come on top, see huntCostHr)
 const hourCostHr=()=>potCostHr()+fieldCostHr()+convCostHr();
@@ -318,7 +318,7 @@ const vitPct=()=>C().mode!=="build"&&CRD().vitata?num(CRD().spBonus):0;
 // consumables' and buffs from others' lines the status window doesn't show (parseCons and PBUFF in build-ui.js): "SP consumption −x%" and HP / SP restored over time
 // (only your own rows make them; summed once per change of those rows, as regen is asked for on every monster)
 let CONS_SUM={k:null,v:{}};
-const consSum=t=>{const c=C(),rows=OWN_LISTS.flatMap(L=>rowsOf(c,L.key)).filter(r=>r.on),k=rows.map(r=>r.eff).join("\n");
+const consSum=t=>{const c=C(),rows=ownRows(c),k=rows.map(r=>r.eff).join("\n");
   if(CONS_SUM.k!==k){const v={};rows.forEach(r=>parseCons(r.eff).lines.forEach(([x,,,n])=>v[x]=(v[x]||0)+num(n)));CONS_SUM={k,v}}return (CONS_SUM.v[t]||0)+pbSum(t)};
 const spCostMul=()=>{const c=C();return Math.max(0,1+(c.bx?num(c.bx.spCost):0)/100+(SKFX?SKFX.spCost:0)/100+vitPct()/100+consSum("sp_cost_percent")/100)};
 // SP / HP per second from consumables such as Small Mana Potion (5% of Max SP every 5 s); like cards it keeps going when you're overweight

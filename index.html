@@ -137,6 +137,9 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <button type="button" role="radio" data-cmode="status">Status window</button>
       </div>
     </div>
+    <div class="bar note"><label class="bar" title="The clan you joined at its Clan Master: a buff that stays on, so your status window always includes it. Counted in build mode">Clan <select id="clanSel"></select></label>
+      <span class="muted" id="clanInfo"></span>
+    </div>
     <details class="card sub build" id="buildPanel" open hidden>
       <summary title="Your stats worked out from base stats, job level and gear"><b>Build from gear</b></summary>
       <details class="card sub" id="buildStatFold" open>
@@ -379,9 +382,12 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <span id="itemInfo"></span>
       </div>
       <div class="bar note" id="useItems"></div>
-      <label class="bar note" title="Saved for the whole account. Off: potions, Cheese, Strawberry and White / Blue Herb, plus any item you changed or picked"><input type="checkbox" id="recAll"> Show all items <span class="muted" id="recAllN"></span></label>
-      <div class="scroll"><table id="recTable"><thead><tr><th data-sk="name">Item</th><th data-sk="kind">Type</th><th data-sk="avg" title="min – max restored (edit them); the average is what's counted">Avg amount</th><th data-sk="price" title="With Buy with Discount: the Discount price, else the NPC price; player-only items use the player price">Price used</th><th data-sk="per">Cost per HP / SP</th><th data-sk="perW" title="restored per point of weight (edit the weight)">HP or SP per weight</th><th data-sk="uph">Uses / hr</th><th data-sk="zph">Cost / hr</th><th data-sk="wph">Weight / hr</th></tr></thead><tbody></tbody></table></div>
-      <div class="note hint">Measured on Zero Global; ? = classic RO's. Items without a price aren't counted until you type one.</div>
+      <details class="card sub" id="recListFold" open>
+        <summary title="Every HP and SP item: amount, price and weight, which you can change"><b>Items list</b></summary>
+        <label class="bar note" title="Saved for the whole account. Off: potions, Cheese, Strawberry and White / Blue Herb, plus any item you changed or picked"><input type="checkbox" id="recAll"> Show all items <span class="muted" id="recAllN"></span></label>
+        <div class="scroll"><table id="recTable"><thead><tr><th data-sk="name">Item</th><th data-sk="kind">Type</th><th data-sk="avg" title="min – max restored (edit them); the average is what's counted">Avg amount</th><th data-sk="price" title="With Buy with Discount: the Discount price, else the NPC price; player-only items use the player price">Price used</th><th data-sk="per">Cost per HP / SP</th><th data-sk="perW" title="restored per point of weight (edit the weight)">HP or SP per weight</th><th data-sk="uph">Uses / hr</th><th data-sk="zph">Cost / hr</th><th data-sk="wph">Weight / hr</th></tr></thead><tbody></tbody></table></div>
+        <div class="note hint">Measured on Zero Global; ? = classic RO's. Items without a price aren't counted until you type one.</div>
+      </details>
     </details>
     <details class="card sub" id="convPanel" open>
       <summary title="Converters, Cursed Water, Aspersio Scroll, Enchant Poison: one at a time, on basic attacks and weapon-element skills"><b>Weapon element</b></summary>
@@ -402,20 +408,17 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <label class="bar">lasts <input class="w-xs" id="potMin" type="number" step="1"> min</label>
         <span id="potInfo"></span>
       </div>
-      <div class="bar note"><label class="bar" title="Consumes 1 World Tree Dew or Zelstar (KP shop) for 1 hour: all stats +7, ATK +30, MATK +30, HIT +5, FLEE +5"><input type="checkbox" id="yggOn"> Blessing of Yggdrasil</label>
+      <div class="bar note"><label class="bar" title="Stappy, the spirit of the Yggdrasil Staff, gives it for 1 Yggdrasil Dew (up to 3 a day from Stappy) or 1 Zelstar. It also fully restores HP and SP, and doesn't stack"><input type="checkbox" id="yggOn"> Blessing of Yggdrasil</label>
+        <span class="muted">All stats +7, ATK +30, MATK +30, HIT +5, FLEE +5 · 1 hour</span>
       </div>
-      <div class="bar note"><label class="bar" title="The clan you joined at its Clan Master: a buff that stays on, so your status window always includes it. Counted in build mode">Clan <select id="clanSel"></select></label>
-        <span class="muted" id="clanInfo"></span>
-      </div>
-      <div class="note hint">+ doesn't stack with Blessing of Yggdrasil (the higher counts); +% is a share of your total stat.</div>
-      <table id="consStats" class="cstats"><thead><tr><th>Stat</th><th>+</th><th>+%</th></tr></thead><tbody></tbody></table>
-      <div class="note"><b>Other effects</b></div>
-      <div id="consList" class="eqlist"></div>
-      <div class="bar"><button type="button" class="small" id="consAdd">+ Add</button><select id="consPreset" aria-label="Add an event item"></select><span class="note" id="consNote"></span></div>
-      <div class="note"><b>Buffs from others</b></div>
+      <div class="note"><b>Skill buffs</b></div>
       <div id="pbuffList" class="eqlist"></div>
       <div id="pbuffOwn" class="eqlist"></div>
       <div class="bar"><button type="button" class="small" id="pbuffAdd">+ Add</button><span class="note hint">e.g. "STR +5, ATK +20, ASPD +10%"</span><span class="note" id="pbuffNote"></span></div>
+      <div class="note"><b>Consumables effects</b></div>
+      <div id="consItems" class="eqlist"></div>
+      <div id="consList" class="eqlist"></div>
+      <div class="bar"><button type="button" class="small" id="consAdd">+ Add</button><span class="note hint">e.g. "ATK +20, HIT +10, Ranged damage +5%"</span><span class="note" id="consNote"></span></div>
     </details>
   </section>
 

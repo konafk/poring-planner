@@ -1833,13 +1833,15 @@ t("buffs from others: Zero's Impositio Manus, Assumptio and Adrenaline Rush valu
   assert.deepEqual(JSON.parse(run(`JSON.stringify(BUILD_LAST.unmodelled)`)), []);
 });
 
-t("consumables: + and +% per main stat, old food buffs move into the table", () => {
+t("consumables: stat food as a row; an old save's stat table and food buffs become one", () => {
   setup("Knight", { atkTxt: "100+300", aspd: 160, weapon: "Two-handed sword", st: { str: "50", agi: "80", vit: "1", int: "1", dex: "40", luk: "1" }, intTxt: "1",
     potOn: false, cons: [], consStat: { str: { n: 10, p: 10 } }, pbuffs: { agiFood: { on: true, lv: 7 }, dexFood: { on: false, lv: 5 } }, buffs: {}, skills: {},
     a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
   assert.equal(run(`statVal(C(),"str")`), 50 + 10 + Math.floor(60 * 0.10));  // +10, then 10% of 60
   assert.equal(run(`statVal(C(),"agi")`), 87);                              // AGI food Lv 7 from an old save
   assert.equal(run(`JSON.stringify(C().pbuffs)`), "{}");
+  assert.equal(run(`JSON.stringify(C().cons)`), JSON.stringify([{ on: true, name: "Stat food", eff: "STR +10, STR +10%, AGI +7" }]));
+  assert.equal(run(`"consStat" in C()`), false);
   assert.equal(run(`potCostHr()`), 0);                                       // consumables carry no zeny cost
   assert.equal(run(`PBUFF.some(b=>b.k==="bandage")`), false);               // Yggdrasil's Blessing (Battle Bandage) is gone
   // the effect text follows the level you typed
@@ -1853,23 +1855,23 @@ t("consumables: + and +% per main stat, old food buffs move into the table", () 
   assert.equal(eff("clementia", 70), "STR +17, INT +17, DEX +17 (Blessing Lv 10 + Priest Job Lv/10)");
   run(`C().pbuffs={bandage:{on:true}};SKFX=skillEffects(C());applyBuild();applyConsumables()`);
   assert.equal(run(`statVal(C(),"luk")`), 1);                               // an old save's tick adds nothing
-  run(`C().pbuffs={};C().consStat={...C().consStat,dex:{n:7},luk:{n:7}};C().cons=[{on:true,name:"x",eff:"HIT +5"}];applyConsumables()`);
+  run(`C().pbuffs={};C().cons=[{on:true,name:"x",eff:"HIT +5"},{on:true,name:"Stat food",eff:"DEX +7, LUK +7"}];applyConsumables()`);
   assert.equal(run(`statVal(C(),"luk")`), 8);
   assert.equal(run(`sumStat(cf("hitTxt"))-sumStat(C().hitTxt)`), 5 + 7 + 2); // HIT +5, DEX +7, and LUK 1 → 8 adds floor(8/3)
   run(`C().addOnTop=false;applyConsumables()`);                             // the typed status window already has them
   assert.equal(run(`statVal(C(),"luk")`), 1);
   assert.equal(run(`cf("hitTxt")`), run(`C().hitTxt`));
   run(`C().addOnTop=true`);
-  // Blessing of Yggdrasil (World Tree Dew / Zelstar from the KP shop, 1 hour): all stats +7, ATK/MATK +30, HIT/FLEE +5, no zeny
-  run(`C().consStat={};C().cons=[];C().yggOn=true;applyConsumables()`);
+  // Blessing of Yggdrasil (Stappy, for Yggdrasil Dew or Zelstar, 1 hour): all stats +7, ATK/MATK +30, HIT/FLEE +5, no zeny
+  run(`C().cons=[];C().yggOn=true;applyConsumables()`);
   assert.equal(run(`statVal(C(),"luk")`), 8);
   assert.equal(run(`statVal(C(),"str")`), 57);
-  // stacking: stat food and Yggdrasil don't add, the higher counts; a course meal stacks on top
-  run(`C().consStat={str:{n:10},agi:{n:5}};applyConsumables()`);
-  assert.equal(run(`statVal(C(),"str")`), 60); assert.equal(run(`statVal(C(),"agi")`), 80 + 7);  // STR 50 + 10 (not 17); AGI food 5 < 7
-  run(`C().cons=[{on:true,name:"Premium Course Meal",eff:"All stats +5, ATK/MATK +20"}];applyConsumables()`);
-  assert.equal(run(`statVal(C(),"str")`), 65);
-  run(`C().consStat={};C().cons=[];applyConsumables()`);
+  // stacking: a stat food row, Yggdrasil and a listed course meal all add up
+  run(`C().cons=[{on:true,name:"Stat food",eff:"STR +10, AGI +5"}];applyConsumables()`);
+  assert.equal(run(`statVal(C(),"str")`), 50 + 10 + 7); assert.equal(run(`statVal(C(),"agi")`), 80 + 5 + 7);
+  run(`C().consItems={"Premium Course Meal":true};applyConsumables()`);
+  assert.equal(run(`statVal(C(),"str")`), 50 + 10 + 7 + 5);
+  run(`C().cons=[];C().consItems={};applyConsumables()`);
   assert.equal(run(`sumStat(cf("hitTxt"))-sumStat(C().hitTxt)`), 5 + 7 + 2); // HIT +5, DEX +7, LUK +7
   assert.equal(run(`sumStat(cf("fleeTxt"))-sumStat(C().fleeTxt)`), 5 + 7 + 1); // FLEE +5, AGI +7, LUK +7
   assert.equal(run(`potCostHr()`), 0);
@@ -2220,14 +2222,14 @@ t("SP regen: Increase SP Recovery adds to auto regen; consumables restore SP / H
   run(`C().skills={"increase-sp-recovery":10}`);                           // Lv 10: 10 × (3 + 0.2% of 500) = 40 SP every 10 s
   assert.equal(run("isrPer10()"), 40); near(run("regenPerSec()"), base + 4);
   near(run("withRegenOff(()=>regenPerSec())"), 0);                         // none at 70% weight, like natural regen
-  run(`C().skills={};C().cons=[{on:true,name:"Small Mana Potion",eff:"SP +5% every 5s"}]`);
+  run(`C().skills={};C().consItems={"Small Mana Potion":true}`);
   near(run("consSPPerSec()"), 500 * 0.05 / 5); near(run("regenPerSec()"), base + 5);
   near(run("withRegenOff(()=>regenPerSec())"), 5);                         // keeps going when overweight
-  run(`C().cons=[{on:true,name:"",eff:"HP +5% every 5s, SP +2/s"}]`);
+  run(`C().consItems={};C().cons=[{on:true,name:"",eff:"HP +5% every 5s, SP +2/s"}]`);
   near(run("consHPPerSec()"), 4000 * 0.05 / 5); near(run("consSPPerSec()"), 2);
-  run(`C().cons=[{on:true,name:"Mimir's Well",eff:"Max SP +10%, SP consumption -10%"}]`);
+  run(`C().cons=[];C().consItems={"Mimir's Well":true}`);
   near(run("spCostMul()"), 0.9);
-  run(`C().cons[0].on=false`); near(run("spCostMul()"), 1); near(run("consSPPerSec()"), 0);
+  run(`C().consItems={}`); near(run("spCostMul()"), 1); near(run("consSPPerSec()"), 0);
 });
 
 t("event consumables: presets and the effect lines they use", () => {
@@ -2245,14 +2247,31 @@ t("event consumables: presets and the effect lines they use", () => {
   assert.equal(kinds("Cri damage / ranged damage / magic damage +5%"), "crit_dmg 5, range_dmg 5, magic_dmg 5");
   assert.equal(kinds("Incoming Heal and Recovery Item effect +20%"), "heal_pct 20, rec_item_pct 20");
   assert.equal(kinds("SP Consumption -5%, Fixed Cast Time -30%"), "sp_cost_percent -5, fct_percent -30");
+  // Nordfeld Beer: physical and magic damage against the Boulder Dwarf group, or one of them when the line says so
+  assert.equal(lines("Damage to Boulder Dwarves +10%"), JSON.stringify({ lines: [["physical_damage_percent", "monster_group", "boulder_dwarf", 10], ["magic_damage_percent", "monster_group", "boulder_dwarf", 10]], bad: [] }));
+  assert.equal(kinds("Physical damage against Boulder Dwarf +5%"), "physical_damage_percent 5");
+  // ... which in status-window mode goes on top of the Equipment Stats rows, against Boulder Dwarves only
+  run(`C().cons=[{on:true,name:"Nordfeld Beer",eff:"Damage to Boulder Dwarves +10%"}];applyBuild()`);
+  assert.equal(run(`JSON.stringify([C().bx.phys.group,C().bx.magic.group])`), JSON.stringify([{ "Boulder Dwarf": 10 }, { "Boulder Dwarf": 10 }]));
+  assert.equal(run(`groupMul(C().bx.phys,{name:"Boulder Dwarf Siege Trooper"})`), 1.1);
+  assert.equal(run(`groupMul(C().bx.phys,{name:"Poring"})`), 1);
+  run(`C().cons=[];applyBuild()`);
   // every preset reads without leftovers
   assert.equal(run(`CONS_PRESETS.flatMap(p=>parseCons(p.eff).bad).join()`), "");
   // fixed cast: only the highest % cut counts
   assert.equal(run("fctPctEff()"), 10);
-  run(`C().cons=[{on:true,name:"Challenge Drink",eff:CONS_PRESETS[0].eff}]`);
+  // the listed items are ticked by name (c.consItems)
+  run(`C().consItems={"Challenge Drink":true}`);
   assert.equal(run("fctPctEff()"), 30); near(run("spCostMul()"), 0.95);
   assert.equal(run("noBreak()"), false);
-  run(`C().cons.push({on:true,name:"Unlimited Drink",eff:CONS_PRESETS[4].eff})`); assert.equal(run("noBreak()"), true);
+  run(`C().consItems["Unlimited Drink"]=true`); assert.equal(run("noBreak()"), true);
+  run(`C().consItems={}`);
+  // an older save's row that is exactly a listed item becomes its tick (an unticked row stays unticked); other rows stay rows
+  run(`C().cons=[{on:true,name:"Mimir's Well",eff:"Max SP +10%, SP consumption -10%"},{on:false,name:"Enriched Abrasive",eff:"CRIT +30"},{on:true,name:"Mine",eff:"ATK +5"}]`);
+  assert.equal(run(`JSON.stringify(consItemsOf(C()))`), JSON.stringify({ "Mimir's Well": true }));
+  assert.equal(run(`C().cons.map(r=>r.name).join()`), "Mine");
+  assert.equal(run(`ownRows(C()).map(r=>r.name).join()`), "Mimir's Well,Mine");
+  run(`C().cons=[];C().consItems={}`);
   // Growth Elixir: +50% base and job EXP per kill
   const mob = "({id:-4,name:'E',lv:10,exp:100,job:60,drops:[]})";
   run(`state.bonus=0;state.jobBonus=0`);
@@ -2270,7 +2289,7 @@ t("event consumables: presets and the effect lines they use", () => {
   setup("Merchant", { st: {}, cons: [], autoSp: false, potOn: false });
   run(`state.recovery={discount:true}`);
   near(run(`recItem("501").avg`), 45);
-  run(`C().cons=[{on:true,name:"Ale's Blessing",eff:CONS_PRESETS.find(p=>p.name==="Ale's Blessing").eff}]`);
+  run(`C().consItems={"Ale's Blessing":true}`);
   near(run(`recItem("501").avg`), 54); near(run(`recItem("548").avg`), 32 * 1.2);
   run(`CRD().healHp=100`); near(run(`healHpEff()`), 120);
   run(`C().cons=[]`);
