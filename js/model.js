@@ -197,6 +197,8 @@ const ignOf=(k,m)=>{const c=C(),I=c.bx&&c.bx.ign&&c.bx.ign[k];let v=num(c[k==="d
   if(I&&m)v+=(I.race[m.race]||0)+(I.size[m.size]||0)+(I.ele[m.el||"Neutral"]||0)+(I.kind[m.boss?"boss":"normal"]||0);return Math.min(100,Math.max(0,v))};
 const effDef=m=>(m.def||0)*(1-ignOf("def",m)/100);
 const effMdef=m=>(m.mdef||0)*(1-ignOf("mdef",m)/100);
+// MATK for damage: the status window's (status + gear, flat) × (1 + MATK %), which the window leaves out
+const matkOf=()=>Math.floor(sumStat(cf("matkTxt"))*(1+num(cf("matkPct"))/100));
 // Formulas from roz.prontera.info/mechanics (Ragnarok Zero, renewal core)
 // ATK is "status + gear" as in the status window. The gear side is the weapon (×(1 + STR or DEX / 200)) and equipment ATK (eq); with
 // dual wield the left weapon too. ATK % isn't in the window: it comes from atkPct (gear in build mode, the ATK % box, consumables)
@@ -230,7 +232,7 @@ const hitPctOf=m=>{const a=C().a;if(a.falcon)return elemMult(m,"Neutral");if(a.t
 const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist"||C().a.falcon||C().a.mr)return 100;if(m.hit100==null)return Math.min(100,95+daSkill().hit);return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100+daSkill().hit))};
 function dmgPerHit(m){
   const a=C().a;if(a.type==="spellfist")return sfOn()?sfHit(m,atkEl()):hsHit(m,atkEl());if(a.mr)return mrHit(m);if(a.falcon==="assault")return faHit(m);if(a.falcon)return blitzHit(m,Math.round(num(a.hits,5)));
-  if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0||tuOff(m))return 0;const md=effMdef(m);return Math.max(1,Math.floor((sumStat(cf("matkTxt"))*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
+  if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0||tuOff(m))return 0;const md=effMdef(m);return Math.max(1,Math.floor((matkOf()*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
   const P=atkParts(),d=physDmg(m,handAtk(m,P.weapon,C().weapon,atkEl(),frontAtk()));
   return dualHit()&&d>0?Math.max(1,Math.floor(d*handPct().right/100)):d}
 // one physical hit from a hand's ATK (handAtk: the post bonuses and element are in it), × skill %, then the full bonuses and DEF
@@ -268,10 +270,12 @@ const procFree=m=>ssDmg(m)*SS_CHANCE;
 // text, like the in-game tooltip, changes only the damage % and the duration with the level, and gives no chance
 const DL_PHYS=1,DL_MAGIC=0.5;
 const dlLv=(c=C())=>!c.a.dl?0:hasTree(c)?skLv(c,"duple-light"):10;
-const dlDmg=m=>{const lv=dlLv();if(!lv)return 0;const o={...C().a,dl:false,hits:1,sadd:[]};
-  const phys=withAtk({...o,name:"Duple Light",type:"phys",pct:500+50*lv,el:"W"},()=>dmgPerHit(m)*hitChance(m)/100);
+// one orb of each: phys (its damage when it lands), hc (its chance to land), mag
+const dlParts=m=>{const lv=dlLv();if(!lv)return null;const o={...C().a,dl:false,hits:1,sadd:[]};let hc=0;
+  const phys=withAtk({...o,name:"Duple Light",type:"phys",pct:500+50*lv,el:"W"},()=>{hc=hitChance(m)/100;return dmgPerHit(m)});
   const mag=withAtk({...o,name:"Duple Light",type:"magic",pct:800+80*lv,el:"Neutral"},()=>dmgPerHit(m));
-  return phys*DL_PHYS+mag*DL_MAGIC};
+  return {phys,hc,mag}};
+const dlDmg=m=>{const d=dlParts(m);return d?d.phys*d.hc*DL_PHYS+d.mag*DL_MAGIC:0};
 // Blitz Beat (Hunter falcon), per hit: (AGI/2 + DEX/10) × 2 + 6 × Steel Crow Lv + 20 × Blitz Beat Lv, as a Neutral hit that always lands
 // and ignores DEF and your damage bonuses. Auto Blitz: LUK/3 % on each basic attack that hits, at Lv (Job Lv + 9)/10 up to the learned Lv
 // (rAthena renewal). Steel Crow and Blitz Beat count as Lv 10 / 5 without a skill tree
@@ -426,7 +430,7 @@ const sfChance=()=>sfOn()?Math.min(10,Math.max(0,num(G().sfLv)))*5/100:0;
 // Spell Fist %: 100 × bolt Lv + 100 × Spell Fist Lv. The bolt is worked out first at 100% (its MDEF steps included), then × that %
 const sfPct=()=>100*Math.min(10,Math.max(1,num(G().boltLv,10)))+100*Math.min(10,Math.max(1,num(G().sfLv,10)));
 const sfHit=(m,el)=>Math.floor(magicDmg(m,100,el)*sfPct()/100);
-const magicDmg=(m,pct,el,addMatk=0)=>{const e=elemMult(m,el)/100;if(e<=0||pct<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor(((sumStat(cf("matkTxt"))+addMatk)*pct/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*e))};
+const magicDmg=(m,pct,el,addMatk=0)=>{const e=elemMult(m,el)/100;if(e<=0||pct<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor(((matkOf()+addMatk)*pct/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*e))};
 // Hindsight: Lv × 2% chance per attack to auto-cast a bolt at half its level (100% MATK per hit); costs 2/3 of the bolt's SP
 const hsLvN=()=>Math.min(10,Math.max(0,num(G().hsLv)));
 const hsChance=()=>hsOnNow()?hsLvN()*2/100:0;
@@ -508,6 +512,18 @@ const withAtk=(a,fn)=>{const c=C(),k=c.a;c.a=a;try{return fn()}finally{c.a=k}};
 const sfPhys=m=>withAtk(BASIC,()=>withEl(null,()=>useAvg(m,dmgPerHit(m),procPerUse(m))));
 const sfMagic=m=>{const el=atkEl();return sfChance()*sfHit(m,el)*daFactor()+hsChance()*hsSustain()*hsHit(m,el)*(1+dbChance())};
 const sfPerAttack=m=>sfMagic(m)+sfPhys(m)*daFactor();
+// a hit that lands, low to high, where a basic attack can add damage by chance: Duple Light's orbs (low: the hit alone; high: the
+// physical orb and the magic orb (DL_MAGIC of the time) both on top; the physical one rolls to hit again) and Spell Fist (low: the
+// swing's physical hit; high: it plus the Spell Fist bolt, Lv × 5% of swings, and the Hindsight bolt, twice with Double Bolt).
+// avg: each part by its chance (no crits, no misses). Null for any other attack: its hits are all the same
+function hitRange(m){const c=C();
+  if(isSF()){const el=atkEl(),ph=withAtk(BASIC,()=>withEl(null,()=>dmgPerHit(m))),sf=sfOn()?sfHit(m,el):0,hs=hsOnNow()&&hsLvN()?hsHit(m,el):0;
+    if(!sf&&!hs)return null;const db=dbChance()>0?2:1;
+    return {lo:ph,hi:ph+sf+hs*db,avg:ph+sfChance()*sf+hsChance()*hs*(1+dbChance()),parts:[["physical",ph],sf&&["Spell Fist",sf],hs&&["Hindsight",hs]].filter(Boolean)}}
+  if(c.a.type!=="auto")return null;const d=dlParts(m);if(!d)return null;const base=dmgPerHit(m)+leftDmg(m);
+  return {lo:base,hi:base+d.phys+d.mag,avg:base+d.phys*d.hc*DL_PHYS+d.mag*DL_MAGIC,parts:[["hit",base],["physical orb",d.phys],["magic orb",d.mag]]}}
+// "1,234 (800–2,100)" for a hitRange, else the hit alone
+const hitTxt=(m,plain)=>{const r=hitRange(m);return r?`${fmtN(r.avg)} (${fmtN(r.lo)}–${fmtN(r.hi)})`:plain};
 // Hindsight vs none on the session's map, as a note in Sage options: the extra EXP and what the extra SP items cost per 1% (after the extra loot)
 function hsCompare(){
   const g=G();if(!isSF()||!hsLvN()){g._note="";return}
@@ -530,7 +546,7 @@ const skRowOf=(slug,lv)=>{for(const t of SKILLS[state.job]||[])for(const s of t.
 // Heal (Acolyte, Priest, Monk, Crusader) at its learned level: (BaseLv + INT) / 5 × 3 × Lv + MATK, × Heal received % (rAthena's renewal
 // formula, not checked in game), SP from Zero's skill data. Without it, Vitata's Heal Lv1 (the HP / SP boxes on the Cards card). null: no Heal
 function healOpt(){const lv=skLv(C(),"heal");
-  if(lv>0){const r=skRowOf("heal",lv);return {name:`Heal Lv${lv}`,hp:(Math.floor((num(C().baseLv)+(statVal(C(),"int")||0))/5)*3*lv+sumStat(cf("matkTxt")))*(1+consSum("heal_pct")/100),sp:num(r?r[0]:10+3*lv)*spCostMul()}}
+  if(lv>0){const r=skRowOf("heal",lv);return {name:`Heal Lv${lv}`,hp:(Math.floor((num(C().baseLv)+(statVal(C(),"int")||0))/5)*3*lv+matkOf())*(1+consSum("heal_pct")/100),sp:num(r?r[0]:10+3*lv)*spCostMul()}}
   return cdOn("vitata")&&healHpEff()>0?{name:"Vitata's Heal Lv1",hp:healHpEff(),sp:num(CRD().healSp)*(isSF()?sgSpMult():spCostMul())}:null}
 // Indulge (Sage) at its learned level: 10% of Max HP for (10 × Lv)% of that as SP, less the Lv SP it costs (the 10% is classic RO's,
 // not checked in game). null: not learned, or it can't give SP back
@@ -642,7 +658,9 @@ function mapSpShort(mp,w,el){let s=0,t=0;withMobbed(mp,()=>withEl(el,()=>(MAPMOB
 // zeny per kill: the exported loot value (the database, NPC prices) scaled by your drop rate bonus. A drop you sell to players
 // counts at the market price you typed instead: the loot value already holds its NPC price, so the market price adds only what
 // it beats the NPC price by. Its chance is scaled by the drop bonus and the level penalty, capped at 100%
-const dropMul=()=>1+num(state.dropBonus)/100;
+// the Drop rate bonus box plus "Item drop rate +x%" from gear in build mode (an event card's option)
+const dropPct=()=>num(state.dropBonus)+num((C().bx||{}).drop);
+const dropMul=()=>1+dropPct()/100;
 // NPC sell price: the one you typed, else the database's (data/prices.js), else 0
 const npcSell=id=>{const v=state.npcPrices[id];return v!=null&&v!==""?num(v):num(NPCSELL[id])};
 // drop rate cut by level gap = monster Lv − your base Lv (official guide, roz.mygnjoy.com/en/intro/guide/11): "~ -19" no penalty,

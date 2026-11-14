@@ -8,7 +8,7 @@ const FX_LABEL={str:"STR",agi:"AGI",vit:"VIT",int:"INT",dex:"DEX",luk:"LUK",all_
   physical_damage_percent:"Physical damage",magic_damage_percent:"Magic damage",ranged_damage_percent:"Ranged physical damage",melee_damage_percent:"Melee physical damage",
   skill_damage_percent:"Skill damage",damage_taken_percent:"Damage taken",magic_damage_taken_percent:"Magic damage taken",resistance_percent:"Resistance",
   exp_percent:"EXP",heal_amount_percent:"Heal power",item_heal_percent:"HP heal effect",sp_heal_percent:"SP heal effect",heal_received_percent:"Heal received",sp_recovery_percent:"SP recovery",
-  hp_recovery_percent:"HP recovery",sp_cost_percent:"SP cost",ignore_def_percent:"Ignore DEF",ignore_mdef_percent:"Ignore MDEF",sp_per_hit:"SP per hit",hp_per_hit:"HP per hit"};
+  hp_recovery_percent:"HP recovery",sp_cost_percent:"SP cost",drop_percent:"Item drop rate",ignore_def_percent:"Ignore DEF",ignore_mdef_percent:"Ignore MDEF",sp_per_hit:"SP per hit",hp_per_hit:"HP per hit"};
 const fxCap=s=>String(s||"").split("_").map(w=>w&&w[0].toUpperCase()+w.slice(1)).join(" ").replace("Demi Human","Demi-Human");
 // one bonus line [type, target kind, target, value, per N refines, skill, scaling skill] -> "Physical damage vs Demon +10%"
 function fxLine([t,kind,target,v,per,skill,scale]){
@@ -20,12 +20,14 @@ function fxLine([t,kind,target,v,per,skill,scale]){
   else if(kind==="monster_kind")l+=target==="boss"?" vs Boss":" vs normal monsters";
   else if(kind&&(t==="damage_taken_percent"||t==="magic_damage_taken_percent"))l+=` from ${T}`;
   else if(kind==="race"&&target==="all")l+=" vs all races";
+  else if(kind==="size"&&target==="all")l+=" vs all sizes";
   else if(kind)l+=` vs ${T}${kind==="size"?" size":""}`;
   if(skill)l=`${skill}: ${l}`;
   return `${l} ${+v>0?"+":""}${v}${pct||stat?"%":""}${per?` per${+per>1?` ${per}`:""} refine${+per>1?"s":""}`:""}${scale?` per ${scale} level`:""}`}
 // a bonus group: its condition, then its lines or text
 function fxGroup(g){const when=[g.r!=null?`at +${g.r}`:"",g.rs!=null?`combined refine +${g.rs}`:"",g.lv!=null?`base Lv ${g.lv}+`:"",
-    g.cls&&g.cls.length?[...new Set(g.cls)].map(fxCap).join(" / "):"",g.lvPer?`per ${g.lvPer} base Lv${g.lvMax?` (to Lv ${g.lvMax})`:""}`:""].filter(Boolean).join(", ");
+    g.cls&&g.cls.length?[...new Set(g.cls)].map(fxCap).join(" / "):"",g.wt?`with a ${[].concat(g.wt).join(" or ").toLowerCase()}`:"",g.lvPer?`per ${g.lvPer} base Lv${g.lvMax?` (to Lv ${g.lvMax})`:""}`:"",
+    g.ev?`event option, until the ${new Date(g.ev+"T00:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short",timeZone:"UTC"})} maintenance`:""].filter(Boolean).join(", ");
   const body=(g.b||[]).length?g.b.map(fxLine).join(", "):g.proc||g.text||"";return body?(when?`${when}: `:"")+body:""}
 const fxOf=it=>(it&&it.g||[]).map(fxGroup).filter(Boolean);
 // the jobs that wear it, as the app names them: "All jobs" when every 1st job does (a 2nd job wears its 1st job's gear)

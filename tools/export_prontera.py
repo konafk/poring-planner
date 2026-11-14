@@ -78,6 +78,8 @@ GROUP_DMG = {300944: ("physical_damage_percent", "boulder_dwarf", 30), 300943: (
 # memorial dungeon gear whose bonus groups prontera has wrong: the armor's set lines (counted again by SETS) as its own, its
 # +3 group twice, MaxHP / MaxSP and the "DEF +x" line (on top of the armor's DEF) missing, the shoes' SP Heal effect missing,
 # the Oath rings' INT / DEX and LUK / AGI +2 only at +7. Replaced with the groups the Global client's item description gives
+# weapon types a group can need (wt, as build.js names them): "a blunt weapon" is a mace
+MACES = ["One-handed mace", "Two-handed mace"]
 GEAR_G = {
     # Clock Casket: prontera has the refine line vs Formless and no ATK; the client: "ATK +20. Every 2 refine levels, increases Physical
     # Damage to monsters of all races by 1%. At +7 refine, HIT +15. At +9 refine, MHP +250."
@@ -97,9 +99,16 @@ GEAR_G = {
     # with Joker Card, ... transform you into Joker for 7 seconds. During transformation: ATK +70, MATK +70" (the set's proc, not counted)
     27270: [{"b": [["mdef", None, None, 10, 1]]}],
     # Orc General Card: prontera has ATK +25 flat. Client: ATK +25 (and ASPD +2) only "When equipped together with High Orc Card"
-    # (the set, in SETS); its own lines depend on the weapon type, not counted
-    27273: [{"text": "While using a blunt weapon, increases CRIT by 1 per weapon refine, and at +10 increases Critical Damage by 10%."},
-            {"text": "While using a knuckle, reduces After Attack Delay by 1% per refine, and at +10 increases ASPD by 2."}],
+    # (the set, in SETS); its own lines need the weapon type (wt): "While using a blunt weapon (a mace), CRIT +1 per weapon refine,
+    # and at +10 Critical Damage +10%. While using a knuckle, After Attack Delay -1% per refine, and at +10 ASPD +2"
+    27273: [{"wt": MACES, "b": [["crit", None, None, 1, 1]]}, {"wt": MACES, "r": 10, "b": [["crit_damage_percent", None, None, 10]]},
+            {"wt": "Knuckle", "b": [["attack_delay_percent", None, None, -1, 1]]}, {"wt": "Knuckle", "r": 10, "b": [["aspd", None, None, 2]]}],
+    # Assassin Dagger: prontera leaves out the client's "Slightly increases ASPD (After Attack Delay decreased)": ASPD +2%
+    # (rAthena item_db bAspdRate 2, the client gives no number)
+    1232: [{"b": [["hp_percent", None, None, 20], ["sp_percent", None, None, 15], ["aspd_percent", None, None, 2]]}],
+    # Cursed Emerald Earring: prontera has the +7 line only. Client: "DEX +2, AGI +2 (data/client.js lines adds it). At +7 refine: DEX +2,
+    # AGI +2. At +9 refine: For every BaseLv 25, ASPD increases (After Attack Delay -2%)"
+    28568: [{"r": 7, "b": [["dex", None, None, 2], ["agi", None, None, 2]]}, {"r": 9, "lvPer": 25, "b": [["attack_delay_percent", None, None, -2]]}],
     # cards checked against the client's text: prontera counts set lines as the card's own (Merman: AGI / DEX and the Archer line
     # belong to the Merman, Cruiser, Anolian, Alligator & Dragon Tail set), refine conditions as always on, or leaves lines out
     4199: [{"b": [["hp_recovery_percent", None, None, 10], ["sp_recovery_percent", None, None, 10]]}],  # Merman Card
