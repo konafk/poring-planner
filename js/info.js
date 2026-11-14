@@ -70,7 +70,7 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
     +(me?infoTile(`You (${esc(state.job)})`,isFinite(r.sec)?r.sec.toFixed(1)+"s / kill":"can't hurt",`your hit ${Math.round(r.mult)}%${elTag(r.el2)}`)
       // damage per second while fighting it, with the element the EXP/min picks (as on the Character card); none for Spell Fist
       +(dps!=null&&isFinite(dps)?infoTile("Damage / s",fmtN(Math.round(dps)),`vs its ${m.hp==null?"?":fmtN(m.hp)} HP, misses included`):"")
-      +infoTile("Zeny / kill",hasLoot(m)?fmtN(r.zk):"–",`${m.drops.length&&m.drops.every(([,ch])=>ch==null)?"no published drop rates yet · ":""}${penNote(m)||"no drop level penalty"}${num(state.dropBonus)?` · drop rate +${num(state.dropBonus)}%`:""}`)
+      +infoTile("Zeny / kill",hasLoot(m)?fmtN(r.zk):"–",`${m.drops.length&&m.drops.every(([,ch])=>ch==null)?"no published drop rates yet · ":""}${penNote(m)||"no drop level penalty"}${dropPct()?` · drop rate +${fmtP(dropPct())}%`:""}`)
       +mobYouTiles(m):"");
   // drops: best chance first, with your chance, what NPCs and players pay, and the zeny a kill it's worth to you
   const drops=(m.drops||[]).slice().sort((x,y)=>(y[1]??-1)-(x[1]??-1)).map(([id,ch])=>{const y=yourCh(m,ch),lt=looted(id);

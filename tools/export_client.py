@@ -244,10 +244,19 @@ def affixes(grf):
     return out
 
 
+# event-limited options of cards, as bonus lines with the day the event ends (ev: counted before that day). The Gatchaman collaboration's
+# three garment cards (29 October to the 26 November 2026 maintenance), each: "Physical/Magical damage dealt to monsters of all races +10%
+# (excluding Players). Physical/Magical damage dealt to enemies of all sizes +10%. EXP gained from defeating monsters +15%. Item drop rate +7%."
+GATCHAMAN_EV = {"ev": "2026-11-26", "b": [["damage_percent", "race", "all", 10], ["magic_damage_percent", "race", "all", 10],
+                                         ["damage_percent", "size", "all", 10], ["magic_damage_percent", "size", "all", 10],
+                                         ["exp_percent", None, None, 15], ["drop_percent", None, None, 7]]}
+EVENT_OPT = {300732: GATCHAMAN_EV, 300733: GATCHAMAN_EV, 300734: GATCHAMAN_EV}
+
+
 def card_row(i, v, st, affix):
     """A data/cards.js row for a card the database doesn't have yet: its slot from "Equipped on" / "Equippable by", bonus lines from
-    its text up to "[Event-Limited Option]" (an event's options go when it ends, so they stay text only), "For every 10 BaseLv, ...
-    (Applies up to BaseLv 50.)" as lvPer / lvMax."""
+    its text up to "[Event-Limited Option]" (an event's options go when it ends: only the ones in EVENT_OPT count, until their day),
+    "For every 10 BaseLv, ... (Applies up to BaseLv 50.)" as lvPer / lvMax."""
     slot = CARD_SLOT.get(st.get("Equipped On") or st.get("Equippable by") or "")
     if not slot:
         return None
@@ -260,6 +269,8 @@ def card_row(i, v, st, affix):
                 g.append({"lvPer": int(m.group(1)), **({"lvMax": int(cap.group(1))} if cap else {}), "b": b[0]["b"]})
         elif b := bonus(s):
             g += b
+    if i in EVENT_OPT:
+        g.append(EVENT_OPT[i])
     row = {"id": i, "slug": re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") + f"-{i}", "name": name, "slot": [slot], "slots": 0, "lv": 0,
            "wlv": 0, "g": g, **({"affix": affix[0], "affixPos": affix[1]} if affix else {})}
     return {k: x for k, x in row.items() if x not in (None, [], "")}

@@ -242,6 +242,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
       <div class="form cfill" id="bonusRow">
         <label>Extra damage %<input id="dmgBonus" type="number" step="1"></label>
         <label title="ATK % from gear. The status window's ATK leaves it out. It scales weapon and equipment ATK next to race / size / element cards, not multiplied with them">ATK %<input id="atkPct" type="number" step="1" placeholder="0"></label>
+        <label title="MATK % from gear. The status window's MATK leaves it out (it shows only the flat MATK). It multiplies your whole MATK">MATK %<input id="matkPct" type="number" step="1" placeholder="0"></label>
         <label title="+% damage to monsters whose name contains this text. Boulder Dwarf Captain / Squad Leader Cards are already counted by build mode and the Equipment stats 'monster group' line">+% vs monster name<span class="bar"><input class="fill" id="nameSel" list="mobList" placeholder="e.g. Orc"><select id="nameType" aria-label="Damage type"><option value="phys">Phys</option><option value="magic">Magic</option><option value="both">Both</option></select><input class="w-sm" id="namePct" type="number" step="1"></span></label>
       </div>
       <div class="form c5">

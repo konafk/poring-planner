@@ -58,7 +58,7 @@ const BUILD=(()=>{
   // gear, skills such as Improve Dodge) + Perfect Dodge (1 + LUK / 10 + gear), "147+1"
   function status(lv,s,ranged){const f=Math.floor;
     return {atk:f(lv/4+(ranged?s.dex+s.str/5:s.str+s.dex/5)+s.luk/3),matk:s.int+f(s.int/2)+f(s.dex/5)+f(s.luk/3)+f(lv/4),
-      hit:175+lv+s.dex+f(s.luk/3),flee:100+lv+s.agi+f(s.luk/5),softDef:f(lv/2)+f(s.vit/2)+f(s.agi/5), // each part rounds down: Lv 63 VIT 5 AGI 100 shows 53 in game, not 54
+      hit:175+lv+s.dex+f(s.luk/3),flee:100+lv+s.agi+f(s.luk/5),softDef:f(lv/2)+f(s.vit/2+s.agi/5), // base Lv / 2 rounds down on its own: Lv 63 VIT 5 AGI 100 shows 53, Lv 73 VIT 5 AGI 103 59 (Sage, 2026-11-14)
       softMdef:Math.max(0,f(s.int+lv/4+(s.dex+s.vit)/5)),crit:1+s.luk*0.3+lv/100,aspdTerm:Math.sqrt(s.agi*s.agi/2+s.dex*s.dex/(ranged?7:5))/4}}
 
   // status points: 48 at Lv 1 with every stat at 1, then floor(Lv / 5) + 3 a level (Lv 40 305, Lv 60 555, as the game's window
@@ -74,7 +74,7 @@ const BUILD=(()=>{
   const blank=()=>({st:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},stPct:{str:0,agi:0,vit:0,int:0,dex:0,luk:0},atk:0,matk:0,atkPct:0,matkPct:0,hit:0,flee:0,pd:0,crit:0,critDmg:0,aspd:0,aspdPct:0,aspdMod:0,
     hp:0,hpPct:0,sp:0,spPct:0,def:0,vitDef:0,mdef:0,ranged:0,melee:0,skill:0,skillOf:{},vct:0,fct:0,acd:0,vctOf:{},fctOf:{},ignDef:0,ignMdef:0,
     ign:{def:{race:{},size:{},ele:{},kind:{}},mdef:{race:{},size:{},ele:{},kind:{}}},
-    phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},taken:{race:{},size:{},ele:{},kind:{}},exp:{all:0,race:{}},critRace:{},spCost:0,spRec:0,hpRec:0,wEle:null,unmodelled:[]});
+    phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}},magic:{all:0,race:{},size:{},ele:{},kind:{},group:{}},myEle:{},taken:{race:{},size:{},ele:{},kind:{}},exp:{all:0,race:{}},drop:0,critRace:{},spCost:0,spRec:0,hpRec:0,wEle:null,unmodelled:[]});
   // lines that only matter for PvP survival, healing or status resistance: not part of the farming maths, so not reported either
   const QUIET=["resistance_percent","heal_amount_percent","item_heal_percent","sp_heal_percent","sp_recovery_percent","hp_recovery_percent","perfect_hit","magic_damage_taken_percent","sp_per_hit","hp_per_hit"];
   // consumable and buff lines the page counts itself (consSum in js/model.js): not reported as not counted
@@ -92,6 +92,7 @@ const BUILD=(()=>{
     // "Fire Magical Damage +x%" boosts your own spells of that element; physical lines with an element target the monster's element
     if(type==="magic_damage_percent"&&kind==="element"){addTo(A.myEle,tgt(kind,target),v);return true}
     if(type==="exp_percent"&&!kind){A.exp.all+=v;return true}
+    if(type==="drop_percent"&&!kind){A.drop+=v;return true} // "Item drop rate +7%": on top of the Drop rate bonus box
     if(type==="damage_percent"&&!kind){A.phys.all+=v;return true}
     if(type==="magic_damage_percent"&&!kind){A.magic.all+=v;return true}
     if(type==="sp_cost_percent"&&!kind){A.spCost+=v;return true}
@@ -111,8 +112,8 @@ const BUILD=(()=>{
     if(type==="cast_time_fixed_percent"&&!kind){const top=(o,k)=>{o[k]=-v>0?Math.max(o[k]||0,-v):(o[k]||0)-v};if(b[5])top(A.fctOf,b[5]);else top(A,"fct");return true}
     if(type==="skill_damage_percent"&&!kind){if(b[5])addTo(A.skillOf,b[5],v);else A.skill+=v;return true}
     if((type==="damage_percent"||type==="magic_damage_percent"||type==="physical_damage_percent")&&bucket(kind)){
-      // race "all" ("monsters of all races"): every race's bonus, which the game sums with the other race bonuses
-      const ch=bucket(kind),ts=kind==="race"&&target==="all"?Object.values(RACE):[tgt(kind,target)];
+      // race "all" ("monsters of all races"): every race's bonus, which the game sums with the other race bonuses; size "all" the same
+      const ch=bucket(kind),ts=target==="all"&&(kind==="race"||kind==="size")?Object.values(kind==="race"?RACE:SIZE):[tgt(kind,target)];
       for(const t of ts){if(type!=="magic_damage_percent")addTo(A.phys[ch],t,v);if(type!=="physical_damage_percent"&&type!=="damage_percent")addTo(A.magic[ch],t,v)}return true}
     // ignore DEF / MDEF: for every monster, or only against a race, size, element or boss / normal monsters (A.ign)
     if((type==="ignore_def_percent"||type==="ignore_mdef_percent")&&!kind){if(type==="ignore_def_percent")A.ignDef+=v;else A.ignMdef+=v;return true}
@@ -246,9 +247,10 @@ const BUILD=(()=>{
   const stonesWorn=sel=>STONE_SLOTS.map(z=>stone((sel||{})[z.k])).filter((x,i)=>x&&x.slot===STONE_SLOTS[i].k);
   // does a bonus group apply? r: item refine, rs: combined refine of a set, lv: base level, cls: job slugs
   // ("Acolyte Class" in game covers Priest and Monk, so a 2nd job also matches its 1st job)
-  // wt: the weapon type a Job Essence's group needs
-  const groupOn=(g,ctx)=>(g.r==null||ctx.refine>=g.r)&&(g.rs==null||ctx.refineSum>=g.rs)&&(g.lv==null||ctx.baseLv>=g.lv)&&(!g.wt||ctx.weapon===g.wt)&&(!g.cls||!g.cls.length||g.cls.includes(ctx.jobSlug)||g.cls.includes(ctx.firstSlug));
-  function applyGroups(A,gs,ctx,src){(gs||[]).forEach(g=>{if(!groupOn(g,ctx))return;
+  // wt: the weapon type (or types) the group needs in your right hand (a Job Essence's, Orc General Card's "While using a knuckle")
+  // ev: the day an event-limited option ends ("2026-11-26": off from that day); counted while ctx.today is before it, or when no day is given
+  const groupOn=(g,ctx)=>(g.r==null||ctx.refine>=g.r)&&(g.rs==null||ctx.refineSum>=g.rs)&&(g.lv==null||ctx.baseLv>=g.lv)&&(!g.wt||[].concat(g.wt).includes(ctx.weapon))&&(!g.ev||!ctx.today||ctx.today<g.ev)&&(!g.cls||!g.cls.length||g.cls.includes(ctx.jobSlug)||g.cls.includes(ctx.firstSlug));
+  function applyGroups(A,gs,ctx,src){(gs||[]).forEach(g=>{if(!groupOn(g,ctx)){if(g.ev&&groupOn({...g,ev:null},ctx))A.unmodelled.push(`${src}: event option ended ${g.ev}`);return}
     if(g.proc||g.text){A.unmodelled.push(`${src}: ${g.proc||g.text}`);}
     // a proc's lines last only while it's up (Extra Joker & Joker: ATK +70 while transformed): listed, not counted
     if(g.proc)return;
@@ -260,10 +262,12 @@ const BUILD=(()=>{
   // ---- the whole build ----
   // b = {baseLv, jobLv, base:{str..luk}, gear:{slot:{id, refine, cards:[ids]}}, stones?, special?, extra?, hpBase?, spBase?, skills?}; job = "Knight"
   function compute(b,job,aspdBase){
-    const A=blank(),lv=Math.max(1,+b.baseLv||1),jobLv=Math.max(1,+b.jobLv||1),ctxBase={baseLv:lv,jobSlug:String(job).toLowerCase(),firstSlug:String(FIRST_OF[job]||job).toLowerCase(),refineSum:0};
     const gear=b.gear||{},worn=[];let wpn=null,wpnL=null,shield=false,weaponAtk=0,gearAtk=0,gearMatk=0,refAtk=0,refMatk=0,refDef=0,gearDef=0,gearMdef=0;
     // a two-handed weapon leaves no hand for the Shield row: whatever is saved there doesn't count
     const w0=gear.weapon&&item(gear.weapon.id),bothHands=!!w0&&twoHanded(WTYPE[w0.type]);
+    // ctx.weapon: the right hand's type for groups that need one (wt); ctx.today (b.today, "YYYY-MM-DD") for event options (ev)
+    const A=blank(),lv=Math.max(1,+b.baseLv||1),jobLv=Math.max(1,+b.jobLv||1),ctxBase={baseLv:lv,jobSlug:String(job).toLowerCase(),firstSlug:String(FIRST_OF[job]||job).toLowerCase(),refineSum:0,
+      weapon:w0&&WTYPE[w0.type]||"Bare hands",today:b.today||null};
     SLOTS.forEach(s=>{const g=gear[s.k];const it=g&&item(g.id);if(!it)return;if(s.k==="shield"&&bothHands){A.unmodelled.push(`${it.name}: not counted, ${w0.name} takes both hands`);return}const r=Math.max(0,+g.refine||0);
       if(s.k.startsWith("head")&&worn.some(w=>w.it===it&&w.slot.startsWith("head")))return; // a multi-slot headgear counts once (two of the same dagger or accessory are two items)
       worn.push({it,r,slot:s.k,cards:(g.cards||[]).map(item).filter(Boolean)});
@@ -274,7 +278,7 @@ const BUILD=(()=>{
     worn.forEach(w=>{const ctx={...ctxBase,refine:w.r};applyGroups(A,w.it.g,ctx,w.it.name);w.cards.forEach(c=>applyGroups(A,c.g,ctx,c.name));
       const o=optLinesOf(gear[w.slot]||{});o.lines.forEach(b=>apply(A,b,w.it.name+" option"));o.bad.forEach(x=>A.unmodelled.push(`${w.it.name} option not understood: ${x}`));o.off.forEach(x=>A.unmodelled.push(`${w.it.name} option not counted: ${x}`));
       // Job Essences among the row's options, by the armor's refine and b.skills
-      optRows((gear[w.slot]||{}).opts).forEach(x=>{const e=OPT_BY[x.k].ess;if(e)applyGroups(A,e.g,{...ctx,skills:b.skills||{},weapon:wpn?WTYPE[wpn.type]:""},e.name)})});
+      optRows((gear[w.slot]||{}).opts).forEach(x=>{const e=OPT_BY[x.k].ess;if(e)applyGroups(A,e.g,{...ctx,skills:b.skills||{}},e.name)})});
     // costume enchant stones (data/stones.js): b.stones = {upper, middle, lower, garment} -> stone id, plus the sets they complete
     const st=stonesWorn(b.stones);st.forEach(x=>{(x.b||[]).forEach(l=>apply(A,l,x.name));if(x.off)A.unmodelled.push(`${x.name}: ${x.off}`)});
     const ids=st.map(x=>x.id);(typeof STONE_SETS!=="undefined"?STONE_SETS:[]).forEach(z=>{if(z.need.every(i=>ids.includes(i)))z.b.forEach(l=>apply(A,l,z.name))});
@@ -299,9 +303,10 @@ const BUILD=(()=>{
     S.softDef+=vitDefAdd(tot.vit,A.vitDef);
     const lw=wpnL?WTYPE[wpnL.type]||null:null,dual=dualOk(job,weapon,lw);
     if(wpnL&&!dual)A.unmodelled.push(`${wpnL.name}: a left-hand weapon needs an Assassin with a dagger, one-handed sword or one-handed axe in each hand`);
-    // ATK % isn't in the status window's ATK: it's passed on as atkPct, which the damage model adds next to the race / size cards
+    // ATK % isn't in the status window's ATK: it's passed on as atkPct, which the damage model adds next to the race / size cards.
+    // MATK % isn't in its MATK either (Lv 73 Sage with MATK +5%: 136+265, the +265 Equipment Stats' M.ATK): passed on as matkPct
     const gearSide=f(weaponAtk+gearAtk+refAtk+A.atk);
-    const matkTot=f((S.matk+gearMatk+refMatk+A.matk)*(1+A.matkPct/100));
+    const matkTot=S.matk+f(gearMatk+refMatk+A.matk);
     const hpBase=+b.hpBase>0?+b.hpBase:curve(job,"hp",lv),spBase=+b.spBase>0?+b.spBase:curve(job,"sp",lv);
     const maxHp=hpBase!=null?f((f(hpBase*(1+tot.vit/100))+A.hp)*(1+A.hpPct/100)):null,maxSp=spBase!=null?f((f(spBase*(1+tot.int/100))+A.sp)*(1+A.spPct/100)):null;
     const ab=aspdBase?aspdBase(job,weapon):null;let aspd=null;
@@ -312,7 +317,7 @@ const BUILD=(()=>{
     const ammo=worn.find(w=>w.slot==="ammo"),arrowEl=weapon==="Bow"&&ammo&&ammo.it.el?cap(ammo.it.el):null; // bows shoot the arrow's element
     const fields={baseLv:lv,jobLv,weapon,wElem:arrowEl||A.wEle||(wpn&&wpn.el?cap(wpn.el):null)||"Neutral",
       st:{str:`${base.str}+${tot.str-base.str}`,agi:`${base.agi}+${tot.agi-base.agi}`,vit:`${base.vit}+${tot.vit-base.vit}`,dex:`${base.dex}+${tot.dex-base.dex}`,luk:`${base.luk}+${tot.luk-base.luk}`},
-      intTxt:`${base.int}+${tot.int-base.int}`,atkTxt:`${S.atk}+${gearSide}`,wAtk:f(weaponAtk+(wpn?refineAt(wpn,(gear.weapon||{}).refine)[0]:0)),atkPct:A.atkPct,
+      intTxt:`${base.int}+${tot.int-base.int}`,atkTxt:`${S.atk}+${gearSide}`,matkPct:A.matkPct,wAtk:f(weaponAtk+(wpn?refineAt(wpn,(gear.weapon||{}).refine)[0]:0)),atkPct:A.atkPct,
       matkTxt:`${S.matk}+${matkTot-S.matk}`,hitTxt:`${S.hit}+${A.hit}`,fleeTxt:`${S.flee+A.flee}+${1+f(tot.luk/10)+A.pd}`,defTxt:`${S.softDef}+${gearDef+refDef+A.def}`,
       maxHp,maxSp,aspd,crit:Math.round((S.crit+A.crit)*10)/10,critDmg:A.critDmg,
       vctPct:A.vct,fctPct:A.fct,acdPct:A.acd,ignDef:A.ignDef,ignMdef:A.ignMdef,
