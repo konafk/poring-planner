@@ -119,6 +119,7 @@ const VEGGIE_ENCHANT={gear:[[19238,"Poring Village Leek"],[19239,"Poring Village
   lines:[...MEM_STATS.map(s=>s+" +1"),"MaxSP +10","MaxSP +25","MaxSP +50","MaxHP +100","MaxHP +200"]};
 // the Job Essences on +9 armor (names and effects in data/essences.js), % each by essence level: Subjugation Team armor rolls a 1st
 // job's Lv 1; Expedition armor rolls a 2nd job's. What the essences here don't add up to in MEM_ENCHANT is the Ninja's, which the client doesn't have
+// (hidden on the page while Ninja isn't in the game)
 const MEM_ESSENCE={subjugation:{tier:1,lv:{1:2.03}},expedition:{tier:2,lv:{1:0.05,2:0.025}}};
 // every NPC the tab's memorials, Jellostones, upgrades, crafts and enchants need, for the NPCs card: [name, where ("map x y", or a
 // list when there are several), what they do]
