@@ -184,6 +184,9 @@ state.recovery={discount:!(state.recovery&&state.recovery.discount===false),all:
 delete state.dailyMine;state.dailyHideDone=state.dailyHideDone===true;state.dailyHideNoLv=state.dailyHideNoLv===true;
 {const t=objOr(state.dailyLv),b=v=>{const x=Math.round(+v);return v!==""&&v!=null&&Number.isFinite(x)&&x>=1?x:null};let f=b(t.from),to=b(t.to);
   if(f!=null&&to!=null&&f>to)[f,to]=[to,f];state.dailyLv={from:f,to}}
+// the Monster skills tab's filters (mskills.js): the text typed, the kind ("" for every kind) and Hide monsters with no open map (on
+// unless you turn it off)
+{const t=objOr(state.msk);state.msk={q:typeof t.q==="string"?t.q.slice(0,100):"",kind:typeof t.kind==="string"&&/^[a-z]{2,4}$/.test(t.kind)?t.kind:"",open:t.open!==false}}
 // the Recipes tab's Brewing and Cooking simulators (craftsim.js): the numbers you typed over your character's (whole numbers in range),
 // the recipe picked to roll (id) and how many tries (n); cooking's kit is the level it cooks at (11 to 13)
 {const t=objOr(state.craftSim),keep=(o,keys)=>Object.fromEntries(Object.entries(numMap(o)).filter(([k])=>keys[k]).map(([k,v])=>[k,Math.min(keys[k][1],Math.max(keys[k][0],Math.round(v)))]));

@@ -15,6 +15,7 @@ const TAB_DESC={
   equip:"Every weapon and piece of armor: filter by type, job, level, card slots and stats, and put it in any of your gear sets.",
   skilltree:"Try any job's skill tree without a character: points per tree, the job level it needs, and what each skill does.",
   stylist:"Every job's clothes colours, hair styles and hair colours from the game client: try a look, then put it on your character.",
+  mskill:"Every skill monsters use, and the monsters that use it: when, how often, and what sets it off. Find the ones that stun, silence or summon.",
   affix:"The items that add a random option (affix) to gear: the gear each one works on, and the affixes players have seen it add.",
   cards:"Every card and what it does: filter by the gear it goes in, and slot it into your gear or another gear set.",
   brew:"Prepare Potion's chance for every potion with your stats, what a potion costs counting the failures, and a run of tries rolled the server's way.",
@@ -61,7 +62,7 @@ function showTab0(t,local){
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
   // renderAll only draws these while their tab is showing; the big ones again only when something was saved since
-  if(t==="market")renderPrices();if(t==="items")redraw("items",renderItems);if(t==="equip")redraw("equip",renderEquipDb);if(t==="cards")redraw("cards",renderCardDb);if(t==="recipes")redraw("recipes",renderRecipes);if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="daily")renderDaily();if(t==="affix")renderAffixItems();if(t==="skilltree")renderSkPlan(true);if(t==="stylist")renderStylist();
+  if(t==="market")renderPrices();if(t==="items")redraw("items",renderItems);if(t==="equip")redraw("equip",renderEquipDb);if(t==="cards")redraw("cards",renderCardDb);if(t==="recipes")redraw("recipes",renderRecipes);if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="daily")renderDaily();if(t==="affix")renderAffixItems();if(t==="mskill")renderMsk();if(t==="skilltree")renderSkPlan(true);if(t==="stylist")renderStylist();
   // the section links, once the tab's cards are drawn (a card can hide as it draws, as the Market's two panes do)
   pageNav(t);
 }
@@ -178,7 +179,7 @@ document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",e=>
   if(g==="farm"){showTab("track");openCard($("farmCard"));return}
   showTab(g);scrollTo({top:0})}));
 $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,"1")}catch(e){}renderStart()});
-// ---- search (Ctrl+K or /): tabs, a few actions, every monster, dropped item and map; Enter opens it where it lives ----
+// ---- search (Ctrl+K or /): tabs, a few actions, every monster, dropped item, monster skill and map; Enter opens it where it lives ----
 (function setupJump(){
   const dlg=$("jump"),inp=$("jumpInput"),list=$("jumpList");let hits=[],at=0;
   const tabName=t=>document.querySelector(`[data-tabbtn="${t}"] span`).textContent;
@@ -210,6 +211,8 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
       run:()=>openInfo("item",it.id)})),
     ...(typeof CARDS!=="undefined"?CARDS:[]).map(x=>({k:"Card",name:x.name,meta:`#${x.id} · ${CARD_PART[cardPart(x)]||"–"}${cardName(x)?` · ${cardName(x)}`:""}${notInGame(x.id)?" · not in game yet":""}${dropTxt(x.id)}`,ico:x.id,
       run:()=>openInfo("item",x.id)})),
+    // monster skills: Enter opens the Monster skills tab on it
+    ...mskList().map(s=>({k:"Skill",name:s.name,meta:`monster skill · ${MSK_KINDS[s.kind][0].toLowerCase()} · used by ${s.mobs.length} monster${s.mobs.length>1?"s":""}`,run:()=>openMsk(s.sid)})),
     ...Object.keys(MAPNAMES).map(mp=>({k:"Map",name:mapName(mp)||mapCode(mp),meta:mapCode(mp),alt:mp,
       run:go("maps",()=>{state.map=mp;save();renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})})}))];
   // best first: the name starts with it, then a word in it does, then it's anywhere (name, map code, item #id)

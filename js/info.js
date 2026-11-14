@@ -77,7 +77,7 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
     return `<tr class="${lt?"":"muted"}"><td class="name"><div class="dbName">${itemIcon(id,1,"il")}<div>${infoLink(infoKind(id),id,itemName(id))}<div class="note">${GROUP_NAME[groupOf(id)]}${lt?"":" · not looted"}${dropAff(id,m.id)?` · ${affTxt(dropAff(id,m.id))}`:""}</div></div></div></td>
       <td>${chTxt(ch)}${me&&y!==ch?`<div class="note">you ${chTxt(y)}</div>`:""}</td><td>${npcSell(id)>0?fmtN(npcPays(id)):"–"}</td><td>${state.prices[id]>0?fmtN(state.prices[id]):"–"}</td>${me?`<td>${lt?dropZTxt(dropZ(m,id,ch)):"0"}</td>`:""}</tr>`}).join("");
   const dropT=drops&&`<div class="scroll"><table class="matTable usedTable dropTable"><thead><tr><th>Item</th><th>Chance</th><th>NPC pays</th><th>Players pay</th>${me?"<th>Zeny / kill</th>":""}</tr></thead><tbody>${drops}</tbody></table></div>`;
-  const skills=(m.skills||[]).map(([sid,st,lv,ch,cast,delay,cond,intr])=>`<tr><td class="name">${esc(MOBSKILLNAME[sid]||`skill ${sid}`)}</td><td class="name">${esc(st.toLowerCase())}</td><td>${lv}</td><td>${ch}%</td><td>${cast?MOB_SKILL_T(cast)+(intr?"":` <span class="note" title="hitting it doesn't stop the cast">uninterruptible</span>`):"instant"}</td><td>${MOB_SKILL_T(delay)}</td><td class="name">${esc(cond)||"–"}</td></tr>`).join("");
+  const skills=(m.skills||[]).map(([sid,st,lv,ch,cast,delay,cond,intr])=>`<tr><td class="name"><a href="#" data-mskill="${sid}" title="Every monster that uses it (Monster skills tab)">${esc(MOBSKILLNAME[sid]||`skill ${sid}`)}</a></td><td class="name">${esc(st.toLowerCase())}</td><td>${lv}</td><td>${ch}%</td><td>${cast?MOB_SKILL_T(cast)+(intr?"":` <span class="note" title="hitting it doesn't stop the cast">uninterruptible</span>`):"instant"}</td><td>${MOB_SKILL_T(delay)}</td><td class="name">${esc(cond)||"–"}</td></tr>`).join("");
   const skillT=skills&&`<div class="scroll"><table class="matTable usedTable"><thead><tr><th>Skill</th><th>When</th><th>Lv</th><th>Chance</th><th>Cast</th><th>Delay</th><th>Condition</th></tr></thead><tbody>${skills}</tbody></table></div><div class="note">From kRO's tables; Global may differ.</div>`;
   // spawns: lit on the world map, then each map with the other monsters on it
   const sp=SPAWN[m.id]||[];
@@ -207,7 +207,8 @@ function infoAct(a){const [kind,id]=INFO[INFO.length-1],d=$("infoDlg");
   d.addEventListener("click",e=>{if(e.target===d){d.close();return}
     if(e.target.closest("[data-gotab]")){d.close();return}// a link to a tab (its handler opens it)
     const b=e.target.closest("[data-infoact]");if(b){infoAct(b.dataset.infoact);return}
-    const mp=e.target.closest("[data-infomap]");if(mp){e.preventDefault();d.close();openMap(mp.dataset.infomap)}});
+    const mp=e.target.closest("[data-infomap]");if(mp){e.preventDefault();d.close();openMap(mp.dataset.infomap);return}
+    const sk=e.target.closest("[data-mskill]");if(sk){e.preventDefault();d.close();openMsk(+sk.dataset.mskill)}});
   d.addEventListener("toggle",e=>{const s=e.target.closest&&e.target.closest("details.infoSec");if(!s||e.target!==s)return;
     const c=state.collapsed=state.collapsed||{},k=s.dataset.fold;if(s.open===!c[k])return;if(s.open)delete c[k];else c[k]=true;store.set(state)},true);
   d.addEventListener("change",e=>{const i=e.target.closest("[data-infoprice]");if(!i)return;const id=i.dataset.infoprice,v=Math.max(0,num(i.value));

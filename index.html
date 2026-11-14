@@ -33,6 +33,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
       </div></div>
       <div class="navSec"><button type="button" class="navGrp" aria-expanded="false" aria-haspopup="true" title="Game data tabs"><span>Game data</span><svg class="ic navChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><div class="navItems" role="group" aria-label="Game data">
         <button type="button" role="tab" data-tabbtn="maps" title="Monsters &amp; maps"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Monsters &amp; maps</span></button>
+        <button type="button" role="tab" data-tabbtn="mskill" title="Monster skills: every skill monsters use, which ones use it, when and how often"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><span>Monster skills</span></button>
         <button type="button" role="tab" data-tabbtn="items" title="Item info"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5V8z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg><span>Item info</span></button>
         <button type="button" role="tab" data-tabbtn="equip" title="Equipment"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6l-8-3z"/></svg><span>Equipment</span></button>
         <button type="button" role="tab" data-tabbtn="cards" title="Cards"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>Cards</span></button>
@@ -862,6 +863,13 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="note hint">Every try uses the ingredients and a kit, success or not. Classic formula, not measured on Zero Global.</div>
   </section>
 
+  <section class="card" id="mskCard" data-tab="mskill">
+    <div class="bar"><h2 class="grow">Monster skills</h2><span class="note" id="mskNote"></span></div>
+    <div class="bar note"><input id="mskQ" type="search" placeholder="Skill or monster" aria-label="Find a skill or a monster" title="A skill's name shows it with every monster that uses it; a monster's name shows its skills"><select id="mskKind" aria-label="Kind of skill" title="What the skill does to you (the planner's own grouping)"></select><label class="bar"><input type="checkbox" id="mskOpen"> <span>Hide monsters with no open map</span></label></div>
+    <div class="scroll mt"><table id="mskTable" class="dbTable"><thead><tr><th data-sk="name" class="l" title="Its name, and what it does to you (the planner's own grouping)">Skill</th><th data-sk="n" title="How many monsters use it (with these filters)">Monsters</th><th class="l">Used by</th></tr></thead><tbody id="mskRows"></tbody></table></div>
+    <div class="note hint">From kRO's monster skill tables (the game client has none); Global's monsters may differ. Click a monster for its details, or open When and how often for the state it uses the skill in, the skill's level, its chance each time it can, the cast, the delay before it uses it again and what sets it off.</div>
+  </section>
+
   <section class="card" id="affixCard" data-tab="affix">
     <div class="bar"><h2 class="grow">Items that add affixes</h2></div>
     <div class="note">Rolls are what players have seen so far.</div>
@@ -1039,6 +1047,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 <script src="js/stellar.js"></script>
 <script src="js/dailies.js"></script>
 <script src="js/affixitems.js"></script>
+<script src="js/mskills.js"></script>
 <script src="js/navi.js"></script>
 <script src="js/mapinfo.js"></script>
 <script src="js/news.js"></script>

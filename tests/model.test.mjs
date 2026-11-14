@@ -3635,6 +3635,34 @@ t("daily quests: a day runs 04:00 to 04:00 UTC, ticks are per character and clea
   assert.equal(run("DAILIES.filter(q=>!q.npc[0]||!q.task||(q.where||[]).some(([,at])=>at.split(' ').length!==3)).length"), 0);
 });
 
+t("monster skills: each skill with the monsters that use it, its kind, and the filters", () => {
+  // every skill a monster uses is listed once, with each monster's rows for it
+  assert.equal(run("mskList().length"), run("new Set(Object.values(MOBSKILL).flat().map(r=>r[0])).size"));
+  assert.equal(run("mskList().reduce((s,x)=>s+x.mobs.reduce((t,m)=>t+m.rows.length,0),0)"), run("Object.values(MOBSKILL).flat().length"));
+  // Baphomet's Earthquake: its rows, from Baphomet's own list
+  assert.ok(run("mskList().find(s=>s.sid===750).mobs.some(x=>x.id===1039&&x.name==='Baphomet'&&x.rows.every(r=>r[0]===750))"));
+  // kinds: every kind the list gives is one the tab knows; Stun hit an ailment, Summon Slave a summon, Emotion other
+  assert.equal(run("Object.values(MSK_KIND_OF).filter(k=>!MSK_KINDS[k]).length"), 0);
+  assert.equal(run("[179,196,197,26,343,186].map(mskKind).join()"), "ail,sum,oth,mov,brk,mag");
+  // the kind filter, and text: a skill's name keeps all its monsters, a monster's name keeps only that monster
+  const shown = (sid, f) => JSON.parse(run(`JSON.stringify((m=>m&&m.map(x=>x.id))(mskShown(mskList().find(s=>s.sid===${sid}),${JSON.stringify(f)})))`));
+  const all = shown(750, { q: "", kind: "", open: false });
+  assert.ok(all.length > 1);
+  assert.deepEqual(shown(750, { q: "earthq", kind: "", open: false }), all);
+  assert.deepEqual(shown(750, { q: "baphomet", kind: "", open: false }), [1039]);
+  assert.equal(shown(750, { q: "", kind: "ail", open: false }), null);
+  assert.equal(shown(750, { q: "poring", kind: "", open: false }), null);           // no Poring uses it
+  // Hide monsters with no open map keeps only monsters that spawn on an open map
+  assert.ok(run("mskList().every(s=>(mskShown(s,{q:'',kind:'',open:true})||[]).every(x=>openMaps(x.m).length>0))"));
+  // a name two skills share shows the skill's id
+  assert.ok(run("MSK_SHARED.has('Stone Curse')&&!MSK_SHARED.has('Earthquake')"));
+  // a monster's details link each skill to the tab
+  assert.match(run("popMob(MOB_BY_ID.get(1039)).body"), /data-mskill="750"/);
+  // saved filters: anything odd goes back to the defaults (Hide monsters with no open map on)
+  const fresh = load({ msk: { q: 5, kind: "nope!", open: "x" } });
+  assert.equal(fresh("JSON.stringify(state.msk)"), JSON.stringify({ q: "", kind: "", open: true }));
+});
+
 t("a monster's world map opens on the world with the most of its spawns", () => {
   const most = rows => run(`worldMost(${JSON.stringify(rows)})`);
   assert.equal(most([["nrd_fild01", 50], ["prt_d02", 20], ["pay_f08", 8]]), 1);   // Nordfeld has more spawns, though Midgard has more maps
