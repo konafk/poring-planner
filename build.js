@@ -8,7 +8,7 @@ const BUILD=(()=>{
   const STAT6=["str","agi","vit","int","dex","luk"];
   // ASPD lost while a shield is worn, per job (RO樂園攻速計算機 2026-09-07, sheet "攻速懲罰表"). Assassins use
   // their left-hand row
-  const SHIELD_ASPD={Swordsman:5,Mage:10,Archer:9,Acolyte:7,Merchant:5,Thief:6,Knight:5,Crusader:5,Wizard:8,Sage:3,
+  const SHIELD_ASPD={Novice:10,Swordsman:5,Mage:10,Archer:9,Acolyte:7,Merchant:5,Thief:6,Knight:5,Crusader:5,Wizard:8,Sage:3,
     Hunter:9,Bard:5,Dancer:5,Priest:3,Monk:3,Blacksmith:5,Alchemist:4,Assassin:6,Rogue:3};
   // Assassin dual wield: a dagger, one-handed sword or one-handed axe in each hand (the left one goes in the Shield row). The left
   // weapon adds a quarter of its own delay: base ASPD drops by floor(aspd_base / 4) with aspd_base Dagger 42, 1h sword 50, 1h axe 51
@@ -312,8 +312,9 @@ const BUILD=(()=>{
     const ab=aspdBase?aspdBase(job,weapon):null;let aspd=null;
     // Zero (RO樂園攻速計算機 2026-09-07, checked against a Lv 105 Sage in game):
     // ASPD1 = floor(base − shield penalty + stat term + potion/skill value × AGI/200); ASPD = floor(ASPD1 + (195 − ASPD1) × ASPD % + flat
-    // gear ASPD), cap 190. "aspd_mod" lines carry the potion/skill values (Concentration Potion 4, Two-Hand Quicken 7...)
-    if(ab!=null){const a1=f(ab-(shield?SHIELD_ASPD[job]||0:0)-(dual?LEFT_ASPD[lw]:0)+S.aspdTerm+A.aspdMod*tot.agi/200);aspd=Math.min(190,f(a1+(195-a1)*A.aspdPct/100+A.aspd))}
+    // gear ASPD), cap 190. "aspd_mod" lines carry the potion/skill values (Concentration Potion 4, Two-Hand Quicken 7...). The 1e-9 is a
+    // safety net against a floating-point sum landing a hair under a whole number (no stat or % mix tried so far does)
+    if(ab!=null){const a1=f(ab-(shield?SHIELD_ASPD[job]||0:0)-(dual?LEFT_ASPD[lw]:0)+S.aspdTerm+A.aspdMod*tot.agi/200);aspd=Math.min(190,f(a1+(195-a1)*A.aspdPct/100+A.aspd+1e-9))}
     const ammo=worn.find(w=>w.slot==="ammo"),arrowEl=weapon==="Bow"&&ammo&&ammo.it.el?cap(ammo.it.el):null; // bows shoot the arrow's element
     const fields={baseLv:lv,jobLv,weapon,wElem:arrowEl||A.wEle||(wpn&&wpn.el?cap(wpn.el):null)||"Neutral",
       st:{str:`${base.str}+${tot.str-base.str}`,agi:`${base.agi}+${tot.agi-base.agi}`,vit:`${base.vit}+${tot.vit-base.vit}`,dex:`${base.dex}+${tot.dex-base.dex}`,luk:`${base.luk}+${tot.luk-base.luk}`},

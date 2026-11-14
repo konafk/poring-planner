@@ -1897,6 +1897,24 @@ t("Clementia and Canto Candidus: one of each pair on a character, over your own 
   assert.deepEqual(JSON.parse(run(`JSON.stringify(aspdFrom())`)), ["Increase Agility"]);
 });
 
+t("ASPD: Novice row, riding a Peco Peco, Awakening Potion for Novices", () => {
+  // Novice: base 156, a dagger −15, a shield −10 (in game)
+  assert.equal(run(`aspdBase("Novice","Dagger")`), 141);
+  assert.equal(run(`BUILD.SHIELD_ASPD.Novice`), 10);
+  const nov = run(`BUILD.compute({base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{},extra:[]},"Novice",aspdBase).fields.aspd`);
+  assert.equal(nov, Math.floor(156 + Math.sqrt(1 / 2 + 1 / 5) / 4));
+  assert.equal(run(`potOk("awak","Novice",99)`), true);                     // the client: all but Acolyte, Priest, Bard, Dancer
+  // riding: potion/skill value −(50 − 10 × Cavalier Mastery), nothing at Lv 5
+  setup("Knight", { aspd: 160, weapon: "Two-handed sword", st: { str: "1", agi: "80", vit: "1", int: "1", dex: "1", luk: "1" }, intTxt: "1", potOn: false, cons: [], pbuffs: {},
+    skills: { "peco-peco-ride": 1, "cavalier-mastery": 2 }, buffs: { "peco-peco-ride": true } });
+  run(`SKFX=skillEffects(C())`);
+  assert.ok(run(`JSON.stringify(SKFX.buffStat)`).includes('"aspd_mod",null,null,-30'));
+  run(`C().skills["cavalier-mastery"]=5;SKFX=skillEffects(C())`);
+  assert.ok(!run(`JSON.stringify(SKFX.buffStat)`).includes('aspd_mod'));
+  run(`C().buffs={};C().skills["cavalier-mastery"]=0;SKFX=skillEffects(C())`);
+  assert.ok(!run(`JSON.stringify(SKFX.buffStat)`).includes('aspd_mod'));    // not riding: no cut
+});
+
 t("Max SP from Dance Lessons with any weapon, Max HP from Angelus", () => {
   setup("Dancer", { atkTxt: "100+100", aspd: 160, weapon: "Bow", maxHp: 1000, maxSp: 300, st: { vit: "9", int: "11" }, intTxt: "11",
     cons: [], pbuffs: {}, buffs: {}, skills: { "dance-lessons": 10 } });
@@ -1962,8 +1980,10 @@ t("consumables: + and +% per main stat, old food buffs move into the table", () 
   const eff = (k, lv) => run(`pbEff(PBUFF.find(b=>b.k==="${k}"),${lv})`);
   assert.equal(eff("blessing", 5), "STR +5, INT +5, DEX +5, HIT +10");
   assert.equal(eff("incAgi", 3), "AGI +5, ASPD +3%");
-  assert.equal(eff("riff", 3), "ASPD +5% (Zero: 17% at Lv 10, not the description's 20%)");
-  assert.equal(eff("riff", 10), "ASPD +17% (Zero: 17% at Lv 10, not the description's 20%)");   // Zero: 17%, not 20%
+  assert.equal(eff("riff", 3), "ASPD +6%");
+  assert.equal(eff("riff", 10), "ASPD +20%");                               // the client: After Attack Delay −2% a level
+  assert.equal(eff("canto", 70), "AGI +19, ASPD +17% (Increase AGI Lv 10 + Priest Job Lv/10)");
+  assert.equal(eff("canto", 50), "AGI +17, ASPD +15% (Increase AGI Lv 10 + Priest Job Lv/10)");
   assert.equal(run(`JSON.stringify(SK_ASPD.study(1))`), run(`JSON.stringify(SK_ASPD.study(10))`)); // Study: a flat potion/skill value 4
   assert.equal(run(`SK_ASPD.study(10)[0][3]`), 4);
   assert.equal(eff("clementia", 70), "STR +17, INT +17, DEX +17, HIT +27 (Blessing Lv 10 + Priest Job Lv/10)");

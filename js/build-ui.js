@@ -106,8 +106,8 @@ const consLines=()=>{const lines=[],bad=[],cs=consStatOf(C()),ygg=Object.fromEnt
   lines.push(...clanLines(C()));
   OWN_LISTS.forEach(L=>rowsOf(C(),L.key).filter(r=>r.on).forEach(r=>{const o=parseCons(r.eff);lines.push(...o.lines);bad.push(...o.bad.map(x=>`${r.name||L.what}: ${x}`))}));return {lines,bad}};
 // ---- ASPD potions and buffs from others, from the RO樂園攻速計算機 sheet (2026-09-07, "增益"). "aspd_mod" is the sheet's potion/skill
-// value: it adds value × AGI/200 to ASPD1 (see build.js). Who can drink them and from which base level (lv): rAthena item_db_usable ----
-const ASPD_POT={conc:{id:645,name:"Concentration Potion",mod:4},awak:{id:656,name:"Awakening Potion",mod:6,lv:40,no:["Novice","Acolyte","Priest","Bard","Dancer"]},
+// value: it adds value × AGI/200 to ASPD1 (see build.js). Who can drink them and from which base level (lv): the potions' in-game text ----
+const ASPD_POT={conc:{id:645,name:"Concentration Potion",mod:4},awak:{id:656,name:"Awakening Potion",mod:6,lv:40,no:["Acolyte","Priest","Bard","Dancer"]},
   bers:{id:657,name:"Berserk Potion",mod:9,lv:85,only:["Mage","Merchant","Swordsman","Wizard","Blacksmith","Alchemist","Knight","Crusader","Rogue"]}};
 const potJobOk=(k,job=state.job)=>{const p=ASPD_POT[k];return !!p&&!(p.no||[]).includes(job)&&(!p.only||p.only.includes(job))};
 // below the potion's base level it can't be drunk (a blank base level doesn't hold it back)
@@ -124,12 +124,16 @@ const PBUFF=[
   {k:"clementia",name:"Clementia (Priest, advanced Blessing)",lv:[1,70,50,"Priest Job Lv"],fx:j=>{const v=10+Math.floor(j/10);return [["str",v],["int",v],["dex",v],["hit",v+10]]},
     how:"Blessing Lv 10 + Priest Job Lv/10"},
   {k:"incAgi",name:"Increase AGI",lv:[1,10,10],fx:l=>[["agi",2+l],["aspd_percent",l]]},
-  {k:"canto",name:"Canto Candidus (Priest, advanced Increase AGI)",fx:()=>[["agi",19],["aspd_percent",17]]},
+  // Canto Candidus: Increase AGI Lv 10 (AGI +12, ASPD +10%) and Priest Job Lv / 10 on each, as Clementia: a Job Lv 70 Priest gives AGI +19,
+  // ASPD +17%. Defaults to Job Lv 70, the value it had before it took a level
+  {k:"canto",name:"Canto Candidus (Priest, advanced Increase AGI)",lv:[1,70,70,"Priest Job Lv"],fx:j=>{const v=Math.floor(j/10);return [["agi",12+v],["aspd_percent",10+v]]},
+    how:"Increase AGI Lv 10 + Priest Job Lv/10"},
   // Angelus on Zero: Max HP +50 and VIT-based DEF +5% per level (the VIT / 2 part of soft DEF), 30 s × level, the caster's whole party
   {k:"angelus",name:"Angelus",lv:[1,10,10],fx:l=>[["hp",50*l],["vit_def_percent",5*l]]},
   {k:"impositio",name:"Impositio Manus (Priest)",lv:[1,5,5],fx:l=>[["atk",5*l],["matk",5*l]],how:"Zero: ATK and MATK, not only weapon ATK"},
   {k:"assumptio",name:"Assumptio (Priest)",lv:[1,5,5],fx:l=>[["def",50*l],["heal_pct",2*l]],how:"Zero: flat DEF, not classic's half damage"},
-  {k:"riff",name:"Impressive Riff (Bard)",lv:[1,10,10],fx:l=>[["aspd_percent",l===10?17:1+2*(l-1)]],how:"Zero: 17% at Lv 10, not the description's 20%"},
+  // Impressive Riff: After Attack Delay −2% a level, so +20% at Lv 10 (the client's SkillDescript_enUS, 2026-11-12)
+  {k:"riff",name:"Impressive Riff (Bard)",lv:[1,10,10],fx:l=>[["aspd_percent",2*l]]},
   {k:"adren",name:"Adrenaline Rush",w:AXE_MACE,lv:[1,5,5],fx:l=>[["aspd_mod",6],["aspd_percent",10],["hit",5+3*l]],how:"axes and maces; HIT +5 + 3 per level from Zero's skill text"},
   // a party Sage's Endow: your weapon's element (both hands) at no cost to you, and +1% a level to your spells of that element. One at
   // a time (a new Endow replaces the old one); a converter or skill picked under Weapon element goes over it (see pEndow in model.js)
@@ -178,7 +182,7 @@ function applyConsumables(){EFF=null;const c=C();if(!addOnTop(c))return;const li
   const atkSt=as+d("atk"),atkGear=ag+g("atk");
   const matkSt=ms+d("matk"),matkTot=matkSt+mg+g("matk"); // MATK % isn't in the window either: matkPct
   // ASPD as in build.js: stat term and potion/skill value × AGI/200 go into ASPD1, then ASPD % and flat ASPD, rounded down
-  let aspd=num(c.aspd,170)+d("aspdTerm")+g("aspd_mod")*(statVal(tmp,"agi")||0)/200;aspd=Math.min(190,Math.floor(aspd+(195-aspd)*g("aspd_percent")/100+g("aspd")));
+  let aspd=num(c.aspd,170)+d("aspdTerm")+g("aspd_mod")*(statVal(tmp,"agi")||0)/200;aspd=Math.min(190,Math.floor(aspd+(195-aspd)*g("aspd_percent")/100+g("aspd")+1e-9));
   const vit0=statVal(c,"vit"),vit1=statVal(tmp,"vit"),int0=statVal(c,"int"),int1=statVal(tmp,"int");
   // Angelus's VIT-based DEF % goes on the soft DEF (needs the VIT you typed)
   const vitDef=vit1!=null?BUILD.vitDefAdd(vit1,g("vit_def_percent")):0;
