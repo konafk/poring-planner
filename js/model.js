@@ -1,6 +1,10 @@
 // ---- attack model ----
 let EL_OVR=null;
-const atkEl=()=>{const a=C().a;if(a.type==="spellfist")return EL_OVR||sfBolts()[0]||"Fire";return a.el==="W"?(EL_OVR||C().wElem):a.el};
+// a party Sage's Endow from Buffs from others ({el, lv, name}, the first ticked), and your weapon's element with it: the one you typed, else
+// the Endow's. Spell Fist and Hindsight hit with the bolt's element, so neither changes them
+const pEndow=(c=C())=>{const b=typeof PBUFF!=="undefined"&&PBUFF.find(x=>x.el&&pbTicked(x.k,c));return b?{el:b.el,lv:pbLv(b,pbuffOf(c)[b.k]),name:b.name}:null};
+const wElNow=()=>(pEndow()||{}).el||C().wElem;
+const atkEl=()=>{const a=C().a;if(a.type==="spellfist")return EL_OVR||sfBolts()[0]||"Fire";return a.el==="W"?(EL_OVR||wElNow()):a.el};
 // weapon endows: elemental converters (Fire/Water/Earth/Wind), Cursed Water (Shadow), the Lv.5 Aspersio Scroll (Holy), an Assassin's
 // Enchant Poison and a Sage's Endows change the weapon element for basic attacks and weapon-element skills. One is on at a time:
 // c.convEl picks it, or "" to try each (and your weapon's own element) and take the best per monster / map
@@ -10,43 +14,51 @@ const atkEl=()=>{const a=C().a;if(a.type==="spellfist")return EL_OVR||sfBolts()[
 const CONV_ITEMS={Fire:{ids:[12114],min:20},Water:{ids:[12115],min:20},Earth:{ids:[12116],min:20},Wind:{ids:[12117],min:20},
   Shadow:{ids:[12020],min:20},Holy:{ids:[12217,523],min:3}};
 // skills: Enchant Poison (Assassin), 20 SP for 15 + 15 × Lv s; the Sage's Endows (Endow Blaze Fire, Tsunami Water, Tornado Wind, Quake
-// Earth), 40 SP and a Point (Scarlet, Indigo, Yellow Wish, Lime Green) for 5 + 5 × Lv minutes. SP and how long it lasts come from the
+// Earth), 40 SP and a Point (Scarlet, Indigo, Yellow Wish, Lime Green, bought from the Point Merchant NPC) for 5 + 5 × Lv minutes. SP and how long it lasts come from the
 // skill's own level (its "Duration: 30 min" text). A job that has the skill casts it instead of buying that element's converter;
 // the level is the skill tree's once you set one (the Weapon element card's Lv box raises or lowers it there, so both stay in step);
-// until then the card's own Lv box (c.convLv {el: Lv}), the top level by default. Lv 0: not learned, so that element's converter
+// until then the card's own Lv box (c.convLv {el: Lv}), the top level by default. Lv 0 (not learned in the tree): that element's converter
 const CONV_SKILL={Poison:{sl:"enchant-poison"},Fire:{sl:"endow-blaze",ids:[6360]},Water:{sl:"endow-tsunami",ids:[6361]},
   Wind:{sl:"endow-tornado",ids:[6362]},Earth:{sl:"endow-quake",ids:[6363]}};
 const convSk=el=>CONV_SKILL[el]&&skOf(state.job)[CONV_SKILL[el].sl];
 const convSkLv=el=>{const s=convSk(el),c=C();if(!s)return 0;if(hasTree(c))return Math.min(s.max,skLv(c,s.slug));
   const v=(c.convLv||{})[el];return v==null||v===""?s.max:Math.max(0,Math.min(s.max,Math.round(num(v))))};
-// the Lv box: the lowest level it offers (0 only where a converter takes over) and setting it. With a skill tree it raises the skill (and
-// what it needs) or lowers it, which the tree refuses while a learned skill still needs it: returns why
-const convLvMin=el=>CONV_ITEMS[el]?0:1;
-function setConvLv(el,lv){const s=convSk(el),c=C();if(!s)return null;lv=Math.max(convLvMin(el),Math.min(s.max,Math.round(num(lv))));
+// the Lv box sets the level. With a skill tree it raises the skill (and what it needs) or lowers it, which the tree refuses while a
+// learned skill still needs it (returns why); without one it is the box's own level. Picking a level casts the skill again
+function setConvLv(el,lv){const s=convSk(el),c=C();if(!s)return null;lv=Math.max(1,Math.min(s.max,Math.round(num(lv))));setConvItem(el,false);
   if(!hasTree(c)){c.convLv={...(c.convLv||{}),[el]:lv};return null}
   if(lv>skLv(c,s.slug)){raiseSkill(c,s.slug,lv);return null}return lowerSkill(c,s.slug,lv)}
+// having the skill doesn't take the converter away: c.convItem {el: true} uses that element's converter instead (its box's "converter",
+// or the converter in the Weapon element list), leaving the skill's level as it is
+const convItemOn=el=>!!CONV_ITEMS[el]&&!!(C().convItem||{})[el];
+function setConvItem(el,on){const c=C(),o={...(c.convItem||{})};if(on&&CONV_ITEMS[el]&&convSk(el))o[el]=true;else delete o[el];c.convItem=o}
 // the skill's SP and seconds per cast at a level
 const convSkRow=(el,lv)=>{const r=convSk(el).lv[lv-1]||[],m=String(r[7]||"").match(/Duration:\s*(\d+)\s*(sec|min)/i);
   return {sp:num(r[0]),sec:m?+m[1]*(/min/i.test(m[2])?60:1):0}};
 const CONV_ALL=[...new Set([...Object.keys(CONV_ITEMS),...Object.keys(CONV_SKILL)])];
-const convIsSk=el=>convSkLv(el)>0;
-const convEls=()=>CONV_ALL.filter(el=>convIsSk(el)||CONV_ITEMS[el]);
+// the skill casts it: learned, and not switched to the converter
+const convIsSk=el=>convSkLv(el)>0&&!convItemOn(el);
+const convEls=()=>CONV_ALL.filter(el=>convSkLv(el)>0||CONV_ITEMS[el]);
 // what one use takes (the skill's catalyst, or the item) and how many minutes it lasts
 const convIds=el=>convIsSk(el)?CONV_SKILL[el].ids||[]:(CONV_ITEMS[el]||{ids:[]}).ids;
 const convMin=el=>convIsSk(el)?convSkRow(el,convSkLv(el)).sec/60:(CONV_ITEMS[el]||{}).min||0;
-const CONV_IDS=[...new Set([...Object.values(CONV_ITEMS),...Object.values(CONV_SKILL)].flatMap(x=>x.ids||[]))];
+// the items you buy from players (the skills' Points come from an NPC)
+const CONV_IDS=[...new Set(Object.values(CONV_ITEMS).flatMap(x=>x.ids))];
 const convOn=()=>!!C().converters&&C().a.el==="W";
 const convFixed=()=>convEls().includes(C().convEl)?C().convEl:"";
-const convAll=()=>[...new Set([C().wElem,...convEls()])];
+const convAll=()=>[...new Set([wElNow(),...convEls()])];
 const convName=el=>convIsSk(el)?convSk(el).name.trim():el==="Shadow"?"Cursed Water":el==="Holy"?"Aspersio Scroll":`${el} converter`;
-const convWith=el=>el===C().wElem?`${el} (your weapon)`:/converter/.test(convName(el))?convName(el):`${el} (${convName(el)})`;
+const convWith=el=>el===wElNow()?`${el} (${pEndow()?pEndow().name:"your weapon"})`:/converter/.test(convName(el))?convName(el):`${el} (${convName(el)})`;
 const convLabel=by=>convFixed()?convName(convFixed()):`best weapon element ${by}`;
 const convUsesHr=el=>convIds(el).length&&convMin(el)>0?60/convMin(el):0;
-const convPrice=el=>convIds(el).reduce((t,id)=>t+(state.prices[id]>0?state.prices[id]:0),0);
+// an item from players at what you typed; a skill's Point at the NPC's price (data/shops.js), less Discount when the account buys with it
+const convNpc=el=>convIsSk(el);
+const convItemPrice=(el,id)=>convNpc(el)?(shopPrice(id)||0)*discMul():state.prices[id]>0?state.prices[id]:0;
+const convPrice=el=>convIds(el).reduce((t,id)=>t+convItemPrice(el,id),0);
 const convElNow=()=>convOn()?EL_OVR||convFixed():"";
-const convCostHr=()=>{const el=convElNow();return el&&el!==C().wElem?convUsesHr(el)*convPrice(el):0};
+const convCostHr=()=>{const el=convElNow();return el&&el!==wElNow()?convUsesHr(el)*convPrice(el):0};
 // a skill's SP: recast as it runs out (none when your weapon has that element already)
-const convSpPerSec=()=>{const el=convElNow(),lv=el&&el!==C().wElem?convSkLv(el):0;if(!lv)return 0;const r=convSkRow(el,lv);return r.sec?r.sp*spCostMul()/r.sec:0};
+const convSpPerSec=()=>{const el=convElNow(),lv=el&&el!==wElNow()&&convIsSk(el)?convSkLv(el):0;if(!lv)return 0;const r=convSkRow(el,lv);return r.sec?r.sp*spCostMul()/r.sec:0};
 const elOptions=()=>C().a.type==="spellfist"?(sfBolts().length?sfBolts():[null]):convOn()?(convFixed()?[convFixed()]:convAll()):[null];
 const withEl=(el,fn)=>{const k=EL_OVR;EL_OVR=el;try{return fn()}finally{EL_OVR=k}};
 const elTag=el=>el&&(convOn()||C().a.type==="spellfist")?` <span class="el ${el}">${el}</span>`:"";
@@ -163,7 +175,10 @@ const bonusParts=(m,magic=false)=>{const c=C();let post=1,full=1+num(c.dmgBonus)
   full*=1+consSum(magic?"magic_dmg":isRangedHit(c.a,c.weapon)?"range_dmg":"")/100;
   // learned passives and buffs: physical damage % (Advanced Katar Mastery, Power Thrust), element % for spells (Endow, Volcano...)
   // and, for an element's plain "Damage" bonus (Volcano, Deluge, Whirlwind), for physical attacks of that element too
-  if(SKFX){if(!magic){full*=1+SKFX.pct/100;post*=1+(SKFX.physEle[atkEl()]||0)/100}else post*=1+(SKFX.myEle[atkEl()]||0)/100}return {post,full}};
+  if(SKFX){if(!magic){full*=1+SKFX.pct/100;post*=1+(SKFX.physEle[atkEl()]||0)/100}else post*=1+(SKFX.myEle[atkEl()]||0)/100}
+  // a party Sage's Endow: +Lv% to your spells of its element (not on top of your own Endow buff of that element)
+  if(magic){const pe=pEndow(c),own=pe&&CONV_SKILL[pe.el]&&CONV_SKILL[pe.el].sl;if(pe&&pe.el===atkEl()&&!((c.buffs||{})[own]&&skLv(c,own)))post*=1+pe.lv/100}
+  return {post,full}};
 const bonusMul=(m,magic=false)=>{const b=bonusParts(m,magic);return b.post*b.full};
 // build mode: gear EXP bonus % (plus vs a monster's race), and damage taken from its race / size / element / boss-normal kind
 const expGear=m=>{const c=C();return c.bx?(c.bx.exp.all||0)+((c.bx.exp.race||{})[m.race]||0):0};
@@ -203,7 +218,7 @@ const frontAtk=()=>atkParts().st*(dualOn()&&C().a.type!=="auto"?1:2);
 const dualOn=(c=C())=>BUILD.dualOk(state.job,c.weapon,c.lw);
 const handPct=()=>{const c=C(),t=hasTree(c),lv=k=>t?skLv(c,k):5;return {right:50+10*lv("righthand-mastery"),left:30+10*lv("lefthand-mastery")}};
 const dualHit=()=>dualOn()&&C().a.type==="auto";
-const leftEl=()=>EL_OVR||C().lwElem||"Neutral";
+const leftEl=()=>EL_OVR||(pEndow()||{}).el||C().lwElem||"Neutral";
 const mobSoftDef=m=>Math.max(0,Math.floor(((m.lv||0)+(m.vit||0))/2));
 const mobSoftMdef=m=>Math.max(0,Math.floor(((m.lv||0)+(m.int||0))/4));
 // "Your hit %": skill % after element, size and your bonuses, as a share of your full ATK (before monster DEF/MDEF)
