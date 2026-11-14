@@ -1,32 +1,52 @@
 // ---- attack model ----
 let EL_OVR=null;
 const atkEl=()=>{const a=C().a;if(a.type==="spellfist")return EL_OVR||sfBolts()[0]||"Fire";return a.el==="W"?(EL_OVR||C().wElem):a.el};
-// weapon endows: elemental converters (Fire/Water/Earth/Wind), Cursed Water (Shadow), the Lv.5 Aspersio Scroll (Holy) and an Assassin's
-// Enchant Poison change the weapon element for basic attacks and weapon-element skills. One is on at a time: c.convEl picks it, or "" to
-// try each (and your weapon's own element) and take the best per monster / map
+// weapon endows: elemental converters (Fire/Water/Earth/Wind), Cursed Water (Shadow), the Lv.5 Aspersio Scroll (Holy), an Assassin's
+// Enchant Poison and a Sage's Endows change the weapon element for basic attacks and weapon-element skills. One is on at a time:
+// c.convEl picks it, or "" to try each (and your weapon's own element) and take the best per monster / map
 // items (bought from players, at what players pay for them: state.prices, as on the Market tab): what one use takes and how many minutes
 // it lasts (the client's text). Converters and Cursed Water last 20 minutes, so 3 an hour; the Aspersio Scroll casts Aspersio Lv 5 (180 s)
 // and uses up a Holy Water too, so 20 of each an hour. None on your weapon's own element
 const CONV_ITEMS={Fire:{ids:[12114],min:20},Water:{ids:[12115],min:20},Earth:{ids:[12116],min:20},Wind:{ids:[12117],min:20},
   Shadow:{ids:[12020],min:20},Holy:{ids:[12217,523],min:3}};
-// skills: Enchant Poison (Assassin), 20 SP for 15 + 15 × Lv s; offered when the job has it (Lv 10 until you set a skill tree, else your level)
-const CONV_SKILL={Poison:"enchant-poison"};
-const convSkLv=el=>{const sl=CONV_SKILL[el],c=C();if(!sl||!skOf(state.job)[sl])return 0;return hasTree(c)?skLv(c,sl):10};
-const CONV_ALL=[...Object.keys(CONV_ITEMS),...Object.keys(CONV_SKILL)];
-const convEls=()=>CONV_ALL.filter(el=>CONV_ITEMS[el]||convSkLv(el)>0);
-const CONV_IDS=[...new Set(Object.values(CONV_ITEMS).flatMap(x=>x.ids))];
+// skills: Enchant Poison (Assassin), 20 SP for 15 + 15 × Lv s; the Sage's Endows (Endow Blaze Fire, Tsunami Water, Tornado Wind, Quake
+// Earth), 40 SP and a Point (Scarlet, Indigo, Yellow Wish, Lime Green) for 5 + 5 × Lv minutes. SP and how long it lasts come from the
+// skill's own level (its "Duration: 30 min" text). A job that has the skill casts it instead of buying that element's converter;
+// the level is the skill tree's once you set one (the Weapon element card's Lv box raises or lowers it there, so both stay in step);
+// until then the card's own Lv box (c.convLv {el: Lv}), the top level by default. Lv 0: not learned, so that element's converter
+const CONV_SKILL={Poison:{sl:"enchant-poison"},Fire:{sl:"endow-blaze",ids:[6360]},Water:{sl:"endow-tsunami",ids:[6361]},
+  Wind:{sl:"endow-tornado",ids:[6362]},Earth:{sl:"endow-quake",ids:[6363]}};
+const convSk=el=>CONV_SKILL[el]&&skOf(state.job)[CONV_SKILL[el].sl];
+const convSkLv=el=>{const s=convSk(el),c=C();if(!s)return 0;if(hasTree(c))return Math.min(s.max,skLv(c,s.slug));
+  const v=(c.convLv||{})[el];return v==null||v===""?s.max:Math.max(0,Math.min(s.max,Math.round(num(v))))};
+// the Lv box: the lowest level it offers (0 only where a converter takes over) and setting it. With a skill tree it raises the skill (and
+// what it needs) or lowers it, which the tree refuses while a learned skill still needs it: returns why
+const convLvMin=el=>CONV_ITEMS[el]?0:1;
+function setConvLv(el,lv){const s=convSk(el),c=C();if(!s)return null;lv=Math.max(convLvMin(el),Math.min(s.max,Math.round(num(lv))));
+  if(!hasTree(c)){c.convLv={...(c.convLv||{}),[el]:lv};return null}
+  if(lv>skLv(c,s.slug)){raiseSkill(c,s.slug,lv);return null}return lowerSkill(c,s.slug,lv)}
+// the skill's SP and seconds per cast at a level
+const convSkRow=(el,lv)=>{const r=convSk(el).lv[lv-1]||[],m=String(r[7]||"").match(/Duration:\s*(\d+)\s*(sec|min)/i);
+  return {sp:num(r[0]),sec:m?+m[1]*(/min/i.test(m[2])?60:1):0}};
+const CONV_ALL=[...new Set([...Object.keys(CONV_ITEMS),...Object.keys(CONV_SKILL)])];
+const convIsSk=el=>convSkLv(el)>0;
+const convEls=()=>CONV_ALL.filter(el=>convIsSk(el)||CONV_ITEMS[el]);
+// what one use takes (the skill's catalyst, or the item) and how many minutes it lasts
+const convIds=el=>convIsSk(el)?CONV_SKILL[el].ids||[]:(CONV_ITEMS[el]||{ids:[]}).ids;
+const convMin=el=>convIsSk(el)?convSkRow(el,convSkLv(el)).sec/60:(CONV_ITEMS[el]||{}).min||0;
+const CONV_IDS=[...new Set([...Object.values(CONV_ITEMS),...Object.values(CONV_SKILL)].flatMap(x=>x.ids||[]))];
 const convOn=()=>!!C().converters&&C().a.el==="W";
 const convFixed=()=>convEls().includes(C().convEl)?C().convEl:"";
 const convAll=()=>[...new Set([C().wElem,...convEls()])];
-const convName=el=>CONV_SKILL[el]?"Enchant Poison":el==="Shadow"?"Cursed Water":el==="Holy"?"Aspersio Scroll":`${el} converter`;
+const convName=el=>convIsSk(el)?convSk(el).name.trim():el==="Shadow"?"Cursed Water":el==="Holy"?"Aspersio Scroll":`${el} converter`;
 const convWith=el=>el===C().wElem?`${el} (your weapon)`:/converter/.test(convName(el))?convName(el):`${el} (${convName(el)})`;
 const convLabel=by=>convFixed()?convName(convFixed()):`best weapon element ${by}`;
-const convUsesHr=el=>CONV_ITEMS[el]?60/CONV_ITEMS[el].min:0;
-const convPrice=el=>(CONV_ITEMS[el]||{ids:[]}).ids.reduce((t,id)=>t+(state.prices[id]>0?state.prices[id]:0),0);
+const convUsesHr=el=>convIds(el).length&&convMin(el)>0?60/convMin(el):0;
+const convPrice=el=>convIds(el).reduce((t,id)=>t+(state.prices[id]>0?state.prices[id]:0),0);
 const convElNow=()=>convOn()?EL_OVR||convFixed():"";
-const convCostHr=()=>{const el=convElNow();return el&&CONV_ITEMS[el]&&el!==C().wElem?convUsesHr(el)*convPrice(el):0};
-// Enchant Poison's SP: 20 a cast, recast as it runs out (none when your weapon is Poison already)
-const convSpPerSec=()=>{const el=convElNow(),lv=el&&el!==C().wElem?convSkLv(el):0;return lv?20*spCostMul()/(15+15*lv):0};
+const convCostHr=()=>{const el=convElNow();return el&&el!==C().wElem?convUsesHr(el)*convPrice(el):0};
+// a skill's SP: recast as it runs out (none when your weapon has that element already)
+const convSpPerSec=()=>{const el=convElNow(),lv=el&&el!==C().wElem?convSkLv(el):0;if(!lv)return 0;const r=convSkRow(el,lv);return r.sec?r.sp*spCostMul()/r.sec:0};
 const elOptions=()=>C().a.type==="spellfist"?(sfBolts().length?sfBolts():[null]):convOn()?(convFixed()?[convFixed()]:convAll()):[null];
 const withEl=(el,fn)=>{const k=EL_OVR;EL_OVR=el;try{return fn()}finally{EL_OVR=k}};
 const elTag=el=>el&&(convOn()||C().a.type==="spellfist")?` <span class="el ${el}">${el}</span>`:"";

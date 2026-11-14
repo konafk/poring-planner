@@ -67,8 +67,8 @@ const craftChTxt=c=>c.lo===c.hi?pct(c.avg*100,1):`${pct(c.avg*100,1)}<div class=
 function craftMoney(r,extra,c){const w=tryCost(r,extra),p=matPrice(r.id),unkTip=w.unknown?` title="${w.unknown} item${w.unknown>1?"s have":" has"} no price: set one on the Market tab"`:"";
   return `<td${unkTip}>${zTxt(w)}</td><td${unkTip}>${c.avg>0?zTxt(w,1/c.avg):"–"}</td><td>${p!=null?fmtN(p):"–"}</td>`}
 // an NPC shop: its name, price, the quest that opens it, and the towns it stands in, each once (the first few; every spot on hover)
-const shopTowns=at=>[...new Set(at.map(a=>(mapName(a[0])||a[0]).split(",")[0]))];
-const shopTxt=(name,at,z,q,ts=shopTowns(at))=>`<span title="${esc(at.map(([mp,x,y])=>`${mapLabel(mp)} ${x},${y}`).join(" · "))}">${esc(name)}</span> <span class="note">${fmtN(z)} z · ${esc(shopQuest(q))}${esc(ts.slice(0,3).join(", "))}${ts.length>3?` +${ts.length-3} more`:""}</span>`;
+const shopTowns=at=>[...new Set(at.map(a=>naviName(a[0]).split(",")[0]))];
+const shopTxt=(name,at,z,q,ts=shopTowns(at))=>`<span title="${esc(at.map(([mp,x,y])=>`${mapLabel(mp)}${x!=null?` ${x},${y}`:""}`).join(" · "))}">${esc(name)}</span> <span class="note">${fmtN(z)} z · ${esc(shopQuest(q))}${esc(ts.slice(0,3).join(", "))}${ts.length>3?` +${ts.length-3} more`:""}</span>`;
 const itemCell=(id,sub)=>`<td class="name"><div class="dbName">${itemIcon(id)}<div>${infoLink("item",id,itemName(id))}${sub?`<div class="note">${sub}</div>`:""}</div></div></td>`;
 const craftInput=(kind,k,v,mine,label,title)=>`<label title="${esc(title||"")}">${label}<input class="w-xs" type="number" min="${(kind==="brew"?BREW_KEYS:COOK_KEYS)[k][0]}" max="${(kind==="brew"?BREW_KEYS:COOK_KEYS)[k][1]}" step="1" data-csim="${kind}.${k}" value="${state.craftSim[kind][k]??""}" placeholder="${mine[k]}"></label>`;
 function renderBrew(){const v=brewVals(),m=craftMine(),S=state.craftSim.brew;
