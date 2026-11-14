@@ -81,16 +81,17 @@ function renderMemorials(){
 // each Job Essence a gear's +9 armor rolls: {x: the essence, v: its %}
 const memEssences=g=>{const m=MEM_ESSENCE[g];return ESSENCES.filter(x=>x.tier===m.tier).map(x=>({x,v:m.lv[/Lv\.(\d)$/.exec(x.name)[1]]})).filter(e=>e.v)};
 const ENCH_HINT="One random enchant in card slot 4 for 100,000 zeny. Reset: 10,000,000 zeny (70%) or a Zelstar.";
-function renderEnchants(){const g=$("enchGear").value||"subjugation",veg=g==="veggie";$("enchPool").disabled=veg;
+function renderEnchants(){const g=$("enchGear").value||"expedition",veg=g==="veggie";$("enchPool").disabled=veg;
   $("enchHint").textContent=veg?`One random line, on the one you're wearing, for ${fmtN(VEGGIE_ENCHANT.mats[0][2])} ${VEGGIE_ENCHANT.mats[0][1]} and ${fmtN(VEGGIE_ENCHANT.zeny)} zeny: ${VEGGIE_ENCHANT.ok}% success, a failure breaks it. A new line replaces the old one the same way. Lines as reported from other Zero servers, with no chances.`:ENCH_HINT;
   if(veg){$("enchFxHead").hidden=true;$("enchEssences").textContent="";
     $("enchRows").innerHTML=VEGGIE_ENCHANT.lines.map(l=>`<tr><td class="name">${esc(l)}</td><td>–</td></tr>`).join("");return}
-  const p=$("enchPool").value||"low",rows=MEM_ENCHANT[g][p],armor=p==="armor";
+  const p=$("enchPool").value||"armor",rows=MEM_ENCHANT[g][p],armor=p==="armor";
   const line=(name,v,fx)=>`<tr><td class="name">${name}</td><td>${v}%</td>${armor?`<td class="name enchFx">${esc(fx)}</td>`:""}</tr>`;
   $("enchFxHead").hidden=!armor;
-  $("enchRows").innerHTML=rows.map(([l,v])=>{if(l!=="essence")return line(esc(l),v,"");const es=memEssences(g),rest=Math.round((v-es.reduce((t,e)=>t+e.v,0))*1000)/1000;
-    return es.map(e=>line(memName([e.x.id,e.x.name]),e.v,e.x.t)).join("")+(rest>0?line("Ninja's essences",rest,"Not in the game client"):"")}).join("");
-  $("enchEssences").textContent=armor?`Job Essences together: ${rows.find(r=>r[0]==="essence")[1]}%. Pick the one you get from the Armor row's affix list on the Character tab.`:""}
+  // the essence row lists each Job Essence the client has; the Ninja's (the rest of the row's %) stay hidden while Ninja isn't in the game
+  const es=memEssences(g),esSum=Math.round(es.reduce((t,e)=>t+e.v,0)*1000)/1000;
+  $("enchRows").innerHTML=rows.map(([l,v])=>l!=="essence"?line(esc(l),v,""):es.map(e=>line(memName([e.x.id,e.x.name]),e.v,e.x.t)).join("")).join("");
+  $("enchEssences").textContent=armor?`Job Essences together: ${esSum}%. Pick the one you get from the Armor row's affix list on the Character tab.`:""}
 function renderMem(){renderJello();renderMemorials()}
 const jelloSave=()=>{save();renderJello()};
 $("jelloCard").addEventListener("input",e=>{const J=jello(),d=e.target.dataset,v=Math.max(0,Math.round(num(e.target.value)));
