@@ -46,8 +46,10 @@ LEVELS = {
     # Junior Mage (Geffen): "you'll need to gain a bit more experience first" / Lv 55 when you first talk to him; "you'll need a bit
     # more training before you can head up to the 3rd floor" / Lv 80, then the 1st and 2nd floor hunts are offered instead
     21102: 55, 21105: 55, 21108: 80,
-    # Serdin, the Tower Keeper (Al De Baran): "You should be at least Level 60" for the 1st floor, "Level 70" for the living clocks
-    21287: 60, 21289: 70,
+    # Serdin, the Tower Keeper (Al De Baran): "You should be at least Level 60" for the 1st floor, "Level 70" for the living clocks.
+    # Living Clocks 2 (Alarm, 3F) and Laughter from Below (Bathory, underground) have no line of their own: 70, since both need the
+    # Clock Tower Key he gives for Living Clocks 1 ("To go underground, you'll need a key")
+    21287: 60, 21289: 70, 21291: 70, 21293: 70,
     # Honest in the Morroc Ruins (another Honest stands in the Undersea Cave): "We're not strong enough to handle this ourselves, so
     # we'll have to ask other adventurers for help" / Lv 60, after his three dailies and the Old Scholar's lines. His other line, "If you
     # were a little stronger, I might've grabbed onto your pant leg and begged you to help" / Lv 40, is for finding Maxim's team in the
