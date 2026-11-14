@@ -1794,14 +1794,14 @@ t("Endows from a party Sage (Buffs from others): your weapon's element, free, an
   assert.equal(run(`atkEl()`), "Neutral");
   run(`C().pbuffs={endowWater:{on:true,lv:3}}`);
   assert.equal(run(`atkEl()+","+wElNow()`), "Water,Water");
-  assert.equal(run(`JSON.stringify(pEndow())`), JSON.stringify({ el: "Water", lv: 3, name: "Endow Tsunami (from a Sage)" }));
+  assert.equal(run(`JSON.stringify(pEndow())`), JSON.stringify({ el: "Water", lv: 3, name: "Endow Tsunami" }));
   run(`C().pbuffs={endowFire:{on:true,lv:5},endowWater:{on:true}}`);         // the first ticked counts
   assert.equal(run(`pEndow().el`), "Fire");
   // with Weapon element on, the Endow is the free baseline and the items still compete; a fixed converter goes over it
   run(`C().converters=true;state.prices[12115]=1500`);
   assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Fire", "Water", "Earth", "Wind", "Shadow", "Holy"]));
   assert.equal(run(`withEl("Fire",()=>convCostHr())`), 0);
-  assert.equal(run(`convWith("Fire")`), "Fire (Endow Blaze (from a Sage))");
+  assert.equal(run(`convWith("Fire")`), "Fire (Endow Blaze)");
   run(`C().convEl="Water"`);
   assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Water"]));
   near(run(`withEl("Water",()=>convCostHr())`), 4500);
@@ -1833,12 +1833,26 @@ t("ASPD potion and buffs from others (RO樂園攻速計算機 values)", () => {
   run(`C().potOn=false;C().pbuffs={incAgi:{on:true,lv:10},canto:{on:true}};SKFX=skillEffects(C());applyBuild();applyConsumables()`);
   const lines = run(`JSON.stringify(aspdBuffLines())`);
   assert.ok(lines.includes('"agi",null,null,19') && !lines.includes('"agi",null,null,12'));   // Canto Candidus replaces Increase AGI
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(aspdFrom())`)), ["Canto Candidus"]);   // what Your numbers' ASPD tile names
   run(`C().pbuffs={adren:{on:true}}`);
   assert.equal(run(`aspdBuffLines().length`), 0);                           // Adrenaline Rush needs an axe or mace
   run(`C().pbuffs={};C().skills={"two-hand-quicken":10};C().buffs={"two-hand-quicken":true};SKFX=skillEffects(C())`);
   assert.ok(run(`JSON.stringify(SKFX.buffStat)`).includes('"aspd_mod",null,null,7'));      // Two-Hand Quicken: value 7, +10%
   run(`state.job="Hunter";state.chars={};Object.assign(C(),{weapon:"Bow",skills:{"falcon-eyes":10},buffs:{"falcon-eyes":true}});SKFX=skillEffects(C())`);
   assert.equal(run(`SKFX.buffStat.filter(b=>["agi","dex"].includes(b[0])).reduce((a,b)=>a+b[3],0)`), 10);   // Falcon Eyes (True Sight): AGI, DEX +5
+});
+
+t("Clementia and Canto Candidus: one of each pair on a character, over your own Blessing / Increase AGI", () => {
+  setup("Priest", { aspd: 150, weapon: "One-handed mace", st: { str: "1", agi: "50", vit: "1", int: "1", dex: "1", luk: "1" }, intTxt: "1", potOn: false, cons: [], pbuffs: {},
+    skills: { "increase-agility": 10, blessing: 10 }, buffs: { "increase-agility": true, blessing: true } });
+  run(`SKFX=skillEffects(C())`);
+  const own = () => JSON.parse(run(`JSON.stringify(SKFX.buffStat.map(b=>b[0]))`));
+  assert.ok(own().includes("agi") && own().includes("str"));
+  run(`C().pbuffs={canto:{on:true},clementia:{on:true}};SKFX=skillEffects(C())`);
+  assert.ok(!own().includes("agi") && !own().includes("str"));              // the advanced buffs replace your own
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(aspdFrom())`)), ["Canto Candidus"]);
+  run(`C().pbuffs={};SKFX=skillEffects(C())`);
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(aspdFrom())`)), ["Increase Agility"]);
 });
 
 t("Max SP from Dance Lessons with any weapon, Max HP from Angelus", () => {
