@@ -88,6 +88,8 @@ JADE = ("Jade", "payon 173,238")
 EXCHANGES.update({716: (*JADE, [[717, 2]], "Gemstone Exchange", "Misc"),
                   715: (*JADE, [[716, 2]], "Gemstone Exchange", "Misc"),
                   717: (*JADE, [[715, 2]], "Gemstone Exchange", "Misc")})
+# the most an NPC swaps in one trade, by NPC: Jade's "Tell me an amount of 100 or less"
+EXCHANGE_MAX = {"Jade": 100}
 # Puchuchartan, the Utan shaman (Shaman's House, umbala 219,188, where the Umbala Guide points), fuses monster loot into elemental
 # ores once chief Karkatan allows it (for a Mr. Smile): 15 Horn, 20 Snail's Shell, 20 Scorpion Tail, 25 Rainbow Shell, from the shaman's lines
 # ("You need 20 Scorpion Tail from Scorpion"). The ritual can fail and the lines don't say how many ores it gives: written as one
@@ -109,6 +111,10 @@ EXCHANGES.update({984: (*TADDE, [[756, 5]], "Process refining stones", "Forging"
 # Blacksmith Blessing for 30 Blacksmith Blessing Powder and 10 Zelstar, no zeny. The Goblin Coin Shard cost isn't known yet: left out
 YAKT = ("Yakt", "moc_para01 22,35")
 EXCHANGES.update({6635: (*YAKT, [[1002357, 30], [25399, 10]], "Exchange with Zelstar", "Misc")})
+# Brewer Burkel (nordfeld 205,142) brews one Nordfeld Beer a day for the quest log's "Nordfeld: Special Beer!" (quest 1000213: 5 Red Herb,
+# 5 Apple, 2 Gleaming Pebble, 2 Nordium Fragment; "please come back tomorrow"). After it Brewer Telsa sells more (data/shops.js)
+BURKEL = ("Brewer Burkel", "nordfeld 205,142")
+EXCHANGES.update({107452: (*BURKEL, [[507, 5], [512, 5], [1002995, 2], [1002996, 2]], "Nordfeld: Special Beer! daily quest", "Misc")})
 # a second NPC for an item EXCHANGES already has: [(item id, (NPC, where, what it takes, its menu, category))]
 EXCHANGES_ALSO = [(984, (*KANT, [[756, 5]], "Process refining stones", "Forging")),
                   (985, (*KANT, [[757, 5]], "Process refining stones", "Forging")),
@@ -419,7 +425,7 @@ def npc_recipes(grf, client):
     if later:
         print(f"  in the dialogue but not offered yet, left out: {later}")
     made = [r for (npc, i), r in sorted(out.items()) if npc not in offered or i in offered[npc]]
-    swaps = [{"cat": cat, "type": "npc", "id": i, "n": 1, "lv": None, "mats": mats, "npc": [npc, at], "swap": menu}
+    swaps = [{"cat": cat, "type": "npc", "id": i, "n": 1, "lv": None, "mats": mats, "npc": [npc, at], "swap": menu, "max": EXCHANGE_MAX.get(npc)}
              for i, (npc, at, mats, menu, cat) in [*EXCHANGES.items(), *EXCHANGES_ALSO]]
     return [{k: x for k, x in r.items() if x is not None or k == "lv"} for r in made + hat_quests(client, quests) + swaps]
 

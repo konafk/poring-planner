@@ -66,8 +66,9 @@ const craftChTxt=c=>c.lo===c.hi?pct(c.avg*100,1):`${pct(c.avg*100,1)}<div class=
 // one row's money: a try's cost, a made item's cost (tries per success × a try), and what the item's worth
 function craftMoney(r,extra,c){const w=tryCost(r,extra),p=matPrice(r.id),unkTip=w.unknown?` title="${w.unknown} item${w.unknown>1?"s have":" has"} no price: set one on the Market tab"`:"";
   return `<td${unkTip}>${zTxt(w)}</td><td${unkTip}>${c.avg>0?zTxt(w,1/c.avg):"–"}</td><td>${p!=null?fmtN(p):"–"}</td>`}
-// an NPC shop: its name, price and the towns it stands in (the first few, all of them on hover)
-const shopTxt=(name,at,z)=>`<span title="${esc(at.map(([mp,x,y])=>`${mapLabel(mp)}${x!=null?` ${x},${y}`:""}`).join(" · "))}">${esc(name)}</span> <span class="note">${fmtN(z)} z · ${esc(at.slice(0,3).map(a=>naviName(a[0]).split(",")[0]).join(", "))}${at.length>3?` +${at.length-3} more`:""}</span>`;
+// an NPC shop: its name, price, the quest that opens it, and the towns it stands in, each once (the first few; every spot on hover)
+const shopTowns=at=>[...new Set(at.map(a=>naviName(a[0]).split(",")[0]))];
+const shopTxt=(name,at,z,q,ts=shopTowns(at))=>`<span title="${esc(at.map(([mp,x,y])=>`${mapLabel(mp)}${x!=null?` ${x},${y}`:""}`).join(" · "))}">${esc(name)}</span> <span class="note">${fmtN(z)} z · ${esc(shopQuest(q))}${esc(ts.slice(0,3).join(", "))}${ts.length>3?` +${ts.length-3} more`:""}</span>`;
 const itemCell=(id,sub)=>`<td class="name"><div class="dbName">${itemIcon(id)}<div>${infoLink("item",id,itemName(id))}${sub?`<div class="note">${sub}</div>`:""}</div></div></td>`;
 const craftInput=(kind,k,v,mine,label,title)=>`<label title="${esc(title||"")}">${label}<input class="w-xs" type="number" min="${(kind==="brew"?BREW_KEYS:COOK_KEYS)[k][0]}" max="${(kind==="brew"?BREW_KEYS:COOK_KEYS)[k][1]}" step="1" data-csim="${kind}.${k}" value="${state.craftSim[kind][k]??""}" placeholder="${mine[k]}"></label>`;
 function renderBrew(){const v=brewVals(),m=craftMine(),S=state.craftSim.brew;
@@ -89,7 +90,7 @@ function renderCook(){const v=cookVals(),m=craftMine(),S=state.craftSim.cook;
   const id=S.id||COOK_RECIPES[0].id;$("cookPick").innerHTML=COOK_RECIPES.map(r=>`<option value="${r.id}"${r.id===id?" selected":""}>${esc(itemName(r.id))} (Lv ${dishLv(r.id)})</option>`).join("");
   $("cookN").value=S.n||100;
   $("cookBooks").innerHTML=[1,2,3,4,5,6,7,8,9,10].map(lv=>{const id=COOKBOOK(lv),ds=COOK_RECIPES.filter(r=>dishLv(r.id)===lv),dr=ITEM_DROPS[id]||[];
-    const from=[...(SHOPS_OF[id]||[]).map(([name,at,z])=>shopTxt(name,at,z)),
+    const from=[...(SHOPS_OF[id]||[]).map(([name,at,z,q])=>shopTxt(name,at,z,q)),
       ...dr.slice(0,3).map(({m,ch})=>`${infoLink("mob",m.id,m.name)} <span class="note">${chTxt(ch)}</span>`)].filter(Boolean);
     return `<tr>${itemCell(id,ds.length?`${ds.length} dish${ds.length>1?"es":""}`:"")}<td class="name fx">${ds.length?ds.map(r=>infoLink("item",r.id,itemName(r.id))).join(", "):'<span class="note">none in the recipe list</span>'}</td>
       <td class="name from">${from.length?from.join(", ")+(dr.length>3?` <span class="note">and ${dr.length-3} more</span>`:""):'<span class="note">no source known yet</span>'}</td><td class="mono">${npcSell(id)>0?`${fmtN(npcPays(id))} z`:"–"}</td></tr>`}).join("")}

@@ -32,14 +32,18 @@ RECIPE_LIST.forEach(r=>{(RECIPES_MAKING[r.id]=RECIPES_MAKING[r.id]||[]).push(r);
 const matPrice=id=>state.prices[id]>0?state.prices[id]:NPCSELL[id]!=null||state.npcPrices[id]!=null?npcPays(id):null;
 // a recipe's materials' worth plus an NPC's fee: {z, unknown (how many materials have no price)}; none: nothing in it has a price
 const recipeWorth=r=>r.mats.reduce((a,[id,n])=>{const p=matPrice(id);if(p==null)a.unknown++;else a.z+=p*n;return a},{z:r.fee||0,unknown:0});
-// the NPC shops that sell it (data/shops.js): [[shop name, [[map, x, y], ...], price], ...], and the cheapest one's price
-const SHOPS_OF={};(typeof NPC_SHOPS!=="undefined"?NPC_SHOPS:[]).forEach(([name,at,items])=>items.forEach(([id,z])=>(SHOPS_OF[id]=SHOPS_OF[id]||[]).push([name,at,z])));
+// the NPC shops that sell it (data/shops.js): [[shop name, [[map, x, y], ...], price, the quest that opens it or undefined], ...],
+// and the cheapest one's price
+const SHOPS_OF={};(typeof NPC_SHOPS!=="undefined"?NPC_SHOPS:[]).forEach(([name,at,items,quest])=>items.forEach(([id,z])=>(SHOPS_OF[id]=SHOPS_OF[id]||[]).push([name,at,z,quest])));
+// "after the Nordfeld: Special Beer! quest · " for a shop a quest opens
+const shopQuest=q=>q?`after the ${q} quest · `:"";
 const shopPrice=id=>SHOPS_OF[id]?Math.min(...SHOPS_OF[id].map(s=>s[2])):null;
 // what a material costs you to get: your Market price, else an NPC shop's, else what an NPC pays (the simulators' cost of a try)
 const buyPrice=id=>state.prices[id]>0?state.prices[id]:shopPrice(id)??matPrice(id);
 const worthNone=(r,w)=>w.unknown===r.mats.length&&!r.fee;
-// "(quest)" when the NPC's quest unlocks it, "(quest, Lv 40+)" when the quest has a level
-const recipeQuest=r=>r.swap?` (${r.swap})`:r.quest?` (quest${r.qlv?`, Lv ${r.qlv}+`:""})`:"";
+// "(quest)" when the NPC's quest unlocks it, "(quest, Lv 40+)" when the quest has a level; an exchange's menu, with the most it swaps
+// in one trade when the NPC says ("(Gemstone Exchange, up to 100 per trade)")
+const recipeQuest=r=>r.swap?` (${r.swap}${r.max?`, up to ${fmtN(r.max)} per trade`:""})`:r.quest?` (quest${r.qlv?`, Lv ${r.qlv}+`:""})`:"";
 // who makes it, for the recipes an NPC makes: "JavaDullihan · morocc_in 146,99", "Marienne (quest) · prt_in 49,172" when her quest unlocks them,
 // then who the quest starts with when that's someone else
 // the skill that makes it, for what a player crafts with a skill rather than at an NPC: Arrows (Arrow Crafting), Brewing (Prepare
