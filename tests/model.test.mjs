@@ -1698,6 +1698,45 @@ t("Enchant Poison: an Assassin's Poison weapon, for SP rather than zeny", () => 
   assert.equal(run(`convSpPerSec()`), 0);
 });
 
+t("Sage Endows: Fire, Water, Wind and Earth weapons for SP and a Point", () => {
+  setup("Sage", { atkTxt: "150+200", wAtk: 0, wElem: "Neutral", weapon: "Book", hitTxt: "300", st: {}, autoSp: false, potOn: false, cons: [], converters: true, convEl: "", skills: {},
+    a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  // the Endows take the converters' place; Cursed Water and the Aspersio Scroll stay items, and no Enchant Poison
+  assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Neutral", "Fire", "Water", "Earth", "Wind", "Shadow", "Holy"]));
+  assert.equal(run(`convName("Fire")`), "Endow Blaze");
+  assert.equal(run(`convName("Water")+","+convName("Wind")+","+convName("Earth")`), "Endow Tsunami,Endow Tornado,Endow Quake");
+  assert.equal(run(`convName("Shadow")`), "Cursed Water");
+  assert.equal(run(`convEls().includes("Poison")`), false);
+  // Lv 5 with no skill tree set: 40 SP and a Scarlet Point every 30 minutes
+  const spm = run(`spCostMul()`);
+  near(run(`withEl("Fire",()=>convSpPerSec())`), 40 * spm / 1800);
+  assert.equal(run(`JSON.stringify(convIds("Fire"))`), "[6360]");
+  assert.equal(run(`withEl("Fire",()=>convCostHr())`), 0);                  // no price typed
+  run(`state.prices[6360]=500`);
+  near(run(`withEl("Fire",()=>convCostHr())`), 1000);                        // 2 an hour
+  assert.ok(run(`CONV_IDS.includes(6360)&&CONV_IDS.includes(6363)`));
+  const jakk = `MOBS.find(m=>m.name==="Jakk")`;
+  assert.equal(run(`mobRow(${jakk},0).el2`), "Water");
+  // a skill tree with Endow Blaze Lv 1: 10 minutes, so 6 Points an hour; Endow Tsunami not learned falls back to the Water converter
+  run(`C().skills={"endow-blaze":1};C().convEl="Fire"`);
+  assert.equal(run(`convSkLv("Fire")`), 1);
+  near(run(`convCostHr()`), 3000);
+  near(run(`convSpPerSec()`), 40 * run(`spCostMul()`) / 600);
+  assert.equal(run(`convName("Water")`), "Water converter");
+  assert.equal(run(`JSON.stringify(convIds("Water"))`), "[12115]");
+  run(`C().wElem="Fire"`);                                                   // a Fire weapon already: nothing to cast
+  assert.equal(run(`convCostHr()`), 0);
+  assert.equal(run(`convSpPerSec()`), 0);
+  run(`delete state.prices[6360]`);
+  // the Endow buff's extra element damage goes by its level: +1% a level, on Fire spells only
+  for (const lv of [1, 3, 5]) {
+    run(`C().skills={"endow-blaze":${lv}};C().buffs={"endow-blaze":true};SKFX=skillEffects(C())`);
+    assert.equal(run(`SKFX.myEle.Fire`), lv);
+    assert.equal(run(`SKFX.physEle.Fire||0`), 0);
+  }
+  run(`C().buffs={};SKFX=skillEffects(C())`);
+});
+
 t("ASPD potion and buffs from others (RO樂園攻速計算機 values)", () => {
   setup("Knight", { baseLv: 90, atkTxt: "100+300", aspd: 160, weapon: "Two-handed sword", st: { str: "50", agi: "80", vit: "1", int: "1", dex: "40", luk: "1" }, intTxt: "1",
     potOn: true, potType: "conc", cons: [], pbuffs: {}, buffs: {}, skills: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
