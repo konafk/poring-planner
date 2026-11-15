@@ -30,7 +30,7 @@ const load = (save, raw) => {
 const run = load();
 
 let n = 0;
-const t = (name, fn) => { run("state.sessions=[{id:'s1',name:'t',mobIds:[],entries:[]}];state.current='s1';state.chars={};state.bonus=0;state.jobBonus=0;state.dropBonus=0"); fn(); n++; console.log("ok", name); };
+const t = (name, fn) => { run("state.sessions=[{id:'s1',name:'t',mobIds:[],entries:[]}];state.current='s1';state.chars={};state.bonus=0;state.dropBonus=0"); fn(); n++; console.log("ok", name); };
 const near = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-9, `${msg ?? ""} ${a} != ${b}`);
 // a kill by whole hits: the damage of u uses (avg each) covers the Dummy's 10,000 HP, overshooting by less than one landed hit (max)
 const overkill = (u, avg, max) => assert.ok(u * avg >= 10000 - 1e-6 && u * avg <= 10000 + max, `${u} uses × ${avg} vs 10000 HP`);
@@ -245,17 +245,23 @@ t("party Even Share and EXP bonus", () => {
   [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110].forEach((p, i) => { run(`cur().partyN=${i + 1}`); assert.equal(run(`partyBonus()`), p); });
 });
 
-t("job EXP per kill: gear counts for job EXP, an item's base-only EXP % doesn't", () => {
-  // in game, party of 3: Captain (job 6,564) with 10% gear gave 14,441 / 2,888, Squad Leader (job 6,672) with an "EXP +10%" item
-  // gave 14,679 / 2,669; the game shares by damage dealt, so these come out 1 EXP above the model
-  run(`state.bonus=0;state.jobBonus=0;C().bx={exp:{all:10,race:{}}};cur().partyN=3`);
+t("job EXP per kill: gear and the Base EXP % box count for job EXP too", () => {
+  // in game, party of 3: Captain (job 6,564) with 10% gear gave 14,441 / 2,888; the game shares by damage dealt, so it comes out
+  // 1 EXP above the model
+  run(`state.bonus=0;C().bx={exp:{all:10,race:{}}};cur().partyN=3`);
   assert.equal(run(`killExp({exp:32822,job:6564})`), 14440);
   assert.equal(run(`killJobExp({exp:32822,job:6564})`), 2887);
-  run(`state.bonus=10;delete C().bx`);
+  run(`state.bonus=10;delete C().bx`);                                  // Base EXP 110%
   assert.equal(run(`killExp({exp:33361,job:6672})`), 14678);
-  assert.equal(run(`killJobExp({exp:33361,job:6672})`), 2668);
-  run(`state.jobBonus=10`);                                            // [Event] Account EXP Buff: EXP +10%, Job EXP +10%
   assert.equal(run(`killJobExp({exp:33361,job:6672})`), 2934);
+});
+
+t("death penalty: the rate the game shows, 100% costs 10% EXP, 50% costs 5%, 0% nothing", () => {
+  run(`delete state.deathRate`); assert.equal(run(`diePct()`), 10);
+  run(`state.deathRate=50`); assert.equal(run(`diePct()`), 5);
+  run(`state.deathRate=0`); assert.equal(run(`diePct()`), 0);
+  run(`state.deathRate=30`); assert.equal(run(`diePct()`), 10);        // not one the game has: 100%
+  run(`state.deathRate=100`);
 });
 
 t("EXP table log: oldest first, each dated, none is the current table", () => {
@@ -2391,7 +2397,7 @@ t("event consumables: presets and the effect lines they use", () => {
   run(`C().cons.push({on:true,name:"Unlimited Drink",eff:CONS_PRESETS[4].eff})`); assert.equal(run("noBreak()"), true);
   // Growth Elixir: +50% base and job EXP per kill
   const mob = "({id:-4,name:'E',lv:10,exp:100,job:60,drops:[]})";
-  run(`state.bonus=0;state.jobBonus=0`);
+  run(`state.bonus=0`);
   assert.equal(run(`killExp(${mob})`), 100); assert.equal(run(`killJobExp(${mob})`), 60);
   run(`C().cons=[{on:true,name:"Growth Elixir",eff:"Base/Job EXP +50%"}]`);
   assert.equal(run(`killExp(${mob})`), 150); assert.equal(run(`killJobExp(${mob})`), 90);

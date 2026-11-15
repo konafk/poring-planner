@@ -222,11 +222,17 @@ if(!state.current||!state.sessions.some(s=>s.id===state.current))state.current=s
 // the Monsters card's old Level range: a range set there becomes its Lv column filter
 if(state.minLv!=null||state.maxLv!=null){const lo=Math.round(+state.minLv)||1,hi=Math.round(+state.maxLv)||99,f=state.filters=objOr(state.filters);
   if((lo>1||hi<99)&&!f.lv)f.lv=`${lo}-${hi}`;delete state.minLv;delete state.maxLv}
-const D={bonus:0,jobBonus:0,hideClosed:true,filters:{},mobF:{boss:"noboss"},infoF:{},sort:"epm",dir:-1,regions:{},closed:[],maxSec:60};
+// Job EXP bonus % is gone: the Base EXP % box counts for job EXP too. The shop's death item (5% instead of 10%) is Death penalty 50%.
+// Base EXP % and Drop rate % can't go under 100%, so a bonus saved below 0 counts as 0
+delete state.jobBonus;if(state.deathRate==null&&state.dieItem)state.deathRate=50;delete state.dieItem;
+["bonus","dropBonus"].forEach(k=>{if(state[k]!=null&&!(+state[k]>0))state[k]=0});
+const D={bonus:0,dropBonus:0,deathRate:100,hideClosed:true,filters:{},mobF:{boss:"noboss"},infoF:{},sort:"epm",dir:-1,regions:{},closed:[],maxSec:60};
 for(const k in D)if(state[k]==null)state[k]=JSON.parse(JSON.stringify(D[k]));
 // GEN counts the saves: a card drawn since the last one is up to date (redraw in render.js)
 let GEN=0;
 const save=()=>{GEN++;store.set(state)};
+// a session picked from another account in the Session dropdown: the reload opens it
+if(VIEW&&VIEW.sess&&state.current!==VIEW.sess&&state.sessions.some(s=>s.id===VIEW.sess)){state.current=VIEW.sess;state.calcMobId=null;save()}
 // a character made now starts in Build from gear (NEW_CHAR_MODE; the tests start theirs in status-window mode). One saved with no mode
 // types its status window, as every character did before, so the mode is left out of charDefault and share links
 let NEW_CHAR_MODE="build";
@@ -275,6 +281,9 @@ const lvExp=(lv,t)=>expTableAt(t)[lv]||null;
 const MAX_BASE_LV=80;
 // the highest base level a goal can be worked out to: one past the EXP table's last level, at most the cap
 const GOAL_TOP_LV=Math.min(MAX_BASE_LV,Math.max(...Object.keys(EXP_TABLE).map(Number))+1);
+// a base level goal saved at Lv 70, the cap before the 12 November 2026 patch, goes back to the default (the cap, Lv 80) once;
+// goalLv80 marks it done, so a Lv 70 goal picked after that stays
+if(!state.goalLv80){if(+state.goalLv===70)state.goalLv=null;state.goalLv80=1}
 const atMaxLv=()=>num(C().baseLv)>=MAX_BASE_LV;
 // Even Share: a kill gives the party 100% + 10% per member beyond the first, split evenly (110% for 2, 120% for 3 ... 210% for 12),
 // for base and job EXP alike. Checked in game with +20% EXP: Boulder Dwarf Captain (32,822) → 15,753 each for 3 members, 12,800 for 4;

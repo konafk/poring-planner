@@ -21,7 +21,7 @@ const syncChar=()=>{
   $("weapon").value=c.weapon;$("wElem").value=c.wElem;$("dualRow").hidden=state.job!=="Assassin";$("lw").value=c.lw||"";$("lwElem").value=c.lwElem||"Neutral";$("lwAtk").value=num(c.lwAtk)>0?c.lwAtk:"";handsUi(c);$("nameType").value=c.nameType||"phys";$("autoSp").checked=!!c.autoSp;{const o=`<option value="">none</option><option value="auto">best per monster / map</option>${convEls().flatMap(el=>convSkLv(el)>0?[[el,`${el} · ${convSk(el).name.trim()}`],...(CONV_ITEMS[el]?[[el+":item",`${el} converter`]]:[])]:[[el,/converter/.test(convName(el))?convName(el):`${el} · ${convName(el)}`]]).map(([v,t])=>`<option value="${v}">${t}</option>`).join("")}`;if($("convSel").innerHTML!==o)$("convSel").innerHTML=o}$("convSel").value=!c.converters?"":convFixed()?convFixed()+(convSkLv(convFixed())>0&&convItemOn(convFixed())?":item":""):"auto";$("potOn").checked=!!c.potOn;$("potPrice").value=c.potPrice??2200;$("potMin").value=c.potMin??30;potInfo();$("yggOn").checked=!!c.yggOn;$("convNote").textContent=c.converters&&c.a.el!=="W"?"(this attack has its own element, so these don't change it)":"";
   const a=c.a;$("aType").value=a.type;$("aPct").value=a.pct;$("aHits").value=a.hits;$("aElem").value=a.el;$("aCast").value=a.cast;$("aDelay").value=a.delay;$("aSp").value=a.sp;$("aTargets").value=a.targets;$("aZeny").value=a.zeny||"";$("cartW").value=c.cartW||"";$("cartWrap").hidden=!num(a.cart);
   {const ac=AC();$("acSpell").innerHTML=Object.keys(AC_SPELLS).map(n=>`<option>${esc(n)}</option>`).join("");$("acOn").checked=!!ac.on;$("acSpell").value=ac.spell;$("acLv").value=ac.lv;$("acPct").value=ac.pct}
-  $("bonus").value=state.bonus;$("jobBonus").value=num(state.jobBonus);
+  ["bonus","dropBonus"].forEach(k=>{if(document.activeElement!==$(k))$(k).value=100+num(state[k])});$("deathRate").value=String(deathRate());
   {const cd=CRD();ROOTQ("[data-cd]").forEach(i=>{const k=i.dataset.cd;if(i.type!=="checkbox")i.value=cd[k]??""})}
   $("dpWrap").hidden=state.job!=="Sage";
   $("killSpBoxes").innerHTML=Object.entries(KILL_SP).map(([r,n])=>`<label class="bar"><input type="checkbox" data-cdkill="${esc(r)}"> <b>${esc(n)}</b> (${esc(r)})</label>`).join("");
@@ -177,10 +177,19 @@ function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp
       <td class="nowrap">${x.perW==null?"–":fmtSig(x.perW)} <span class="note">per ${inp(x,"w",x.w,52)}${x.wOk?"":' <span title="weight not checked in game yet">?</span>'}</span></td>
       <td>${fmtQty(x.uph)}</td><td>${x.per==null?"n/a":x.zph==null?"–":fmtN(x.zph)}</td><td>${fmtQty(x.wph)}</td></tr>`}).join("")}
 // ---- render: tracker ----
-function renderSessions(){const none=!state.sessions.length;
-  $("sessionSel").innerHTML=none?'<option value="">No session yet</option>':state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===state.current?"selected":""}>${esc(s.name)}</option>`).join("");
-  // nothing to rename or delete until logging EXP, Farm here or New session starts one
-  ["sessionSel","editSession","renameSession","delSession"].forEach(id=>$(id).disabled=none);
+// the Session dropdown lists every account's sessions under the account's name. Another account's are read from its save (once, until
+// another tab saves); picking one of them (value "acct:<account id>:<session id>") switches to that account and opens it
+const OTHER_SESS=new Map();
+const otherSessions=id=>{if(!OTHER_SESS.has(id)){let v=null;try{v=JSON.parse(localStorage.getItem(acctKey(id)))}catch(e){}
+  OTHER_SESS.set(id,(v&&Array.isArray(v.sessions)?v.sessions:[]).filter(s=>s&&s.id!=null).map(s=>({id:String(s.id),name:String(s.name||"Session")})))}return OTHER_SESS.get(id)};
+addEventListener("storage",()=>OTHER_SESS.clear());
+// with 2+ accounts the picked session reads "Account · Session", so the closed dropdown says which account you're on
+function renderSessions(){const none=!state.sessions.length,many=accts.list.length>1,an=many?esc((accts.list.find(a=>a.id===accts.active)||{}).name||"")+" · ":"";
+  const mine=none?`<option value="">${an}No session yet</option>`:state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===state.current?"selected":""}>${s.id===state.current?an:""}${esc(s.name)}</option>`).join("");
+  $("sessionSel").innerHTML=!many?mine:accts.list.map(a=>{if(a.id===accts.active)return `<optgroup label="${esc(a.name)}">${mine}</optgroup>`;
+    const ss=otherSessions(a.id);return `<optgroup label="${esc(a.name)}">${ss.length?ss.map(s=>`<option value="acct:${esc(a.id)}:${esc(s.id)}">${esc(s.name)}</option>`).join(""):`<option value="acct:${esc(a.id)}:">No session yet</option>`}</optgroup>`}).join("");
+  // nothing to rename or delete until logging EXP, Farm here or New session starts one; the dropdown still picks another account's
+  ["editSession","renameSession","delSession"].forEach(id=>$(id).disabled=none);$("sessionSel").disabled=none&&!many;
   // the Map card's own pick (Monsters & maps): the session Farm here and Farming it now go to, or a new one
   $("mapSessSel").innerHTML=(none?'<option value="">No session yet</option>':state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===cur().id?"selected":""}>${esc(s.name)}</option>`).join(""))+'<option value="+new">+ New session</option>'}
 // ---- get started: its steps shown on Home until they're done (or hidden), each ticked off as you do it ----
@@ -213,7 +222,7 @@ function renderSpark(s,st){const box=$("ctxRate"),es=[...s.entries].sort((a,b)=>
   $("ctxRateV").textContent=`${pct(st.avgPct)}/hr`}
 function renderTracker(){renderStart();
   // at the max base level base EXP stops counting, so the quick Log EXP box (the + button, L) goes away
-  document.documentElement.classList.toggle("maxLv",atMaxLv());$("dieItem").checked=!!state.dieItem;$("dieBtn").textContent=`Died −${diePct()}%`;
+  document.documentElement.classList.toggle("maxLv",atMaxLv());$("dieBtn").textContent=`Died −${diePct()}%`;
   const s=cur(),st=stats(s);renderSpark(s,st);
   if(document.activeElement!==$("partyN"))$("partyN").value=partyN(s);$("partyBonus").value=partyBonus(s);
   $("partyNote").textContent=partyN(s)>1?`Each kill gives you ${partyPct(s)}% of its EXP (party of ${partyN(s)}). Even Share only works within 15 base levels.`:"";
@@ -238,7 +247,7 @@ function renderTracker(){renderStart();
       return `<tr class="${inS?"sel":""}" style="${isSkipped(m)?"opacity:.55":""}"><td class="name">${mobIcon(m.id,1,"il")}<a href="#" data-info="mob:${m.id}">${esc(m.name)}</a>${BOSS_PILL(m)}${off?' <span class="note">not on this map</span>':""}</td><td>${off?"–":`≈${spN(n)}`}</td><td>${m.lv}</td><td>${fmtExp(m)}</td><td><button type="button" class="small${inS?"":" primary"}" data-sessmob="${m.id}">${inS?"− Session":"+ Session"}</button></td></tr>`}).join("")}
   // the folded part of the Log EXP card says what it's set to, so you know without opening it
   {const n=partyN(s),bits=[];
-    if(n>1)bits.push(`party of ${n}`);if($("fTime").dataset.auto!=="1"||$("fDate").dataset.auto!=="1")bits.push("time set by hand");if(state.dieItem)bits.push("death item");
+    if(n>1)bits.push(`party of ${n}`);if($("fTime").dataset.auto!=="1"||$("fDate").dataset.auto!=="1")bits.push("time set by hand");if(deathRate()!==100)bits.push(`death penalty ${deathRate()}%`);
     $("logMoreMeta").textContent=bits.join(" · ")}
   const lastE=[...s.entries].sort((a,b)=>a.t-b.t).pop();
   if(lastE){$("tCurLv").textContent=`Lv ${lastE.lv}`;$("tCurLvS").textContent=lvExp(lastE.lv)?`${fmtN(lvExp(lastE.lv))} EXP to level`:"Lv outside EXP table";

@@ -60,8 +60,8 @@ function refFormulas(alts=[]){const vals=[],c=C(),m=calcMob(),ok=STATS.every(k=>
    R("Weight","kills per trip = (Max Weight × sell point − weight now) / weight per kill; time per kill = seconds per kill + town trip / kills per trip",()=>{if(!wOn())return "type your Max Weight";const t=m&&tripInfo(m,walkSec());return t&&t.wk>0?(isFinite(t.kills)?`${fmtN(Math.floor(t.kills))} kills a trip${mn}`:"sell first"):`${fmtN(num(c.curW))} / ${fmtN(maxWt(c))}`},"at 70% weight HP and SP don't regenerate; at 90% you can't attack or use skills")+
    grp("EXP")+
    R("Even Share party","share = floor(monster EXP × (100% + 10% × (members − 1)) / members)",()=>`${100+partyBonus()}% ÷ ${partyN()} = ${partyPct()}% each`,"same map, within 15 base levels; the game splits by damage dealt, so a kill can be 1 EXP off")+
-   R("Base EXP per kill","floor(share of base EXP × (1 + gear EXP % + gear EXP % vs its race + EXP bonus %))",()=>need(x=>`${fmtN(killExp(x))}${mn}`),"bonuses add up, they don't multiply; EXP bonus % is items and buffs that say \"EXP +X%\"")+
-   R("Job EXP per kill","floor(share of job EXP × (1 + gear EXP % + gear EXP % vs its race + Job EXP bonus %))",()=>need(x=>`${fmtN(killJobExp(x))}${mn}`),"only \"Job EXP +X%\" counts here, not \"EXP +X%\"")+
+   R("Base EXP per kill","floor(share of base EXP × (1 + gear EXP % + gear EXP % vs its race + (Base EXP % − 100%)))",()=>need(x=>`${fmtN(killExp(x))}${mn}`),"bonuses add up, they don't multiply; Base EXP % is the rate the game shows (basic 100% plus premium and events)")+
+   R("Job EXP per kill","floor(share of job EXP × (1 + gear EXP % + gear EXP % vs its race + (Base EXP % − 100%)))",()=>need(x=>`${fmtN(killJobExp(x))}${mn}`),"the same Base EXP % as base EXP")+
    R("EXP / hour","EXP per kill × 3600 / (fight seconds + walking seconds)",()=>null)+
    grp("Loot")+
    R("Drop level penalty","gap = monster Lv − base Lv",()=>need(x=>dropGap(x)==null?null:`gap ${String(dropGap(x)).replace("-","−")}: ${penNote(x)||"no penalty"}${mn}`),"−19 or more: none; −40 or less: drops −50%; −20 to −39 isn't in the official guide, so none is counted")+

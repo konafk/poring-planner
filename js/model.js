@@ -183,11 +183,11 @@ const bonusMul=(m,magic=false)=>{const b=bonusParts(m,magic);return b.post*b.ful
 // build mode: gear EXP bonus % (plus vs a monster's race), and damage taken from its race / size / element / boss-normal kind
 const expGear=m=>{const c=C();return c.bx?(c.bx.exp.all||0)+((c.bx.exp.race||{})[m.race]||0):0};
 // your EXP per kill: your Even Share cut (rounded down), then every EXP bonus added together, not multiplied (10% + 10% is ×1.20,
-// matching the in-game kills noted at partyN). Gear EXP counts for base and job EXP; an item's "EXP +X%" is base EXP only and
-// only "Job EXP +X%" raises job EXP (checked in game: a Captain with 10% gear gave +10% to both, an "EXP +10%" item +10% base only)
+// matching the in-game kills noted at partyN). Gear EXP and the Base EXP % box (state.bonus: what's over 100%) count for base and
+// job EXP; a consumable's "EXP +X%" is base EXP only and "Job EXP +X%" job EXP only
 const partyCut=(v,s=cur())=>Math.floor(v*(100+partyBonus(s))/100/partyN(s));
 const killExp=(m,s=cur())=>Math.floor(partyCut(m.exp,s)*(1+(expGear(m)+num(state.bonus)+consSum("exp_base"))/100));
-const killJobExp=(m,s=cur())=>Math.floor(partyCut(m.job,s)*(1+(expGear(m)+num(state.jobBonus)+consSum("exp_job"))/100));
+const killJobExp=(m,s=cur())=>Math.floor(partyCut(m.job,s)*(1+(expGear(m)+num(state.bonus)+consSum("exp_job"))/100));
 // each kind of cut counts only down to −70% (official guide, Option Maximum Limit System); more of it does nothing
 const TAKEN_CAP=-70,takenPct=v=>Math.max(TAKEN_CAP,v||0);
 const takenMul=m=>{const c=C();if(!c.bx)return 1;const t=c.bx.taken;return (1+takenPct(t.race[m.race])/100)*(1+takenPct((t.size||{})[m.size])/100)*(1+takenPct(t.ele[m.el||"Neutral"])/100)*(1+takenPct(t.kind[m.boss?"boss":"normal"])/100)};
@@ -661,7 +661,7 @@ function mapSpShort(mp,w,el){let s=0,t=0;withMobbed(mp,()=>withEl(el,()=>(MAPMOB
 // zeny per kill: the exported loot value (the database, NPC prices) scaled by your drop rate bonus. A drop you sell to players
 // counts at the market price you typed instead: the loot value already holds its NPC price, so the market price adds only what
 // it beats the NPC price by. Its chance is scaled by the drop bonus and the level penalty, capped at 100%
-// the Drop rate bonus box plus "Item drop rate +x%" from gear in build mode (an event card's option)
+// the Drop rate % box over 100% plus "Item drop rate +x%" from gear in build mode (an event card's option)
 const dropPct=()=>num(state.dropBonus)+num((C().bx||{}).drop);
 const dropMul=()=>1+dropPct()/100;
 // NPC sell price: the one you typed, else the database's (data/prices.js), else 0
@@ -754,8 +754,10 @@ Object.entries(SPAWN).forEach(([id,arr])=>{const m=MOBS.find(x=>x.id===+id);if(!
 // ---- tracker math ----
 function cumulative(e,base){let total=0;for(let l=base;l<e.lv;l++)total+=lvExp(l,e.t)||100;return total+(e.pct/100)*(lvExp(e.lv,e.t)||100)}
 // pausing: s.pauses=[{from,to}] (to missing while paused); paused time is left out of every rate, EXP gained is still counted
-// EXP % lost on death: 10%, halved by the shop's death penalty item
-const diePct=()=>state.dieItem?5:10;
+// EXP % lost on death: 10% at the Death penalty rate the game shows (100%, 50% or 0%)
+const DEATH_RATES=[100,50,0];
+const deathRate=()=>DEATH_RATES.includes(+state.deathRate)?+state.deathRate:100;
+const diePct=()=>10*deathRate()/100;
 const openPause=s=>(s.pauses||[]).find(p=>p.to==null);
 const pausedMs=(s,a,b)=>(s.pauses||[]).reduce((x,p)=>x+Math.max(0,Math.min(b,p.to??Date.now())-Math.max(a,p.from)),0);
 const activeH=(s,a,b)=>(b-a-pausedMs(s,a,b))/36e5;
@@ -824,8 +826,8 @@ const snapEst=()=>{let n=0;state.sessions.forEach(s=>{if(!s.snap&&(s.job||state.
 function withSnap(c,fn){const job=state.job,real=state.chars[job],k={SKFX,EFF,BUILD_LAST};state.chars[job]=JSON.parse(JSON.stringify(c));
   try{SKFX=skillEffects(C());sageFromTree(C());applyBuild();applyConsumables();return fn()}
   finally{state.chars[job]=real;SKFX=k.SKFX;EFF=k.EFF;BUILD_LAST=k.BUILD_LAST}}
-// the EXP bonus % a session was logged with (s.snap.bonus, saved with its stats): the walking is the logged EXP ÷ EXP per kill, so
-// raising EXP bonus % afterwards (a Double EXP weekend: +100) must not stretch the walking of what was logged before. Without a
+// the Base EXP % (over 100) a session was logged with (s.snap.bonus, saved with its stats): the walking is the logged EXP ÷ EXP per kill, so
+// raising Base EXP % afterwards (a Double EXP weekend: 100% to 200%) must not stretch the walking of what was logged before. Without a
 // snapshot it's the one you have now. withBonus runs fn with it in state.bonus, then puts yours back
 const snapBonus=s=>s&&s.snap&&Number.isFinite(s.snap.bonus)?s.snap.bonus:num(state.bonus);
 function withBonus(s,fn){const k=state.bonus;state.bonus=snapBonus(s);try{return fn()}finally{state.bonus=k}}

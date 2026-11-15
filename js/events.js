@@ -114,9 +114,12 @@ $("recTable").addEventListener("change",e=>{if(e.target.dataset.rid)setTimeout(r
 $("recTable").addEventListener("focusout",()=>setTimeout(renderRecovery,0));
 $("recTable").addEventListener("click",e=>{const a=e.target.closest("[data-rreset]");if(!a)return;e.preventDefault();delete REC().overrides[a.dataset.rreset];save();renderAll()});
 $("partyN").addEventListener("input",e=>{sessNow().partyN=num(e.target.value,1)||1;save();renderAll()});
-$("dropBonus").value=state.dropBonus||0;$("dropBonus").addEventListener("input",e=>{state.dropBonus=num(e.target.value);save();renderAll()});
-$("bonus").addEventListener("input",e=>{state.bonus=num(e.target.value);save();renderAll()});
-$("jobBonus").addEventListener("input",e=>{state.jobBonus=num(e.target.value);save();renderAll()});
+// Base EXP % and Drop rate % are the rates the game shows (basic 100% + premium + events), never below 100%; state keeps what's over 100
+// (state.bonus, state.dropBonus). While you type, a number under 100 counts as 100; leaving the box puts 100 back in it
+[["bonus","bonus"],["dropBonus","dropBonus"]].forEach(([id,k])=>{const i=$(id);i.value=100+num(state[k]);
+  i.addEventListener("input",()=>{state[k]=Math.max(0,num(i.value)-100);save();renderAll()});
+  i.addEventListener("change",()=>{i.value=100+num(state[k])})});
+$("deathRate").addEventListener("change",e=>{state.deathRate=num(e.target.value);save();renderAll()});
 // log
 function nowTime(){return new Date().toTimeString().slice(0,5)}
 const today=()=>{const d=new Date(),p=x=>String(x).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`};
@@ -146,13 +149,13 @@ $("addForm").addEventListener("submit",e=>{e.preventDefault();const s=sessNow();
   const ent={t,lv:lvG,pct:pIn};if($("fDied").checked){ent.died=diePct();$("fDied").checked=false}if($("fJob").value!==""){ent.jpct=num($("fJob").value);const pv=[...s.entries].filter(e=>e.t<t&&e.jpct!=null).sort((a,b)=>b.t-a.t)[0];if(pv&&pv.jpct-ent.jpct>=50&&num(C().jobLv))C().jobLv=Math.min(jobMax(),num(C().jobLv)+1)}s.entries.push(ent);autoResume(s,t);if(!s.job)s.job=state.job;
   if(s.job===state.job&&num(C().jobLv)>0&&s.entries.every(x=>x.t<=t))ent.jlv=num(C().jobLv);snapSession(s,was);
   if(C().baseLv!==lvG&&s.entries.every(x=>x.t<=t)){const c0=C(),b0=derived(c0);c0.baseLv=lvG;shiftByStats(c0,b0)}save();renderAll();syncChar();resetForm(true);$("fPct").focus()});
-// a death costs 10% base EXP, 5% with the shop item. The EXP % box is your EXP just before dying: it goes in through the form like any entry,
+// a death costs 10% base EXP at Death penalty 100%, 5% at 50%, nothing at 0%. The EXP % box is your EXP just before dying: it goes in through the form like any entry,
 // then a second entry a second later has it less the penalty, so the EXP gained up to the death still counts
-$("dieItem").addEventListener("change",e=>{state.dieItem=e.target.checked;save();renderTracker()});
 $("dieBtn").addEventListener("click",()=>{const box=$("fPct").value,pen=diePct();
   if(box===""){$("pasteMsg").textContent="Type your EXP % from just before you died, then press Died.";$("fPct").focus();return}
   const s=sessNow(),t=formTime(),before=num(box),after=Math.max(0,Math.round((before-pen)*100)/100);$("fDied").checked=false;$("addForm").requestSubmit();
   const pre=s.entries.find(x=>x.t===t);if(!pre||$("fPct").value)return;
+  if(!pen){$("pasteMsg").textContent=`Died: logged ${before}% (death penalty 0%, no EXP lost).`;return}
   const ent={t:t+1000,lv:pre.lv,pct:after,died:pen};if(pre.jpct!=null)ent.jpct=pre.jpct;if(pre.jlv)ent.jlv=pre.jlv;
   s.entries=s.entries.filter(x=>x.t!==ent.t);s.entries.push(ent);save();renderAll();
   $("pasteMsg").textContent=`Died: logged ${before}% then ${after}% (−${pen}%).`});
@@ -244,9 +247,10 @@ const openSession=id=>{state.current=id;state.calcMobId=null;LOG_EDIT=null;save(
 // The pick is written even when this tab is STALE (another tab saved): into the account list as it is in storage now, so accounts
 // another tab added stay, and into this tab's VIEW, so the reload opens it even if the list can't be written (storage full)
 function renderAccts(){$("acctSel").innerHTML=accts.list.map(a=>`<option value="${esc(a.id)}" ${a.id===accts.active?"selected":""}>${esc(a.name)}</option>`).join("");$("delAcct").disabled=accts.list.length<2}
-const switchAcct=(id,add)=>{save();let a=null;try{a=JSON.parse(localStorage.getItem(ACCT_KEY))}catch(e){}
+// view: more for the reload to open (the Session dropdown: the session and the tab)
+const switchAcct=(id,add,view)=>{save();let a=null;try{a=JSON.parse(localStorage.getItem(ACCT_KEY))}catch(e){}
   if(!a||!Array.isArray(a.list)||!a.list.length)a={list:accts.list.slice()};if(add&&!a.list.some(x=>x.id===add.id))a.list.push(add);a.active=id;
-  try{localStorage.setItem(ACCT_KEY,JSON.stringify(a))}catch(e){}try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({acct:id}))}catch(e){}location.reload()};
+  try{localStorage.setItem(ACCT_KEY,JSON.stringify(a))}catch(e){}try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({...view,acct:id}))}catch(e){}location.reload()};
 $("acctSel").addEventListener("change",e=>switchAcct(e.target.value));
 $("newAcct").addEventListener("click",()=>{const id="a"+Date.now();let n=accts.list.length+1;while(accts.list.some(a=>a.name==="Account "+n))n++;const add={id,name:"Account "+n};accts.list.push(add);switchAcct(id,add)});
 const endAcctRename=keep=>{const i=$("acctName");if(i.hidden)return;if(keep){const v=i.value.trim(),a=accts.list.find(x=>x.id===accts.active);if(v&&a){a.name=v;saveAccts()}}i.hidden=true;$("acctSel").hidden=false;$("renameAcct").textContent="Rename";renderAccts()};
@@ -277,7 +281,8 @@ addEventListener("mousedown",e=>{DOWN_AT=[e.clientX,e.clientY];const a=e.target.
 addEventListener("click",e=>{const d=DOWN_AT;if(!d||e.target.closest?.("input,textarea,select,button,label"))return;
   if(Math.hypot(e.clientX-d[0],e.clientY-d[1])>4&&String(getSelection()).trim()){e.preventDefault();e.stopPropagation()}},true);
 renderAccts();
-$("sessionSel").addEventListener("change",e=>openSession(e.target.value));
+$("sessionSel").addEventListener("change",e=>{const v=e.target.value,m=/^acct:([^:]*):(.*)$/.exec(v);
+  if(m&&m[1]!==accts.active&&accts.list.some(a=>a.id===m[1]))switchAcct(m[1],null,{sess:m[2],tab:"track"});else if(v&&!m)openSession(v)});
 // Monsters & maps: switch the session there, without going to the Session tab; "+ New session" starts one
 $("mapSessSel").addEventListener("change",e=>{const v=e.target.value;if(v==="+new"){openSession(newSess().id);showToast("New session: Farm here or Farming it now picks its monsters")}else if(v)openSession(v)});
 // rename: swap the session picker for a text box; Enter or leaving the box saves, Esc cancels
