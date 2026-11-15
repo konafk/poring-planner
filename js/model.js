@@ -621,11 +621,11 @@ function useHour(m,w){const r=mobRow(m,w);if(!r||!isFinite(r.tot)||!(r.tot>0))re
 const fieldBuffs=()=>{const c=C();return Object.keys(FIELD_ITEM).filter(k=>(c.buffs||{})[k]&&skLv(c,k)>0).map(k=>({k,id:CONS_ID[FIELD_ITEM[k]],perHr:60/skLv(c,k)}))};
 const fieldCostHr=()=>fieldBuffs().reduce((t,f)=>t+f.perHr*consPrice(f.id),0);
 // ---- recovery items (data/recovery.js): HP and SP items priced per HP / SP ----
-// per character (chars.<Job>.recovery): the HP and SP item you use ("auto" = the cheapest per HP / SP that has a price; "none" = no item;
+// per character (chars.<Job>.recovery): the HP and SP item you use (an item id; "none" = no item, the default, and an older save's "auto" becomes it;
 // "custom" = the restores / costs boxes next to it) and your own min / max / weight / prices per item (overrides).
 // Per account (state.recovery.discount, on by default): buy at the Discount price, since a Merchant on the account can buy for the others
-const REC_D={hpItem:"auto",spItem:"auto",overrides:{}};
-const REC=()=>{const c=C();if(!c.recovery||typeof c.recovery!=="object")c.recovery={};const r=c.recovery;for(const k in REC_D)if(r[k]==null||typeof r[k]!==typeof REC_D[k])r[k]=JSON.parse(JSON.stringify(REC_D[k]));return r};
+const REC_D={hpItem:"none",spItem:"none",overrides:{}};
+const REC=()=>{const c=C();if(!c.recovery||typeof c.recovery!=="object")c.recovery={};const r=c.recovery;for(const k in REC_D)if(r[k]==null||typeof r[k]!==typeof REC_D[k]||r[k]==="auto")r[k]=JSON.parse(JSON.stringify(REC_D[k]));return r};
 const recDisc=()=>!state.recovery||state.recovery.discount!==false;
 const REC_IDS=Object.keys(RECOVERY);
 // HP / SP items restore more with a consumable such as Ale's Blessing (+20%)
@@ -647,12 +647,11 @@ const recItems=kind=>REC_IDS.flatMap(id=>(RECOVERY[id].kind==="both"?["hp","sp"]
 // listed in the table and the HP / SP pickers: the popular items, else every item with "show all items" (per account), one you changed or the one picked
 const recAll=()=>!!(state.recovery&&state.recovery.all);
 const recShown=(x,picked)=>recAll()||!RECOVERY[x.id].more||x.edited||x.id===picked;
-const recCheapest=kind=>recItems(kind).filter(x=>x.per!=null).sort((a,b)=>a.per-b.per)[0]||null;
-// the item in use: the one you picked when it has a price, else the cheapest (auto, with want = a picked item that has no price); null with "none"
+// the item in use: the one you picked (one with no price costs nothing here); null with "none"
 function recPick(kind){const k=REC()[kind==="hp"?"hpItem":"spItem"];if(k==="none")return null;
   if(k==="custom"){const c=C(),hp=kind==="hp",avg=num(hp?c.itemHp:c.itemSp)*recMul(),price=num(hp?c.itemHpPrice:c.itemPrice)*discMul();
     return {id:"custom",name:`Custom ${kind.toUpperCase()} item`,kind,avg,price,per:avg>0?price/avg:null,custom:true}}
-  const it=recFor(k,kind)?recItem(k,kind):null;if(it&&it.per!=null)return it;const ch=recCheapest(kind);return ch?{...ch,auto:true,want:it}:null}
+  return recFor(k,kind)?recItem(k,kind):null}
 const spItemAmt=()=>{const p=recPick("sp");return p?num(p.avg):0};
 const spItemPrice=()=>{const p=recPick("sp");return p?num(p.price):0};
 // HP items to make up an HP loss per minute: items per hour (n), zeny per hour (z) and the item (p)

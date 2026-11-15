@@ -91,7 +91,7 @@ function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   const us=useSec(),need=spNeedPerSec()*60,reg=regenPerSec()*60,ips=itemsPerSec(),rf=restFactor();
   {const oc=skRate("overcharge");$("mercNote").textContent=oc?`Overcharge: NPCs pay you +${oc}%`:""}
   renderUseItems();
-  {const p=recPick("sp");$("spItemUse").innerHTML=p?`<b>${esc(p.name)}</b> (${fmtSig(p.avg)} SP, ${fmtSig(p.price)} z${p.auto?", cheapest":""})`:REC().spItem==="none"?'<span class="muted">no SP item (None): you rest</span>':""}
+  {const p=recPick("sp");$("spItemUse").innerHTML=p?`<b>${esc(p.name)}</b> (${fmtSig(p.avg)} SP, ${p.price==null?"no price":fmtSig(p.price)+" z"})`:REC().spItem==="none"?'<span class="muted">no SP item (None): you rest</span>':""}
   $("itemInfo").textContent=c.autoSp?(ips>0?`≈ ${(ips*60).toFixed(1)} items/min · ${fmtN(ips*3600*spItemPrice())} z/hr`:"not needed: regen covers it"):"";
   const atk=a.type==="magic"||a.type==="spellfist"?`MATK ${fmtN(matkOf())}`:`ATK ${fmtN(sumStat(c.atkTxt))}`;
   syncCardRows();
@@ -155,11 +155,11 @@ const REC_BASE={amt:"min",spAmt:"spMin"};
 // the map uses per hour are worked out on: the session's (Where to farm), else the picked monster's best open map. HP lost / min and SP short per hour there
 function recNeed(){let mp=currentMap();if(!MAPMOBS[mp])mp=mobMap(calcMob());if(!MAPMOBS[mp])return null;
   const w=walkSec(),r=mapStats(mp,w);return {mp,hpm:r?r.hpi:null,loss:r?r.hpm:null,sp:r?mapSpShort(mp,w,r.el2):0}}
-function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp:recPick("sp")},ch={hp:recCheapest("hp"),sp:recCheapest("sp")};
-  const opts=kind=>`<option value="auto">Auto (cheapest${ch[kind]?": "+esc(ch[kind].name):""})</option><option value="none">None</option>`+recItems(kind).filter(x=>recShown(x,R[kind==="hp"?"hpItem":"spItem"])).map(x=>`<option value="${x.id}">${esc(x.name)}${x.per==null?" (no price)":""}</option>`).join("")+'<option value="custom">Custom (type it)</option>';
-  $("recHp").innerHTML=opts("hp");$("recHp").value=R.hpItem==="custom"||R.hpItem==="none"||recFor(R.hpItem,"hp")?R.hpItem:"auto";
-  $("recSp").innerHTML=opts("sp");$("recSp").value=R.spItem==="custom"||R.spItem==="none"||recFor(R.spItem,"sp")?R.spItem:"auto";
-  $("recHp").title=pick.hp&&pick.hp.want?`${pick.hp.want.name} has no price, so the cheapest is used`:"";$("recSp").title=pick.sp&&pick.sp.want?`${pick.sp.want.name} has no price, so the cheapest is used`:"";
+function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp:recPick("sp")};
+  const opts=kind=>`<option value="none">None</option>`+recItems(kind).filter(x=>recShown(x,R[kind==="hp"?"hpItem":"spItem"])).map(x=>`<option value="${x.id}">${esc(x.name)}${x.per==null?" (no price)":""}</option>`).join("")+'<option value="custom">Custom (type it)</option>';
+  $("recHp").innerHTML=opts("hp");$("recHp").value=R.hpItem==="custom"||R.hpItem==="none"||recFor(R.hpItem,"hp")?R.hpItem:"none";
+  $("recSp").innerHTML=opts("sp");$("recSp").value=R.spItem==="custom"||R.spItem==="none"||recFor(R.spItem,"sp")?R.spItem:"none";
+  $("recHp").title=pick.hp&&pick.hp.price==null?`${pick.hp.name} has no price: type one in the Items list to count its cost`:"";$("recSp").title=pick.sp&&pick.sp.price==null?`${pick.sp.name} has no price: type one in the Items list to count its cost`:"";
   $("recCustom").hidden=R.spItem!=="custom";$("recCustomHp").hidden=R.hpItem!=="custom";$("recDisc").checked=recDisc();
   $("recNote").textContent=need?`${state.job} on ${mapCode(need.mp)}: ${need.loss==null?"HP loss unknown":`${fmtN(need.loss)} HP lost/min${need.loss>0&&vitHeals()?" (your Vitata Heals cover it)":""}`} · ${fmtN(need.sp/60)} SP/min short`+` · using ${pick.hp?pick.hp.name:"no HP item"} and ${pick.sp?pick.sp.name:"no SP item"}`:"pick a monster or a map (Map planner) to see uses per hour";
   // don't rebuild the box you're typing in; the table catches up when you leave it
