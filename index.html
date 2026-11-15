@@ -127,9 +127,9 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <label>Attack<select id="preset"></select></label>
         <label>Base level<input id="baseLv" type="number" min="1" max="99"></label>
         <label>Job level<input id="jobLv" type="number" min="1" max="70"></label>
-        <label title="Items and buffs that say &quot;EXP +X%&quot; (base EXP), plus EXP gear if you aren't building from gear">EXP bonus %<input id="bonus" type="number" step="1"></label>
-        <label title="Only items and buffs that say &quot;Job EXP +X%&quot;, plus EXP gear if you aren't building from gear">Job EXP bonus %<input id="jobBonus" type="number" step="1"></label>
-        <label>Drop rate bonus %<input id="dropBonus" type="number" step="1"></label>
+        <label title="Your EXP rate as the game shows it (basic 100% plus premium and events), for base and job EXP; add EXP gear if you aren't building from gear">Base EXP %<input id="bonus" type="number" min="100" step="1"></label>
+        <label title="Your drop rate as the game shows it (basic 100% plus premium and events)">Drop rate %<input id="dropBonus" type="number" min="100" step="1"></label>
+        <label title="Your death penalty rate as the game shows it: at 100% a death costs 10% base EXP, at 50% it costs 5%">Death penalty<select id="deathRate"><option value="100">100%</option><option value="50">50%</option><option value="0">0%</option></select></label>
       </div>
     </details>
     <div class="bar">
@@ -530,9 +530,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
             <label>Party members<input id="partyN" type="number" min="1" max="12" value="1"></label>
             <label>Party EXP bonus %<input id="partyBonus" type="number" value="0" readonly tabindex="-1" title="Worked out from the party size"></label>
             <div class="note span-rest" id="partyNote"></div>
-            <label class="bar note span-all" title="For an EXP % you note after a death: the drop since the last entry is the death, not EXP lost per hour. Or type your EXP from just before dying and press Died"><input type="checkbox" id="fDied"> 💀 Died since the last entry: this EXP % is after the death</label>
-            <label class="bar note span-all"><input type="checkbox" id="dieItem"> Death penalty item from the shop: a death costs 5% EXP instead of 10%</label>
-          </div>
+            <label class="bar note span-all" title="For an EXP % you note after a death: the drop since the last entry is the death, not EXP lost per hour. Or type your EXP from just before dying and press Died"><input type="checkbox" id="fDied"> 💀 Died since the last entry: this EXP % is after the death</label>          </div>
         </details>
       </form>
       <details class="more" id="pasteMore">
