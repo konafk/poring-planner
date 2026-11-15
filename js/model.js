@@ -213,10 +213,12 @@ const procFree=m=>ssDmg(m)*SS_CHANCE;
 // text, like the in-game tooltip, changes only the damage % and the duration with the level, and gives no chance
 const DL_PHYS=1,DL_MAGIC=0.5;
 const dlLv=(c=C())=>!c.a.dl?0:hasTree(c)?skLv(c,"duple-light"):10;
-const dlDmg=m=>{const lv=dlLv();if(!lv)return 0;const o={...C().a,dl:false,hits:1,sadd:[]};
-  const phys=withAtk({...o,name:"Duple Light",type:"phys",pct:500+50*lv,el:"W"},()=>dmgPerHit(m)*hitChance(m)/100);
+// one orb of each when it lands: phys / mag damage, hc the physical orb's own hit chance (0-1); null with Duple Light off
+const dlOrbs=m=>{const lv=dlLv();if(!lv)return null;const o={...C().a,dl:false,hits:1,sadd:[]};
+  const [phys,hc]=withAtk({...o,name:"Duple Light",type:"phys",pct:500+50*lv,el:"W"},()=>[dmgPerHit(m),hitChance(m)/100]);
   const mag=withAtk({...o,name:"Duple Light",type:"magic",pct:800+80*lv,el:"Neutral"},()=>dmgPerHit(m));
-  return phys*DL_PHYS+mag*DL_MAGIC};
+  return {phys,hc,mag}};
+const dlDmg=m=>{const d=dlOrbs(m);return d?d.phys*d.hc*DL_PHYS+d.mag*DL_MAGIC:0};
 // Blitz Beat (Hunter falcon), per hit: (AGI/2 + DEX/10) × 2 + 6 × Steel Crow Lv + 20 × Blitz Beat Lv, as a Neutral hit that always lands
 // and ignores DEF and your damage bonuses. Auto Blitz: LUK/3 % on each basic attack that hits, at Lv (Job Lv + 9)/10 up to the learned Lv
 // (rAthena renewal). Steel Crow and Blitz Beat count as Lv 10 / 5 without a skill tree

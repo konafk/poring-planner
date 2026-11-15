@@ -1459,6 +1459,10 @@ t("Duple Light: a physical orb per hit (own hit roll) and a magic orb half the t
   const hc = run(`hitChance(${MOB})`) / 100;
   const orb = (type, pct, el) => run(`withAtk({...C().a,dl:false,type:'${type}',pct:${pct},el:'${el}'},()=>dmgPerHit(${MOB}))`);
   near(run(`dlDmg(${MOB})`), orb("phys", 1000, "W") * hc + orb("magic", 1600, "Neutral") * 0.5);
+  const orbs = JSON.parse(run(`JSON.stringify(dlOrbs(${MOB}))`));       // one orb of each, shown apart from the basic hit
+  near(orbs.phys, orb("phys", 1000, "W"));
+  near(orbs.mag, orb("magic", 1600, "Neutral"));
+  near(orbs.hc, hc);
   const base = run(`dmgPerHit(${MOB})`);
   overkill(run(`usesPerKill(${MOB})`), (base + run(`dlDmg(${MOB})`)) * hc, base + run(`dlDmg(${MOB})`));   // both orbs need the basic attack to land
   near(run("dlUpkeep()"), 100 / 360);                                  // 100 SP every 6 minutes
@@ -1469,6 +1473,7 @@ t("Duple Light: a physical orb per hit (own hit roll) and a magic orb half the t
   near(run("skillSPPerSec()"), 100 / 360);
   run("C().a={...C().a,dl:false}");
   assert.equal(run(`dlDmg(${MOB})`), 0);
+  assert.equal(run(`dlOrbs(${MOB})`), null);
 });
 
 t("Blitz Beat: falcon hits that always land, ignore DEF and bonuses; auto Blitz on basic attacks", () => {
