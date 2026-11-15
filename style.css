@@ -277,6 +277,7 @@ details.sub details.sub{background:var(--surface)}
 @media (max-width:760px){.row2{grid-template-columns:1fr}}
 .build{display:flex;flex-direction:column;gap:10px}
 .eqlist{display:flex;flex-direction:column;gap:6px}
+#buffList label.bar{flex-wrap:wrap;column-gap:6px;row-gap:2px}
 
 /* ---- form grids ---- */
 .form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 12px;align-items:end}
