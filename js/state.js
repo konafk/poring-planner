@@ -103,11 +103,12 @@ for(const j in state.chars){let c=state.chars[j];if(!c||typeof c!=="object"){del
   // your price per skill item (item id → zeny) and support casts per kill: numbers of 0 or more
   if(c.itemPrices!=null)c.itemPrices=Object.fromEntries(Object.entries(numMap(c.itemPrices)).filter(([k,v])=>/^\d+$/.test(k)&&v>=0));
   if(c.supCasts!=null)c.supCasts=Object.fromEntries(Object.entries(numMap(c.supCasts)).filter(([,v])=>v>=0));
-  // recovery items (the Consumables card): the HP / SP item picked (text: an item id, "auto", "none" or "custom") and your values per item
+  // recovery items (the Consumables card): the HP / SP item picked (text: an item id, "none" or "custom"; the old "auto", the cheapest, reads as "none") and your values per item
   // (numbers of 0 or more). A save from before it with its own SP item typed (not the 37 SP for 200 z default) keeps that as the Custom SP item
   if(c.recovery==null&&((c.itemSp!=null&&+c.itemSp!==37)||(c.itemPrice!=null&&+c.itemPrice!==200)))c.recovery={spItem:"custom"};
   if(c.recovery!=null){const r=c.recovery&&typeof c.recovery==="object"&&!Array.isArray(c.recovery)?c.recovery:{},o=r.overrides&&typeof r.overrides==="object"?r.overrides:{},keys=(x,ks)=>Object.fromEntries(Object.entries(numMap(x)).filter(([k,v])=>ks.includes(k)&&v>=0));
-    c.recovery={hpItem:typeof r.hpItem==="string"?r.hpItem:"auto",spItem:typeof r.spItem==="string"?r.spItem:"auto",
+    const it=x=>typeof x==="string"&&x!=="auto"?x:"none";
+    c.recovery={hpItem:it(r.hpItem),spItem:it(r.spItem),
       overrides:Object.fromEntries(Object.entries(o).filter(([id])=>Object.hasOwn(RECOVERY,id)).map(([id,x])=>[id,keys(x,["min","max","spMin","spMax","pct","w","npc","disc","player"])]).filter(([,x])=>Object.keys(x).length))}}}
 // market prices you typed, one book per game server (each has its own market). The server picked on the Market tab has its book in
 // state.prices / npcPrices / priceSeen / priceVars, which every zeny figure reads; the others wait in state.serverPrices[server]

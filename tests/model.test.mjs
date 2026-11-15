@@ -839,7 +839,7 @@ t("Monsters & maps: the table's own filters find a monster, and an empty table s
 });
 
 t("Zeny Hunter: net zeny per hour is loot less skill and item costs, and counts monsters with no EXP", () => {
-  setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed spear", st: {}, autoSp: false, potOn: false, cons: [], hpRegen6: 1, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed spear", st: {}, autoSp: false, potOn: false, cons: [], hpRegen6: 1, recovery: { hpItem: "501", spItem: "548", overrides: {} }, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
   const mob = MOB.replace("drops:[]", "drops:[],loot:500");
   const r = run(`huntMob0(${mob},2)`), sec = run(`fightSec(${mob})`) + 2;
   near(r.zk, 500); near(r.loot, 500 * 3600 / sec);
@@ -848,9 +848,9 @@ t("Zeny Hunter: net zeny per hour is loot less skill and item costs, and counts 
   near(run(`huntMob0(${mob},2)`).loot, 750 * 3600 / sec);
   run(`state.dropBonus=0;C().a.zeny=100`);                              // Mammonite-style zeny per use comes off each kill
   near(run(`huntMob0(${mob},2)`).zk, 500 - 100 * run(`usesPerKill(${mob})`));
-  run(`C().a.zeny=0;C().potOn=true;C().potMin=30;C().potPrice=1000`);   // an ASPD potion every 30 min: 2,000 z/hr
+  run(`C().a.zeny=0;C().potOn=true;C().potType="conc"`);   // a Concentration Potion (1,200 z at a Tool Dealer) every 30 min: 2,400 z/hr
   const p = run(`huntMob0(${mob},2)`);
-  near(p.cost, 2000 + p.hpZ); near(p.net, p.loot - 2000 - p.hpZ);
+  near(p.cost, 2400 + p.hpZ); near(p.net, p.loot - 2400 - p.hpZ);
   run(`C().potOn=false`);
   // Giearth has no EXP in the data but still drops loot, so it counts towards zeny on its map
   const map = run(`huntMap0("mjo_d03",2)`);
@@ -1216,11 +1216,11 @@ t("Zeny Hunter level filter: monsters outside the Lv range, or with a drop penal
 
 t("Overcharge raises NPC sales; Buy with Discount (Lv 10 on the account) cuts NPC purchases", () => {
   const atk = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
-  setup("Blacksmith", { atkTxt: "100+300", st: {}, a: atk, skills: {}, itemPrice: 1000, potOn: true, potMin: 30, potPrice: 1000, cons: [] });
+  setup("Blacksmith", { atkTxt: "100+300", st: {}, a: atk, skills: {}, itemPrice: 1000, potOn: true, potType: "conc", cons: [] });
   const mob = "({id:-3,name:'Seller',lv:50,loot:100,drops:[[909,10]]})";
   run(`C().baseLv=50;state.dropBonus=0;state.prices={};state.npcPrices={}`);
   near(run(`zenyKill(${mob})`), 100);                                     // no skills learned
-  near(run(`potCostHr()`), 2000);
+  near(run(`potCostHr()`), 2400);
   run(`C().skills={overcharge:10,discount:10}`);
   assert.equal(run(`skRate("overcharge")`), 24);                          // Lv 10: 24% in Zero's skill data
   assert.equal(run(`(C().skills.overcharge=1,skRate("overcharge"))`), 7);  // Lv 1: 7%
@@ -1228,15 +1228,15 @@ t("Overcharge raises NPC sales; Buy with Discount (Lv 10 on the account) cuts NP
   near(run(`zenyKill(${mob})`), 124);                                     // NPC loot value +24%
   run(`state.prices={909:200};state.npcPrices={909:10}`);                 // a market price replaces the NPC price you'd get with Overcharge
   near(run(`zenyKill(${mob})`), 124 + (200 - Math.floor(10 * 1.24)) * 0.10);
-  near(run(`potCostHr()`), 2000);                                         // this character's own Discount doesn't count
+  near(run(`potCostHr()`), 2400);                                         // this character's own Discount doesn't count
   run(`state.recovery.discount=true`);                                    // Buy with Discount: −24% (Lv 10) on what you buy from NPCs
-  near(run(`potCostHr()`), 2000 * 0.76);
+  near(run(`potCostHr()`), 2400 * 0.76);
   run(`REC().spItem="custom"`);                                          // a Custom SP item (typed 1,000 z) takes it too
   near(run(`spItemPrice()`), 760);
   run(`C().skills={}`);                                                   // on any job, not only the Merchant line
-  near(run(`potCostHr()`), 2000 * 0.76);
+  near(run(`potCostHr()`), 2400 * 0.76);
   run(`state.recovery.discount=false`);                                   // off: NPC prices
-  near(run(`potCostHr()`), 2000);
+  near(run(`potCostHr()`), 2400);
   run(`state.prices={};state.npcPrices={};C().skills={};C().potOn=false`);
 });
 
@@ -1249,9 +1249,8 @@ t("recovery items: cost per HP / SP, the cheapest pick and healing per hour", ()
   near(per(510), 49 / 62); assert.equal(+per(510).toFixed(2), 0.79);        // Blue Herb: 51–73, avg 62
   near(per(578), 200 / 101); assert.equal(+per(578).toFixed(2), 1.98);      // Strawberry at the 200 z player price
   assert.equal(per(505), null);                                             // Blue Potion: not sold by NPCs, no price
-  assert.equal(run(`recCheapest("hp").name`), "Red Potion");
-  assert.equal(run(`recCheapest("sp").name`), "Cheese");
-  assert.equal(run(`recPick("hp").auto`), true);                            // Auto (cheapest) by default
+  assert.equal(run(`recPick("hp")`), null); assert.equal(run(`recPick("sp")`), null);   // None by default: no Auto (cheapest) any more
+  run(`REC().hpItem="501"`);                                                // Red Potion
   // healing per hour: 202 HP lost / min ≈ 2.2k z/hr with Red Potions, 1,089 ≈ 11.6k
   near(run(`hpHeal(202).z`), 202 * 60 / 45 * 8); assert.equal(Math.round(run(`hpHeal(202).z`) / 100) / 10, 2.2);
   assert.equal(Math.round(run(`hpHeal(1089).z`) / 100) / 10, 11.6);
@@ -1263,17 +1262,17 @@ t("recovery items: cost per HP / SP, the cheapest pick and healing per hour", ()
   run(`state.recovery.discount=true`);
   // your values per item: a dearer Cheese makes Blue Herb the cheapest; a price on Blue Potion lets it be picked
   run(`REC().overrides={"548":{disc:100}}`);
-  assert.equal(run(`recCheapest("sp").name`), "Blue Herb");
+  assert.ok(per(548) > per(510));
   run(`REC().overrides["505"]={player:6}`);
-  near(per(505), 0.1); assert.equal(run(`recCheapest("sp").name`), "Blue Potion");
+  near(per(505), 0.1);
   run(`REC().overrides={"501":{min:40,max:50,w:5}}`);
   near(run(`recItem("501").avg`), 45); near(run(`recItem("501").perW`), 9); assert.equal(run(`recItem("501").edited`), true);
   run(`REC().overrides={}`);
-  // a picked item; one with no price falls back to the cheapest
+  // a picked item; one with no price is still the one used, at no cost
   run(`REC().spItem="578"`);
   near(run(`spItemAmt()`), 101); near(run(`spItemPrice()`), 200);
   run(`REC().spItem="505"`);
-  assert.equal(run(`recPick("sp").name`), "Cheese"); assert.equal(run(`recPick("sp").want.name`), "Blue Potion");
+  assert.equal(run(`recPick("sp").name`), "Blue Potion"); assert.equal(run(`spItemPrice()`), 0);
   run(`REC().hpItem="504"`);
   near(run(`hpHeal(100).z`), 100 * 60 / 325 * 996);
   // Custom: the restores / costs boxes, as before
@@ -1289,7 +1288,7 @@ t("recovery items: cost per HP / SP, the cheapest pick and healing per hour", ()
   assert.equal(run(`recPick("hp")`), null); assert.equal(run(`recPick("sp")`), null);
   assert.equal(run(`hpHeal(202).z`), 0); assert.equal(run(`hpHeal(202).n`), 0);
   assert.equal(run(`spItemAmt()`), 0); assert.equal(run(`spItemPrice()`), 0);
-  run(`REC().spItem="auto";REC().hpItem="auto"`);
+  run(`REC().spItem="none";REC().hpItem="none"`);
   // items that heal HP and SP: listed as an HP item and as an SP item. Yggdrasil Berry / Seed: all / half of Max HP and SP, at the price you type
   run(`C().maxHp=2000;C().maxSp=300`);
   assert.equal(run(`recItem("607","hp").avg`), 2000); assert.equal(run(`recItem("607","sp").avg`), 300);
@@ -1300,13 +1299,13 @@ t("recovery items: cost per HP / SP, the cheapest pick and healing per hour", ()
   near(run(`spItemAmt()`), 300); near(run(`spItemPrice()`), 5000); near(run(`recItem("607","hp").per`), 2.5);
   run(`REC().overrides={"526":{spMin:30,spMax:30}}`);                        // the SP side's own amounts; the HP side keeps its own
   near(run(`recItem("526","sp").avg`), 30); near(run(`recItem("526","hp").avg`), 365);
-  run(`REC().overrides={};REC().spItem="auto"`);
+  run(`REC().overrides={};REC().spItem="none"`);
 });
 
 t("recovery items: SP items in the SP model, Heal cost / hr and Net zeny / hr in the EXP Hunter", () => {
   const sk = { name: "x", type: "phys", pct: 300, hits: 1, el: "Neutral", cast: 0, delay: 1, sp: 40, targets: 1 };
   setup("Merchant", { atkTxt: "100+300", wAtk: 0, st: {}, a: sk, autoSp: true, potOn: false, cons: [], spRegen: 5, maxSp: 300, hpRegen6: 1 });
-  run(`state.recovery={discount:true};state.skipMobs=[]`);
+  run(`state.recovery={discount:true};state.skipMobs=[];REC().spItem="548";REC().hpItem="501"`);   // Cheese, Red Potion
   const mob = MOB.replace("drops:[]", "drops:[],loot:5000");
   // SP items per second cover what regen doesn't, at the Cheese's 32 SP each
   const short = run(`(()=>{SG_MOB=${mob};try{return spNeedPerSec()-regenPerSec()}finally{SG_MOB=null}})()`);
@@ -1330,7 +1329,7 @@ t("recovery items: SP items in the SP model, Heal cost / hr and Net zeny / hr in
   run(`REC().spItem="none";REC().hpItem="none"`);                           // None: no SP items bought, no HP items either
   const m3 = run(`mapStats0("prt_f08",2)`);
   assert.equal(m3.spZ, 0); assert.equal(m3.hpZ, 0); near(m3.net, m3.zph);
-  run(`REC().spItem="auto";REC().hpItem="auto"`);
+  run(`REC().spItem="548";REC().hpItem="501"`);
   run(`C().autoSp=false`);                                                  // auto-use off: you rest, no SP items bought
   const m2 = run(`mapStats0("prt_f08",2)`);
   assert.equal(m2.spZ, 0); near(m2.net, m2.zph - m2.hpZ);
@@ -1340,9 +1339,9 @@ t("recovery items: saves load with defaults, older SP items carry over, bad valu
   const S = [{ id: "s1", name: "t", mobIds: [1002], entries: [{ t: 1, lv: 50, pct: 1 }, { t: 60001, lv: 50, pct: 2 }], pauses: [{ from: 10, to: 20 }] }];
   const app = load({ job: "Merchant", current: "s1", sessions: S, chars: { Merchant: { itemSp: 37, itemPrice: 200 }, Sage: { itemSp: 60, itemPrice: 450 },
     Wizard: { recovery: { hpItem: 501, spItem: "548", scaleByStats: "yes", refStats: { vit: "40", int: "x", job: 3 }, overrides: { 548: { disc: "30", w: -1, bogus: 5 }, 999: { disc: 1 }, 501: "x" } } } } });
-  assert.equal(app("state.chars.Merchant.recovery.spItem"), "auto");       // the 37 SP for 200 z default: Auto (cheapest)
-  assert.equal(app("JSON.stringify(state.chars.Sage.recovery)"), JSON.stringify({ hpItem: "auto", spItem: "custom", overrides: {} }));
-  assert.equal(app("JSON.stringify(state.chars.Wizard.recovery)"), JSON.stringify({ hpItem: "auto", spItem: "548", overrides: { 548: { disc: 30 } } }));
+  assert.equal(app("state.chars.Merchant.recovery.spItem"), "none");       // the 37 SP for 200 z default: None
+  assert.equal(app("JSON.stringify(state.chars.Sage.recovery)"), JSON.stringify({ hpItem: "none", spItem: "custom", overrides: {} }));
+  assert.equal(app("JSON.stringify(state.chars.Wizard.recovery)"), JSON.stringify({ hpItem: "none", spItem: "548", overrides: { 548: { disc: 30 } } }));
   assert.equal(app("state.recovery.discount"), true);                      // Buy with Discount: on by default
   assert.equal(app("JSON.stringify(state.sessions[0].entries)"), JSON.stringify(S[0].entries));
   assert.equal(app("JSON.stringify(state.sessions[0].pauses)"), JSON.stringify(S[0].pauses));
@@ -1359,7 +1358,7 @@ t("recovery items: three accounts load, switch and keep their own settings", () 
     store["rozero-farm-planner-accounts"] = JSON.stringify({ ...JSON.parse(store["rozero-farm-planner-accounts"]), active: id });
     const app = load(null, store);                                           // the page reloads on each account switch
     assert.equal(app("state.job"), want[id], id);
-    assert.equal(app(`REC().hpItem`), "auto", id);
+    assert.equal(app(`REC().hpItem`), "none", id);
     app(`REC().overrides={"501":{disc:${id === "aFX" ? 7 : 9}}};state.recovery.discount=${id !== "aGem"};save()`);
   }
   assert.equal(JSON.parse(store["rozero-farm-planner-v1:aFX"]).chars.Merchant.recovery.overrides["501"].disc, 7);
@@ -1370,7 +1369,7 @@ t("recovery items: three accounts load, switch and keep their own settings", () 
   assert.equal(app(`recItem("501").price`), 10);                             // Discount off for this account: NPC price
   run(`state.job="Merchant";state.chars={};REC().overrides={"548":{disc:20}};REC().spItem="custom"`);  // and a share link keeps them
   const after = JSON.parse(run(`JSON.stringify(unpackState(JSON.parse(JSON.stringify(packState(state)))))`));
-  assert.deepEqual(after.chars.Merchant.recovery, { hpItem: "auto", spItem: "custom", overrides: { 548: { disc: 20 } } });
+  assert.deepEqual(after.chars.Merchant.recovery, { hpItem: "none", spItem: "custom", overrides: { 548: { disc: 20 } } });
 });
 
 t("spawn counts come from the client's navigation table (normal channels)", () => {
@@ -1978,13 +1977,17 @@ t("buffs from others: Zero's Impositio Manus, Assumptio and Adrenaline Rush valu
   assert.deepEqual(JSON.parse(run(`JSON.stringify(BUILD_LAST.unmodelled)`)), []);
 });
 
-t("consumables: + and +% per main stat, old food buffs move into the table", () => {
+t("consumables: cooking dishes; an old save's stat table and food buffs become dishes or a row", () => {
   setup("Knight", { atkTxt: "100+300", aspd: 160, weapon: "Two-handed sword", st: { str: "50", agi: "80", vit: "1", int: "1", dex: "40", luk: "1" }, intTxt: "1",
     potOn: false, cons: [], consStat: { str: { n: 10, p: 10 } }, pbuffs: { agiFood: { on: true, lv: 7 }, dexFood: { on: false, lv: 5 } }, buffs: {}, skills: {},
     a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
   assert.equal(run(`statVal(C(),"str")`), 50 + 10 + Math.floor(60 * 0.10));  // +10, then 10% of 60
   assert.equal(run(`statVal(C(),"agi")`), 87);                              // AGI food Lv 7 from an old save
   assert.equal(run(`JSON.stringify(C().pbuffs)`), "{}");
+  // AGI +7 is a dish's (Steamed Alligator with Vegetable); STR +10 with +10% isn't, so it's a row
+  assert.equal(run(`JSON.stringify(C().food)`), JSON.stringify({ agi: 12087 }));
+  assert.equal(run(`JSON.stringify(C().cons)`), JSON.stringify([{ on: true, name: "Stat food", eff: "STR +10, STR +10%" }]));
+  assert.equal(run(`"consStat" in C()`), false);
   assert.equal(run(`potCostHr()`), 0);                                       // consumables carry no zeny cost
   assert.equal(run(`PBUFF.some(b=>b.k==="bandage")`), false);               // Yggdrasil's Blessing (Battle Bandage) is gone
   // the effect text follows the level you typed
@@ -2000,23 +2003,23 @@ t("consumables: + and +% per main stat, old food buffs move into the table", () 
   assert.equal(eff("clementia", 70), "STR +17, INT +17, DEX +17, HIT +27 (Blessing Lv 10 + Priest Job Lv/10)");
   run(`C().pbuffs={bandage:{on:true}};SKFX=skillEffects(C());applyBuild();applyConsumables()`);
   assert.equal(run(`statVal(C(),"luk")`), 1);                               // an old save's tick adds nothing
-  run(`C().pbuffs={};C().consStat={...C().consStat,dex:{n:7},luk:{n:7}};C().cons=[{on:true,name:"x",eff:"HIT +5"}];applyConsumables()`);
+  run(`C().pbuffs={};C().cons=[{on:true,name:"x",eff:"HIT +5"},{on:true,name:"Stat food",eff:"DEX +7, LUK +7"}];applyConsumables()`);
   assert.equal(run(`statVal(C(),"luk")`), 8);
   assert.equal(run(`sumStat(cf("hitTxt"))-sumStat(C().hitTxt)`), 5 + 7 + 2); // HIT +5, DEX +7, and LUK 1 → 8 adds floor(8/3)
   run(`C().addOnTop=false;applyConsumables()`);                             // the typed status window already has them
   assert.equal(run(`statVal(C(),"luk")`), 1);
   assert.equal(run(`cf("hitTxt")`), run(`C().hitTxt`));
   run(`C().addOnTop=true`);
-  // Blessing of Yggdrasil (World Tree Dew / Zelstar from the KP shop, 1 hour): all stats +7, ATK/MATK +30, HIT/FLEE +5, no zeny
-  run(`C().consStat={};C().cons=[];C().yggOn=true;applyConsumables()`);
+  // Blessing of Yggdrasil (Stappy, for Yggdrasil Dew or Zelstar, 1 hour): all stats +7, ATK/MATK +30, HIT/FLEE +5, no zeny
+  run(`C().cons=[];C().food={};C().yggOn=true;applyConsumables()`);
   assert.equal(run(`statVal(C(),"luk")`), 8);
   assert.equal(run(`statVal(C(),"str")`), 57);
-  // stacking: stat food and Yggdrasil don't add, the higher counts; a course meal stacks on top
-  run(`C().consStat={str:{n:10},agi:{n:5}};applyConsumables()`);
-  assert.equal(run(`statVal(C(),"str")`), 60); assert.equal(run(`statVal(C(),"agi")`), 80 + 7);  // STR 50 + 10 (not 17); AGI food 5 < 7
-  run(`C().cons=[{on:true,name:"Premium Course Meal",eff:"All stats +5, ATK/MATK +20"}];applyConsumables()`);
+  // stacking: a dish and Yggdrasil don't add, the higher counts; a listed course meal stacks on top
+  run(`C().food={str:12075,agi:12060};applyConsumables()`);                // Steamed Tongue STR +10, Steamed Bat Wing in Pumpkin AGI +5
+  assert.equal(run(`statVal(C(),"str")`), 60); assert.equal(run(`statVal(C(),"agi")`), 80 + 7);  // STR 50 + 10 (not 17); AGI dish 5 < 7
+  run(`C().consItems={"Premium Course Meal":true};applyConsumables()`);
   assert.equal(run(`statVal(C(),"str")`), 65);
-  run(`C().consStat={};C().cons=[];applyConsumables()`);
+  run(`C().food={};C().cons=[];C().consItems={};applyConsumables()`);
   assert.equal(run(`sumStat(cf("hitTxt"))-sumStat(C().hitTxt)`), 5 + 7 + 2); // HIT +5, DEX +7, LUK +7
   assert.equal(run(`sumStat(cf("fleeTxt"))-sumStat(C().fleeTxt)`), 5 + 7 + 1); // FLEE +5, AGI +7, LUK +7
   assert.equal(run(`potCostHr()`), 0);
@@ -2083,7 +2086,7 @@ t("Thief Double Attack: daggers hit twice 7% × Lv of the time with HIT +1% × L
 
 t("damage taken from race / size / element cuts HP lost, heal cost and raises net zeny", () => {
   // a Thief like Chainsmoker: Poo Poo Hat's own −10% from Demi-Human, Muffler and Boots each rolled "Resistance to Demi-Human 7%"
-  run(`state.job="Thief";state.chars={};state.recovery={discount:false};Object.assign(C(),{baseLv:45,jobLv:40,mode:"build",st:{},eq:[],skills:{}})`);
+  run(`state.job="Thief";state.chars={};state.recovery={discount:false};Object.assign(C(),{baseLv:45,jobLv:40,mode:"build",st:{},eq:[],skills:{},recovery:{hpItem:"501",spItem:"548",overrides:{}}})`);
   const orc = "MOBS.find(m=>m.id===1023)", mp = "gef_fild03";
   const set = g => { run(`C().build={base:{str:60,agi:70,vit:20,int:1,dex:30,luk:1},gear:${g}};SKFX=skillEffects(C());applyBuild();applyConsumables()`);
     return JSON.parse(run(`JSON.stringify({mul:takenMul(${orc}),hit:mobHitDmg(${orc}),hpm:hpLossPerMin(${orc}),map:(r=>({hpm:r.hpm,heal:r.heal,net:r.net}))(mapStats(${JSON.stringify(mp)},2)),un:BUILD_LAST.unmodelled})`)); };
@@ -2342,7 +2345,7 @@ t("Energy Coat works on any Mage, Wizard or Sage attack", () => {
   near(run(`(()=>{SG_MOB=${MOB};try{return spNeedPerSec()}finally{SG_MOB=null}})()`), sp + d.ecSP);
   run("C().a={...C().a,sp:60}");                                            // the skill eats the regen: SP runs low, −6%
   assert.equal(run(`defense(${MOB})`).red, 6);
-  run("C().autoSp=true;C().itemSp=37;ECO().spPct=70");                      // SP items keep it around 70%: −24%
+  run("C().autoSp=true;REC().spItem=\"548\";ECO().spPct=70");              // SP items (Cheese) keep it around 70%: −24%
   assert.equal(run(`defense(${MOB})`).red, 24);
   run("state.job='Knight';state.chars={};ECO().on=true");                   // not a Mage-line job
   assert.equal(run("ecOn()"), false);
@@ -2367,14 +2370,14 @@ t("SP regen: Increase SP Recovery adds to auto regen; consumables restore SP / H
   run(`C().skills={"increase-sp-recovery":10}`);                           // Lv 10: 10 × (3 + 0.2% of 500) = 40 SP every 10 s
   assert.equal(run("isrPer10()"), 40); near(run("regenPerSec()"), base + 4);
   near(run("withRegenOff(()=>regenPerSec())"), 0);                         // none at 70% weight, like natural regen
-  run(`C().skills={};C().cons=[{on:true,name:"Small Mana Potion",eff:"SP +5% every 5s"}]`);
+  run(`C().skills={};C().consItems={"Small Mana Potion":true}`);
   near(run("consSPPerSec()"), 500 * 0.05 / 5); near(run("regenPerSec()"), base + 5);
   near(run("withRegenOff(()=>regenPerSec())"), 5);                         // keeps going when overweight
-  run(`C().cons=[{on:true,name:"",eff:"HP +5% every 5s, SP +2/s"}]`);
+  run(`C().consItems={};C().cons=[{on:true,name:"",eff:"HP +5% every 5s, SP +2/s"}]`);
   near(run("consHPPerSec()"), 4000 * 0.05 / 5); near(run("consSPPerSec()"), 2);
-  run(`C().cons=[{on:true,name:"Mimir's Well",eff:"Max SP +10%, SP consumption -10%"}]`);
+  run(`C().cons=[];C().consItems={"Mimir's Well":true}`);
   near(run("spCostMul()"), 0.9);
-  run(`C().cons[0].on=false`); near(run("spCostMul()"), 1); near(run("consSPPerSec()"), 0);
+  run(`C().consItems={}`); near(run("spCostMul()"), 1); near(run("consSPPerSec()"), 0);
 });
 
 t("event consumables: presets and the effect lines they use", () => {
@@ -2392,14 +2395,31 @@ t("event consumables: presets and the effect lines they use", () => {
   assert.equal(kinds("Cri damage / ranged damage / magic damage +5%"), "crit_dmg 5, range_dmg 5, magic_dmg 5");
   assert.equal(kinds("Incoming Heal and Recovery Item effect +20%"), "heal_pct 20, rec_item_pct 20");
   assert.equal(kinds("SP Consumption -5%, Fixed Cast Time -30%"), "sp_cost_percent -5, fct_percent -30");
+  // Nordfeld Beer: physical and magic damage against the Boulder Dwarf group, or one of them when the line says so
+  assert.equal(lines("Damage to Boulder Dwarves +10%"), JSON.stringify({ lines: [["physical_damage_percent", "monster_group", "boulder_dwarf", 10], ["magic_damage_percent", "monster_group", "boulder_dwarf", 10]], bad: [] }));
+  assert.equal(kinds("Physical damage against Boulder Dwarf +5%"), "physical_damage_percent 5");
+  // ... which in status-window mode goes on top of the Equipment Stats rows, against Boulder Dwarves only
+  run(`C().cons=[{on:true,name:"Nordfeld Beer",eff:"Damage to Boulder Dwarves +10%"}];applyBuild()`);
+  assert.equal(run(`JSON.stringify([C().bx.phys.group,C().bx.magic.group])`), JSON.stringify([{ "Boulder Dwarf": 10 }, { "Boulder Dwarf": 10 }]));
+  assert.equal(run(`groupMul(C().bx.phys,{name:"Boulder Dwarf Siege Trooper"})`), 1.1);
+  assert.equal(run(`groupMul(C().bx.phys,{name:"Poring"})`), 1);
+  run(`C().cons=[];applyBuild()`);
   // every preset reads without leftovers
   assert.equal(run(`CONS_PRESETS.flatMap(p=>parseCons(p.eff).bad).join()`), "");
   // fixed cast: only the highest % cut counts
   assert.equal(run("fctPctEff()"), 10);
-  run(`C().cons=[{on:true,name:"Challenge Drink",eff:CONS_PRESETS[0].eff}]`);
+  // the listed items are ticked by name (c.consItems)
+  run(`C().consItems={"Challenge Drink":true}`);
   assert.equal(run("fctPctEff()"), 30); near(run("spCostMul()"), 0.95);
   assert.equal(run("noBreak()"), false);
-  run(`C().cons.push({on:true,name:"Unlimited Drink",eff:CONS_PRESETS[4].eff})`); assert.equal(run("noBreak()"), true);
+  run(`C().consItems["Unlimited Drink"]=true`); assert.equal(run("noBreak()"), true);
+  run(`C().consItems={}`);
+  // an older save's row that is exactly a listed item becomes its tick (an unticked row stays unticked); other rows stay rows
+  run(`C().cons=[{on:true,name:"Mimir's Well",eff:"Max SP +10%, SP consumption -10%"},{on:false,name:"Enriched Abrasive",eff:"CRIT +30"},{on:true,name:"Mine",eff:"ATK +5"}]`);
+  assert.equal(run(`JSON.stringify(consItemsOf(C()))`), JSON.stringify({ "Mimir's Well": true }));
+  assert.equal(run(`C().cons.map(r=>r.name).join()`), "Mine");
+  assert.equal(run(`ownRows(C()).map(r=>r.name).join()`), "Mimir's Well,Mine");
+  run(`C().cons=[];C().consItems={}`);
   // Growth Elixir: +50% base and job EXP per kill
   const mob = "({id:-4,name:'E',lv:10,exp:100,job:60,drops:[]})";
   run(`state.bonus=0`);
@@ -2417,7 +2437,7 @@ t("event consumables: presets and the effect lines they use", () => {
   setup("Merchant", { st: {}, cons: [], autoSp: false, potOn: false });
   run(`state.recovery={discount:true}`);
   near(run(`recItem("501").avg`), 45);
-  run(`C().cons=[{on:true,name:"Ale's Blessing",eff:CONS_PRESETS.find(p=>p.name==="Ale's Blessing").eff}]`);
+  run(`C().consItems={"Ale's Blessing":true}`);
   near(run(`recItem("501").avg`), 54); near(run(`recItem("548").avg`), 32 * 1.2);
   run(`CRD().healHp=100`); near(run(`healHpEff()`), 120);
   run(`C().cons=[]`);
