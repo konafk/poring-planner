@@ -18,7 +18,10 @@ const altName=(c,i)=>{const b=c.build,a=b&&Array.isArray(b.alts)&&b.alts[i];retu
 const altIdx=(c=C())=>{const m=c.mode==="build"&&/^alt(\d+)$/.exec(c.gearEdit||"");return m&&+m[1]<altN(c)?+m[1]:-1};
 const editAlt=(c=C())=>altIdx(c)>=0;
 const gearSet=(c=C())=>editAlt(c)?altOf(c,altIdx(c)):buildOf(c);
-function applyBuild(){const c=C();if(c.mode!=="build"){BUILD_LAST=null;c.bx=eqToBx(c);return}
+// status-window mode: the Equipment Stats window doesn't hold food, so your rows' monster-group damage (Nordfeld Beer) is added on top
+const consGroupTo=(bx,c)=>{if(!addOnTop(c))return bx;consLines().lines.forEach(([t,k,g,v])=>{if(k!=="monster_group")return;const n=g==="boulder_dwarf"?"Boulder Dwarf":g;
+  [["physical_damage_percent",bx.phys],["magic_damage_percent",bx.magic]].forEach(([x,o])=>{if(t===x)o.group[n]=(o.group[n]||0)+num(v)})});return bx};
+function applyBuild(){const c=C();if(c.mode!=="build"){BUILD_LAST=null;c.bx=consGroupTo(eqToBx(c),c);return}
   const r=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,skills:learned(c),today:todayUtc(),extra:[...consLines().lines,...(SKFX?[...SKFX.stat,...SKFX.buffStat]:[]),...aspdBuffLines(c)]},state.job,aspdBase);BUILD_LAST=r;const F=r.fields,A=r.acc;
   // skill-specific gear lines count when the attack's name contains the skill
   const nm=String(c.a.name||"").toLowerCase(),match=o=>Object.entries(o).reduce((t,[k,v])=>t+(nm.includes(k.toLowerCase())?v:0),0);
@@ -38,11 +41,24 @@ const STAT6_UI=["str","agi","vit","int","dex","luk"];
 const rowsOf=(c,key)=>{if(!Array.isArray(c[key]))c[key]=[];return c[key]};
 const consOf=c=>rowsOf(c,"cons");
 const OWN_LISTS=[{list:"consList",add:"consAdd",note:"consNote",key:"cons",what:"Consumable"},{list:"pbuffOwn",add:"pbuffAdd",note:"pbuffNote",key:"pbuffOwn",what:"Buff"}];
-// older saves had AGI / DEX food among the buffs from others: move a ticked one into the stat table once
-const consStatOf=c=>{if(!c.consStat||typeof c.consStat!=="object")c.consStat={};const pb=c.pbuffs||{};
-  [["agiFood","agi"],["dexFood","dex"]].forEach(([k,st])=>{if(!pb[k])return;if(pb[k].on){const o=c.consStat[st]||(c.consStat[st]={});o.n=num(o.n)+Math.min(10,Math.max(1,num(pb[k].lv,10)))}delete pb[k]});
-  return c.consStat};
-// Blessing of Yggdrasil (World Tree Dew or Zelstar, 1 hour): all stats +7, ATK +30, MATK +30, HIT +5, FLEE +5 (in-game Yggdrasil Staff tooltip)
+// cooking (data/cookbooks.js; each dish's stat from its text, data/itemtext.js): ten dishes per stat, +1 to +10, one per stat at a time.
+// c.food = {str: dish id}. A dish and Blessing of Yggdrasil don't add up: the higher one counts per stat
+let DISHES_=null;
+const dishes=()=>{if(DISHES_)return DISHES_;const o={};if(typeof COOKBOOKS==="undefined"||typeof ITEM_TEXT==="undefined")return o;
+  Object.values(COOKBOOKS).forEach(ds=>ds.forEach(([id])=>{const m=String(ITEM_TEXT[id]||"").match(/\b(STR|AGI|VIT|INT|DEX|LUK) \+(\d+)/);if(m)(o[m[1].toLowerCase()]=o[m[1].toLowerCase()]||[]).push([id,+m[2]])}));
+  Object.values(o).forEach(l=>l.sort((a,b)=>a[1]-b[1]));return DISHES_=o};
+const foodOf=c=>{if(!c.food||typeof c.food!=="object")c.food={};return c.food};
+const dishVal=(k,id)=>((dishes()[k]||[]).find(d=>d[0]===+id)||[])[1]||0;
+// older saves had a stat table for food (c.consStat: {str: {n, p}}: STR + and +%), and before it AGI / DEX food among the buffs from
+// others. Once: a stat's +1 to +10 (with no %) becomes that stat's dish; anything else one row in Consumables effects, "Stat food"
+const foodToRow=c=>{const cs=c.consStat&&typeof c.consStat==="object"?c.consStat:{},pb=c.pbuffs||{},fd=foodOf(c);
+  [["agiFood","agi"],["dexFood","dex"]].forEach(([k,st])=>{if(!pb[k])return;if(pb[k].on){const o=cs[st]||(cs[st]={});o.n=num(o.n)+Math.min(10,Math.max(1,num(pb[k].lv,10)))}delete pb[k]});
+  const sg=v=>`${v>0?"+":""}${v}`,eff=STAT6_UI.flatMap(k=>{const o=cs[k]||{},n=num(o.n),p=num(o.p),K=k.toUpperCase(),d=!p&&(dishes()[k]||[]).find(x=>x[1]===n);
+    if(d){fd[k]=d[0];return []}return [n?`${K} ${sg(n)}`:"",p?`${K} ${sg(p)}%`:""]}).filter(Boolean).join(", ");
+  if(eff)rowsOf(c,"cons").push({on:true,name:"Stat food",eff});delete c.consStat};
+// Blessing of Yggdrasil (Stappy, the Yggdrasil Staff's spirit, for 1 Yggdrasil Dew, up to 3 a day from Stappy, or 1 Zelstar; 1 hour, doesn't
+// stack): all stats +7, ATK +30, MATK +30, HIT +5, FLEE +5 (in-game Yggdrasil Staff tooltip; Stappy's lines in the client say the same).
+// The Blessing of Yggdrasil item (23481, from the MVP Subjugation Reward Boxes) gives the same for 1 hour: the same tick
 const YGG_FX=[...["str","agi","vit","int","dex","luk"].map(k=>[k,7]),["atk",30],["matk",30],["hit",5],["flee",5]];
 // effect lines the status window can't show, read before the usual options (they count whether or not "add on top" is ticked):
 // "SP +5% every 5s" / "HP +20 every 5 sec" / "SP +2/s" -> restored per second (sp_regen, sp_regen_pct of Max SP, same for HP),
@@ -58,6 +74,10 @@ function parseCons(txt){const lines=[],rest=[],N="([+-]\\s*\\d+(?:\\.\\d+)?)";
     if(!/[+-]\s*\d/.test(p))p=p.replace(/\s(\d+(?:\.\d+)?%?)(\s*(?:every|per|\/).*)?$/i," +$1$2");
     if((m=p.match(TIMED_RE))){const k=/hp/i.test(m[1])?"hp":"sp";lines.push([k+(m[3]?"_regen_pct":"_regen"),null,null,parseFloat(m[2])/(m[4]?parseFloat(m[4]):1)]);return}
     const pct=(re,...ts)=>{const x=p.match(new RegExp(re+"\\s*"+N+"\\s*%$","i"));if(x)ts.forEach(t=>lines.push([t,null,null,parseFloat(x[1].replace(/\s/g,""))]));return !!x};
+    // "Damage to Boulder Dwarves +10%" (Nordfeld Beer): physical and magic damage against the monster group, as gear's lines are
+    if((m=p.match(new RegExp("^(physical\\s*|magic(?:al)?\\s*)?damage\\s*(?:dealt\\s*)?(?:to|against|vs\\.?)\\s*boulder\\s*dwar(?:f|ves|fs)\\s*"+N+"\\s*%$","i")))){
+      const v=parseFloat(m[2].replace(/\s/g,""));if(!/^mag/i.test(m[1]||""))lines.push(["physical_damage_percent","monster_group","boulder_dwarf",v]);
+      if(!/^phys/i.test(m[1]||""))lines.push(["magic_damage_percent","monster_group","boulder_dwarf",v]);return}
     if(pct("^(?:skill\\s*)?sp\\s*consumption","sp_cost_percent"))return;
     if(pct("^fixed\\s*cast(?:ing)?(?:\\s*time)?","fct_percent"))return;
     if(pct("^cri(?:t(?:ical)?)?\\s*(?:damage|dmg)","crit_dmg"))return;
@@ -76,35 +96,47 @@ function parseCons(txt){const lines=[],rest=[],N="([+-]\\s*\\d+(?:\\.\\d+)?)";
   String(txt||"").split(/[,;\n]+/).forEach(one);
   const o=BUILD.parseOptions(rest.join(","));return {lines:[...lines,...o.lines],bad:o.bad}}
 // Ragnarok Zero event consumables (30 minutes each), added as rows you can edit; values from the in-game tooltips (Ragnarok Zero Global).
-// note: what isn't counted
+// id: the item (its icon opens its details); note: what isn't counted
 const CONS_PRESETS=[
-  {name:"Challenge Drink",eff:"ATK/MATK +30, ATK/MATK +1%, HIT/FLEE +30, ASPD +1, SP consumption -5%, Fixed cast -30%"},
-  {name:"Mimir's Well",eff:"Max SP +10%, SP consumption -10%"},
-  {name:"Small Mana Potion",eff:"SP +5% every 5s"},
-  {name:"Small Healing Potion",eff:"HP +5% every 5s"},
-  {name:"Unlimited Drink",eff:"Max HP/Max SP +5%, Crit damage +5%, Ranged damage +5%, Magic damage +5%, Casting cannot be interrupted"},
-  {name:"Premium Course Meal",eff:"All stats +5, ATK/MATK +20"},
-  {name:"Enriched Abrasive",eff:"CRIT +30"},
-  {name:"Growth Elixir",eff:"Base/Job EXP +50%"},
-  {name:"Ale's Blessing",eff:"Recovery items +20%, Heal received +20%"},
+  {name:"Challenge Drink",id:23605,eff:"ATK/MATK +30, ATK/MATK +1%, HIT/FLEE +30, ASPD +1, SP consumption -5%, Fixed cast -30%"},
+  {name:"Mimir's Well",id:23611,eff:"Max SP +10%, SP consumption -10%"},
+  {name:"Small Mana Potion",id:23203,eff:"SP +5% every 5s"},
+  {name:"Small Healing Potion",id:22817,eff:"HP +5% every 5s"},
+  {name:"Unlimited Drink",id:23607,eff:"Max HP/Max SP +5%, Crit damage +5%, Ranged damage +5%, Magic damage +5%, Casting cannot be interrupted"},
+  {name:"Premium Course Meal",id:23604,eff:"All stats +5, ATK/MATK +20"},
+  {name:"Enriched Abrasive",id:102892,eff:"CRIT +30"},
+  {name:"Growth Elixir",id:105743,eff:"Base/Job EXP +50%"},
+  {name:"Ale's Blessing",id:23608,eff:"Recovery items +20%, Heal received +20%"},
   // Gatchaman collaboration (until the 26 November 2026 maintenance): Condor Joe's feathers, 60 minutes each (data/news.js)
-  {name:"Gorgeous Feather",eff:"CRIT +5, ASPD +1"},
-  {name:"Heavy Feather",eff:"ATK +4%, MATK +3%"},
-  {name:"Nimble Feather",eff:"HIT/FLEE +15"},
-  {name:"Sturdy Feather",eff:"Max HP/Max SP +3%"}];
-// stacking: stat food (the + column) and Blessing of Yggdrasil don't add up, the higher one counts per stat;
-// course meals, event drinks and other rows stack on top
+  {name:"Gorgeous Feather",id:105668,eff:"CRIT +5, ASPD +1"},
+  {name:"Heavy Feather",id:105667,eff:"ATK +4%, MATK +3%"},
+  {name:"Nimble Feather",id:105669,eff:"HIT/FLEE +15"},
+  {name:"Sturdy Feather",id:105672,eff:"Max HP/Max SP +3%"},
+  // not an event item: Brewer Burkel's daily quest gives one, Brewer Telsa sells more for 3,000z (data/shops.js)
+  // the client: "ASPD increases slightly more for 30 minutes", on top of the ASPD potions and by AGI like them; how much isn't known yet
+  {name:"Agi Up Potion",id:102891,eff:"",info:"ASPD up a little, on top of an ASPD potion",note:"30 minutes; the amount isn't known yet, so it isn't counted"},
+  {name:"Nordfeld Beer",id:107452,eff:"Damage to Boulder Dwarves +10%"}];
+// they're listed with a tick each, like the buffs from others: the ticked ones by name (c.consItems). Older saves added one as a row of
+// its own in Consumables effects: a row that is exactly a listed item (same name and effect) becomes its tick, ticked if the row was
+const consItemsOf=c=>{if(c.consStat||(c.pbuffs&&(c.pbuffs.agiFood||c.pbuffs.dexFood)))foodToRow(c);
+  if(!c.consItems||typeof c.consItems!=="object")c.consItems={};const it=c.consItems;
+  if(Array.isArray(c.cons)&&c.cons.length)c.cons=c.cons.filter(r=>{const p=CONS_PRESETS.find(x=>x.name===r.name&&x.eff===r.eff);if(!p)return true;if(r.on)it[p.name]=true;return false});
+  return it};
+// every row that counts: the listed items ticked, then your own rows in Consumables effects and Skill buffs ({on, name, eff, what})
+const ownRows=c=>[...CONS_PRESETS.filter(p=>consItemsOf(c)[p.name]).map(p=>({on:true,name:p.name,eff:p.eff,what:"Item"})),
+  ...OWN_LISTS.flatMap(L=>rowsOf(c,L.key).filter(r=>r.on).map(r=>({...r,what:L.what})))];
+// stacking: a cooked dish and Blessing of Yggdrasil don't add up, the higher one counts per stat; the listed items and your rows stack on top
 // clans (Ragnarok Zero Global; as iRO Wiki's Clan System has it): a buff that stays on while you're
 // a member, two stats +1, Max HP +30 and Max SP +10. It stacks with food and Blessing of Yggdrasil. It can't be switched off, so a
 // typed status window always has it: only build mode adds it
 const CLANS={sword:{name:"Sword Clan",st:["str","vit"]},archwand:{name:"Arch Wand Clan",st:["int","dex"]},goldenmace:{name:"Golden Mace Clan",st:["luk","int"]},crossbow:{name:"Crossbow Clan",st:["dex","agi"]}};
 const clanLines=c=>{const x=c.mode==="build"&&CLANS[c.clan];return x?[...x.st.map(k=>[k,null,null,1]),["hp",null,null,30],["sp",null,null,10]]:[]};
 const clanEff=x=>`${x.st.map(k=>k.toUpperCase()+" +1").join(", ")}, Max HP +30, Max SP +10`;
-const consLines=()=>{const lines=[],bad=[],cs=consStatOf(C()),ygg=Object.fromEntries(C().yggOn?YGG_FX:[]);
+const consLines=()=>{const lines=[],bad=[],ygg=Object.fromEntries(C().yggOn?YGG_FX:[]),fd=foodOf(C());
   Object.entries(ygg).forEach(([t,v])=>{if(!STAT6_UI.includes(t))lines.push([t,null,null,v])});
-  STAT6_UI.forEach(k=>{const o=cs[k]||{},n=Math.max(num(o.n),ygg[k]||0);if(n)lines.push([k,null,null,n]);if(num(o.p))lines.push([k+"_percent",null,null,num(o.p)])});
+  STAT6_UI.forEach(k=>{const n=Math.max(dishVal(k,fd[k]),ygg[k]||0);if(n)lines.push([k,null,null,n])});
   lines.push(...clanLines(C()));
-  OWN_LISTS.forEach(L=>rowsOf(C(),L.key).filter(r=>r.on).forEach(r=>{const o=parseCons(r.eff);lines.push(...o.lines);bad.push(...o.bad.map(x=>`${r.name||L.what}: ${x}`))}));return {lines,bad}};
+  ownRows(C()).forEach(r=>{const o=parseCons(r.eff);lines.push(...o.lines);bad.push(...o.bad.map(x=>`${r.name||r.what}: ${x}`))});return {lines,bad}};
 // ---- ASPD potions and buffs from others, from the RO樂園攻速計算機 sheet (2026-09-07, "增益"). "aspd_mod" is the sheet's potion/skill
 // value: it adds value × AGI/200 to ASPD1 (see build.js). Who can drink them and from which base level (lv): the potions' in-game text ----
 const ASPD_POT={conc:{id:645,name:"Concentration Potion",mod:4},awak:{id:656,name:"Awakening Potion",mod:6,lv:40,no:["Acolyte","Priest","Bard","Dancer"]},
@@ -134,11 +166,13 @@ const PBUFF=[
   {k:"assumptio",name:"Assumptio (Priest)",lv:[1,5,5],fx:l=>[["def",50*l],["heal_pct",2*l]],how:"Zero: flat DEF, not classic's half damage"},
   // Impressive Riff: After Attack Delay −2% a level, so +20% at Lv 10 (the client's SkillDescript_enUS, 2026-11-12)
   {k:"riff",name:"Impressive Riff (Bard)",lv:[1,10,10],fx:l=>[["aspd_percent",2*l]]},
-  {k:"adren",name:"Adrenaline Rush",w:AXE_MACE,lv:[1,5,5],fx:l=>[["aspd_mod",6],["aspd_percent",10],["hit",5+3*l]],how:"axes and maces; HIT +5 + 3 per level from Zero's skill text"},
+  {k:"adren",name:"Adrenaline Rush (Blacksmith)",w:AXE_MACE,lv:[1,5,5],fx:l=>[["aspd_mod",6],["aspd_percent",10],["hit",5+3*l]],how:"axes and maces; HIT +5 + 3 per level from Zero's skill text"},
   // a party Sage's Endow: your weapon's element (both hands) at no cost to you, and +1% a level to your spells of that element. One at
   // a time (a new Endow replaces the old one); a converter or skill picked under Weapon element goes over it (see pEndow in model.js)
   ...[["endowFire","Endow Blaze","Fire"],["endowWater","Endow Tsunami","Water"],["endowWind","Endow Tornado","Wind"],["endowEarth","Endow Quake","Earth"]]
     .map(([k,name,el])=>({k,name,el,lv:[1,5,5],fx:()=>[],eff:l=>`weapon element ${el}, ${el} spells +${l}%`}))];
+// each buff's skill, for its icon
+const PB_ICON={blessing:"blessing",clementia:"clementia",incAgi:"increase-agility",angelus:"angelus",impositio:"impositio-manus",assumptio:"assumptio",canto:"cantocandidus",riff:"impressive-riff",adren:"adrenaline-rush",endowFire:"endow-blaze",endowWater:"endow-tsunami",endowWind:"endow-tornado",endowEarth:"endow-quake"};
 const pbuffOf=c=>{if(!c.pbuffs||typeof c.pbuffs!=="object")c.pbuffs={};return c.pbuffs};
 const pbLv=(b,o)=>b.lv?Math.min(b.lv[1],Math.max(b.lv[0],num(o.lv,b.lv[2]))):0;
 // what it does at level lv (the level you typed, else the default)
@@ -190,15 +224,20 @@ function applyConsumables(){EFF=null;const c=C();if(!addOnTop(c))return;const li
   const sp=num(c.maxSp)>0?f((num(c.maxSp)*(100+int1)/(100+int0)+g("sp"))*(1+g("sp_percent")/100)):c.maxSp;
   EFF={atkTxt:`${atkSt}+${atkGear}`,matkTxt:`${matkSt}+${matkTot-matkSt}`,hitTxt:String(sumStat(c.hitTxt)+d("hit")+g("hit")),fleeTxt:String(sumStat(c.fleeTxt)+d("flee")+g("flee")),
     atkPct:num(c.atkPct)+g("atk_percent"),matkPct:num(c.matkPct)+g("matk_percent"),defTxt:`${ds+d("def")+vitDef}+${dh+g("def")}`,crit:num(c.crit)+d("crit")+g("crit"),aspd,maxHp:hp,maxSp:sp,st:tmp.st,intTxt:tmp.intTxt}}
-function renderCons(){const c=C(),cs=consStatOf(c);
-  $("consStats").tBodies[0].innerHTML=STAT6_UI.map(k=>{const o=cs[k]||{};return `<tr data-cs="${k}"><td>${k.toUpperCase()}</td>
-    <td><input data-f="n" type="number" step="1" value="${esc(o.n??"")}" placeholder="0" aria-label="${k.toUpperCase()} +"></td>
-    <td><input data-f="p" type="number" step="1" value="${esc(o.p??"")}" placeholder="0" aria-label="${k.toUpperCase()} +%"></td></tr>`}).join("");
+function renderCons(){const c=C(),it=consItemsOf(c);
+  // the listed items: a tick, the item's icon (opens its details), the name, what it does
+  $("consItems").innerHTML=CONS_PRESETS.map(p=>`<div class="eqrow" data-ci="${esc(p.name)}"><label class="bar pbName"><input type="checkbox" data-f="on" ${it[p.name]?"checked":""}><a href="#" data-info="item:${p.id}" title="${esc(p.name)}">${itemIcon(p.id)}</a>${esc(p.name)}</label>
+    <span class="note">${esc(p.eff||p.info||"")}${p.note?` · ${esc(p.note)}`:""}</span></div>`).join("");
+  // cooking: a dish per stat, its icon opening its details
+  const fd=foodOf(c);$("consFood").innerHTML=STAT6_UI.map(k=>{const id=+fd[k]||0,v=dishVal(k,id),K=k.toUpperCase();
+    return `<div class="eqrow" data-food="${k}"><label class="bar pbName">${v?`<a href="#" data-info="item:${id}" title="${esc(itemName(id))}">${itemIcon(id)}</a>`:""}${K} food
+      <select data-f="dish" aria-label="${K} dish"><option value="">none</option>${(dishes()[k]||[]).map(([d,n])=>`<option value="${d}"${d===id&&v?" selected":""}>${K} +${n} · ${esc(itemName(d))}</option>`).join("")}</select></label>
+      ${v?`<span class="note">${K} +${v} · the higher of this and Blessing of Yggdrasil counts</span>`:""}</div>`}).join("");
   OWN_LISTS.forEach(L=>$(L.list).innerHTML=rowsOf(c,L.key).map((r,i)=>`<div class="eqrow" data-i="${i}">
     <input type="checkbox" data-f="on" ${r.on?"checked":""} aria-label="Use it">
     <input data-f="name" value="${esc(r.name||"")}" placeholder="name" class="w-2xl">
     <input data-f="eff" value="${esc(r.eff||"")}" placeholder="e.g. ATK +20, HIT +10, ASPD +10%" class="grow200">
-    <button type="button" class="small danger" data-del aria-label="Remove">✕</button></div>`).join("")||(L.key==="cons"?'<div class="note">None yet.</div>':""));consNote()}
+    <button type="button" class="small danger" data-del aria-label="Remove">✕</button></div>`).join(""));consNote()}
 // redrawn on every render (job and weapon change what's allowed), except while you're typing in it
 function renderAspdBuffs(){const c=C(),k=potKey(c),act=document.activeElement;$("consOff").hidden=c.mode==="build"||addOnTop(c);
   $("clanSel").value=CLANS[c.clan]?c.clan:"";$("clanInfo").textContent=(CLANS[c.clan]?clanEff(CLANS[c.clan]):"two stats +1, Max HP +30, Max SP +10")+(c.mode==="build"?"":" · build mode only: your status window already shows it");
@@ -208,7 +247,7 @@ function renderAspdBuffs(){const c=C(),k=potKey(c),act=document.activeElement;$(
   $("potIcon").innerHTML=k?`<a href="#" data-info="item:${ASPD_POT[k].id}" title="${esc(ASPD_POT[k].name)}">${itemIcon(ASPD_POT[k].id)}</a>`:"";
   if(!$("pbuffList").contains(act))$("pbuffList").innerHTML=PBUFF.map(b=>{const o=pbuffOf(c)[b.k]||{},off=b.w&&!b.w.includes(c.weapon),own=PB_SELF[b.k]&&(c.buffs||{})[PB_SELF[b.k]]&&skLv(c,PB_SELF[b.k]),
       base=Object.keys(PB_OVER).find(x=>PB_OVER[x]===b.k),repl=o.on&&base&&PB_SELF[base]&&(c.buffs||{})[PB_SELF[base]]&&skLv(c,PB_SELF[base]);
-    return `<div class="eqrow" data-pb="${b.k}"><label class="bar pbName"><input type="checkbox" data-f="on" ${o.on?"checked":""}>${esc(b.name)}</label>
+    return `<div class="eqrow" data-pb="${b.k}"><label class="bar pbName"><input type="checkbox" data-f="on" ${o.on?"checked":""}>${PB_ICON[b.k]?iconHtml("skill",PB_ICON[b.k]):""}${esc(b.name)}</label>
     ${b.lv?`<label class="bar">${b.lv[3]||"Lv"} <input data-f="lv" type="number" min="${b.lv[0]}" max="${b.lv[1]}" value="${pbLv(b,o)}" class="w-xs"></label>`:""}
     <span class="note"><span data-pbeff>${esc(pbEff(b,pbLv(b,o)))}</span>${off?' · <span class="warnc">not with this weapon</span>':own&&!(PB_OVER[b.k]&&pbTicked(PB_OVER[b.k],c))?" · on in your Skills card, counted there":repl?` · replaces your ${esc(PBUFF.find(x=>x.k===base).name)} from the Skills card`:""}</span></div>`}).join("")}
 $("pbuffList").addEventListener("input",e=>{const f=e.target.dataset.f,row=e.target.closest("[data-pb]");if(!f||!row)return;const o=pbuffOf(C())[row.dataset.pb]||(pbuffOf(C())[row.dataset.pb]={});
@@ -225,11 +264,10 @@ $("addOnTop").addEventListener("change",e=>{C().addOnTop=e.target.checked;save()
 $("potType").addEventListener("change",e=>{C().potType=e.target.value;save();renderAll()});
 const consNote=()=>OWN_LISTS.forEach(L=>{const bad=rowsOf(C(),L.key).filter(r=>r.on).flatMap(r=>parseCons(r.eff).bad.map(x=>`${r.name||L.what}: ${x}`));
   $(L.note).innerHTML=bad.length?`<span class="bad">Not understood: ${bad.map(esc).join(", ")}</span>`:""});
-$("consStats").addEventListener("input",e=>{const f=e.target.dataset.f,row=e.target.closest("[data-cs]");if(!f||!row)return;const cs=consStatOf(C());
-  (cs[row.dataset.cs]||(cs[row.dataset.cs]={}))[f]=e.target.value===""?"":num(e.target.value);save();renderAll()});
-$("consPreset").innerHTML='<option value="">+ event item…</option>'+CONS_PRESETS.map((p,i)=>`<option value="${i}" title="${esc(p.eff)}">${esc(p.name)}</option>`).join("");
-$("consPreset").addEventListener("change",e=>{const p=CONS_PRESETS[+e.target.value];e.target.value="";if(!p)return;
-  consOf(C()).push({on:true,name:p.name,eff:p.eff});save();renderCons();renderAll();if(p.note)$("consNote").innerHTML+=` <span class="muted">${esc(p.name)}: ${esc(p.note)}</span>`});
+$("consFood").addEventListener("change",e=>{const row=e.target.closest("[data-food]");if(!row||e.target.dataset.f!=="dish")return;const fd=foodOf(C());
+  if(e.target.value)fd[row.dataset.food]=+e.target.value;else delete fd[row.dataset.food];save();renderCons();renderAll()});
+$("consItems").addEventListener("change",e=>{const row=e.target.closest("[data-ci]");if(!row||e.target.dataset.f!=="on")return;const it=consItemsOf(C());
+  if(e.target.checked)it[row.dataset.ci]=true;else delete it[row.dataset.ci];save();renderAll()});
 OWN_LISTS.forEach(L=>{
   $(L.add).addEventListener("click",()=>{rowsOf(C(),L.key).push({on:true,name:"",eff:""});save();renderCons();renderAll()});
   $(L.list).addEventListener("click",e=>{if(!e.target.closest("[data-del]"))return;rowsOf(C(),L.key).splice(+e.target.closest(".eqrow").dataset.i,1);save();renderCons();renderAll()});
@@ -680,8 +718,10 @@ function classPicker(el,groups,onPick,mine){let cur=null,shown="",looks={};
     const cs=[...btn.querySelectorAll(".ewFeet canvas")],px=(c,k)=>parseFloat(c.style[k])||0;
     const up=Math.max(...cs.map(c=>-px(c,"top"))),side=Math.max(...cs.map(c=>Math.max(-px(c,"left"),px(c,"left")+c.width))),k=Math.min(1,94/up,47/side);
     if(k<1)btn.querySelectorAll(".ewFeet").forEach(f=>f.style.transform=`scale(${(.7*k).toFixed(3)})`)}}
-// Build from gear's Status, Gear, Equipment and Special equipment panels fold away, remembered like a card (state.collapsed)
-[["buildStatFold","Build from gear: status"],["gsetFold","Build from gear: gear sets"],["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
+// Build from gear's Status, Gear, Equipment and Special equipment panels and the HP & SP recovery items list fold away, remembered like
+// a card (state.collapsed)
+[["buildStatFold","Build from gear: status"],["gsetFold","Build from gear: gear sets"],["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"],
+  ["recListFold","Consumables: recovery items list"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
   d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[key])return;if(d.open)delete c[key];else c[key]=true;save()})});
 // Attack details (damage %, cast time, delay, mastery…) starts folded: the Attack picker fills them in, and its line says what it
 // does. Opened once, it stays open (state.collapsed["Attack details"] === false)
