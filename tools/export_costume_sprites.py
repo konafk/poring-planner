@@ -9,22 +9,24 @@ data/client.js's gear (those named "[Costume] ..." are costumes too) (normal gea
 System\\itemInfo_data.lub. A headgear's view is an accessory: data.grf's accessoryid.lub and accname.lub (compiled Lua, read with
 tools/lua51.py) name its sprite, data\\sprite\\악세사리\\<남|여>\\<남|여><name>.spr/.act, one per gender. A garment's view is a robe:
 spriterobeid.lub and spriterobename.lub name its folder, data\\sprite\\로브\\<name>\\<남|여>\\<body>_<남|여>.spr/.act, one per job (and
-transcendent look) and gender; spriterobename_f.lub's IsTopLayer says which robes the client draws over the body instead of behind it.
+transcendent look) and gender; spriterobename_f.lub's IsTopLayer says which robes the client draws over the headgear too when it draws
+them in front (from the back; facing you, its spreditinfo layer tables put every garment behind the body).
 Each is drawn as the game draws it standing and facing you (action 0, frame 0), in its own colours, like tools/export_sprites.py's
 bodies: a headgear placed from the body's head anchor (as hair is), a garment from the feet, moved by the body's anchor less its own.
 Many entries are DES-encoded; export_minimaps' DesGrf reads them.
 
 Writes data/costumelooks.js (COSTUME_LOOKS: items {item id: ["h" | "r", view]}, gear {item id: [slots]} for the normal gear among them,
 the headgear sheet with each view's [x, y, w, h on the
-sheet, left, top from the head anchor] per gender, and per body (job, or "<job>+" for the transcendent look) a garment sheet with each
-robe's [x, y, w, h, left, top from the feet] per gender, plus the robes drawn over the body), img/costume-head.png and
+sheet, left, top from the head anchor] per gender, and per body (job, "<job>+" for the transcendent look, "<job>~" riding the Halter
+Lead's mount, "<job>+~" both: export_sprites.BODIES) a garment sheet with each
+robe's [x, y, w, h, left, top from the feet] per gender, plus the robes on the client's top layer), img/costume-head.png and
 img/costume-robe-<job>.png (RGBA, packed in rows). Standard library only.
 """
 import json, os, re, struct, sys, zlib
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import export_sprites  # noqa: E402
-from export_sprites import ROOT, JOBS, TRANS, SEX, ONE_SEX, draw, crop, pack  # noqa: E402
+from export_sprites import ROOT, BODIES, SEX, ONE_SEX, draw, crop, pack  # noqa: E402
 from export_minimaps import DesGrf  # noqa: E402
 from export_spawns import lua_data  # noqa: E402
 from lua51 import run, call  # noqa: E402
@@ -122,11 +124,8 @@ def main():
 
     # garments: per body (each job, and each 2nd job's transcendent look) and gender
     export_sprites.SHEET_W = 512
-    bodies = {job: (name, "body") for job, name in JOBS.items()}
-    bodies.update({job + "+": (name, "trans") for job, name in TRANS.items()})
     robe_sheets, total = {}, 0
-    for key, (body, kind) in bodies.items():
-        job = key.rstrip("+")
+    for key, job, body, kind in BODIES:
         images, robe_at = [], {}
         for view in robes:
             name = call(g["ReqRobSprName_V2"], [view, False])[0] if "ReqRobSprName_V2" in g else robe_names[view]
@@ -142,7 +141,7 @@ def main():
                 images.append((w, h, px)); robe_at.setdefault(view, {})[sx] = (len(images) - 1, L + dx, T + dy)
         if not images:
             continue
-        file = f"img/costume-robe-{key.lower().replace('+', '-trans')}.png"
+        file = f"img/costume-robe-{key.lower().replace('+', '-trans').replace('~', '-ride')}.png"
         at, v, size = write_sheet(images, os.path.join(ROOT, *file.split("/")))
         total += size
         robe_sheets[key] = {"file": file, "v": v, "at": {str(view): {sx: [*at[k], images[k][0], images[k][1], l, t] for sx, (k, l, t) in g2.items()}
@@ -156,8 +155,9 @@ def main():
         f.write("// How costumes, and normal headgear and garments, look in the Stylist (tools/export_costume_sprites.py, from the game client).\n"
                 "// items: {item id: [\"h\" (headgear) | \"r\" (garment), view]}; gear: the normal gear among them {item id: [slots]}; cos: the\n"
                 "// costumes only the gear data has, with their slots (the rest are data/costumes.js's); head: the headgear sheet and per view and gender (m/f) [x,y,w,h on the sheet, left,top from the\n"
-                "// body's head anchor]; robe.bodies: per job (\"<job>+\": its transcendent look) a garment sheet and per robe and gender\n"
-                "// [x,y,w,h, left,top from the feet]; robe.top: the robes drawn over the body (the rest go behind it). Sheets are RGBA.\n")
+                "// body's head anchor]; robe.bodies: per job (\"<job>+\": its transcendent look, \"<job>~\"\n"
+                "// riding the Halter Lead's mount, \"<job>+~\" both) a garment sheet and per robe and gender\n"
+                "// [x,y,w,h, left,top from the feet]; robe.top: the robes that, when drawn in front (seen from the back), go over the headgear too. Sheets are RGBA.\n")
         f.write("const COSTUME_LOOKS=" + json.dumps(out, separators=(",", ":"), ensure_ascii=False) + ";\n")
     print(f"{sum(i in costumes for i in items)} of {len(costumes)} costumes and {sum(i in gear for i in items)} of {len(gear)} normal headgear and garments have a look")
     if missing:

@@ -4,6 +4,7 @@
 const TAB_DESC={
   home:"What the planner does, where you left off, and every tool in it.",
   char:"Your job, stats, gear and attack: everything the damage, EXP and zeny numbers work from. Back up or share the account at the bottom.",
+  daily:"Every daily quest NPCs give, from the game client: the level it needs, what to hunt and where, with a tick for each one you've done today. They reset at 04:00 UTC+0.",
   track:"Where to farm for your character, then log your EXP as you farm to see your real EXP/hr, when you'll level and how far your goals are.",
   maps:"Every map and monster: any map with its picture, NPCs and monsters, and every monster's drops, skills and spawns. With a character, your numbers against them.",
   star:"Not open in game yet (Taiwan Zero data). The ★ Forging Certificates each ★ weapon needs, where you'd farm its weapon fastest, and what Activation costs.",
@@ -14,23 +15,25 @@ const TAB_DESC={
   equip:"Every weapon and piece of armor: filter by type, job, level, card slots and stats, and put it in any of your gear sets.",
   skilltree:"Try any job's skill tree without a character: points per tree, the job level it needs, and what each skill does.",
   stylist:"Every job's clothes colours, hair styles and hair colours from the game client: try a look, then put it on your character.",
+  mskill:"Every skill monsters use, and the monsters that use it: when, how often, and what sets it off. Find the ones that stun, silence or summon.",
   affix:"The items that add a random option (affix) to gear: the gear each one works on, and the affixes players have seen it add.",
   cards:"Every card and what it does: filter by the gear it goes in, and slot it into your gear or another gear set.",
   brew:"Prepare Potion's chance for every potion with your stats, what a potion costs counting the failures, and a run of tries rolled the server's way.",
+  refcalc:"What a refine takes on average: the tries, the ore, the zeny and the pieces a failure destroys, with the official rates. Pick the ore for each try, or let it find the cheapest.",
   cook:"Every dish's chance with each cooking kit for your stats, cook mastery, and a run of tries rolled the server's way.",
   recipes:"What every forge, brew, arrow, cooking, NPC and memorial recipe uses up.",
   market:"What players posted on your server (Skadi, Odin or Loki), with each item's lowest price, median and sellers to DM; and on My market, your own items, posts and prices.",
-  ref:"EXP tables, party share, the element and size tables, and every formula with your numbers in it.",
+  exp:"Base and job EXP to each level, with kills of your monster per level. Every base table the game has used stays here: pick one and compare it with another.",
+  ref:"Party share, the element and size tables, and every formula with your numbers in it.",
 };
 function showHero(t){
   const b=document.querySelector(`[data-tabbtn="${t}"]`);if(!b)return;
-  const g=b.closest(".navSec");
-  $("heroGrp").textContent=g?g.querySelector(".navGrp").textContent:"";$("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
+  $("heroTitle").textContent=b.querySelector("span").textContent;$("heroDesc").textContent=TAB_DESC[t]||"";
 }
 // a link to a tab: #memorial-dungeons (its name, any case) or #mem (its key); the address bar always shows the open tab's link, in
 // lower case. A name goes before a key. The old Monster info and Maps tabs' links (#monster-info, #maps) open Monsters & maps,
-// the old Account tab's (#account) Character
-const OLD_TAB={"monster-info":"maps",mobinfo:"maps",mapinfo:"maps",account:"char",acct:"char"};
+// the old Account tab's (#account) Character, and the old EXP & formulas tab's (#exp-formulas) Formulas
+const OLD_TAB={"monster-info":"maps",mobinfo:"maps",mapinfo:"maps",account:"char",acct:"char","exp-formulas":"ref"};
 const tabSlug=t=>document.querySelector(`[data-tabbtn="${t}"] span`).textContent.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
 function hashTab(){let h="";try{h=decodeURIComponent(location.hash.slice(1)).toLowerCase()}catch(e){}if(!h)return null;
   const bs=[...document.querySelectorAll("[data-tabbtn]")],b=bs.find(b=>tabSlug(b.dataset.tabbtn)===h)||bs.find(b=>b.dataset.tabbtn===h);
@@ -54,12 +57,12 @@ function showTab0(t,local){
   if(location.hash!=="#"+tabSlug(t)&&!location.hash.startsWith("#s="))try{history.replaceState(null,"",location.pathname+location.search+"#"+tabSlug(t))}catch(e){}
   // Where to farm (its best spots show on Home too) after the tab has drawn. At load renderAll draws it just after this
   if(DREW_ALL&&(t==="home"||t==="track"))farmLater();
-  if(t==="home")renderHome();if(t==="news")renderNews();if(t==="ref"){renderRef();refScroll()}
+  if(t==="home")renderHome();if(t==="news")renderNews();if(t==="ref")renderRef();if(t==="exp"){renderExp();expScroll()}
   if(t==="char")renderGearCmp();
   // the Session charts were drawn while hidden (no width to measure): redraw them at the width they now have
   if(t==="track"){const c=$("chart");if(+c.clientWidth&&chartW(c)!==c.viewBox.baseVal.width)setTimeout(renderTracker)}
   // renderAll only draws these while their tab is showing; the big ones again only when something was saved since
-  if(t==="market")renderPrices();if(t==="items")redraw("items",renderItems);if(t==="equip")redraw("equip",renderEquipDb);if(t==="cards")redraw("cards",renderCardDb);if(t==="recipes")redraw("recipes",renderRecipes);if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="affix")renderAffixItems();if(t==="skilltree")renderSkPlan(true);if(t==="stylist")renderStylist();
+  if(t==="market")renderPrices();if(t==="items")redraw("items",renderItems);if(t==="equip")redraw("equip",renderEquipDb);if(t==="cards")redraw("cards",renderCardDb);if(t==="recipes")redraw("recipes",renderRecipes);if(t==="brew")renderBrew();if(t==="cook")renderCook();if(t==="mem")renderMem();if(t==="star")renderStar();if(t==="daily")renderDaily();if(t==="affix")renderAffixItems();if(t==="mskill")renderMsk();if(t==="refcalc"){RC_PX_TYPE="";renderRefCalc()}if(t==="skilltree")renderSkPlan(true);if(t==="stylist")renderStylist();
   // the section links, once the tab's cards are drawn (a card can hide as it draws, as the Market's two panes do)
   pageNav(t);
 }
@@ -88,14 +91,14 @@ const INFO_AT=hashInfo(location.hash);
 const PAGE_NAV_OFF=new Set(["home","char","news"]);
 let PAGE_SECS=[];
 const secHeading=el=>el.querySelector(":scope>h2, :scope>.bar>h2");
-function pageNav(t){const nav=$("pageNav");if(!nav)return;const wrap=nav.parentNode;
+function pageNav(t){soloFold();const nav=$("pageNav");if(!nav)return;const wrap=nav.parentNode;
   const shown=el=>!el.hidden&&getComputedStyle(el).display!=="none";
   // a card's heading, or the headings of the cards inside a row of them (the Session tab's charts)
   const secs=PAGE_NAV_OFF.has(t)?[]:[...wrap.children].filter(el=>el.dataset.tab&&shown(el)).flatMap(el=>{const h=secHeading(el);
     return h?[[el,h]]:[...el.querySelectorAll(":scope>.card")].map(c=>[c,secHeading(c)]).filter(x=>x[1])});
   const on=secs.length>1;nav.hidden=!on;wrap.classList.toggle("hasPageNav",on);PAGE_SECS=on?secs.map(x=>x[0]):[];if(!on){nav.innerHTML="";if(typeof navSubs==="function")navSubs();return}
   secs.forEach(([el],i)=>{if(!el.id)el.id=`sec-${t}-${i}`});
-  nav.innerHTML=`<span class="secHead">On this tab</span>`+secs.map(([el,h])=>`<a href="#${el.id}" data-psec="${el.id}">${esc(h.textContent.trim())}</a>`).join("");
+  nav.innerHTML=secs.map(([el,h])=>`<a href="#${el.id}" data-psec="${el.id}">${esc(h.textContent.trim())}</a>`).join("");
   if(typeof navSubs==="function")navSubs();
   // beside the cards from the one under the heading down
   nav.style.gridRow=`2 / span ${Math.max(1,[...wrap.children].filter(el=>el!==nav&&!el.classList.contains("pageHead")&&shown(el)).length)}`;
@@ -127,28 +130,25 @@ function renderHome(){
   newsBanner();
   $("homeCharBtn").textContent=charSet(C())?"Open Character":"Set up your character";
 }
-// ---- Session's At a glance: your character, where you farm, and what the planner works out for you there; hidden for a new player
-// (the get started card is on Home) ----
-function renderNow(){
-  const c=C(),set=charSet(c),s=cur(),ms=sessMobs(s),smp=sessMap(s),max=atMaxLv();
-  $("homeNowCard").hidden=!set&&!ms.length;if($("homeNowCard").hidden)return;
-  const tile=(k,v,sub,tab,now)=>`<button type="button" class="tile${now?" now":""}" data-gotab="${tab}"><div class="k">${k}</div><div class="v">${esc(v)}</div><div class="s">${esc(sub)}</div></button>`;
-  // what the planner works out for your character on the map you're farming, not what you've logged
-  const est=set&&smp?mapStats(smp,walkSec()):null,why=!set?"Set up your character":!smp?"Farm a map for an estimate":"No estimate for this map";
-  $("homeTiles").innerHTML=
-    tile("Character",noChar()?"–":state.job,set?[c.baseLv&&`Base ${c.baseLv}`,c.jobLv&&`Job ${c.jobLv}`,c.a&&c.a.name].filter(Boolean).join(" · "):"Not set up yet","char",true)+
-    tile("Farming",smp?mapCode(smp):ms.length===1?ms[0].name:ms.length?`${ms.length} monsters`:"–",smp?mapName(smp):ms.length?s.name:"Pick a spot in Where to farm","maps",true)+
-    tile("EXP / min there",max?"Max level":est?fmtN(est.epm):"–",max?"EXP no longer counts":est?"planner estimate":why,"track")+
-    tile("Zeny / hr there",est?fmtN(est.net):"–",est?"net, planner estimate":why,"track");
-}
-// ---- collapsible cards: click a heading (or Enter/Space on it) to fold the card; saved by heading text ----
-function foldCard(card){const h=card.querySelector(":scope>h2, :scope>.bar>h2");if(!h||h.hasAttribute("aria-expanded"))return;
+// ---- collapsible cards: click a heading (or Enter/Space on it) to fold the card; saved by heading text. A card that's the only
+// one showing on its tab doesn't fold (soloFold): it shows even if you folded it before, and when its heading only says the tab's
+// name again (Roadmap, Item info, Brewing simulator…) the heading goes and the rest of its row (counts, buttons) moves up beside
+// the tab's title, back into the card when it's no longer the only one ----
+function foldCard(card){const h=card.querySelector(":scope>h2, :scope>.bar>h2");if(!h||h.classList.contains("foldHead"))return;
     if(!state.collapsed)state.collapsed={};
-    const head=h.parentElement===card?h:h.parentElement;head.classList.add("cardHead");const key=h.textContent.trim();
-    h.tabIndex=0;h.setAttribute("role","button");
-    const set=v=>{card.classList.toggle("collapsed",v);h.setAttribute("aria-expanded",String(!v))};set(!!state.collapsed[key]);
-    const flip=()=>{const v=!card.classList.contains("collapsed");state.collapsed[key]=v;if(!v)delete state.collapsed[key];save();set(v)};
+    const head=h.parentElement===card?h:h.parentElement;head.classList.add("cardHead");h.classList.add("foldHead");h.foldCard=card;const key=h.textContent.trim();
+    const set=v=>{card.classList.toggle("collapsed",v);h.setAttribute("aria-expanded",String(!v))};
+    const flip=()=>{if(card.classList.contains("solo"))return;const v=!card.classList.contains("collapsed");state.collapsed[key]=v;if(!v)delete state.collapsed[key];save();set(v)};
+    let spot=null;// where the heading row sits in the card while it's up by the tab's title
+    card.foldSolo=solo=>{card.classList.toggle("solo",solo);
+      const tab=$("heroTitle").textContent.trim().toLowerCase(),name=key.toLowerCase(),up=solo&&head!==h&&(name===tab||name.startsWith(tab+" "));
+      h.hidden=up;if(up&&!spot){spot=document.createComment("");head.before(spot);$("heroBar").append(head)}else if(!up&&spot){spot.replaceWith(head);spot=null}
+      if(solo){card.classList.remove("collapsed");h.removeAttribute("aria-expanded");h.removeAttribute("role");h.removeAttribute("tabindex")}
+      else{h.tabIndex=0;h.setAttribute("role","button");set(!!state.collapsed[key])}};
+    card.foldSolo(false);
     h.addEventListener("click",flip);h.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();flip()}})}
+function soloFold(){const cards=[...document.querySelectorAll(".foldHead")].map(h=>h.foldCard),solo=cards.filter(c=>c.getClientRects().length);
+  cards.forEach(c=>{const v=solo.length===1&&c===solo[0];if(c.classList.contains("solo")!==v)c.foldSolo(v)})}
 document.querySelectorAll(".card:not(#acctCard):not(#newsHead)").forEach(foldCard);
 // go to a card on the open tab, unfolding it
 function openCard(c){if(c.classList.contains("collapsed"))c.querySelector("h2[aria-expanded]")?.click();c.scrollIntoView({behavior:"smooth",block:"start"})}
@@ -179,7 +179,7 @@ document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",e=>
   if(g==="farm"){showTab("track");openCard($("farmCard"));return}
   showTab(g);scrollTo({top:0})}));
 $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,"1")}catch(e){}renderStart()});
-// ---- search (Ctrl+K or /): tabs, a few actions, every monster, dropped item and map; Enter opens it where it lives ----
+// ---- search (Ctrl+K or /): tabs, a few actions, every monster, dropped item, monster skill and map; Enter opens it where it lives ----
 (function setupJump(){
   const dlg=$("jump"),inp=$("jumpInput"),list=$("jumpList");let hits=[],at=0;
   const tabName=t=>document.querySelector(`[data-tabbtn="${t}"] span`).textContent;
@@ -188,6 +188,8 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
     {k:"Action",name:"Log EXP",meta:"+ button · L",run:()=>openQuickLog(true),ok:()=>!atMaxLv()},
     {k:"Action",name:"Switch theme",meta:"auto → light → dark",run:()=>$("themeBtn").click()},
     {k:"Action",name:"Show or hide hints",meta:"help text under the cards",run:()=>$("hintBtn").click()},
+    {k:"Action",name:"Show or hide price boxes",meta:"the boxes to type what you pay",run:()=>$("priceBtn").click()},
+    {k:"Action",name:"Show or hide future content",meta:"Contingent and Conqueror gear",run:()=>$("futureBtn").click()},
     {k:"Action",name:"New session",meta:"Session tab",run:()=>$("newSession").click()}];
   let ALL=null;
   // gear and cards are listed once, as Gear or Card (with what drops them), not again as an Item
@@ -210,6 +212,8 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
       run:()=>openInfo("item",it.id)})),
     ...(typeof CARDS!=="undefined"?CARDS:[]).map(x=>({k:"Card",name:x.name,meta:`#${x.id} · ${CARD_PART[cardPart(x)]||"–"}${cardName(x)?` · ${cardName(x)}`:""}${notInGame(x.id)?" · not in game yet":""}${dropTxt(x.id)}`,ico:x.id,
       run:()=>openInfo("item",x.id)})),
+    // monster skills: Enter opens the Monster skills tab on it
+    ...mskList().map(s=>({k:"Skill",name:s.name,meta:`monster skill · ${MSK_KINDS[s.kind][0].toLowerCase()} · used by ${s.mobs.length} monster${s.mobs.length>1?"s":""}`,run:()=>openMsk(s.sid)})),
     ...Object.keys(MAPNAMES).map(mp=>({k:"Map",name:mapName(mp)||mapCode(mp),meta:mapCode(mp),alt:mp,
       run:go("maps",()=>{state.map=mp;save();renderMap();$("mapCard").scrollIntoView({behavior:"smooth",block:"start"})})}))];
   // best first: the name starts with it, then a word in it does, then it's anywhere (name, map code, item #id)
@@ -238,7 +242,7 @@ $("startHide").addEventListener("click",()=>{try{localStorage.setItem(KEY_START,
     if((e.key==="k"||e.key==="K")&&(e.ctrlKey||e.metaKey)){e.preventDefault();dlg.open?dlg.close():open()}
     else if(e.key==="/"&&!typing&&!e.ctrlKey&&!e.metaKey){e.preventDefault();open()}});
 })();
-// ---- Settings menu (sidebar): hints, theme and full width. The ⋯ menu code in events.js opens and closes it; its items keep it open ----
+// ---- Settings menu (sidebar): hints, theme, full width, future content and price boxes. The ⋯ menu code in events.js opens and closes it; its items keep it open ----
 // ---- full width: a per-device display choice kept outside the account saves (index.html applies it before the page draws) ----
 (function setupWide(){
   const KEY_WIDE="rozero-farm-planner-wide",btn=$("wideBtn");
@@ -264,7 +268,13 @@ function navBig(){return typeof matchMedia==="function"&&matchMedia("(min-width:
 function navSide(){return navBig()}
 function navTop(){return !navBig()}
 let NAV_OPENED=0;
-function navClose(except){document.querySelectorAll(".tabs .navSec.open").forEach(s=>{if(s===except)return;s.classList.remove("open");s.querySelector(".navGrp").setAttribute("aria-expanded","false")})}
+function navClose(except){document.querySelectorAll(".tabs .navSec.open").forEach(s=>{if(s===except)return;s.classList.remove("open");s.querySelector(".navGrp").setAttribute("aria-expanded","false");navPop(s.querySelector(".navItems"),false)})}
+// an open menu along the top goes in the top layer (a manual popover): the row it hangs from scrolls sideways, and iOS Safari clips a
+// fixed child of a scrolling box to that box, so the menu showed as a sliver under the row. Only while open: the sidebar's groups are
+// the same elements, and a popover that isn't showing is hidden
+function navPop(m,on){if(!m||typeof m.showPopover!=="function")return;
+  if(on){m.setAttribute("popover","manual");try{m.showPopover()}catch(e){}}
+  else if(m.hasAttribute("popover")){try{m.hidePopover()}catch(e){}m.removeAttribute("popover")}}
 // the open tab's sections under it in the sidebar: copies of the page's section links (Character's own, or the other tabs'); a click goes
 // through the page's link, so it jumps and opens a folded card the same way, and the one you're reading is marked as there
 // each group heading's aria-expanded: is its group showing (the sidebar) or its menu open (along the top)
@@ -300,7 +310,7 @@ function navSubSpy(){const d=document.querySelector(".tabs .navSubs");if(!d)retu
       return}
     const open=!sec.classList.contains("open");navClose(sec);if(open)NAV_OPENED=Date.now();sec.classList.toggle("open",open);g.setAttribute("aria-expanded",String(open));
     // fixed under its heading, as the row along the top scrolls (and would clip it)
-    if(open){const r=g.getBoundingClientRect(),m=sec.querySelector(".navItems");
+    if(open){const r=g.getBoundingClientRect(),m=sec.querySelector(".navItems");navPop(m,true);
       m.style.left=`${Math.round(Math.max(8,Math.min(r.left,innerWidth-m.offsetWidth-8)))}px`;m.style.top=`${Math.round(r.bottom+6)}px`}});
   {let open=[];try{open=JSON.parse(localStorage.getItem(KEY_NAVOPEN))||[]}catch(e){}
    document.querySelectorAll(".tabs .navSec").forEach(s=>s.classList.toggle("exp",open.includes(s.querySelector(".navGrp").textContent)))}
@@ -324,6 +334,16 @@ function navSubSpy(){const d=document.querySelector(".tabs .navSubs");if(!d)retu
   const set=v=>{document.documentElement.classList.toggle("nohints",!v);btn.setAttribute("aria-pressed",String(v));btn.querySelector("span").textContent=`Hints: ${v?"on":"off"}`};
   set(!document.documentElement.classList.contains("nohints"));
   btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{v?localStorage.setItem(KEY_HINTS,"1"):localStorage.removeItem(KEY_HINTS)}catch(e){}});
+})();
+// ---- price boxes: the boxes to type what you pay (Consumables, converters, skill items, the details popup), per device. Hidden for a
+// new player (index.html: no saved data on this device yet), shown for one who already had data, as they may have typed prices.
+// The choice is saved either way ("1" hidden, "0" shown). Hidden, prices typed before still count; the rest use NPC prices.
+// The Market tab keeps its own ----
+(function setupPrices(){
+  const KEY="rozero-farm-planner-noprice",btn=$("priceBtn");
+  const set=v=>{document.documentElement.classList.toggle("noprice",!v);btn.setAttribute("aria-pressed",String(v));btn.querySelector("span").textContent=`Price boxes: ${v?"shown":"hidden"}`};
+  set(!document.documentElement.classList.contains("noprice"));
+  btn.addEventListener("click",()=>{const v=btn.getAttribute("aria-pressed")!=="true";set(v);try{localStorage.setItem(KEY,v?"0":"1")}catch(e){}});
 })();
 // ---- colour theme: auto (follows the device) → light → dark, per device like full width ----
 (function setupTheme(){
@@ -358,6 +378,10 @@ if(VIEW&&VIEW.toast)showToast(String(VIEW.toast));
 (function tripLoop(){tickTrip();setTimeout(tripLoop,1000)})();
 loadShareLink();addEventListener("hashchange",loadShareLink);
 if(INFO_AT)openInfo(...INFO_AT);
+// a skill link (#skill/knight/bowling-bash): the Skill tree tab on that job, its details pinned
+if(SKILL_AT)openSkill(...SKILL_AT);
+// a look link (#stylist/knight/f/h5/...): the Stylist tab on that look
+if(STY_LINK)openStyle(STY_LINK);
 // ---- phones: the Log EXP + button slides away while you scroll down (it sat over the Farm here buttons) and back when you scroll up ----
 (function fabScroll(){if(typeof scrollY!=="number"||typeof requestAnimationFrame!=="function")return;let y=scrollY,raf=0;
   addEventListener("scroll",()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const d=scrollY-y;

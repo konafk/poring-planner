@@ -14,6 +14,9 @@ Object.assign(globalThis, {
     { id: 5, slug: "guard", name: "Guard", slot: ["shield"], refine: "armor", def: 3, g: [] },
     { id: 6, slug: "knife", name: "Knife", slot: ["weapon"], type: "dagger", wlv: 2, refine: "weapon", atk: 40, el: "fire", slots: 1, g: [] },
     { id: 7, slug: "ring", name: "Ring", slot: ["accessory_1", "accessory_2"], g: [{ b: [["matk", null, null, 10, 1]] }, { r: 7, b: [["int", null, null, 3]] }] },
+    { id: 8, slug: "claymore", name: "Claymore", slot: ["weapon"], type: "sword_2h", wlv: 3, refine: "weapon", atk: 180, g: [] },
+    { id: 30, slug: "fist", name: "Fist", slot: ["weapon"], type: "knuckle", wlv: 2, refine: "weapon", atk: 50, g: [] },
+    { id: 31, slug: "club", name: "Club", slot: ["weapon"], type: "mace", wlv: 2, refine: "weapon", atk: 60, g: [] },
     { id: 4, slug: "hat", name: "Hat", slot: ["head_upper", "head_middle"], refine: "armor", def: 1, g: [{ b: [["aspd_percent", null, null, 10]] }] },
   ],
   CARDS: [
@@ -28,6 +31,11 @@ Object.assign(globalThis, {
     { id: 18, slug: "sieglouse", name: "Sieglouse Card", slot: ["footgear"], g: [] },
     { id: 19, slug: "gem", name: "Gem Card", slot: ["head_upper"], g: [] },
     { id: 20, slug: "joker", name: "Joker Card", slot: ["accessory_1"], g: [] },
+    { id: 22, slug: "orcgen", name: "Orc General Card", slot: ["weapon"], g: [{ wt: ["One-handed mace", "Two-handed mace"], b: [["crit", null, null, 1, 1]] },
+      { wt: "Knuckle", b: [["attack_delay_percent", null, null, -1, 1]] }, { wt: "Knuckle", r: 10, b: [["aspd", null, null, 2]] }] },
+    { id: 23, slug: "galactor", name: "Galactor Army Card", slot: ["garment"], g: [{ lvPer: 10, lvMax: 50, b: [["matk", null, null, 7]] },
+      { ev: "2026-11-26", b: [["damage_percent", "race", "all", 10], ["magic_damage_percent", "race", "all", 10], ["damage_percent", "size", "all", 10],
+        ["magic_damage_percent", "size", "all", 10], ["exp_percent", null, null, 15], ["drop_percent", null, null, 7]] }] },
     { id: 21, slug: "xjoker", name: "Extra Joker Card", slot: ["shield"], g: [{ b: [["mdef", null, null, 10, 1]] }] },
   ],
   SETS: [{ slug: "s", name: "Coat Set", pieces: ["coat", "boots"], g: [{ rs: 10, b: [["hp", null, null, 500]] }, { b: [["vit", null, null, 3]] }] },
@@ -119,6 +127,22 @@ t("a shield takes the job's shield penalty off base ASPD", () => {
   const on = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { shield: { id: 5 } } }, "Knight", aspdBase);
   assert.equal(BUILD.SHIELD_ASPD.Knight, 5);
   assert.equal(off.fields.aspd - on.fields.aspd, 5);
+});
+
+t("a two-handed weapon leaves no hand for the Shield row: a shield or left-hand weapon there doesn't count", () => {
+  assert.equal(BUILD.twoHanded("Two-handed sword"), true);
+  assert.equal(BUILD.twoHanded("Bow"), true);
+  assert.equal(BUILD.twoHanded("Katar"), true);
+  assert.equal(BUILD.twoHanded("One-handed sword"), false);
+  assert.equal(BUILD.twoHanded("Knuckle"), false);
+  const bare = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { weapon: { id: 8 } } }, "Knight", aspdBase);
+  const both = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { weapon: { id: 8 }, shield: { id: 5, refine: 4 } } }, "Knight", aspdBase);
+  assert.equal(both.shield, false);
+  assert.equal(both.fields.aspd, bare.fields.aspd);                         // no shield penalty
+  assert.equal(both.fields.defTxt, bare.fields.defTxt);                     // nor the shield's DEF
+  assert.ok(both.unmodelled.some(x => /Guard: not counted, Claymore takes both hands/.test(x)));
+  const one = BUILD.compute({ baseLv: 3, jobLv: 1, base, gear: { weapon: { id: 1 }, shield: { id: 5 } } }, "Knight", aspdBase);
+  assert.equal(one.shield, true);                                           // a one-handed weapon still takes one
 });
 
 t("status formulas match the verified Zero formulas", () => {
@@ -370,6 +394,35 @@ t("a card that grows every 10 base levels, up to Lv 50", () => {
   assert.deepEqual([9, 10, 37, 50, 99].map(lv => at(lv).atk), [0, 7, 21, 35, 35]);
   assert.equal(at(45).def, 12);
   assert.equal(at(99).mdef, 5);
+});
+
+t("a card's lines that need a weapon type count only with that weapon in the right hand", () => {
+  const at = (id, refine) => BUILD.compute({ baseLv: 50, jobLv: 1, base, gear: { weapon: { id, refine, cards: [22] } } }, "Knight", aspdBase).acc;
+  assert.equal(at(30, 7).aspdPct, 7);                                      // knuckle: After Attack Delay -1% per refine
+  assert.equal(at(30, 7).aspd, 0);
+  assert.equal(at(30, 10).aspd, 2);                                        // and ASPD +2 at +10
+  assert.equal(at(30, 7).crit, 0);
+  assert.equal(at(31, 7).crit, 7);                                         // mace: CRIT +1 per refine
+  assert.equal(at(31, 10).aspdPct, 0);
+  assert.equal(at(1, 10).crit + at(1, 10).aspdPct + at(1, 10).aspd, 0);   // a sword: neither
+});
+
+t("an event-limited option counts until its day, and all races / all sizes reach every race and size", () => {
+  const at = today => BUILD.compute({ baseLv: 99, jobLv: 1, base, today, gear: { garment: { id: 2, cards: [23] } } }, "Knight", aspdBase);
+  const on = at("2026-11-25").acc;
+  assert.equal(on.matk, 35);
+  assert.equal(on.phys.race.Demon, 10);
+  assert.equal(on.magic.race.Formless, 10);
+  assert.deepEqual(on.phys.size, { S: 10, M: 10, L: 10 });
+  assert.deepEqual(on.magic.size, { S: 10, M: 10, L: 10 });
+  assert.equal(on.exp.all, 15);
+  assert.equal(on.drop, 7);
+  assert.equal(at(undefined).acc.drop, 7);                                 // no day given: counted
+  const off = at("2026-11-26");
+  assert.equal(off.acc.matk, 35);                                          // the card's own line stays
+  assert.equal(off.acc.drop + off.acc.exp.all, 0);
+  assert.equal(off.acc.phys.race.Demon, undefined);
+  assert.ok(off.unmodelled.some(x => x.includes("event option ended")));
 });
 
 t("gear named the way the equipment window shows it: card names, Double / Triple, cut-off names", () => {

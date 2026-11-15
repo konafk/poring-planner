@@ -4,7 +4,7 @@
 // Oath accessories).
 // Search also matches the materials, so a drop finds what it turns into. Every item opens its details (js/info.js), which list the
 // recipes that make it and the ones that use it. The Memorial category comes from data/memorial.js: 5 Jello Fragments into their
-// Jellostone at the Memory Craftsman's Workshop, the Upgrader's Expedition pieces from a Subjugation Team piece, Faintly Glowing
+// Jellostone at the Memory Craftsman's Workshop, the Equipment Enhancer's Expedition pieces from a Subjugation Team piece, Faintly Glowing
 // Crystals and Jellostones, and Mithril and the Oath rings and earrings from the hard mode boxes' Mithril Ore and gems ----
 const MEMORIAL_RECIPES=typeof JELLO==="undefined"?[]:[
   ...JELLO.map(j=>({cat:"Memorial",type:"npc",id:j.stone[0],n:1,lv:null,mats:[[j.frag[0],JELLO_PER_STONE]],npc:JELLO_NPC})),
@@ -32,14 +32,18 @@ RECIPE_LIST.forEach(r=>{(RECIPES_MAKING[r.id]=RECIPES_MAKING[r.id]||[]).push(r);
 const matPrice=id=>state.prices[id]>0?state.prices[id]:NPCSELL[id]!=null||state.npcPrices[id]!=null?npcPays(id):null;
 // a recipe's materials' worth plus an NPC's fee: {z, unknown (how many materials have no price)}; none: nothing in it has a price
 const recipeWorth=r=>r.mats.reduce((a,[id,n])=>{const p=matPrice(id);if(p==null)a.unknown++;else a.z+=p*n;return a},{z:r.fee||0,unknown:0});
-// the NPC shops that sell it (data/shops.js): [[shop name, [[map, x, y], ...], price], ...], and the cheapest one's price
-const SHOPS_OF={};(typeof NPC_SHOPS!=="undefined"?NPC_SHOPS:[]).forEach(([name,at,items])=>items.forEach(([id,z])=>(SHOPS_OF[id]=SHOPS_OF[id]||[]).push([name,at,z])));
+// the NPC shops that sell it (data/shops.js): [[shop name, [[map, x, y], ...], price, the quest that opens it or undefined], ...],
+// and the cheapest one's price
+const SHOPS_OF={};(typeof NPC_SHOPS!=="undefined"?NPC_SHOPS:[]).forEach(([name,at,items,quest])=>items.forEach(([id,z])=>(SHOPS_OF[id]=SHOPS_OF[id]||[]).push([name,at,z,quest])));
+// "after the Nordfeld: Special Beer! quest · " for a shop a quest opens
+const shopQuest=q=>q?`after the ${q} quest · `:"";
 const shopPrice=id=>SHOPS_OF[id]?Math.min(...SHOPS_OF[id].map(s=>s[2])):null;
 // what a material costs you to get: your Market price, else an NPC shop's, else what an NPC pays (the simulators' cost of a try)
 const buyPrice=id=>state.prices[id]>0?state.prices[id]:shopPrice(id)??matPrice(id);
 const worthNone=(r,w)=>w.unknown===r.mats.length&&!r.fee;
-// "(quest)" when the NPC's quest unlocks it, "(quest, Lv 40+)" when the quest has a level
-const recipeQuest=r=>r.swap?` (${r.swap})`:r.quest?` (quest${r.qlv?`, Lv ${r.qlv}+`:""})`:"";
+// "(quest)" when the NPC's quest unlocks it, "(quest, Lv 40+)" when the quest has a level; an exchange's menu, with the most it swaps
+// in one trade when the NPC says ("(Gemstone Exchange, up to 100 per trade)")
+const recipeQuest=r=>r.swap?` (${r.swap}${r.max?`, up to ${fmtN(r.max)} per trade`:""})`:r.quest?` (quest${r.qlv?`, Lv ${r.qlv}+`:""})`:"";
 // who makes it, for the recipes an NPC makes: "JavaDullihan · morocc_in 146,99", "Marienne (quest) · prt_in 49,172" when her quest unlocks them,
 // then who the quest starts with when that's someone else
 // the skill that makes it, for what a player crafts with a skill rather than at an NPC: Arrows (Arrow Crafting), Brewing (Prepare
@@ -74,6 +78,21 @@ document.addEventListener("click",async e=>{const a=e.target.closest&&e.target.c
 const recipeMade=r=>`${itemName(r.id)}${r.n>1?` ×${fmtN(r.n)}`:""}`;
 // "10 × Iron, 1 × Steel" with icons, each opening its details
 const recipeMats=r=>r.mats.map(([id,n])=>`<span class="mat">${itemIcon(id,1,"il")}<span class="mono">${fmtN(n)}×</span> <a href="#" data-info="item:${id}">${esc(itemName(id))}</a></span>`).join("");
+// the Forging category's notes, from the Tip Box's weapon crafting and Blacksmith ranking guides (data/tipbox.js TIPBOX_FORGING): the anvil
+// to carry and the hammer each forge uses up (an item the client doesn't have, Emperium Anvil, as plain text; the guide's own name in the
+// title where the item's is another: its Steel Hammer is the Iron Hammer), what a ranked or unranked Blacksmith's weapons come with,
+// and the ranking points
+const forgeTool=([id,name])=>id==null?`<span class="mat" title="The client has no item by this name yet">${esc(name)}</span>`
+  :`<span class="mat"${itemName(id)!==name?` title="The guide calls it ${esc(name)}"`:""}>${itemIcon(id,1,"il")}<a href="#" data-info="item:${id}">${esc(itemName(id))}</a></span>`;
+const orList=a=>a.length>1?`${a.slice(0,-1).join(", ")} or ${a[a.length-1]}`:a.join("");
+function forgeNotesHtml(g){
+  return `<p>Carry one anvil: ${orList(g.anvils.map(forgeTool))}. Each forge uses up one hammer: ${orList(g.hammers.map(forgeTool))}. The game then lists the weapons your materials can make.</p>
+    <div class="forgeCols"><div><div class="affHead">Blacksmith ranking</div>
+      <table class="affTable"><thead><tr><th>Blacksmith</th><th>Their crafted weapons</th></tr></thead><tbody>${g.ranks.map(([who,what])=>`<tr><td>${esc(who)}</td><td>${esc(what)}</td></tr>`).join("")}</tbody></table>
+      <div class="note"><span class="mono">${esc(g.command)}</span> in the game's chat shows the top 10. <a href="#" data-gotab="affix" data-goto="affixGearCard">The forged weapons' random options</a> are on the Affixes tab.</div></div>
+    <div><div class="affHead">Ranking points</div>
+      <table class="affTable"><thead><tr><th>Points</th><th>For</th></tr></thead><tbody>${g.points.map(([n,what])=>`<tr><td class="mono">${fmtN(n)}</td><td>${esc(what)}</td></tr>`).join("")}</tbody></table>
+      <div class="note">The guide doesn't name the additional materials. ${itemIcon(1000,1,"il")}<a href="#" data-info="item:1000">${esc(itemName(1000))}</a>'s in-game text only says it makes a crafted weapon more durable; what extra materials add on Global hasn't been reported yet.</div></div></div>`}
 const RECIPEDB_D={q:"",cat:""};
 const recipeDbF=()=>({...RECIPEDB_D,...state.recipeDb});
 TABLES.recipeTable={def:["name",1],cols:{name:{t:r=>recipeMade(r)},cat:{t:r=>r.cat},lv:{n:r=>r.lv},n:{n:r=>r.n},
@@ -85,6 +104,7 @@ function renderRecipes(){const f=recipeDbF();
   // the category buttons, each with how many of its recipes the search leaves
   const byQ=RECIPE_LIST.filter(r=>recipeOk(r,{...f,cat:""}));
   $("recipeCats").innerHTML=[["","All"],...RECIPE_CATS.map(c=>[c,c])].map(([v,n])=>`<button type="button" role="radio" data-rcat="${esc(v)}" aria-checked="${f.cat===v}">${esc(n)} <span class="note">${byQ.filter(r=>!v||r.cat===v).length}</span></button>`).join("");
+  const fg=$("recipeForge");if(fg&&typeof TIPBOX_FORGING!=="undefined"){fg.hidden=f.cat!=="Forging";if(!fg.hidden&&!fg.dataset.drawn){$("recipeForgeBody").innerHTML=forgeNotesHtml(TIPBOX_FORGING);fg.dataset.drawn="1"}}
   const rows=tableRows("recipeTable",byQ.filter(r=>recipeOk(r,f)));
   $("recipeCount").textContent=`${rows.length} of ${RECIPE_LIST.length} recipes`;
   $("recipeTable").tBodies[0].innerHTML=rows.map(r=>{const w=recipeWorth(r);

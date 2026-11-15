@@ -1,19 +1,64 @@
 // ---- attack model ----
 let EL_OVR=null;
-const atkEl=()=>{const a=C().a;if(a.type==="spellfist")return EL_OVR||sfBolts()[0]||"Fire";return a.el==="W"?(EL_OVR||C().wElem):a.el};
-// elemental converters (Fire/Water/Earth/Wind) change the weapon element for basic attacks and weapon-element skills. One is on at
-// a time: c.convEl picks it, or "" to try each (and your weapon's own element) and take the best per monster / map
-const CONV_ELS=["Fire","Water","Earth","Wind"];
+// a party Sage's Endow from Buffs from others ({el, lv, name}, the first ticked), and your weapon's element with it: the one you typed, else
+// the Endow's. Spell Fist and Hindsight hit with the bolt's element, so neither changes them
+const pEndow=(c=C())=>{const b=typeof PBUFF!=="undefined"&&PBUFF.find(x=>x.el&&pbTicked(x.k,c));return b?{el:b.el,lv:pbLv(b,pbuffOf(c)[b.k]),name:b.name}:null};
+const wElNow=()=>(pEndow()||{}).el||C().wElem;
+const atkEl=()=>{const a=C().a;if(a.type==="spellfist")return EL_OVR||sfBolts()[0]||"Fire";return a.el==="W"?(EL_OVR||wElNow()):a.el};
+// weapon endows: elemental converters (Fire/Water/Earth/Wind), Cursed Water (Shadow), the Lv.5 Aspersio Scroll (Holy), an Assassin's
+// Enchant Poison and a Sage's Endows change the weapon element for basic attacks and weapon-element skills. One is on at a time:
+// c.convEl picks it, or "" to try each (and your weapon's own element) and take the best per monster / map
+// items (bought from players, at what players pay for them: state.prices, as on the Market tab): what one use takes and how many minutes
+// it lasts (the client's text). Converters and Cursed Water last 20 minutes, so 3 an hour; the Aspersio Scroll casts Aspersio Lv 5 (180 s)
+// and uses up a Holy Water too, so 20 of each an hour. None on your weapon's own element
+const CONV_ITEMS={Fire:{ids:[12114],min:20},Water:{ids:[12115],min:20},Earth:{ids:[12116],min:20},Wind:{ids:[12117],min:20},
+  Shadow:{ids:[12020],min:20},Holy:{ids:[12217,523],min:3}};
+// skills: Enchant Poison (Assassin), 20 SP for 15 + 15 × Lv s; the Sage's Endows (Endow Blaze Fire, Tsunami Water, Tornado Wind, Quake
+// Earth), 40 SP and a Point (Scarlet, Indigo, Yellow Wish, Lime Green, bought from the Point Merchant NPC) for 5 + 5 × Lv minutes. SP and how long it lasts come from the
+// skill's own level (its "Duration: 30 min" text). A job that has the skill casts it instead of buying that element's converter;
+// the level is the skill tree's once you set one (the Weapon element card's Lv box raises or lowers it there, so both stay in step);
+// until then the card's own Lv box (c.convLv {el: Lv}), the top level by default. Lv 0 (not learned in the tree): that element's converter
+const CONV_SKILL={Poison:{sl:"enchant-poison"},Fire:{sl:"endow-blaze",ids:[6360]},Water:{sl:"endow-tsunami",ids:[6361]},
+  Wind:{sl:"endow-tornado",ids:[6362]},Earth:{sl:"endow-quake",ids:[6363]}};
+const convSk=el=>CONV_SKILL[el]&&skOf(state.job)[CONV_SKILL[el].sl];
+const convSkLv=el=>{const s=convSk(el),c=C();if(!s)return 0;if(hasTree(c))return Math.min(s.max,skLv(c,s.slug));
+  const v=(c.convLv||{})[el];return v==null||v===""?s.max:Math.max(0,Math.min(s.max,Math.round(num(v))))};
+// the Lv box sets the level. With a skill tree it raises the skill (and what it needs) or lowers it, which the tree refuses while a
+// learned skill still needs it (returns why); without one it is the box's own level. Picking a level casts the skill again
+function setConvLv(el,lv){const s=convSk(el),c=C();if(!s)return null;lv=Math.max(1,Math.min(s.max,Math.round(num(lv))));setConvItem(el,false);
+  if(!hasTree(c)){c.convLv={...(c.convLv||{}),[el]:lv};return null}
+  if(lv>skLv(c,s.slug)){raiseSkill(c,s.slug,lv);return null}return lowerSkill(c,s.slug,lv)}
+// having the skill doesn't take the converter away: c.convItem {el: true} uses that element's converter instead (its box's "converter",
+// or the converter in the Weapon element list), leaving the skill's level as it is
+const convItemOn=el=>!!CONV_ITEMS[el]&&!!(C().convItem||{})[el];
+function setConvItem(el,on){const c=C(),o={...(c.convItem||{})};if(on&&CONV_ITEMS[el]&&convSk(el))o[el]=true;else delete o[el];c.convItem=o}
+// the skill's SP and seconds per cast at a level
+const convSkRow=(el,lv)=>{const r=convSk(el).lv[lv-1]||[],m=String(r[7]||"").match(/Duration:\s*(\d+)\s*(sec|min)/i);
+  return {sp:num(r[0]),sec:m?+m[1]*(/min/i.test(m[2])?60:1):0}};
+const CONV_ALL=[...new Set([...Object.keys(CONV_ITEMS),...Object.keys(CONV_SKILL)])];
+// the skill casts it: learned, and not switched to the converter
+const convIsSk=el=>convSkLv(el)>0&&!convItemOn(el);
+const convEls=()=>CONV_ALL.filter(el=>convSkLv(el)>0||CONV_ITEMS[el]);
+// what one use takes (the skill's catalyst, or the item) and how many minutes it lasts
+const convIds=el=>convIsSk(el)?CONV_SKILL[el].ids||[]:(CONV_ITEMS[el]||{ids:[]}).ids;
+const convMin=el=>convIsSk(el)?convSkRow(el,convSkLv(el)).sec/60:(CONV_ITEMS[el]||{}).min||0;
+// the items you buy from players (the skills' Points come from an NPC)
+const CONV_IDS=[...new Set(Object.values(CONV_ITEMS).flatMap(x=>x.ids))];
 const convOn=()=>!!C().converters&&C().a.el==="W";
-const convFixed=()=>CONV_ELS.includes(C().convEl)?C().convEl:"";
-const convAll=()=>[...new Set([C().wElem,...CONV_ELS])];
-const convLabel=by=>convFixed()?`${convFixed()} converter`:`best converter ${by}`;
-// converters are made by Sages and bought from players, at what players pay for them (state.prices, as on the Market tab). One lasts
-// 20 minutes (the client's text), so 3 an hour while the attack uses one: the element being tried (withEl), else the one you picked;
-// none on your weapon's own element
-const CONV_ID={Fire:12114,Water:12115,Earth:12116,Wind:12117};
-const convPrice=el=>state.prices[CONV_ID[el]]>0?state.prices[CONV_ID[el]]:0;
-const convCostHr=()=>{const el=EL_OVR||convFixed();return convOn()&&CONV_ID[el]&&el!==C().wElem?3*convPrice(el):0};
+const convFixed=()=>convEls().includes(C().convEl)?C().convEl:"";
+const convAll=()=>[...new Set([wElNow(),...convEls()])];
+const convName=el=>convIsSk(el)?convSk(el).name.trim():el==="Shadow"?"Cursed Water":el==="Holy"?"Aspersio Scroll":`${el} converter`;
+const convWith=el=>el===wElNow()?`${el} (${pEndow()?pEndow().name:"your weapon"})`:/converter/.test(convName(el))?convName(el):`${el} (${convName(el)})`;
+const convLabel=by=>convFixed()?convName(convFixed()):`best weapon element ${by}`;
+const convUsesHr=el=>convIds(el).length&&convMin(el)>0?60/convMin(el):0;
+// an item from players at what you typed; a skill's Point at the NPC's price (data/shops.js), less Discount when the account buys with it
+const convNpc=el=>convIsSk(el);
+const convItemPrice=(el,id)=>convNpc(el)?(shopPrice(id)||0)*discMul():state.prices[id]>0?state.prices[id]:0;
+const convPrice=el=>convIds(el).reduce((t,id)=>t+convItemPrice(el,id),0);
+const convElNow=()=>convOn()?EL_OVR||convFixed():"";
+const convCostHr=()=>{const el=convElNow();return el&&el!==wElNow()?convUsesHr(el)*convPrice(el):0};
+// a skill's SP: recast as it runs out (none when your weapon has that element already)
+const convSpPerSec=()=>{const el=convElNow(),lv=el&&el!==wElNow()&&convIsSk(el)?convSkLv(el):0;if(!lv)return 0;const r=convSkRow(el,lv);return r.sec?r.sp*spCostMul()/r.sec:0};
 const elOptions=()=>C().a.type==="spellfist"?(sfBolts().length?sfBolts():[null]):convOn()?(convFixed()?[convFixed()]:convAll()):[null];
 const withEl=(el,fn)=>{const k=EL_OVR;EL_OVR=el;try{return fn()}finally{EL_OVR=k}};
 const elTag=el=>el&&(convOn()||C().a.type==="spellfist")?` <span class="el ${el}">${el}</span>`:"";
@@ -48,12 +93,19 @@ const vctFactor=()=>{const c=C();const dex=statVal(c,"dex");if(dex==null)return 
 const cardInGear=(c,ids)=>c.mode==="build"&&Object.values((c.build&&c.build.gear)||{}).some(g=>g&&(g.cards||[]).some(id=>ids.includes(+id)));
 // how many copies of these cards build mode's gear holds (every slot, both hands); 0 outside build mode
 const cardsInGear=(c,ids)=>c.mode!=="build"?0:Object.values((c.build&&c.build.gear)||{}).reduce((n,g)=>n+(g?(g.cards||[]).filter(id=>ids.includes(+id)).length:0),0);
+// the Cards rows under the attack: in build mode a card counts when it's slotted anywhere in your gear (its tick box follows),
+// in status window mode when it's ticked
+const CD_IDS={vitata:[4053],daSF:[4117],creamy:[4040],phen:[4077],bbfly:[4327],hfOn:[27266],dracOn:[27268],dpOn:[4171]};
+const cdOn=k=>C().mode==="build"?cardsInGear(C(),CD_IDS[k])>0:!!CRD()[k];
+// the +5 SP per kill cards, by the race they're for (names in KILL_SP)
+const KILL_SP_ID={Fish:4307,Plant:4289,Dragon:4180,Brute:4167,"Demi-Human":4329,Formless:4308,Undead:4274};
+const killSpOn=()=>C().mode==="build"?Object.keys(KILL_SP_ID).filter(r=>cardsInGear(C(),[KILL_SP_ID[r]])>0):CRD().killSp;
 // Phen (4077) and Bloody Butterfly (4327) Cards: casts can't be interrupted, variable cast +25% / +30%
-const PHEN=4077,BBFLY=4327;
-const noBreak=()=>{const cd=CRD();return !!(cd.phen||cd.bbfly)||cardInGear(C(),[PHEN,BBFLY])||consSum("no_break")>0};
+const noBreak=()=>cdOn("phen")||cdOn("bbfly")||consSum("no_break")>0;
 // fixed cast % cut: only the highest one counts (the box, or a consumable such as Challenge Drink)
 const fctPctEff=()=>Math.max(num(C().fctPct),-consSum("fct_percent"));
-const vctCards=()=>{const cd=CRD(),c=C();return (cd.phen&&!cardInGear(c,[PHEN])?25:0)+(cd.bbfly&&!cardInGear(c,[BBFLY])?30:0)};
+// their variable cast +%: build mode counts it from the gear's own lines
+const vctCards=()=>{const cd=CRD();return C().mode==="build"?0:(cd.phen?25:0)+(cd.bbfly?30:0)};
 // vk: share of the variable cast left (Foresight halves it)
 const castSec=(vk=1)=>{const c=C(),a=c.a,vp=num(c.vctPct)-vctCards();
   if(a.fct!=null||a.vct!=null)return Math.max(0,num(a.vct)*vctFactor()*(1-vp/100))*vk+Math.max(0,(num(a.fct)-num(c.fctSec))*(1-fctPctEff()/100));
@@ -80,9 +132,9 @@ const fsUsed=()=>fsAble()&&fsUseSec()<plainUseSec();
 // base-level skills: × BaseLv/100 only above Lv100, except the three Zero skills missing that check (blvBug, see game.js)
 // cart skills (Cart Revolution): +a.cart % per 8,000 cart weight, capped at a full 8,000 cart
 // shield skills (a.shw: Shield Boomerang, Rapid Smiting): + shield weight + 4 × shield refine %. Build mode reads the Shield row
-// (a left-hand weapon doesn't count); otherwise the Shield weight / refine boxes
-const shieldWR=(c=C())=>{if(c.mode==="build"){const g=((c.build&&c.build.gear)||{}).shield,it=g&&g.id&&BUILD.item(g.id);
-    return it&&(it.slot||[]).includes("shield")?{w:num(it.w),r:num(g.refine),name:it.name}:{w:0,r:0,name:""}}
+// (a left-hand weapon doesn't count, nor a shield under a two-handed weapon); otherwise the Shield weight / refine boxes
+const shieldWR=(c=C())=>{if(c.mode==="build"){const gear=(c.build&&c.build.gear)||{},g=gear.shield,it=g&&g.id&&BUILD.item(g.id),w=gear.weapon&&BUILD.item(gear.weapon.id);
+    return it&&(it.slot||[]).includes("shield")&&!(w&&BUILD.twoHanded(BUILD.WTYPE[w.type]))?{w:num(it.w),r:num(g.refine),name:it.name}:{w:0,r:0,name:""}}
   return {w:Math.max(0,num(c.shieldW)),r:Math.max(0,num(c.shieldRef))}};
 const shieldPct=(c=C())=>{const s=shieldWR(c);return s.w+4*s.r};
 // weapon-weight skills (a.wgt: Axe Boomerang): + weapon weight %, from the Weapon row in build mode, otherwise the Weapon weight box
@@ -123,7 +175,10 @@ const bonusParts=(m,magic=false)=>{const c=C();let post=1,full=1+num(c.dmgBonus)
   full*=1+consSum(magic?"magic_dmg":isRangedHit(c.a,c.weapon)?"range_dmg":"")/100;
   // learned passives and buffs: physical damage % (Advanced Katar Mastery, Power Thrust), element % for spells (Endow, Volcano...)
   // and, for an element's plain "Damage" bonus (Volcano, Deluge, Whirlwind), for physical attacks of that element too
-  if(SKFX){if(!magic){full*=1+SKFX.pct/100;post*=1+(SKFX.physEle[atkEl()]||0)/100}else post*=1+(SKFX.myEle[atkEl()]||0)/100}return {post,full}};
+  if(SKFX){if(!magic){full*=1+SKFX.pct/100;post*=1+(SKFX.physEle[atkEl()]||0)/100}else post*=1+(SKFX.myEle[atkEl()]||0)/100}
+  // a party Sage's Endow: +Lv% to your spells of its element (not on top of your own Endow buff of that element)
+  if(magic){const pe=pEndow(c),own=pe&&CONV_SKILL[pe.el]&&CONV_SKILL[pe.el].sl;if(pe&&pe.el===atkEl()&&!((c.buffs||{})[own]&&skLv(c,own)))post*=1+pe.lv/100}
+  return {post,full}};
 const bonusMul=(m,magic=false)=>{const b=bonusParts(m,magic);return b.post*b.full};
 // build mode: gear EXP bonus % (plus vs a monster's race), and damage taken from its race / size / element / boss-normal kind
 const expGear=m=>{const c=C();return c.bx?(c.bx.exp.all||0)+((c.bx.exp.race||{})[m.race]||0):0};
@@ -142,6 +197,8 @@ const ignOf=(k,m)=>{const c=C(),I=c.bx&&c.bx.ign&&c.bx.ign[k];let v=num(c[k==="d
   if(I&&m)v+=(I.race[m.race]||0)+(I.size[m.size]||0)+(I.ele[m.el||"Neutral"]||0)+(I.kind[m.boss?"boss":"normal"]||0);return Math.min(100,Math.max(0,v))};
 const effDef=m=>(m.def||0)*(1-ignOf("def",m)/100);
 const effMdef=m=>(m.mdef||0)*(1-ignOf("mdef",m)/100);
+// MATK for damage: the status window's (status + gear, flat) × (1 + MATK %), which the window leaves out
+const matkOf=()=>Math.floor(sumStat(cf("matkTxt"))*(1+num(cf("matkPct"))/100));
 // Formulas from roz.prontera.info/mechanics (Ragnarok Zero, renewal core)
 // ATK is "status + gear" as in the status window. The gear side is the weapon (×(1 + STR or DEX / 200)) and equipment ATK (eq); with
 // dual wield the left weapon too. ATK % isn't in the window: it comes from atkPct (gear in build mode, the ATK % box, consumables)
@@ -163,7 +220,7 @@ const frontAtk=()=>atkParts().st*(dualOn()&&C().a.type!=="auto"?1:2);
 const dualOn=(c=C())=>BUILD.dualOk(state.job,c.weapon,c.lw);
 const handPct=()=>{const c=C(),t=hasTree(c),lv=k=>t?skLv(c,k):5;return {right:50+10*lv("righthand-mastery"),left:30+10*lv("lefthand-mastery")}};
 const dualHit=()=>dualOn()&&C().a.type==="auto";
-const leftEl=()=>EL_OVR||C().lwElem||"Neutral";
+const leftEl=()=>EL_OVR||(pEndow()||{}).el||C().lwElem||"Neutral";
 const mobSoftDef=m=>Math.max(0,Math.floor(((m.lv||0)+(m.vit||0))/2));
 const mobSoftMdef=m=>Math.max(0,Math.floor(((m.lv||0)+(m.int||0))/4));
 // "Your hit %": skill % after element, size and your bonuses, as a share of your full ATK (before monster DEF/MDEF)
@@ -175,7 +232,7 @@ const hitPctOf=m=>{const a=C().a;if(a.falcon)return elemMult(m,"Neutral");if(a.t
 const hitChance=m=>{if(C().a.type==="magic"||C().a.type==="spellfist"||C().a.falcon||C().a.mr)return 100;if(m.hit100==null)return Math.min(100,95+daSkill().hit);return Math.max(5,Math.min(100,100+sumStat(cf("hitTxt"))-m.hit100+daSkill().hit))};
 function dmgPerHit(m){
   const a=C().a;if(a.type==="spellfist")return sfOn()?sfHit(m,atkEl()):hsHit(m,atkEl());if(a.mr)return mrHit(m);if(a.falcon==="assault")return faHit(m);if(a.falcon)return blitzHit(m,Math.round(num(a.hits,5)));
-  if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor((sumStat(cf("matkTxt"))*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
+  if(a.type==="magic"){const el=elemMult(m,atkEl())/100;if(el<=0||tuOff(m))return 0;const md=effMdef(m);return Math.max(1,Math.floor((matkOf()*pctEff(m)/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*el))}
   const P=atkParts(),d=physDmg(m,handAtk(m,P.weapon,C().weapon,atkEl(),frontAtk()));
   return dualHit()&&d>0?Math.max(1,Math.floor(d*handPct().right/100)):d}
 // one physical hit from a hand's ATK (handAtk: the post bonuses and element are in it), × skill %, then the full bonuses and DEF
@@ -194,7 +251,7 @@ const daLv=(c=C())=>c.a.type!=="auto"||c.weapon!=="Dagger"?0:hasTree(c)?skLv(c,"
 const daSkill=()=>{const lv=daLv();if(!lv)return {lv:0,ch:0,hit:0};const d=String((skRowOf("double-attack",lv)||[])[7]||""),m=d.match(/Chance:\s*(\d+)%/i),h=d.match(/HIT Bonus:\s*(\d+)%/i);
   return {lv,ch:(m?+m[1]:7*lv)/100,hit:h?+h[1]:lv}};
 // basic attacks hit twice (right hand only) at the higher of Double Attack's chance and Side Winder's (any weapon)
-const swMul=()=>C().a.type!=="auto"?1:1+Math.max(daSkill().ch,CRD().daSF?num(CRD().daPct)/100:0);
+const swMul=()=>C().a.type!=="auto"?1:1+Math.max(daSkill().ch,cdOn("daSF")?num(CRD().daPct)/100:0);
 const perUse=m=>{const a=C().a,h=a.sizeHits?a.sizeHits[{S:0,M:1,L:2}[m.size]??1]:num(a.hits,1);return dmgPerHit(m)*Math.max(0.01,h)*swMul()+leftDmg(m)};
 // crits (basic attacks only): chance = CRIT (doubled with a katar) − monster LUK × 0.2, always hit, × 1.4 × (1 + crit damage %)
 // m: the monster, for gear CRIT that only counts against its race (Cruiser Card: CRIT +7 vs Brute)
@@ -213,12 +270,12 @@ const procFree=m=>ssDmg(m)*SS_CHANCE;
 // text, like the in-game tooltip, changes only the damage % and the duration with the level, and gives no chance
 const DL_PHYS=1,DL_MAGIC=0.5;
 const dlLv=(c=C())=>!c.a.dl?0:hasTree(c)?skLv(c,"duple-light"):10;
-// one orb of each when it lands: phys / mag damage, hc the physical orb's own hit chance (0-1); null with Duple Light off
-const dlOrbs=m=>{const lv=dlLv();if(!lv)return null;const o={...C().a,dl:false,hits:1,sadd:[]};
-  const [phys,hc]=withAtk({...o,name:"Duple Light",type:"phys",pct:500+50*lv,el:"W"},()=>[dmgPerHit(m),hitChance(m)/100]);
+// one orb of each: phys (its damage when it lands), hc (its chance to land), mag
+const dlParts=m=>{const lv=dlLv();if(!lv)return null;const o={...C().a,dl:false,hits:1,sadd:[]};let hc=0;
+  const phys=withAtk({...o,name:"Duple Light",type:"phys",pct:500+50*lv,el:"W"},()=>{hc=hitChance(m)/100;return dmgPerHit(m)});
   const mag=withAtk({...o,name:"Duple Light",type:"magic",pct:800+80*lv,el:"Neutral"},()=>dmgPerHit(m));
   return {phys,hc,mag}};
-const dlDmg=m=>{const d=dlOrbs(m);return d?d.phys*d.hc*DL_PHYS+d.mag*DL_MAGIC:0};
+const dlDmg=m=>{const d=dlParts(m);return d?d.phys*d.hc*DL_PHYS+d.mag*DL_MAGIC:0};
 // Blitz Beat (Hunter falcon), per hit: (AGI/2 + DEX/10) × 2 + 6 × Steel Crow Lv + 20 × Blitz Beat Lv, as a Neutral hit that always lands
 // and ignores DEF and your damage bonuses. Auto Blitz: LUK/3 % on each basic attack that hits, at Lv (Job Lv + 9)/10 up to the learned Lv
 // (rAthena renewal). Steel Crow and Blitz Beat count as Lv 10 / 5 without a skill tree
@@ -245,16 +302,23 @@ const dpsOf=m=>{if(isSF())return null;return useAvg(m,perUse(m),procPerUse(m),pr
 // (3 when one of them crits for 420). Card auto-casts are averaged into each use that connects,
 // Shadow Spell into every use. Past KILL_EXACT hits the overkill is averaged instead (renewal: HP / μ + E[X²] / 2μ²)
 const KILL_EXACT=40;
+// Turn Undead (Priest, Zero skill text): only on Undead-element monsters; each cast kills it outright at the level's "Success Chance"
+// (2% a level), otherwise hits for 30% MATK Holy. Bosses are never killed outright (rAthena: status-immune; not checked in game).
+// Lv10 without a skill tree. A kill chance k on each use, N uses by damage alone: (1 − (1 − k)^N) / k uses on average
+const tuOff=m=>!!C().a.tu&&(m.el||"Neutral")!=="Undead";
+const tuLv=(c=C())=>!c.a.tu?0:hasTree(c)&&skLv(c,"turn-undead")>0?skLv(c,"turn-undead"):10;
+const tuKill=m=>{const lv=tuLv();if(!lv||m.boss||tuOff(m))return 0;const d=String((skRowOf("turn-undead",lv)||[])[7]||""),x=d.match(/Chance:\s*(\d+)%/i);return (x?+x[1]:2*lv)/100};
+const geoUses=(N,k)=>k>0?(1-Math.pow(1-k,N))/k:N;
 function usesPerKill(m){if(isSF()){const d=sfPerAttack(m);return d>0?Math.ceil(m.hp/d):Infinity}const per=perUse(m),proc=procPerUse(m),free=procFree(m);if(per<=0&&proc<=0&&free<=0)return Infinity;
   const cr=critChance(m),hc=hitChance(m)/100,L=leftDmg(m),sw=swMul(),da=sw-1,base=(per-L)/sw,O=[];
   [[cr,critMul()],[(1-cr)*hc,1]].forEach(([p,k])=>[[1-da,1],[da,2]].forEach(([q,n])=>O.push([p*q,(base*n+L)*k+proc+free])));O.push([(1-cr)*(1-hc),free]);
   const hit=O.filter(([p,d])=>p>0&&d>0),land=hit.reduce((t,[p])=>t+p,0);if(!(land>0))return Infinity;hit.forEach(o=>o[0]/=land);
-  const hp=m.hp,lo=Math.min(...hit.map(o=>o[1])),hi=Math.max(...hit.map(o=>o[1]));
-  if(hi-lo<1e-9)return Math.ceil(hp/hi)/land;
+  const hp=m.hp,lo=Math.min(...hit.map(o=>o[1])),hi=Math.max(...hit.map(o=>o[1])),k=tuKill(m);
+  if(hi-lo<1e-9)return geoUses(Math.ceil(hp/hi),k)/land;
   // hits that land: the chance each number of them leaves it alive, summed
-  if(hp/lo>KILL_EXACT){const mu=hit.reduce((t,[p,d])=>t+p*d,0),m2=hit.reduce((t,[p,d])=>t+p*d*d,0);return Math.max(Math.ceil(hp/hi),hp/mu+m2/(2*mu*mu))/land}
+  if(hp/lo>KILL_EXACT){const mu=hit.reduce((t,[p,d])=>t+p*d,0),m2=hit.reduce((t,[p,d])=>t+p*d*d,0);return geoUses(Math.max(Math.ceil(hp/hi),hp/mu+m2/(2*mu*mu)),k)/land}
   let dist=new Map([[0,1]]),n=0;while(dist.size){dist.forEach(p=>n+=p);const nx=new Map();
-    dist.forEach((p,s)=>hit.forEach(([q,d])=>{const t=Math.round(s+d);if(t<hp)nx.set(t,(nx.get(t)||0)+p*q)}));dist=nx}
+    dist.forEach((p,s)=>hit.forEach(([q,d])=>{const t=Math.round(s+d);if(t<hp)nx.set(t,(nx.get(t)||0)+p*q*(1-k))}));dist=nx}
   return n/land}
 // SP: a use costs SP; natural regen is 1 + MaxSP/100 + INT/6 per 8s, + (INT − 120)/2 + 4 from INT 120 (roz.prontera.info), unless typed
 // "SP Recovery +x%" from gear (Eggyra, Sohee, Merman Cards…) raises it by x%; a typed regen already has it
@@ -267,9 +331,9 @@ const hpRecPct=()=>{const c=C();return c.bx?num(c.bx.hpRec):0};
 const hpRegen6=()=>{if(num(C().hpRegen6)>0)return num(C().hpRegen6);const r=Math.floor((statVal(C(),"vit")||0)/5)+Math.max(1,Math.floor(num(cf("maxHp"))/200));
   return hpRecPct()?Math.floor(r*(1+hpRecPct()/100)):r};
 // gear "SP consumption +x%" (build mode) scales the SP each use costs
-// Vitata Card's +25% counts when ticked, unless build mode already has the card in your gear
+// Vitata Card's +25% counts when ticked; build mode counts it from the card's own line in your gear
 const vitInGear=c=>cardInGear(c,[4053]);
-const vitPct=()=>CRD().vitata&&!vitInGear(C())?num(CRD().spBonus):0;
+const vitPct=()=>C().mode!=="build"&&CRD().vitata?num(CRD().spBonus):0;
 // consumables' and buffs from others' lines the status window doesn't show (parseCons and PBUFF in build-ui.js): "SP consumption −x%" and HP / SP restored over time
 // (only your own rows make them; summed once per change of those rows, as regen is asked for on every monster)
 let CONS_SUM={k:null,v:{}};
@@ -288,7 +352,7 @@ const ihrPer10=()=>{const l=skLv(C(),"increase-hp-recovery");return l>0?Math.flo
 const hpRegenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(hpRegen6()/6+ihrPer10()/10)*(1-poisonUp(m)))+consHPPerSec();
 // SP the attack itself costs per second (Spell Fist: its upkeep); defSP adds Energy Coat and Vitata's heals against the monster in play
 // Guillotine Fist spends all your SP (Max SP each use), whatever SP cost cuts you have
-const skillSPPerSec=()=>(C().a.asura?num(cf("maxSp")):(num(C().a.sp)+(fsUsed()?num(fsRow()[0])/FS_USES:0))*spCostMul())/useSec()+dlUpkeep();
+const skillSPPerSec=()=>(C().a.asura?num(cf("maxSp")):(num(C().a.sp)+(fsUsed()?num(fsRow()[0])/FS_USES:0))*spCostMul())/useSec()+dlUpkeep()+convSpPerSec();
 // HP you spend yourself per second: Martyr's Reckoning 9% of Max HP per attack, a.hpCost per use (Excruciating Palm)
 const selfHpPerSec=()=>{const a=C().a;return a.mr?0.09*num(cf("maxHp"))/useSec():num(a.hpCost)/useSec()};
 const spNeedPerSec=()=>isSF()?sgUpkeep()+defSP()+hsFullSP()*hsSustain():skillSPPerSec()+defSP();
@@ -346,7 +410,7 @@ const mobHitDmg=m=>{if(m.atkMin==null)return null;const {soft,hard}=defParts(),k
 // healsPerSec), so none; hpTakenPerMin is the damage before regen
 // d: defense(m) when the caller already has it
 const hpLossPerMin=(m,d=defense(m))=>d?d.hp*60:null;
-const vitHeals=()=>CRD().vitata&&healHpEff()>0;
+const vitHeals=()=>cdOn("vitata")&&healHpEff()>0;
 const hpItemsPerMin=(m,d=defense(m))=>d?vitHeals()?0:d.hp*60:null;
 const hpTakenPerMin=(m,d=defense(m))=>d?(d.taken+d.psn+d.self)*60:null;
 // pz: share of the time poisoned, psn: HP a minute it drains
@@ -365,16 +429,19 @@ const sfBolts=()=>["Fire","Water","Wind"].filter(b=>G().bolts[b]&&(state.job!=="
 const sfChance=()=>sfOn()?Math.min(10,Math.max(0,num(G().sfLv)))*5/100:0;
 // Spell Fist %: 100 × bolt Lv + 100 × Spell Fist Lv. The bolt is worked out first at 100% (its MDEF steps included), then × that %
 const sfPct=()=>100*Math.min(10,Math.max(1,num(G().boltLv,10)))+100*Math.min(10,Math.max(1,num(G().sfLv,10)));
-const sfHit=(m,el)=>Math.floor(magicDmg(m,100,el)*sfPct()/100);
-const magicDmg=(m,pct,el,addMatk=0)=>{const e=elemMult(m,el)/100;if(e<=0||pct<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor(((sumStat(cf("matkTxt"))+addMatk)*pct/100*bonusMul(m,true)*(1+num(C().skillPct)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*e))};
+// gear's bolt damage % of the element's bolt (Fire Bolt, Cold Bolt, Lightning Bolt: Sage's Essence), added to the skill damage %
+// on Spell Fist and Hindsight procs; build mode only (bx.bolt), the typed Skill damage % box covers it otherwise
+const boltPct=el=>num(((C().bx||{}).bolt||{})[el]);
+const sfHit=(m,el)=>Math.floor(magicDmg(m,100,el,0,boltPct(el))*sfPct()/100);
+const magicDmg=(m,pct,el,addMatk=0,addSkill=0)=>{const e=elemMult(m,el)/100;if(e<=0||pct<=0)return 0;const md=effMdef(m);return Math.max(1,Math.floor(((matkOf()+addMatk)*pct/100*bonusMul(m,true)*(1+(num(C().skillPct)+addSkill)/100)*(1000+md)/(1000+10*md)-mobSoftMdef(m))*e))};
 // Hindsight: Lv × 2% chance per attack to auto-cast a bolt at half its level (100% MATK per hit); costs 2/3 of the bolt's SP
 const hsLvN=()=>Math.min(10,Math.max(0,num(G().hsLv)));
 const hsChance=()=>hsOnNow()?hsLvN()*2/100:0;
 const hsBoltLv=()=>Math.floor(hsLvN()/2);
-const hsHit=(m,el)=>hsBoltLv()*magicDmg(m,100,el);
+const hsHit=(m,el)=>hsBoltLv()*magicDmg(m,100,el,0,boltPct(el));
 // the % one proc deals: Spell Fist's, or the Hindsight bolt's when Spell Fist is off
 const sgPct=()=>sfOn()?sfPct():100*hsBoltLv();
-const sgSpMult=()=>1+(CRD().vitata?num(CRD().spBonus):0)/100; // Vitata Card: +25% SP cost
+const sgSpMult=()=>1+(cdOn("vitata")?num(CRD().spBonus):0)/100; // Vitata Card: +25% SP cost
 const hsProcSP=()=>(10+2*hsBoltLv())*2/3*sgSpMult();
 // Double Bolt (needs Hindsight): (30 + 10 × Lv)% chance the auto-cast bolt fires again; recast every 90 s for 35 + 5 × Lv SP
 const dbLvN=()=>Math.min(5,Math.max(1,num(G().dbLv,5)));
@@ -382,13 +449,13 @@ const dbChance=()=>hsOnNow()&&G().dbOn?(30+10*dbLvN())/100:0;
 // Spell Fist upkeep: 76 SP plus a bolt every 300 s
 const sgUpkeep=()=>(sfOn()?(76+30)*sgSpMult()/300:0)+(hsOnNow()&&G().dbOn?(35+5*dbLvN())*sgSpMult()/90:0);
 // Side Winder Card: chance for a basic attack to hit twice; under Spell Fist the 2nd hit procs it too
-const daFactor=()=>CRD().daSF?1+num(CRD().daPct)/100:1;
+const daFactor=()=>cdOn("daSF")?1+num(CRD().daPct)/100:1;
 // Hunter Fly Card: each physical attack has a 5% chance to restore 100 HP/s for 5 s (refreshes, doesn't stack). Basic attacks
 // and Spell Fist swing at your ASPD, physical skills once per use; spells don't trigger it
 const physAtkPerSec=()=>{const t=C().a.type;return t==="auto"||t==="spellfist"?atkPerSec():t==="phys"&&!C().a.falcon?1/useSec():0};
-// copies worn: build mode counts them in the gear (and then they count as ticked), else the box (1–4) when ticked
+// copies worn: build mode counts them in the gear, status window mode the box (1–4) when ticked
 const HUNTER_FLY=27266,DRACULA=27268;
-const cardCopies=(id,on,n)=>{const g=cardsInGear(C(),[id]);return g>0?g:on?Math.min(4,Math.max(1,Math.round(num(n,1)))):0};
+const cardCopies=(id,on,n)=>C().mode==="build"?cardsInGear(C(),[id]):on?Math.min(4,Math.max(1,Math.round(num(n,1)))):0;
 const hfCards=()=>cardCopies(HUNTER_FLY,CRD().hfOn,CRD().hfN),dracCards=()=>cardCopies(DRACULA,CRD().dracOn,CRD().dracN);
 // k copies: each rolls on every attack until one procs, and the restore doesn't add up (not checked in game),
 // so the effect runs 1 − (1 − p)^(k × attacks in its window) of the time
@@ -398,11 +465,11 @@ const hfHpPerSec=()=>{const k=hfCards();if(!k)return 0;return procUptime(num(CRD
 // Dracula Card: each physical or magic attack has a 10% chance to restore 20 SP/s for 7 s (refreshes, doesn't stack); copies as Hunter Fly
 const dracSPPerSec=()=>{const cd=CRD(),k=dracCards();if(!k)return 0;const n=(isSF()||C().a.type==="auto"?atkPerSec():1/useSec())*7;return procUptime(num(cd.dracPct)/100,k,n)*num(cd.dracSp)};
 // Dark Priest Card (Sage only): 1 SP each time a physical attack hits, so crits and hits that land
-const dpSPPerSec=()=>{if(!CRD().dpOn||state.job!=="Sage")return 0;const r=physAtkPerSec();if(!r)return 0;const m=SG_MOB||calcMob();if(!m)return r;
+const dpSPPerSec=()=>{if(!cdOn("dpOn")||state.job!=="Sage")return 0;const r=physAtkPerSec();if(!r)return 0;const m=SG_MOB||calcMob();if(!m)return r;
   return r*withAtk(isSF()?BASIC:C().a,()=>{const cr=critChance(m),hc=hitChance(m)/100;return cr+(1-cr)*hc})};
 // +5 SP per kill (Nereid, Tri-Joint… Cards) when a melee physical attack kills that race: counted over the time spent fighting it.
 // Not with Spell Fist, where the killing blow is as likely to be the bolt
-const killSPPerSec=()=>{const cd=CRD(),m=SG_MOB||calcMob(),t=C().a.type;if(!m||!cd.killSp.includes(m.race)||isSF()||(t!=="auto"&&t!=="phys")||isRangedHit())return 0;
+const killSPPerSec=()=>{const cd=CRD(),m=SG_MOB||calcMob(),t=C().a.type;if(!m||!killSpOn().includes(m.race)||isSF()||(t!=="auto"&&t!=="phys")||isRangedHit())return 0;
   const f=rawFight(m);return isFinite(f)&&f>0?5/f:0};
 const cardSPPerSec=()=>dracSPPerSec()+dpSPPerSec()+killSPPerSec();
 // Energy Coat: damage cut and SP per hit taken (% of Max SP) depend on how full your SP is
@@ -423,7 +490,7 @@ function defense(m){
   const sf=isSF(),max=num(cf("maxSp")),ec=ecOn(),hpBack=hfHpPerSec()+hpRegenPerSec(m),regen=regenPerSec(m),up=sf?sgUpkeep():skillSPPerSec(),hs=sf?hsFullSP():0,spMul=sf?sgSpMult():spCostMul();
   // pz: share of the time you're poisoned, psn: HP a second it drains (Energy Coat doesn't cut it)
   const pz=poisonUp(m),psn=pz*poisonHpPerSec(),self=selfHpPerSec(); // self: HP your own attack spends
-  const band=i=>{const red=ec?EC_BANDS[i][0]:0,ecSP=ec?hits*EC_BANDS[i][1]/100*max:0,taken=raw*(1-red/100)*hits,hp=Math.max(0,taken+psn+self-hpBack),cd=CRD(),healSP=cd.vitata&&healHpEff()>0?hp/healHpEff()*num(cd.healSp)*spMul:0;return {i,red,ecSP,healSP,hp,taken,pz,psn,self,label:ec?EC_BANDS[i][2]:""}};
+  const band=i=>{const red=ec?EC_BANDS[i][0]:0,ecSP=ec?hits*EC_BANDS[i][1]/100*max:0,taken=raw*(1-red/100)*hits,hp=Math.max(0,taken+psn+self-hpBack),cd=CRD(),healSP=cdOn("vitata")&&healHpEff()>0?hp/healHpEff()*num(cd.healSp)*spMul:0;return {i,red,ecSP,healSP,hp,taken,pz,psn,self,label:ec?EC_BANDS[i][2]:""}};
   const cost=b=>up+b.ecSP+b.healSP;
   let b=null;for(let i=0;i<5;i++){const x=band(i);if(cost(x)+hs<=regen){b=x;break}}
   // fb: no band fits your regen, so SP items (or none) set it
@@ -436,7 +503,7 @@ const HEAL_DELAY=0.3;
 const healSec=()=>Math.max(HEAL_DELAY,1/atkPerSec());
 // HP one Vitata Heal gives you: the box, + "Heal received +x%" from consumables (Ale's Blessing)
 const healHpEff=()=>num(CRD().healHp)*(1+consSum("heal_pct")/100);
-const healsPerSec=m=>{const cd=CRD();if(!cd.vitata||!(healHpEff()>0))return 0;const hp=(defense(m)||{}).hp;return hp>0?hp/healHpEff():0};
+const healsPerSec=m=>{if(!cdOn("vitata")||!(healHpEff()>0))return 0;const hp=(defense(m)||{}).hp;return hp>0?hp/healHpEff():0};
 const healShare=m=>healsPerSec(m)*healSec();
 let SG_MOB=null; // monster the SP balance is worked out against
 const defSP=()=>{const m=SG_MOB||calcMob();const d=m?defense(m):null;return d?d.extra:0};
@@ -448,6 +515,18 @@ const withAtk=(a,fn)=>{const c=C(),k=c.a;c.a=a;try{return fn()}finally{c.a=k}};
 const sfPhys=m=>withAtk(BASIC,()=>withEl(null,()=>useAvg(m,dmgPerHit(m),procPerUse(m))));
 const sfMagic=m=>{const el=atkEl();return sfChance()*sfHit(m,el)*daFactor()+hsChance()*hsSustain()*hsHit(m,el)*(1+dbChance())};
 const sfPerAttack=m=>sfMagic(m)+sfPhys(m)*daFactor();
+// a hit that lands, low to high, where a basic attack can add damage by chance: Duple Light's orbs (low: the hit alone; high: the
+// physical orb and the magic orb (DL_MAGIC of the time) both on top; the physical one rolls to hit again) and Spell Fist (low: the
+// swing's physical hit; high: it plus the Spell Fist bolt, Lv × 5% of swings, and the Hindsight bolt, twice with Double Bolt).
+// avg: each part by its chance (no crits, no misses). Null for any other attack: its hits are all the same
+function hitRange(m){const c=C();
+  if(isSF()){const el=atkEl(),ph=withAtk(BASIC,()=>withEl(null,()=>dmgPerHit(m))),sf=sfOn()?sfHit(m,el):0,hs=hsOnNow()&&hsLvN()?hsHit(m,el):0;
+    if(!sf&&!hs)return null;const db=dbChance()>0?2:1;
+    return {lo:ph,hi:ph+sf+hs*db,avg:ph+sfChance()*sf+hsChance()*hs*(1+dbChance()),parts:[["physical",ph],sf&&["Spell Fist",sf],hs&&["Hindsight",hs]].filter(Boolean)}}
+  if(c.a.type!=="auto")return null;const d=dlParts(m);if(!d)return null;const base=dmgPerHit(m)+leftDmg(m);
+  return {lo:base,hi:base+d.phys+d.mag,avg:base+d.phys*d.hc*DL_PHYS+d.mag*DL_MAGIC,parts:[["hit",base],["physical orb",d.phys],["magic orb",d.mag]]}}
+// "1,234 (800–2,100)" for a hitRange, else the hit alone
+const hitTxt=(m,plain)=>{const r=hitRange(m);return r?`${fmtN(r.avg)} (${fmtN(r.lo)}–${fmtN(r.hi)})`:plain};
 // Hindsight vs none on the session's map, as a note in Sage options: the extra EXP and what the extra SP items cost per 1% (after the extra loot)
 function hsCompare(){
   const g=G();if(!isSF()||!hsLvN()){g._note="";return}
@@ -470,8 +549,8 @@ const skRowOf=(slug,lv)=>{for(const t of SKILLS[state.job]||[])for(const s of t.
 // Heal (Acolyte, Priest, Monk, Crusader) at its learned level: (BaseLv + INT) / 5 × 3 × Lv + MATK, × Heal received % (rAthena's renewal
 // formula, not checked in game), SP from Zero's skill data. Without it, Vitata's Heal Lv1 (the HP / SP boxes on the Cards card). null: no Heal
 function healOpt(){const lv=skLv(C(),"heal");
-  if(lv>0){const r=skRowOf("heal",lv);return {name:`Heal Lv${lv}`,hp:(Math.floor((num(C().baseLv)+(statVal(C(),"int")||0))/5)*3*lv+sumStat(cf("matkTxt")))*(1+consSum("heal_pct")/100),sp:num(r?r[0]:10+3*lv)*spCostMul()}}
-  return CRD().vitata&&healHpEff()>0?{name:"Vitata's Heal Lv1",hp:healHpEff(),sp:num(CRD().healSp)*(isSF()?sgSpMult():spCostMul())}:null}
+  if(lv>0){const r=skRowOf("heal",lv);return {name:`Heal Lv${lv}`,hp:(Math.floor((num(C().baseLv)+(statVal(C(),"int")||0))/5)*3*lv+matkOf())*(1+consSum("heal_pct")/100),sp:num(r?r[0]:10+3*lv)*spCostMul()}}
+  return cdOn("vitata")&&healHpEff()>0?{name:"Vitata's Heal Lv1",hp:healHpEff(),sp:num(CRD().healSp)*(isSF()?sgSpMult():spCostMul())}:null}
 // Indulge (Sage) at its learned level: 10% of Max HP for (10 × Lv)% of that as SP, less the Lv SP it costs (the 10% is classic RO's,
 // not checked in game). null: not learned, or it can't give SP back
 function indulgeOpt(){const lv=skLv(C(),"indulge");if(!(lv>0))return null;const hp=num(cf("maxHp"))*0.1,r=skRowOf("indulge",lv),sp=hp*lv/10-num(r?r[0]:lv)*spCostMul();
@@ -582,7 +661,9 @@ function mapSpShort(mp,w,el){let s=0,t=0;withMobbed(mp,()=>withEl(el,()=>(MAPMOB
 // zeny per kill: the exported loot value (the database, NPC prices) scaled by your drop rate bonus. A drop you sell to players
 // counts at the market price you typed instead: the loot value already holds its NPC price, so the market price adds only what
 // it beats the NPC price by. Its chance is scaled by the drop bonus and the level penalty, capped at 100%
-const dropMul=()=>1+num(state.dropBonus)/100;
+// the Drop rate bonus box plus "Item drop rate +x%" from gear in build mode (an event card's option)
+const dropPct=()=>num(state.dropBonus)+num((C().bx||{}).drop);
+const dropMul=()=>1+dropPct()/100;
 // NPC sell price: the one you typed, else the database's (data/prices.js), else 0
 const npcSell=id=>{const v=state.npcPrices[id];return v!=null&&v!==""?num(v):num(NPCSELL[id])};
 // drop rate cut by level gap = monster Lv − your base Lv (official guide, roz.mygnjoy.com/en/intro/guide/11): "~ -19" no penalty,
@@ -663,14 +744,15 @@ const lockPill=mp=>lvLocked(mp)?` <span class="pill down" title="Needs base Lv $
 // monsters you skip (e.g. ones that stun you): left out of map averages, you walk past them
 const isSkipped=m=>!!(state.skipMobs&&state.skipMobs.includes(m.id));
 // the database has no EXP for some monsters yet (Mist, Isis, Anubis...): shown as "?" and left out of EXP averages
-const fmtExp=m=>m.expUnknown?"?":fmtN(m.exp);
+// a * marks EXP not confirmed in game (expUnsure)
+const fmtExp=m=>m.expUnknown?"?":fmtN(m.exp)+(m.expUnsure?"*":"");
 // a spawn count, or ? on a map the client doesn't list yet (SPAWN has [map, null] there: which monsters, from the data, but no count)
 const spN=n=>n==null?"?":n;
 const MAPMOBS={};
 Object.entries(SPAWN).forEach(([id,arr])=>{const m=MOBS.find(x=>x.id===+id);if(!m)return;arr.forEach(([mp,n])=>{(MAPMOBS[mp]=MAPMOBS[mp]||[]).push({m,n})})});
 
 // ---- tracker math ----
-function cumulative(e,base){let total=0;for(let l=base;l<e.lv;l++)total+=lvExp(l)||100;return total+(e.pct/100)*(lvExp(e.lv)||100)}
+function cumulative(e,base){let total=0;for(let l=base;l<e.lv;l++)total+=lvExp(l,e.t)||100;return total+(e.pct/100)*(lvExp(e.lv,e.t)||100)}
 // pausing: s.pauses=[{from,to}] (to missing while paused); paused time is left out of every rate, EXP gained is still counted
 // EXP % lost on death: 10%, halved by the shop's death penalty item
 const diePct=()=>state.dieItem?5:10;
@@ -681,7 +763,7 @@ const activeH=(s,a,b)=>(b-a-pausedMs(s,a,b))/36e5;
 const autoResume=(s,t)=>{const p=openPause(s);if(p&&t>=p.from)p.to=Math.max(p.from,t)};
 // a death (entry.died: the EXP % it cost) isn't negative EXP/hr: the drop to that entry is given back, up to the penalty. With the
 // Died button the entry before it is your EXP just before dying, so that pair adds nothing; a pasted death after EXP gained keeps the gain
-const deathBack=(e,q,base)=>{if(!e.died)return 0;const pen=e.died/100*(lvExp(e.lv)||100),d=cumulative(e,base)-cumulative(q,base);return e.t-q.t<=6e4?Math.min(pen,Math.max(0,-d)):pen};
+const deathBack=(e,q,base)=>{if(!e.died)return 0;const pen=e.died/100*(lvExp(e.lv,e.t)||100),d=cumulative(e,base)-cumulative(q,base);return e.t-q.t<=6e4?Math.min(pen,Math.max(0,-d)):pen};
 // EXP gained from es[i] to es[j] (sorted), with deaths given back; never below 0 across a death
 function gained(es,i,j,base){let x=0;for(let k=i+1;k<=j;k++){const d=cumulative(es[k],base)-cumulative(es[k-1],base);x+=es[k].died?Math.max(0,d+deathBack(es[k],es[k-1],base)):d}return x}
 function stats(s){
@@ -689,7 +771,7 @@ function stats(s){
   // the recent rate runs from the newest entry at least a minute (unpaused) before the last, so a death logged a second after your EXP doesn't blow it up
   const base=es[0].lv,n=es.length-1,last=es[n],pi=es.slice(0,-1).map((e,i)=>i).reverse().find(i=>activeH(s,es[i].t,last.t)>=1/60)??n-1,prev=es[pi];const hrs=(a,b)=>activeH(s,a.t,b.t);
   if(hrs(es[0],last)<=0)return null;
-  const avgRaw=gained(es,0,n,base)/hrs(es[0],last);const recRaw=hrs(prev,last)>0?gained(es,pi,n,base)/hrs(prev,last):0;const L=lvExp(last.lv)||100;
+  const avgRaw=gained(es,0,n,base)/hrs(es[0],last);const recRaw=hrs(prev,last)>0?gained(es,pi,n,base)/hrs(prev,last):0;const L=lvExp(last.lv,last.t)||100;
   return {es,last,prev,avgRaw,recRaw,avgPct:avgRaw/L*100,recPct:recRaw/L*100,L,recentMin:Math.round(hrs(prev,last)*60),spanMin:Math.round(hrs(es[0],last)*60),
     fullH:avgRaw>0?L/avgRaw:Infinity,nextH:avgRaw>0?L*(1-last.pct/100)/avgRaw:Infinity,deaths:es.filter(e=>e.died).length};
 }
@@ -703,7 +785,8 @@ const sessMaps=s=>{const k={},tot={};sessMobs(s).forEach(m=>openMaps(m).forEach(
 const sessMapAuto=s=>(sessMaps(s)[0]||[])[0]||null;
 // a map you picked counts while one of the session's monsters spawns there, even one marked as not open
 const sessOn=(s,mp)=>sessMobs(s).some(m=>(SPAWN[m.id]||[]).some(x=>x[0]===mp));
-const sessMap=s=>s.map&&sessOn(s,s.map)?s.map:sessMapAuto(s);
+// (or while it has no monsters: you picked the map, then took them all out to choose again)
+const sessMap=s=>s.map&&(sessOn(s,s.map)||!s.mobIds.length&&MAPMOBS[s.map])?s.map:sessMapAuto(s);
 // the monsters you hunt on a map, as the Map planner and EXP Hunter count them: not bosses or the ones you skip (all of them if that's none)
 const mapHuntIds=mp=>{const all=MAPMOBS[mp]||[],h=all.filter(x=>!x.m.boss&&!isSkipped(x.m));return (h.length?h:all).map(x=>x.m.id)};
 // the map a monster is farmed on: the session's map when it's one of the session's monsters and spawns there, else its best open map
@@ -717,14 +800,14 @@ function sessMix(s,keep){const mp=sessMap(s);let list=sessMobs(s).map(m=>({m,w:s
 function pace0(s,same){
   // with this job's attack, monsters you can't hurt aren't being killed, so they're left out of the mix
   const st=stats(s);const mix=sessMix(s,same?m=>isFinite(bestFight(m)):null);if(!st||!mix||st.avgRaw<=0||!(mix.avg(m=>m.exp)>0))return null;
-  const kph=st.avgRaw/mix.avg(m=>killExp(m,s));const obs=3600/kph;const fight=same?mix.avg(bestFight):NaN;
+  const kph=st.avgRaw/withBonus(s,()=>mix.avg(m=>killExp(m,s)));const obs=3600/kph;const fight=same?mix.avg(bestFight):NaN;
   return {kph,obs,fight,walk:isFinite(fight)&&obs>=fight?obs-fight:null,mix,st};
 }
 // ---- a session's stats: the character as it was when you logged its entries (s.snap = {at, c}), so its fight time and the walking
 // worked out from it don't move when you change gear or stats afterwards (that only changes fight time). A session saved before
 // snapshots takes the stats you have when it's first worked out (est) ----
-// (gear bonuses, bx, are worked out again from the gear lines or Build from gear when it's used; the other gear sets, saved loadouts and remembered gear aren't kept)
-const charSnap=(c=C())=>{const o=JSON.parse(JSON.stringify(c));delete o.bx;delete o.gearEdit;if(o.build){delete o.build.alt;delete o.build.alts;delete o.build.loadouts;delete o.build.mem}if(o.sage)delete o.sage._note;return o};
+// (gear bonuses, bx, are worked out again from the gear lines or Build from gear when it's used; the other gear sets, their names and remembered gear aren't kept)
+const charSnap=(c=C())=>{const o=JSON.parse(JSON.stringify(c));delete o.bx;delete o.gearEdit;if(o.build){delete o.build.alt;delete o.build.alts;delete o.build.loadouts;delete o.build.setName;delete o.build.mem}if(o.sage)delete o.sage._note;return o};
 // A log with stats that change the session's fight time keeps the ones before in s.snapHist = [{t, c}] (oldest first; t: the newest entry
 // they cover), so the part of the session logged with them keeps its fight time: lowering ATK or MATK and logging again doesn't make
 // the walking of the hour before shrink. was: the entry times the session had before this log (the new entries take the new stats)
@@ -733,16 +816,21 @@ const snapFight=(s,c)=>withSnap(c,()=>{const p=pace0(s,true);return p&&isFinite(
 const snapSession=(s,was)=>{if((s.job||state.job)!==state.job)return;was=Array.isArray(was)?was:[];const c=charSnap(),prev=s.snap,t=Math.max(-Infinity,...was);
   if(prev&&was.length>=2&&stats(s)&&JSON.stringify(prev.c)!==JSON.stringify(c)){const a=snapFight(s,prev.c),b=snapFight(s,c);
     if(a!=null&&(b==null||Math.abs(a-b)>1e-6)){const h=(s.snapHist||[]).filter(x=>x.t<t);h.push({t,c:prev.c});s.snapHist=h.slice(-SNAP_HIST_MAX)}}
-  s.snap={at:Date.now(),c}};
+  s.snap={at:Date.now(),c,bonus:num(state.bonus)}};
 // sessions of this job with a pace and no snapshot yet take the stats you have now, after renderAll has worked everything out
-const snapEst=()=>{let n=0;state.sessions.forEach(s=>{if(!s.snap&&(s.job||state.job)===state.job&&stats(s)){s.snap={at:Date.now(),c:charSnap(),est:true};n++}});if(n)save()};
+const snapEst=()=>{let n=0;state.sessions.forEach(s=>{if(!s.snap&&(s.job||state.job)===state.job&&stats(s)){s.snap={at:Date.now(),c:charSnap(),est:true,bonus:num(state.bonus)};n++}});if(n)save()};
 // the model with a copy of a session's snapshot swapped in: redoes what renderAll works out from it (not Hindsight auto: the snapshot
 // keeps the choice it had), then puts yours back as it was. Unlike build-ui.js withChar it leaves the snapshot untouched
 function withSnap(c,fn){const job=state.job,real=state.chars[job],k={SKFX,EFF,BUILD_LAST};state.chars[job]=JSON.parse(JSON.stringify(c));
   try{SKFX=skillEffects(C());sageFromTree(C());applyBuild();applyConsumables();return fn()}
   finally{state.chars[job]=real;SKFX=k.SKFX;EFF=k.EFF;BUILD_LAST=k.BUILD_LAST}}
-// what the walking depends on besides the snapshot: the entries, pauses, monsters, party and EXP bonus
-const calKey=s=>[s.snap?s.snap.at:0,...(s.snapHist||[]).map(x=>"h"+x.t),s.mobIds.join("."),sessMap(s),partyN(s),num(state.bonus),...s.entries.map(e=>`${e.t}:${e.lv}:${e.pct}:${e.died||0}`),...(s.pauses||[]).map(p=>`${p.from}-${p.to??""}`)].join("|");
+// the EXP bonus % a session was logged with (s.snap.bonus, saved with its stats): the walking is the logged EXP ÷ EXP per kill, so
+// raising EXP bonus % afterwards (a Double EXP weekend: +100) must not stretch the walking of what was logged before. Without a
+// snapshot it's the one you have now. withBonus runs fn with it in state.bonus, then puts yours back
+const snapBonus=s=>s&&s.snap&&Number.isFinite(s.snap.bonus)?s.snap.bonus:num(state.bonus);
+function withBonus(s,fn){const k=state.bonus;state.bonus=snapBonus(s);try{return fn()}finally{state.bonus=k}}
+// what the walking depends on besides the snapshot: the entries, pauses, monsters, party and the EXP bonus it was logged with
+const calKey=s=>[s.snap?s.snap.at:0,...(s.snapHist||[]).map(x=>"h"+x.t),s.mobIds.join("."),sessMap(s),partyN(s),snapBonus(s),...s.entries.map(e=>`${e.t}:${e.lv}:${e.pct}:${e.died||0}`),...(s.pauses||[]).map(p=>`${p.from}-${p.to??""}`)].join("|");
 // a session's pace with its own stats, worked out once and kept on it (s.walk = {key, sec, fight, kph}); null for another job's session
 // Until a session has a snapshot (one saved before them) it follows your stats; renderAll then gives it one (snapEst)
 function sessCal(s){if((s.job||state.job)!==state.job||!stats(s))return null;const key=calKey(s);if(s.walk&&s.walk.key===key)return s.walk;
@@ -856,6 +944,11 @@ function mapStats00(mp,w){
   return {mp,N,epm:exp/time*60,secT:time/n,sec:fight/n,walk:w,sell:time/n-fight/n-w,epk:exp/n,zg,zph:zg-hcHr,zcost:zc/time*3600+hcHr,hpm,hpi:hpiM,hpt:hpN?hpt/hpN:null,pz:hpN?pz/hpN:0,psn:hpN?psn/hpN:0,skip:skip.length,skipNames:skip,unk:unk.length,unkNames:unk,
     spHr,spZ,hpHr:hh.n,hpZ:hh.z,heal:hh.z+spZ,zb:zg-hcHr+spZ,net:zg-hcHr-hh.z,wk,wph:wt/time*3600,trip:wk>0&&room>0?room/wk*(time/n)/3600:null,sus:susCalc(sus)};
 }
+// damage per second on a map's mix with one converter: each monster's DPS weighted by the time spent fighting it (the monsters
+// mapStats counts). Null with Spell Fist (no single damage per use)
+function mapDps(mp,w,el){return withEl(el,()=>withMobbed(mp,()=>{let d=0,t=0;
+  (MAPMOBS[mp]||[]).filter(x=>!x.m.boss&&!isSkipped(x.m)&&!x.m.expUnknown).forEach(({m,n:c})=>{const r=mobRow0(m,w);if(!isFinite(r.sec))return;
+    const v=dpsOf(m);if(v==null||!isFinite(v))return;d+=c*r.sec*v;t+=c*r.sec});return t?d/t:null}))}
 // best converter per monster (by EXP/min) and one converter per map
 function mobRow(m,w){let best=null;elOptions().forEach(el=>{const r=withEl(el,()=>mobRow0(m,w));r.el2=el;if(!best||r.epm>best.epm)best=r});return best}
 function mapStats(mp,w){let best=null;elOptions().forEach(el=>{const r=withEl(el,()=>mapStats0(mp,w));if(r){r.el2=el;if(!best||r.epm>best.epm)best=r}});return best}
@@ -929,8 +1022,7 @@ const huntCosts=(m,hpi)=>{const spHr=spItemsHr(m),spZ=spHr*spItemPrice(),other=h
 const huntOffOf=mp=>(state.huntOff||{})[mp];
 const killTot=(m,sec,walk)=>{const k=SG_MOB;SG_MOB=m;try{return tripTot(m,sec+walk,walk)}finally{SG_MOB=k}};
 const noTele=mp=>(state.noTele||[]).includes(mp);
-const CREAMY=4040;
-const creamyOn=()=>!!CRD().creamy||cardInGear(C(),[CREAMY]);
+const creamyOn=()=>cdOn("creamy");
 const canTele=()=>creamyOn()||skLv(C(),"teleport")>0;
 const teleSec=()=>state.teleSec==null?1:num(state.teleSec);
 // the Zeny Hunter's level filter: monsters outside its Lv range (state.huntMinLv / huntMaxLv, null = any), or with a drop level penalty

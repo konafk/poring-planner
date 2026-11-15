@@ -1,20 +1,31 @@
 // ---- render: character ----
 // card tick boxes: a card's numbers only show while it's ticked
 const syncCardOpts=()=>ROOTQ(".cdItem").forEach(r=>{const b=r.querySelector('input[type="checkbox"][data-cd]'),o=r.querySelector(".cdOpts");if(b&&o)o.hidden=!b.checked});
+// in build mode the Cards rows follow your gear: a box is ticked when the card is slotted, and locked; Hunter Fly's and Dracula's
+// copies are the ones in your gear. Status window mode shows your own ticks
+const syncCardRows=()=>{const c=C(),b=c.mode==="build",cd=CRD(),ks=killSpOn(),why="Build mode: on when this card is slotted in your gear";
+  ROOTQ('input[type="checkbox"][data-cd]').forEach(i=>{i.checked=b?cdOn(i.dataset.cd):!!cd[i.dataset.cd];i.disabled=b;i.title=b?why:""});
+  [["hfN",HUNTER_FLY],["dracN",DRACULA]].forEach(([k,id])=>ROOTQ(`[data-cd="${k}"]`).forEach(i=>{i.disabled=b;
+    if(b)i.value=cardsInGear(c,[id]);else if(document.activeElement!==i)i.value=cd[k]??""}));
+  ROOTQ("[data-cdkill]").forEach(i=>{i.checked=ks.includes(i.dataset.cdkill);i.disabled=b;i.title=b?why:""});
+  syncCardOpts()};
+// status-window mode: a two-handed weapon closes the shield tick box and the left hand
+function handsUi(c){const both=BUILD.twoHanded(c.weapon);$("shield").checked=!!c.shield&&!both;$("shield").disabled=both;$("lw").disabled=both;
+  $("shieldNote").textContent=both?`${c.weapon}: it takes both hands, so no shield${state.job==="Assassin"?" or left-hand weapon":""}`:`${state.job} shield penalty: ASPD −${BUILD.SHIELD_ASPD[state.job]??"?"}${state.job==="Assassin"?"; it replaces a left-hand weapon":""}. Ticking or unticking moves the ASPD above`}
 const syncChar=()=>{
   const c=C();$("job").value=noChar()?"":state.job;renderEq();renderCons();
   $("preset").innerHTML=JOBS[state.job].p.map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join("")+'<option value="-1">Custom</option>';
   $("preset").value=String(c.preset??0);renderSkills();
-  ["baseLv","jobLv","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","fctSec","normalPct","myElPct","ignDef","ignMdef","mastery","rangePct","skillPct","crit","critDmg","fixedShare","vctPct","fctPct","acdPct","dmgBonus","atkPct","nameSel","namePct","itemSp","itemPrice","itemHp","itemHpPrice","mobInterval","hitScale"].forEach(k=>$(k).value=c[k]??"");["curW","maxW","gymLv"].forEach(k=>$(k).value=num(c[k])>0?c[k]:"");$("townMin").value=c.townMin??3;$("sellAt").value=num(c.sellAt)>0?c.sellAt:"";$("wAtk").value=num(c.wAtk)>0?c.wAtk:"";
+  ["baseLv","jobLv","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","fctSec","normalPct","myElPct","ignDef","ignMdef","mastery","rangePct","skillPct","crit","critDmg","fixedShare","vctPct","fctPct","acdPct","dmgBonus","atkPct","matkPct","nameSel","namePct","itemSp","itemPrice","itemHp","itemHpPrice","mobInterval","hitScale"].forEach(k=>$(k).value=c[k]??"");["curW","maxW","gymLv"].forEach(k=>$(k).value=num(c[k])>0?c[k]:"");$("townMin").value=c.townMin??3;$("sellAt").value=num(c.sellAt)>0?c.sellAt:"";$("wAtk").value=num(c.wAtk)>0?c.wAtk:"";
   $("spRegen").value=num(c.spRegen)>0?c.spRegen:"";$("hpRegen6").value=num(c.hpRegen6)>0?c.hpRegen6:"";
-  $("weapon").value=c.weapon;$("wElem").value=c.wElem;$("dualRow").hidden=state.job!=="Assassin";$("lw").value=c.lw||"";$("lwElem").value=c.lwElem||"Neutral";$("lwAtk").value=num(c.lwAtk)>0?c.lwAtk:"";$("shield").checked=!!c.shield;$("shieldNote").textContent=`${state.job} shield penalty: ASPD −${BUILD.SHIELD_ASPD[state.job]??"?"}${state.job==="Assassin"?"; it replaces a left-hand weapon":""}. Ticking or unticking moves the ASPD above`;$("nameType").value=c.nameType||"phys";$("autoSp").checked=!!c.autoSp;$("convSel").value=!c.converters?"":convFixed()||"auto";$("potOn").checked=!!c.potOn;$("potPrice").value=c.potPrice??2200;$("potMin").value=c.potMin??30;potInfo();$("yggOn").checked=!!c.yggOn;$("convNote").textContent=c.converters&&c.a.el!=="W"?"(this attack has its own element, so converters don't change it)":"";
+  $("weapon").value=c.weapon;$("wElem").value=c.wElem;$("dualRow").hidden=state.job!=="Assassin";$("lw").value=c.lw||"";$("lwElem").value=c.lwElem||"Neutral";$("lwAtk").value=num(c.lwAtk)>0?c.lwAtk:"";handsUi(c);$("nameType").value=c.nameType||"phys";$("autoSp").checked=!!c.autoSp;{const o=`<option value="">none</option><option value="auto">best per monster / map</option>${convEls().flatMap(el=>convSkLv(el)>0?[[el,`${el} · ${convSk(el).name.trim()}`],...(CONV_ITEMS[el]?[[el+":item",`${el} converter`]]:[])]:[[el,/converter/.test(convName(el))?convName(el):`${el} · ${convName(el)}`]]).map(([v,t])=>`<option value="${v}">${t}</option>`).join("")}`;if($("convSel").innerHTML!==o)$("convSel").innerHTML=o}$("convSel").value=!c.converters?"":convFixed()?convFixed()+(convSkLv(convFixed())>0&&convItemOn(convFixed())?":item":""):"auto";$("potOn").checked=!!c.potOn;$("potPrice").value=c.potPrice??2200;$("potMin").value=c.potMin??30;potInfo();$("yggOn").checked=!!c.yggOn;$("convNote").textContent=c.converters&&c.a.el!=="W"?"(this attack has its own element, so these don't change it)":"";
   const a=c.a;$("aType").value=a.type;$("aPct").value=a.pct;$("aHits").value=a.hits;$("aElem").value=a.el;$("aCast").value=a.cast;$("aDelay").value=a.delay;$("aSp").value=a.sp;$("aTargets").value=a.targets;$("aZeny").value=a.zeny||"";$("cartW").value=c.cartW||"";$("cartWrap").hidden=!num(a.cart);
   {const ac=AC();$("acSpell").innerHTML=Object.keys(AC_SPELLS).map(n=>`<option>${esc(n)}</option>`).join("");$("acOn").checked=!!ac.on;$("acSpell").value=ac.spell;$("acLv").value=ac.lv;$("acPct").value=ac.pct}
   $("bonus").value=state.bonus;$("jobBonus").value=num(state.jobBonus);
-  {const cd=CRD();ROOTQ("[data-cd]").forEach(i=>{const k=i.dataset.cd;if(i.type==="checkbox")i.checked=!!cd[k];else i.value=cd[k]??""})}
-  syncCardOpts();
+  {const cd=CRD();ROOTQ("[data-cd]").forEach(i=>{const k=i.dataset.cd;if(i.type!=="checkbox")i.value=cd[k]??""})}
   $("dpWrap").hidden=state.job!=="Sage";
-  {const ks=CRD().killSp;$("killSpBoxes").innerHTML=Object.entries(KILL_SP).map(([r,n])=>`<label class="bar"><input type="checkbox" data-cdkill="${esc(r)}"${ks.includes(r)?" checked":""}> <b>${esc(n)}</b> (${esc(r)})</label>`).join("")}
+  $("killSpBoxes").innerHTML=Object.entries(KILL_SP).map(([r,n])=>`<label class="bar"><input type="checkbox" data-cdkill="${esc(r)}"> <b>${esc(n)}</b> (${esc(r)})</label>`).join("");
+  syncCardRows();
   $("ecRow").hidden=!EC_JOBS.includes(state.job);{const e=ECO();ROOTQ("[data-ec]").forEach(i=>{const k=i.dataset.ec;if(i.type==="checkbox")i.checked=!!e[k];else i.value=e[k]??""})}
   $("sagePanel").hidden=state.job!=="Sage";if(state.job==="Sage"){const g=G();ROOTQ("[data-sg]").forEach(i=>{const k=i.dataset.sg;if(i.type==="checkbox")i.checked=!!g[k];else i.value=g[k]??""});ROOTQ("[data-sgbolt]").forEach(i=>i.checked=!!g.bolts[i.dataset.sgbolt])}STATS.forEach(k=>$("st_"+k).value=(c.st&&c.st[k])||"");renderStatNote();
   if(typeof secNavSync==="function")secNavSync();
@@ -25,30 +36,41 @@ const eqMaxNote=()=>{const t=!atMaxLv()?"":num(C().jobLv)>=jobMax()?"Max level: 
 function crowdInfo(){const c=C(),m=calcMob();if(document.activeElement!==$("crowd"))$("crowd").value=c.crowd??"";
   if(!m){$("crowdInfo").textContent="";return}const n=crowdN(m),pz=poisonUp(m);
   $("crowdInfo").textContent=`vs ${m.name}: ${m.agg||m.assist?`${m.agg?"aggressive":"assists its kind"}, possible rampage of ${fmtP(n)}`:"fights you alone"}${n>2?` (FLEE −${Math.round((1-crowdFlee(n))*100)}%, DEF −${Math.round((1-crowdDef(n))*100)}%)`:""}${m.poison?` · poisons you ${Math.round(pz*100)}% of the time: −${fmtN(poisonHpPerSec())} HP/s, no HP or SP regen then`:""}`}
-// Your numbers starts with what you farm for: the time a kill takes, EXP and zeny on the session's map or monster (the bottom dock on
-// narrower screens shows only these). The attack's own numbers (per use, SP, walking) follow them
-function charOutTiles(){const m=calcMob(),tile=(k,v,sub)=>`<div class="tile out"><div class="k">${k}</div><div class="v mono">${v}</div><div class="s">${sub}</div></div>`;
+// Your numbers starts with what you farm for: the time a kill takes, damage per second, EXP and zeny on the session's map or monster
+// (the bottom dock on narrower screens shows only these). The attack's own numbers (time per attack or cast, SP) follow them; walking
+// is in the kill time's line, and where it comes from in its tooltip
+function charOutTiles(){const m=calcMob(),tile=(k,v,sub,tip)=>`<div class="tile out"${tip?` title="${esc(tip)}"`:""}><div class="k">${k}</div><div class="v mono">${v}</div><div class="s">${sub}</div></div>`;
+  const dpsTile=(d,sub)=>d!=null&&isFinite(d)?tile("Damage / s",fmtN(Math.round(d)),sub):"";
   const far='<a href="#session" data-gotab="track" data-goto="farmCard">Where to farm</a>';
-  if(!charSet())return `<div class="tile out wide"><div class="k">Your numbers</div><div class="s">Fill in your stats below to see your kill time, EXP and zeny</div></div>`;
+  if(!charSet())return `<div class="tile out wide"><div class="k">No stats yet</div><div class="s">Fill in your stats below to see your kill time, EXP and zeny</div></div>`;
   if(!m)return `<div class="tile out wide"><div class="k">No monster picked</div><div class="s">Press "Farm here" in ${far} on the Session tab to see your kill time, EXP and zeny</div></div>`;
   // a whole map farmed (Farm here) and no one monster picked: the map's mix, the numbers Where to farm ranked it by
   {const ss=cur(),mp=sessMap(ss),r=!state.calcMobId&&sessMobs(ss).length>1&&mp?mapStats(mp,walkSec()):null;
-    if(r&&isFinite(r.secT))return tile(`on ${esc(mapName(mp)||mapCode(mp))}`,`${r.secT.toFixed(1)}s`,`a kill: ${r.sec.toFixed(1)}s fighting + ${(r.secT-r.sec).toFixed(1)}s walking${r.sell>0.05?" and selling":""}`)+
+    if(r&&isFinite(r.secT))return tile(`on ${esc(mapName(mp)||mapCode(mp))}`,`${r.secT.toFixed(1)}s`,`a kill: ${r.sec.toFixed(1)}s fighting + ${(r.secT-r.sec).toFixed(1)}s walking${r.sell>0.05?" and selling":""}`,walkSrcTxt())+
+      dpsTile(mapDps(mp,walkSec(),r.el2),"while fighting, averaged over the map's monsters, misses included")+
       tile("EXP / min",fmtN(r.epm),`${fmtN(r.epk)} EXP a kill`)+tile("Zeny / hr",fmtN(r.net),"net: loot after HP and SP items")}
   const r=mobRow(m,walkSec());if(!r||!isFinite(r.tot))return `<div class="tile out wide"><div class="k">vs ${esc(m.name)}</div><div class="v mono">can't hurt it</div><div class="s">Check your attack and its element</div></div>`;
-  return tile(`vs ${esc(m.name)}`,`${r.tot.toFixed(1)}s`,`a kill: ${r.sec.toFixed(1)}s fighting + ${(r.tot-r.sec).toFixed(1)}s walking`)+
-    tile("EXP / min",m.expUnknown?"?":fmtN(r.epm),m.expUnknown?"no EXP data for it yet":`job ${fmtN(r.jpm)} / min`)+
+  // damage per second while fighting it, with the element the EXP/min picks (none for Spell Fist, which has no single damage per use)
+  const dps=withEl(r.el2,()=>dpsOf(m));
+  return tile(`vs ${esc(m.name)}`,`${r.tot.toFixed(1)}s`,`a kill: ${r.sec.toFixed(1)}s fighting + ${(r.tot-r.sec).toFixed(1)}s walking`,walkSrcTxt())+
+    dpsTile(dps,`vs its ${fmtN(m.hp)} HP, misses included`)+
+    tile("EXP / min",m.expUnknown?"?":fmtN(r.epm)+(m.expUnsure?"*":""),m.expUnknown?"no EXP data for it yet":`${m.expUnsure?"* EXP unconfirmed · ":""}job ${fmtN(r.jpm)} / min`)+
     tile("Zeny / hr",fmtN(r.zph),"loot after skill and SP items")}
 function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
-  // converters vs the monster you picked: the element-table rate of each one, and the one the EXP/min picks
-  // the converters in use, each with its icon and what players pay for it (made by Sages, so bought from players); not while you type in one
-  if(!$("convItems").contains(document.activeElement))$("convItems").innerHTML=C().converters?(convFixed()?[convFixed()]:CONV_ELS).map(el=>{const id=CONV_ID[el];
-    return `<label class="bar"><a href="#" data-info="item:${id}" title="${esc(itemName(id))}">${itemIcon(id)}</a><input class="w-md" type="number" min="0" step="100" data-convprice="${id}" value="${state.prices[id]>0?state.prices[id]:""}" placeholder="price" aria-label="${esc(itemName(id))}: what players pay"> z</label>`}).join("")
-    +`<span class="muted">from players, 20 min each (3 / hr)${convFixed()&&convPrice(convFixed())>0?`: ${fmtN(3*convPrice(convFixed()))} z/hr`:""}</span>`:"";
+  // weapon endows vs the monster you picked: the element-table rate of each one, and the one the EXP/min picks
+  // the items in use, each with its icon and what players pay for it (bought from players), and how many an hour; skills (Enchant Poison,
+  // the Sage's Endows) with their SP, and the Point an Endow uses up (from an NPC, so no price box). Not while you type in a price
+  // a job with the skill gets a Lv box in that element's row, kept in step with the skill tree; its "converter" uses the item instead
+  if(!$("convItems").contains(document.activeElement)){const els=C().converters?convFixed()?[convFixed()]:convEls():[];$("convItems").innerHTML=els.map(el=>{
+    const ids=convIds(el),hr=convUsesHr(el),lv=convIsSk(el)&&convSkLv(el),r=lv&&convSkRow(el,lv),min=convMin(el),s=convSk(el);
+    const box=s?`<label class="bar" title="${hasTree(C())?"the level in your skill tree":"until you set a skill tree"}">${esc(s.name.trim())} <select class="w-xl" data-convlv="${el}" aria-label="${esc(s.name.trim())} level">${
+      (CONV_ITEMS[el]?`<option value="item"${lv?"":" selected"}>converter</option>`:"")+Array.from({length:s.max},(_,i)=>i+1).map(v=>`<option value="${v}"${v===lv?" selected":""}>Lv ${v}</option>`).join("")}</select></label>`:"";
+    const sk=box+(lv?`<span class="muted">${r.sp} SP every ${r.sec%60?r.sec+" s":r.sec/60+" min"}</span>`:"");
+    return `<span class="bar"><span class="el ${el}">${el}</span>${sk}${ids.map(id=>convNpc(el)?`<span class="bar"><a href="#" data-info="item:${id}" title="${esc(itemName(id))}">${itemIcon(id)}</a><span class="muted">${fmtN(convItemPrice(el,id))} z from NPCs</span></span>`:`<label class="bar priceIn"><a href="#" data-info="item:${id}" title="${esc(itemName(id))}">${itemIcon(id)}</a><input class="w-md" type="number" min="0" step="100" data-convprice="${id}" value="${state.prices[id]>0?state.prices[id]:""}" placeholder="price" aria-label="${esc(itemName(id))}: what players pay"> z</label>`).join("")}${ids.length?`<span class="muted">${lv?"":`${fmtN(min)} min, `}${fmtN(hr)} / hr${convPrice(el)>0?`: ${fmtN(hr*convPrice(el))} z/hr`:""}</span>`:""}</span>`}).join("")
+    +(els.some(el=>!convNpc(el)&&convIds(el).length)?`<span class="muted">items from players</span>`:"")}
   {const m=convOn()&&calcMob();$("convInfo").innerHTML=m?`vs ${esc(m.name)} (${m.el||"Neutral"} ${m.elv||1}): ${convAll().map(el=>elRateHtml(el,elemMult(m,el))).join(" · ")} → ${convFixed()?`using ${convFixed()}`:`best ${esc(mobRow(m,walkSec()).el2)}`}`:""}
   if(typeof renderStatNote==="function")renderStatNote();
   const c=C(),a=c.a,p=JOBS[state.job].p[c.preset];
-  $("jobNote").textContent=`Settings are saved per job · ${Object.keys(state.chars).length} job${Object.keys(state.chars).length===1?"":"s"} set up`;
   $("atkSummary").textContent=a.type==="spellfist"?`· ${[sfOn()?`Spell Fist Lv ${G().sfLv}: ${Math.round(sfChance()*100)}% per attack, ${sfPct()}% MATK`:"",hsOnNow()?`Hindsight Lv ${hsLvN()}: ${Math.round(hsChance()*100)}% per attack, a Lv ${hsBoltLv()} bolt`:""].filter(Boolean).join(" · ")||"Spell Fist and Hindsight off"} with ${sfBolts().map(b=>({Fire:"Fire",Water:"Cold",Wind:"Lightning"})[b]).join(" / ")||"no"} bolts`:`· ${a.type==="magic"?"Magic":a.type==="auto"?"Basic attacks":"Physical"} ${a.pct}% × ${a.hits} ${atkEl()}${a.targets>1?` · ${a.targets} targets`:""}${p&&p.note?` · ${p.note}`:""}`;
   {const ac=AC(),s=acSpell(),basic=a.type==="auto"||a.type==="spellfist";$("acInfo").innerHTML=ac.on?(basic?`${s.pct}% × ${s.hits} ${s.el} MATK (Lv ${s.lv}), no SP`:'<span class="bad">only procs on basic attacks: pick a basic attack or Spell Fist</span>'):""}
   if(a.type==="spellfist")$("atkSummary").textContent+=` · each attack also lands its physical hit (ATK, weapon element)`;
@@ -71,21 +93,22 @@ function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   renderUseItems();
   {const p=recPick("sp");$("spItemUse").innerHTML=p?`<b>${esc(p.name)}</b> (${fmtSig(p.avg)} SP, ${fmtSig(p.price)} z${p.auto?", cheapest":""})`:REC().spItem==="none"?'<span class="muted">no SP item (None): you rest</span>':""}
   $("itemInfo").textContent=c.autoSp?(ips>0?`≈ ${(ips*60).toFixed(1)} items/min · ${fmtN(ips*3600*spItemPrice())} z/hr`:"not needed: regen covers it"):"";
-  const atk=a.type==="magic"||a.type==="spellfist"?`MATK ${fmtN(sumStat(c.matkTxt))}`:`ATK ${fmtN(sumStat(c.atkTxt))}`;
+  const atk=a.type==="magic"||a.type==="spellfist"?`MATK ${fmtN(matkOf())}`:`ATK ${fmtN(sumStat(c.atkTxt))}`;
+  syncCardRows();
   {const cd=CRD(),m=calcMob(),k0=SG_MOB;SG_MOB=m;try{const hf=hfHpPerSec(),hs=m?healsPerSec(m):0,sh=m?healShare(m):0,parts=[];
     {const k=hfCards(),lbl=`Hunter Fly${k>1?` ×${k}`:""}${cardsInGear(c,[HUNTER_FLY])>0?" (from your gear)":""}`;
       const hp=[];if(k)hp.push(hf>0?`${lbl} heals ~${fmtN(hf*60)} HP/min`:`${lbl}: only physical attacks trigger it`);if(hpRecPct())hp.push(`HP recovery +${hpRecPct()}% from gear`);
       $("hpCardInfo").innerHTML=hp.join(" · ");
       $("hpInfo").textContent=`${fmtN(hpRegen6())} per 6s${ihrPer10()?` + ${ihrPer10()} per 10s (Increase HP Recovery)`:""}${consHPPerSec()>0?` + ${fmtSig(consHPPerSec()*60)}/min from consumables`:""} = ${fmtN(hpRegenPerSec(null)*60)} HP/min${hf>0?`, + ${fmtN(hf*60)} from Hunter Fly`:""}`}
-    if(cd.vitata)parts.push((vitInGear(c)?"Vitata SP cost from your gear":`SP cost +${num(cd.spBonus)}%`)+(hs>0?` · vs ${esc(m.name)}: Heal ${(hs*60).toFixed(1)} casts/min${sh>=1?` <span class="bad">(can't keep up: more than all of your time)</span>`:` (${Math.round(sh*100)}% of your time not attacking)`}`:""));
-    if(cd.creamy)parts.push("Creamy: Where to farm (by zeny) teleports past monsters you skip");
-    if(noBreak())parts.push(cd.phen||cd.bbfly?`casts aren't interrupted${vctCards()?` · cast +${vctCards()}%`:" · cast time from your gear"}`:"Phen / Bloody Butterfly in your gear: casts aren't interrupted");
-    if(cd.daSF)parts.push(a.type!=="auto"&&a.type!=="spellfist"?"Side Winder: only basic attacks":daSkill().ch>=num(cd.daPct)/100?"Side Winder: Double Attack's chance is higher, nothing added":`Side Winder: +${num(cd.daPct)}% hits`);
+    if(cdOn("vitata"))parts.push((vitInGear(c)?"Vitata SP cost from your gear":`SP cost +${num(cd.spBonus)}%`)+(hs>0?` · vs ${esc(m.name)}: Heal ${(hs*60).toFixed(1)} casts/min${sh>=1?` <span class="bad">(can't keep up: more than all of your time)</span>`:` (${Math.round(sh*100)}% of your time not attacking)`}`:""));
+    if(cdOn("creamy"))parts.push("Creamy: Where to farm (by zeny) teleports past monsters you skip");
+    if(cdOn("phen")||cdOn("bbfly"))parts.push(c.mode==="build"?"Phen / Bloody Butterfly in your gear: casts aren't interrupted":`casts aren't interrupted · cast +${vctCards()}%`);
+    if(cdOn("daSF"))parts.push(a.type!=="auto"&&a.type!=="spellfist"?"Side Winder: only basic attacks":daSkill().ch>=num(cd.daPct)/100?"Side Winder: Double Attack's chance is higher, nothing added":`Side Winder: +${num(cd.daPct)}% hits`);
     $("cardInfo").innerHTML=parts.join(" · ");
     const sp=[],dr=dracSPPerSec(),dp=dpSPPerSec(),ks=killSPPerSec();
     {const k=dracCards();if(k)sp.push(`Dracula${k>1?` ×${k}`:""}${cardsInGear(c,[DRACULA])>0?" (from your gear)":""} ~${fmtN(dr*60)} SP/min`)}
-    if(cd.dpOn&&state.job==="Sage")sp.push(dp>0?`Dark Priest ~${fmtN(dp*60)} SP/min`:"Dark Priest: only physical attacks");
-    if(cd.killSp.length)sp.push(!m?"pick a monster to see the SP per kill":ks>0?`vs ${esc(m.name)}: +5 SP a kill ≈ ${fmtN(ks*60)} SP/min`:`no +5 SP per kill vs ${esc(m.name)}${isSF()?" (not with Spell Fist)":isRangedHit()?" (melee only)":cd.killSp.includes(m.race)?"":` (${esc(m.race||"?")})`}`);
+    if(cdOn("dpOn")&&state.job==="Sage")sp.push(dp>0?`Dark Priest ~${fmtN(dp*60)} SP/min`:"Dark Priest: only physical attacks");
+    const kl=killSpOn();if(kl.length)sp.push(!m?"pick a monster to see the SP per kill":ks>0?`vs ${esc(m.name)}: +5 SP a kill ≈ ${fmtN(ks*60)} SP/min`:`no +5 SP per kill vs ${esc(m.name)}${isSF()?" (not with Spell Fist)":isRangedHit()?" (melee only)":kl.includes(m.race)?"":` (${esc(m.race||"?")})`}`);
     if(spRecPct())sp.push(`SP recovery +${spRecPct()}% from gear`);
     $("spCardInfo").innerHTML=sp.join(" · ")}finally{SG_MOB=k0}}
   if(ecOn()){const m=calcMob(),k0=SG_MOB;SG_MOB=m;try{const d=m?defense(m):null;
@@ -96,9 +119,9 @@ function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
       ` · SP items ${sgItemsOn()?`${(sgItemsPerSec()*60).toFixed(1)}/min ≈ ${fmtN(sgItemsPerSec()*3600*spItemPrice())} z/hr`:"off (Hindsight off)"}`}
   if(state.job==="Sage"){const t=a.type;$("fsInfo").textContent=!G().fsOn?"":hasTree(c)&&!skLv(c,"foresight")?"not learned":t!=="magic"&&t!=="phys"||!(castSec(0)<castSec())?"only for attacks with a variable cast time"
     :fsUsed()?`saves ${(plainUseSec()-fsUseSec()).toFixed(2)} s per cast (${plainUseSec().toFixed(2)} → ${fsUseSec().toFixed(2)} s, its own cast included)`:`not worth it: ${fsUseSec().toFixed(2)} s per cast with it vs ${plainUseSec().toFixed(2)} s without`}
-  $("charTiles").innerHTML=charOutTiles()+`<div class="tile det"><div class="k">Per use</div><div class="v mono">${us.toFixed(2)}s</div><div class="s">${a.type==="auto"||a.type==="spellfist"?`ASPD ${aspdEff()}${c.potOn?" (potion)":""} · ${atkPerSec().toFixed(2)} hits/s${critChance()>0?` · ${Math.round(critChance()*100)}% crits`:""}`:`cast ${castSec().toFixed(2)}s${castSec()<num(a.cast)?` (base ${num(a.cast)}s)`:""}${fsUsed()?`, ${castSec(0.5).toFixed(2)}s with Foresight (+ ${(fsCastSec()/FS_USES).toFixed(2)}s a cast for Foresight's own)`:""}${castEff()>castSec()+0.005?` <span class="warnc">≈ ${castEff().toFixed(2)}s with hits interrupting it</span>`:""} + delay ${delaySec().toFixed(2)}s${castEff()+delaySec()<1/atkPerSec()?" · held by your attack interval (ASPD), not cast + delay":""}${critChance()>0?` · ${Math.round(critChance()*100)}% crits`:""}`} · ${atk}</div></div>
-   <div class="tile det ${need>reg&&!c.autoSp?"":"now"}"><div class="k">SP use vs regen</div><div class="v mono">${fmtN(need)} / ${fmtN(reg)}</div><div class="s">per minute · regen ${spRegen8()} per 8s${isrPer10()?` + ${isrPer10()} per 10s (Increase SP Recovery)`:""}${consSPPerSec()>0?` + ${fmtSig(consSPPerSec()*60)}/min from consumables`:""}${a.type==="spellfist"?(ips>0?` · ${(ips*60).toFixed(1)} SP items/min`:hsChance()>0&&hsSustain()<1?` · <span class="bad">Hindsight fires ${Math.round(hsSustain()*100)}% as often</span>`:""):need>reg?(c.autoSp?` · items cover ${fmtN(need-reg)}/min`:` · <span class="bad">you rest ${Math.round((1-1/rf)*100)}% of the time</span>`):""}</div></div>
-   <div class="tile det"><div class="k">Walking per kill</div><div class="v mono">${walkSec().toFixed(1)}s</div><div class="s">${esc(walkSrcTxt())}</div></div>`;
+  $("charTiles").innerHTML=charOutTiles()+`<div class="tile det"><div class="k">${a.type==="auto"||a.type==="spellfist"?"Time per attack":"Time per cast"}</div><div class="v mono">${us.toFixed(2)}s</div><div class="s">${a.type==="auto"||a.type==="spellfist"?`${atkPerSec().toFixed(2)} hits/s${critChance()>0?` · ${Math.round(critChance()*100)}% crits`:""}`:`cast ${castSec().toFixed(2)}s${castSec()<num(a.cast)?` (base ${num(a.cast)}s)`:""}${fsUsed()?`, ${castSec(0.5).toFixed(2)}s with Foresight (+ ${(fsCastSec()/FS_USES).toFixed(2)}s a cast for Foresight's own)`:""}${castEff()>castSec()+0.005?` <span class="warnc">≈ ${castEff().toFixed(2)}s with hits interrupting it</span>`:""} + delay ${delaySec().toFixed(2)}s${castEff()+delaySec()<1/atkPerSec()?" · held by your attack interval (ASPD), not cast + delay":""}${critChance()>0?` · ${Math.round(critChance()*100)}% crits`:""}`} · ${atk}</div></div>
+   <div class="tile det aspdT"><div class="k">ASPD</div><div class="v mono">${aspdEff()}</div><div class="s">${(w=>w.length?`with ${w.map(esc).join(", ")}`:"no ASPD potion or buffs")(aspdFrom(c))}${a.type==="auto"||a.type==="spellfist"?"":" · casts can't go faster than it"}</div></div>
+   <div class="tile det ${need>reg&&!c.autoSp?"":"now"}"><div class="k">SP use vs regen</div><div class="v mono">${fmtN(need)} / ${fmtN(reg)}</div><div class="s">per minute · regen ${spRegen8()} per 8s${isrPer10()?` + ${isrPer10()} per 10s (Increase SP Recovery)`:""}${consSPPerSec()>0?` + ${fmtSig(consSPPerSec()*60)}/min from consumables`:""}${a.type==="spellfist"?(ips>0?` · ${(ips*60).toFixed(1)} SP items/min`:hsChance()>0&&hsSustain()<1?` · <span class="bad">Hindsight fires ${Math.round(hsSustain()*100)}% as often</span>`:""):need>reg?(c.autoSp?` · items cover ${fmtN(need-reg)}/min`:` · <span class="bad">you rest ${Math.round((1-1/rf)*100)}% of the time</span>`):""}</div></div>`;
 }
 
 // items skills use up: casts per kill for this job's support skills and a price box for every item in play (c.supCasts, c.itemPrices,
@@ -108,9 +131,9 @@ function renderUseItems(){const c=C(),a=c.a,ui=useItems(),sup=supShown(),fb=Obje
   const ids=[...new Set([...ui.map(x=>x.id),...sup.flatMap(s=>s.items.map(([n])=>CONS_ID[n])),...fb.map(k=>CONS_ID[FIELD_ITEM[k]])])].filter(Boolean);
   const box=$("useItems"),key=ids.join()+"|"+sup.map(s=>s.key).join(),lab='class="bar"';
   if(box.dataset.key!==key){box.dataset.key=key;
-    const row=(h,x)=>`<div class="bar full"><span>${h}</span>${x}</div>`;
+    const row=(h,x,cls="")=>`<div class="bar full${cls}"><span>${h}</span>${x}</div>`;
     box.innerHTML=(sup.length?row("Support skills, casts per kill:",sup.map(s=>`<label ${lab} title="How many times you cast it per kill (e.g. 0.5 = every other kill); each cast uses ${esc(s.items.map(([n,q])=>`${n} ×${q}`).join(" + "))}. Its cast time isn't counted">${esc(s.name)} <input type="number" min="0" step="0.5" data-supk="${s.key}" class="w-xs" placeholder="0"></label>`).join("")):"")
-      +(ids.length?row("Skill item prices:",ids.map(id=>`<label ${lab} title="Blank: the NPC price, ${fmtN(consNpc(id))} z (rAthena; check it in game). Type what you pay, e.g. a market price">${esc(consName(id))} <input type="number" min="0" step="1" data-iprice="${id}" class="w-md" placeholder="${consNpc(id)}"> z</label>`).join("")):"")}
+      +(ids.length?row("Skill item prices:",ids.map(id=>`<label ${lab} title="Blank: the NPC price, ${fmtN(consNpc(id))} z (rAthena; check it in game). Type what you pay, e.g. a market price">${esc(consName(id))} <input type="number" min="0" step="1" data-iprice="${id}" class="w-md" placeholder="${consNpc(id)}"> z</label>`).join("")," priceIn"):"")}
   box.querySelectorAll("[data-supk]").forEach(i=>{if(document.activeElement!==i)i.value=supCasts(i.dataset.supk)||""});
   box.querySelectorAll("[data-iprice]").forEach(i=>{if(document.activeElement!==i){const v=(c.itemPrices||{})[i.dataset.iprice];i.value=v!=null&&v!==""?v:""}});
   box.hidden=!ids.length&&!sup.length;
@@ -129,8 +152,8 @@ const fmtQty=n=>n==null||!isFinite(n)?"–":n<10?n.toFixed(1):fmtN(n);
 const REC_SRC={disc:"Discount",npc:"NPC",player:"players"};
 // the item value a one-box amount (an item that heals a fixed amount) shows as its placeholder
 const REC_BASE={amt:"min",spAmt:"spMin"};
-// the map uses per hour are worked out on: the Map planner's, else the picked monster's best open map, else the session's. HP lost / min and SP short per hour there
-function recNeed(){let mp=mapKey(state.map);if(!MAPMOBS[mp])mp=mobMap(calcMob())||currentMap();if(!MAPMOBS[mp])return null;
+// the map uses per hour are worked out on: the session's (Where to farm), else the picked monster's best open map. HP lost / min and SP short per hour there
+function recNeed(){let mp=currentMap();if(!MAPMOBS[mp])mp=mobMap(calcMob());if(!MAPMOBS[mp])return null;
   const w=walkSec(),r=mapStats(mp,w);return {mp,hpm:r?r.hpi:null,loss:r?r.hpm:null,sp:r?mapSpShort(mp,w,r.el2):0}}
 function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp:recPick("sp")},ch={hp:recCheapest("hp"),sp:recCheapest("sp")};
   const opts=kind=>`<option value="auto">Auto (cheapest${ch[kind]?": "+esc(ch[kind].name):""})</option><option value="none">None</option>`+recItems(kind).filter(x=>recShown(x,R[kind==="hp"?"hpItem":"spItem"])).map(x=>`<option value="${x.id}">${esc(x.name)}${x.per==null?" (no price)":""}</option>`).join("")+'<option value="custom">Custom (type it)</option>';
@@ -157,13 +180,21 @@ function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp
 function renderSessions(){const none=!state.sessions.length;
   $("sessionSel").innerHTML=none?'<option value="">No session yet</option>':state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===state.current?"selected":""}>${esc(s.name)}</option>`).join("");
   // nothing to rename or delete until logging EXP, Farm here or New session starts one
-  ["sessionSel","editSession","renameSession","delSession"].forEach(id=>$(id).disabled=none)}
+  ["sessionSel","editSession","renameSession","delSession"].forEach(id=>$(id).disabled=none);
+  // the Map card's own pick (Monsters & maps): the session Farm here and Farming it now go to, or a new one
+  $("mapSessSel").innerHTML=(none?'<option value="">No session yet</option>':state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===cur().id?"selected":""}>${esc(s.name)}</option>`).join(""))+'<option value="+new">+ New session</option>'}
 // ---- get started: its steps shown on Home until they're done (or hidden), each ticked off as you do it ----
 const KEY_START="rozero-farm-planner-start-hidden";
-// the character is set up: built from gear, or all six stats typed. Until then a monster's details leave out your numbers against it
-const charSet=(c=C())=>c.mode==="build"||STATS.every(k=>statVal(c,k)!=null);
+// the character is set up: built from gear once a base stat is raised or a piece of gear is on (a new character starts in build mode
+// with neither), or all six stats typed. Until then a monster's details leave out your numbers against it
+const charSet=(c=C())=>c.mode==="build"?!!c.build&&(Object.values(c.build.base||{}).some(v=>num(v)>1)||Object.values(c.build.gear||{}).some(g=>g&&g.id))
+  :STATS.every(k=>statVal(c,k)!=null);
 // no character yet: a new visitor who hasn't picked a job (state.noJob) or set one up; the calculators use a Novice meanwhile
 const noChar=()=>!!state.noJob&&!charSet();
+// Game data (Monsters & maps, the monster popup) can leave your character's numbers out, to look a monster or map up as the game has
+// it: the My numbers switch (state.hideMine, per account)
+const showMine=()=>charSet()&&state.hideMine!==true;
+const mineSwitch=()=>charSet()?`<label class="bar mineSw" title="Your kill time, damage, EXP and zeny against each monster"><input type="checkbox" data-mine${state.hideMine===true?"":" checked"}> My numbers</label>`:"";
 const NO_CHAR_TXT="Set up your character on the Character tab to see your kill time, EXP / min and zeny a kill";
 function renderStart(){const box=$("startCard"),c=C(),s=cur(),n=s.entries.length;
   // any session counts, so a new, empty session doesn't bring the card back; once both are done it stays away
@@ -180,7 +211,7 @@ function renderSpark(s,st){const box=$("ctxRate"),es=[...s.entries].sort((a,b)=>
   const line=r.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
   $("spark").innerHTML=`<polyline points="${line}" fill="none" stroke="url(#sparkG)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><defs><linearGradient id="sparkG"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-2)"/></linearGradient></defs>`+(r.length?`<circle cx="${X(r.length-1)}" cy="${Y(r[r.length-1])}" r="2.2" style="fill:var(--accent-2)"/>`:"");
   $("ctxRateV").textContent=`${pct(st.avgPct)}/hr`}
-function renderTracker(){renderStart();if(typeof renderNow==="function")renderNow();
+function renderTracker(){renderStart();
   // at the max base level base EXP stops counting, so the quick Log EXP box (the + button, L) goes away
   document.documentElement.classList.toggle("maxLv",atMaxLv());$("dieItem").checked=!!state.dieItem;$("dieBtn").textContent=`Died −${diePct()}%`;
   const s=cur(),st=stats(s);renderSpark(s,st);
@@ -189,11 +220,22 @@ function renderTracker(){renderStart();if(typeof renderNow==="function")renderNo
   const pz=openPause(s);$("pauseBtn").textContent=pz?"Resume":"Pause";$("pauseBtn").classList.toggle("primary",!!pz);$("pauseNote").hidden=!pz;
   if(pz)$("pauseNote").textContent=`Paused since ${fmtT(pz.from)}; time away isn't counted. Resume or log an entry when back.`;
   const ms=sessMobs(s),maps=sessMaps(s),auto=sessMapAuto(s),smp=sessMap(s);
-  {const sel=$("sessMapSel"),of=ms.length>1?x=>` · ${x[1]} of ${ms.length} monsters`:()=>"";sel.disabled=!maps.length;
-    sel.innerHTML=!maps.length?`<option value="">${ms.length?"No open map for these monsters":"Pick a monster first"}</option>`
-      :`<option value="">Auto: ${esc(mapLabel(auto))}</option>`+maps.map(x=>`<option value="${esc(x[0])}">${esc(mapLabel(x[0]))}${of(x)} · ≈${spN(x[2])} spawns</option>`).join("")
-      +(s.map&&smp===s.map&&!maps.some(x=>x[0]===s.map)?`<option value="${esc(s.map)}">${esc(mapLabel(s.map))} · not open</option>`:"");
+  // the session's monsters' maps, then every other open map (picking one of those farms it, with its monsters: farmMap)
+  {const sel=$("sessMapSel"),of=ms.length>1?x=>` · ${x[1]} of ${ms.length} monsters`:()=>"";
+    const other=Object.keys(MAPMOBS).filter(k=>!isClosed(k)&&!maps.some(x=>x[0]===k)&&!(k===s.map&&smp===k)).sort((a,b)=>mapLabel(a).localeCompare(mapLabel(b)));
+    sel.innerHTML=(!maps.length?`<option value="">${ms.length?"No open map for these monsters":"Pick a map"}</option>`
+      :`<option value="">Auto: ${esc(mapLabel(auto))}</option>`+maps.map(x=>`<option value="${esc(x[0])}">${esc(mapLabel(x[0]))}${of(x)} · ≈${spN(x[2])} spawns</option>`).join(""))
+      +(s.map&&smp===s.map&&!maps.some(x=>x[0]===s.map)?`<option value="${esc(s.map)}">${esc(mapLabel(s.map))}${isClosed(s.map)?" · not open":""}</option>`:"")
+      +(other.length?`<optgroup label="Other open maps">${other.map(k=>`<option value="${esc(k)}">${esc(mapLabel(k))}</option>`).join("")}</optgroup>`:"");
     sel.value=s.map&&smp===s.map?s.map:""}
+  // the monsters on the session's map (and any the session hunts that don't spawn there), each with + Session / − Session
+  {const on=MAPMOBS[smp]?[...MAPMOBS[smp]].sort((a,b)=>(b.n??-1)-(a.n??-1)):[],ids=new Set(s.mobIds);
+    const rows=[...on,...ms.filter(m=>!on.some(x=>x.m.id===m.id)).map(m=>({m,n:null,off:true}))];
+    $("sessMobHead").innerHTML=!smp?`Pick a map in Farming on or on the world map to see its monsters.`
+      :`<b>Monsters on ${esc(mapName(smp)||mapCode(smp))}</b> · hunting ${ms.length} of ${on.length}`;
+    $("sessMobTable").closest(".scroll").hidden=!rows.length;
+    $("sessMobTable").querySelector("tbody").innerHTML=rows.map(({m,n,off})=>{const inS=ids.has(m.id);
+      return `<tr class="${inS?"sel":""}" style="${isSkipped(m)?"opacity:.55":""}"><td class="name">${mobIcon(m.id,1,"il")}<a href="#" data-info="mob:${m.id}">${esc(m.name)}</a>${BOSS_PILL(m)}${off?' <span class="note">not on this map</span>':""}</td><td>${off?"–":`≈${spN(n)}`}</td><td>${m.lv}</td><td>${fmtExp(m)}</td><td><button type="button" class="small${inS?"":" primary"}" data-sessmob="${m.id}">${inS?"− Session":"+ Session"}</button></td></tr>`}).join("")}
   // the folded part of the Log EXP card says what it's set to, so you know without opening it
   {const n=partyN(s),bits=[];
     if(n>1)bits.push(`party of ${n}`);if($("fTime").dataset.auto!=="1"||$("fDate").dataset.auto!=="1")bits.push("time set by hand");if(state.dieItem)bits.push("death item");
@@ -211,7 +253,7 @@ function renderTracker(){renderStart();if(typeof renderNow==="function")renderNo
     $("tNextK").textContent=`To Lv ${st.last.lv+1}`;$("tNext").textContent=fmtDur(st.nextH);$("tNextS").textContent=`${(100-st.last.pct).toFixed(1)}% left`}
   const p=sessionPace(s);
   if(p){$("tPace").textContent=`${fmtN(p.kph)}/hr`;$("tPaceS").textContent=`${p.obs.toFixed(1)}s per kill`+(isFinite(p.fight)?(p.obs<p.fight?` · faster than the model's ${p.fight.toFixed(1)}s fight, so check your ATK/MATK`:` · ~${p.fight.toFixed(1)}s fighting + ~${p.walk.toFixed(1)}s walking`):"");
-    $("tPaceS").title=s.snap?`Fight time with the stats ${s.snap.est?"you had when this session was first worked out":`you had when you last logged (${fmtD(s.snap.at)} ${fmtT(s.snap.at)})`}${s.snapHist&&s.snapHist.length?", and for the entries before a change, the stats they were logged with":""}; changing them later doesn't move this session's walking`:""}
+    $("tPaceS").title=s.snap?`Fight time with the stats ${s.snap.est?"you had when this session was first worked out":`you had when you last logged (${fmtD(s.snap.at)} ${fmtT(s.snap.at)})`}${s.snapHist&&s.snapHist.length?", and for the entries before a change, the stats they were logged with":""}, and EXP bonus ${snapBonus(s)}% (the one you had then); changing them later doesn't move this session's walking`:""}
   else{$("tPace").textContent="–";$("tPaceS").textContent="Needs a monster and 2+ entries"}
   if(p){const zk=p.zk,gross=p.kph*zk,cost=itemsPerSec()*3600*spItemPrice()+hourCostHr()+p.kph*p.mix.avg(skillZeny);$("tZeny").textContent=fmtN(gross-cost);$("tZenyS").textContent=`${fmtN(gross)} z loot`+(cost>0?` − ${fmtN(cost)} z SP items, potions & skill items`:"")+` · ${fmtN(zk)} z/kill`}
   else{$("tZeny").textContent="–";$("tZenyS").textContent="Needs a monster and 2+ entries"}
@@ -264,7 +306,7 @@ function tickTrip(){const now=Date.now(),s=cur();
     if(!x.trip.rang){x.trip.rang=true;save();TRIP_RING={id:x.id,n:1,at:now};tripAlarm(x)}
     else if(TRIP_RING.id===x.id&&TRIP_RING.n<5&&now-TRIP_RING.at>=6e4){TRIP_RING.n++;TRIP_RING.at=now;if(state.tripSound!==false)tripBeep()}});
   const ph=tripPhase(s,now),el=$("tripClock");if(ph!==TRIP_PHASE)renderTripBtns(s);
-  if(ph==="none"){el.textContent="–";el.className="v mono";$("tripK").textContent="Next sell";$("tripS").textContent=TRIP_OK?"Press Start when you leave town":"Needs a trip length: see One trip";document.title=BASE_TITLE;return}
+  if(ph==="none"){el.textContent="–";el.className="v mono";$("tripK").textContent="Next sell";$("tripS").textContent=TRIP_OK?"Press Start when you leave town":"";document.title=BASE_TITLE;return}
   const due=tripDue(s),left=due-now,early=tripEarly();
   el.textContent=ph==="paused"?"Paused":left>0?fmtClock(left):"Sell now";el.className="v mono"+(ph==="due"?left>0?" warnc":" bad":"");
   $("tripK").textContent=ph==="due"?"Time to sell":"Next sell";
@@ -332,7 +374,7 @@ function renderLog(s){
     if(ed&&ed.t===e.t)return {t:e.t,k:0,h:`<tr class="editRow"><td><input type="datetime-local" data-f="t" value="${dtLocal(e.t)}" aria-label="Time"></td>
       <td class="nowrap">B ${inN("lv",e.lv,'min="1" max="99" step="1" aria-label="Base level"')} J ${inN("jlv",jl.get(e),'min="1" max="70" step="1" placeholder="?" aria-label="Job level"')}</td>
       <td class="nowrap">${inN("pct",e.pct,'min="0" max="100" step="0.01" aria-label="EXP %"')} <label class="note" title="Ticked: this is your EXP after a death, so the drop to it isn't counted as EXP lost per hour"><input type="checkbox" data-f="died"${e.died?" checked":""}> 💀 died</label></td><td>${inN("jpct",e.jpct,'min="0" max="100" step="0.01" placeholder="–" aria-label="Job EXP %"')}</td>${saveBtns}</tr>`};
-    let rate="";if(e.died)rate=`<span class="pill down" title="A death: the EXP it cost isn't counted against your EXP/hr">💀 died −${esc(e.died)}%</span>`;else if(i>0){const q=es[i-1],h=activeH(s,q.t,e.t);rate=h>=1/60?pct((cumulative(e,base)-cumulative(q,base))/h/(lvExp(e.lv)||100)*100):`<span title="under a minute of unpaused time since the last entry">–</span>`}
+    let rate="";if(e.died)rate=`<span class="pill down" title="A death: the EXP it cost isn't counted against your EXP/hr">💀 died −${esc(e.died)}%</span>`;else if(i>0){const q=es[i-1],h=activeH(s,q.t,e.t);rate=h>=1/60?pct((cumulative(e,base)-cumulative(q,base))/h/(lvExp(e.lv,e.t)||100)*100):`<span title="under a minute of unpaused time since the last entry">–</span>`}
     return {t:e.t,k:0,h:`<tr data-t="${esc(e.t)}"><td>${e.died?'<span title="died">💀</span> ':""}${when(e.t)}</td><td>B${esc(e.lv)}${jl.get(e)?`/J${esc(jl.get(e))}`:""}</td><td>${e.pct.toFixed(1)}%</td><td>${e.jpct!=null?e.jpct.toFixed(1)+"%":"–"}</td><td>${rate}</td>${btns(`data-edit="${esc(e.t)}"`,`data-del="${esc(e.t)}"`,"entry")}</tr>`}});
   ps.forEach((p,i)=>rows.push({t:p.from,k:1,h:ed&&ed.p===i?`<tr class="pauseRow editRow"><td colspan="4">Paused from <input type="datetime-local" data-f="from" value="${dtLocal(p.from)}" aria-label="Paused from">
       to <input type="datetime-local" data-f="to" value="${p.to!=null?dtLocal(p.to):""}" aria-label="Paused until"> <span class="note">empty: still paused</span></td>${saveBtns}</tr>`
@@ -342,18 +384,18 @@ function renderLog(s){
   $("setupNote").textContent=s.job&&s.job!==state.job?`This session was logged as ${s.job}. Switch Job to ${s.job} to see its pace and walking time.`:"";
 }
 function renderCompare(){
-  const all=state.sessions.map(s=>{const st=stats(s);if(!st)return null;const ms=sessMobs(s),mix=sessMix(s);const kph=mix&&st.avgRaw>0&&mix.avg(m=>m.exp)>0?st.avgRaw/mix.avg(m=>killExp(m,s)):null;return {s,st,ms,kph}}).filter(Boolean);
+  const all=state.sessions.map(s=>{const st=stats(s);if(!st)return null;const ms=sessMobs(s),mix=sessMix(s);const kph=mix&&st.avgRaw>0&&mix.avg(m=>m.exp)>0?st.avgRaw/withBonus(s,()=>mix.avg(m=>killExp(m,s))):null;return {s,st,ms,kph}}).filter(Boolean);
   const rows=tableRows("cmpTable",all).map(({s,st,ms,kph})=>
     `<tr data-sid="${esc(s.id)}" class="${s.id===state.current?"sel":""}"><td class="name">${esc(s.name)}</td><td class="name">${esc(s.job||"–")}</td><td class="name">${ms.length?ms.map(m=>esc(m.name)).join(", "):"–"}</td><td>${fmtD(st.es[0].t)} ${fmtT(st.es[0].t)}</td><td>${st.spanMin} min</td><td title="% of the EXP base Lv ${esc(st.last.lv)} needs, gained per hour"><b>${pct(st.avgPct)}</b> <span class="muted">at B${esc(st.last.lv)}</span></td><td>${fmtN(st.avgRaw/60)}</td><td>${kph?fmtN(kph):"–"}</td><td>${kph?(3600/kph).toFixed(1)+"s":"–"}</td><td>${st.deaths?`<span title="${st.deaths} death${st.deaths>1?"s":""} logged">💀 ${st.deaths}</span>`:"–"}</td></tr>`);
   $("cmpTable").querySelector("tbody").innerHTML=rows.join("")||`<tr><td colspan="10" class="name muted">${all.length?"No sessions match the filters.":"Sessions with 2+ entries show up here."}</td></tr>`;
 }
 function renderGoal(s,st){
-  const tiles=$("goalTiles"),goal=Math.min(MAX_BASE_LV,num(state.goalLv)||MAX_BASE_LV);$("goalLv").max=MAX_BASE_LV;if(document.activeElement!==$("goalLv"))$("goalLv").value=goal;
+  const tiles=$("goalTiles"),goal=Math.min(MAX_BASE_LV,num(state.goalLv)||GOAL_TOP_LV);$("goalLv").max=MAX_BASE_LV;if(document.activeElement!==$("goalLv"))$("goalLv").value=goal;
   if(!st||st.avgRaw<=0){tiles.innerHTML='<div class="note">Log 2+ entries with EXP going up to see goal estimates.</div>';$("goalNote").textContent="";return}
   const curLv=st.last.lv;
   if(goal<=curLv){tiles.innerHTML=`<div class="note">You're already Lv ${curLv}. Pick a higher level.</div>`;$("goalNote").textContent="";return}
   let need=lvExp(curLv)?lvExp(curLv)*(1-st.last.pct/100):null;for(let l=curLv+1;l<goal&&need!=null;l++)need=lvExp(l)?need+lvExp(l):null;
-  if(need==null){tiles.innerHTML=`<div class="note">The EXP table doesn't cover every level up to Lv ${goal}, so pick a lower goal.</div>`;$("goalNote").textContent="";return}
+  if(need==null){tiles.innerHTML=`<div class="note">The EXP each level needs is only known up to Lv ${GOAL_TOP_LV-1} so far, so pick a goal up to Lv ${GOAL_TOP_LV}.</div>`;$("goalNote").textContent="";return}
   const hrs=need/st.avgRaw;
   $("goalNote").textContent=`at your ${pct(st.avgPct)}/hr average`;
   tiles.innerHTML=`<div class="tile"><div class="k">EXP still needed</div><div class="v mono">${fmtN(need)}</div><div class="s">from Lv ${curLv} ${st.last.pct.toFixed(1)}% to Lv ${goal}</div></div>
@@ -468,7 +510,7 @@ const mobFOk=(m,f)=>(!f.el||m.el===f.el)&&(!f.race||m.race===f.race)&&(!f.size||
 const mobOpt=m=>`<option value="${esc(m.name)}">Lv ${m.lv} · ${fmtExp(m)} EXP${m.mvp?" · MVP":m.mini?" · mini boss":m.boss?" · boss":""}${MOB_VARIANT[m.id]?" · "+MOB_VARIANT[m.id]:""}</option>`;
 const isMagicAtk=()=>C().a.type==="magic"||C().a.type==="spellfist";
 function renderMobs(){
-  const w=walkSec(),me=charSet();
+  const w=walkSec(),me=showMine();$("mobMine").innerHTML=mineSwitch();
   const shown=m=>mobFOk(m,state.mobF)&&!(state.hideClosed&&!openMaps(m).length);
   const row=m=>{const om=openMaps(m);return {...m,om,topN:om.length?om[0][1]:0,ratio:m.hp>0?m.exp/m.hp:0,...mobRow(m,w)}};
   const F=state.filters,fOk=m=>Object.entries(F).every(([k,v])=>!v||matchF(v,colNum(m,k),colText(m,k)));
@@ -495,15 +537,15 @@ function weightTile(m){const t=tripInfo(m,walkSec());if(!t)return "";const c=C()
   const pctNow=maxWt(c)?Math.round(num(c.curW)/maxWt(c)*100):0;
   const v=!(t.wk>0)?"–":isFinite(t.kills)?`${fmtN(Math.floor(t.kills))} kills`:'<span class="bad">sell first</span>';
   return `<div class="tile"><div class="k">Weight · sell at ${t.fell?70:fmtP(at)}%</div><div class="v mono">${v}</div><div class="s">${t.wk>0?`${t.wk.toFixed(1)} weight per kill`:"its drops weigh nothing"}${isFinite(t.kills)&&t.wk>0?` · ${fmtDur(t.min/60)} a trip + ${fmtN(num(c.townMin,3))} min to town`:""} · start at ${pctNow}%${t.fell?' · <span class="bad">no regen past 70% and you need SP, so you sell at 70%</span>':""}</div></div>`}
-// basic attacks with Duple Light: the basic hit, the magic orb (half the time) and the physical orb (its own hit roll), one number each
-function dlTxt(m,el2){const d=withEl(el2,()=>dlOrbs(m));if(!d)return null;
-  const basic=withEl(el2,()=>dmgPerHit(m))+(dualHit()?withEl(el2,()=>leftDmg(m)):0);
-  return `Basic ${fmtN(basic)} · Duple Light magic ${fmtN(d.mag)} (${Math.round(DL_MAGIC*100)}%) · physical ${fmtN(d.phys)} (${Math.round(d.hc*100)}% hit)`}
+// basic attacks with Duple Light: the basic hit, the magic orb (half the time) and the physical orb (its own hit roll), one number each,
+// then the average hit (hitRange)
+function dlTxt(m,el2){if(C().a.type!=="auto"||isSF())return null;const d=withEl(el2,()=>dlParts(m)),r=d&&withEl(el2,()=>hitRange(m));if(!r)return null;
+  return `Basic ${fmtN(r.lo)} · Duple Light magic ${fmtN(d.mag)} (${Math.round(DL_MAGIC*100)}%) · physical ${fmtN(d.phys)} (${Math.round(d.hc*100)}% hit) · ${fmtN(r.avg)} per hit on average`}
 // a monster's numbers for your character, for its details popup (js/info.js): EXP / min, per kill, defence, farming without items, weight
 function mobYouTiles(m){const r=mobRow(m,walkSec()),L=lvExp(num(C().baseLv))||null;
-  return `<div class="tile now"><div class="k">EXP / min</div><div class="v mono">${m.expUnknown?"?":r.epm?fmtN(r.epm):"–"}</div><div class="s">${m.expUnknown?"EXP unknown (no data yet) · ":""}${r.el2&&convOn()?`with ${r.el2} converter · `:""}${isFinite(r.sec)?r.sec.toFixed(1)+"s fight + "+walkSec().toFixed(1)+"s walk"+sellTxt(r.tot-r.sec-walkSec()," + "," selling"):"can't hurt it"}${L&&r.epm?` · ~${pct(r.epm*60/L*100)}/hr at Lv ${C().baseLv}`:""}</div></div>
-   <div class="tile"><div class="k">Per kill</div><div class="v mono">${isFinite(r.uses)?r.uses.toFixed(1):"–"} uses</div><div class="s">${dlTxt(m,r.el2)??`${fmtN(withEl(r.el2,()=>dmgPerHit(m)))}${dualHit()?` + ${fmtN(withEl(r.el2,()=>leftDmg(m)))} left hand`:""} per hit`} · ${Math.round(r.hitc)}% land · ${fmtN(num(C().a.sp)*spCostMul()*r.uses/targets())} SP</div></div>
-   <div class="tile" title="${esc(hpTip(r))}"><div class="k">Defence</div><div class="v mono">${r.hpm==null?"–":fmtN(r.hpm)}</div><div class="s">HP lost/min${r.hpm>0&&vitHeals()?" (your Heals cover it)":""}${r.pz>0.005?` · poisoned ${Math.round(r.pz*100)}%`:""}${crowdN(m)>1?` · rampage of ${fmtP(crowdN(m))}`:""} · you dodge ${r.dodge??"–"}% · DEF ${m.def??"–"} · MDEF ${m.mdef??"–"}</div></div>
+  return `<div class="tile now"><div class="k">EXP / min</div><div class="v mono">${m.expUnknown?"?":r.epm?fmtN(r.epm)+(m.expUnsure?"*":""):"–"}</div><div class="s">${m.expUnknown?"EXP unknown (no data yet) · ":m.expUnsure?"* EXP unconfirmed · ":""}${r.el2&&convOn()?`with ${esc(convWith(r.el2))} · `:""}${isFinite(r.sec)?r.sec.toFixed(1)+"s fight + "+walkSec().toFixed(1)+"s walk"+sellTxt(r.tot-r.sec-walkSec()," + "," selling"):"can't hurt it"}${L&&r.epm?` · ~${pct(r.epm*60/L*100)}/hr at Lv ${C().baseLv}`:""}</div></div>
+   <div class="tile"><div class="k">Per kill</div><div class="v mono">${isFinite(r.uses)?r.uses.toFixed(1):"–"} uses</div><div class="s">${dlTxt(m,r.el2)??(withEl(r.el2,()=>hitRange(m))?`${withEl(r.el2,()=>hitTxt(m))} per hit, average (low–high)`:`${fmtN(withEl(r.el2,()=>dmgPerHit(m)))}${dualHit()?` + ${fmtN(withEl(r.el2,()=>leftDmg(m)))} left hand`:""} per hit`)} · ${Math.round(r.hitc)}% land · ${fmtN(num(C().a.sp)*spCostMul()*r.uses/targets())} SP</div></div>
+   <div class="tile" title="${esc(hpTip(r))}"><div class="k">Defence</div><div class="v mono">${r.hpm==null?"–":fmtN(r.hpm)}</div><div class="s">HP lost/min${r.hpm>0&&vitHeals()?" (your Heals cover it)":""}${r.pz>0.005?` · poisoned ${Math.round(r.pz*100)}%`:""}${crowdN(m)>1?` · rampage of ${fmtP(crowdN(m))}`:""} · you dodge ${r.dodge??"–"}%</div></div>
 ${withEl(r.el2,()=>susTile(susMob(m,walkSec()),"vs "+esc(m.name)))}
 ${weightTile(m)}`}
 // a monster that is a version of another (data/client.js): "Boss Bathory", "Enhanced Owl Duke"
@@ -526,7 +568,7 @@ const mobbedPill=mp=>mobbedOf(mp)>1?` <span class="pill down" title="Possible ra
 const healTip=r=>{const h=recPick("hp"),s=recPick("sp");return [r.hpm==null?"HP: no damage data":r.hpm>0&&vitHeals()?`HP: your Vitata Heals cover ${fmtN(r.hpm)}/min (SP and time, no HP items)`:r.hpZ>0&&h?`HP: ${h.name} ×${fmtQty(r.hpHr)}/hr = ${fmtN(r.hpZ)} z`:r.hpm>0&&!h?"HP: no HP item":"HP: none lost",
   r.spHr>0&&s?`SP: ${s.name} ×${fmtQty(r.spHr)}/hr = ${fmtN(r.spZ)} z`:!s?"SP: no SP item (you rest)":itemsOnNow()?"SP: regen covers it":"SP: no SP items (auto-use off, you rest)"].join("\n")};
 // the Zeny Hunter's Costs / hr: healing as above, plus the ASPD potion and ground buffs
-const costTip=r=>healTip(r)+(r.other>=0.5?`\n${["ASPD potion",fieldBuffs().length&&"ground buffs",convOn()&&"converters"].filter(Boolean).join(", ")}: ${fmtN(r.other)} z`:"");
+const costTip=r=>healTip(r)+(r.other>=0.5?`\n${["ASPD potion",fieldBuffs().length&&"ground buffs",convOn()&&"weapon element items"].filter(Boolean).join(", ")}: ${fmtN(r.other)} z`:"");
 const UNK_PILL=' <span class="pill down" title="No EXP data for it yet, so it\'s left out of EXP / min">EXP ?</span>';
 // the EXP Hunter's tooltips: what a kill's seconds are made of and where the walking comes from; the HP a minute taken, regen and healing
 const secTip=r=>`${r.sec.toFixed(1)}s fighting + ${r.walk.toFixed(1)}s walking${r.sell>=0.05?` + ${r.sell.toFixed(1)}s of selling trips`:""} per kill${r.cal?`\ncalibrated to your logs (×${r.cal.toFixed(2)}): ~${r.secT.toFixed(1)}s a kill`:""}\n${walkSrcTxt()}`;
@@ -538,6 +580,8 @@ const huntLimTxt=rows=>{const n=rows.filter(r=>r.slow).length,lk=Object.keys(MAP
 // ---- render: Where to farm (the best spots, then one ranking by EXP or by zeny) ----
 // the top 3 maps by EXP (renderBest) and by zeny (renderHunt), with a Farm here button each
 let SPOT_EXP=[],SPOT_ZENY=[];
+// every map each ranking ranked (by EXP, by zeny), for the numbers on Where to farm's world map
+const FARM_RANKED={exp:[],zeny:[]};
 const top3=rows=>rows.filter(r=>r.rank<=3).sort((a,b)=>a.rank-b.rank);
 // the monsters Farm here hunts: the zeny table's picks on that map, else every monster there but bosses and skipped ones
 const farmIds=r=>r.earn?r.earn.map(x=>x.m.id):mapHuntIds(r.mp);
@@ -553,7 +597,39 @@ function renderSpots(){const max=atMaxLv(),sm=sessMap(cur());
     :'<div class="note">No open maps match.</div>'}</div>`;
   // at the max base level EXP no longer counts: only the zeny column
   $("spots").innerHTML=(max?"":col("Best for EXP",SPOT_EXP,r=>`<b>${fmtN(r.epm)}</b> EXP / min · ${fmtN(r.net)} z/hr net`))+col("Best for zeny",SPOT_ZENY,r=>`<b>${fmtN(r.net)}</b> z/hr net${r.epm!=null?` · ${fmtN(r.epm)} EXP / min`:""}`);
-  $("spots").classList.toggle("one",max)}
+  $("spots").classList.toggle("one",max);
+  // folded, its line still names the best map of each, then the ranking below (syncFarm)
+  const best=(rows,by)=>rows[0]?`${by}: ${mapName(rows[0].mp)||mapCode(rows[0].mp)}`:"";
+  $("rankSum").dataset.best=[!max&&best(SPOT_EXP,"EXP"),best(SPOT_ZENY,"zeny")].filter(Boolean).join(" · ");
+  renderFarmWorld()}
+// Where to farm's Best maps (the best spots, then the ranking) folds, remembered like a card (state.collapsed). The ranking's top 3
+// are the best spots' cards just above it, so the table in its own order with no filter on starts after them (its first row says so);
+// sort by a column or filter it to see them in the table
+const RANK_FOLD="Where to farm: ranking";
+{const d=$("rankMore");if(d){d.open=!(state.collapsed||{})[RANK_FOLD];
+  d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[RANK_FOLD])return;if(d.open)delete c[RANK_FOLD];else c[RANK_FOLD]=true;save()})}}
+const inSpots=id=>{const [k,d]=tblSort(id),[k0,d0]=sortDef(id);return k===k0&&d===d0&&!activeFilters(id).length};
+// the rows the table shows (the top N, less the best spots' 3 while those show) and its first row saying where they went
+const spotRows=(id,rows,on,lim,head)=>{const top=filterRows(id,rows).slice(0,lim),n=on?top.filter(r=>r.rank<=3).length:0;
+  if(!n)return {rows:sortRows(id,top),note:""};
+  return {rows:sortRows(id,top.filter(r=>r.rank>3)),note:`<tr class="spotsNote"><td colspan="18" class="name muted">#1–${n} are in ${head} above · sort by a column to list them here too</td></tr>`}};
+// Where to farm's world map: every spawn map (not towns), the session's lit; a click farms that map with its monsters (farmMap, as Farm here).
+// The maps the ranking shows (Show) carry their rank, the top 3 picked out; their box's tooltip gives the rank and the EXP / min or zeny / hr
+const WORLD_FARM_FOLD="Where to farm: world map";
+{const d=$("farmWorldMore");if(d){d.open=!(state.collapsed||{})[WORLD_FARM_FOLD];
+  d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[WORLD_FARM_FOLD])return;if(d.open)delete c[WORLD_FARM_FOLD];else c[WORLD_FARM_FOLD]=true;save()})}}
+const farmPick=k=>{if(!MAPMOBS[k]){showToast(`${mapName(k)||mapCode(k)} has no monsters to farm`);return}
+  farmMap(k);showToast(`Farming ${mapCode(k)} in "${cur().name}"${isClosed(k)?" (not open yet)":""}: log your EXP as you go`)};
+function renderFarmWorld(){const el=$("farmWorld");if(!el||typeof WORLDMAPS==="undefined")return;
+  const s=cur(),mp=MAPMOBS[sessMap(s)]?sessMap(s):null,z=state.farmBy==="zeny"||atMaxLv(),lim=num($("farmN").value,10);
+  worldMap(el,mp,farmPick,false);
+  const rk={};(FARM_RANKED[z?"zeny":"exp"]||[]).forEach(r=>{if(r.mp&&r.rank<=lim)rk[r.mp]=r});
+  el.querySelectorAll(".wmBox[data-wm],.wmDot[data-wm]").forEach(b=>{if(b.dataset.t0==null)b.dataset.t0=b.title;
+    const best=b.dataset.wm.split(",").map(k=>rk[k]).filter(Boolean).sort((a,c)=>a.rank-c.rank)[0];
+    if(b.classList.contains("wmDot")||!best){delete b.dataset.rank;b.classList.remove("top")}else{b.dataset.rank=best.rank;b.classList.toggle("top",best.rank<=3)}
+    b.title=b.dataset.t0+(best?`\n#${best.rank} ${z?`· ${fmtN(best.net)} z/hr net`:`· ${fmtN(best.epm)} EXP / min`}`:"")+"\nClick to farm here"});
+  const n=Object.keys(rk).length;
+  $("farmWorldSum").textContent=[mp&&`${mapName(mp)||mapCode(mp)} lit`,n&&`top ${n} by ${z?"zeny":"EXP"} numbered`].filter(Boolean).join(" · ")}
 // show the ranking picked (by EXP or by zeny) and only its options; More options' line says what they're set to
 function syncFarm(){const by=state.farmBy==="zeny"?"zeny":"exp",z=by==="zeny",maps=state.huntMode!=="mobs";
   // no character yet: a note in place of rankings worked out for a Novice
@@ -561,6 +637,7 @@ function syncFarm(){const by=state.farmBy==="zeny"?"zeny":"exp",z=by==="zeny",ma
   ROOTQ("[data-farmby]").forEach(b=>b.setAttribute("aria-checked",String(b.dataset.farmby===by)));
   $("bestWrap").hidden=z;$("huntWrap").hidden=!z;$("bestBasis").hidden=z;$("huntBasis").hidden=!z;$("huntModeSeg").hidden=!z;
   $("bestMinWrap").hidden=z;$("calWrap").hidden=z;["huntMinWrap","huntLvWrap","huntPenWrap","teleWrap"].forEach(id=>$(id).hidden=!z);$("huntAutoWrap").hidden=!z||!maps;
+  {const n=num($("farmN").value,10);$("rankSum").textContent=[$("rankSum").dataset.best,`ranked by ${z?"zeny":"EXP"}${z&&!maps?", single monsters":""} · ${n>=1000?"all":"top "+n}`].filter(Boolean).join(" · ")}
   const off=LOOT_GROUPS.filter(([g])=>!looted0(g)).map(([,n])=>n.toLowerCase());
   $("farmMoreSum").textContent=[`min ${num($(z?"huntMin":"bestMin").value)} monsters`,`max ${maxSecKill()||"∞ "}s / kill`,!z&&state.calOn&&"calibrated",
     z&&huntLvTxt().replace(/^ · hunting /,""),z&&maps&&state.huntAuto&&"best-paying only",off.length&&`not looting ${off.join(", ")}`].filter(Boolean).join(" · ")}
@@ -572,20 +649,20 @@ function renderBest(){
   // rank every open map by EXP / min (Net zeny / hr at the max level), then filter, keep the top N and sort by the picked column.
   // Projected is worked out before the calibration, as it's already scaled to your session
   rows.forEach(r=>{r.proj=st&&sameJob&&curEpm?st.avgPct*r.epm/curEpm:null;r.logged=cal.maps[r.mp]||null;if(k)calApply(r,k)});
-  rankRows(rows,max?r=>r.net:r=>r.epm);SPOT_EXP=top3(rows);
-  const shown=sortRows("bestTable",filterRows("bestTable",rows).slice(0,lim));
+  rankRows(rows,max?r=>r.net:r=>r.epm);SPOT_EXP=top3(rows);FARM_RANKED.exp=rows;
+  const sp=spotRows("bestTable",rows,!max&&inSpots("bestTable"),lim,"Best for EXP"),shown=sp.rows;
   $("bestBasis").innerHTML=(max?`<b>Max level: EXP doesn't matter</b> · ranked by Net zeny / hr · `:"")+esc(`${state.job} · ${C().a.name||"attack"} · ${convOn()?convLabel("per map"):atkEl()} · walking ~${w.toFixed(1)}s/kill`+(curEpm&&st?` · compared with your session on ${mapCode(curMap)} at ${pct(st.avgPct)}/hr`:""))+(k?` · <b>calibrated ×${k.toFixed(2)}</b>`:"")+huntLimTxt(rows);
   $("calOn").checked=!!state.calOn;$("calOn").disabled=!cal.k&&!state.calOn;
   $("calNote").textContent=cal.k?`×${cal.k.toFixed(2)}: median of real ÷ projected kills over ${cal.n} session${cal.n>1?"s":""} longer than 60 min`:`needs a ${state.job} session longer than 60 min`;
   {const c=C(),mw=maxWt(c),hid=(state.hideCols||{}).bestTable||[];$("bestWeight").hidden=["Weight / kill","Weight / hr","Town trip every"].every(n=>hid.includes(n));$("bestWeight").textContent=mw>0?`Weight columns assume ${fmtN(num(c.curW))} / ${fmtN(mw)} weight now, selling at ${fmtP(sellPct())}% (${fmtN(mw*sellLim())}) with ${fmtN(num(c.townMin,3))} min to town and back · drops × your drop rate${num(state.dropBonus)?` +${num(state.dropBonus)}%`:""} and the level penalty, auto-looted groups only`
     :"Weight columns: type your Max Weight on the Character tab (or the sell timer) to see town trips"}
-  $("bestTable").querySelector("tbody").innerHTML=shown.map(r=>{
+  $("bestTable").querySelector("tbody").innerHTML=sp.note+(shown.map(r=>{
     const main=MAPMOBS[r.mp].filter(x=>!x.m.boss&&!isSkipped(x.m)).sort((a,b)=>b.n-a.n).slice(0,3).map(x=>`<div>${mobIcon(x.m.id,1,"il")}${esc(x.m.name)} <span class="note">×${x.n}</span>${BOSS_PILL(x.m)}${x.m.expUnknown?UNK_PILL:""}</div>`).join("");
     const proj=r.proj,L=r.logged;
     return `<tr data-map="${r.mp}" class="${r.mp===curMap?"sel":""}"><td>${r.rank}</td><td class="name">${mapTitle(r.mp)}${mobbedPill(r.mp)}${slowPill(r)}${elTag(r.el2)} ${farmBtn(r)}</td><td class="name mainmobs">${main}</td><td${max?' class="muted" title="Max level: base EXP no longer counts"':""}><b>${fmtN(r.epm)}</b></td><td title="${esc(secTip(r))}">${r.sec.toFixed(1)}s + ${r.walk.toFixed(1)}s${sellTxt(r.sell," + ")}${r.cal?` <span class="note">≈${r.secT.toFixed(1)}s</span>`:""}</td><td>${fmtN(r.epk)}</td><td>${fmtN(r.zb)}</td><td title="${esc(healTip(r))}">${r.heal>=0.5?fmtN(r.heal):"–"}</td><td class="${r.net>0?"good":"bad"}"><b>${fmtN(r.net)}</b></td><td title="${esc(hpTip(r))}">${r.hpm==null?"–":fmtN(r.hpm)}</td><td>${susCell(r.sus)}</td><td>${r.skip?`<span class="pill down" title="${esc(r.skipNames.join(", "))}">${r.skip}</span>`:"–"}</td><td>≈${r.N}</td><td>${proj==null?"–":"~"+proj.toFixed(1)+"%/hr"}</td>
       <td title="${L?esc(L.tip):"no session of this job logged here"}">${L?`<span class="${L.ratio<0.9?"warnc":L.ratio>1.1?"good":""}">${L.ratio.toFixed(2)}×</span> <span class="note">${L.list.length} log${L.list.length>1?"s":""}</span>`:"–"}</td>
       <td>${fmtQty(r.wk)}</td><td>${fmtQty(r.wph)}</td><td title="${r.trip==null?"":esc(`about ${fmtN(wRoom(sellLim())/r.wk)} kills to your sell point, then ${fmtN(num(C().townMin,3))} min to town and back`)}">${wOn()?tripTxt(r.trip):"–"}</td></tr>`}).join("")
-    ||'<tr><td colspan="18" class="name muted">No open maps match.</td></tr>';
+    ||(sp.note?"":'<tr><td colspan="18" class="name muted">No open maps match.</td></tr>'));
   renderSpots();syncFarm();
 }
 // ---- render: Where to farm, by zeny ----
@@ -912,17 +989,17 @@ function renderHunt(){
   // rank everything by net zeny / hr, then filter, keep the top N and sort by the picked column
   rankRows(rows,r=>r.net);
   // the best spots are maps: in single-monster mode they're worked out on their own
-  if(mode==="maps")SPOT_ZENY=top3(rows);
-  else{const mr=Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)&&!lvLocked(mp)).map(mp=>huntMap(mp,w,min)).filter(r=>r&&r.N>=min);rankRows(mr,r=>r.net);SPOT_ZENY=top3(mr)}
-  const shown=sortRows("huntTable",filterRows("huntTable",rows).slice(0,lim));
-  $("huntBasis").textContent=`${state.job} · ${C().a.name||"attack"} · ${convOn()?convLabel("by zeny"):atkEl()} · walking ~${w.toFixed(1)}s/kill`+(num(state.dropBonus)?` · drop rate +${num(state.dropBonus)}%`:"")+(num(C().baseLv)>39?` · drops −50% from monsters Lv ${num(C().baseLv)-40} and below`:"")+huntLvTxt();$("huntBasis").innerHTML+=huntLimTxt(rows);
+  if(mode==="maps"){SPOT_ZENY=top3(rows);FARM_RANKED.zeny=rows}
+  else{const mr=Object.keys(MAPMOBS).filter(mp=>!isClosed(mp)&&!lvLocked(mp)).map(mp=>huntMap(mp,w,min)).filter(r=>r&&r.N>=min);rankRows(mr,r=>r.net);SPOT_ZENY=top3(mr);FARM_RANKED.zeny=mr}
+  const sp=spotRows("huntTable",rows,mode==="maps"&&inSpots("huntTable"),lim,"Best for zeny"),shown=sp.rows;
+  $("huntBasis").textContent=`${state.job} · ${C().a.name||"attack"} · ${convOn()?convLabel("by zeny"):atkEl()} · walking ~${w.toFixed(1)}s/kill`+(dropPct()?` · drop rate +${fmtP(dropPct())}%`:"")+(num(C().baseLv)>39?` · drops −50% from monsters Lv ${num(C().baseLv)-40} and below`:"")+huntLvTxt();$("huntBasis").innerHTML+=huntLimTxt(rows);
   const sel=currentMap(),selMob=(calcMob()||{}).id;
-  $("huntTable").querySelector("tbody").innerHTML=shown.map(r=>{
+  $("huntTable").querySelector("tbody").innerHTML=sp.note+(shown.map(r=>{
     const name=r.mp?`${mapTitle(r.mp)}${mobbedPill(r.mp)}${slowPill(r)} ${farmBtn(r)}`:`${mobIcon(r.m.id,1,"il")}<b title="${esc(dropNames(r.m))}"><a href="#" data-info="mob:${r.m.id}">${esc(r.m.name)}</a></b>${BOSS_PILL(r.m)} <span class="note">Lv ${r.m.lv}</span>${slowPill(r)}`;
     const from=r.mp?huntPicker(r,w)+(r.skip?`<div class="note" title="${esc(r.skipNames.join(", "))}">can't hurt ${r.skip}</div>`:"")
       :(()=>{const om=openMaps(r.m);return `<div><span class="mono">${mapCode(om[0][0])}</span> <span class="note">≈${spN(om[0][1])}${penNote(r.m)?` · ${esc(penNote(r.m))}`:""}</span></div>${dropList(r.m)}`})();
     return `<tr ${r.mp?`data-map="${r.mp}"`:`data-id="${r.m.id}"`} class="${(r.mp&&r.mp===sel)||(r.m&&r.m.id===selMob)?"sel":""}"><td>${r.rank}</td><td class="name">${name}${elTag(r.el2)}</td><td class="name mainmobs">${from}</td><td class="${r.net>0?"good":"bad"}"><b>${fmtN(r.net)}</b></td><td>${fmtN(r.loot)}</td><td title="${esc(costTip(r))}">${r.cost>0?fmtN(r.cost):"–"}</td><td>${fmtN(r.kph)}</td><td>${fmtN(r.zk)}</td><td>${fmtQty(r.wk)}</td><td title="${esc(huntWTip(r))}">${fmtQty(r.wph)}</td><td>${r.epm==null?"?":fmtN(r.epm)}</td><td>${r.hpm==null?"–":fmtN(r.hpm)}</td></tr>`}).join("")
-    ||`<tr><td colspan="12" class="name muted">${mode==="maps"?"No open maps match.":"No open monsters you can hurt."}${huntLvTxt()?" Try widening the level filter.":""}</td></tr>`;
+    ||(sp.note?"":`<tr><td colspan="12" class="name muted">${mode==="maps"?"No open maps match.":"No open monsters you can hurt."}${huntLvTxt()?" Try widening the level filter.":""}</td></tr>`));
   renderSpots();syncFarm();
 }
 // the Roadmap card: each update with its level cap, what it adds and its regions (click one to mark it open or closed)
@@ -946,12 +1023,12 @@ const noneOpen=m=>{const a=mobArrives(m);return `<span class="note"${a?` title="
 // and what the picked one can't hurt or is resisted by
 function convCheck(mp,w,r){const sf=C().a.type==="spellfist",opts=sf?elOptions().filter(Boolean):convOn()?convAll():[];if(opts.length<2)return "";const tag=!sf&&convFixed()?"in use":"best";
   const mobs=MAPMOBS[mp].filter(x=>!x.m.boss&&!isSkipped(x.m)).sort((a,b)=>b.n-a.n);if(!mobs.length)return "";
-  const rows=opts.map(el=>{const s=withEl(el,()=>mapStats0(mp,w));return `<tr class="${r&&el===r.el2?"sel":""}"><td class="name"><span class="el ${el}">${el}</span>${!sf&&el===C().wElem?' <span class="note">weapon</span>':""}${r&&el===r.el2?` <span class="pill">${tag}</span>`:""}</td>
+  const rows=opts.map(el=>{const s=withEl(el,()=>mapStats0(mp,w));return `<tr class="${r&&el===r.el2?"sel":""}"><td class="name"><span class="el ${el}">${el}</span>${!sf&&el===wElNow()?` <span class="note">${pEndow()?"Sage's Endow":"weapon"}</span>`:""}${r&&el===r.el2?` <span class="pill">${tag}</span>`:""}</td>
     ${mobs.map(x=>{const v=elemMult(x.m,el);return `<td class="${elRateCls(v)}">${elRateTxt(v)}</td>`}).join("")}<td>${s?fmtN(s.epm):"–"}${s&&s.skip?` <span class="warnc">skips ${esc(s.skipNames.join(", "))}</span>`:""}</td></tr>`}).join("");
   const el=r&&r.el2,bad=el?mobs.filter(x=>elemMult(x.m,el)<100):[];
   const warn=bad.length?`<div class="warnc">With ${el}: ${bad.map(x=>{const v=elemMult(x.m,el);return `${esc(x.m.name)} (${x.m.el} ${x.m.elv}) ${v}%`}).join(" · ")}</div>`:"";
-  return `<div class="note mt"><b>${sf?"Spell Fist bolts":"Converters"} vs these monsters</b> · element table rate (Reference tab): <span class="good">above 100%</span>, <span class="warnc">below</span>, <span class="bad">0% ✕ none</span>${sf||isMagicAtk()?"":"; it applies to your weapon ATK, status ATK always hits as Neutral"}</div>
-  <div class="scroll"><table class="convtab"><thead><tr><th>${sf?"Bolt":"Converter"}</th>${mobs.map(x=>`<th>${esc(x.m.name)}<br><span class="el ${x.m.el||"Neutral"}">${x.m.el||"Neutral"} ${x.m.elv||1}</span></th>`).join("")}<th>EXP / min</th></tr></thead><tbody>${rows}</tbody></table></div>${warn}`}
+  return `<div class="note mt"><b>${sf?"Spell Fist bolts":"Weapon elements"} vs these monsters</b> · element table rate (Reference tab): <span class="good">above 100%</span>, <span class="warnc">below</span>, <span class="bad">0% ✕ none</span>${sf||isMagicAtk()?"":"; it applies to your weapon ATK, status ATK always hits as Neutral"}</div>
+  <div class="scroll"><table class="convtab"><thead><tr><th>${sf?"Bolt":"Element"}</th>${mobs.map(x=>`<th>${esc(x.m.name)}<br><span class="el ${x.m.el||"Neutral"}">${x.m.el||"Neutral"} ${x.m.elv||1}</span></th>`).join("")}<th>EXP / min</th></tr></thead><tbody>${rows}</tbody></table></div>${warn}`}
 // ---- the client's world maps (data/minimaps.js WORLDMAPS: Midgard, Nordfeld) with a box on each spawn map and map mp lit, drawn into el
 // (the Map planner's, the Maps tab's). It turns to the world mp is on when mp changes; the buttons over it turn to another. Floors of one
 // dungeon share a box, so clicking it lists them, like the game's world map, and pick(map) gets the one clicked; a dungeon with one floor
@@ -1015,7 +1092,7 @@ function worldMap(el,mp,pick,towns,all){
       ...WORLDMAPS.map((w,i)=>i!==here&&on(i).length?`${maps(on(i).length)} on the ${w.name} map.`:""),
       off.length?`Not on the game's world map: ${off.map(k=>`${mapName(k)||mapCode(k)}${mapArrives(k)?` (${mapArrives(k)})`:""}`).join(", ")}.`:""].filter(Boolean).join(" ");return}
   const nm=mp&&(all&&all.d?all.d.n:mapName(mp)||mapCode(mp)),wi=worldOf(mp);
-  el.querySelector(".wmNote").textContent=!mp?"Click a box to pick that map":wi===+el.dataset.w?"":wi>=0?`${nm} is on the ${WORLDMAPS[wi].name} map`:`${nm} isn't on the game's world map: ${mapArrives(mp)?`its region comes with the ${mapArrives(mp)}`:"the game doesn't draw it there"}`}
+  el.querySelector(".wmNote").textContent=!mp?"":wi===+el.dataset.w?"":wi>=0?`${nm} is on the ${WORLDMAPS[wi].name} map`:`${nm} isn't on the game's world map: ${mapArrives(mp)?`its region comes with the ${mapArrives(mp)}`:"the game doesn't draw it there"}`}
 // the Map planner's world map: folds, remembered like a card (state.collapsed)
 const WORLD_FOLD="Map planner: world map";
 {const d=$("worldMore");if(d){d.open=!(state.collapsed||{})[WORLD_FOLD];
@@ -1023,7 +1100,7 @@ const WORLD_FOLD="Map planner: world map";
 const planPick=k=>{state.map=k;state.mapAll=null;save();renderMap()};
 const planPickAll=k=>{state.map=state.mapAll=k;save();renderMap()};
 function renderMap(){
-  let mp=mapKey(state.map);const mob=calcMob(),me=charSet();
+  let mp=mapKey(state.map);const mob=calcMob(),me=showMine();$("mapMine").innerHTML=mineSwitch();
   if(!MAPMOBS[mp]&&!isTown(mp))mp=mobMap(mob)||Object.keys(MAPMOBS).sort((a,b)=>mapCode(a).localeCompare(mapCode(b)))[0];
   const dun=mapDun(mp);
   if(document.activeElement!==$("mapInput"))$("mapInput").value=mp?mapCode(mp):"";$("mapName").textContent=mp?mapFactsTxt(mp):"";
@@ -1047,8 +1124,8 @@ function renderMap(){
   renderMapList();$("mapTableWrap").hidden=!MAPMOBS[mp];
   if(!MAPMOBS[mp]){$("mapTiles").innerHTML=`<div class="note">${isTown(mp)?"A town: no monsters.":"Pick a map to see its monsters."}</div>`;$("mapConv").innerHTML="";$("mapTable").querySelector("tbody").innerHTML="";return}
   const w=walkSec(),r=mapStats(mp,w);const L=lvExp(num(C().baseLv));const st=stats(cur());const L2=st?st.L:L;
-  $("mapTiles").innerHTML=!me?`<div class="note noCharNote">${NO_CHAR_TXT} on this map. <a href="#" data-gotab="char">Open Character</a></div>${isClosed(mp)?`<div class="note bad">This map is marked as not open yet${mapArrives(mp)?`: it comes with the ${esc(mapArrives(mp))}`:""}.</div>`:""}`
-   :r?`<div class="tile now"><div class="k">Average EXP / min</div><div class="v mono">${fmtN(r.epm)}</div><div class="s">weighted by spawn counts${r.el2&&convOn()?` · bring ${r.el2} converters`:""}${r.skip?` · skips ${r.skip} you can't hurt`:""}${r.unk?` · leaves out ${esc(r.unkNames.join(", "))} (EXP unknown)`:""}</div></div>
+  $("mapTiles").innerHTML=!me?`${charSet()?"":`<div class="note noCharNote">${NO_CHAR_TXT} on this map. <a href="#" data-gotab="char">Open Character</a></div>`}${isClosed(mp)?`<div class="note bad">This map is marked as not open yet${mapArrives(mp)?`: it comes with the ${esc(mapArrives(mp))}`:""}.</div>`:""}`
+   :r?`<div class="tile now"><div class="k">Average EXP / min</div><div class="v mono">${fmtN(r.epm)}</div><div class="s">weighted by spawn counts${r.el2&&convOn()?` · with ${esc(convWith(r.el2))}`:""}${r.skip?` · skips ${r.skip} you can't hurt`:""}${r.unk?` · leaves out ${esc(r.unkNames.join(", "))} (EXP unknown)`:""}</div></div>
    <div class="tile" title="${esc(walkSrcTxt())}"><div class="k">Kills / hr</div><div class="v mono">${fmtN(3600/r.secT)}</div><div class="s">${r.sec.toFixed(1)}s fight + ${r.walk.toFixed(1)}s walk${sellTxt(r.sell," + "," selling")}</div></div>
    <div class="tile"><div class="k">EXP / hr</div><div class="v mono">${L2?pct(r.epm*60/L2*100):fmtN(r.epm*60)}</div><div class="s">${L2?`1 level in ${fmtDur(L2/(r.epm*60))}`:`set Base level 1–${MAX_BASE_LV} for %`}</div></div>
    <div class="tile"><div class="k">Zeny / hr</div><div class="v mono">${fmtN(r.zph)}</div><div class="s">net${r.zcost>=0.5?` of ~${fmtN(r.zcost)} z SP items, potions &amp; skill items`:""}${r.hpm==null?"":` · HP lost ~${fmtN(r.hpm)}/min`}</div></div>
@@ -1064,5 +1141,5 @@ function renderMap(){
 let TAB_ON=null,DREW_ALL=false;const DRAWN={};
 const draw=(k,f)=>{DRAWN[k]=GEN;f()},redraw=(k,f)=>{if(DRAWN[k]!==GEN)draw(k,f)};
 function renderAll(){rowPass(renderAll0)}
-function renderAll0(){stampPrices();SKFX=skillEffects(C());const sgTree=sageFromTree(C());ROOTQ('[data-sg="sfLv"],[data-sg="boltLv"],[data-sg="hsLv"],[data-sg="dbLv"]').forEach(i=>{i.disabled=sgTree;i.title=sgTree?"Set by the Skills card":""});ROOTQ("[data-sgbolt]").forEach(i=>i.disabled=sgTree&&!skLv(C(),SG_BOLT[i.dataset.sgbolt]));applyBuild();applyConsumables();renderBuild();hsCompare();renderSessions();renderChar();renderTracker();const t=TAB_ON;if(t==="maps")renderMobs();if(t==="track"||t==="home")draw("best",renderBest);renderRecovery();if(t==="track")draw("hunt",renderHunt);if(t==="market")renderPrices();if(t==="items")draw("items",renderItems);if(t==="equip"&&typeof renderEquipDb==="function")draw("equip",renderEquipDb);if(t==="cards"&&typeof renderCardDb==="function")draw("cards",renderCardDb);renderMap();renderRef();if(t==="home"&&typeof renderHome==="function")renderHome();snapEst();DREW_ALL=true}
+function renderAll0(){stampPrices();SKFX=skillEffects(C());const sgTree=sageFromTree(C());ROOTQ('[data-sg="sfLv"],[data-sg="boltLv"],[data-sg="hsLv"],[data-sg="dbLv"]').forEach(i=>{i.disabled=sgTree;i.title=sgTree?"Set by the Skills card":""});ROOTQ("[data-sgbolt]").forEach(i=>i.disabled=sgTree&&!skLv(C(),SG_BOLT[i.dataset.sgbolt]));applyBuild();applyConsumables();renderBuild();hsCompare();renderSessions();renderChar();renderTracker();const t=TAB_ON;if(t==="maps")renderMobs();if(t==="track"||t==="home")draw("best",renderBest);renderRecovery();if(t==="track")draw("hunt",renderHunt);if(t==="market")renderPrices();if(t==="items")draw("items",renderItems);if(t==="equip"&&typeof renderEquipDb==="function")draw("equip",renderEquipDb);if(t==="cards"&&typeof renderCardDb==="function")draw("cards",renderCardDb);renderMap();renderRef();renderExp();if(t==="home"&&typeof renderHome==="function")renderHome();snapEst();DREW_ALL=true}
 

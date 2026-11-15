@@ -36,6 +36,8 @@
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.5;font-feature-settings:"cv11","ss01";-webkit-font-smoothing:antialiased}
 [hidden]{display:none!important}
+.buildOff{display:none!important} /* the typed Status card's boxes in Build from gear, which works them out */
+:root:not(.future) .future{display:none!important}
 
 /* ---- shell: sidebar + main column ---- */
 .app{display:grid;grid-template-columns:var(--side) minmax(0,1fr);min-height:100vh;
@@ -84,6 +86,8 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
   .navSec.open>.navGrp .navChev{transform:rotate(180deg)}
   .navSec>.navItems{display:none;position:fixed;z-index:40;min-width:220px;max-width:calc(100vw - 16px);padding:6px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-pop)}
   .navSec.open>.navItems{display:flex}
+  /* open as a popover (js/start.js navPop): undo the browser's popover look, the script places it */
+  .navSec>.navItems[popover]{inset:auto;margin:0;width:auto;height:auto;max-height:calc(100dvh - 16px);overflow:auto;color:var(--fg)}
   .tabs .navItems button{width:100%;justify-content:flex-start}
   .navItems .ic{display:inline-block!important}
   .tabs .navGrp .navChev{display:inline-block!important}
@@ -115,6 +119,12 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
 .eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:var(--brand);-webkit-background-clip:text;background-clip:text;color:transparent;width:fit-content}
 .pageHead h1{font-size:2.35rem;font-weight:800;letter-spacing:-.035em;line-height:1.05}
 .pageHead p{margin:4px 0 0;max-width:62ch;color:var(--muted);font-size:14.5px;text-wrap:pretty}
+/* a tab's only card: what its heading row held besides the heading (counts, notes, buttons) sits beside the title (soloFold) */
+.heroRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
+.heroRow h1{flex:1 1 auto}
+.heroBar:empty{display:none}
+.heroBar>.cardHead{margin:0;padding:0;border:0}
+.heroBar .note{font-size:12.5px}
 /* Full width (Settings menu): drop the 1180px cap on wide screens */
 :root.wide .wrap{max-width:none}
 @media (max-width:1480px){#wideBtn{display:none}}
@@ -184,6 +194,15 @@ a{color:var(--accent);text-underline-offset:2px}
 .pickLbl{flex:none;width:4.5em}
 /* account and session pickers stay on one line with their buttons, down to phone width */
 .bar .pickLbl~.grow{flex-basis:0}
+/* Gear card: the sets wrap onto more lines rather than squeeze their names; what the set picked changes is one line, so the rows keep
+   their height as you pick sets; "more" opens the rest when it doesn't fit */
+#gsetSeg{flex-wrap:wrap}
+#gsetSeg button{white-space:nowrap}
+#altNote{display:flex;gap:6px;align-items:baseline;min-height:1.3em}
+#altNote .altTxt{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#altNote.open .altTxt{white-space:normal}
+#altMore{flex:none;border:0;background:none;padding:0;font-size:inherit;line-height:inherit;color:var(--accent)}
+#altMore:hover{background:none;text-decoration:underline}
 
 /* ---- controls ---- */
 input,select,button,textarea{font:inherit;color:var(--fg)}
@@ -378,6 +397,9 @@ td .map{cursor:default}
 /* Stellar tab: tables read left to right, lists stack in their cell */
 #starTable th,#starTable td,#starRulesTable th,#starRulesTable td,#starNpcTable th,#starNpcTable td{text-align:left;vertical-align:top;cursor:default}
 #starTable tbody tr,#starRulesTable tbody tr,#starNpcTable tbody tr{cursor:default}
+#dailyTable th,#dailyTable td{text-align:left;vertical-align:top;cursor:default}#dailyTable tbody tr{cursor:default}
+#dailyTable td:nth-child(3){min-width:240px;white-space:normal}#dailyTable .nowrap{white-space:nowrap}
+#dailyTable tr.dailyDone td:not(:first-child){opacity:.55}
 #starNpcTable td:nth-child(3){white-space:normal;min-width:220px}
 #starTable td div{margin:2px 0}
 #starTable td:nth-child(5){white-space:normal;min-width:260px}
@@ -425,7 +447,9 @@ table.cstats tbody tr,table.cmptab tbody tr{cursor:default}
 .skgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
 /* like the game's skill window: name, then icon, then level, centred; names get two lines (the tooltip has them whole) */
 .sk{border:1px solid var(--line);border-radius:8px;padding:5px 4px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:3px;min-width:0;text-align:center;background:var(--surface)}
-.sk:not(.on)>.ico{opacity:.55}
+.sk:not(.on)>.skico>.ico{opacity:.55}
+.sk .skico{border:0;background:none;padding:0;line-height:0;cursor:pointer;border-radius:4px}
+.sk .skico:hover>.ico{opacity:1}
 .sk.empty{border:0;background:none}
 .sk.on{border-color:color-mix(in srgb,var(--accent) 55%,transparent);background:var(--accent-soft)}
 .sk.pas .nm{font-style:italic}
@@ -442,10 +466,13 @@ table.cstats tbody tr,table.cmptab tbody tr{cursor:default}
 #skillCard,#skpCard{position:relative}
 .sktip{position:absolute;z-index:3;pointer-events:none;width:max-content;max-width:min(360px,calc(100% - 16px));background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;box-shadow:var(--shadow-pop);display:flex;flex-direction:column;gap:4px}
 .sktip[hidden]{display:none}
+.sktip.pin{pointer-events:auto;user-select:text;border-color:var(--accent)}
+.sktip .skActs{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.sktip .skUnpin{margin-left:auto;align-self:flex-start}
 .sktip b{font-family:var(--display);font-weight:600}
 .sktip p{margin:0}
 @media (max-width:680px){.skgrid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}.sk.empty{display:none}}
-/* EXP & formulas tab: reference tables, rows aren't clickable */
+/* EXP tables and Formulas tabs: reference tables, rows aren't clickable */
 #refBaseTable tbody tr,#refJobTable tbody tr,#refFormulas tbody tr,#refElemTable tbody tr,#refSizeTable tbody tr,#refPartyTable tbody tr{cursor:default}
 #refFormulas td.f{white-space:normal;text-align:left;font-size:12.5px;min-width:260px}
 #refFormulas th:nth-child(2){text-align:left}
@@ -520,8 +547,9 @@ table.formulas td.chg{background:var(--accent-soft)}
   .sumCard .secHead,.sumCard .tile .s{display:none}
   /* the dock shows only the outcome; a message (no monster yet) spans it with its line showing */
   .sumCard .tile.det{display:none}
+  .sumCard .tile.out:not(.wide)~.tile.aspdT{display:block} /* and your ASPD, once there are numbers */
   .sumCard .tile.wide{grid-column:1/-1}.sumCard .tile.wide .s{display:block;font-size:12px}
-  .sumCard .calc{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+  .sumCard .calc{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:6px} /* its 4 or 5 tiles in one row */
   .sumCard .tile{padding:7px 10px}
   .sumCard .tile .v{font-size:1rem}
   .charMain :is(#charCard,#buildPanel,#statPanel,#eqPanel,#atkPanel,#cardRow,#sagePanel,#weightPanel,#skillCard,#recCard,#gearCmpCard,#backupCard){scroll-margin-top:108px}
@@ -611,7 +639,6 @@ table.formulas td.chg{background:var(--accent-soft)}
 .homeNext b{color:var(--accent);font-weight:650}
 .homeNext span{color:var(--muted)}
 .homeNext:empty{display:none}
-.tiles.homeTiles{grid-template-columns:repeat(4,minmax(0,1fr))}
 button.tile{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
 button.tile:hover{border-color:var(--accent)}
 .homeTools{display:flex;flex-direction:column;gap:18px}
@@ -631,7 +658,6 @@ button.tile:hover{border-color:var(--accent)}
 .toolTxt{display:flex;flex-direction:column;gap:2px;min-width:0}
 .toolTxt b{font-family:var(--display);font-weight:650;font-size:14.5px;letter-spacing:-.01em}
 .toolTxt span{font-size:12.5px;color:var(--muted);line-height:1.45}
-@media (max-width:900px){.tiles.homeTiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:600px){.homeHero{padding-top:20px}.homeHero h1{font-size:2rem}}
 @media (max-width:760px){.startCard{padding:14px}.startHead{margin-bottom:10px}.startHead h2{font-size:1.05rem}
   .steps{grid-template-columns:1fr;gap:8px}.steps li{flex-direction:row;align-items:center;padding:10px 12px}
@@ -639,6 +665,8 @@ button.tile:hover{border-color:var(--accent)}
 
 /* hints off (sidebar button): the help text under the cards goes */
 .nohints .hint{display:none!important}
+/* price boxes off (Settings; off for a new player): the boxes to type what you pay go; prices typed before still count. The Market tab keeps its own */
+.noprice .priceIn{display:none!important}
 /* the page description under each tab's heading is a hint too */
 .nohints #heroDesc{display:none}
 #hintBtn[aria-pressed="false"]{opacity:.7}
@@ -690,10 +718,15 @@ button.tile:hover{border-color:var(--accent)}
 /* ---- no character yet: the Monsters & maps tables show the game's numbers only, not the ones worked out for a character ---- */
 #mobTable.noChar :is(th,td):is(:nth-child(n+9):nth-child(-n+15),:nth-child(17)),
 #mapTable.noChar :is(th,td):is(:nth-child(6),:nth-child(9),:nth-child(10),:nth-child(12)){display:none}
+.mineSw{gap:6px;font-size:12.5px;font-weight:500;color:var(--muted);white-space:nowrap}
 .noCharNote{padding:12px 14px;border:1px dashed var(--line-strong);border-radius:12px}
 #farmNoChar{display:none}
 #farmCard.noChar #farmNoChar{display:block}
-#farmCard.noChar>:not(.bar:first-child):not(#farmNoChar){display:none}
+#farmCard.noChar>:not(.bar:first-child):not(#farmNoChar):not(.farmOn):not(#sessMobRow):not(#farmWorldMore){display:none}
+/* the monsters on the session's map, each with + Session / − Session */
+#sessMobRow{margin-bottom:12px}#sessMobRow[hidden]{display:none}#sessMobHead{margin-bottom:6px}
+#sessMobRow>.scroll{max-width:720px}
+.farmOn{margin-bottom:10px}.farmOn>label{flex:0 1 auto;min-width:0;max-width:100%}.farmOn select{flex:1 1 220px;min-width:0;width:min(100%,420px)}
 #farmCard.noChar>.bar:first-child>.note{display:none}
 #mapTable.noChar :is([data-sessmob],[data-skip]){display:none}
 /* max base level: no quick Log EXP */
@@ -819,12 +852,13 @@ details.more>.form{display:grid}
 .ewTabs button:last-child{border-right:0}
 .ewTabs button[aria-selected="true"]{background:var(--ew-bg);color:var(--fg);font-weight:600}
 .ewBody{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px;padding:8px}
-.ewCol{display:flex;flex-direction:column;gap:5px}
+.ewCol{display:flex;flex-direction:column;gap:5px;position:relative;z-index:1} /* over a wide garment or headgear on the character */
 .ewSlot{display:flex;align-items:center;gap:6px;min-height:36px;padding:3px 7px;border:0;border-radius:9px;background:var(--ew-slot);color:var(--fg);font-size:12px;font-weight:500;line-height:1.2;text-align:left;cursor:pointer}
 .ewSlot.r{flex-direction:row-reverse;text-align:right}
 .ewSlot:hover{background:var(--ew-slot-hover);border:0}
 .ewSlot.empty{background:var(--ew-slot-empty)}
 .ewSlot.none{cursor:default}
+.ewSlot.both{opacity:.5}
 .ewSlot .ico.none{width:24px;height:24px}
 .ewName{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .ewChar{display:flex;flex-direction:column;align-items:center;width:calc(52px*var(--ew-z))}
@@ -832,13 +866,31 @@ details.more>.form{display:grid}
 .ewStage::before{content:"";position:absolute;left:50%;bottom:calc(8px*var(--ew-z));width:calc(26px*var(--ew-z));height:calc(7px*var(--ew-z));transform:translateX(-50%);border-radius:50%;background:var(--ew-floor)}
 .ewFeet{position:absolute;left:50%;bottom:calc(12px*var(--ew-z));width:0;height:0;transform:scale(var(--ew-z));transform-origin:0 0}
 .ewFeet canvas{position:absolute;image-rendering:pixelated}
-.ewLook{display:flex;align-items:center;gap:3px;margin-top:4px;font-size:11px;color:var(--muted);white-space:nowrap}
-.ewLook button{min-height:0;padding:1px 6px;font-size:11px;line-height:1.4}
-.ewLook .ewTrans[aria-pressed="true"]{color:var(--accent);background:var(--accent-soft);border-color:var(--accent)}
+.seg.segSm{padding:2px;gap:1px}.seg.segSm button{min-height:0;padding:2px 10px;font-size:11.5px;line-height:1.4}
+/* the window and, on its right (under it when there's no room), the Look panel: gender, job look, and a button per hair style, hair
+   colour and clothes dye that opens its grid (.ewPicker) in the panel */
+.ewWrap{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;margin:10px 0}
+.ewWrap>.equipWin{flex:1 1 440px;max-width:560px;margin:0;min-width:0}
+.ewSide{flex:0 1 190px;min-width:170px;border:1px solid var(--ew-line);border-radius:7px;background:var(--ew-bg);box-shadow:var(--shadow);font-size:12px;overflow:hidden}
+.ewSideHead{padding:4px 10px;background:var(--ew-head);border-bottom:1px solid var(--ew-line);font-weight:600}
+.ewRows{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:6px 10px 10px}
+.ewLbl{margin-top:4px;font-size:11.5px;color:var(--muted)}
+.ewOpen{display:inline-flex;align-items:center;gap:4px;min-width:80px;min-height:0;padding:2px 4px 2px 8px;font-size:11.5px;line-height:1.4;white-space:nowrap}
+.ewOpen>span:not(.ewSwatch){flex:1;text-align:left}
+.ewChev{width:12px;height:12px;color:var(--muted);transition:transform .15s}
+.ewOpen[aria-expanded="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.ewOpen[aria-expanded="true"] .ewChev{transform:rotate(180deg);color:var(--accent)}
+.ewPicker{flex:1 1 100%;min-width:0;padding:6px 10px 10px;border:1px solid var(--ew-line);border-radius:7px;background:var(--ew-bg);box-shadow:var(--shadow);font-size:12px}
+.ewPickHead{display:flex;align-items:baseline;gap:8px}.ewPickHead .note{font-size:11px}
+.ewPickX{margin-left:auto;min-height:0;padding:0 6px;line-height:1.5}
+.ewPickTip{margin:2px 0 6px;font-size:11px}
+.ewPickGrid{max-height:300px;overflow:auto;padding:2px}
+.ewPickGrid.styHeads{grid-template-columns:repeat(auto-fill,minmax(60px,1fr))}
+.ewPickGrid.styHeads .styOpt{min-height:70px}
 .ewSwatch{display:inline-block;width:9px;height:9px;margin-right:3px;border:1px solid var(--ew-line);border-radius:2px;vertical-align:-1px}
 .ewAmmo{grid-column:1/-1;display:flex;justify-content:center}
 .ewAmmo .ewSlot{width:min(100%,260px)}
-@media (max-width:520px){.equipWin{--ew-z:1.5}.ewBody{padding:6px;gap:4px}.ewSlot{padding:3px 5px;gap:4px;font-size:11px}.ewLook button{padding:1px 4px}.ewHairW{display:none}}
+@media (max-width:520px){.equipWin{--ew-z:1.5}.ewBody{padding:6px;gap:4px}.ewSlot{padding:3px 5px;gap:4px;font-size:11px}}
 /* the class picker (the Skill tree's Job): a button with the job's look, client icon and name that opens every job's as a grid. The
    looks are the equipment window's (.ewStage / .ewFeet). A look reaches 91px above its feet (long hair) and 14px below (feet,
    shadow), so each stage leaves that much room, scaled, above and below where the feet stand */
@@ -865,11 +917,19 @@ details.more>.form{display:grid}
    colours (heads at twice their size) */
 .styTop{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;margin:6px 0 4px}
 .styPreviewCol{display:flex;flex-direction:column;gap:6px}
-.styAnimCtl{gap:4px}.styAnimCtl .styDir{min-width:2.2em;text-align:center}
+.styAnimCtl{flex-direction:column;align-items:stretch;gap:6px;width:274px;max-width:100%}
+.styTurn{display:flex;align-items:center;gap:4px}.styAnimCtl .styDir{min-width:2.2em;text-align:center}
+/* the actions: a label, then up to four buttons a row, every row on the same columns */
+.styAnimCtl .styActs{display:grid;grid-template-columns:auto repeat(4,1fr);gap:2px;row-gap:3px}
+.styActRow{display:contents}
+.styActLab{align-self:center;padding:0 6px 0 4px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.styActRow>button{grid-column:auto}.styActRow>.styActLab{grid-column:1}
+.styOpts.styAnimCtl .seg button{padding:3px 2px;font-size:12.5px;white-space:nowrap}
 .styAnim{display:block;width:270px;height:300px;image-rendering:pixelated}
 .styPreview{--ew-z:1.5;width:272px;height:302px;position:relative;overflow:hidden;border:1px solid var(--line);border-radius:var(--r);background:var(--raised)}
 .styPreview .ewStage{display:block;height:100%;min-height:0}.styPreview .ewFeet{bottom:43px}.styPreview .ewStage::before{bottom:37px}
 .styCtl{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1 1 240px}
+.styOpts .seg button{padding:2px 14px;font-size:12.5px}
 .styOpts button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .styFold{margin-top:12px}
 .styGrid{display:grid;gap:6px}
@@ -963,6 +1023,13 @@ button.naviMark.warp:hover{transform:translate(-50%,-50%) scale(1.4)}
 #infoDlg .worldMap{margin:8px 0}
 #infoDlg .worldMap button:disabled{opacity:1;pointer-events:none}
 .wmBox.on{border:2px solid #ff3b30;background:rgba(255,59,48,.3);box-shadow:0 0 0 2px rgba(255,255,255,.8)}
+/* Where to farm's world map: the ranking's maps carry their rank, the top 3 in the accent colour */
+#farmWorldMore{max-width:900px;margin:4px 0 12px}
+#farmWorld .wmBox[data-rank]{border-color:rgba(255,255,255,.85);background:rgba(255,255,255,.12)}
+#farmWorld .wmBox[data-rank]::after{content:attr(data-rank);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:2;min-width:1.5em;padding:0 3px;border-radius:999px;background:rgba(20,12,8,.85);color:#fff;font-size:clamp(9px,1.1cqw,12px);font-weight:700;line-height:1.5;text-align:center;pointer-events:none}
+#farmWorld .wmBox.top::after{background:var(--accent)}
+#farmWorld .wmBox.dun[data-rank]::after{top:0;left:100%}
+@container (max-width:560px){#farmWorld .wmBox[data-rank]:not(.top)::after{display:none}}
 .wmFloors{position:absolute;z-index:3;width:max-content;max-width:100%;margin:3px 0;padding:3px 0;border:1px solid var(--line-strong);border-radius:6px;background:var(--surface);box-shadow:0 6px 18px rgba(0,0,0,.35)}
 .wmFloors[hidden]{display:none}
 .wmFloorsHead{padding:2px 10px 4px;border-bottom:1px solid var(--line);margin-bottom:2px;font-size:12px;font-weight:600}
@@ -1011,6 +1078,13 @@ details.infoSec>summary:hover h3{color:var(--fg)}
 /* Recipes tab: the category buttons wrap on a phone; each material on its own line */
 #recipeCats{flex-wrap:wrap}
 #recipeCats .note{margin-left:2px}
+/* the Forging category's notes: the tools as a sentence, the ranking and its points side by side (stacked on a phone) */
+#recipeForge{margin-top:10px}#recipeForge[hidden]{display:none}#recipeForge p{margin:4px 0 12px;line-height:1.9}
+#recipeForge .mat{white-space:nowrap}
+#recipeForge table{width:100%}#recipeForge :is(th,td){text-align:left;white-space:normal;font-family:var(--body)}
+#recipeForge td:first-child{white-space:nowrap;width:1%}#recipeForge td.mono{font-family:var(--mono);text-align:right}
+.forgeCols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}.forgeCols .note{margin-top:6px}
+@media (max-width:720px){.forgeCols{grid-template-columns:minmax(0,1fr)}}
 .dbTable td.mats{white-space:normal;min-width:200px;line-height:1.9}
 .dbTable td.mats .mat{display:block;white-space:nowrap}
 /* the details popup: the recipes that use an item, each made item's line and its other materials wrapping */
@@ -1067,6 +1141,13 @@ details.infoSec>summary:hover h3{color:var(--fg)}
 .newsHeadCard{display:flex;flex-direction:column;gap:8px}
 .newsHeadCard h2{font-family:var(--display);font-size:1.9rem;font-weight:800;letter-spacing:-.03em;line-height:1.05}
 .newsHeadCard p{margin:0;max-width:75ch;color:var(--muted);line-height:1.6;text-wrap:pretty}
+.newsUpdates{grid-column:1/-1;display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);justify-self:start;max-width:100%}
+.newsUpdates::-webkit-scrollbar,.newsUpdates[hidden]{display:none}
+.newsUpdates button{flex:none;display:flex;align-items:baseline;gap:6px;border:0;background:none;border-radius:8px;padding:6px 12px;color:var(--muted);font:inherit;font-size:13px;font-weight:500;white-space:nowrap;cursor:pointer;transition:background .12s,color .12s}
+.newsUpdates button span{font-size:12px;opacity:.8}
+.newsUpdates button:hover{color:var(--fg)}
+.newsUpdates button[aria-selected="true"]{color:var(--accent);background:var(--accent-soft);font-weight:600}
+@media (max-width:1359px){.newsUpdates{order:-2;align-self:flex-start}}
 .newsTower{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .newsFloor{display:grid;grid-template-columns:56px minmax(0,1fr);border-top:1px solid var(--line)}
 .newsFloor:first-child{border-top:0}
@@ -1173,6 +1254,10 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 .syncAsk{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:60;width:min(560px,calc(100% - 32px));background:var(--surface);color:var(--fg);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 12px 40px rgba(16,24,40,.25);padding:14px 16px;display:grid;gap:10px}
 .syncSides{display:grid;grid-template-columns:1fr 1fr;gap:10px}.syncSides>div{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--raised);font-size:13px}
 @media (max-width:520px){.syncSides{grid-template-columns:1fr}}
+.syncDiff{display:grid;font-size:13px}.syncDiff>.note:first-child{padding-bottom:4px}
+.sdRow{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:10px;padding:5px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}.sdRow b{font-weight:600}
+.sdHead{border-top:0;padding-top:0}
+@media (max-width:520px){.sdRow{grid-template-columns:1fr 1fr;gap:2px 10px}.sdRow b,.sdHead>span:first-child{grid-column:1/-1}.sdHead>span:first-child{display:none}}
 /* + Add item: the Market's popup (index.html #addDlg). Its suggestions sit in the flow, so the popup's scroll never cuts them off */
 .mktDlg{width:min(640px,calc(100vw - 32px));max-height:min(720px,calc(100vh - 48px));margin-top:8vh}
 .mktDlg .mktPick{position:static}.mktDlg .mktSug{position:static;margin-top:6px;box-shadow:none;max-height:260px}
@@ -1210,3 +1295,16 @@ a.newsBoss{display:inline-flex;align-items:center;gap:2px;text-decoration:none}a
 .affDetails{margin-top:4px}.affDetails summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--accent);padding:2px 0}.affDetails .scroll{margin-top:6px}
 #affixGear .scroll{max-height:420px;overflow:auto}
 /* Item info: the item picked in the list, under it */
+/* Monster skills tab: the monsters as a wrapping row of chips, and each skill's When and how often under them */
+#mskTable td,#mskTable th{vertical-align:top;text-align:left}#mskTable td.mono{text-align:right}#mskTable tbody tr{cursor:default}
+#mskTable>tbody>tr>td:first-child{min-width:140px;max-width:220px}#mskTable>tbody>tr>td:first-child .pill{display:inline-block;margin-top:4px;white-space:nowrap}
+#mskTable td.l{white-space:normal;min-width:240px}
+.mskMobs{display:flex;flex-wrap:wrap;gap:2px 12px}
+.mskMore{margin-top:4px;font-size:13px}.mskMore>summary{cursor:pointer;color:var(--accent);width:max-content}
+.mskMore .scroll{margin-top:6px}.mskHow td[rowspan]{vertical-align:top}
+#mskQ{min-width:180px}
+.mskOneT td,.mskOneT th{vertical-align:top;text-align:left}.mskOneT td[rowspan]{min-width:150px}.mskOneT td[rowspan] .pill{display:inline-block;margin-top:4px;white-space:nowrap}
+/* Refine calculator: price boxes wide enough for millions, the tries before your refine (only after a break) faded */
+#rcPx input{width:118px}
+#rcTable td,#rcTable th{vertical-align:middle}#rcTable select{font-family:inherit}
+#rcTable tr.muted td{opacity:.55}

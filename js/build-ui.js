@@ -3,26 +3,31 @@
 // compared with what the build computes (BUILD_LAST), not with c, since typed Max HP / SP replace the computed ones
 const CHECKS=[["atk","ATK",F=>sumStat(F.atkTxt)],["matk","MATK",F=>sumStat(F.matkTxt)],["hit","HIT",F=>sumStat(F.hitTxt)],["flee","FLEE",F=>parseFloat(String(F.fleeTxt).split("+")[0])||0],
   ["aspd","ASPD",F=>F.aspd],["def","DEF",F=>sumStat(F.defTxt)],["hp","Max HP",F=>F.maxHp],["sp","Max SP",F=>F.maxSp]];
-const BUILT_IDS=["atkPct","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lw","lwAtk","lwElem","crit","critDmg","rangePct","skillPct","vctPct","fctPct","acdPct","ignDef","ignMdef","st_str","st_agi","st_vit","st_dex","st_luk","weapon","wElem"];
+const BUILT_IDS=["atkPct","matkPct","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lw","lwAtk","lwElem","crit","critDmg","rangePct","skillPct","vctPct","fctPct","acdPct","ignDef","ignMdef","st_str","st_agi","st_vit","st_dex","st_luk","weapon","wElem"];
 let BUILD_LAST=null;
-const buildOf=c=>{if(!c.build)c.build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{}};return c.build};
-// other gear sets, as many as you add (up to ALT_MAX; build.alts[i]: gear, stones, special like the build's own), worked out for the
-// gear comparison (Character tab) and the EXP & formulas tab only. c.gearEdit "alt0"…: the gear table edits that set instead of your gear
-const ALT_MAX=10;
+// today in UTC, "YYYY-MM-DD": event-limited gear options (a group's ev) count before the day their event ends
+const todayUtc=()=>new Date().toISOString().slice(0,10);
+const buildOf=c=>{if(!c.build)c.build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{}};const b=c.build;if(!b.base)b.base={str:1,agi:1,vit:1,int:1,dex:1,luk:1};if(!b.gear)b.gear={};return b};
+// other gear sets, as many as you add (up to ALT_MAX, state.js; build.alts[i]: gear, stones, special like the build's own, and a name), worked
+// out for the gear comparison (Character tab) and the Formulas tab only. c.gearEdit "alt0"…: the gear table edits that set instead of your gear
 const altN=c=>{const b=c.build;return b&&Array.isArray(b.alts)?Math.min(ALT_MAX,b.alts.length):0};
 const altOf=(c,i)=>{const b=buildOf(c);if(!Array.isArray(b.alts))b.alts=[];let a=b.alts[i];if(!a||typeof a!=="object")a=b.alts[i]={};if(!a.gear||typeof a.gear!=="object")a.gear={};return a};
 // the set the table edits: 0…altN−1, or −1 for your gear
+// set i's name: the one you gave it, else "Set 3"
+const altName=(c,i)=>{const b=c.build,a=b&&Array.isArray(b.alts)&&b.alts[i];return String(a&&a.name||"").trim()||`Set ${i+1}`};
 const altIdx=(c=C())=>{const m=c.mode==="build"&&/^alt(\d+)$/.exec(c.gearEdit||"");return m&&+m[1]<altN(c)?+m[1]:-1};
 const editAlt=(c=C())=>altIdx(c)>=0;
 const gearSet=(c=C())=>editAlt(c)?altOf(c,altIdx(c)):buildOf(c);
 function applyBuild(){const c=C();if(c.mode!=="build"){BUILD_LAST=null;c.bx=eqToBx(c);return}
-  const r=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,skills:learned(c),extra:[...consLines().lines,...(SKFX?[...SKFX.stat,...SKFX.buffStat]:[]),...aspdBuffLines(c)]},state.job,aspdBase);BUILD_LAST=r;const F=r.fields,A=r.acc;
+  const r=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,skills:learned(c),today:todayUtc(),extra:[...consLines().lines,...(SKFX?[...SKFX.stat,...SKFX.buffStat]:[]),...aspdBuffLines(c)]},state.job,aspdBase);BUILD_LAST=r;const F=r.fields,A=r.acc;
   // skill-specific gear lines count when the attack's name contains the skill
   const nm=String(c.a.name||"").toLowerCase(),match=o=>Object.entries(o).reduce((t,[k,v])=>t+(nm.includes(k.toLowerCase())?v:0),0);
   const top=o=>Object.entries(o).reduce((t,[k,v])=>nm.includes(k.toLowerCase())?Math.max(t,v):t,0); // fixed cast %: only the highest counts
+  // gear's bolt damage % (Sage's / Mage's Essence) also counts on Spell Fist and Hindsight procs: by element, the bolt each one uses
+  const ofSk=(o,n)=>Object.entries(o).reduce((t,[k,v])=>k.toLowerCase()===n?t+v:t,0),bolt={Fire:ofSk(A.skillOf,"fire bolt"),Water:ofSk(A.skillOf,"cold bolt"),Wind:ofSk(A.skillOf,"lightning bolt")};
   Object.assign(c,{atkTxt:F.atkTxt,matkTxt:F.matkTxt,hitTxt:F.hitTxt,fleeTxt:F.fleeTxt,defTxt:F.defTxt,intTxt:F.intTxt,wAtk:F.wAtk,crit:F.crit,critDmg:F.critDmg,
-    atkPct:F.atkPct,rangePct:isRangedHit(c.a,F.weapon)?A.ranged:A.melee,skillPct:A.skill+match(A.skillOf),vctPct:F.vctPct+match(A.vctOf),fctPct:Math.max(F.fctPct,top(A.fctOf)),acdPct:F.acdPct,ignDef:F.ignDef,ignMdef:F.ignMdef,
-    weapon:F.weapon,wElem:F.wElem,lw:F.lw,lwAtk:F.lwAtk,lwElem:F.lwElem,st:{...(c.st||{}),...F.st},bx:{phys:A.phys,magic:A.magic,dist:{melee:A.melee,ranged:A.ranged},myEle:A.myEle,taken:A.taken,exp:A.exp,critRace:A.critRace,spCost:A.spCost,spRec:A.spRec,hpRec:A.hpRec,ign:A.ign}});
+    atkPct:F.atkPct,matkPct:F.matkPct,rangePct:isRangedHit(c.a,F.weapon)?A.ranged:A.melee,skillPct:A.skill+match(A.skillOf),vctPct:F.vctPct+match(A.vctOf),fctPct:Math.max(F.fctPct,top(A.fctOf)),acdPct:F.acdPct,ignDef:F.ignDef,ignMdef:F.ignMdef,
+    weapon:F.weapon,wElem:F.wElem,lw:F.lw,lwAtk:F.lwAtk,lwElem:F.lwElem,st:{...(c.st||{}),...F.st},bx:{phys:A.phys,magic:A.magic,dist:{melee:A.melee,ranged:A.ranged},myEle:A.myEle,taken:A.taken,exp:A.exp,drop:A.drop,critRace:A.critRace,spCost:A.spCost,spRec:A.spRec,hpRec:A.hpRec,ign:A.ign,bolt}});
   c.shield=r.shield;if(F.aspd!=null)c.aspd=F.aspd;if(F.maxHp!=null)c.maxHp=F.maxHp;if(F.maxSp!=null)c.maxSp=F.maxSp;
   // in-game Max HP / SP typed under "Check against the game" win: they include anything the build can't see (buffs, a stale job change)
   const ck=buildOf(c).check||{};if(num(ck.hp)>0)c.maxHp=num(ck.hp);if(num(ck.sp)>0)c.maxSp=num(ck.sp)}
@@ -81,7 +86,12 @@ const CONS_PRESETS=[
   {name:"Premium Course Meal",eff:"All stats +5, ATK/MATK +20"},
   {name:"Enriched Abrasive",eff:"CRIT +30"},
   {name:"Growth Elixir",eff:"Base/Job EXP +50%"},
-  {name:"Ale's Blessing",eff:"Recovery items +20%, Heal received +20%"}];
+  {name:"Ale's Blessing",eff:"Recovery items +20%, Heal received +20%"},
+  // Gatchaman collaboration (until the 26 November 2026 maintenance): Condor Joe's feathers, 60 minutes each (data/news.js)
+  {name:"Gorgeous Feather",eff:"CRIT +5, ASPD +1"},
+  {name:"Heavy Feather",eff:"ATK +4%, MATK +3%"},
+  {name:"Nimble Feather",eff:"HIT/FLEE +15"},
+  {name:"Sturdy Feather",eff:"Max HP/Max SP +3%"}];
 // stacking: stat food (the + column) and Blessing of Yggdrasil don't add up, the higher one counts per stat;
 // course meals, event drinks and other rows stack on top
 // clans (Ragnarok Zero Global; as iRO Wiki's Clan System has it): a buff that stays on while you're
@@ -96,8 +106,8 @@ const consLines=()=>{const lines=[],bad=[],cs=consStatOf(C()),ygg=Object.fromEnt
   lines.push(...clanLines(C()));
   OWN_LISTS.forEach(L=>rowsOf(C(),L.key).filter(r=>r.on).forEach(r=>{const o=parseCons(r.eff);lines.push(...o.lines);bad.push(...o.bad.map(x=>`${r.name||L.what}: ${x}`))}));return {lines,bad}};
 // ---- ASPD potions and buffs from others, from the RO樂園攻速計算機 sheet (2026-09-07, "增益"). "aspd_mod" is the sheet's potion/skill
-// value: it adds value × AGI/200 to ASPD1 (see build.js). Who can drink them and from which base level (lv): rAthena item_db_usable ----
-const ASPD_POT={conc:{id:645,name:"Concentration Potion",mod:4},awak:{id:656,name:"Awakening Potion",mod:6,lv:40,no:["Novice","Acolyte","Priest","Bard","Dancer"]},
+// value: it adds value × AGI/200 to ASPD1 (see build.js). Who can drink them and from which base level (lv): the potions' in-game text ----
+const ASPD_POT={conc:{id:645,name:"Concentration Potion",mod:4},awak:{id:656,name:"Awakening Potion",mod:6,lv:40,no:["Acolyte","Priest","Bard","Dancer"]},
   bers:{id:657,name:"Berserk Potion",mod:9,lv:85,only:["Mage","Merchant","Swordsman","Wizard","Blacksmith","Alchemist","Knight","Crusader","Rogue"]}};
 const potJobOk=(k,job=state.job)=>{const p=ASPD_POT[k];return !!p&&!(p.no||[]).includes(job)&&(!p.only||p.only.includes(job))};
 // below the potion's base level it can't be drunk (a blank base level doesn't hold it back)
@@ -110,29 +120,49 @@ const AXE_MACE=["One-handed axe","Two-handed axe","One-handed mace","Two-handed 
 // Skill values are Zero's in-game skill text (data/skills.js), which differs from classic RO for several of them
 const PBUFF=[
   {k:"blessing",name:"Blessing",lv:[1,10,10],fx:l=>[["str",l],["int",l],["dex",l],["hit",2*l]]},
-  {k:"clementia",name:"Clementia (Priest)",lv:[1,70,50,"Priest Job Lv"],fx:j=>{const v=10+Math.floor(j/10);return [["str",v],["int",v],["dex",v]]},
+  // Clementia: Blessing Lv 10 (stats +10, HIT +20) and Job Lv / 10 on each: a Job Lv 70 Priest shows STR, INT, DEX +17 and HIT +27 (2026-11-14)
+  {k:"clementia",name:"Clementia (Priest, advanced Blessing)",lv:[1,70,50,"Priest Job Lv"],fx:j=>{const v=10+Math.floor(j/10);return [["str",v],["int",v],["dex",v],["hit",v+10]]},
     how:"Blessing Lv 10 + Priest Job Lv/10"},
   {k:"incAgi",name:"Increase AGI",lv:[1,10,10],fx:l=>[["agi",2+l],["aspd_percent",l]]},
+  // Canto Candidus: Increase AGI Lv 10 (AGI +12, ASPD +10%) and Priest Job Lv / 10 on each, as Clementia: a Job Lv 70 Priest gives AGI +19,
+  // ASPD +17%. Defaults to Job Lv 70, the value it had before it took a level
+  {k:"canto",name:"Canto Candidus (Priest, advanced Increase AGI)",lv:[1,70,70,"Priest Job Lv"],fx:j=>{const v=Math.floor(j/10);return [["agi",12+v],["aspd_percent",10+v]]},
+    how:"Increase AGI Lv 10 + Priest Job Lv/10"},
   // Angelus on Zero: Max HP +50 and VIT-based DEF +5% per level (the VIT / 2 part of soft DEF), 30 s × level, the caster's whole party
   {k:"angelus",name:"Angelus",lv:[1,10,10],fx:l=>[["hp",50*l],["vit_def_percent",5*l]]},
   {k:"impositio",name:"Impositio Manus (Priest)",lv:[1,5,5],fx:l=>[["atk",5*l],["matk",5*l]],how:"Zero: ATK and MATK, not only weapon ATK"},
   {k:"assumptio",name:"Assumptio (Priest)",lv:[1,5,5],fx:l=>[["def",50*l],["heal_pct",2*l]],how:"Zero: flat DEF, not classic's half damage"},
-  {k:"canto",name:"Canto Candidus (Priest)",fx:()=>[["agi",19],["aspd_percent",17]]},
-  {k:"riff",name:"Impressive Riff (Bard)",lv:[1,10,10],fx:l=>[["aspd_percent",l===10?17:1+2*(l-1)]],how:"Zero: 17% at Lv 10, not the description's 20%"},
-  {k:"adren",name:"Adrenaline Rush (from a Blacksmith)",w:AXE_MACE,lv:[1,5,5],fx:l=>[["aspd_mod",6],["aspd_percent",10],["hit",5+3*l]],how:"axes and maces; HIT +5 + 3 per level from Zero's skill text"}];
+  // Impressive Riff: After Attack Delay −2% a level, so +20% at Lv 10 (the client's SkillDescript_enUS, 2026-11-12)
+  {k:"riff",name:"Impressive Riff (Bard)",lv:[1,10,10],fx:l=>[["aspd_percent",2*l]]},
+  {k:"adren",name:"Adrenaline Rush",w:AXE_MACE,lv:[1,5,5],fx:l=>[["aspd_mod",6],["aspd_percent",10],["hit",5+3*l]],how:"axes and maces; HIT +5 + 3 per level from Zero's skill text"},
+  // a party Sage's Endow: your weapon's element (both hands) at no cost to you, and +1% a level to your spells of that element. One at
+  // a time (a new Endow replaces the old one); a converter or skill picked under Weapon element goes over it (see pEndow in model.js)
+  ...[["endowFire","Endow Blaze","Fire"],["endowWater","Endow Tsunami","Water"],["endowWind","Endow Tornado","Wind"],["endowEarth","Endow Quake","Earth"]]
+    .map(([k,name,el])=>({k,name,el,lv:[1,5,5],fx:()=>[],eff:l=>`weapon element ${el}, ${el} spells +${l}%`}))];
 const pbuffOf=c=>{if(!c.pbuffs||typeof c.pbuffs!=="object")c.pbuffs={};return c.pbuffs};
 const pbLv=(b,o)=>b.lv?Math.min(b.lv[1],Math.max(b.lv[0],num(o.lv,b.lv[2]))):0;
 // what it does at level lv (the level you typed, else the default)
 const PB_LABEL={aspd_percent:v=>`ASPD +${v}%`,aspd_mod:v=>`potion/skill value ${v}`,hp:v=>`Max HP +${v}`,vit_def_percent:v=>`VIT DEF +${v}%`,heal_pct:v=>`Heal received +${v}%`};
-const pbEff=(b,lv=b.lv?b.lv[2]:0)=>b.eff||b.fx(lv).map(([t,v])=>PB_LABEL[t]?PB_LABEL[t](v):`${t.toUpperCase()} +${v}`).join(", ")+(b.how?` (${b.how})`:"");
+const pbEff=(b,lv=b.lv?b.lv[2]:0)=>(typeof b.eff==="function"?b.eff(lv):b.eff)||b.fx(lv).map(([t,v])=>PB_LABEL[t]?PB_LABEL[t](v):`${t.toUpperCase()} +${v}`).join(", ")+(b.how?` (${b.how})`:"");
 // a buff counts when ticked and it fits your weapon. It doesn't stack with the same buff switched on in your Skills card, and
-// Clementia replaces Blessing, Canto Candidus replaces Increase AGI
+// Clementia (the advanced Blessing) replaces Blessing, Canto Candidus (the advanced Increase AGI) replaces Increase AGI: a character
+// has one of each pair, so ticking one unticks the other, and it replaces your own Blessing / Increase AGI from the Skills card too
 const PB_SELF={blessing:"blessing",incAgi:"increase-agility",angelus:"angelus",impositio:"impositio-manus",adren:"adrenaline-rush"},PB_OVER={blessing:"clementia",incAgi:"canto"};
+const PB_PAIRS=[["blessing","clementia"],["incAgi","canto"]];
 const pbTicked=(k,c)=>!!(pbuffOf(c)[k]||{}).on;
+// your own Skills card buff (skills.js skillEffects) that a ticked advanced buff from others replaces
+const pbOverOwn=(slug,c)=>{const k=Object.keys(PB_SELF).find(x=>PB_SELF[x]===slug);return !!(k&&PB_OVER[k]&&pbTicked(PB_OVER[k],c))};
 const pbOn=(b,c)=>{if(!pbTicked(b.k,c)||(b.w&&!b.w.includes(c.weapon)))return false;const own=PB_SELF[b.k];
   if(own&&(c.buffs||{})[own]&&skLv(c,own))return false;return !(PB_OVER[b.k]&&pbTicked(PB_OVER[b.k],c))};
 function aspdBuffLines(c=C()){const out=[];if(c.potOn){const k=potKey(c);if(k)out.push(["aspd_mod",null,null,ASPD_POT[k].mod])}
   PBUFF.forEach(b=>{if(pbOn(b,c))b.fx(pbLv(b,pbuffOf(c)[b.k])).forEach(([t,v])=>out.push([t,null,null,v]))});return out}
+// what raises your ASPD, for its tile in Your numbers: the potion, the buffs from others and your own Skills card buffs that have ASPD lines
+const ASPD_LINE_T=["aspd","aspd_percent","aspd_mod","agi"];
+function aspdFrom(c=C()){const out=[];if(c.potOn){const k=potKey(c);if(k)out.push(ASPD_POT[k].name)}
+  PBUFF.forEach(b=>{if(pbOn(b,c)&&b.fx(pbLv(b,pbuffOf(c)[b.k])).some(([t])=>ASPD_LINE_T.includes(t)))out.push(b.name.replace(/ \(.*\)$/,""))});
+  if(hasTree(c)){const S=skOf(state.job);Object.keys(c.buffs||{}).forEach(k=>{if(c.buffs[k]&&SK_BUFF[k]&&S[k]&&skLv(c,k)&&!pbOverOwn(k,c)&&(!SK_BUFF[k].w||SK_BUFF[k].w.includes(c.weapon))
+    &&skillEffects({...c,buffs:{[k]:true}}).buffStat.some(([t])=>ASPD_LINE_T.includes(t)))out.push(S[k].name.trim())})}
+  return out}
 // one line type summed over the buffs from others that count (Assumptio's Heal received % for consSum)
 const pbSum=(t,c=C())=>aspdBuffLines(c).reduce((a,b)=>a+(b[0]===t?b[3]:0),0);
 // status-window mode: the typed numbers are read with consumables off, so their effect is added here into EFF (see cf).
@@ -150,16 +180,16 @@ function applyConsumables(){EFF=null;const c=C();if(!addOnTop(c))return;const li
   const [as,ag]=parts(c.atkTxt),[ms,mg]=parts(c.matkTxt),[ds,dh]=parts(c.defTxt);
   // ATK % isn't in the status window: it goes to atkPct, which the damage model adds next to the race / size cards
   const atkSt=as+d("atk"),atkGear=ag+g("atk");
-  const matkSt=ms+d("matk"),matkTot=f((matkSt+mg+g("matk"))*(1+g("matk_percent")/100));
+  const matkSt=ms+d("matk"),matkTot=matkSt+mg+g("matk"); // MATK % isn't in the window either: matkPct
   // ASPD as in build.js: stat term and potion/skill value × AGI/200 go into ASPD1, then ASPD % and flat ASPD, rounded down
-  let aspd=num(c.aspd,170)+d("aspdTerm")+g("aspd_mod")*(statVal(tmp,"agi")||0)/200;aspd=Math.min(190,Math.floor(aspd+(195-aspd)*g("aspd_percent")/100+g("aspd")));
+  let aspd=num(c.aspd,170)+d("aspdTerm")+g("aspd_mod")*(statVal(tmp,"agi")||0)/200;aspd=Math.min(190,Math.floor(aspd+(195-aspd)*g("aspd_percent")/100+g("aspd")+1e-9));
   const vit0=statVal(c,"vit"),vit1=statVal(tmp,"vit"),int0=statVal(c,"int"),int1=statVal(tmp,"int");
   // Angelus's VIT-based DEF % goes on the soft DEF (needs the VIT you typed)
   const vitDef=vit1!=null?BUILD.vitDefAdd(vit1,g("vit_def_percent")):0;
   const hp=num(c.maxHp)>0?f((num(c.maxHp)*(vit0!=null?(100+vit1)/(100+vit0):1)+g("hp"))*(1+g("hp_percent")/100)):c.maxHp;
   const sp=num(c.maxSp)>0?f((num(c.maxSp)*(100+int1)/(100+int0)+g("sp"))*(1+g("sp_percent")/100)):c.maxSp;
   EFF={atkTxt:`${atkSt}+${atkGear}`,matkTxt:`${matkSt}+${matkTot-matkSt}`,hitTxt:String(sumStat(c.hitTxt)+d("hit")+g("hit")),fleeTxt:String(sumStat(c.fleeTxt)+d("flee")+g("flee")),
-    atkPct:num(c.atkPct)+g("atk_percent"),defTxt:`${ds+d("def")+vitDef}+${dh+g("def")}`,crit:num(c.crit)+d("crit")+g("crit"),aspd,maxHp:hp,maxSp:sp,st:tmp.st,intTxt:tmp.intTxt}}
+    atkPct:num(c.atkPct)+g("atk_percent"),matkPct:num(c.matkPct)+g("matk_percent"),defTxt:`${ds+d("def")+vitDef}+${dh+g("def")}`,crit:num(c.crit)+d("crit")+g("crit"),aspd,maxHp:hp,maxSp:sp,st:tmp.st,intTxt:tmp.intTxt}}
 function renderCons(){const c=C(),cs=consStatOf(c);
   $("consStats").tBodies[0].innerHTML=STAT6_UI.map(k=>{const o=cs[k]||{};return `<tr data-cs="${k}"><td>${k.toUpperCase()}</td>
     <td><input data-f="n" type="number" step="1" value="${esc(o.n??"")}" placeholder="0" aria-label="${k.toUpperCase()} +"></td>
@@ -176,12 +206,17 @@ function renderAspdBuffs(){const c=C(),k=potKey(c),act=document.activeElement;$(
     return `<option value="${key}"${key===k?" selected":""}${lvOk?"":" disabled"}>${p.name} (${p.mod})${lvOk?"":` · Base Lv ${p.lv}+`}</option>`}).join("");
   // the potion in use, its icon opening its details like the other item names
   $("potIcon").innerHTML=k?`<a href="#" data-info="item:${ASPD_POT[k].id}" title="${esc(ASPD_POT[k].name)}">${itemIcon(ASPD_POT[k].id)}</a>`:"";
-  if(!$("pbuffList").contains(act))$("pbuffList").innerHTML=PBUFF.map(b=>{const o=pbuffOf(c)[b.k]||{},off=b.w&&!b.w.includes(c.weapon),own=PB_SELF[b.k]&&(c.buffs||{})[PB_SELF[b.k]]&&skLv(c,PB_SELF[b.k]);
+  if(!$("pbuffList").contains(act))$("pbuffList").innerHTML=PBUFF.map(b=>{const o=pbuffOf(c)[b.k]||{},off=b.w&&!b.w.includes(c.weapon),own=PB_SELF[b.k]&&(c.buffs||{})[PB_SELF[b.k]]&&skLv(c,PB_SELF[b.k]),
+      base=Object.keys(PB_OVER).find(x=>PB_OVER[x]===b.k),repl=o.on&&base&&PB_SELF[base]&&(c.buffs||{})[PB_SELF[base]]&&skLv(c,PB_SELF[base]);
     return `<div class="eqrow" data-pb="${b.k}"><label class="bar pbName"><input type="checkbox" data-f="on" ${o.on?"checked":""}>${esc(b.name)}</label>
     ${b.lv?`<label class="bar">${b.lv[3]||"Lv"} <input data-f="lv" type="number" min="${b.lv[0]}" max="${b.lv[1]}" value="${pbLv(b,o)}" class="w-xs"></label>`:""}
-    <span class="note"><span data-pbeff>${esc(pbEff(b,pbLv(b,o)))}</span>${off?' · <span class="warnc">not with this weapon</span>':own?" · on in your Skills card, counted there":""}</span></div>`}).join("")}
+    <span class="note"><span data-pbeff>${esc(pbEff(b,pbLv(b,o)))}</span>${off?' · <span class="warnc">not with this weapon</span>':own&&!(PB_OVER[b.k]&&pbTicked(PB_OVER[b.k],c))?" · on in your Skills card, counted there":repl?` · replaces your ${esc(PBUFF.find(x=>x.k===base).name)} from the Skills card`:""}</span></div>`}).join("")}
 $("pbuffList").addEventListener("input",e=>{const f=e.target.dataset.f,row=e.target.closest("[data-pb]");if(!f||!row)return;const o=pbuffOf(C())[row.dataset.pb]||(pbuffOf(C())[row.dataset.pb]={});
   o[f]=f==="on"?e.target.checked:num(e.target.value);
+  // one Endow at a time, and one of Blessing / Clementia and of Increase AGI / Canto Candidus: ticking one unticks the others
+  if(f==="on"&&o.on){const k=row.dataset.pb,pair=PB_PAIRS.find(p=>p.includes(k));
+    PBUFF.filter(x=>x.k!==k&&(PBUFF.find(y=>y.k===k).el?x.el:pair&&pair.includes(x.k))).forEach(x=>{const q=pbuffOf(C())[x.k];if(q)q.on=false;
+      const box=$("pbuffList").querySelector(`[data-pb="${x.k}"] [data-f="on"]`);if(box)box.checked=false})}
   // the list isn't redrawn while you type in it, so the effect text follows the level here
   {const b=PBUFF.find(x=>x.k===row.dataset.pb),el=row.querySelector("[data-pbeff]");if(b&&el)el.textContent=pbEff(b,pbLv(b,o))}save();renderAll()});
 $("clanSel").innerHTML=`<option value="">none</option>`+Object.entries(CLANS).map(([k,x])=>`<option value="${k}">${esc(x.name)}</option>`).join("");
@@ -227,7 +262,7 @@ function eqToBx(c){const o={phys:{all:0,race:{},size:{},ele:{},kind:{},group:{}}
 // equipment; not consumables or buffs), one row per bonus. A bonus with different physical and magic values gets a row for each
 const setSaved=b=>{const sp=b.special||{};return Object.keys(b.gear||{}).length>0||Object.values(b.stones||{}).some(Boolean)||!!sp.ring||!!sp.shield||(sp.own||[]).length>0||Object.values(sp.costume||{}).some(Boolean)};
 const gearSaved=c=>setSaved(c.build||{});
-function gearEqRows(c){const A=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,skills:learned(c),extra:[]},state.job,aspdBase).acc,rows=[];
+function gearEqRows(c){const A=BUILD.compute({...buildOf(c),baseLv:c.baseLv,jobLv:c.jobLv,skills:learned(c),today:todayUtc(),extra:[]},state.job,aspdBase).acc,rows=[];
   const add=(by,t,v,ch="both")=>{v=Math.round(v*100)/100;if(v)rows.push({by,t,ch,v})};
   const both=(by,t,p,m)=>{if(p===m)add(by,t,p);else{add(by,t,p,"phys");add(by,t,m,"magic")}};
   ["race","size","ele","kind","group"].forEach(by=>new Set([...Object.keys(A.phys[by]),...Object.keys(A.magic[by])]).forEach(t=>both(by,t,A.phys[by][t]||0,A.magic[by][t]||0)));
@@ -250,18 +285,22 @@ $("eqAdd").addEventListener("click",()=>{eqOf(C()).push({by:"race",t:RACES[0],ch
 $("eqFill").addEventListener("click",()=>{const c=C();if(!gearSaved(c))return;const rows=gearEqRows(c),had=eqOf(c).length;
   if(had&&!confirm(`Replace your ${had} Equipment stats line${had>1?"s":""} with the ${rows.length} your gear in Build from gear gives?`))return;
   c.eq=rows;save();renderEq();renderAll();
-  $("eqFillNote").textContent=rows.length?`Filled ${rows.length} line${rows.length>1?"s":""} from your gear. Procs and lines Build from gear lists under "Not counted" aren't included.`:"Your gear in Build from gear has no lines for this list."});
+  $("eqFillNote").textContent=rows.length?`Filled ${rows.length} line${rows.length>1?"s":""} from your gear (procs and "Not counted" lines left out).`:"Your gear in Build from gear has no lines for this list."});
 $("eqList").addEventListener("click",e=>{if(e.target.closest("[data-del]")==null)return;const i=+e.target.closest(".eqrow").dataset.i;eqOf(C()).splice(i,1);save();renderEq();renderAll()});
 $("eqList").addEventListener("change",e=>{const f=e.target.dataset.f;if(!f||f==="v")return;const r=eqOf(C())[+e.target.closest(".eqrow").dataset.i];r[f]=e.target.value;
   if(f==="by"){const T=EQ_TARGETS[r.by];const first=T&&T()[0];r.t=first==null?"":Array.isArray(first)?first[0]:first}save();renderEq();renderAll()});
 $("eqList").addEventListener("input",e=>{if(e.target.dataset.f!=="v")return;eqOf(C())[+e.target.closest(".eqrow").dataset.i].v=e.target.value===""?"":num(e.target.value);save();renderAll()});
-// item picker labels: the name, plus the id when two items share a name
 const jobSlug=()=>state.job.toLowerCase();
 // gear lists the job family ("swordsman" covers Knight and Crusader), so a 2nd job also matches its 1st job
 const FIRST_OF=BUILD.FIRST_OF;
 const canWear=it=>!it.jobs||!it.jobs.length||it.jobs.includes(jobSlug())||(FIRST_OF[state.job]&&it.jobs.includes(FIRST_OF[state.job].toLowerCase()));
-const labelOf=(it,list)=>list.filter(x=>x.name===it.name).length>1?`${it.name} #${it.id}`:it.name;
-const pickList=(list)=>{const m=new Map();list.forEach(it=>m.set(labelOf(it,list),it.id));return m};
+// item picker labels: the name; when two items share a name, the slot count as the game writes it ("Arc Wand [1]", "Arc Wand [2]").
+// Copies alike in everything but the id (Damascus 1222 and 510137) share the label and the list keeps the first; the id is added only
+// when same-named, same-slot items differ
+const itemKey=it=>JSON.stringify({...it,id:0,slug:0,jobs:[...new Set(it.jobs||[])].sort()});
+const labelOf=(it,list)=>{const same=list.filter(x=>x.name===it.name);if(same.length<2)return it.name;
+  const n=it.slots||0,l=n?`${it.name} [${n}]`:it.name,k=itemKey(it);return same.some(x=>(x.slots||0)===n&&itemKey(x)!==k)?`${l} #${it.id}`:l};
+const pickList=(list)=>{const m=new Map();list.forEach(it=>{const l=labelOf(it,list);if(!m.has(l))m.set(l,it.id)});return m};
 let GEAR_LISTS={};
 // an Assassin's Shield row also takes a left-hand dagger, one-handed sword or one-handed axe
 const leftHandOk=it=>state.job==="Assassin"&&(it.slot||[]).includes("weapon")&&BUILD.DUAL_W.includes(BUILD.WTYPE[it.type]);
@@ -310,7 +349,7 @@ function renderStones(){const b=gearSet(),sel=b.stones||{},ring=(b.special||{}).
     return `<tr><td>Costume ${lo}</td><td><div class="itemBox">${itemIcon(cos[z.k])}<input class="item" data-costume="${z.k}" list="cos_${z.k}" placeholder="none" title="The costume the ${lo} stone goes on" aria-label="Costume ${lo}" value="${esc(costumeName(cos[z.k]))}"></div></td>
     <td><div class="itemBox">${itemIcon(sel[z.k])}<select data-stone="${z.k}" aria-label="Costume ${lo} stone"><option value="">no stone</option>${all.filter(x=>x.slot===z.k)
     .map(x=>`<option value="${x.id}"${+sel[z.k]===x.id?" selected":""}>${esc(x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""))}: ${esc(stoneFx(x))}</option>`).join("")}</select></div></td><td></td></tr>`}).join("")+
-    `<tr><td>Shield</td><td><div class="itemBox">${iconHtml("gear",sh)}<select data-shadow="shield" aria-label="Shadow shield"><option value="">none</option>${shadowShields().map(x=>`<option value="${x.id}"${+sh===x.id?" selected":""}>${esc(x.name)}: ${esc(stoneFx({b:(x.g||[]).flatMap(g=>g.b||[])}))}</option>`).join("")}</select></div></td><td></td><td></td></tr>
+    `<tr><td>Shadow shield</td><td><div class="itemBox">${iconHtml("gear",sh)}<select data-shadow="shield" aria-label="Shadow shield"><option value="">none</option>${shadowShields().map(x=>`<option value="${x.id}"${+sh===x.id?" selected":""}>${esc(x.name)}: ${esc(stoneFx({b:(x.g||[]).flatMap(g=>g.b||[])}))}</option>`).join("")}</select></div></td><td></td><td></td></tr>
     <tr><td>Accessory right</td><td><div class="itemBox">${itemIcon(ring&&24966)}<select data-ringon="1" aria-label="Accessory right"><option value="">none</option><option value="1"${ring?" selected":""}>Taming Ring</option></select></div></td><td><div class="itemBox">${itemIcon(ring)}<select data-ring="1" aria-label="Taming Ring pet egg" title="${ring?"The pet egg sealed in the ring":"Picking an egg puts the Taming Ring on"}"><option value="">no egg</option>${eggs.map(x=>`<option value="${x.id}"${+ring===x.id?" selected":""}>${esc(x.name)}: ${esc([x.b.length?stoneFx({b:x.b}):"",x.off||""].filter(Boolean).join(", "))}</option>`).join("")}</select></div></td><td></td></tr>`;renderSpecialOwn()}
 // other special equipment: rows {on, name, opts} in b.special.own, each with up to OPT_MAX effects from the full affix list
 const specialOwn=()=>{const b=gearSet();b.special=b.special||{};if(!Array.isArray(b.special.own))b.special.own=[];return b.special.own};
@@ -355,6 +394,11 @@ const memAll=(c,gear)=>Object.values(gear||{}).forEach(g=>memKeep(c,g));
 // put item id in row g, the one there now remembered first: as it last was if remembered, else +0 with no cards or affixes
 function gearPut(c,g,id){if(g.id===id)return;memKeep(c,g);const m=memOf(c)[id]||{};g.id=id;
   g.refine=num(m.refine);g.cards=[...(m.cards||[])];g.opts=JSON.parse(JSON.stringify(m.opts||[]));if(m.optsText)g.optsText=m.optsText;else delete g.optsText}
+// a two-handed weapon takes both hands, so it and the Shield row (shield or left-hand weapon) can't both be worn: putting one on
+// takes the other off, remembered, as the game does. k is the row just filled
+const twoHandOn=gear=>{const w=gear&&gear.weapon&&BUILD.item(gear.weapon.id);return !!w&&BUILD.twoHanded(BUILD.WTYPE[w.type])};
+function handsFree(c,gear,k){if(k!=="weapon"&&k!=="shield"||!twoHandOn(gear)||!(gear.shield&&gear.shield.id))return;
+  const off=k==="weapon"?"shield":"weapon";memKeep(c,gear[off]);delete gear[off]}
 // "+7 · Vitata Card · 2 affixes"
 const memTxt=m=>[num(m.refine)?`+${num(m.refine)}`:"",...(m.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean),
   ...(m.opts&&m.opts.length?[`${m.opts.length} affix${m.opts.length>1?"es":""}`]:[])].filter(Boolean).join(" · ");
@@ -387,7 +431,9 @@ function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};l
     const g=b.gear[s.k]||{},it=g.id&&BUILD.item(g.id),label=n=>{const x=BUILD.item(n);return x?labelOf(x,cards):""};
     const cardBoxes=it&&it.slots?Array.from({length:it.slots},(_,i)=>`<span class="cardBox">${iconHtml("card",g.cards&&g.cards[i],.5)}<input data-card="${i}" list="cl_${s.k}" placeholder="card" title="The card (Vitata), or the name it gives the item in game (Healing)" value="${esc(g.cards&&g.cards[i]?label(g.cards[i]):"")}"></span>`).join(""):"";
     const refinable=it&&s.k!=="ammo"; // every part: some accessories and headgear refine though the data has no schedule for them
-    return `<tr data-slot="${s.k}"><td>${s.k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label}</td><td><div class="itemBox">${iconHtml("gear",it&&it.id)}<input class="item" list="gl_${s.k}" placeholder="${items.length?"none":"no items for this job"}" title="The item, or its name from the equipment window (+7 Healing Shining Clip) or with its cards (+7 Shining Clip Vitata): sets the refine and cards too" value="${esc(it?labelOf(it,items):"")}"></div></td>
+    // under a two-handed weapon the Shield row is closed; a shield saved there before stays editable so it can be taken off
+    const both=s.k==="shield"&&twoHandOn(b.gear),w2=both&&BUILD.item(b.gear.weapon.id),off=both&&!it;
+    return `<tr data-slot="${s.k}"${both?' class="bothHands"':""}><td>${s.k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label}${both?`<div class="note">${it?"not counted: ":""}${esc(w2.name)} takes both hands</div>`:""}</td><td><div class="itemBox">${iconHtml("gear",it&&it.id)}<input class="item" list="gl_${s.k}" placeholder="${off?"two-handed weapon":items.length?"none":"no items for this job"}" title="${off?esc(`${w2.name} is two-handed: take it off to use a shield${state.job==="Assassin"?" or a left-hand weapon":""}`):"The item, or its name from the equipment window (+7 Healing Shining Clip) or with its cards (+7 Shining Clip Vitata): sets the refine and cards too"}" value="${esc(it?labelOf(it,items):"")}"${off?" disabled":""}></div></td>
       <td>${refinable?`<input class="ref" type="number" min="0" max="20" value="${num(g.refine)}">`:""}</td><td><div class="cards">${cardBoxes}</div></td>
       <td>${it?optBoxes(s.k,g,it):""}</td></tr>`}).join("");
   $("gearTable").tBodies[0].innerHTML=rows;$("gearLists").innerHTML=lists;renderStones();
@@ -440,15 +486,35 @@ function wornOf(L){const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,co
   const shown=k=>{for(const w of [cos,gear])if(w[k])return ["upper","middle","lower"].find(s=>slotsOf(w[k]).includes(s))===k?w[k]:null;return null};
   const r=look(cos.garment||gear.garment);
   return {head:["lower","upper","middle"].map(shown).map(look).filter(x=>x&&x[0]==="h").map(x=>x[1]),robe:r&&r[0]==="r"?r[1]:null}}
+// what a gear set (gearSet's) wears, as a look's {gear, cos}: its headgear and garment (one that's a costume, "[Costume] ...", with the
+// costumes) and the costumes in Special equipment, each in every slot it takes, a later one taking off what was in them. Pieces the
+// client has no look for are left out
+function wornFromSet(b){const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,w={gear:{},cos:{}};if(!CL||!b)return w;
+  const cosSlots=id=>(typeof COSTUMES!=="undefined"&&COSTUMES[id])||CL.cos[id];
+  const put=(kind,id)=>{const c=w[kind],sl=(kind==="cos"?cosSlots(id):CL.gear[id])||[];
+    sl.forEach(k=>{const o=c[k];if(o)Object.keys(c).forEach(s=>{if(c[s]===o)delete c[s]})});
+    sl.forEach(k=>{if(["upper","middle","lower","garment"].includes(k))c[k]=id})};
+  const ids=a=>[...new Set(a.map(x=>+x).filter(x=>x&&CL.items[x]))];
+  ids(["headTop","headMid","headLow","garment"].map(k=>((b.gear||{})[k]||{}).id)).forEach(id=>put(cosSlots(id)?"cos":"gear",id));
+  ids(Object.values((b.special||{}).costume||{})).forEach(id=>put("cos",id));
+  return w}
+// the body a look is drawn with (data/sprites.js): the job's own (a Novice's for a job with no look), its transcendent look (trans, a 2nd
+// job's), riding the Halter Lead's mount (ride), or both, where the client has it. set: the body per gender; pal: its clothes colours'
+// set; key: "<job>", "<job>+", "<job>~" or "<job>+~", as the garment sheets and animated looks name it
+const LOOK_SETS={"":"body","+":"trans","~":"ride","+~":"rideTrans"};
+function lookBody(job,trans,ride){const S=JOB_SPRITES,j=S.body[job]?job:"Novice",t=!!(trans&&EW_TRANS[j]&&(S.trans||{})[j]);
+  const r=!!(ride&&(S[t?"rideTrans":"ride"]||{})[j]),sfx=(t?"+":"")+(r?"~":""),set=LOOK_SETS[sfx];
+  return {job:j,trans:t,ride:r,key:j+sfx,set:S[set][j],pal:set+"Pal"}}
 // a job's look as a canvas placed from the feet (in an .ewFeet), painted by drawLook once the sheets load: L is a look like state.look
 // ({sex, hair, color, dye}, cos: the costumes worn and gear: the normal headgear and garment, each {upper, middle, lower, garment: item
-// id}), trans a 2nd job's transcendent look. A job with no look of its own (or no look for the gender) takes the Novice's, or its one gender's
+// id}, ride: on the Halter Lead's mount), trans a 2nd job's transcendent look. A job with no look of its own (or no look for the gender)
+// takes the Novice's, or its one gender's
 function lookCanvas(job,L,trans){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";
-  const tj=trans&&EW_TRANS[job]&&S.trans&&S.trans[job],bj=tj||S.body[job]||S.body.Novice,sex=bj[L.sex]?L.sex:Object.keys(bj)[0],b=bj[sex],
-    hs=S.head[sex]||{},hair=hs[L.hair]?L.hair:1,h=hs[hair],pk=tj?"transPal":"bodyPal",pj=tj||S.body[job]?job:"Novice";
-  // what it wears (wornOf): headgear on the head anchor, the garment from the feet on this body's garment sheet, behind the body unless
-  // the client draws it on top
-  const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,w=wornOf(L),rk=tj?job+"+":S.body[job]?job:"Novice";
+  const lb=lookBody(job,trans,L.ride),bj=lb.set,sex=bj[L.sex]?L.sex:Object.keys(bj)[0],b=bj[sex],
+    hs=S.head[sex]||{},hair=hs[L.hair]?L.hair:1,h=hs[hair],pk=lb.pal,pj=lb.job;
+  // what it wears (wornOf): headgear on the head anchor, the garment from the feet on this body's garment sheet, behind the body: the
+  // look stands facing you, which the client always draws with the garment behind (its spreditinfo layer tables)
+  const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LOOKS,w=wornOf(L),rk=lb.key;
   const acc=w.head.map(v=>(CL.head.at[v]||{})[sex]).filter(Boolean),rs=w.robe&&CL.robe.bodies[rk],ra=rs&&(rs.at[w.robe]||{})[sex];
   // body and head go into one canvas at the sprites' own size, which the page then scales: as separate boxes each rounded to the
   // screen's pixels on its own, so at some zooms the head sat a pixel off the body
@@ -456,24 +522,56 @@ function lookCanvas(job,L,trans){const S=typeof JOB_SPRITES!=="undefined"&&JOB_S
   const l=Math.min(...parts.map(p=>p[4])),t=Math.min(...parts.map(p=>p[5])),r=Math.max(...parts.map(p=>p[4]+p[2])),bt=Math.max(...parts.map(p=>p[5]+p[3]));
   const at=(p,x,y)=>[...p.slice(0,4),x-l,y-t].join(","),bp=((S[pk]||{})[pj]||{})[sex],dye=bp&&L.dye<bp.c.length?L.dye:0,color=L.color<ewColors(sex,hair)?L.color:0;
   return `<canvas class="ewPic" width="${r-l}" height="${bt-t}" style="left:${l}px;top:${t}px" data-body="${at(b,b[4],b[5])}" data-pal="${pk},${pj},${sex}" data-dye="${dye}"${h?` data-head="${at(h,b[6]+h[4],b[7]+h[5])}" data-hair="${sex},${hair},${color}"`:""}`+
-    `${acc.length?` data-acc="${acc.map(a=>at(a,b[6]+a[4],b[7]+a[5])).join(";")}"`:""}${ra?` data-robe="${rk},${at(ra,ra[4],ra[5])},${CL.robe.top.includes(w.robe)?1:0}"`:""}></canvas>`}
-function lookHtml(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";const tj=ewTrans(S),bj=(state.look.trans&&tj)||S.body[state.job]||S.body.Novice,sex=ewSex(bj),hs=S.head[sex]||{};
-  const one=Object.keys(bj).length<2,hair=hs[state.look.hair]?state.look.hair:1,nc=ewColors(sex,hair),color=state.look.color<nc?state.look.color:0;
-  const pal=S.hairPal&&S.hairPal[sex]&&S.hairPal[sex][hair],swatch=pal?pal.c[color].substr(pal.k*6,6):"";
+    `${acc.length?` data-acc="${acc.map(a=>at(a,b[6]+a[4],b[7]+a[5])).join(";")}"`:""}${ra?` data-robe="${rk},${at(ra,ra[4],ra[5])}"`:""}></canvas>`}
+// the look as drawn now: the body (the transcendent look's with Trans on), its gender, and the hair style, hair colour and clothes
+// colour that fit it (an out-of-range one shows as the first)
+function ewLookNow(){const S=JOB_SPRITES,tj=ewTrans(S),bj=(state.look.trans&&tj)||S.body[state.job]||S.body.Novice,sex=ewSex(bj),hs=S.head[sex]||{};
+  const hair=hs[state.look.hair]?state.look.hair:1,nc=ewColors(sex,hair),color=state.look.color<nc?state.look.color:0;
   // clothes colour 0 is undyed, 1 and up the client's dyes for this body
-  const bp=ewBodyPal(),nd=bp?bp.c.length:0,dye=state.look.dye<nd?state.look.dye:0,dyeSwatch=bp?bp.c[dye].substr(bp.k*6,6):"";
-  // Ragnarok Zero has no zeny stylist (iRO's): a new style or color after character creation takes a paid KP shop item (New Style
-  // Coupon, 7622), and clothes color a Clothing Dye Coupon or Clothing Dye Coupon II (6046, 6047), the transcendent look's too
-  const hairTip="changing it after character creation takes a paid KP shop item, such as a New Style Coupon";
-  const dyeTip="a Clothing Dye Coupon or Clothing Dye Coupon II (KP shop) changes it, on the transcendent look too. The dye stays through a job change, but can look different on the new job";
-  return `<div class="ewStage"><div class="ewFeet">${lookCanvas(state.job,state.look,state.look.trans)}</div></div>
-    <div class="ewLook"><button type="button" class="small" data-ewsex="" ${one?`disabled title="${esc(state.job)}s are ${sex==="f"?"female":"male"} only"`:`title="Gender: ${sex==="f"?"female":"male"}"`} aria-label="Gender">${sex==="f"?"♀":"♂"}</button>
-      <button type="button" class="small" data-ewhair="-1" aria-label="Previous hair style" title="Hair style: ${hairTip}">◀</button><span title="Hair style: ${hairTip}"><span class="ewHairW">Hair </span>${hair}</span><button type="button" class="small" data-ewhair="1" aria-label="Next hair style" title="Hair style: ${hairTip}">▶</button></div>
-      ${nc>1?`<div class="ewLook"><button type="button" class="small" data-ewcolor="-1" aria-label="Previous hair color" title="Hair color: ${hairTip}">◀</button><span title="Hair color ${color} of 0–${nc-1}: ${hairTip}"><span class="ewSwatch" style="background:#${swatch}"></span><span class="ewHairW">Color </span>${color}</span><button type="button" class="small" data-ewcolor="1" aria-label="Next hair color" title="Hair color: ${hairTip}">▶</button></div>`:""}
-      ${nd>1?`<div class="ewLook"><button type="button" class="small" data-ewdye="-1" aria-label="Previous clothes color" title="Clothes color: ${dyeTip}">◀</button><span title="Clothes color ${dye} of 0–${nd-1} (0 undyed): ${dyeTip}"><span class="ewSwatch" style="background:#${dyeSwatch}"></span><span class="ewHairW">Dye </span>${dye}</span><button type="button" class="small" data-ewdye="1" aria-label="Next clothes color" title="Clothes color: ${dyeTip}">▶</button></div>`:""}
-      ${tj?`<div class="ewLook"><button type="button" class="small ewTrans" data-ewtrans="" aria-pressed="${!!state.look.trans}" title="${esc(`${EW_TRANS[state.job]} look: Ragnarok Zero has no transcendent jobs, so a ${state.job} can look like a ${EW_TRANS[state.job]}. A Costume Change Ticket switches the look in game`)}">Trans</button></div>`:""}`}
+  const bp=ewBodyPal(),nd=bp?bp.c.length:0,dye=state.look.dye<nd?state.look.dye:0;
+  return {S,tj,bj,sex,one:Object.keys(bj).length<2,hair,nh:ewHairs(sex),nc,color,bp,nd,dye}}
+// Ragnarok Zero has no zeny stylist (iRO's): a new style or color after character creation takes a paid KP shop item (New Style
+// Coupon, 7622), and clothes color a Clothing Dye Coupon or Clothing Dye Coupon II (6046, 6047), the transcendent look's too
+const EW_HAIR_TIP="Changing it after character creation takes a paid KP shop item, such as a New Style Coupon.";
+const EW_DYE_TIP="A Clothing Dye Coupon or Clothing Dye Coupon II (KP shop) changes it, on the transcendent look too. The dye stays through a job change, but can look different on the new job.";
+// which grid of choices is open under the Look panel (EW_PICK: "hair", "color", "dye" or null): a button per choice beats stepping
+// through 40-odd hair styles one at a time
+let EW_PICK=null;
+const ewChev='<svg class="ic ewChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+// the character in the window, wearing what the tab shows
+function lookHtml(worn){return typeof JOB_SPRITES==="undefined"?"":`<div class="ewStage"><div class="ewFeet">${lookCanvas(state.job,{...state.look,...worn},state.look.trans)}</div></div>`}
+// the Look panel beside the window: gender (M / F; the one a job doesn't have greyed out, Bards are male only and Dancers female), a 2nd
+// job's own look or its transcendent job's, then a button for hair style, hair colour and clothes dye that opens the grid of them all
+function ewLookCtl(){const S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!S)return "";const v=ewLookNow();
+  const pal=S.hairPal&&S.hairPal[v.sex]&&S.hairPal[v.sex][v.hair],swatch=pal?pal.c[v.color].substr(pal.k*6,6):"",dyeSwatch=v.bp?v.bp.c[v.dye].substr(v.bp.k*6,6):"";
+  const radio=(k,x,on,label,extra="")=>`<button type="button" role="radio" data-ew${k}="${x}" aria-checked="${on}"${extra}>${esc(label)}</button>`;
+  const sexBtn=s=>radio("sex",s,v.sex===s,s==="f"?"F":"M",v.one&&v.sex!==s?` disabled title="${esc(state.job)}s are ${v.sex==="f"?"female":"male"} only"`:` title="${s==="f"?"Female":"Male"}"`);
+  const row=(label,ctl)=>`<span class="ewLbl">${label}</span>${ctl}`;
+  const open=(k,label,val,sw)=>row(label,`<button type="button" class="small ewOpen" data-ewopen="${k}" aria-expanded="${EW_PICK===k}" aria-controls="ewPicker" aria-label="${label} ${val}: pick from all of them">${sw?`<span class="ewSwatch" style="background:#${sw}"></span>`:""}<span>${val}</span>${ewChev}</button>`);
+  return `<div class="ewSide"><div class="ewSideHead">Look</div><div class="ewRows">
+    ${row("Gender",`<span class="seg segSm" role="radiogroup" aria-label="Gender">${sexBtn("m")}${sexBtn("f")}</span>`)}
+    ${v.tj?row("Job look",`<span class="seg segSm" role="radiogroup" aria-label="Job look" title="${esc(`Ragnarok Zero has no transcendent jobs, so a ${state.job} can look like a ${EW_TRANS[state.job]}. A Costume Change Ticket switches the look in game`)}">${radio("trans",0,!state.look.trans,state.job)}${radio("trans",1,!!state.look.trans,EW_TRANS[state.job])}</span>`):""}
+    ${open("hair","Hair style",v.hair,"")}${v.nc>1?open("color","Hair color",v.color,swatch):""}${v.nd>1?open("dye","Clothes dye",v.dye,dyeSwatch):""}</div></div>`}
+// the open grid, across under the window and the Look panel: every hair style (in your hair colour, or its first where it has fewer), every
+// hair colour on your hair style, or every clothes colour on the whole look without its costumes. A pick shows on the character at
+// once and leaves the grid open to try the next
+function ewPicker(){const k=EW_PICK,S=typeof JOB_SPRITES!=="undefined"&&JOB_SPRITES;if(!k||!S)return "";const v=ewLookNow();
+  const n={hair:v.nh,color:v.nc,dye:v.nd}[k];if(!(n>1))return "";
+  const opt=(x,on,pic,label)=>`<button type="button" class="styOpt" data-ewpick="${k},${x}" aria-pressed="${on}" title="${esc(label)}">${pic}<span class="mono">${x}</span></button>`;
+  const grid=k==="hair"?Array.from({length:n},(_,i)=>i+1).map(h=>opt(h,h===v.hair,headCanvas(v.sex,h,v.color<ewColors(v.sex,h)?v.color:0,2),`Hair style ${h}`))
+    :k==="color"?Array.from({length:n},(_,c)=>opt(c,c===v.color,headCanvas(v.sex,v.hair,c,2),`Hair color ${c}`))
+    :Array.from({length:n},(_,d)=>opt(d,d===v.dye,`<span class="ewStage"><span class="ewFeet">${lookCanvas(state.job,{...state.look,dye:d,cos:{},gear:{}},state.look.trans)}</span></span>`,d?`Clothes color ${d}`:"Clothes color 0: undyed"));
+  const [title,cur,lo]={hair:["Hair style",v.hair,1],color:["Hair color",v.color,0],dye:["Clothes dye",v.dye,0]}[k];
+  return `<div class="ewPicker" id="ewPicker" role="group" aria-label="${title}"><div class="ewPickHead"><b>${title}</b><span class="note">${cur} of ${lo}–${lo+n-1}${k==="dye"?" (0 undyed)":""}</span>
+      <button type="button" class="small ewPickX" data-ewclose="" aria-label="Close">✕</button></div>
+    <p class="note ewPickTip">${k==="dye"?EW_DYE_TIP:EW_HAIR_TIP}</p>
+    <div class="styGrid ${k==="dye"?"styLooks":"styHeads"} ewPickGrid">${grid.join("")}</div></div>`}
+// what the character in the window wears, as in game: on Normal Equip its headgear and garment, on Special Equip the costumes over them
+function ewWorn(b,sp){const w=wornFromSet(b);if(!sp)w.cos={};return w}
 function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),sp=EW_TAB==="special";
   const gearSlot=(k,right)=>{const g=b.gear[k],it=g&&g.id&&BUILD.item(g.id),s=BUILD.SLOTS.find(x=>x.k===k);
+    // a two-handed weapon fills the shield slot too, as in game (a shield saved there before shows instead, not counted)
+    if(k==="shield"&&!it&&twoHandOn(b.gear))return ewSlot("weapon",`${s.label} (two-handed weapon)`,gameName(b.gear.weapon),iconHtml("gear",b.gear.weapon.id),right).replace('class="ewSlot','class="ewSlot both');
     return ewSlot(k,k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label,it?gameName(g):"",iconHtml("gear",it&&it.id),right)};
   // a costume slot: the costume with its stone, "[Costume] Chicken beak [STR Stone]" (or the stone alone, when no costume is picked)
   const stone=(k,right)=>{const id=(b.stones||{})[k],x=id&&(typeof STONES!=="undefined"?STONES:[]).find(s=>s.id===+id&&s.slot===k),
@@ -483,18 +581,19 @@ function renderEquipWin(){const el=$("equipWin"),c=C(),b=gearSet(c),i=altIdx(c),
   const ring=()=>{const id=(b.special||{}).ring,x=id&&(typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[]).find(e=>e.id===+id);
     return ewSlot("ring","Taming Ring",x?`Taming Ring [${x.name}]`:id?"Taming Ring":"",itemIcon(id&&24966),false)};
   // the shadow shield in the shield's place, as in game; other special equipment you wear in the right column's free slots
-  const shield=()=>{const it=BUILD.item((b.special||{}).shield);return ewSlot("shield","Shield",it?it.name:"",iconHtml("gear",it&&it.id),true)};
+  const shield=()=>{const id=(b.special||{}).shield,it=id&&BUILD.item(id);return ewSlot("shield","Shadow shield",it?it.name:"",iconHtml("gear",it&&it.id),true)};
   const own=((b.special||{}).own||[]).map((x,j)=>({x,j})).filter(o=>o.x.on!==false&&(o.x.name||"").trim()).slice(0,3),ownSlot=n=>own[n]?ewSlot("own"+own[n].j,"Special equipment",own[n].x.name.trim(),iconHtml("gear",null),true):ewNone(true);
   const L=sp?[stone("upper"),stone("lower"),ewNone(),stone("garment"),ring()]:EW_L.map(k=>gearSlot(k,false));
   const R=sp?[stone("middle",true),ownSlot(0),shield(),ownSlot(1),ownSlot(2)]:EW_R.map(k=>gearSlot(k,true));
   // arrows only for jobs that can hold a bow, or when some are set
   const ammo=!sp&&(b.gear.ammo&&b.gear.ammo.id||gearChoices("weapon").some(it=>BUILD.WTYPE[it.type]==="Bow"))?`<div class="ewAmmo">${gearSlot("ammo",false)}</div>`:"";
-  const html=`<div class="ewHead"><span>Equipped Items</span>${i>=0?`<span class="ewSet">Set ${i+1}</span>`:""}</div>
+  const html=`<div class="equipWin"><div class="ewHead"><span>Equipped Items</span>${i>=0?`<span class="ewSet">${esc(altName(c,i))}</span>`:""}</div>
     <div class="ewTabs" role="tablist">${[["normal","Normal Equip"],["special","Special Equip"]].map(([k,t])=>`<button type="button" role="tab" data-ewtab="${k}" aria-selected="${EW_TAB===k}">${t}</button>`).join("")}</div>
-    <div class="ewBody"><div class="ewCol">${L.join("")}</div><div class="ewChar">${lookHtml()}</div><div class="ewCol">${R.join("")}</div>${ammo}</div>`;
-  // the button you pressed keeps focus through the redraw
-  const a=document.activeElement,f=a&&el.contains(a)?["ewtab","ewsex","ewhair","ewcolor","ewdye","ewtrans","ewslot"].map(k=>a.dataset[k]!=null?`[data-${k}="${a.dataset[k]}"]`:null).find(Boolean):null;
-  if(renderEquipWin.html===html)return;renderEquipWin.html=html;el.innerHTML=html;drawLook(el);if(f)el.querySelector(f)?.focus()}
+    <div class="ewBody"><div class="ewCol">${L.join("")}</div><div class="ewChar">${lookHtml(ewWorn(b,sp))}</div><div class="ewCol">${R.join("")}</div>${ammo}</div></div>${ewLookCtl()}${ewPicker()}`;
+  // the button you pressed keeps focus through the redraw, and the open grid its scroll
+  const a=document.activeElement,f=a&&el.contains(a)?["ewtab","ewsex","ewopen","ewpick","ewtrans","ewslot"].map(k=>a.dataset[k]!=null?`[data-${k}="${a.dataset[k]}"]`:null).find(Boolean):null;
+  if(renderEquipWin.html===html)return;renderEquipWin.html=html;const g=el.querySelector(".ewPickGrid"),top=g&&g.scrollTop;
+  el.innerHTML=html;drawLook(el);const g2=el.querySelector(".ewPickGrid");if(g2&&top)g2.scrollTop=top;if(f)el.querySelector(f)?.focus({preventScroll:true})}
 // a hair style on its own (the Stylist's hair grids), drawn k times its size, painted by drawLook like a look's canvas
 function headCanvas(sex,hair,color,k=1){const h=typeof JOB_SPRITES!=="undefined"&&(JOB_SPRITES.head[sex]||{})[hair];if(!h)return "";
   return `<canvas class="ewPic lookHead" width="${h[2]}" height="${h[3]}" style="width:${h[2]*k}px;height:${h[3]*k}px" data-head="${[...h.slice(0,4),0,0].join(",")}" data-hair="${sex},${hair},${color}"></canvas>`}
@@ -505,7 +604,7 @@ function costumeImg(key){const CL=typeof COSTUME_LOOKS!=="undefined"&&COSTUME_LO
   if(!COS_IMG.has(key))COS_IMG.set(key,Object.assign(new Image(),{onload:()=>drawLook(document),src:`${s.file}?v=${s.v}`}));return COS_IMG.get(key)}
 // each look's canvas in root (lookCanvas, headCanvas): the body [x,y,w,h on the sheet, x,y in the canvas] from the job sheet, each index
 // coloured with the clothes colour's palette, then the head the same from the hair sheet with the hair colour's; once both sheets have
-// loaded. Costumes are drawn from their sheets as they are: a garment behind the body (or over it), headgear over the head
+// loaded. Costumes are drawn from their sheets as they are: a garment behind the body, headgear over the head
 function drawLook(root){const bp=ewPx(EW_SHEET),hp=ewPx(EW_HAIR);if(!bp||!hp)return;
   root.querySelectorAll("canvas.ewPic").forEach(c=>{const [k,j,s]=(c.dataset.pal||"").split(","),body=k&&((JOB_SPRITES[k]||{})[j]||{})[s];if(body||!c.dataset.body)paintLook(c,bp,hp,body)})}
 function paintLook(c,bp,hp,body){const g=c.getContext("2d");g.clearRect(0,0,c.width,c.height);
@@ -515,23 +614,25 @@ function paintLook(c,bp,hp,body){const g=c.getContext("2d");g.clearRect(0,0,c.wi
       if(rgb){img.data[o]=parseInt(rgb.slice(0,2),16);img.data[o+1]=parseInt(rgb.slice(2,4),16);img.data[o+2]=parseInt(rgb.slice(4),16);img.data[o+3]=255}}
     const pc=document.createElement("canvas");pc.width=w;pc.height=h;pc.getContext("2d").putImageData(img,0,0);g.drawImage(pc,l,t)};
   const sheet=(im,at)=>{if(!im||!im.complete||!im.naturalWidth)return;const [x,y,w,h,l,t]=at.map(Number);g.drawImage(im,x,y,w,h,l,t,w,h)};
-  const robe=c.dataset.robe&&c.dataset.robe.split(","),ri=robe&&costumeImg(robe[0]),top=robe&&robe[7]==="1";
-  if(robe&&!top)sheet(ri,robe.slice(1,7));
+  const robe=c.dataset.robe&&c.dataset.robe.split(",");
+  if(robe)sheet(costumeImg(robe[0]),robe.slice(1,7));
   if(c.dataset.body)paint(bp,c.dataset.body,ewPal(body,+c.dataset.dye));
-  if(robe&&top)sheet(ri,robe.slice(1,7));
   if(c.dataset.head){const [sex,n,color]=c.dataset.hair.split(",");paint(hp,c.dataset.head,ewPal(JOB_SPRITES.hairPal[sex][n],+color))}
   if(c.dataset.acc){const im=costumeImg("head");c.dataset.acc.split(";").forEach(a=>sheet(im,a.split(",")))}}
 $("equipWin").addEventListener("click",e=>{const t=e.target.closest("button");if(!t||t.disabled)return;const L=state.look;
   if(t.dataset.ewtab){EW_TAB=t.dataset.ewtab;renderEquipWin();return}
-  if(t.dataset.ewtrans!=null){L.trans=!L.trans;save();renderEquipWin();return}
-  if(t.dataset.ewsex!=null){L.sex=L.sex==="f"?"m":"f";if(L.hair>ewHairs(L.sex))L.hair=1;save();renderEquipWin();return}
-  if(t.dataset.ewhair){const S=JOB_SPRITES.body[state.job]||JOB_SPRITES.body.Novice,n=ewHairs(ewSex(S));if(n)L.hair=(L.hair-1+ +t.dataset.ewhair+n)%n+1;save();renderEquipWin();return}
-  if(t.dataset.ewcolor){const S=JOB_SPRITES.body[state.job]||JOB_SPRITES.body.Novice,n=ewColors(ewSex(S),L.hair);if(n)L.color=((L.color<n?L.color:0)+ +t.dataset.ewcolor+n)%n;save();renderEquipWin();return}
-  if(t.dataset.ewdye){const p=ewBodyPal(),n=p?p.c.length:0;if(n)L.dye=((L.dye<n?L.dye:0)+ +t.dataset.ewdye+n)%n;save();renderEquipWin();return}
+  if(t.dataset.ewtrans){L.trans=t.dataset.ewtrans==="1";save();renderEquipWin();return}
+  if(t.dataset.ewsex){if(L.sex===t.dataset.ewsex)return;L.sex=t.dataset.ewsex;if(L.hair>ewHairs(L.sex))L.hair=1;save();renderEquipWin();return}
+  if(t.dataset.ewopen){EW_PICK=EW_PICK===t.dataset.ewopen?null:t.dataset.ewopen;renderEquipWin();
+    if(EW_PICK)$("ewPicker")?.scrollIntoView({block:"nearest",behavior:"smooth"});return}
+  if(t.dataset.ewclose!=null){const k=EW_PICK;EW_PICK=null;renderEquipWin();$("equipWin").querySelector(`[data-ewopen="${k}"]`)?.focus();return}
+  if(t.dataset.ewpick){const [k,x]=t.dataset.ewpick.split(",");L[k]=+x;save();renderEquipWin();return}
   const k=t.dataset.ewslot;if(!k)return;
   const to=EW_TAB==="special"?(k==="ring"?$("stoneRow").querySelector("[data-ringon]"):k==="shield"?$("stoneRow").querySelector("[data-shadow]"):k.startsWith("own")?$("specialOwn").querySelector(`[data-i="${k.slice(3)}"] [data-f=name]`):$("stoneRow").querySelector(`[data-costume="${k}"]`))
     :$("gearTable").querySelector(`tr[data-slot="${k}"] input.item`);
   if(to){const d=to.closest("details");if(d)d.open=true;to.scrollIntoView({block:"center",behavior:"smooth"});to.focus({preventScroll:true})}});
+// Escape closes the open grid, back to its button
+$("equipWin").addEventListener("keydown",e=>{if(e.key!=="Escape"||!EW_PICK)return;e.preventDefault();const k=EW_PICK;EW_PICK=null;renderEquipWin();$("equipWin").querySelector(`[data-ewopen="${k}"]`)?.focus()});
 // ---- class picker (the Skill tree's Job): a button with the job's look, icon and name that opens every job's in groups, like a list
 // of classes to pick from. Each job shows its male and female look side by side (a Bard only male, a Dancer only female), undyed, each
 // with a random hair style and colour, rolled each time you open the tab (the button and the list show the same). groups: [[heading,
@@ -573,7 +674,12 @@ function classPicker(el,groups,onPick,mine){let cur=null,shown="",looks={};
   document.addEventListener("click",e=>{if(!el.contains(e.target))close()});
   el.addEventListener("focusout",e=>{if(e.relatedTarget&&!el.contains(e.relatedTarget))close()});
   return (job,fresh)=>{if(fresh)looks={};const html=`${look(job,mine?mine(job):lookOf(job))}${iconHtml("job",job)}<span class="cpName"><span class="cpLbl">Job</span>${esc(job)}</span><svg class="ic cpChev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`;
-    cur=job;btn.setAttribute("aria-label",`Job: ${job}`);if(shown===html)return;shown=html;btn.innerHTML=html;drawLook(btn)}}
+    cur=job;btn.setAttribute("aria-label",`Job: ${job}`);if(shown===html)return;shown=html;btn.innerHTML=html;drawLook(btn);
+    // a look taller or wider than one on foot (riding the Halter Lead's mount) is drawn smaller, to fit the button: 94px above the
+    // feet and 47px to each side at the stage's scale (.7)
+    const cs=[...btn.querySelectorAll(".ewFeet canvas")],px=(c,k)=>parseFloat(c.style[k])||0;
+    const up=Math.max(...cs.map(c=>-px(c,"top"))),side=Math.max(...cs.map(c=>Math.max(-px(c,"left"),px(c,"left")+c.width))),k=Math.min(1,94/up,47/side);
+    if(k<1)btn.querySelectorAll(".ewFeet").forEach(f=>f.style.transform=`scale(${(.7*k).toFixed(3)})`)}}
 // Build from gear's Status, Gear, Equipment and Special equipment panels fold away, remembered like a card (state.collapsed)
 [["buildStatFold","Build from gear: status"],["gsetFold","Build from gear: gear sets"],["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
   d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[key])return;if(d.open)delete c[key];else c[key]=true;save()})});
@@ -585,23 +691,27 @@ function renderBuild(){const c=C(),on=c.mode==="build";
   if(on&&renderBuild.job!==state.job){renderBuild.job=state.job;renderGearTable()}if(!on)renderBuild.job=null;
   ROOTQ("[data-cmode]").forEach(x=>x.setAttribute("aria-checked",String(x.dataset.cmode===(on?"build":"status"))));
   $("buildPanel").hidden=!on;$("statNote").hidden=on;$("shieldRow").hidden=on;$("onTopWrap").hidden=on;$("addOnTop").checked=c.addOnTop!==false;BUILT_IDS.forEach(id=>{const el=$(id);el.disabled=on;if(on&&document.activeElement!==el)el.value=id.startsWith("st_")?(c.st||{})[id.slice(3)]??"":c[id]??""});
-  $("modeNote").textContent=on?"Stats below are worked out from your base stats, job level and gear.":"Type the numbers from your in-game status window.";
-  if(!on)return;renderAltBar(c);renderLoadouts(c);renderEquipWin();const b=buildOf(c);renderStatWin(c);
+  // Build from gear has its own status window: the typed Status card keeps only SP regen, the one box it still takes
+  {const p=$("statPanel"),sp=$("spRegen");p.querySelectorAll(".form,.form>label").forEach(x=>x.classList.toggle("buildOff",on&&!x.contains(sp)));
+    p.querySelector("summary .note").textContent=on?"leave it on auto, or type the tick you measured":"";
+    p.querySelector("summary b").textContent=on?"SP regen":"Status"}
+  if(!on)return;renderAltBar(c);renderEquipWin();const b=buildOf(c);renderStatWin(c);
   const r=BUILD_LAST;if(!r)return;const jb=r.jobBonus;
   $("jobBonusNote").textContent=`Job Lv ${r.fields.jobLv} bonus: `+BUILD.STAT6.map(k=>`${k.toUpperCase()} +${jb[k]}`).join(" · ")+(BUILD.curve(state.job,"hp",num(c.baseLv))==null?" · no HP/SP table for this job, type Max HP/SP after switching back":"");
   // check against the game: type the in-game totals, see the difference per stat
   const ck=b.check||{},rows=CHECKS.map(([k,label,get])=>{const mine=get(r.fields),g=ck[k];const d=g!=null&&g!==""&&mine!=null?num(g)-mine:null;
     return `<label>${label}<span class="bar"><input data-ck="${k}" type="number" value="${esc(g??"")}" placeholder="${mine??"–"}" class="fill">${d==null?"":`<span class="${Math.abs(d)<0.5?"good":"bad"}">${d===0?"✓":(d>0?"+":"")+fmtP(+d.toFixed(1))}</span>`}</span></label>`}).join("");
   if(!$("checkGrid").contains(document.activeElement))$("checkGrid").innerHTML=rows;
-  // cards the Character tab's Cards rows model: they count once ticked there
+  // cards the Character tab's Cards rows model from your gear: listed as counted there, not as missing
   // the other gear set's own notes while the table shows it
   const un=editAlt(c)?(x=>x?withSnap(x,()=>BUILD_LAST.unmodelled):[])(altChar(c,altIdx(c))):r.unmodelled;
-  const inRow=x=>CARD_ROW.some(n=>x.startsWith(n+":")),tick=un.filter(inRow),rest=un.filter(x=>!inRow(x));
+  const inRow=x=>CARD_ROW.some(n=>x.startsWith(n+":"))&&(state.job==="Sage"||!x.startsWith("Dark Priest Card:")),
+    inRows=[...new Set(un.filter(inRow).map(x=>x.split(":")[0]))],rest=un.filter(x=>!inRow(x));
   $("buildNote").innerHTML=(rest.length?`<b>Not counted</b> (procs, conditional or unsupported lines):<br>${rest.map(esc).join("<br>")}`:"")+
-    (tick.length?`${rest.length?"<br>":""}<b>Tick in the Cards rows</b> (Character tab, under the attack) to count: ${tick.map(x=>esc(x.split(":")[0])).join(", ")}`:"")}
-const CARD_ROW=["Hunter Fly Card","Sidewinder Card","Creamy Card","Dracula Card","Dark Priest Card",...Object.values(KILL_SP).map(n=>n+" Card")];
+    (inRows.length?`${rest.length?"<br>":""}<b>Counted in the Cards rows</b> (Character tab, under the attack): ${inRows.map(esc).join(", ")}`:"")}
+const CARD_ROW=["Vitata Card","Phen Card","Bloody Butterfly Card","Hunter Fly Card","Sidewinder Card","Creamy Card","Dracula Card","Dark Priest Card",...Object.values(KILL_SP).map(n=>n+" Card")];
 // switching to build keeps a copy of the typed status-window values, and switching back restores them
-const SNAP_KEYS=["shield","atkPct","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lw","lwAtk","lwElem","crit","critDmg","rangePct","skillPct","vctPct","fctPct","acdPct","ignDef","ignMdef","weapon","wElem","st"];
+const SNAP_KEYS=["shield","atkPct","matkPct","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lw","lwAtk","lwElem","crit","critDmg","rangePct","skillPct","vctPct","fctPct","acdPct","ignDef","ignMdef","weapon","wElem","st"];
 ROOTQ("[data-cmode]").forEach(x=>x.addEventListener("click",()=>{const c=C(),to=x.dataset.cmode,from=c.mode==="build"?"build":"status";if(to===from)return;
   if(to==="build")c.statusSnap=JSON.parse(JSON.stringify(Object.fromEntries(SNAP_KEYS.map(k=>[k,c[k]??null]))));
   else if(c.statusSnap){SNAP_KEYS.forEach(k=>{const v=c.statusSnap[k];if(v==null)delete c[k];else c[k]=v});delete c.statusSnap}
@@ -639,14 +749,14 @@ const readTxt=r=>{const it=BUILD.item(r.id),n=new Map();r.cards.forEach(id=>n.se
 function gearAlts(k,txt,r){GEAR_ALTS=r&&r.alts?{k,list:[r,...r.alts]}:null;const el=$("gearAlts");el.hidden=!GEAR_ALTS;
   el.innerHTML=GEAR_ALTS?`“${esc(txt)}” fits more than one reading. Filled in: ${esc(readTxt(r))}. Or use: ${r.alts.map((a,i)=>`<button type="button" class="small" data-gearalt="${i+1}">${esc(readTxt(a))}</button>`).join(" ")}`:""}
 $("gearAlts").addEventListener("click",e=>{const x=e.target.closest("[data-gearalt]");if(!x||!GEAR_ALTS)return;const c=C(),b=gearSet(c),k=GEAR_ALTS.k;
-  gearRead(c,b.gear[k]||(b.gear[k]={}),GEAR_ALTS.list[+x.dataset.gearalt]);gearAlts(k,"",null);save();renderGearTable();renderAll()});
+  gearRead(c,b.gear[k]||(b.gear[k]={}),GEAR_ALTS.list[+x.dataset.gearalt]);handsFree(c,b.gear,k);gearAlts(k,"",null);save();renderGearTable();renderAll()});
 $("gearTable").addEventListener("change",e=>{const tr=e.target.closest("tr[data-slot]");if(!tr)return;const k=tr.dataset.slot,c=C(),b=gearSet(c),g=b.gear[k]||(b.gear[k]={});
   if(e.target.classList.contains("item")){const v=e.target.value.trim();const id=GEAR_LISTS["g_"+k].get(v);
     // not on the list: read it as the equipment window names it, refine and cards included (they win over what the item last had)
     const r=id==null&&v?readGear(k,v):null;
     if(!v){memKeep(c,g);delete b.gear[k]}else if(id!=null)gearPut(c,g,id);
     else if(r)gearRead(c,g,r);else{e.target.value=g.id?e.target.defaultValue:"";return}
-    gearAlts(k,v,r);save();renderGearTable();renderAll();return}
+    if(v)handsFree(c,b.gear,k);gearAlts(k,v,r);save();renderGearTable();renderAll();return}
   // picking an option keeps its value; "remove" drops it. The rows replace any text typed before the lists
   if(e.target.dataset.opt!=null){const rows=BUILD.optRows(g.opts),i=+e.target.dataset.opt,v=e.target.value;
     if(!v)rows.splice(i,1);else rows[i]={k:v,v:rows[i]?rows[i].v:""};optSet(g,rows);save();renderGearTable();renderAll();
@@ -672,7 +782,7 @@ $("gearTable").addEventListener("input",e=>{if(e.target.dataset.optv!=null){cons
   if(!e.target.classList.contains("ref"))return;const k=e.target.closest("tr").dataset.slot;const g=gearSet().gear[k];if(!g)return;
   g.refine=Math.max(0,Math.min(20,num(e.target.value)));save();renderAll()});
 // ---- other gear sets: + Add set adds one and Remove set takes it away; the gear table edits set i after "Set i" is picked. Your gear
-// stays what the page works with, and Your gear vs other gear sets (Character tab, ref.js) works them all out side by side. "Swap" makes a set your gear (and yours
+// stays what the page works with, and Compare gear (Character tab, ref.js) works them all out side by side. "Swap" makes a set your gear (and yours
 // that set), so you can switch back ----
 const altSaved=(c,i)=>c.mode==="build"&&!!(c.build&&Array.isArray(c.build.alts)&&c.build.alts[i])&&setSaved(c.build.alts[i]);
 // the sets with gear in them, by number
@@ -680,64 +790,57 @@ const altList=(c=C())=>Array.from({length:altN(c)},(_,i)=>i).filter(i=>altSaved(
 // your character with set i on instead of your gear (base stats, skills and buffs stay); the in-game Max HP / SP typed
 // under "Check against the game" are for your gear, so they don't count for it
 const altChar=(c,i)=>{if(!altSaved(c,i))return null;const x=JSON.parse(JSON.stringify(c)),a=x.build.alts[i];
-  x.build={...x.build,gear:a.gear||{},stones:a.stones||{},special:a.special||{},check:{}};delete x.build.alts;delete x.build.loadouts;delete x.build.mem;delete x.gearEdit;return x};
+  x.build={...x.build,gear:a.gear||{},stones:a.stones||{},special:a.special||{},check:{}};delete x.build.alts;delete x.build.loadouts;delete x.build.setName;delete x.build.mem;delete x.gearEdit;return x};
 const SET_KEYS=["gear","stones","special"];
 const setCopy=b=>JSON.parse(JSON.stringify(Object.fromEntries(SET_KEYS.map(k=>[k,b[k]||{}]))));
 const gearTxt=g=>{const it=g&&g.id&&BUILD.item(g.id);if(!it)return "none";const n=(g.cards||[]).filter(Boolean).map(id=>(BUILD.item(id)||{}).name).filter(Boolean);
   return `${num(g.refine)?`+${num(g.refine)} `:""}${it.name}${n.length?` [${n.join(", ")}]`:""}`};
-// what set i changes: "Weapon: Pike → +7 Zweihander" per gear row (affixes count as a change too), then the special equipment
-function altDiff(c,i){const b=buildOf(c),a=altOf(c,i),g0=b.gear||{},g1=a.gear||{},same=(x,y)=>JSON.stringify(x||null)===JSON.stringify(y||null);
-  const rows=BUILD.SLOTS.filter(s=>!same(g0[s.k],g1[s.k])).map(s=>`${esc(s.label)}: ${esc(gearTxt(g0[s.k]))} → <b>${esc(gearTxt(g1[s.k]))}</b>${gearTxt(g0[s.k])===gearTxt(g1[s.k])?" (affixes)":""}`);
+// what set i changes: "Weapon: Pike → +7 Zweihander" per gear row (affixes count as a change too), then the special equipment.
+// short: only what the set has, "Weapon → +7 Zweihander"
+function altDiff(c,i,short){const b=buildOf(c),a=altOf(c,i),g0=b.gear||{},g1=a.gear||{},same=(x,y)=>JSON.stringify(x||null)===JSON.stringify(y||null);
+  const rows=BUILD.SLOTS.filter(s=>!same(g0[s.k],g1[s.k])).map(s=>short?`${esc(s.label)} → ${esc(gearTxt(g1[s.k]))}`:`${esc(s.label)}: ${esc(gearTxt(g0[s.k]))} → <b>${esc(gearTxt(g1[s.k]))}</b>${gearTxt(g0[s.k])===gearTxt(g1[s.k])?" (affixes)":""}`);
   // an empty list of other special equipment is the same as none (a set the table never showed has none)
   const sp=x=>{const o={...(x||{})};if(Array.isArray(o.own)&&!o.own.length)delete o.own;return o};
   if(!same(b.stones||{},a.stones||{})||!same(sp(b.special),sp(a.special)))rows.push("Special equipment");return rows}
 const altDiffTxt=(c,i)=>{const d=altDiff(c,i);return d.length?d.join(" · "):"same as your gear"};
-function renderAltBar(c=C()){const i=altIdx(c),has=i>=0&&altSaved(c,i),list=altList(c),n=altN(c);
-  $("gsetSeg").innerHTML=`<button type="button" role="radio" data-gset="mine" aria-checked="${i<0}">My gear</button>`+Array.from({length:n},(_,k)=>
-    `<button type="button" role="radio" data-gset="${k}" aria-checked="${k===i}" title="Another set of gear, worked out next to yours in Your gear vs other gear sets (bottom of this tab)">Set ${k+1}${altSaved(c,k)?" ●":""}</button>`).join("");
+function renderAltBar(c=C()){const i=altIdx(c),has=i>=0&&altSaved(c,i),list=altList(c),n=altN(c),b=buildOf(c),mine=String(b.setName||"").trim(),memN=Object.keys(memOf(c)).length;
+  const wait=(Array.isArray(b.loadouts)?b.loadouts:[]).map(x=>String(x&&x.name||"").trim()||"(no name)");
+  $("gsetSeg").innerHTML=`<button type="button" role="radio" data-gset="mine" aria-checked="${i<0}"${mine?` title="You swapped on ${esc(mine)}"`:""}>My gear${mine?` (${esc(mine)})`:""}</button>`+Array.from({length:n},(_,k)=>
+    `<button type="button" role="radio" data-gset="${k}" aria-checked="${k===i}" title="Set ${k+1}: another set of gear, worked out next to yours in Compare gear (bottom of this tab)">${esc(altName(c,k))}${altSaved(c,k)?" ●":""}</button>`).join("");
   $("altAdd").disabled=n>=ALT_MAX;$("altAdd").title=n>=ALT_MAX?`Up to ${ALT_MAX} other sets`:"Add another set of gear to compare with yours";
-  $("buildPanel").classList.toggle("altedit",i>=0);["altCopy","altSwap","altDel"].forEach(id=>$(id).hidden=i<0);$("altSwap").disabled=!has;
-  $("altNote").innerHTML=i>=0?`<b>Editing set ${i+1}.</b> The page still works with your gear. `+(has?`${altDiffTxt(c,i)} · compare in Your gear vs other gear sets, at the bottom of this tab`:"Pick its gear below, or copy yours in and change a part.")
-    :list.length?list.map(k=>`Set ${k+1}: ${altDiffTxt(c,k)}`).join("<br>")+"<br>Compare them in Your gear vs other gear sets, at the bottom of this tab":`Press + Add set for another set of gear, worked out next to yours in Your gear vs other gear sets, at the bottom of this tab.`}
+  $("buildPanel").classList.toggle("altedit",i>=0);// the set's buttons stay put on your gear (greyed out), so the rows below don't move as you pick sets
+  ["altRename","altCopy","altSwap","altDel"].forEach(id=>$(id).disabled=i<0);$("altSwap").disabled=!has;
+  $("memClear").hidden=!memN;$("memClear").textContent=`Forget remembered items (${memN})`;
+  // one line, so the gear window below doesn't move as you pick a set: what the set changes, or on your gear a pointer to Compare gear,
+  // which lists every set's changes. Text that doesn't fit gets "more" (altNoteFit)
+  const note=$("altNote").querySelector(".altTxt"),cmp="side by side in Compare gear, at the bottom of this tab";
+  note.innerHTML=i>=0?`<b>Editing ${esc(altName(c,i))}:</b> `+(has?altDiff(c,i,true).join(" · ")||"same as your gear":"empty. Pick its gear below, or copy yours in")
+    // saved loadouts from before they became sets, that didn't fit in ALT_MAX sets (state.js loadoutsIn)
+    :wait.length?`<span class="bad">${wait.length} saved loadout${wait.length>1?"s":""} didn't fit in the ${ALT_MAX} sets: ${wait.map(esc).join(", ")}. Remove a set and ${wait.length>1?"they come":"it comes"} in as one.</span>`
+    :list.length?`Your gear and ${list.length} other set${list.length>1?"s":""}, ${cmp}`:"";
+  note.title=i>=0?`${note.textContent}\nThe page still works with your gear. This set is ${cmp}.`:note.textContent;altNoteFit()}
+// "more" under the sets, when its line doesn't fit: opens it to every line (and it stays open as you pick sets, until "less")
+let ALT_NOTE_OPEN=false;
+function altNoteFit(){const n=$("altNote"),t=n.querySelector(".altTxt"),m=$("altMore");n.classList.remove("open");const over=t.scrollWidth>t.clientWidth+1;
+  n.classList.toggle("open",ALT_NOTE_OPEN&&over);m.hidden=!over;m.textContent=ALT_NOTE_OPEN?"less":"more";m.setAttribute("aria-expanded",String(ALT_NOTE_OPEN))}
+$("altMore").addEventListener("click",()=>{ALT_NOTE_OPEN=!ALT_NOTE_OPEN;altNoteFit()});
+// a narrower page can cut the line where it fit before
+if(typeof ResizeObserver!=="undefined"){let w=0;new ResizeObserver(([e])=>{const x=Math.round(e.contentRect.width);if(x!==w){w=x;altNoteFit()}}).observe($("altNote"))}
 $("gsetSeg").addEventListener("click",e=>{const x=e.target.closest("[data-gset]");if(!x)return;const c=C();if(x.dataset.gset==="mine")delete c.gearEdit;else c.gearEdit="alt"+x.dataset.gset;save();renderGearTable();renderAll()});
 // add an empty set (its index, or −1 at ALT_MAX); remove set i, the ones after it moving up, its items remembered
 function altAdd(c){const b=buildOf(c);if(!Array.isArray(b.alts))b.alts=[];if(b.alts.length>=ALT_MAX)return -1;b.alts.push({gear:{}});return b.alts.length-1}
-function altDel(c,i){const b=buildOf(c);if(!Array.isArray(b.alts)||!b.alts[i])return;memAll(c,altOf(c,i).gear);b.alts.splice(i,1);delete c.gearEdit}
+function altDel(c,i){const b=buildOf(c);if(!Array.isArray(b.alts)||!b.alts[i])return;memAll(c,altOf(c,i).gear);b.alts.splice(i,1);delete c.gearEdit;loadoutsIn(b)}
+// name set i (blank: back to "Set i+1")
+function altRename(c,i,name){const a=altOf(c,i),nm=String(name||"").trim().slice(0,SET_NAME_MAX);if(nm)a.name=nm;else delete a.name}
 $("altAdd").addEventListener("click",()=>{const c=C(),i=altAdd(c);if(i<0)return;c.gearEdit="alt"+i;save();renderGearTable();renderAll()});
-$("altCopy").addEventListener("click",()=>{const c=C(),i=altIdx(c);if(i<0)return;if(altSaved(c,i)&&altDiff(c,i).length&&!confirm(`Replace set ${i+1} with a copy of your gear?`))return;
-  memAll(c,altOf(c,i).gear);buildOf(c).alts[i]=setCopy(buildOf(c));save();renderGearTable();renderAll()});
-const altSwap=(c,i)=>{const b=buildOf(c),mine=setCopy(b),other=setCopy(altOf(c,i));Object.assign(b,other);b.alts[i]=mine};
+$("altRename").addEventListener("click",()=>{const c=C(),i=altIdx(c);if(i<0)return;const a=altOf(c,i);
+  const nm=prompt(`Name set ${i+1} (“Farm”, “Boss”). Leave it blank for “Set ${i+1}”.`,String(a.name||"").trim());if(nm==null)return;altRename(c,i,nm);save();renderAll()});
+$("altCopy").addEventListener("click",()=>{const c=C(),i=altIdx(c);if(i<0)return;if(altSaved(c,i)&&altDiff(c,i).length&&!confirm(`Replace ${altName(c,i)} with a copy of your gear?`))return;
+  // the set keeps its name
+  const nm=altOf(c,i).name;memAll(c,altOf(c,i).gear);buildOf(c).alts[i]={...(nm?{name:nm}:{}),...setCopy(buildOf(c))};save();renderGearTable();renderAll()});
+// the name goes with the gear: the set's name is your gear's (build.setName) while you wear it, and your gear's goes to the set
+const altSwap=(c,i)=>{const b=buildOf(c),mine=setCopy(b),a=altOf(c,i),other=setCopy(a),nm=[b.setName,a.name].map(x=>String(x||"").trim());
+  Object.assign(b,other);b.alts[i]={...(nm[0]?{name:nm[0]}:{}),...mine};if(nm[1])b.setName=nm[1];else delete b.setName};
 $("altSwap").addEventListener("click",()=>{const c=C(),i=altIdx(c);if(i<0)return;altSwap(c,i);save();renderGearTable();renderAll()});
-$("altDel").addEventListener("click",()=>{const c=C(),i=altIdx(c);if(i<0||altSaved(c,i)&&!confirm(`Remove set ${i+1}?${i+1<altN(c)?" The sets after it move up one.":""}`))return;altDel(c,i);save();renderGearTable();renderAll()});
-// ---- saved loadouts: whole gear setups under a name (build.loadouts: {name, gear, stones, special}), to swap the table shown (your
-// gear, or the set being edited) between them. Loading one remembers the items it takes off ----
-const loadoutsOf=c=>{const b=buildOf(c);if(!Array.isArray(b.loadouts)||b.loadouts.some(x=>!x||typeof x!=="object"))b.loadouts=(Array.isArray(b.loadouts)?b.loadouts:[]).filter(x=>x&&typeof x==="object");return b.loadouts};
-// a set's gear in a fixed form, for "is this the same gear": keys sorted, empty rows and trailing empty card boxes dropped
-const canon=v=>Array.isArray(v)?v.map(canon):v&&typeof v==="object"?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canon(v[k])])):v;
-const setKey=b=>{const x=setCopy(b);x.gear=Object.fromEntries(Object.entries(x.gear).filter(([,g])=>g&&g.id).map(([k,g])=>[k,{...g,cards:(g.cards||[]).map(id=>id||null).filter((id,i,a)=>a.slice(i).some(Boolean)),refine:num(g.refine)}]));return JSON.stringify(canon(x))};
-// the loadout the table shows now, or −1
-const loadoutAt=(c=C())=>{const k=setKey(gearSet(c));return loadoutsOf(c).findIndex(x=>setKey(x)===k)};
-// save the table shown as loadout name (one with that name, in any case, is replaced); its index
-function loadoutSave(c,name){const L=loadoutsOf(c),nm=String(name).trim(),i=L.findIndex(x=>String(x.name||"").toLowerCase()===nm.toLowerCase()),x={name:nm,...setCopy(gearSet(c))};
-  if(i>=0){L[i]=x;return i}L.push(x);return L.length-1}
-function loadoutLoad(c,i){const lo=loadoutsOf(c)[i];if(!lo)return;const s=gearSet(c);memAll(c,s.gear);Object.assign(s,setCopy(lo))}
-const loadoutName=x=>String(x&&x.name||"").trim()||"(no name)";
-function renderLoadouts(c=C()){const L=loadoutsOf(c),at=loadoutAt(c),pick=$("loadoutPick"),i=altIdx(c),memN=Object.keys(memOf(c)).length;
-  if(document.activeElement!==pick){const was=pick.value;
-    pick.innerHTML=L.length?L.map((x,j)=>`<option value="${j}">${esc(loadoutName(x))}${j===at?" (in the table)":""}</option>`).join(""):`<option value="">No saved loadouts</option>`;
-    pick.value=L[+was]&&was!==""?was:String(at>=0?at:L.length?0:"")}
-  $("loadoutLoad").textContent=i>=0?`Load into set ${i+1}`:"Wear it";["loadoutLoad","loadoutDel"].forEach(id=>$(id).disabled=!L.length);
-  $("memClear").hidden=!memN;$("memClear").textContent=`Forget remembered items (${memN})`;
-  $("loadoutNote").innerHTML=(at>=0?`The table is loadout <b>${esc(loadoutName(L[at]))}</b>. `:"")+
-    `Gear you take off keeps its refine, cards and affixes: put it on again and they come back${memN?" (marked “remembered” in the item lists)":""}.`}
-$("loadoutSave").addEventListener("click",()=>{const c=C(),L=loadoutsOf(c),at=loadoutAt(c),cur=L[+$("loadoutPick").value];
-  const nm=prompt("Name this loadout",at>=0?loadoutName(L[at]):cur?loadoutName(cur):`Loadout ${L.length+1}`);if(nm==null||!nm.trim())return;
-  const same=L.find(x=>String(x.name||"").toLowerCase()===nm.trim().toLowerCase());if(same&&setKey(same)!==setKey(gearSet(c))&&!confirm(`Replace loadout “${loadoutName(same)}” with the gear in the table?`))return;
-  const j=loadoutSave(c,nm);save();renderAll();$("loadoutPick").value=String(j)});
-$("loadoutLoad").addEventListener("click",()=>{const c=C(),j=+$("loadoutPick").value,lo=loadoutsOf(c)[j];if(!lo)return;
-  // the table's gear goes unless a loadout has it (its items stay remembered either way)
-  const s=gearSet(c),has=Object.values(s.gear||{}).some(g=>g&&g.id);
-  if(has&&loadoutAt(c)<0&&setKey(s)!==setKey(lo)&&!confirm(`The gear in the table isn't saved as a loadout. Put “${loadoutName(lo)}” on anyway?`))return;
-  loadoutLoad(c,j);save();renderGearTable();renderAll()});
-$("loadoutDel").addEventListener("click",()=>{const c=C(),L=loadoutsOf(c),j=+$("loadoutPick").value;if(!L[j]||!confirm(`Delete loadout “${loadoutName(L[j])}”?`))return;L.splice(j,1);save();renderAll()});
+$("altDel").addEventListener("click",()=>{const c=C(),i=altIdx(c);if(i<0||altSaved(c,i)&&!confirm(`Remove ${altName(c,i)}?${i+1<altN(c)?" The sets after it move up one.":""}`))return;altDel(c,i);save();renderGearTable();renderAll()});
 $("memClear").addEventListener("click",()=>{const c=C();if(!confirm("Forget the refine, cards and affixes remembered for the gear you took off?"))return;buildOf(c).mem={};save();renderGearTable();renderAll()});

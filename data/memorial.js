@@ -30,9 +30,9 @@ const JELLO=[
 {day:4,frag:[25468,"Deviling Jello Fragment"],stone:[25473,"Chaos Jellostone"]},
 {day:5,frag:[25469,"Angeling Jello Fragment"],stone:[25474,"Holy Jellostone"]}];
 const JELLO_PER_STONE=5,JELLO_CRAFT_DAYS=3,JELLO_BOX=[23649,"Jellopy Fragment Box"],JELLO_NPC=["Memory Craftsman's Workshop","prontera 48,227"];
-// Expedition gear (Ant Hell): the Upgrader (prt_in 118 34) makes it from a Subjugation Team piece, 50 Faintly Glowing Crystal and
+// Expedition gear (Ant Hell): the Equipment Enhancer (prt_in 118 34) makes it from a Subjugation Team piece, 50 Faintly Glowing Crystal and
 // Jellostones. EXPEDITION: id, name, from: [id, name], stones: {Jellostone id: how many}
-const EXPEDITION_CRYSTALS=[25424,"Faintly Glowing Crystal",50],EXPEDITION_NPC=["Upgrader","prt_in 118,34"];
+const EXPEDITION_CRYSTALS=[25424,"Faintly Glowing Crystal",50],EXPEDITION_NPC=["Equipment Enhancer","prt_in 118,34"];
 const EXPEDITION=[
 {id:15221,name:"Expedition's Armor",from:[15220,"Subjugation Team's Armor"],stones:{25470:2}},
 {id:15222,name:"Expedition's Robe",from:[15220,"Subjugation Team's Armor"],stones:{25471:2}},
@@ -42,11 +42,56 @@ const EXPEDITION=[
 {id:22152,name:"Expedition Shoes",from:[22150,"Subjugation Team Boots"],stones:{25471:1,25474:1}},
 {id:28540,name:"Expedition Ring",from:[28539,"Subjugation Team's Ring"],stones:{25472:3}},
 {id:28541,name:"Expedition Magic Ring",from:[28539,"Subjugation Team's Ring"],stones:{25474:3}}];
+// The two rungs after Expedition, not in the Global client yet: Contingent (base Lv 80, with the Izlude memorial of the Lutie update,
+// data/roadmap.js) and Conqueror (base Lv 90, not announced). As reported from other
+// Zero servers (rAthena's Zero data), so no item ids and no Crimson Crystal id. The Equipment Enhancer makes each from its piece of
+// the rung below, 50 crystals and Jellostones, in four branches: melee, ranged, magic and healing. Upgrading gives a new +0 piece: the
+// old one's refine, card and enchant are gone. LATER_RUNGS: rung: {crystals: [id, name, how many], lv, pieces: [{name, from: [id, name],
+// branch, stones: {Jellostone id: how many}}]}
+const LATER_RUNGS={
+contingent:{name:"Contingent",lv:80,crystals:[25475,"Crystal of Blue Light",50],pieces:[
+ {name:"Contingent Mail",from:[15221,"Expedition's Armor"],branch:"melee",stones:{25470:4}},
+ {name:"Contingent Manteau",from:[20868,"Expedition Manteau"],branch:"melee",stones:{25473:4}},
+ {name:"Contingent Greaves",from:[22151,"Expedition Boots"],branch:"melee",stones:{25470:4}},
+ {name:"Contingent Ring",from:[28540,"Expedition Ring"],branch:"melee",stones:{25474:6}},
+ {name:"Contingent Cloth",from:[15221,"Expedition's Armor"],branch:"ranged",stones:{25470:2,25473:2}},
+ {name:"Contingent Cloak",from:[20868,"Expedition Manteau"],branch:"ranged",stones:{25470:2,25473:2}},
+ {name:"Contingent Boots",from:[22151,"Expedition Boots"],branch:"ranged",stones:{25473:4}},
+ {name:"Contingent Glove",from:[28540,"Expedition Ring"],branch:"ranged",stones:{25474:6}},
+ {name:"Contingent Robe",from:[15222,"Expedition's Robe"],branch:"magic",stones:{25471:4}},
+ {name:"Contingent Muffler",from:[20869,"Expedition Muffler"],branch:"magic",stones:{25471:2,25474:2}},
+ {name:"Contingent Shoes",from:[22152,"Expedition Shoes"],branch:"magic",stones:{25471:4}},
+ {name:"Contingent Magic Ring",from:[28541,"Expedition Magic Ring"],branch:"magic",stones:{25474:6}},
+ {name:"Contingent Dress",from:[15222,"Expedition's Robe"],branch:"healing",stones:{25471:2,25474:2}},
+ {name:"Contingent Cape",from:[20869,"Expedition Muffler"],branch:"healing",stones:{25474:4}},
+ {name:"Contingent Sandal",from:[22152,"Expedition Shoes"],branch:"healing",stones:{25474:4}},
+ {name:"Contingent Necklace",from:[28541,"Expedition Magic Ring"],branch:"healing",stones:{25474:6}}]},
+conqueror:{name:"Conqueror",lv:90,crystals:[null,"Crimson Crystal",50],pieces:[
+ {name:"Conqueror's Mail",from:[null,"Contingent Mail"],branch:"melee",stones:{25470:6}},
+ {name:"Conqueror's Manteau",from:[null,"Contingent Manteau"],branch:"melee",stones:{25473:6}},
+ {name:"Conqueror's Greaves",from:[null,"Contingent Greaves"],branch:"melee",stones:{25470:6}},
+ {name:"Conqueror's Ring",from:[null,"Contingent Ring"],branch:"melee",stones:{25474:9}},
+ {name:"Conqueror's Cloth",from:[null,"Contingent Cloth"],branch:"ranged",stones:{25470:3,25473:3}},
+ {name:"Conqueror's Cloak",from:[null,"Contingent Cloak"],branch:"ranged",stones:{25470:3,25473:3}},
+ {name:"Conqueror's Boots",from:[null,"Contingent Boots"],branch:"ranged",stones:{25473:6}},
+ {name:"Conqueror's Glove",from:[null,"Contingent Glove"],branch:"ranged",stones:{25474:10}},
+ {name:"Conqueror's Robe",from:[null,"Contingent Robe"],branch:"magic",stones:{25471:6}},
+ {name:"Conqueror's Muffler",from:[null,"Contingent Muffler"],branch:"magic",stones:{25471:3,25474:3}},
+ {name:"Conqueror's Shoes",from:[null,"Contingent Shoes"],branch:"magic",stones:{25471:6}},
+ {name:"Conqueror's Magic Ring",from:[null,"Contingent Magic Ring"],branch:"magic",stones:{25474:10}},
+ {name:"Conqueror's Dress",from:[null,"Contingent Dress"],branch:"healing",stones:{25471:3,25474:3}},
+ {name:"Conqueror's Cape",from:[null,"Contingent Cape"],branch:"healing",stones:{25474:6}},
+ {name:"Conqueror's Magic Shoes",from:[null,"Contingent Sandal"],branch:"healing",stones:{25474:6}},
+ {name:"Conqueror's Necklace",from:[null,"Contingent Necklace"],branch:"healing",stones:{25474:10}}]}};
+// every upgrade the Jellostone tracker can count, with its crystals: an Expedition piece's key is its item id, a later one's its name
+const MEM_LADDER=[...EXPEDITION.map(x=>({...x,key:x.id,crystals:EXPEDITION_CRYSTALS})),
+  ...Object.values(LATER_RUNGS).flatMap(r=>r.pieces.map(x=>({...x,key:x.name,crystals:r.crystals})))];
 // what the hard mode gems and Mithril Ore make: Thor's Flame (alberta_in 18 58, prt_in 64 68, morocc_in 74 35, payon 143 169,
-// geffen_in 102 176, aldeba_in 33 50) turns 10 Mithril Ore into a Mithril, and the Suspicious Craftsman (morocc_in 76 167) makes each
-// Oath ring and earring from 15 of its gem and 10 Mithril (or without the Mithril, in a week). MEM_CRAFTS: id, name, npc [name, map
+// geffen_in 102 176, aldeba_in 33 50) turns 10 Mithril Ore into a Mithril, and the Mysterious Artisan (morocc_in 76 167) makes each
+// Oath ring and earring from 15 of its gem and 10 Mithril, ready in a week, or at once for 10 more Mithril (its dialogue, client patch
+// of 12 November 2026, which names it; the amounts are filled in by the server, not in the client). MEM_CRAFTS: id, name, npc [name, map
 // x,y], mats [[id, name, how many]]
-const MEM_CRAFT_NPC=["Suspicious Craftsman","morocc_in 76,167"];
+const MEM_CRAFT_NPC=["Mysterious Artisan","morocc_in 76,167"];
 const MEM_CRAFTS=[
 {id:25430,name:"Mithril",npc:["Thor's Flame","prt_in 64,68"],mats:[[25429,"Mithril Ore",10]]},
 {id:28568,name:"Cursed Emerald Earring",npc:MEM_CRAFT_NPC,mats:[[25457,"Cursed Emerald",15],[25430,"Mithril",10]]},
@@ -68,8 +113,13 @@ const MEM_ENCHANT={
    garment:memPool(7.13,0.89,3.48,3.48,3.48,3.48,[[50,10.70],[100,8.91],[200,7.58],[300,6.31],[400,4.46]]),
    shoes:memPool(7.58,3.57,4.90,4.90,4.90,4.90,[[50,4.90],[100,3.50],[200,2.60],[300,1.70],[400,0.80]]),
    armor:[...memPool(5.25,4.90,4.28,4.28,4.28,4.28,[[50,5.25],[100,5.25],[200,5.25],[300,3.50],[400,0.805]]),["essence",1.925]]}};
+// the Vegetable Enhancer's one enchant on the Poring Village Leek or Carrot you're wearing (Global's Navigation has the NPC; the cost
+// and lines are as reported, with no chances): VEGGIE_ENCHANT: gear [[id, name]], cost (zeny, [[id, name, how many]]), lines
+const VEGGIE_ENCHANT={gear:[[19238,"Poring Village Leek"],[19239,"Poring Village Carrot"]],zeny:20000,mats:[[909,"Jellopy",50]],ok:70,
+  lines:[...MEM_STATS.map(s=>s+" +1"),"MaxSP +10","MaxSP +25","MaxSP +50","MaxHP +100","MaxHP +200"]};
 // the Job Essences on +9 armor (names and effects in data/essences.js), % each by essence level: Subjugation Team armor rolls a 1st
 // job's Lv 1; Expedition armor rolls a 2nd job's. What the essences here don't add up to in MEM_ENCHANT is the Ninja's, which the client doesn't have
+// (hidden on the page while Ninja isn't in the game)
 const MEM_ESSENCE={subjugation:{tier:1,lv:{1:2.03}},expedition:{tier:2,lv:{1:0.05,2:0.025}}};
 // every NPC the tab's memorials, Jellostones, upgrades, crafts and enchants need, for the NPCs card: [name, where ("map x y", or a
 // list when there are several), what they do]
@@ -80,8 +130,9 @@ const MEM_NPCS=[
 ["Memory Labyrinth Association Member","prt_fild06 37 197","lets you into Ant Hell (base Lv 70)"],
 ["Memory Craftsman's Workshop","prontera 48 227","makes a Jellostone from 5 of its Jello Fragment, after a 3-day wait (one at a time)"],
 ["Stone Transmuter","prt_in 118 28","turns a Jellostone you have spare into another with a Zelstar (KP shop)"],
-["Upgrader","prt_in 118 34","makes an Expedition piece from a Subjugation Team piece, 50 Faintly Glowing Crystal and Jellostones"],
+["Equipment Enhancer","prt_in 118 34","makes an Expedition piece from a Subjugation Team piece, 50 Faintly Glowing Crystal and Jellostones"],
 ["Enchant Association staff","prt_in 135 35","enchants Subjugation Team armor, garments and shoes (card slot 4)"],
 ["Enchant Association staff","prt_in 135 28","enchants Expedition armor, garments and shoes (card slot 4)"],
+["Vegetable Enhancer","prt_fild05 174 238","enchants the Poring Village Leek or Carrot you're wearing (one line) for 50 Jellopy and 20,000 zeny: 70% success, a failure breaks it"],
 ["Thor's Flame",["prt_in 64 68","alberta_in 18 58","morocc_in 74 35","payon 143 169","geffen_in 102 176","aldeba_in 33 50"],"turns 10 Mithril Ore into a Mithril"],
-["Suspicious Craftsman","morocc_in 76 167","makes the Oath rings and the earrings from 15 of their gem and 10 Mithril, in a week or at once for 10 more Mithril"]];
+["Mysterious Artisan","morocc_in 76 167","makes the Oath rings and the earrings from 15 of their gem and 10 Mithril, in a week or at once for 10 more Mithril"]];

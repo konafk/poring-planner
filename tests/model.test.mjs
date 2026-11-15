@@ -23,6 +23,8 @@ const load = (save, raw) => {
     localStorage: { getItem: k => k in store ? store[k] : null, setItem: (k, v) => { store[k] = String(v) }, removeItem: k => { delete store[k] } },
   });
   for (const [, src] of html.matchAll(/<script src="([^"?]+)(?:\?v=[^"]*)?"><\/script>/g)) vm.runInContext(readFileSync(new URL(src, root), "utf8"), ctx, { filename: src });
+  // the page starts a new character in Build from gear; the tests' characters type their status window unless they say otherwise
+  vm.runInContext(`NEW_CHAR_MODE="status"`, ctx);
   return code => vm.runInContext(code, ctx);
 };
 const run = load();
@@ -256,8 +258,44 @@ t("job EXP per kill: gear counts for job EXP, an item's base-only EXP % doesn't"
   assert.equal(run(`killJobExp({exp:33361,job:6672})`), 2934);
 });
 
+t("EXP table log: oldest first, each dated, none is the current table", () => {
+  const log = run("EXP_TABLE_LOG.map(x=>({until:x.until,top:Math.max(...Object.keys(x.table).map(Number)),same:x.table===EXP_TABLE}))");
+  assert.ok(log.length >= 1);
+  log.forEach((x, i) => { assert.ok(Number.isFinite(x.until)); assert.ok(x.top >= 1); assert.equal(x.same, false); if (i) assert.ok(x.until > log[i - 1].until) });
+  assert.equal(run(`lvExp(70,${log[0].until - 1})`), 568722300); assert.equal(run(`lvExp(70,${log[log.length - 1].until})`), 192576600);
+});
+
+t("EXP tables tab: every table to pick from, oldest first, the current one last", () => {
+  const vs = run("JSON.stringify(expVersions().map(v=>[v.key,v.name,v.label,v.table===EXP_TABLE]))");
+  assert.deepEqual(JSON.parse(vs).slice(0, 1), [["0", "Before 12 Nov 2026", "Before 12 Nov 2026", false]]);
+  assert.deepEqual(JSON.parse(vs).at(-1), ["cur", "Current", "Current (since 12 Nov 2026)", true]);
+  assert.equal(run("expPct(192576600,568722300)"), "−66.1%"); assert.equal(run("expPct(5,0)"), "–");
+  run(`state.expVer="nope";state.expCmp="0";renderExp()`);                       // an unknown pick falls back to the current table
+  // how each table grows, worked out from the numbers: the old one ×1.2 a level, the 12 November one in steps with a jump at 51, 61, 71
+  assert.equal(run("expGrowthTxt(EXP_TABLE_LOG[0].table)"), "Lv 2–70 ×1.2 each");
+  assert.equal(run("expGrowthTxt(EXP_TABLE)"), "Lv 2–50 ×1.15 each · Lv 51 ×5 · Lv 52–60 ×1.1 each · Lv 61 ×4 · Lv 62–70 ×1.1 each · Lv 71 ×3 · Lv 72–80 ×1.05 each");
+  // the levels the new table adds go against the old table's last level: Lv 71 is ×1.02 the old Lv 70, not ×3 (that's the new Lv 70)
+  assert.equal(run("expPastTxt(EXP_TABLE_LOG[0].table,EXP_TABLE,70,'Before 12 Nov 2026','Current')"),
+    "Past Lv 70 of Before 12 Nov 2026 (568,722,300 EXP): Current Lv 71 takes 577,729,800, ×1.02 that (+1.6%), then Lv 72–80 ×1.05 each. Lv 80: ×1.58 (+57.6%)");
+  run(`globalThis.getEl=document.getElementById;globalThis.expEls={refBaseTable:{tHead:{},tBodies:[{}]},expCmpNote:{}};
+    document.getElementById=id=>expEls[id]||getEl(id);state.expVer="cur";state.expCmp="0";renderExp();document.getElementById=getEl`);
+  const body = run("expEls.refBaseTable.tBodies[0].innerHTML"), chg = l => body.match(new RegExp(`<tr[^>]*><td>${l}</td>(?:<td[^>]*>.*?</td>){2}<td[^>]*>(.*?)</td>`))[1].replace(/<[^>]+>/g, "");
+  assert.deepEqual([70, 71, 80].map(chg), ["−66.1%", "+1.6% vs Lv 70", "+57.6% vs Lv 70"]);
+  assert.match(run("expEls.expCmpNote.innerHTML"), /Past Lv 70 of Before 12 Nov 2026/);
+});
+
+t("tracker: entries logged before the 12 November 2026 maintenance use the old EXP table", () => {
+  const h = 36e5, old = Date.UTC(2026, 10, 11), now = Date.UTC(2026, 11, 1);
+  assert.equal(run("lvExp(50)"), 1731900); assert.equal(run(`lvExp(50,${old})`), 14834800); assert.equal(run(`lvExp(50,${now})`), 1731900);
+  assert.equal(run("lvExp(80)"), 896248000); assert.equal(run(`lvExp(75,${old})`), null);
+  run(`cur().entries=[{t:${old},lv:50,pct:10},{t:${old + h},lv:50,pct:20}];cur().pauses=[]`);
+  near(run("stats(cur())").avgRaw, 1483480);                                 // 10% of the old Lv 50's 14,834,800 in an hour
+  run(`cur().entries=[{t:${now},lv:50,pct:10},{t:${now + h},lv:50,pct:20}]`);
+  near(run("stats(cur())").avgRaw, 173190);                                  // the same 10% of the new 1,731,900
+});
+
 t("tracker: EXP rate across a level-up, with paused time left out", () => {
-  const h = 36e5, t0 = 1e12;
+  const h = 36e5, t0 = Date.UTC(2026, 11, 1);                          // after the 12 November 2026 EXP table
   run(`cur().entries=[{t:${t0},lv:10,pct:50},{t:${t0 + h},lv:11,pct:25}];cur().pauses=[]`);
   const exp = run("EXP_TABLE[10]") * 0.5 + run("EXP_TABLE[11]") * 0.25;
   let s = run("stats(cur())");
@@ -381,7 +419,11 @@ t("session map: auto is the best open map, a picked one wins while its monsters 
   run(`cur().map='no_such_map'`);
   assert.equal(run(`sessMap(cur())`), maps[0]);                      // a map none of them spawn on falls back to auto
   run(`cur().map=${JSON.stringify(maps[1])};toggleSessMob(1002)`);
-  assert.equal(run(`cur().map`), undefined);                         // removing its monsters drops the pick
+  assert.equal(run(`cur().map`), maps[1]);                           // taking out the last monster keeps the map, to pick from it again
+  assert.equal(run(`sessMap(cur())`), maps[1]);
+  const off = run(`MOBS.find(m=>!m.boss&&openMaps(m).length&&!(SPAWN[m.id]||[]).some(x=>x[0]===${JSON.stringify(maps[1])})).id`);
+  run(`toggleSessMob(${off})`);
+  assert.equal(run(`cur().map`), undefined);                         // a monster that doesn't spawn there drops the pick
 });
 
 t("Map planner's Farm here: the map's hunted monsters, and a picked map holds even when marked closed", () => {
@@ -565,6 +607,27 @@ t("cloud sync: which way it goes after a Discord login", () => {
   assert.equal(plan(mine, other, 9, { at: 5, h: h(mine) }), "down");      // only the cloud changed
   assert.equal(plan(mine, other, 9, { at: 5, h: "x" }), "ask");           // both changed
   assert.match(run(`syncSummary(${JSON.stringify(mine)})`), /^1 account · Sage/);
+  // a different save revision alone isn't a difference
+  const rev = r => acc({ rev: r, job: "Sage", chars: { Sage: {} }, sessions: [] });
+  assert.equal(plan(rev(3), rev(8), 9, { at: 5, h: "x" }), "same");
+  // what differs: the character's parts and each session's log
+  const a = acc({ job: "Sage", chars: { Sage: { baseLv: 60, eq: [] } }, sessions: [{ id: "s1", name: "GH", entries: [{ t: 1, lv: 1, pct: 1 }] }] });
+  const b = acc({ job: "Sage", chars: { Sage: { baseLv: 61, eq: [] } }, sessions: [{ id: "s1", name: "GH", entries: [{ t: 1, lv: 1, pct: 1 }, { t: 2, lv: 1, pct: 2 }] }] });
+  const d = run(`syncDiff(${JSON.stringify(a)},${JSON.stringify(b)})`);
+  assert.equal(JSON.stringify(d.map(r => r.what)), JSON.stringify(["Sage character", "Session “GH”"]));
+  assert.equal(d[0].cloud, "differs: stats");
+  assert.match(d[1].cloud, /^1 entry/); assert.match(d[1].local, /^2 entries/);
+  assert.equal(run(`syncDiff(${JSON.stringify(rev(1))},${JSON.stringify(rev(2))})`).length, 0);
+  // folded panels, the open tab and the tables' sorts, filters and columns stay with each browser: not compared, not hashed, not sent up
+  const fold = (r, c) => acc({ rev: r, collapsed: c, tab: c.x ? "maps" : "track", sort: "epm", dir: c.x ? 1 : -1, tsort: { t: c.x ? ["a", 1] : ["b", -1] }, filters: c, hideCols: { t: c.x ? ["A"] : [] }, mkt: { q: c.x ? "x" : "" }, job: "Sage", chars: { Sage: {} }, sessions: [] });
+  assert.equal(plan(fold(1, { x: true }), fold(2, {}), 9, { at: 5, h: "x" }), "same");
+  assert.equal(run(`syncDiff(${JSON.stringify(fold(1, { x: true }))},${JSON.stringify(fold(1, {}))})`).length, 0);
+  assert.equal(run(`syncHash(${JSON.stringify(fold(1, { x: true }))})`), run(`syncHash(${JSON.stringify(fold(4, { y: false }))})`));
+  assert.equal(run(`JSON.stringify(Object.keys(JSON.parse(syncStrip(${JSON.stringify(fold(1, { x: true }))})).accounts[0].data).sort())`), '["chars","job","rev","sessions"]');
+  // real settings still count
+  assert.equal(run(`syncDiff(${JSON.stringify(acc({ bonus: 1 }))},${JSON.stringify(acc({ bonus: 2 }))})`)[0].cloud, "differ: bonus");
+  // a sync noted before the folds were left out (the whole text's hash) still counts as this browser unchanged
+  assert.equal(plan(mine, other, 9, { at: 5, h: h(mine) }), "down");
 });
 
 t("Restore and the cloud sync write an all-accounts backup the same way", () => {
@@ -639,9 +702,11 @@ t("roadmap: regions open on their update's day, or after its month when the day 
   assert.ok(!run(`isClosed("tow_d01")`) && run(`isClosed("gl_chu")`));
   assert.ok(run(`isClosed("iz_d03")&&isClosed("iz_d04")`) && !run(`isClosed("iz_d02")`)); // Byalan 4F & 5F: 12 November
   assert.equal(run(`regionOf("iz_dun04").id`), "by");
-  assert.equal(run(`mapArrives("iz_d04")`), "Byalan Dungeon 4F & 5F update, 12 Nov 2026");
+  assert.equal(run(`mapArrives("iz_d04")`), "Level 80 & Ant Hell update, 12 Nov 2026");
+  assert.ok(run(`isClosed("bea_d01")`) && !run(`isClosed("bea_d02")`));            // Western Cave Karu: 12 November too
   run(`ROADMAP_TODAY="2026-11-12"`);
-  assert.ok(!run(`isClosed("iz_d03")||isClosed("iz_d04")`));
+  assert.ok(!run(`isClosed("iz_d03")||isClosed("iz_d04")||isClosed("bea_d01")`));
+  assert.equal(run(`capTxt(capNow())`), "Base 80 / Job 70");                       // the 12 November update raises it
   run(`ROADMAP_TODAY="2026-11-01"`);
   assert.equal(run(`capTxt(capNow())`), "Base 70 / Job 70");
   assert.equal(run(`mapArrives("tow_d01")`), "");
@@ -656,17 +721,34 @@ t("roadmap: regions open on their update's day, or after its month when the day 
 });
 
 t("monsters with no EXP in the data are listed but left out of EXP averages", () => {
-  const myst = run(`MOBS.find(m=>m.name==="Mist")`);
-  assert.ok(myst.expUnknown && myst.exp === 0);
-  assert.equal(run(`fmtExp(MOBS.find(m=>m.name==="Mist"))`), "?");
-  assert.ok(run(`MAPMOBS.mjo_d03.some(x=>x.m.name==="Mist"&&x.n===39)`));
+  const gi = run(`MOBS.find(m=>m.name==="Giearth")`);
+  assert.ok(gi.expUnknown && gi.exp === 0);
+  assert.equal(run(`fmtExp(MOBS.find(m=>m.name==="Giearth"))`), "?");
+  assert.ok(run(`MAPMOBS.mjo_d03.some(x=>x.m.name==="Giearth"&&x.n===5)`));
   setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed spear", st: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
   const r = run(`mapStats0("mjo_d03",2)`);
-  assert.equal([...r.unkNames].sort().join(), "Cramp,Giearth,Mist");
+  assert.equal([...r.unkNames].sort().join(), "Cramp,Giearth");
   // only the monsters with known EXP make up EXP / kill
   const known = run(`MAPMOBS.mjo_d03.filter(x=>!x.m.boss&&!x.m.expUnknown).map(x=>x.m.name)`);
-  assert.ok(known.length && !known.includes("Mist"));
+  assert.ok(known.includes("Mist") && !known.includes("Giearth"));
   assert.ok(r.epk > 0 && isFinite(r.epm));
+});
+
+t("base EXP matches in-game kills: Mist, Skel Worker (Lv 70 Sage, +15%) and Clock Tower B2F (Lv 70 Priest, +10%)", () => {
+  run(`state.bonus=15`);
+  assert.equal(run(`killExp(MOBS.find(m=>m.name==="Mist"))`), 94937);
+  assert.equal(run(`killExp(MOBS.find(m=>m.name==="Skel Worker"))`), 69887);
+  // Clock Tower B2F, a Lv 70 Priest with +10% EXP
+  run(`state.bonus=10`);
+  assert.equal(run(`["Brilight","High Orc","Orc Archer"].map(n=>killExp(MOBS.find(m=>m.name===n))).join()`), "11085,21794,17883");
+  // their HP: base EXP is 60% of it
+  assert.equal(run(`["Brilight","High Orc","Orc Archer"].map(n=>(m=>Math.floor(m.hp*0.6)===m.exp)(MOBS.find(m=>m.name===n))).join()`), "true,true,true");
+  // the rest of the Clock Tower is on the database's EXP: shown with a * as unconfirmed; the ones checked in game aren't
+  assert.equal(run(`fmtExp(MOBS.find(m=>m.name==="Penomena"))`), "59,610*");
+  assert.equal(run(`["Brilight","High Orc","Orc Archer","Mist"].map(n=>fmtExp(MOBS.find(m=>m.name===n))).join(" ")`), "10,078 19,813 16,258 82,554");
+  assert.equal(run(`EXP_UNSURE.size`), run(`[...EXP_UNSURE].filter(id=>MOBS.some(m=>m.id===id&&!m.expUnknown)).length`));
+  // Mist's job EXP isn't known yet
+  assert.ok(run(`(m=>!m.expUnknown&&m.jobUnknown)(MOBS.find(m=>m.name==="Mist"))`));
 });
 
 t("mini bosses are tagged apart from Boss class: Vocal is a mini boss, Owl Duke only Boss class", () => {
@@ -764,13 +846,13 @@ t("Zeny Hunter: net zeny per hour is loot less skill and item costs, and counts 
   const p = run(`huntMob0(${mob},2)`);
   near(p.cost, 2000 + p.hpZ); near(p.net, p.loot - 2000 - p.hpZ);
   run(`C().potOn=false`);
-  // Mist has no EXP in the data but still drops loot, so it counts towards zeny on its map
+  // Giearth has no EXP in the data but still drops loot, so it counts towards zeny on its map
   const map = run(`huntMap0("mjo_d03",2)`);
-  assert.ok(map.earn.some(x => x.m.name === "Mist") && map.epm > 0 && map.loot > 0);  // net can go below 0: this character loses ~4k HP/min there
+  assert.ok(map.earn.some(x => x.m.name === "Giearth") && map.epm > 0 && map.loot > 0);  // net can go below 0: this character loses ~4k HP/min there
   // monsters you skip are left out
-  const id = run(`MOBS.find(m=>m.name==="Mist").id`);
+  const id = run(`MOBS.find(m=>m.name==="Giearth").id`);
   run(`state.skipMobs=[${id}]`);
-  assert.ok(!run(`huntMap0("mjo_d03",2)`).earn.some(x => x.m.name === "Mist"));
+  assert.ok(!run(`huntMap0("mjo_d03",2)`).earn.some(x => x.m.name === "Giearth"));
   run(`state.skipMobs=[]`);
 });
 
@@ -1287,7 +1369,7 @@ t("recovery items: three accounts load, switch and keep their own settings", () 
 
 t("spawn counts come from the client's navigation table (normal channels)", () => {
   const sp = (id, mp) => run(`JSON.stringify((SPAWN[${id}]||[]).find(x=>x[0]==="${mp}"))`);
-  assert.equal(sp(1002, "prt_f08"), JSON.stringify(["prt_f08", 20, 30]));  // Poring: 20 on prt_fild08, 30 on the PvP channel
+  assert.equal(sp(1002, "prt_f08"), JSON.stringify(["prt_f08", 87, 131]));  // Poring: 87 on prt_fild08, 131 on the PvP channel (20 / 30 before the 12 November 2026 patch)
   assert.equal(sp(1169, "mjo_d03"), JSON.stringify(["mjo_d03", 78, 78]));  // Skel Worker on mjo_dun03
   assert.equal(sp(1013, "maz_d03"), JSON.stringify(["maz_d03", 20, 20]));  // Wolf on prt_maze03: missing before
   assert.equal(sp(1045, "bea_d02"), JSON.stringify(["bea_d02", 30, 30]));  // Marc on North Cave (Luanda) since the patch
@@ -1299,13 +1381,13 @@ t("spawn counts come from the client's navigation table (normal channels)", () =
   assert.equal(sp(1087, "gef_fild03"), JSON.stringify(["gef_fild03", 1, 1]));    // Orc Hero, from b_gef_f03 / b_gef_f03_z
   assert.equal(run(`Object.values(SPAWN).flat().filter(x=>!(x[1]>0)&&x[1]!==null).length`), 0);
   // maps the client doesn't list yet: which monsters come, but no count (no estimate), and only on the roadmap's regions
-  assert.equal(sp(1045, "iz_d03"), JSON.stringify(["iz_d03", null]));      // Marc on Undersea Cave 4F
-  // (Western Cave Karu, bea_d01, isn't in the client either but isn't on the roadmap: open, counts ?)
-  assert.ok(run(`Object.values(SPAWN).flat().filter(x=>x[1]===null&&x[0]!=="bea_d01").every(x=>regionOf(x[0]))`));
+  assert.equal(sp(1117, "gl_chu"), JSON.stringify(["gl_chu", null]));      // Evil Druid in Glast Heim's Chivalry
+  assert.equal(sp(1045, "iz_d03"), JSON.stringify(["iz_d03", 40, 40]));    // Marc on Undersea Cave 4F: counted since the 12 November 2026 patch
+  assert.ok(run(`Object.values(SPAWN).flat().filter(x=>x[1]===null).every(x=>regionOf(x[0]))`));
   assert.equal(run(`Object.values(SPAWN).flat().filter(x=>x[1]===null&&x.length!==2).length`), 0);
   assert.equal(run(`spN(null)+" "+spN(30)`), "? 30");
-  assert.ok(run(`mapStats("iz_d03",0)`) == null);                          // nothing to weight by: out of the map rankings
-  assert.equal(run(`MAPMOBS.prt_f08.find(x=>x.m.id===1002).n`), 20);      // the app uses the normal-channel count
+  assert.ok(run(`mapStats("gl_chu",0)`) == null);                          // nothing to weight by: out of the map rankings
+  assert.equal(run(`MAPMOBS.prt_f08.find(x=>x.m.id===1002).n`), 87);      // the app uses the normal-channel count
 });
 
 t("gear CRIT against a race only counts against that race", () => {
@@ -1403,6 +1485,24 @@ t("Spell Fist: the bolt at 100%, then × (100 × bolt Lv + 100 × Spell Fist Lv)
   assert.equal(run("sfPct()"), 800);
 });
 
+t("Sage's Essence: gear's bolt damage % counts on Spell Fist and Hindsight procs, by the bolt's element", () => {
+  const sg = (opts, name) => { const i = run(`JOBS.Sage.p.findIndex(p=>p.name===${JSON.stringify(name)})`);
+    setup("Sage", { mode: "build", baseLv: 50, jobLv: 40, build: { base: { str: 1, agi: 1, vit: 1, int: 60, dex: 1, luk: 1 }, gear: { armor: { id: 15221, refine: 0, opts } } },
+      cons: [], consStat: {}, pbuffs: {}, buffs: {}, skills: {}, sage: { sfLv: 10, boltLv: 10, bolts: { Fire: true, Water: true, Wind: true }, hsLv: 10, dbOn: false },
+      ec: { on: false }, cards: { daSF: false, vitata: false }, preset: i, a: JSON.parse(run(`JSON.stringify(JOBS.Sage.p[${i}])`)) }) };
+  sg([], "Spell Fist Lv10 + Hindsight Lv10");
+  const sf0 = run(`sfHit(${MOB},'Wind')`), hs0 = run(`hsHit(${MOB},'Wind')`), base = run(`magicDmg(${MOB},100,'Wind')`);
+  assert.equal(run("C().skillPct"), 0);
+  sg([{ k: "ess_29576", v: "" }], "Spell Fist Lv10 + Hindsight Lv10");      // Sage's Essence II Lv.2: Fire / Cold / Lightning Bolt +40%
+  assert.deepEqual(JSON.parse(run("JSON.stringify(C().bx.bolt)")), { Fire: 40, Water: 40, Wind: 40 });
+  assert.equal(run("C().skillPct"), 0);                                       // the attack isn't named after a bolt: only its procs take it
+  const sf = run(`sfHit(${MOB},'Wind')`), hs = run(`hsHit(${MOB},'Wind')`);
+  assert.ok(sf > sf0 && hs > hs0, `${sf} > ${sf0}, ${hs} > ${hs0}`);
+  assert.equal(sf, Math.floor(run(`magicDmg(${MOB},100,'Wind',0,40)`) * run("sfPct()") / 100));
+  assert.equal(hs, 5 * run(`magicDmg(${MOB},100,'Wind',0,40)`));
+  assert.equal(run(`magicDmg(${MOB},100,'Wind')`), base);                   // other magic (auto-casts) unchanged
+});
+
 t("Sage attacks: Spell Fist, Hindsight, or both, named with their levels", () => {
   const sage = { matkTxt: "300+200", intTxt: "", st: {}, aspd: 170, sage: { sfLv: 10, boltLv: 10, bolts: { Fire: true, Water: false, Wind: false }, hsLv: 10, dbOn: false },
     ec: { on: false }, cards: { daSF: false, vitata: false } };
@@ -1459,7 +1559,7 @@ t("Duple Light: a physical orb per hit (own hit roll) and a magic orb half the t
   const hc = run(`hitChance(${MOB})`) / 100;
   const orb = (type, pct, el) => run(`withAtk({...C().a,dl:false,type:'${type}',pct:${pct},el:'${el}'},()=>dmgPerHit(${MOB}))`);
   near(run(`dlDmg(${MOB})`), orb("phys", 1000, "W") * hc + orb("magic", 1600, "Neutral") * 0.5);
-  const orbs = JSON.parse(run(`JSON.stringify(dlOrbs(${MOB}))`));       // one orb of each, shown apart from the basic hit
+  const orbs = JSON.parse(run(`JSON.stringify(dlParts(${MOB}))`));       // one orb of each, shown apart from the basic hit
   near(orbs.phys, orb("phys", 1000, "W"));
   near(orbs.mag, orb("magic", 1600, "Neutral"));
   near(orbs.hc, hc);
@@ -1473,7 +1573,47 @@ t("Duple Light: a physical orb per hit (own hit roll) and a magic orb half the t
   near(run("skillSPPerSec()"), 100 / 360);
   run("C().a={...C().a,dl:false}");
   assert.equal(run(`dlDmg(${MOB})`), 0);
-  assert.equal(run(`dlOrbs(${MOB})`), null);
+  assert.equal(run(`dlParts(${MOB})`), null);
+});
+
+t("Damage per hit low – high: Duple Light's orbs and Spell Fist's bolt on top of the hit", () => {
+  const dl = JSON.parse(run(`JSON.stringify(JOBS.Priest.p.find(p=>p.dl))`));
+  setup("Priest", { atkTxt: "100+150", wAtk: 0, wElem: "Neutral", matkTxt: "200+100", intTxt: "", hitTxt: "250", crit: 0, st: {}, maxSp: 300, a: dl });
+  const hc = run(`hitChance(${MOB})`) / 100;
+  const orb = (type, pct, el) => run(`withAtk({...C().a,dl:false,type:'${type}',pct:${pct},el:'${el}'},()=>dmgPerHit(${MOB}))`);
+  const base = run(`dmgPerHit(${MOB})`), p = orb("phys", 1000, "W"), m = orb("magic", 1600, "Neutral");
+  let r = run(`hitRange(${MOB})`);
+  near(r.lo, base);
+  near(r.hi, base + p + m);
+  near(r.avg, base + p * hc + m * 0.5);
+  near(r.avg, base + run(`dlDmg(${MOB})`));
+  run("C().a={...C().a,dl:false}");
+  assert.equal(run(`hitRange(${MOB})`), null);                              // a plain basic attack: every hit the same
+  const char = { atkTxt: "100+300", wAtk: 0, wElem: "Neutral", matkTxt: "300+200", hitTxt: "220", crit: 0, aspd: 170, st: {}, intTxt: "",
+    sage: { sfLv: 10, boltLv: 10, bolts: { Fire: true, Water: false, Wind: false }, hsLv: 0 }, ec: { on: false }, cards: { daSF: false, vitata: false } };
+  setup("Sage", { ...char, preset: 0, a: JSON.parse(run("JSON.stringify(JOBS.Sage.p[0])")) });
+  const ph = run(`withAtk(BASIC,()=>withEl(null,()=>dmgPerHit(${MOB})))`), sf = run(`sfHit(${MOB},atkEl())`);
+  r = run(`hitRange(${MOB})`);
+  near(r.lo, ph);
+  near(r.hi, ph + sf);
+  near(r.avg, ph + 0.5 * sf);                                                // Spell Fist Lv10: half the swings
+  assert.ok(sf > ph);
+});
+
+t("Turn Undead: Undead element only, 20% to kill outright at Lv10, otherwise 30% MATK; bosses only take the damage", () => {
+  const tu = JSON.parse(run(`JSON.stringify(JOBS.Priest.p.find(p=>p.tu))`));
+  setup("Priest", { matkTxt: "200+100", intTxt: "", st: {}, maxSp: 300, a: tu });
+  assert.equal(run(`dmgPerHit(${MOB})`), 0);                                // Water: can't be used
+  assert.equal(run(`usesPerKill(${MOB})`), Infinity);
+  const und = MOB.replace("el:'Water'", "el:'Undead'"), d = run(`dmgPerHit(${und})`), N = Math.ceil(10000 / d);
+  assert.ok(d > 0 && N > 1);
+  near(run(`tuKill(${und})`), 0.2);
+  near(run(`usesPerKill(${und})`), (1 - 0.8 ** N) / 0.2);                    // each cast may end it early
+  const boss = und.replace("drops:[]", "drops:[],boss:1");
+  assert.equal(run(`usesPerKill(${boss})`), N);
+  run("C().skills={'turn-undead':3}");                                       // a skill tree at Lv3: 6%
+  near(run(`tuKill(${und})`), 0.06);
+  run("C().skills={}");
 });
 
 t("Blitz Beat: falcon hits that always land, ignore DEF and bonuses; auto Blitz on basic attacks", () => {
@@ -1558,7 +1698,7 @@ t("auto-cast spells from cards work on any job's basic attacks", () => {
 t("elemental converter: one element picked, or the best per monster / map", () => {
   setup("Knight", { atkTxt: "150+200", wAtk: 0, wElem: "Neutral", weapon: "Two-handed sword", hitTxt: "300", st: {}, autoSp: false, potOn: false, cons: [], converters: true, convEl: "",
     a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
-  assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Neutral", "Fire", "Water", "Earth", "Wind"]));   // auto: your weapon and each converter
+  assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Neutral", "Fire", "Water", "Earth", "Wind", "Shadow", "Holy"]));   // auto: your weapon, each converter, Cursed Water, Aspersio Scroll
   const jakk = `MOBS.find(m=>m.name==="Jakk")`;
   assert.equal(run(`elemMult(${jakk},"Fire")`), 0);                          // Fire 2 takes nothing from Fire
   assert.equal(run(`mobRow(${jakk},0).el2`), "Water");
@@ -1580,6 +1720,148 @@ t("elemental converter: one element picked, or the best per monster / map", () =
   assert.equal(run(`convCostHr()`), 0);
   assert.equal(run(`JSON.stringify(elOptions())`), "[null]");
   run(`delete state.prices[12114]`);
+  // Cursed Water (Shadow) lasts 20 min like a converter; the Aspersio Scroll casts Aspersio Lv 5 (180 s) and uses up a Holy Water: 20 of each an hour
+  run(`state.prices[12020]=1000;state.prices[12217]=300;state.prices[523]=200;C().converters=true`);
+  near(run(`withEl("Shadow",()=>convCostHr())`), 3000);
+  near(run(`withEl("Holy",()=>convCostHr())`), 20 * 500);
+  assert.ok(run(`CONV_IDS.includes(12020)&&CONV_IDS.includes(523)`));
+  assert.equal(run(`convEls().includes("Poison")`), false);                // Enchant Poison is an Assassin skill
+  run(`delete state.prices[12020];delete state.prices[12217];delete state.prices[523]`);
+});
+
+t("Enchant Poison: an Assassin's Poison weapon, for SP rather than zeny", () => {
+  setup("Assassin", { atkTxt: "150+200", wAtk: 0, wElem: "Neutral", weapon: "Katar", hitTxt: "300", st: {}, autoSp: false, potOn: false, cons: [], converters: true, convEl: "", skills: {},
+    a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  assert.ok(run(`convEls().includes("Poison")`));
+  assert.ok(run(`elOptions().includes("Poison")`));
+  assert.equal(run(`withEl("Poison",()=>convCostHr())`), 0);
+  near(run(`withEl("Poison",()=>convSpPerSec())`), 20 / 165);              // Lv 10 with no skill tree set: 20 SP every 165 s
+  assert.equal(run(`withEl("Fire",()=>convSpPerSec())`), 0);
+  assert.ok(run(`withEl("Poison",()=>skillSPPerSec())`) > run(`withEl("Fire",()=>skillSPPerSec())`));
+  run(`C().convEl="Poison"`);
+  assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Poison"]));
+  near(run(`convSpPerSec()`), 20 / 165);
+  run(`C().wElem="Poison"`);                                                 // a Poison weapon already: nothing to cast
+  assert.equal(run(`convSpPerSec()`), 0);
+});
+
+t("Sage Endows: Fire, Water, Wind and Earth weapons for SP and a Point", () => {
+  setup("Sage", { atkTxt: "150+200", wAtk: 0, wElem: "Neutral", weapon: "Book", hitTxt: "300", st: {}, autoSp: false, potOn: false, cons: [], converters: true, convEl: "", skills: {},
+    a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  // the Endows cast each element by default; Cursed Water and the Aspersio Scroll stay items, and no Enchant Poison
+  assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Neutral", "Fire", "Water", "Earth", "Wind", "Shadow", "Holy"]));
+  assert.equal(run(`convName("Fire")`), "Endow Blaze");
+  assert.equal(run(`convName("Water")+","+convName("Wind")+","+convName("Earth")`), "Endow Tsunami,Endow Tornado,Endow Quake");
+  assert.equal(run(`convName("Shadow")`), "Cursed Water");
+  assert.equal(run(`convEls().includes("Poison")`), false);
+  // Lv 5 with no skill tree set: 40 SP and a Scarlet Point every 30 minutes
+  const spm = run(`spCostMul()`);
+  near(run(`withEl("Fire",()=>convSpPerSec())`), 40 * spm / 1800);
+  assert.equal(run(`JSON.stringify(convIds("Fire"))`), "[6360]");
+  // the Point Merchant sells the Points for 200 z: 2 an hour, a price you type for players doesn't count
+  near(run(`withEl("Fire",()=>convCostHr())`), 400);
+  run(`state.prices[6360]=500`);
+  near(run(`withEl("Fire",()=>convCostHr())`), 400);
+  run(`state.recovery.discount=true`);                                      // Discount Lv 10 off the NPC: 152 z
+  near(run(`withEl("Fire",()=>convCostHr())`), 2 * 152);
+  run(`state.recovery.discount=false`);
+  assert.ok(!run(`CONV_IDS.includes(6360)`) && run(`CONV_IDS.includes(12114)`));   // no player price needed for the Points
+  const jakk = `MOBS.find(m=>m.name==="Jakk")`;
+  assert.equal(run(`mobRow(${jakk},0).el2`), "Water");
+  // a skill tree with Endow Blaze Lv 1: 10 minutes, so 6 Points an hour; Endow Tsunami not learned falls back to the Water converter
+  run(`C().skills={"endow-blaze":1};C().convEl="Fire"`);
+  assert.equal(run(`convSkLv("Fire")`), 1);
+  near(run(`convCostHr()`), 1200);
+  near(run(`convSpPerSec()`), 40 * run(`spCostMul()`) / 600);
+  assert.equal(run(`convName("Water")`), "Water converter");
+  assert.equal(run(`JSON.stringify(convIds("Water"))`), "[12115]");
+  run(`C().wElem="Fire"`);                                                   // a Fire weapon already: nothing to cast
+  assert.equal(run(`convCostHr()`), 0);
+  assert.equal(run(`convSpPerSec()`), 0);
+  run(`delete state.prices[6360]`);
+  // the Lv box: with no skill tree it keeps its own level per element
+  run(`C().skills={};C().wElem="Neutral";C().convEl="";state.prices[6360]=500`);
+  assert.equal(run(`setConvLv("Fire",2)`), null);
+  assert.equal(run(`convSkLv("Fire")+","+hasTree(C())+","+C().convLv.Fire`), "2,false,2");
+  near(run(`withEl("Fire",()=>convCostHr())`), 800);                        // 15 minutes: 4 an hour
+  assert.equal(run(`convSkLv("Water")`), 5);                                 // the others stay at Lv 5
+  // having Endow Blaze doesn't take the Fire converter away: switched to it, Fire costs a converter from players and no SP
+  run(`state.prices[12114]=1500;setConvItem("Fire",true)`);
+  assert.equal(run(`convName("Fire")`), "Fire converter");
+  assert.equal(run(`convSkLv("Fire")`), 2);                                  // the Endow's level stays as it was
+  near(run(`withEl("Fire",()=>convCostHr())`), 4500);
+  assert.equal(run(`withEl("Fire",()=>convSpPerSec())`), 0);
+  assert.equal(run(`convName("Water")`), "Endow Tsunami");                   // the other elements keep their Endow
+  assert.ok(run(`convEls().includes("Fire")`));
+  run(`setConvLv("Fire",3)`);                                                // picking a level casts the Endow again
+  assert.equal(run(`convName("Fire")+","+convSkLv("Fire")`), "Endow Blaze,3");
+  run(`setConvItem("Shadow",true)`);                                         // nothing to switch where there's no skill
+  assert.equal(run(`"Shadow" in C().convItem`), false);
+  run(`delete state.prices[12114]`);
+  // with a skill tree it is the tree's level: raising it raises what it needs, and the tree refuses a lower level a learned skill needs
+  run(`C().skills={"endow-blaze":1}`);
+  run(`setConvLv("Fire",4)`);
+  assert.equal(run(`C().skills["endow-blaze"]+","+C().skills["study"]+","+C().skills["fire-bolt"]`), "4,5,1");
+  assert.equal(run(`convSkLv("Fire")`), 4);
+  run(`C().skills.volcano=1`);                                               // Volcano needs Endow Blaze Lv 2
+  assert.ok(run(`setConvLv("Fire",1)`)[0].includes("Volcano"));
+  assert.equal(run(`convSkLv("Fire")`), 4);
+  run(`setConvItem("Fire",true)`);                                           // the converter leaves the tree's level alone
+  assert.equal(run(`C().skills["endow-blaze"]+","+convName("Fire")`), "4,Fire converter");
+  run(`delete C().skills.volcano;C().skills["endow-blaze"]=0;setConvItem("Fire",false)`);   // not learned: the converter
+  assert.equal(run(`convName("Fire")`), "Fire converter");
+  run(`delete state.prices[6360]`);
+  // the Endow buff's extra element damage goes by its level: +1% a level, on Fire spells only
+  for (const lv of [1, 3, 5]) {
+    run(`C().skills={"endow-blaze":${lv}};C().buffs={"endow-blaze":true};SKFX=skillEffects(C())`);
+    assert.equal(run(`SKFX.myEle.Fire`), lv);
+    assert.equal(run(`SKFX.physEle.Fire||0`), 0);
+  }
+  run(`C().buffs={};SKFX=skillEffects(C())`);
+});
+
+t("Spell Fist hits with the bolt's element: the Weapon element picker and a party Endow leave it alone", () => {
+  setup("Sage", { atkTxt: "150+200", wAtk: 0, wElem: "Neutral", weapon: "Book", matkTxt: "200+100", intTxt: "80", hitTxt: "300", st: {}, autoSp: false, potOn: false, cons: [],
+    converters: true, convEl: "Water", skills: {}, preset: 0, sage: { bolts: { Fire: true, Water: false, Wind: false } } });
+  run(`C().a={...JOBS.Sage.p[0]}`);
+  assert.equal(run(`C().a.type`), "spellfist");
+  assert.equal(run(`convOn()`), false);
+  assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Fire"]));    // only the ticked bolts
+  assert.equal(run(`withEl("Fire",()=>atkEl()+","+convCostHr()+","+convSpPerSec())`), "Fire,0,0");
+  const jakk = `MOBS.find(m=>m.name==="Jakk")`;
+  const before = run(`withEl("Fire",()=>dmgPerHit(${jakk}))`);
+  run(`C().pbuffs={endowWater:{on:true,lv:5}}`);
+  assert.equal(run(`withEl("Fire",()=>atkEl())`), "Fire");
+  assert.equal(run(`withEl("Fire",()=>dmgPerHit(${jakk}))`), before);
+});
+
+t("Endows from a party Sage (Buffs from others): your weapon's element, free, and +Lv% to that element's spells", () => {
+  setup("Knight", { atkTxt: "150+200", wAtk: 0, wElem: "Neutral", weapon: "Two-handed sword", hitTxt: "300", st: {}, autoSp: false, potOn: false, cons: [], converters: false, convEl: "",
+    pbuffs: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  assert.equal(run(`atkEl()`), "Neutral");
+  run(`C().pbuffs={endowWater:{on:true,lv:3}}`);
+  assert.equal(run(`atkEl()+","+wElNow()`), "Water,Water");
+  assert.equal(run(`JSON.stringify(pEndow())`), JSON.stringify({ el: "Water", lv: 3, name: "Endow Tsunami" }));
+  run(`C().pbuffs={endowFire:{on:true,lv:5},endowWater:{on:true}}`);         // the first ticked counts
+  assert.equal(run(`pEndow().el`), "Fire");
+  // with Weapon element on, the Endow is the free baseline and the items still compete; a fixed converter goes over it
+  run(`C().converters=true;state.prices[12115]=1500`);
+  assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Fire", "Water", "Earth", "Wind", "Shadow", "Holy"]));
+  assert.equal(run(`withEl("Fire",()=>convCostHr())`), 0);
+  assert.equal(run(`convWith("Fire")`), "Fire (Endow Blaze)");
+  run(`C().convEl="Water"`);
+  assert.equal(run(`JSON.stringify(elOptions())`), JSON.stringify(["Water"]));
+  near(run(`withEl("Water",()=>convCostHr())`), 4500);
+  run(`delete state.prices[12115];C().converters=false;C().convEl=""`);
+  // +5% to Fire spells (an auto-cast Fire Bolt), not to Water ones
+  const mob = `MOBS.find(m=>m.name==="Poring")`;
+  run(`C().pbuffs={}`);
+  const fire0 = run(`bonusParts(${mob},true).post`), phys0 = run(`bonusParts(${mob},false).post`);
+  run(`C().pbuffs={endowFire:{on:true,lv:5}}`);
+  near(run(`withEl("Fire",()=>bonusParts(${mob},true).post)`), fire0 * 1.05);
+  near(run(`withEl("Water",()=>bonusParts(${mob},true).post)`), fire0);
+  near(run(`bonusParts(${mob},false).post`), phys0);
+  run(`C().pbuffs={}`);
 });
 
 t("ASPD potion and buffs from others (RO樂園攻速計算機 values)", () => {
@@ -1598,12 +1880,44 @@ t("ASPD potion and buffs from others (RO樂園攻速計算機 values)", () => {
   run(`C().potOn=false;C().pbuffs={incAgi:{on:true,lv:10},canto:{on:true}};SKFX=skillEffects(C());applyBuild();applyConsumables()`);
   const lines = run(`JSON.stringify(aspdBuffLines())`);
   assert.ok(lines.includes('"agi",null,null,19') && !lines.includes('"agi",null,null,12'));   // Canto Candidus replaces Increase AGI
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(aspdFrom())`)), ["Canto Candidus"]);   // what Your numbers' ASPD tile names
   run(`C().pbuffs={adren:{on:true}}`);
   assert.equal(run(`aspdBuffLines().length`), 0);                           // Adrenaline Rush needs an axe or mace
   run(`C().pbuffs={};C().skills={"two-hand-quicken":10};C().buffs={"two-hand-quicken":true};SKFX=skillEffects(C())`);
   assert.ok(run(`JSON.stringify(SKFX.buffStat)`).includes('"aspd_mod",null,null,7'));      // Two-Hand Quicken: value 7, +10%
   run(`state.job="Hunter";state.chars={};Object.assign(C(),{weapon:"Bow",skills:{"falcon-eyes":10},buffs:{"falcon-eyes":true}});SKFX=skillEffects(C())`);
   assert.equal(run(`SKFX.buffStat.filter(b=>["agi","dex"].includes(b[0])).reduce((a,b)=>a+b[3],0)`), 10);   // Falcon Eyes (True Sight): AGI, DEX +5
+});
+
+t("Clementia and Canto Candidus: one of each pair on a character, over your own Blessing / Increase AGI", () => {
+  setup("Priest", { aspd: 150, weapon: "One-handed mace", st: { str: "1", agi: "50", vit: "1", int: "1", dex: "1", luk: "1" }, intTxt: "1", potOn: false, cons: [], pbuffs: {},
+    skills: { "increase-agility": 10, blessing: 10 }, buffs: { "increase-agility": true, blessing: true } });
+  run(`SKFX=skillEffects(C())`);
+  const own = () => JSON.parse(run(`JSON.stringify(SKFX.buffStat.map(b=>b[0]))`));
+  assert.ok(own().includes("agi") && own().includes("str"));
+  run(`C().pbuffs={canto:{on:true},clementia:{on:true}};SKFX=skillEffects(C())`);
+  assert.ok(!own().includes("agi") && !own().includes("str"));              // the advanced buffs replace your own
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(aspdFrom())`)), ["Canto Candidus"]);
+  run(`C().pbuffs={};SKFX=skillEffects(C())`);
+  assert.deepEqual(JSON.parse(run(`JSON.stringify(aspdFrom())`)), ["Increase Agility"]);
+});
+
+t("ASPD: Novice row, riding a Peco Peco, Awakening Potion for Novices", () => {
+  // Novice: base 156, a dagger −15, a shield −10 (in game)
+  assert.equal(run(`aspdBase("Novice","Dagger")`), 141);
+  assert.equal(run(`BUILD.SHIELD_ASPD.Novice`), 10);
+  const nov = run(`BUILD.compute({base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{},extra:[]},"Novice",aspdBase).fields.aspd`);
+  assert.equal(nov, Math.floor(156 + Math.sqrt(1 / 2 + 1 / 5) / 4));
+  assert.equal(run(`potOk("awak","Novice",99)`), true);                     // the client: all but Acolyte, Priest, Bard, Dancer
+  // riding: potion/skill value −(50 − 10 × Cavalier Mastery), nothing at Lv 5
+  setup("Knight", { aspd: 160, weapon: "Two-handed sword", st: { str: "1", agi: "80", vit: "1", int: "1", dex: "1", luk: "1" }, intTxt: "1", potOn: false, cons: [], pbuffs: {},
+    skills: { "peco-peco-ride": 1, "cavalier-mastery": 2 }, buffs: { "peco-peco-ride": true } });
+  run(`SKFX=skillEffects(C())`);
+  assert.ok(run(`JSON.stringify(SKFX.buffStat)`).includes('"aspd_mod",null,null,-30'));
+  run(`C().skills["cavalier-mastery"]=5;SKFX=skillEffects(C())`);
+  assert.ok(!run(`JSON.stringify(SKFX.buffStat)`).includes('aspd_mod'));
+  run(`C().buffs={};C().skills["cavalier-mastery"]=0;SKFX=skillEffects(C())`);
+  assert.ok(!run(`JSON.stringify(SKFX.buffStat)`).includes('aspd_mod'));    // not riding: no cut
 });
 
 t("Max SP from Dance Lessons with any weapon, Max HP from Angelus", () => {
@@ -1671,11 +1985,13 @@ t("consumables: + and +% per main stat, old food buffs move into the table", () 
   const eff = (k, lv) => run(`pbEff(PBUFF.find(b=>b.k==="${k}"),${lv})`);
   assert.equal(eff("blessing", 5), "STR +5, INT +5, DEX +5, HIT +10");
   assert.equal(eff("incAgi", 3), "AGI +5, ASPD +3%");
-  assert.equal(eff("riff", 3), "ASPD +5% (Zero: 17% at Lv 10, not the description's 20%)");
-  assert.equal(eff("riff", 10), "ASPD +17% (Zero: 17% at Lv 10, not the description's 20%)");   // Zero: 17%, not 20%
+  assert.equal(eff("riff", 3), "ASPD +6%");
+  assert.equal(eff("riff", 10), "ASPD +20%");                               // the client: After Attack Delay −2% a level
+  assert.equal(eff("canto", 70), "AGI +19, ASPD +17% (Increase AGI Lv 10 + Priest Job Lv/10)");
+  assert.equal(eff("canto", 50), "AGI +17, ASPD +15% (Increase AGI Lv 10 + Priest Job Lv/10)");
   assert.equal(run(`JSON.stringify(SK_ASPD.study(1))`), run(`JSON.stringify(SK_ASPD.study(10))`)); // Study: a flat potion/skill value 4
   assert.equal(run(`SK_ASPD.study(10)[0][3]`), 4);
-  assert.equal(eff("clementia", 70), "STR +17, INT +17, DEX +17 (Blessing Lv 10 + Priest Job Lv/10)");
+  assert.equal(eff("clementia", 70), "STR +17, INT +17, DEX +17, HIT +27 (Blessing Lv 10 + Priest Job Lv/10)");
   run(`C().pbuffs={bandage:{on:true}};SKFX=skillEffects(C());applyBuild();applyConsumables()`);
   assert.equal(run(`statVal(C(),"luk")`), 1);                               // an old save's tick adds nothing
   run(`C().pbuffs={};C().consStat={...C().consStat,dex:{n:7},luk:{n:7}};C().cons=[{on:true,name:"x",eff:"HIT +5"}];applyConsumables()`);
@@ -1966,6 +2282,30 @@ t("cards: Hunter Fly and Dracula copies (box or counted in the gear) roll on eve
   assert.ok(!JSON.stringify(packed).includes('"dracN"'));                   // defaults aren't written
   const back = JSON.parse(run(`JSON.stringify(unpackState(${JSON.stringify(packed)}))`));
   assert.equal(back.chars.Knight.cards.hfN, 2);
+});
+
+t("cards: in build mode every Cards row follows the gear, and its tick boxes don't count", () => {
+  const AUTO = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
+  setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed sword", hitTxt: "300", aspd: 170, maxSp: 500, st: {}, skills: {}, a: AUTO });
+  // every box ticked, nothing in the gear: build mode counts none of them
+  run(`Object.assign(CRD(),{vitata:true,daSF:true,creamy:true,phen:true,bbfly:true,hfOn:true,dracOn:true,dpOn:true,killSp:["Brute"]});C().mode="build";C().build={gear:{}}`);
+  for (const k of ["vitata", "daSF", "creamy", "phen", "bbfly", "hfOn", "dracOn", "dpOn"]) assert.equal(run(`cdOn("${k}")`), false, k);
+  assert.equal(run("JSON.stringify(killSpOn())"), "[]"); assert.equal(run("hfCards()"), 0); assert.equal(run("noBreak()"), false); assert.equal(run("creamyOn()"), false);
+  assert.equal(run("vctCards()"), 0); assert.equal(run("vitPct()"), 0);
+  // the cards slotted, boxes unticked: each one counts
+  run(`Object.assign(CRD(),{vitata:false,daSF:false,creamy:false,phen:false,bbfly:false,hfOn:false,dracOn:false,dpOn:false,killSp:[]});
+    C().build={gear:{weapon:{id:1158,cards:[4117,4167,4171,4289]},garment:{cards:[4040]},shoes:{cards:[4077]},acc1:{cards:[4053]},acc2:{cards:[27266]}}}`);
+  for (const k of ["vitata", "daSF", "creamy", "phen", "dpOn", "hfOn"]) assert.equal(run(`cdOn("${k}")`), true, k);
+  assert.equal(run(`cdOn("bbfly")`), false);
+  assert.equal(run("JSON.stringify(killSpOn().sort())"), JSON.stringify(["Brute", "Plant"]));
+  assert.equal(run("daFactor()"), 1 + run("num(CRD().daPct)") / 100);           // Side Winder
+  assert.equal(run("noBreak()"), true); assert.equal(run("vctCards()"), 0);       // Phen's cast +% comes from the gear's own line
+  assert.equal(run("creamyOn()"), true); assert.equal(run("hfCards()"), 1);
+  assert.equal(run("vitPct()"), 0);                                               // Vitata's SP cost from the gear too
+  // status window mode: the boxes again
+  run(`C().mode="status"`);
+  assert.equal(run(`cdOn("daSF")`), false); assert.equal(run("JSON.stringify(killSpOn())"), "[]");
+  run(`CRD().phen=true`); assert.equal(run("vctCards()"), 25);
 });
 
 t("cards: a Sage's old Vitata, Hunter Fly and Side Winder settings move out of Sage options", () => {
@@ -2415,8 +2755,28 @@ t("a session keeps the stats it was logged with", () => {
   assert.deepEqual(back.sessions[0].snapHist.map(x => [x.t, x.c.atkTxt, "$d" in x]), [[t0 + 36e5, "100+300", false]]);
 });
 
+t("a session keeps the EXP bonus % it was logged with: raising it raises EXP / min instead of stretching the walking", () => {
+  setup("Knight", { atkTxt: "100+300", hitTxt: "400", wAtk: 0, weapon: "Two-handed spear", wElem: "Neutral", st: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
+  const t0 = 1e12, wolf = "MOBS.find(m=>m.id===1013)";
+  run(`state.bonus=15;state.sessions=[{id:'b',name:'b',job:'Knight',mobIds:[1013],entries:[{t:${t0},lv:30,pct:10},{t:${t0 + 36e5},lv:30,pct:15}]}];state.current='b';snapSession(cur())`);
+  assert.equal(run("cur().snap.bonus"), 15);
+  const w = run("walkSec()"), kph = run("sessionPace(cur()).kph"), epm = run(`mobRow0(${wolf},walkSec()).epm`);
+  run("state.bonus=115");                                                    // a Double EXP weekend: +100 on top of the gear's 15
+  near(run("walkSec()"), w);                                                 // the logged hour still took as many kills
+  near(run("sessionPace(cur()).kph"), kph);
+  near(run(`mobRow0(${wolf},walkSec()).epm`) / epm, run(`killExp(${wolf})`) / run(`withBonus(cur(),()=>killExp(${wolf}))`));
+  assert.ok(run(`mobRow0(${wolf},walkSec()).epm`) > epm * 1.8);
+  // logging during the weekend takes the new bonus for the session
+  run(`cur().entries.push({t:${t0 + 72e5},lv:30,pct:25});snapSession(cur(),[${t0},${t0 + 36e5}])`);
+  assert.equal(run("cur().snap.bonus"), 115);
+  // the bonus survives a share link
+  const back = JSON.parse(run("JSON.stringify(unpackState(packState(JSON.parse(JSON.stringify(state)))))"));
+  assert.equal(back.sessions[0].snap.bonus, 115);
+  run("state.bonus=0");
+});
+
 t("deaths: the EXP a death costs isn't negative EXP / hr", () => {
-  const t0 = 1e12, L = run("lvExp(30)"), st = es => run(`cur().entries=${JSON.stringify(es)};cur().pauses=[];stats(cur())`);
+  const t0 = 1e12, L = run(`lvExp(30,${t0})`), st = es => run(`cur().entries=${JSON.stringify(es)};cur().pauses=[];stats(cur())`);
   // the Died button: your EXP just before (20%), then a second later 10% less
   const b = st([{ t: t0, lv: 30, pct: 10 }, { t: t0 + 36e5, lv: 30, pct: 20 }, { t: t0 + 36e5 + 1000, lv: 30, pct: 10, died: 10 }]);
   near(b.avgRaw, 0.1 * L / ((36e5 + 1000) / 36e5));
@@ -2471,9 +2831,10 @@ t("HP lost: casters and ranged attackers still take hits; Vitata's Heal covers i
 });
 
 t("max base level: the EXP Hunter ranks by net zeny, EXP gear lines are flagged", () => {
-  setup("Knight", { baseLv: 69 });
+  setup("Knight", { baseLv: 70 });                                             // 70 is no longer the max since the 12 November 2026 patch
   run("state.tsort={}");
-  assert.equal(run("MAX_BASE_LV"), 70);
+  assert.equal(run("MAX_BASE_LV"), 80);
+  assert.equal(run("GOAL_TOP_LV"), 80);                                        // the EXP table runs to 80 since the 12 November 2026 update
   assert.equal(run(`JSON.stringify(tblSort("bestTable"))`), '["epm",-1]');
   run("C().baseLv=MAX_BASE_LV");
   assert.equal(run(`JSON.stringify(tblSort("bestTable"))`), '["net",-1]');
@@ -2565,7 +2926,7 @@ t("other gear sets: up to 3 worked out next to your gear without touching it, sw
   assert.equal(three("JSON.stringify(state.chars.Wizard.build.alts)"), JSON.stringify([B(2), E, E]));
 });
 
-t("remembered gear and saved loadouts: swapping a part out and back keeps its refine, cards and affixes", () => {
+t("remembered gear: swapping a part out and back keeps its refine, cards and affixes", () => {
   run(`{state.job="Knight";state.chars={};const c=C();c.mode="build";const b=buildOf(c);const id=n=>EQUIP.find(x=>x.name===n).id;
     globalThis.PIKE=id("Pike");globalThis.ZWEI=id("Zweihander");globalThis.CARD=CARDS.find(x=>(x.slot||[]).includes("weapon")).id;
     b.gear={weapon:{id:PIKE,refine:7,cards:[CARD],opts:[{k:BUILD.OPTIONS[0].k,v:5}]}}}`);
@@ -2579,19 +2940,39 @@ t("remembered gear and saved loadouts: swapping a part out and back keeps its re
   run("memKeep(C(),{id:PIKE,refine:0,cards:[null],opts:[]})"); assert.equal(run("PIKE in memOf(C())"), false);   // nothing to keep
   run("for(let i=0;i<MEM_N+5;i++)memOf(C())[-1-i]={refine:1,cards:[],opts:[],t:i};memKeep(C(),buildOf(C()).gear.weapon)");
   assert.equal(run("Object.keys(memOf(C())).length"), run("MEM_N")); assert.equal(run("ZWEI in memOf(C())"), true);   // the oldest go
-  // loadouts: save the table under a name, load another one in its place, the one in the table found again
-  run("buildOf(C()).gear={weapon:{id:PIKE,refine:7}};loadoutSave(C(),'Farm')");
-  run("buildOf(C()).gear={weapon:{id:ZWEI,refine:9,cards:[]}};loadoutSave(C(),'Boss')");
-  assert.equal(run("loadoutAt(C())"), 1);
-  run("loadoutLoad(C(),0)"); assert.equal(w().id, run("PIKE")); assert.equal(run("loadoutAt(C())"), 0);
-  assert.equal(run("memOf(C())[ZWEI].refine"), 9);                                               // what came off is remembered
-  run("buildOf(C()).gear.weapon.refine=8;loadoutSave(C(),' farm ')");                           // same name, any case: replaced
-  assert.equal(run("loadoutsOf(C()).length"), 2); assert.equal(run("loadoutsOf(C())[0].gear.weapon.refine"), 8);
-  run("altAdd(C());altAdd(C());C().gearEdit='alt1';loadoutLoad(C(),1)");                                                // into the set being edited
-  assert.equal(run("altOf(C(),1).gear.weapon.id"), run("ZWEI")); assert.equal(w().refine, 8);
-  run("delete C().gearEdit");
-  const snap = JSON.parse(run("JSON.stringify(charSnap().build)")); assert.equal("loadouts" in snap || "mem" in snap, false);
-  assert.equal(run("'loadouts' in altChar(C(),1).build"), false);
+  assert.equal(run("'mem' in charSnap().build"), false);
+});
+
+t("named gear sets: renaming, the name going with the gear on Swap, and saved loadouts from older saves coming in as sets", () => {
+  run(`{state.job="Knight";state.chars={};const c=C();c.mode="build";const id=n=>EQUIP.find(x=>x.name===n).id;
+    globalThis.PIKE=id("Pike");globalThis.ZWEI=id("Zweihander");buildOf(c).gear={weapon:{id:PIKE,refine:7}}}`);
+  run("altAdd(C());altAdd(C());altOf(C(),0).gear={weapon:{id:ZWEI,refine:9}}");
+  assert.equal(run("altName(C(),0)"), "Set 1");
+  run("altRename(C(),0,'  Boss  ')"); assert.equal(run("altName(C(),0)"), "Boss");
+  run("altRename(C(),1,'x'.repeat(99))"); assert.equal(run("altName(C(),1).length"), run("SET_NAME_MAX"));
+  run("altRename(C(),1,' ')"); assert.equal(run("altName(C(),1)"), "Set 2"); assert.equal(run("'name' in altOf(C(),1)"), false);
+  assert.equal(run("setLabel(0)"), "Boss"); assert.equal(run("setLabel(-1)"), "My gear");
+  // Swap: Boss's gear is yours and keeps its name; your gear goes to the set, unnamed; swapping back puts both back
+  run("altSwap(C(),0)"); assert.equal(run("buildOf(C()).gear.weapon.id"), run("ZWEI")); assert.equal(run("buildOf(C()).setName"), "Boss");
+  assert.equal(run("altName(C(),0)"), "Set 1"); assert.equal(run("altOf(C(),0).gear.weapon.id"), run("PIKE"));
+  assert.equal(run("'setName' in charSnap().build || 'setName' in altChar(C(),0).build"), false);
+  run("altSwap(C(),0)"); assert.equal(run("altName(C(),0)"), "Boss"); assert.equal(run("'setName' in buildOf(C())"), false);
+  assert.equal(run("altOf(C(),0).gear.weapon.id"), run("ZWEI"));
+  // older saves: each saved loadout is a named set; one with the same gear as a set names it (if it has none)
+  const G = id => ({ weapon: { id, refine: 1 } }), lo = (name, id) => ({ name, gear: G(id), stones: {}, special: {} });
+  const old = load({ job: "Knight", chars: { Knight: { mode: "build", build: { base: {}, gear: G(1),
+    alts: [{ gear: G(2) }, { name: "Mine", gear: G(3) }], loadouts: [lo("Farm", 1), lo(" Boss ", 2), lo("Other", 3), null, lo("", 4)] } } } });
+  const ob = JSON.parse(old("JSON.stringify(state.chars.Knight.build)"));
+  assert.deepEqual(ob.alts.map(a => [a.name, a.gear.weapon.id]), [["Boss", 2], ["Mine", 3], ["Farm", 1], [undefined, 4]]);
+  assert.equal("loadouts" in ob, false);
+  // more than ALT_MAX sets: the ones that don't fit wait, and come in as a set is removed
+  const many = load({ job: "Knight", chars: { Knight: { mode: "build", build: { base: {}, gear: {},
+    alts: Array.from({ length: 9 }, (_, i) => ({ gear: G(100 + i) })), loadouts: [lo("A", 1), lo("B", 2), lo("C", 3)] } } } });
+  assert.equal(many("altN(C())"), 10); assert.equal(many("altName(C(),9)"), "A");
+  assert.equal(many("JSON.stringify(buildOf(C()).loadouts.map(x=>x.name))"), JSON.stringify(["B", "C"]));
+  many("altDel(C(),0)"); assert.equal(many("altN(C())"), 10); assert.equal(many("altName(C(),9)"), "B");
+  assert.equal(many("buildOf(C()).loadouts.length"), 1);
+  many("altDel(C(),0)"); assert.equal(many("altName(C(),9)"), "C"); assert.equal(many("'loadouts' in buildOf(C())"), false);
 });
 
 t("crowds: aggressive or assisting monsters gang up, and from 3 at once FLEE and DEF drop", () => {
@@ -2794,7 +3175,12 @@ t("Skill tree: a 2nd job's points can go on its 1st-job skills", () => {
 
 t("Stylist: a saved look is cleaned, and drawn as the job's body allows", () => {
   const app = load({ stylist: { job: "Knight", sex: "x", hair: "abc", color: -3, dye: 2.6, trans: 1 } });
-  assert.equal(app("JSON.stringify(state.stylist)"), JSON.stringify({ job: "Knight", sex: "m", hair: 1, color: 0, dye: 3, trans: true, cos: {}, gear: {} }));
+  assert.equal(app("JSON.stringify(state.stylist)"), JSON.stringify({ job: "Knight", sex: "m", hair: 1, color: 0, dye: 3, trans: true, ride: false, cos: {}, gear: {} }));
+  // the Halter Lead's mount: a Lord Knight on a lion, with the mounted body's own clothes colours
+  app(`state.stylist.ride=true`);
+  assert.equal(app("JSON.stringify((({key,ride,dyes})=>({key,ride,dyes}))(styleOf()))"),
+    JSON.stringify({ key: "Knight+~", ride: true, dyes: app("JOB_SPRITES.rideTransPal.Knight.m.c.length") }));
+  app(`state.stylist.ride=false`);
   // the Knight's transcendent look has its own clothes colours; a number past the last falls back to the first
   assert.equal(app("JSON.stringify((({job,trans,sex,dye,dyes})=>({job,trans,sex,dye,dyes}))(styleOf()))"),
     JSON.stringify({ job: "Knight", trans: true, sex: "m", dye: 3, dyes: app("JOB_SPRITES.transPal.Knight.m.c.length") }));
@@ -2844,6 +3230,21 @@ t("Enchant Stone Craft Box: the costumes the official guide lists, any 5 for a r
   assert.ok(app("boxOf(104672).rows.every(r=>r[1]===1)"));                             // a stone box: one stone                                   // Bubble Gum 5ea Box: "containing 5"
 });
 
+t("Stylist share link: the look and what's worn, read back as it's drawn", () => {
+  const app = load({});
+  const hat = app(`Object.keys(COSTUME_LOOKS.gear).find(id=>COSTUME_LOOKS.items[id]&&stySlotsOf("gear",id).includes("upper"))`);
+  app(`state.stylist={job:"Knight",sex:"f",hair:5,color:3,dye:2,trans:true,ride:false,cos:{middle:19794,lower:19794,garment:480574},gear:{upper:${hat}}}`);
+  const url = app("styUrl()");
+  assert.match(url, new RegExp(`#stylist/knight/f/h5/c3/d2/trans/hu${hat}/cm19794/cl19794/cg480574$`));
+  const before = app("JSON.stringify(state.stylist)");
+  assert.equal(app(`JSON.stringify(hashStyle(${JSON.stringify(url.slice(url.indexOf("#")))}))`), before);
+  // case doesn't matter; a job with no look, a piece in a slot it doesn't take, a normal garment and unknown parts are left out
+  assert.equal(app(`hashStyle("#stylist/Nope/f")`), null);
+  assert.equal(app(`hashStyle("#skill/knight/bash")`), null);
+  assert.equal(app(`JSON.stringify(hashStyle("#STYLIST/Dancer/H0/cu19794/hg${hat}/zz9/ride"))`),
+    JSON.stringify({ job: "Dancer", sex: "m", hair: 1, color: 0, dye: 0, trans: false, ride: true, cos: {}, gear: {} }));
+});
+
 t("Stylist costumes: worn by slot, drawn on the look from the client's sheets", () => {
   const app = load({ stylist: { job: "Knight", cos: { upper: "19930", middle: -1, garment: 480574, weapon: 1101 } } });
   assert.equal(app("JSON.stringify(state.stylist.cos)"), JSON.stringify({ upper: 19930, garment: 480574 }));   // item ids by slot only
@@ -2859,7 +3260,7 @@ t("Stylist costumes: worn by slot, drawn on the look from the client's sheets", 
   const cos = "{upper:19930,middle:19794,lower:19794,garment:480574}";
   const html = app(`lookCanvas("Knight",{sex:"m",hair:1,color:0,dye:0,cos:${cos}})`);
   assert.equal((html.match(/data-acc="([^"]*)"/) || [])[1].split(";").length, 2);
-  assert.match(html, /data-robe="Knight,(-?\d+,){6}[01]"/);
+  assert.match(html, /data-robe="Knight(,-?\d+){6}"/);
   assert.match(app(`lookCanvas("Knight",{sex:"m",hair:1,color:0,dye:0,cos:${cos}},true)`), /data-robe="Knight\+,/);
   assert.doesNotMatch(app(`lookCanvas("Knight",{sex:"m",hair:1,color:0,dye:0})`), /data-acc|data-robe/);
   // the canvas grows to hold them: the wings are wider than the Knight
@@ -2882,7 +3283,7 @@ t("Stylist costumes: worn by slot, drawn on the look from the client's sheets", 
   app(`state.job="Knight";const b=gearSet(C());b.gear={headTop:{id:2225},headMid:{id:2225},headLow:{id:2218},armor:{id:2301}};b.special={costume:{upper:5915,garment:480574}};
     state.look={sex:"m",hair:7,color:2,dye:1,trans:false};state.stylist={job:"Mage",cos:{lower:19683},gear:{}};styFromMine()`);
   assert.equal(app("JSON.stringify(state.stylist)"), JSON.stringify({ job: "Knight", sex: "m", hair: 7, color: 2, dye: 1, trans: false,
-    cos: { upper: 5915, garment: 480574 }, gear: { upper: 2225, middle: 2225, lower: 2218 } }));
+    ride: false, cos: { upper: 5915, garment: 480574 }, gear: { upper: 2225, middle: 2225, lower: 2218 } }));
   // the lists: costumes with a look in the client, by name; one with no look for this body is greyed out, not hidden
   assert.ok(app("STY_COS.cos.upper.length") > 300 && app("STY_COS.cos.garment.length") > 40);
   assert.equal(app(`STY_COS.cos.upper.every((id,i,a)=>!i||styCosName(a[i-1]).localeCompare(styCosName(id))<=0)`), true);
@@ -2892,10 +3293,12 @@ t("Stylist animation: every frame of a look, drawn by anchors", () => {
   // every job's body (both genders where it has them) and every hair style has its frames; the pieces' list names their files
   assert.equal(run(`Object.keys(JOB_SPRITES.body).every(j=>Object.keys(JOB_SPRITES.body[j]).every(s=>LOOK_HAS["body/"+j+"-"+s]))`), true);
   assert.equal(run(`["m","f"].every(s=>Object.keys(JOB_SPRITES.head[s]).every(n=>LOOK_HAS["hair/"+n+"-"+s]))`), true);
-  // a piece: four actions in 8 directions, frames of layers [image, x, y, mirror, scale x, scale y] and the anchor
+  // a piece: its actions (stand, walk, sit and attack at least, all in LOOK_ACTS) in 8 directions, frames of layers [image, x, y,
+  // mirror, scale x, scale y] and the anchor
   const src = readFileSync(new URL("data/looks/body/Knight-m.js", root), "utf8");
   const p = JSON.parse(src.slice(src.indexOf(",") + 1, src.lastIndexOf(")")));
-  assert.deepEqual(Object.keys(p.act), ["stand", "walk", "sit", "attack"]);
+  const keys = JSON.parse(run(`JSON.stringify(LOOK_ACTS.map(([k])=>k))`));
+  assert.ok(["stand", "walk", "sit", "attack"].every(k => p.act[k]) && Object.keys(p.act).every(k => keys.includes(k)));
   assert.ok(Object.values(p.act).every(dirs => dirs.length === 8 && dirs.every(d => d.f.length > 0 && d.d > 0)));
   assert.ok(p.act.walk[0].f.length > 1 && p.act.walk[0].f.every(([ls, a]) => ls.length && a.length === 2 && ls.every(l => l.length === 6 && p.img[l[0]])));
   // drawn on a canvas stand-in: the body, then the hair attached by anchors; walking moves through the frames with the time
@@ -2910,6 +3313,16 @@ t("Stylist animation: every frame of a look, drawn by anchors", () => {
   const a = p.act.walk[0].f[0][1];
   assert.deepEqual(hairAt, [90 + a[0] - 0 - 5, 168 + a[1] + 70 - 5]);           // the hair's anchor on the body's, the image centred
   assert.deepEqual(later, p.img[p.act.walk[0].f[1][0][0][0]].slice(0, 4));        // 150 ms in: the second walking frame (100 ms each)
+  // the actions a body offers are those its file has frames for, in LOOK_ACTS' order; one it lacks draws standing, and Dead stops on
+  // its last frame where the others loop
+  const fr = (n, i0) => Array.from({ length: 8 }, () => ({ d: 4, f: Array.from({ length: n }, (_, i) => [[[i0 + i, 0, 0, 0, 1, 1]], [0, -70]]) }));
+  const anim = run(`(()=>{const P={img:Array.from({length:20},(_,i)=>[i,0,1,1]),act:{stand:${JSON.stringify(fr(1, 0))},dead:${JSON.stringify(fr(3, 10))},
+      walk:Array.from({length:8},()=>({d:4,f:[]}))},im:{naturalWidth:1,naturalHeight:1}};LOOKS["body/Knight-m"]=P;
+    const im=[];lookTinted=(k)=>k;const g={imageSmoothingEnabled:true,save(){},restore(){},translate(){},scale(){},drawImage:(i,...a)=>{if(i==="body/Knight-m")im.push(a[0])}};
+    const o={job:"Knight",trans:false,sex:"m",hair:1,color:0,dye:0,worn:{head:[],robe:null}};
+    for(const [a,t] of [["cast",0],["dead",0],["dead",250],["dead",5000]])lookAnimDraw(g,o,a,0,t,90,168);
+    return JSON.stringify([lookActs(P).map(([k])=>k),im])})()`);
+  assert.deepEqual(JSON.parse(anim), [["stand", "dead"], [0, 10, 12, 12]]);
 });
 
 t("Equipment and Cards tabs: in-game text, where to get it and the Where to get filter", () => {
@@ -2963,6 +3376,17 @@ t("Item info: the Where to get filter, and other sources the farm tables don't h
   assert.equal(run(`otherSourcesHtml("507")`), "");                                                   // nothing beyond the table
 });
 
+t("My numbers: Monsters & maps and the monster popup can leave your character's numbers out", () => {
+  setup("Knight", { mode: "build", build: { base: { str: 50, agi: 1, vit: 1, int: 1, dex: 1, luk: 1 }, gear: {} } });
+  const pop = () => run(`popMob(MOBS.find(m=>m.id===1002))`);
+  assert.match(pop().body, /You \(Knight\)/); assert.match(pop().acts, /data-mine checked/);
+  run(`state.hideMine=true`);
+  assert.doesNotMatch(pop().body, /You \(Knight\)/); assert.match(pop().acts, /data-mine>/);   // the game's numbers only, the switch off
+  run(`delete state.hideMine`);
+  setup("Knight", {});                                                                                    // not set up: no switch to show
+  assert.doesNotMatch(pop().acts, /data-mine/);
+});
+
 t("details popup: a monster, an item, gear and a card, linked to each other", () => {
   assert.equal(run(`infoKind(909)`), "item");                                                        // Jellopy
   assert.equal(run(`infoKind(1168)`), "gear");                                                       // Zweihander
@@ -2988,7 +3412,7 @@ t("details popup: a monster, an item, gear and a card, linked to each other", ()
   const ms = run(`popMob(MOBS.find(m=>m.skills&&m.skills.length))`);
   assert.match(ms.body, /<h3>Skills<\/h3><\/summary><div class="scroll"><table[^>]*><thead><tr><th>Skill<\/th><th>When<\/th>/);
   const i = run(`popItem("909")`);
-  assert.match(i.acts, /class="infoPay">Players pay<input[^>]*data-infoprice="909"/);                // a box for the player price, in the bottom bar
+  assert.match(i.acts, /class="infoPay priceIn">Players pay<input[^>]*data-infoprice="909"/);        // a box for the player price, in the bottom bar (Settings → Price boxes hides it)
   assert.match(i.body, /NPC pays 3 z/); assert.doesNotMatch(run(`popItem("1002996").body`), /no NPC price/);
   // only where the price counts: a recipe material yes; a box, a costume, an upgrade scroll no
   assert.match(run(`popItem("1002996").acts`), /data-infoprice/);
@@ -3005,6 +3429,24 @@ t("details popup: a monster, an item, gear and a card, linked to each other", ()
   assert.match(run(`fromHtml(1306)`), /data-info="mob:\d+"/);                                         // Where to get links open the popup
 });
 
+t("a new character starts in Build from gear; a saved one with no mode stays on its status window", () => {
+  run(`NEW_CHAR_MODE="build";state.job="Knight";state.chars={}`);
+  assert.equal(run(`C().mode`), "build");
+  run(`state.chars={Knight:{baseLv:50}}`);
+  assert.notEqual(run(`C().mode`), "build");
+  run(`NEW_CHAR_MODE="status"`);
+});
+
+t("item lists: items sharing a name are told apart by their slot count, as the game writes it", () => {
+  setup("Mage", {});
+  const arc = run(`JSON.stringify(gearChoices("weapon").filter(x=>x.name==="Arc Wand").map(x=>labelOf(x,gearChoices("weapon"))).sort())`);
+  assert.equal(arc, JSON.stringify(["Arc Wand [1]", "Arc Wand [2]"]));
+  assert.equal(run(`labelOf({name:"Knife",id:1},[{name:"Knife",id:1}])`), "Knife");                       // one of its name: the name alone
+  assert.equal(run(`labelOf({name:"Axe",id:1,slots:3,atk:38},[{name:"Axe",id:1,slots:3,atk:38},{name:"Axe",id:2,slots:3,atk:38}])`), "Axe [3]");   // alike but the id: one label
+  assert.equal(run(`labelOf({name:"Axe",id:1,slots:3,atk:38},[{name:"Axe",id:1,slots:3,atk:38},{name:"Axe",id:2,slots:3,atk:40}])`), "Axe [3] #1");   // same slots, other stats: the id
+  assert.equal(run(`pickList([{name:"Axe",id:1,slots:3},{name:"Axe",id:2,slots:3}]).get("Axe [3]")`), 1);                     // the list keeps the first
+});
+
 t("equipment window: gear named as the game shows it, and the job's look (Bards male, Dancers female)", () => {
   setup("Novice", { mode: "build" });
   const muf = run(`EQUIP.find(x=>/muffler/i.test(x.name)).id`), name = run(`BUILD.item(${muf}).name`);
@@ -3014,20 +3456,30 @@ t("equipment window: gear named as the game shows it, and the job's look (Bards 
   const card = run(`(CARDS.find(c=>cardName(c)&&c.affixPos!=="suffix"&&!/^of /i.test(cardName(c)))||{}).id`);
   if (card) assert.equal(run(`gameName({id:${muf},refine:0,cards:[${card},${card}]})`), `Double ${run(`cardName(BUILD.item(${card}))`)} ${name}`);
   run(`state.look={sex:"m",hair:2};state.job="Dancer"`);
-  assert.match(run(`lookHtml()`), /disabled[^>]*>♀/);                    // a male look still draws a Dancer female
+  assert.match(run(`ewLookCtl()`), /data-ewsex="m" aria-checked="false" disabled/);   // a male look still draws a Dancer female
+  assert.match(run(`ewLookCtl()`), /data-ewsex="f" aria-checked="true"/);
+  assert.match(run(`lookHtml({})`), /data-pal="bodyPal,Dancer,f"/);
   run(`state.job="Knight"`);
-  assert.match(run(`lookHtml()`), /aria-label="Gender">♂/); assert.match(run(`lookHtml()`), /Hair <\/span>2</);
+  assert.match(run(`ewLookCtl()`), /data-ewsex="m" aria-checked="true" title/); assert.match(run(`ewLookCtl()`), /aria-label="Hair style 2: /);
+  assert.match(run(`ewLookCtl()`), /data-ewtrans="1" aria-checked="false">Lord Knight</);
+  // Hair opens a grid of every hair style, the one worn pressed
+  run(`EW_PICK="hair"`);
+  assert.match(run(`ewPicker()`), /data-ewpick="hair,2" aria-pressed="true"/); assert.match(run(`ewPicker()`), /data-ewpick="hair,1" aria-pressed="false"/);
+  run(`EW_PICK=null`); assert.equal(run(`ewPicker()`), "");
 });
 
 t("Recipes: search by item or material, the popup's Made from and Used in, and every item's icon", () => {
   // Cooking from the client's cookbooks (60 dishes, Lv 1–10) in place of the database's 29, the Tip Box's 6 potions and 4 fruit juices,
-  // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts, and the client's 47 NPC crafts (the 2 Februs offers on Global, the Hat Maker's 2, 33 hat quests, the Quartermaster's two helms and Helm Scroll,
-  // Jade's 3 Gemstone swaps, Puchuchartan's 4 elemental ores, Oridecon and Elunium at Tadde, Kantstaff and Christopher Gillenlow, whose Oridecon replaces the database's)
-  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length-1+60+10+18+53`), run(`RECIPE_LIST.length`));
+  // and the 5 Jellostones, 8 Expedition pieces, 5 Mithril crafts, and the client's 48 NPC crafts (the 2 Februs offers on Global, the Hat Maker's 2, 33 hat quests, the Quartermaster's two helms and Helm Scroll,
+  // Jade's 3 Gemstone swaps, Puchuchartan's 4 elemental ores, Oridecon and Elunium at Tadde, Kantstaff and Christopher Gillenlow, whose Oridecon replaces the database's,
+  // Yakt's Blacksmith Blessing, and Brewer Burkel's daily Nordfeld Beer)
+  assert.equal(run(`RECIPES.filter(r=>r.cat!=="Cooking").length-1+60+10+18+55`), run(`RECIPE_LIST.length`));
+  assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===6635))`), "Yakt (Exchange with Zelstar) · moc_para01 22,35");    // Blacksmith Blessing
+  assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===6635).mats)`), "[[1002357,30],[25399,10]]");
   assert.equal(run(`RECIPE_LIST.filter(r=>r.id===984).map(recipeNpc).join("|")`), "Tadde (Process refining stones) · izlude 145,122|Kantstaff (Process refining stones) · prt_mk 153,162|Christopher Gillenlow (Make Oridecon) · prontera 179,184");  // Oridecon: no database row
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===985).mats)`), "[[757,5]]");                                     // Elunium
   assert.equal(run(`RECIPE_LIST.filter(r=>r.cat==="Headgear").length`), 39);
-  assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===716))`), "Jade (Gemstone Exchange) · payon 173,238");             // Red Gemstone
+  assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===716))`), "Jade (Gemstone Exchange, up to 100 per trade) · payon 173,238");  // Red Gemstone
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===716).mats)`), "[[717,2]]");
   assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===990))`), "Puchuchartan (Elemental Fusion) · umbala 219,188");    // Red Blood
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===990).mats)`), "[[904,20]]");
@@ -3075,6 +3527,10 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.equal(run(`JSON.stringify(RECIPE_LIST.find(r=>r.id===12048).mats)`), "[[518,2],[509,10],[7452,1]]");   // Honey Herbal Tea: the book's 2 Honey
   assert.ok(run(`RECIPE_LIST.filter(r=>r.cat==="Cooking").every(r=>r.mats.every(([id])=>!/^#|Unknown/.test(itemName(id))&&!/ none"/.test(itemIcon(id))))`), "every ingredient has a name and an icon");
   assert.equal(run(`shopPrice(7472)`), 750); assert.equal(run(`shopPrice(12127)`), 2000);              // the Cooking Ingredient Trader
+  assert.equal(run(`shopPrice(717)`), 450); assert.equal(run(`SHOPS_OF[717][0][1].length`), 12);        // the Tool Dealers' Blue Gemstone
+  assert.equal(run(`shopPrice(107452)`), 3000);                                                          // Brewer Telsa's Nordfeld Beer,
+  assert.equal(run(`shopQuest(SHOPS_OF[107452][0][3])`), "after the Nordfeld: Special Beer! quest · ");  // after Burkel's quest
+  assert.equal(run(`recipeNpc(RECIPE_LIST.find(r=>r.id===107452))`), "Brewer Burkel (Nordfeld: Special Beer! daily quest) · nordfeld 205,142");
   assert.ok(run(`RECIPES.every(r=>RECIPE_CATS.includes(r.cat)&&r.mats.length&&r.mats.every(([id,n])=>RECIPE_ITEMN[id]&&n>0))`));
   assert.equal(run(`itemName(1301)`), "Axe");                                                          // a recipe's name for an item no monster drops
   const ok = (q, cat) => run(`RECIPES.filter(r=>recipeOk(r,{q:${JSON.stringify(q)},cat:${JSON.stringify(cat || "")}})).map(r=>r.id)`);
@@ -3114,7 +3570,8 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   assert.equal(run(`itemName(25470)`), "Crimson Jellostone"); assert.equal(run(`itemName(15221)`), "Expedition's Armor");
   const memOk = q => run(`RECIPE_LIST.filter(r=>recipeOk(r,{q:${JSON.stringify(q)},cat:"Memorial"})).map(r=>r.id)`);
   assert.deepEqual([...memOk("poporing")], [25471]);                                                       // a fragment finds its stone
-  assert.ok(memOk("upgrader").length === 8);
+  assert.ok(memOk("equipment enhancer").length === 8);                                                // the NPC, by its client name
+  assert.deepEqual([...memOk("mysterious artisan")].sort(), [28568, 28569, 28570, 28571]);               // the Oath rings and earrings
   assert.match(run(`popItem("25465").body`), /Used in/); assert.match(run(`popGear(15221).body`), /Made from/);
   assert.doesNotMatch(run(`recipeWhere(RECIPE_LIST.find(r=>r.id===25470))`), /undefined| z</);         // no fee to show
   // a costume enchant stone: what it gives, its slot, and the box it comes out of at random
@@ -3185,6 +3642,23 @@ t("Jellostones: what the wanted Expedition pieces still need, and when the last 
   const d = (run(`jelloReady(${now})`) - now) / 864e5;
   assert.ok(d > 15 / 1.4 * 7 && d < 15 / 1.4 * 7 + 10, String(d));
   assert.equal(run(`jelloNeed()[25472]`), 3);
+});
+
+t("Jellostones: Contingent and Conqueror pieces count by name, with their own crystals", () => {
+  assert.equal(run(`LATER_RUNGS.contingent.pieces.length+LATER_RUNGS.conqueror.pieces.length`), 32);
+  assert.ok(run(`LATER_RUNGS.contingent.pieces.every(x=>EXPEDITION.some(e=>e.id===x.from[0]))`));            // each from an Expedition piece
+  assert.ok(run(`LATER_RUNGS.conqueror.pieces.every(x=>LATER_RUNGS.contingent.pieces.some(c=>c.name===x.from[1]))`)); // each from a Contingent one
+  // Expedition's Armor, then Contingent Mail (4 Crimson) and Conqueror's Mail (6 Crimson): 12 Crimson Jellostones in all
+  run(`state.jello={frag:{},stone:{},want:[15221,"Contingent Mail","Conqueror's Mail"],crystals:0}`);
+  assert.equal(run(`SHOW_FUTURE`), false);                                        // future content is hidden by default: only the Expedition piece counts
+  assert.equal(run(`jelloNeed()[25470]`), 2);
+  run(`SHOW_FUTURE=true`);
+  assert.equal(run(`jelloNeed()[25470]`), 12);
+  assert.equal(run(`JSON.stringify(memCrystals().map(([c,n])=>[c[1],n]))`), JSON.stringify([["Faintly Glowing Crystal", 50], ["Crystal of Blue Light", 50], ["Crimson Crystal", 50]]));
+  // a saved want list keeps Expedition ids (even as text) and later pieces' names, and drops what isn't an upgrade
+  run(`SHOW_FUTURE=false`);
+  const r = load({ jello: { want: ["15221", "Contingent Mail", "Nope", 909] } });
+  assert.equal(r(`JSON.stringify(state.jello.want)`), JSON.stringify([15221, "Contingent Mail"]));
 });
 
 t("Stellar weapons: each ★ weapon's certificates come from its own weapon, and the monster that gets you copies fastest", () => {
@@ -3359,7 +3833,98 @@ t("a new visitor starts with no session and no job picked", () => {
   assert.equal(again("state.sessions.length+' '+state.noJob"), "1 true");   // still no job until one is picked or set up
   assert.equal(load({ sessions: [], job: "Mage" })("state.sessions.length+' '+state.noJob+' '+state.current"), "0 undefined null");
   assert.equal(load({ job: "Mage", noJob: "yes" })("state.noJob"), undefined);
-  assert.equal(app("C().mode='build';noChar()"), false);                     // a character built from gear counts as set up
+  assert.equal(app("C().mode='build';noChar()"), true);                      // build mode with base stats all 1 and no gear: not yet
+  assert.equal(app("buildOf(C()).base.str=30;noChar()"), false);             // a raised stat (or a piece of gear) counts as set up
+});
+
+t("daily quests: a day runs 04:00 to 04:00 UTC, ticks are per character and clear when the day turns", () => {
+  const at = iso => Date.parse(iso);
+  assert.equal(run(`dailyDay(${at("2026-11-14T03:59:00Z")})`), "2026-11-13");   // before the reset: still yesterday
+  assert.equal(run(`dailyDay(${at("2026-11-14T04:00:00Z")})`), "2026-11-14");
+  assert.equal(run(`new Date(dailyNext(${at("2026-11-14T03:59:00Z")})).toISOString()`), "2026-11-14T04:00:00.000Z");
+  assert.equal(run(`new Date(dailyNext(${at("2026-11-14T04:00:00Z")})).toISOString()`), "2026-11-15T04:00:00.000Z");
+  const id = run("DAILIES[0].id");
+  run(`state.job="Mage";dailyTick(${id},true)`);
+  assert.equal(run("dailyDone().length"), 1);
+  assert.equal(run(`state.job="Acolyte";dailyDone().length`), 0);               // another character has its own ticks
+  run(`state.job="Mage";C().daily.day="2000-01-01"`);
+  assert.equal(run("dailyDone().length"), 0);                                    // yesterday's tick doesn't count today
+  run(`dailyTick(${id},true);dailyTick(${id},false)`);
+  assert.equal(run("dailyDone().length"), 0);
+  // the level filter: a daily with no level in the client always counts as allowed
+  assert.equal(run("dailyLvOk({lv:80},79)+' '+dailyLvOk({lv:80},80)+' '+dailyLvOk({lv:null},1)"), "false true true");
+  // the level range: both ends count, an empty end is no bound, and a daily with no level always shows
+  assert.equal(run("[40,70,71].map(lv=>dailyLvIn({lv},{from:40,to:70}))+' '+dailyLvIn({lv:5},{from:null,to:10})+' '+dailyLvIn({lv:null},{from:40,to:70})"), "true,true,false true true");
+  // every daily has an NPC, a task and, where it says where, a place the Navigation command can read
+  assert.equal(run("DAILIES.filter(q=>!q.npc[0]||!q.task||(q.where||[]).some(([,at])=>at.split(' ').length!==3)).length"), 0);
+});
+
+t("monster skills: each skill with the monsters that use it, its kind, and the filters", () => {
+  // every skill a monster uses is listed once, with each monster's rows for it
+  assert.equal(run("mskList().length"), run("new Set(Object.values(MOBSKILL).flat().map(r=>r[0])).size"));
+  assert.equal(run("mskList().reduce((s,x)=>s+x.mobs.reduce((t,m)=>t+m.rows.length,0),0)"), run("Object.values(MOBSKILL).flat().length"));
+  // Baphomet's Earthquake: its rows, from Baphomet's own list
+  assert.ok(run("mskList().find(s=>s.sid===750).mobs.some(x=>x.id===1039&&x.name==='Baphomet'&&x.rows.every(r=>r[0]===750))"));
+  // kinds: every kind the list gives is one the tab knows; Stun hit an ailment, Summon Slave a summon, Emotion other
+  assert.equal(run("Object.values(MSK_KIND_OF).filter(k=>!MSK_KINDS[k]).length"), 0);
+  assert.equal(run("[179,196,197,26,343,186].map(mskKind).join()"), "ail,sum,oth,mov,brk,mag");
+  // the kind filter, and text: a skill's name keeps all its monsters, a monster's name keeps only that monster
+  const shown = (sid, f) => JSON.parse(run(`JSON.stringify((m=>m&&m.map(x=>x.id))(mskShown(mskList().find(s=>s.sid===${sid}),${JSON.stringify(f)})))`));
+  const all = shown(750, { q: "", kind: "", open: false });
+  assert.ok(all.length > 1);
+  assert.deepEqual(shown(750, { q: "earthq", kind: "", open: false }), all);
+  assert.deepEqual(shown(750, { q: "baphomet", kind: "", open: false }), [1039]);
+  assert.equal(shown(750, { q: "", kind: "ail", open: false }), null);
+  assert.equal(shown(750, { q: "poring", kind: "", open: false }), null);           // no Poring uses it
+  // a monster picked: only its skills, only it in each, open map or not; text then narrows its skills by name
+  assert.deepEqual(shown(750, { q: "", mob: 1039, kind: "", open: true }), [1039]);
+  assert.equal(shown(750, { q: "", mob: 1002, kind: "", open: false }), null);
+  assert.equal(shown(750, { q: "heal", mob: 1039, kind: "", open: false }), null);
+  const closed = run("mskMobs().find(x=>!mskOpen(x)).id");
+  assert.ok(run(`mskList().some(s=>(mskShown(s,{q:'',mob:${closed},kind:'',open:true})||[]).length)`));
+  assert.ok(run("mskMobs().length===Object.values(MOBSKILL).filter(l=>l.length).length"));
+  // Hide monsters with no open map keeps only monsters that spawn on an open map
+  assert.ok(run("mskList().every(s=>(mskShown(s,{q:'',kind:'',open:true})||[]).every(x=>openMaps(x.m).length>0))"));
+  // a name two skills share shows the skill's id
+  assert.ok(run("MSK_SHARED.has('Stone Curse')&&!MSK_SHARED.has('Earthquake')"));
+  // a monster's details link each skill to the tab
+  assert.match(run("popMob(MOB_BY_ID.get(1039)).body"), /data-mskill="750"/);
+  // saved filters: anything odd goes back to the defaults (Hide monsters with no open map on)
+  const fresh = load({ msk: { q: 5, mob: "1039", kind: "nope!", open: "x" } });
+  assert.equal(fresh("JSON.stringify(state.msk)"), JSON.stringify({ q: "", mob: null, kind: "", open: true }));
+  assert.equal(load({ msk: { mob: 1039 } })("state.msk.mob"), 1039);
+});
+
+t("refine calculator: the official rates, the chain's tries and pieces destroyed, HD ore and the cheapest plan", () => {
+  // the tables: 10 rates per gear and ore, Enriched never below normal
+  assert.ok(run("Object.values(REFINE_RATES).every(r=>r.n.length===10&&r.e.length===10&&r.e.every((v,i)=>v>=r.n[i]))"));
+  const calc = o => JSON.parse(run(`JSON.stringify((r=>({tries:r.tries,broke:r.broke,chance:r.chance,fees:r.fees,ore:r.oreZ,pieces:r.pieceZ,unpriced:r.unpriced,plan:Object.values(r.plan).join("")}))(rcCalc({...state.refcalc,px:{},base:null,slot:"",${JSON.stringify(o).slice(1, -1)}})))`));
+  // armor +0 → +10 with Elunium: 22,731 tries and 4,960 pieces destroyed (as roz.prontera.info's calculator has it)
+  const a = calc({ type: "armor", from: 0, to: 10, plan: "n" });
+  assert.equal(Math.round(a.tries), 22731);
+  assert.equal(Math.round(a.broke), 4960);
+  near(a.fees, a.tries * 10000);
+  assert.deepEqual(a.unpriced, ["Elunium"]);                                     // no price known: none typed, no Market price
+  // from +9: the try to +10 comes 1 / its rate times, the piece makes it at that rate, and the rest is new pieces climbing from +0
+  const one = calc({ type: "armor", from: 9, to: 10, plan: "n" });
+  near(run(`rcCalc({...state.refcalc,type:"armor",from:9,to:10,plan:"n",px:{},base:null,slot:""}).steps[9].tries`), 1 / 0.09);
+  near(one.chance, 0.09);
+  // HD ore: only from +7 (the tries to +8, +9, +10), on armor and Lv 3–4 weapons; a failure goes down 1, so nothing breaks above +7
+  assert.equal(run("rcOpts('armor',7).join()+' '+rcOpts('armor',8).join()+' '+rcOpts('weapon_lv1',9).join()"), "n,e n,e,h n,e");
+  const hd = calc({ type: "weapon_lv4", from: 9, to: 10, plan: "nh" });
+  assert.equal(hd.plan.slice(7), "hhh");
+  assert.ok(hd.broke > 0 && hd.broke < calc({ type: "weapon_lv4", from: 9, to: 10, plan: "n" }).broke);   // only below +7, after falling back
+  // Phracon and Emveretarcon have an NPC price; a price typed wins over it
+  assert.equal(calc({ type: "weapon_lv1", from: 0, to: 1, plan: "n" }).ore, 200 / 0.9);
+  assert.equal(JSON.parse(run(`JSON.stringify(rcCalc({...state.refcalc,type:"weapon_lv1",from:0,to:1,plan:"n",px:{Phracon:100},base:null,slot:""}).oreZ)`)), 100 / 0.9);
+  // Cheapest: never dearer than a fixed plan at the same prices, and a piece's price counts for each one destroyed
+  const px = '{"Oridecon":5000,"Enriched Oridecon":50000,"HD Oridecon":100000}';
+  const total = plan => run(`rcCalc({...state.refcalc,type:"weapon_lv3",from:0,to:10,plan:"${plan}",px:${px},base:1000000,slot:""}).total`);
+  for (const plan of ["n", "e", "nh", "eh"]) assert.ok(total("best") <= total(plan) + 1e-6, plan);
+  near(run(`(r=>r.pieceZ-r.broke*1000000)(rcCalc({...state.refcalc,type:"weapon_lv3",from:0,to:10,plan:"n",px:${px},base:1000000,slot:""}))`), 0);
+  // saved settings: anything odd goes back to the defaults, and the target stays above the current refine
+  const fresh = load({ refcalc: { type: "weapon_lv9", from: 9, to: 3, plan: "x", steps: { 8: "h", 11: "h", 9: "q" }, px: { Oridecon: -1, Elunium: 7000.4 }, base: "5" } });
+  assert.equal(fresh("JSON.stringify(state.refcalc)"), JSON.stringify({ slot: "", type: "armor", from: 9, to: 10, plan: "n", steps: { 8: "h" }, px: { Elunium: 7000 }, base: null }));
 });
 
 t("a monster's world map opens on the world with the most of its spawns", () => {

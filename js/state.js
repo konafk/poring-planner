@@ -55,7 +55,9 @@ state.sessions.forEach(s=>{s.id=String(s.id);s.name=String(s.name??"Session");s.
   if(s.trip!=null)s.trip=s.trip&&Number.isFinite(+s.trip.from)&&Number.isFinite(+s.trip.due)?{from:+s.trip.from,due:+s.trip.due,...(s.trip.rang===true?{rang:true}:{})}:undefined;
   if(s.pauses!=null)s.pauses=(Array.isArray(s.pauses)?s.pauses:[]).filter(p=>p&&Number.isFinite(+p.from)&&(p.to==null||Number.isFinite(+p.to))).map(p=>p.to==null?{from:+p.from}:{from:+p.from,to:+p.to});
   // the character as it was when entries were logged (model.js charSnap), and the walking worked out from it: a character object and numbers
-  if(s.snap!=null)s.snap=s.snap&&typeof s.snap==="object"&&s.snap.c&&typeof s.snap.c==="object"&&!Array.isArray(s.snap.c)&&Number.isFinite(+s.snap.at)?{at:+s.snap.at,c:s.snap.c,...(s.snap.est===true?{est:true}:{})}:undefined;
+  // bonus: the EXP bonus % it was logged with; a snapshot saved before it was kept takes the EXP bonus % saved with it
+  if(s.snap!=null)s.snap=s.snap&&typeof s.snap==="object"&&s.snap.c&&typeof s.snap.c==="object"&&!Array.isArray(s.snap.c)&&Number.isFinite(+s.snap.at)?{at:+s.snap.at,c:s.snap.c,...(s.snap.est===true?{est:true}:{}),
+    bonus:s.snap.bonus!=null&&s.snap.bonus!==""&&Number.isFinite(+s.snap.bonus)?+s.snap.bonus:Number.isFinite(+state.bonus)?+state.bonus:0}:undefined;
   // stats the session was logged with before a change (oldest first; t: the newest entry each covers)
   if(s.snapHist!=null)s.snapHist=(Array.isArray(s.snapHist)?s.snapHist:[]).filter(x=>x&&Number.isFinite(+x.t)&&x.c&&typeof x.c==="object"&&!Array.isArray(x.c)).map(x=>({t:+x.t,c:x.c}));
   if(s.walk!=null){const w=s.walk,n=x=>x==null||!Number.isFinite(+x)?null:+x;s.walk=w&&typeof w==="object"&&typeof w.key==="string"?{key:w.key,sec:n(w.sec),fight:n(w.fight),kph:n(w.kph)}:undefined}});
@@ -65,6 +67,18 @@ KNOWN=knownOf(state);
 if(!JOBS[state.job])state.job="Novice";
 if(!state.chars||typeof state.chars!=="object")state.chars={};
 // per character: learned skill levels and the build-mode "Check against the game" values are numbers; anything else is dropped
+// other gear sets: build.alts, as many as you add up to ALT_MAX (build-ui.js); a set's name is at most SET_NAME_MAX characters
+const ALT_MAX=10,SET_NAME_MAX=30;
+// saved loadouts (build.loadouts: {name, gear, stones, special}) became named gear sets. Each comes in as a set of its own, or names the
+// set that already has the same gear (when that set has no name); the ones that don't fit in ALT_MAX sets wait in build.loadouts until a set is removed
+const canonJ=v=>JSON.stringify(v,(k,x)=>x&&typeof x==="object"&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
+function loadoutsIn(b){if(!Array.isArray(b.loadouts)){delete b.loadouts;return}if(!Array.isArray(b.alts))b.alts=[];
+  const key=s=>canonJ(["gear","stones","special"].map(k=>s[k]&&typeof s[k]==="object"?s[k]:{}));
+  b.loadouts=b.loadouts.filter(lo=>{if(!lo||typeof lo!=="object"||Array.isArray(lo))return false;const nm=String(lo.name||"").trim().slice(0,SET_NAME_MAX),same=b.alts.find(a=>key(a)===key(lo));
+    if(same){if(nm&&!String(same.name||"").trim())same.name=nm;return false}
+    if(b.alts.length>=ALT_MAX)return true;
+    b.alts.push({...(nm?{name:nm}:{}),...Object.fromEntries(["gear","stones","special"].map(k=>[k,lo[k]&&typeof lo[k]==="object"?lo[k]:{}]))});return false});
+  if(!b.loadouts.length)delete b.loadouts}
 const numMap=o=>Object.fromEntries(Object.entries(o&&typeof o==="object"?o:{}).map(([k,v])=>[k,v===""||v==null?NaN:+v]).filter(([,v])=>Number.isFinite(v)));
 for(const j in state.chars){let c=state.chars[j];if(!c||typeof c!=="object"){delete state.chars[j];continue}
   // "Try other gear" kept a copy of the character to go back to (c.trial.base): the copy is your character again, and the gear you were
@@ -77,7 +91,10 @@ for(const j in state.chars){let c=state.chars[j];if(!c||typeof c!=="object"){del
     if(b.alts!=null&&!Array.isArray(b.alts))delete b.alts;
     if(b.alts){b.alts=b.alts.map(a=>a&&typeof a==="object"&&!Array.isArray(a)?a:{gear:{}});const ed=/^alt(\d+)$/.exec(c.gearEdit||""),keep=ed?+ed[1]:-1;
       const empty=a=>!Object.keys(a.gear||{}).length&&!Object.values(a.stones||{}).some(Boolean)&&!(a.special&&(a.special.ring||a.special.shield||(a.special.own||[]).length||Object.values(a.special.costume||{}).some(Boolean)));
-      while(b.alts.length&&b.alts.length-1>keep&&empty(b.alts[b.alts.length-1]))b.alts.pop()}}
+      while(b.alts.length&&b.alts.length-1>keep&&empty(b.alts[b.alts.length-1]))b.alts.pop()}
+    // set names (build.alts[i].name; build.setName: the name of the set you swapped on as your gear) are text
+    (b.alts||[]).forEach(a=>{if(a.name!=null&&typeof a.name!=="string")delete a.name});if(b.setName!=null&&typeof b.setName!=="string")delete b.setName;
+    loadoutsIn(b)}
   if(c.gearEdit==="alt")c.gearEdit="alt0";
   // "HP back per minute" (hpRegen) became "HP regen per 6s" (hpRegen6, blank = worked out): a typed value carries over as 10 ticks a minute
   if(c.hpRegen!=null){const v=+c.hpRegen;if(v>0&&c.hpRegen6==null)c.hpRegen6=Math.max(1,Math.round(v/10));delete c.hpRegen}
@@ -155,14 +172,32 @@ state.mobbed=Object.fromEntries(Object.entries(numMap(state.mobbed)).map(([k,v])
 // all: list the less used recovery items too
 state.recovery={discount:!(state.recovery&&state.recovery.discount===false),all:!!(state.recovery&&state.recovery.all===true)};
 // the Memorial dungeons tab's Jellostone tracker (memorial.js): whole counts of 0 or more by fragment / stone id, the stone crafting
-// ({id, due: ms}), the Expedition pieces you want (item ids) and your Faintly Glowing Crystals
+// ({id, due: ms}), the upgrades you want (MEM_LADDER keys: an Expedition piece's item id, a Contingent or Conqueror piece's name)
+// and your Faintly Glowing Crystals
 {const j=objOr(state.jello),cnt=(o,ids)=>Object.fromEntries(Object.entries(numMap(o)).filter(([k,v])=>ids.includes(+k)&&v>=0).map(([k,v])=>[k,Math.round(v)]).filter(([,v])=>v>0)),
   stones=JELLO.map(x=>x.stone[0]),c=objOr(j.craft);
-  state.jello={frag:cnt(j.frag,JELLO.map(x=>x.frag[0])),stone:cnt(j.stone,stones),want:[...new Set((Array.isArray(j.want)?j.want:[]).map(Number))].filter(id=>EXPEDITION.some(x=>x.id===id)),
+  state.jello={frag:cnt(j.frag,JELLO.map(x=>x.frag[0])),stone:cnt(j.stone,stones),want:[...new Set((Array.isArray(j.want)?j.want:[]).map(k=>/^\d+$/.test(k)?+k:k))].filter(k=>MEM_LADDER.some(x=>x.key===k)),
     crystals:Number.isFinite(+j.crystals)&&+j.crystals>0?Math.round(+j.crystals):0,...(stones.includes(+c.id)&&Number.isFinite(+c.due)?{craft:{id:+c.id,due:+c.due}}:{})}}
 // the Stellar tab (stellar.js): certificates you have by ★ weapon id (whole counts above 0) and your weapon's refine (0 to 20)
 {const t=objOr(state.stellar),r=Math.round(+t.refine);
   state.stellar={have:Object.fromEntries(Object.entries(numMap(t.have)).filter(([k,v])=>/^\d+$/.test(k)&&v>=1).map(([k,v])=>[k,Math.round(v)])),refine:Number.isFinite(r)?Math.min(20,Math.max(0,r)):0}}
+// the Daily quests tab's filters (dailies.js): hide the ones done today, hide the ones with no level, and the range of daily levels to show (from and to: whole
+// numbers from 1, or null for no bound; from is never above to). dailyMine (only the ones your level allows) is gone
+delete state.dailyMine;state.dailyHideDone=state.dailyHideDone===true;state.dailyHideNoLv=state.dailyHideNoLv===true;
+{const t=objOr(state.dailyLv),b=v=>{const x=Math.round(+v);return v!==""&&v!=null&&Number.isFinite(x)&&x>=1?x:null};let f=b(t.from),to=b(t.to);
+  if(f!=null&&to!=null&&f>to)[f,to]=[to,f];state.dailyLv={from:f,to}}
+// the Refine calculator (refinecalc.js): the gear slot it started from, the type (armor or a weapon level), from (+0 to +9) and to (+1 to
+// +10, above from), the ore plan, the ore picked per try (by the refine it takes it to), the prices typed by ore name, and a new piece's
+// price (null: none typed)
+{const t=objOr(state.refcalc),T=["armor","weapon_lv1","weapon_lv2","weapon_lv3","weapon_lv4"],int=(v,lo,hi,d)=>Number.isInteger(v)&&v>=lo&&v<=hi?v:d,
+  zeny=v=>typeof v==="number"&&Number.isFinite(v)&&v>=0?Math.round(v):null,from=int(t.from,0,9,0);
+  state.refcalc={slot:typeof t.slot==="string"&&/^[a-zA-Z0-9]{1,12}$/.test(t.slot)?t.slot:"",type:T.includes(t.type)?t.type:"armor",from,to:Math.max(from+1,int(t.to,1,10,7)),
+    plan:["n","e","nh","eh","best","custom"].includes(t.plan)?t.plan:"n",
+    steps:Object.fromEntries(Object.entries(objOr(t.steps)).filter(([k,v])=>/^([1-9]|10)$/.test(k)&&["n","e","h"].includes(v))),
+    px:Object.fromEntries(Object.entries(objOr(t.px)).filter(([k,v])=>k.length<=40&&zeny(v)!=null).map(([k,v])=>[k,zeny(v)])),base:zeny(t.base)}}
+// the Monster skills tab's filters (mskills.js): the text typed, the monster picked (its id, or null for every monster), the kind
+// ("" for every kind) and Hide monsters with no open map (on unless you turn it off)
+{const t=objOr(state.msk);state.msk={q:typeof t.q==="string"?t.q.slice(0,100):"",mob:Number.isInteger(t.mob)&&t.mob>0?t.mob:null,kind:typeof t.kind==="string"&&/^[a-z]{2,4}$/.test(t.kind)?t.kind:"",open:t.open!==false}}
 // the Recipes tab's Brewing and Cooking simulators (craftsim.js): the numbers you typed over your character's (whole numbers in range),
 // the recipe picked to roll (id) and how many tries (n); cooking's kit is the level it cooks at (11 to 13)
 {const t=objOr(state.craftSim),keep=(o,keys)=>Object.fromEntries(Object.entries(numMap(o)).filter(([k])=>keys[k]).map(([k,v])=>[k,Math.min(keys[k][1],Math.max(keys[k][0],Math.round(v)))]));
@@ -173,10 +208,11 @@ delete state.flyPrice;
 // (0 the default), clothes dye number (0 undyed) and whether a 2nd job wears its transcendent look
 state.look={sex:state.look&&state.look.sex==="f"?"f":"m",hair:Math.max(1,Math.round(+(state.look&&state.look.hair))||1),
   color:Math.max(0,Math.round(+(state.look&&state.look.color))||0),dye:Math.max(0,Math.round(+(state.look&&state.look.dye))||0),trans:!!(state.look&&state.look.trans)};
-// the Stylist tab (stylist.js): the job, gender, hair style, hair colour, clothes colour, transcendent look, headgear and costumes being tried (a job it
+// the Stylist tab (stylist.js): the job, gender, hair style, hair colour, clothes colour, transcendent look, riding the Halter Lead's mount (ride),
+// headgear and costumes being tried (a job it
 // has no look for falls back when drawn)
 {const t=objOr(state.stylist),n=(v,lo)=>Math.max(lo,Math.round(+v)||lo);
-  state.stylist={job:typeof t.job==="string"?t.job:"",sex:t.sex==="f"?"f":"m",hair:n(t.hair,1),color:n(t.color,0),dye:n(t.dye,0),trans:!!t.trans,
+  state.stylist={job:typeof t.job==="string"?t.job:"",sex:t.sex==="f"?"f":"m",hair:n(t.hair,1),color:n(t.color,0),dye:n(t.dye,0),trans:!!t.trans,ride:!!t.ride,
     // the costumes and normal headgear worn, by slot: item ids
     ...Object.fromEntries(["cos","gear"].map(w=>[w,Object.fromEntries(Object.entries(objOr(t[w])).filter(([k,v])=>["upper","middle","lower","garment"].includes(k)&&Number.isInteger(+v)&&+v>0).map(([k,v])=>[k,+v]))]))}}
 ["teleSec","tripEarly","tripMin"].forEach(k=>{if(state[k]!=null&&!(Number.isFinite(+state[k])&&+state[k]>=0))delete state[k]});
@@ -191,7 +227,10 @@ for(const k in D)if(state[k]==null)state[k]=JSON.parse(JSON.stringify(D[k]));
 // GEN counts the saves: a card drawn since the last one is up to date (redraw in render.js)
 let GEN=0;
 const save=()=>{GEN++;store.set(state)};
-const C=()=>{if(!state.chars[state.job])state.chars[state.job]=charDefault(state.job);const c=state.chars[state.job];
+// a character made now starts in Build from gear (NEW_CHAR_MODE; the tests start theirs in status-window mode). One saved with no mode
+// types its status window, as every character did before, so the mode is left out of charDefault and share links
+let NEW_CHAR_MODE="build";
+const C=()=>{if(!state.chars[state.job])state.chars[state.job]={...charDefault(state.job),mode:NEW_CHAR_MODE};const c=state.chars[state.job];
   {const p=c.preset>=0&&JOBS[state.job]&&JOBS[state.job].p[c.preset];if(p&&c.a){if(p.zeny!=null&&c.a.zeny==null)c.a.zeny=p.zeny;if(p.cart!=null&&c.a.cart==null)c.a.cart=p.cart;if(p.consumes&&c.a.consumes==null)c.a.consumes=p.consumes;if(p.arrows!=null&&c.a.arrows==null)c.a.arrows=p.arrows;if(p.blvBug&&c.a.blvBug==null)c.a.blvBug=p.blvBug;if(p.shw&&c.a.shw==null)c.a.shw=p.shw}}const d=charDefault(state.job);for(const k in d)if(c[k]==null)c[k]=d[k];if(!c.a)c.a={...d.a};return c};
 // with no session yet, reading one gets an empty stand-in (not saved); logging EXP, Farm here and the like start a real one (sessNow)
 const NO_SESS=Object.freeze({id:"",name:"No session",mobIds:Object.freeze([]),entries:Object.freeze([])});
@@ -226,9 +265,16 @@ const pct=(n,d=2)=>isFinite(n)?n.toFixed(d)+"%":"–";
 function fmtDur(h){if(!isFinite(h)||h<0)return "–";const m=Math.round(h*60),hh=Math.floor(m/60),mm=m%60;if(hh>=24){const d=Math.floor(hh/24);return `~${d}d ${hh%24}h ${mm}m\n~${hh}h ${mm}m`}return hh?`~${hh}h ${mm}m`:`~${mm}m`}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 const num=(v,d=0)=>{const x=+v;return isFinite(x)?x:d};
-const lvExp=lv=>EXP_TABLE[lv]||null;
+// the base EXP table in use at time t (an entry's time): the first one in EXP_TABLE_LOG still in use then, else the current one, so
+// entries logged before an update keep their rates. No t: the current table
+const expTableAt=t=>(t!=null&&EXP_TABLE_LOG.find(x=>t<x.until)||{table:EXP_TABLE}).table;
+// EXP to the next level, at time t (see expTableAt)
+const lvExp=(lv,t)=>expTableAt(t)[lv]||null;
 // the server's base level cap: raise it when a patch does. At it base EXP no longer counts, so the EXP Hunter ranks by zeny
-const MAX_BASE_LV=70;
+// (80 from the 12 November 2026 patch)
+const MAX_BASE_LV=80;
+// the highest base level a goal can be worked out to: one past the EXP table's last level, at most the cap
+const GOAL_TOP_LV=Math.min(MAX_BASE_LV,Math.max(...Object.keys(EXP_TABLE).map(Number))+1);
 const atMaxLv=()=>num(C().baseLv)>=MAX_BASE_LV;
 // Even Share: a kill gives the party 100% + 10% per member beyond the first, split evenly (110% for 2, 120% for 3 ... 210% for 12),
 // for base and job EXP alike. Checked in game with +20% EXP: Boulder Dwarf Captain (32,822) → 15,753 each for 3 members, 12,800 for 4;

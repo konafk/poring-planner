@@ -5,6 +5,18 @@ import assert from "assert/strict";
 const require = createRequire(import.meta.url);
 for (const f of ["equipment", "cards", "refine", "jobs"])
   (0, eval)(readFileSync(new URL(`../data/${f}.js`, import.meta.url), "utf8").replace(/^const (\w+)=/gm, "globalThis.$1="));
+// the game client's gear, cards and lines laid over the database's, as data/client.js does when the page loads (the event cards are only there)
+{
+  const src = readFileSync(new URL("../data/client.js", import.meta.url), "utf8").split("\n").find(l => l.startsWith("const CLIENT="));
+  (0, eval)(src.replace(/^const CLIENT=/, "globalThis.CLIENT="));
+  const has = new Set(EQUIP.map(e => e.id)), hasCard = new Set(CARDS.map(c => c.id));
+  CLIENT.gear.forEach(r => { if (!has.has(r.id)) EQUIP.push(r) });
+  CLIENT.cards.forEach(r => { if (!hasCard.has(r.id)) CARDS.push(r) });
+  const byId = new Map([...EQUIP, ...CARDS].map(x => [x.id, x]));
+  Object.entries(CLIENT.fix).forEach(([i, f]) => { const x = byId.get(+i); if (x) Object.assign(x, f) });
+  Object.entries(CLIENT.lines).forEach(([i, g]) => { const x = byId.get(+i); if (x) x.g = (x.g || []).concat(g) });
+}
+
 const BUILD = require("../build.js");
 const id = slug => (EQUIP.find(x => x.slug === slug) || CARDS.find(x => x.slug === slug)).id;
 const sum = t => String(t).split("+").reduce((a, b) => a + +b, 0);
@@ -28,6 +40,65 @@ const sum = t => String(t).split("+").reduce((a, b) => a + +b, 0);
   assert.equal(F.matkTxt, "13+21");               // refine MATK on the weapon
   assert.equal(F.maxHp, 235);
   console.log("ok Lv 26 Merchant matches the status window");
+}
+
+// Lv 73 Sage, Job Lv 70, screenshot 2026-11-14, with an Awakening Potion and Study (Sage's Diary is a book):
+// +9 Nordfeld Platinum Helm, Poring Village Leek, +7 Sage's Diary (2 Boulder Dwarf Squad Leader Cards), +7 Hunter's Cape (Galactor Army
+// Card), +9 Expedition's Armor, +7 Hill Patrol Boots, Shining Clip (Vitata Card), Subjugation Team's Ring (Creamy Card). The options aren't
+// in the screenshot: what Equipment Stats lists beyond the gear (AGI +9, FLEE +39, MATK +75, MATK +5%, MaxHP +321, MaxSP +41, ASPD +1%).
+// Status window: ATK 30+147, MATK 136+265 (MATK % isn't in it), HIT 283, FLEE 330+1, DEF 59+394, CRIT 2, ASPD 178, Max HP 3612.
+// Max SP 1289 isn't compared: the base SP table gives 583 at Lv 73, the window needs 584
+{
+  const r = BUILD.compute({ baseLv: 73, jobLv: 70, base: { str: 1, agi: 85, vit: 1, int: 62, dex: 1, luk: 1 }, today: "2026-11-14",
+    gear: { headTop: { id: id("nordfeld-platinum-helm-401510"), refine: 9 }, headLow: { id: id("poring-village-leek-19238") },
+            weapon: { id: id("sage-s-diary-540112"), refine: 7, cards: [300943, 300943] },
+            garment: { id: id("hunter-s-cape-481000"), refine: 7, cards: [300733] }, armor: { id: id("expedition-s-armor-15221"), refine: 9 },
+            shoes: { id: id("hill-patrol-boots-470466"), refine: 7, opts: "AGI +9, FLEE +39, MATK +75, MATK +5%, MaxHP +321, MaxSP +41, ASPD +1%" },
+            acc1: { id: id("shining-clip-490975"), cards: [id("vitata-card-4053")] }, acc2: { id: id("subjugation-team-s-ring-28539"), cards: [id("creamy-card-4040")] } },
+    extra: [["aspd_mod", null, null, 6], ["aspd_mod", null, null, 4]] },   // Awakening Potion 6, Study 4
+    "Sage", () => 153);   // Sage book: 153
+  const F = r.fields;
+  assert.equal(F.atkTxt, "30+147");
+  assert.equal(F.matkTxt, "136+265");
+  assert.equal(F.matkPct, 5);
+  assert.equal(sum(F.hitTxt), 283);
+  assert.equal(F.fleeTxt, "330+1");
+  assert.equal(F.defTxt, "59+394");
+  assert.equal(Math.floor(F.crit), 2);
+  assert.equal(F.aspd, 178);
+  assert.equal(F.maxHp, 3612);
+  console.log("ok Lv 73 Sage matches the status window");
+}
+
+// Lv 72 Priest, Job Lv 70, Crossbow Clan, screenshot 2026-11-14, with Clementia, Canto Candidus, Impositio Manus Lv 5, a Concentration
+// Potion, Mace Mastery Lv 10 and Meditation Lv 10: +9 Nordfeld Platinum Helm, Poring Village Leek, +9 Chain (3 Boulder Dwarf Captain
+// Cards), +9 Hunter's Cape (Nine Tail Card), +4 Nordfeld Soldier's Armor, +7 Hill Patrol Boots (Matyr Card), 2 Subjugation Team's Rings
+// (Kukre Card). The options are what Equipment Stats lists beyond the gear.
+// Status window: ATK 97+171, MATK 114+52, HIT 349, FLEE 366+1, DEF 65+265, CRIT 12, ASPD 185, Max HP 3765. Not compared: soft DEF
+// (65 in game, 66 here) and Max SP (1282 in game, 1278 here)
+{
+  const lines = [["dex", null, null, 1], ["agi", null, null, 1], ["hp", null, null, 30], ["sp", null, null, 10],   // Crossbow Clan
+    ["str", null, null, 17], ["int", null, null, 17], ["dex", null, null, 17], ["hit", null, null, 27],                // Clementia, Job Lv 70
+    ["agi", null, null, 19], ["aspd_percent", null, null, 17], ["atk", null, null, 25], ["matk", null, null, 25],     // Canto Candidus, Impositio Manus
+    ["aspd_mod", null, null, 4], ["crit", null, null, 10], ["sp_percent", null, null, 10]];                          // Concentration, Mace Mastery, Meditation
+  const r = BUILD.compute({ baseLv: 72, jobLv: 70, base: { str: 40, agi: 85, vit: 1, int: 24, dex: 20, luk: 1 }, extra: lines,
+    gear: { headTop: { id: id("nordfeld-platinum-helm-401510"), refine: 9 }, headLow: { id: id("poring-village-leek-19238") },
+            weapon: { id: id("chain-590071"), refine: 9, cards: [300944, 300944, 300944] },
+            garment: { id: id("hunter-s-cape-481000"), refine: 9, cards: [id("nine-tail-card-4159")] }, armor: { id: id("nordfeld-soldier-s-armor-450588"), refine: 4 },
+            shoes: { id: id("hill-patrol-boots-470466"), refine: 7, cards: [id("matyr-card-4097")], opts: "AGI +11, FLEE +25, MaxHP +650, MaxSP +174, ATK +21, ASPD +1, ASPD +1%" },
+            acc1: { id: id("subjugation-team-s-ring-28539"), cards: [id("kukre-card-4027")] }, acc2: { id: id("subjugation-team-s-ring-28539"), cards: [id("kukre-card-4027")] } } },
+    "Priest", () => 153);   // Priest mace: 153 (js/events.js ASPD_T)
+  const F = r.fields;
+  assert.deepEqual([F.st.str, F.st.agi, F.st.vit, F.intTxt, F.st.dex, F.st.luk], ["40+28", "85+49", "1+7", "24+33", "20+30", "1+2"]);
+  assert.equal(F.atkTxt, "97+171");
+  assert.equal(F.matkTxt, "114+52");
+  assert.equal(sum(F.hitTxt), 349);
+  assert.equal(F.fleeTxt, "366+1");
+  assert.equal(F.defTxt.split("+")[1], "265");
+  assert.equal(Math.floor(F.crit), 12);
+  assert.equal(F.aspd, 185);
+  assert.equal(F.maxHp, 3765);
+  console.log("ok Lv 72 Priest matches the status window");
 }
 
 // Max HP / SP: Zero's base tables (tools/export_jobs.py), job bonus to Job Lv 70, flat bonuses, then %.

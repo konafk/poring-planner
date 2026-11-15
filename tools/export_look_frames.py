@@ -6,28 +6,32 @@ each headgear and each garment, from your installed Ragnarok Zero client (offici
     python tools/export_look_frames.py --only body                      # one kind: body, hair, head or robe
 
 The sprites are the ones tools/export_sprites.py (bodies, hair) and tools/export_costume_sprites.py (headgear, garments, with the views
-in data/costumelooks.js) draw standing; here each one's SPR images go on a sheet and its ACT's frames are kept for four actions, in all
-8 directions (S, SW, W, NW, N, NE, E, SE): stand, walk, sit and attack (the client's action types 0, 1, 2 and 5, action = type x 8 +
-direction). A frame is its layers [image, x, y, mirror, scale x, scale y] from the sprite's origin and its anchor (where a head, headgear
+in data/costumelooks.js) draw standing; here each one's SPR images go on a sheet and its ACT's frames are kept for the actions in
+ACTIONS, in all 8 directions (S, SW, W, NW, N, NE, E, SE): stand, walk, sit, pick up, ready, the three attacks, cast, hurt and dead (the
+client's action types, action = type x 8 + direction; the two frozen poses are left out). A frame is its layers [image, x, y, mirror, scale x, scale y] from the sprite's origin and its anchor (where a head, headgear
 or garment attaches: the client draws each so its anchor is on the body's). The ACT's delay per action is in client ticks of 25 ms.
 
 Bodies and hair keep palette indices (a grey sheet, grey level = index) so the page colours them with any clothes or hair colour, and
 their sheets go in the data file as data: URLs (the page reads their pixels, refused for an image from a file opened from disk);
 headgear and garments are drawn in their own colours, from RGBA PNGs beside. One file a piece, loaded when the preview first shows it:
 data/looks/<kind>/<key>.js, which calls LOOKS_ADD("<kind>/<key>", {...}), and img/looks/<kind>/<key>.png for headgear and garments.
-Keys: body <job>-<m|f> (<job>+-<m|f> for the transcendent look), hair <style>-<m|f>, head <view>-<m|f>, robe <view>-<job>-<m|f>.
+Keys: body <job>-<m|f> (<job>+-<m|f> for the transcendent look, <job>~ / <job>+~ riding the Halter Lead's mount), hair <style>-<m|f>, head <view>-<m|f>, robe <view>-<job>-<m|f>.
 Writes data/looks/index.js too (LOOK_FILES: which keys exist). Standard library only.
 """
 import base64, hashlib, json, os, struct, sys, zlib
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import export_sprites  # noqa: E402
-from export_sprites import ROOT, JOBS, TRANS, SEX, ONE_SEX, spr_read, png_gray, pack  # noqa: E402
+from export_sprites import ROOT, BODIES, SEX, ONE_SEX, spr_read, png_gray, pack  # noqa: E402
 from export_minimaps import DesGrf  # noqa: E402
 from export_costume_sprites import png_rgba, LUA, ACC, ROBE  # noqa: E402
 from lua51 import run, call  # noqa: E402
 
-ACTIONS = {"stand": 0, "walk": 1, "sit": 2, "attack": 5}
+# the client's action types, by the keys js/lookanim.js's LOOK_ACTS names them with ("attack" is the first of the three attack
+# motions). Riding the Halter Lead's mount, ready, the three attacks and cast are each one still pose in the client's sprites, and
+# dead is one frame for every body
+ACTIONS = {"stand": 0, "walk": 1, "sit": 2, "pickup": 3, "ready": 4, "attack": 5, "hurt": 6, "dead": 8, "attack2": 10, "attack3": 11,
+           "cast": 12}
 BODY = "data\\sprite\\인간족\\"
 
 
@@ -141,10 +145,10 @@ def main():
 
     if only in (None, "body"):
         files["body"] = []
-        for job, name in list(JOBS.items()) + [(j + "+", n) for j, n in TRANS.items()]:
+        for key, job, name, _ in BODIES:
             for sx, ko in SEX.items():
-                if ONE_SEX.get(job.rstrip("+"), sx) == sx:
-                    put("body", f"{job}-{sx}", f"{BODY}몸통\\{ko}\\{name}_{ko}", True)
+                if ONE_SEX.get(job, sx) == sx:
+                    put("body", f"{key}-{sx}", f"{BODY}몸통\\{ko}\\{name}_{ko}", True)
     if only in (None, "hair"):
         files["hair"] = []
         for sx, ko in SEX.items():
@@ -166,13 +170,13 @@ def main():
             files["robe"] = []
             for view in sorted({v for k, v in looks["items"].values() if k == "r"}):
                 name = call(g["ReqRobSprName_V2"], [view, False])[0]
-                for job, body in list(JOBS.items()) + [(j + "+", n) for j, n in TRANS.items()]:
+                for key, job, body, _ in BODIES:
                     for sx, ko in SEX.items():
-                        if ONE_SEX.get(job.rstrip("+"), sx) == sx:
-                            put("robe", f"{view}-{job}-{sx}", f"{ROBE}{name}\\{ko}\\{body}_{ko}", False)
+                        if ONE_SEX.get(job, sx) == sx:
+                            put("robe", f"{view}-{key}-{sx}", f"{ROBE}{name}\\{ko}\\{body}_{ko}", False)
     with open(index_path, "w", encoding="utf-8", newline="\n") as f:
         f.write("// The Stylist's animated looks (tools/export_look_frames.py, from the game client): the pieces exported, by kind (body: <job>-<m|f>,\n"
-                "// \"<job>+\" the transcendent look; hair: <style>-<m|f>; head: <headgear view>-<m|f>; robe: <garment view>-<job>-<m|f>). Each is\n"
+                "// \"<job>+\" the transcendent look, \"<job>~\" / \"<job>+~\" riding the Halter Lead's mount; hair: <style>-<m|f>; head: <headgear view>-<m|f>; robe: <garment view>-<job>-<m|f>). Each is\n"
                 "// data/looks/<kind>/<key>.js, loaded when the preview first shows it.\n")
         f.write("const LOOK_FILES=" + json.dumps(files, separators=(",", ":")) + ";\n")
     for k, n in sizes.items():

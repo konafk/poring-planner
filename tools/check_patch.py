@@ -232,6 +232,7 @@ def named_dict(t, key):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # folder names are Korean; a Windows console's code page can't print them
     arg = lambda f: sys.argv[sys.argv.index(f) + 1] if f in sys.argv else None
     client = arg("--client") or r"C:\Gravity\RagnarokZero"
     rows = patch_list()
@@ -294,7 +295,7 @@ def main():
     if "externalsettings" in b and "externalsettings" in a:
         x, y = tbl("externalsettings", "MaxLevelTable")
         if section("Level cap", [f"{k}: {x.get(k)} -> {y.get(k)}" for k in sorted(set(x) | set(y)) if x.get(k) != y.get(k)]):
-            found = True; print("  Extend data/exp.js's tables if the cap went past them.")
+            found = True; print("  Extend data/exp.js's tables if the cap went past them (a changed table: log the old one in EXP_TABLE_LOG first).")
     if "equipmentproperties" in b and "equipmentproperties" in a:
         found |= diff_gear(load(a["equipmentproperties"]), load(b["equipmentproperties"]), items)
     if "packageitem" in b:

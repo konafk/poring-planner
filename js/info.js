@@ -18,8 +18,8 @@ function infoPrice(id){const npc=NPCSELL[id]!=null||state.npcPrices[id]!=null?np
 // the box to type what players pay, in the popup's bottom bar, only where that price counts: a drop of a monster the farm tables know
 // (zeny per kill), a recipe material (the Recipes tab's worth), an HP / SP item or an elemental converter (their costs), or one
 // already priced (so it can be cleared)
-const priceCounts=id=>!!(ITEM_DROPS[id]||RECIPES_USING[id]||typeof RECOVERY!=="undefined"&&RECOVERY[id]||Object.values(CONV_ID).includes(+id)||state.prices[id]>0);
-const infoPriceBox=id=>!priceCounts(id)?"":`<label class="infoPay">Players pay<input class="w-lg" type="number" min="0" data-infoprice="${id}" value="${state.prices[id]>0?state.prices[id]:""}" placeholder="0"></label>`;
+const priceCounts=id=>!!(ITEM_DROPS[id]||RECIPES_USING[id]||typeof RECOVERY!=="undefined"&&RECOVERY[id]||CONV_IDS.includes(+id)||state.prices[id]>0);
+const infoPriceBox=id=>!priceCounts(id)?"":`<label class="infoPay priceIn">Players pay<input class="w-lg" type="number" min="0" data-infoprice="${id}" value="${state.prices[id]>0?state.prices[id]:""}" placeholder="0"></label>`;
 // the monsters the farm tables know that drop it, best chance first: the chance (and yours, with your drop bonus and the level penalty),
 // the zeny a kill brings from it (what an NPC or players pay, the way the farm tables count it), affixes a gear drop comes with, and
 // the monster's best open map with its spawns (or when it comes). Every one of them: this is the item's list of droppers
@@ -34,7 +34,7 @@ function infoDroppers(id){const ds=ITEM_DROPS[id]||[];if(!ds.length)return "";
 const infoFrom=id=>{const h=ITEM_DROPS[id]?(typeof otherSourcesHtml==="function"?otherSourcesHtml(id):""):fromHtml(id);return h?`<div class="infoFrom">${h}</div>`:""};
 // the NPC shops that sell it (data/shops.js): price and every place it stands
 function infoShops(id){const ss=SHOPS_OF[id]||[];if(!ss.length)return "";
-  return `<div class="infoList">${ss.map(([name,at,z])=>`<div><b>${esc(name)}</b> <span class="note">${fmtN(z)} z · ${esc(at.map(([mp,x,y])=>`${mapName(mp)||mp} ${x},${y}`).join("; "))}</span></div>`).join("")}</div>`}
+  return `<div class="infoList">${ss.map(([name,at,z,q])=>`<div><b>${esc(name)}</b> <span class="note">${fmtN(z)} z · ${esc(shopQuest(q))}${esc(at.map(([mp,x,y])=>`${naviName(mp)}${x!=null?` ${x},${y}`:""}`).join("; "))}</span></div>`).join("")}</div>`}
 // the recipes that make it and the ones that use it (js/recipes.js), each with its materials
 const recipeWhere=r=>`${esc(r.cat)}${r.lv?` Lv ${r.lv}`:""}${r.npc?` · ${recipeNpcHtml(r)}${r.fee?`, ${fmtN(r.fee)} z`:""}`:recipeSkill(r)?` · ${esc(recipeSkill(r))}`:""}`;
 // Made from and Used in are tables of one row per recipe, led by what it makes: icon, name, how many, and where (craft, NPC, fee)
@@ -62,20 +62,22 @@ const recipeAct=id=>RECIPES_MAKING[id]||RECIPES_USING[id]?'<button type="button"
 // a monster's details: its numbers, then yours against it (with a character), its drops, skills and spawns. Everything the old
 // Monster info tab and the Monsters card's side panel showed
 const MOB_SKILL_T=ms=>!ms?"–":ms>=36e5?`${+(ms/36e5).toFixed(1)}h`:ms>=6e4?`${+(ms/6e4).toFixed(1)} min`:`${+(ms/1000).toFixed(1)}s`;
-function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobIds.includes(m.id),a=mobArrives(m),me=charSet();
+function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobIds.includes(m.id),a=mobArrives(m),me=showMine(),dps=me?withEl(r.el2,()=>dpsOf(m)):null;
   const sub=`Lv ${m.lv} · ${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${BOSS_PILL(m)}${m.agg?' <span class="pill">aggressive</span>':""}`;
   const tiles=infoTile("HP",m.hp==null?"?":fmtN(m.hp),`DEF ${m.def??"–"} · MDEF ${m.mdef??"–"} · ATK ${m.atkMin??"–"}–${m.atkMax??"–"}${m.hit100?` · 100% hit at ${m.hit100} HIT`:""}${m.flee95?` · 95% flee at ${m.flee95} FLEE`:""}`)
-    +infoTile("EXP",fmtExp(m),m.expUnknown?"no EXP data yet":`job ${fmtN(m.job)}${me?` · you get ${fmtN(killExp(m))} / ${fmtN(killJobExp(m))}`:""}`)
+    +infoTile("EXP",fmtExp(m),m.expUnknown?"no EXP data yet":`${m.expUnsure?"* unconfirmed, not checked in game yet · ":""}job ${m.jobUnknown?"?":fmtN(m.job)}${me?` · you get ${fmtN(killExp(m))} / ${m.jobUnknown?"?":fmtN(killJobExp(m))}`:""}`)
     +infoTile("Best map",om.length?esc(mapName(om[0][0])||mapCode(om[0][0])):"–",om.length?`${mapName(om[0][0])?mapCode(om[0][0])+" ":""}≈${spN(om[0][1])}`:a?`none open · comes with the ${esc(a)}`:"none open")
-    +(me?infoTile(`You (${esc(state.job)})`,isFinite(r.sec)?r.sec.toFixed(1)+"s / kill":"can't hurt",`your hit ${Math.round(r.mult)}%${elTag(r.el2)} · ${Math.round(r.hitc)}% land · you dodge ${r.dodge??"–"}%`)
-      +infoTile("Zeny / kill",hasLoot(m)?fmtN(r.zk):"–",`${m.drops.length&&m.drops.every(([,ch])=>ch==null)?"no published drop rates yet · ":""}${penNote(m)||"no drop level penalty"}${num(state.dropBonus)?` · drop rate +${num(state.dropBonus)}%`:""}`)
+    +(me?infoTile(`You (${esc(state.job)})`,isFinite(r.sec)?r.sec.toFixed(1)+"s / kill":"can't hurt",`your hit ${Math.round(r.mult)}%${elTag(r.el2)}`)
+      // damage per second while fighting it, with the element the EXP/min picks (as on the Character card); none for Spell Fist
+      +(dps!=null&&isFinite(dps)?infoTile("Damage / s",fmtN(Math.round(dps)),`vs its ${m.hp==null?"?":fmtN(m.hp)} HP, misses included`):"")
+      +infoTile("Zeny / kill",hasLoot(m)?fmtN(r.zk):"–",`${m.drops.length&&m.drops.every(([,ch])=>ch==null)?"no published drop rates yet · ":""}${penNote(m)||"no drop level penalty"}${dropPct()?` · drop rate +${fmtP(dropPct())}%`:""}`)
       +mobYouTiles(m):"");
   // drops: best chance first, with your chance, what NPCs and players pay, and the zeny a kill it's worth to you
   const drops=(m.drops||[]).slice().sort((x,y)=>(y[1]??-1)-(x[1]??-1)).map(([id,ch])=>{const y=yourCh(m,ch),lt=looted(id);
     return `<tr class="${lt?"":"muted"}"><td class="name"><div class="dbName">${itemIcon(id,1,"il")}<div>${infoLink(infoKind(id),id,itemName(id))}<div class="note">${GROUP_NAME[groupOf(id)]}${lt?"":" · not looted"}${dropAff(id,m.id)?` · ${affTxt(dropAff(id,m.id))}`:""}</div></div></div></td>
       <td>${chTxt(ch)}${me&&y!==ch?`<div class="note">you ${chTxt(y)}</div>`:""}</td><td>${npcSell(id)>0?fmtN(npcPays(id)):"–"}</td><td>${state.prices[id]>0?fmtN(state.prices[id]):"–"}</td>${me?`<td>${lt?dropZTxt(dropZ(m,id,ch)):"0"}</td>`:""}</tr>`}).join("");
   const dropT=drops&&`<div class="scroll"><table class="matTable usedTable dropTable"><thead><tr><th>Item</th><th>Chance</th><th>NPC pays</th><th>Players pay</th>${me?"<th>Zeny / kill</th>":""}</tr></thead><tbody>${drops}</tbody></table></div>`;
-  const skills=(m.skills||[]).map(([sid,st,lv,ch,cast,delay,cond,intr])=>`<tr><td class="name">${esc(MOBSKILLNAME[sid]||`skill ${sid}`)}</td><td class="name">${esc(st.toLowerCase())}</td><td>${lv}</td><td>${ch}%</td><td>${cast?MOB_SKILL_T(cast)+(intr?"":` <span class="note" title="hitting it doesn't stop the cast">uninterruptible</span>`):"instant"}</td><td>${MOB_SKILL_T(delay)}</td><td class="name">${esc(cond)||"–"}</td></tr>`).join("");
+  const skills=(m.skills||[]).map(([sid,st,lv,ch,cast,delay,cond,intr])=>`<tr><td class="name"><a href="#" data-mskill="${sid}" title="Every monster that uses it (Monster skills tab)">${esc(MOBSKILLNAME[sid]||`skill ${sid}`)}</a></td><td class="name">${esc(st.toLowerCase())}</td><td>${lv}</td><td>${ch}%</td><td>${cast?MOB_SKILL_T(cast)+(intr?"":` <span class="note" title="hitting it doesn't stop the cast">uninterruptible</span>`):"instant"}</td><td>${MOB_SKILL_T(delay)}</td><td class="name">${esc(cond)||"–"}</td></tr>`).join("");
   const skillT=skills&&`<div class="scroll"><table class="matTable usedTable"><thead><tr><th>Skill</th><th>When</th><th>Lv</th><th>Chance</th><th>Cast</th><th>Delay</th><th>Condition</th></tr></thead><tbody>${skills}</tbody></table></div><div class="note">From kRO's tables; Global may differ.</div>`;
   // spawns: lit on the world map, then each map with the other monsters on it
   const sp=SPAWN[m.id]||[];
@@ -86,8 +88,8 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
   return {ico:mobIcon(m.id,2),title:m.name,sub,
     body:`<div class="calc">${tiles}</div>${infoSec("Drops",dropT)}${infoSec("Skills",skillT)}${infoSec("Spawns",mapT)}`,
     after:()=>{const w=$("infoMobWorld");if(w)worldMap(w,sp,k=>{$("infoDlg").close();openMap(k)})},
-    acts:inS?'<span class="pill up">In this session</span> <button type="button" data-infoact="unfarm">Remove from session</button>'
-      :`<button type="button" class="primary" data-infoact="farm">${s.mobIds.length?"Also killing it":"Farming it now"}</button>`}}
+    acts:(inS?'<span class="pill up">In this session</span> <button type="button" data-infoact="unfarm">Remove from session</button>'
+      :`<button type="button" class="primary" data-infoact="farm">${s.mobIds.length?"Also killing it":"Farming it now"}</button>`)+mineSwitch()}}
 
 // an HP / SP recovery item (data/recovery.js): what it heals with your changes, the price the Consumables card uses and the cost per HP / SP
 function infoHeal(id){if(!RECOVERY[id])return "";
@@ -169,13 +171,13 @@ function popGear(id){const it=BUILD.item(id),fx=fxOf(it),c=C(),txt=itemText(id),
   const stats=[it.lv?`Lv ${it.lv}+`:"",it.slots?`[${it.slots}] card slot${it.slots>1?"s":""}`:"no card slots",it.atk?`ATK ${it.atk}`:"",it.matk?`MATK ${it.matk}`:"",it.def?`DEF ${it.def}`:"",
     it.wlv?`weapon Lv ${it.wlv}`:"",it.el&&it.el!=="neutral"?`${fxCap(it.el)} element`:"",it.w!=null?`${it.w} weight`:""].filter(Boolean).join(" · ");
   const ok=eqPlaces(it,state.job).length&&wearsJob(it,state.job);
-  return {ico:iconHtml("gear",id,1.5),title:it.name,sub:`${esc(gearKind(it))} · #${id} · ${esc(jobsTxt(it))}${worn.map(x=>` <span class="pill up">${x}</span>`).join("")}`,
+  return {ico:iconHtml("gear",id,1.5),title:it.name,sub:`${esc(gearKind(it))} · #${id} · ${esc(jobsTxt(it))}${worn.map(x=>` <span class="pill up">${esc(x)}</span>`).join("")}`,
     body:`<div class="note mono">${esc(stats)}</div>${infoSec("Effects",fx.length?`<div class="infoList">${fx.map(x=>`<div>${esc(x)}</div>`).join("")}</div>`:"")}${infoSec("In-game text",txt&&`<div class="infoText">${esc(txt)}</div>`)}
       ${infoSec("Dropped by",infoDroppers(id))}${infoSec(ITEM_DROPS[id]?"Other sources":"Where to get",infoFrom(id))}${infoSec("Enchant and upgrade items",infoUpgradedBy(id))}${infoSec("Affixes",typeof gearAffixHtml==="function"?gearAffixHtml(id):"")}${infoRecipes(id)}${ITEM_DROPS[id]?infoPrice(id):""}`,
     acts:`<button type="button" class="primary" data-infoact="equip"${ok?"":` disabled title="${esc(eqPlaces(it,state.job).length?`A ${state.job} can't wear it`:"Not something you wear")}"`}>Equip</button><button type="button" data-infoact="equiptab">Equipment tab</button>${recipeAct(id)}${infoPriceBox(id)}`}}
 
 function popCard(id){const x=BUILD.item(id),fx=fxOf(x),c=C(),txt=itemText(id),worn=wornIn(c,x.id,true);
-  return {ico:iconHtml("card",id),title:x.name,sub:`${CARD_PART[cardPart(x)]||"–"} card · #${id}${cardName(x)?` · names gear "${esc(cardName(x))}"`:""}${notInGamePill(id)}${worn.map(w=>` <span class="pill up">${w}</span>`).join("")}`,
+  return {ico:iconHtml("card",id),title:x.name,sub:`${CARD_PART[cardPart(x)]||"–"} card · #${id}${cardName(x)?` · names gear "${esc(cardName(x))}"`:""}${notInGamePill(id)}${worn.map(w=>` <span class="pill up">${esc(w)}</span>`).join("")}`,
     body:`${infoSec("Effects",fx.length?`<div class="infoList">${fx.map(l=>`<div>${esc(l)}</div>`).join("")}</div>`:"")}${infoSec("In-game text",txt&&`<div class="infoText">${esc(txt)}</div>`)}
       ${infoSec("Dropped by",infoDroppers(id))}${infoSec(ITEM_DROPS[id]?"Other sources":"Where to get",infoFrom(id))}${ITEM_DROPS[id]?infoPrice(id):""}`,
     acts:`<button type="button" class="primary" data-infoact="equip"${cardPart(x)?"":' disabled title="Not a card that goes in gear"'}>Equip</button><button type="button" data-infoact="cardtab">Cards tab</button>${infoPriceBox(id)}`}}
@@ -205,7 +207,8 @@ function infoAct(a){const [kind,id]=INFO[INFO.length-1],d=$("infoDlg");
   d.addEventListener("click",e=>{if(e.target===d){d.close();return}
     if(e.target.closest("[data-gotab]")){d.close();return}// a link to a tab (its handler opens it)
     const b=e.target.closest("[data-infoact]");if(b){infoAct(b.dataset.infoact);return}
-    const mp=e.target.closest("[data-infomap]");if(mp){e.preventDefault();d.close();openMap(mp.dataset.infomap)}});
+    const mp=e.target.closest("[data-infomap]");if(mp){e.preventDefault();d.close();openMap(mp.dataset.infomap);return}
+    const sk=e.target.closest("[data-mskill]");if(sk){e.preventDefault();d.close();openMsk(+sk.dataset.mskill)}});
   d.addEventListener("toggle",e=>{const s=e.target.closest&&e.target.closest("details.infoSec");if(!s||e.target!==s)return;
     const c=state.collapsed=state.collapsed||{},k=s.dataset.fold;if(s.open===!c[k])return;if(s.open)delete c[k];else c[k]=true;store.set(state)},true);
   d.addEventListener("change",e=>{const i=e.target.closest("[data-infoprice]");if(!i)return;const id=i.dataset.infoprice,v=Math.max(0,num(i.value));

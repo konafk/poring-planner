@@ -8,7 +8,7 @@ const FX_LABEL={str:"STR",agi:"AGI",vit:"VIT",int:"INT",dex:"DEX",luk:"LUK",all_
   physical_damage_percent:"Physical damage",magic_damage_percent:"Magic damage",ranged_damage_percent:"Ranged physical damage",melee_damage_percent:"Melee physical damage",
   skill_damage_percent:"Skill damage",damage_taken_percent:"Damage taken",magic_damage_taken_percent:"Magic damage taken",resistance_percent:"Resistance",
   exp_percent:"EXP",heal_amount_percent:"Heal power",item_heal_percent:"HP heal effect",sp_heal_percent:"SP heal effect",heal_received_percent:"Heal received",sp_recovery_percent:"SP recovery",
-  hp_recovery_percent:"HP recovery",sp_cost_percent:"SP cost",ignore_def_percent:"Ignore DEF",ignore_mdef_percent:"Ignore MDEF",sp_per_hit:"SP per hit",hp_per_hit:"HP per hit"};
+  hp_recovery_percent:"HP recovery",sp_cost_percent:"SP cost",drop_percent:"Item drop rate",ignore_def_percent:"Ignore DEF",ignore_mdef_percent:"Ignore MDEF",sp_per_hit:"SP per hit",hp_per_hit:"HP per hit"};
 const fxCap=s=>String(s||"").split("_").map(w=>w&&w[0].toUpperCase()+w.slice(1)).join(" ").replace("Demi Human","Demi-Human");
 // one bonus line [type, target kind, target, value, per N refines, skill, scaling skill] -> "Physical damage vs Demon +10%"
 function fxLine([t,kind,target,v,per,skill,scale]){
@@ -20,12 +20,14 @@ function fxLine([t,kind,target,v,per,skill,scale]){
   else if(kind==="monster_kind")l+=target==="boss"?" vs Boss":" vs normal monsters";
   else if(kind&&(t==="damage_taken_percent"||t==="magic_damage_taken_percent"))l+=` from ${T}`;
   else if(kind==="race"&&target==="all")l+=" vs all races";
+  else if(kind==="size"&&target==="all")l+=" vs all sizes";
   else if(kind)l+=` vs ${T}${kind==="size"?" size":""}`;
   if(skill)l=`${skill}: ${l}`;
   return `${l} ${+v>0?"+":""}${v}${pct||stat?"%":""}${per?` per${+per>1?` ${per}`:""} refine${+per>1?"s":""}`:""}${scale?` per ${scale} level`:""}`}
 // a bonus group: its condition, then its lines or text
 function fxGroup(g){const when=[g.r!=null?`at +${g.r}`:"",g.rs!=null?`combined refine +${g.rs}`:"",g.lv!=null?`base Lv ${g.lv}+`:"",
-    g.cls&&g.cls.length?[...new Set(g.cls)].map(fxCap).join(" / "):"",g.lvPer?`per ${g.lvPer} base Lv${g.lvMax?` (to Lv ${g.lvMax})`:""}`:""].filter(Boolean).join(", ");
+    g.cls&&g.cls.length?[...new Set(g.cls)].map(fxCap).join(" / "):"",g.wt?`with a ${[].concat(g.wt).join(" or ").toLowerCase()}`:"",g.lvPer?`per ${g.lvPer} base Lv${g.lvMax?` (to Lv ${g.lvMax})`:""}`:"",
+    g.ev?`event option, until the ${new Date(g.ev+"T00:00:00Z").toLocaleDateString("en-GB",{day:"numeric",month:"short",timeZone:"UTC"})} maintenance`:""].filter(Boolean).join(", ");
   const body=(g.b||[]).length?g.b.map(fxLine).join(", "):g.proc||g.text||"";return body?(when?`${when}: `:"")+body:""}
 const fxOf=it=>(it&&it.g||[]).map(fxGroup).filter(Boolean);
 // the jobs that wear it, as the app names them: "All jobs" when every 1st job does (a 2nd job wears its 1st job's gear)
@@ -91,7 +93,7 @@ function cardDbOk(c,f){const q=String(f.q||"").trim().toLowerCase();if(f.slot&&c
 
 // ---- putting gear on: set i is your gear (−1) or other gear set i ----
 const setAt=(c,i)=>i<0?buildOf(c):altOf(c,i);
-const setLabel=i=>i<0?"My gear":`Set ${i+1}`;
+const setLabel=i=>i<0?"My gear":altName(C(),i);
 const slotLabel=k=>k==="acc1"?"Accessory 1":k==="acc2"?"Accessory 2":(BUILD.SLOTS.find(s=>s.k===k)||{}).label||k;
 // where item it can go for job: a list of places, each the gear rows it fills (a multi-slot headgear fills every row it covers;
 // an accessory goes in either; an Assassin's dagger, one-handed sword or axe in either hand)
@@ -106,7 +108,7 @@ const placeLabel=(rows,it)=>rows[0]==="shield"&&(it.slot||[]).includes("weapon")
 function eqPut(c,i,rows,id){const s=setAt(c,i);if(!s.gear||typeof s.gear!=="object")s.gear={};
   rows.forEach(k=>{const old=s.gear[k];if(old&&old.id&&k.startsWith("head"))BUILD.SLOTS.forEach(x=>{if(x.k.startsWith("head")&&!rows.includes(x.k)&&s.gear[x.k]&&s.gear[x.k].id===old.id)delete s.gear[x.k]})});
   const g0=s.gear[rows[0]]||(s.gear[rows[0]]={});gearPut(c,g0,id);
-  rows.slice(1).forEach(k=>{const g=s.gear[k];if(g&&g.id!==id)memKeep(c,g);s.gear[k]=JSON.parse(JSON.stringify(g0))})}
+  rows.slice(1).forEach(k=>{const g=s.gear[k];if(g&&g.id!==id)memKeep(c,g);s.gear[k]=JSON.parse(JSON.stringify(g0))});handsFree(c,s.gear,rows[0])}
 // every card box card can go in: set, row, box and the card there now (a multi-slot headgear counts once)
 function cardTargets(c,card){const out=[];
   for(let i=-1;i<altN(c);i++){const s=i<0?c.build||{}:altOf(c,i),gear=s.gear||{},seen=[];
@@ -118,7 +120,7 @@ function cardTargets(c,card){const out=[];
 // card id in card box j of set i's row (and in the other rows of that multi-slot headgear)
 function cardPut(c,i,row,j,id){const s=setAt(c,i),g=s.gear&&s.gear[row];if(!g||!g.id)return;g.cards=g.cards||[];while(g.cards.length<j)g.cards.push(null);g.cards[j]=id;
   if(row.startsWith("head"))BUILD.SLOTS.forEach(x=>{const h=s.gear[x.k];if(x.k!==row&&x.k.startsWith("head")&&h&&h.id===g.id)h.cards=[...g.cards]})}
-// the sets item / card id is in now: ["My gear", "Set 2"]
+// the sets item / card id is in now: ["My gear", "Set 2", "Boss"] (as text)
 function wornIn(c,id,card){const b=c.build;if(!b)return [];const has=s=>Object.values(s&&s.gear||{}).some(g=>g&&(card?(g.cards||[]).includes(id):g.id===id));
   return [-1,...Array.from({length:altN(c)},(_,i)=>i)].filter(i=>has(i<0?b:b.alts[i])).map(setLabel)}
 
@@ -130,7 +132,7 @@ TABLES.equipTable={def:["name",1],cols:{name:{t:r=>r.it.name},id:{n:r=>r.it.id,a
 TABLES.cardTable={def:["name",1],cols:{name:{t:r=>r.c.name},id:{n:r=>r.c.id,asc:1},part:{t:r=>CARD_PART[cardPart(r.c)]||"–"},nm:{t:r=>cardName(r.c)},from:{t:r=>fromTxt(r.c.id)},fx:{t:r=>r.fx.join(" ")}}};
 const EQ_SORTS=[["name:1","Name A–Z"],["name:-1","Name Z–A"],["lv:-1","Highest Lv"],["lv:1","Lowest Lv"],["atk:-1","Highest ATK"],["matk:-1","Highest MATK"],
   ["def:-1","Highest DEF"],["slots:-1","Most card slots"],["w:1","Lightest"],["id:1","ID"]];
-const wornPills=(c,id,card)=>wornIn(c,id,card).map(x=>` <span class="pill up">${x}</span>`).join("");
+const wornPills=(c,id,card)=>wornIn(c,id,card).map(x=>` <span class="pill up">${esc(x)}</span>`).join("");
 const eqBtn=(k,id,ok,why)=>`<button type="button" class="small" data-eq${k}="${id}"${ok?"":` disabled title="${esc(why)}"`}>Equip</button>`;
 function renderEquipDb(){const c=C(),f=eqDbF(),all=typeof EQUIP!=="undefined"?EQUIP:[];
   ROOTQ("[data-eqf]").forEach(x=>{if(document.activeElement!==x)x.value=f[x.dataset.eqf]??""});
@@ -165,18 +167,18 @@ function drawEquip(){const c=C(),{kind,id}=EQ_DLG,it=BUILD.item(id),sets=[-1,...
   $("eqDlgTitle").textContent=`Equip ${it.name}`;$("eqDlgIco").innerHTML=iconHtml(kind==="item"?"gear":"card",id);
   const lv=kind==="item"&&it.lv>num(c.baseLv)?` · needs base Lv ${it.lv} (you're Lv ${num(c.baseLv)})`:"";
   $("eqDlgSub").textContent=(kind==="item"?`${gearKind(it)}${it.slots?` [${it.slots}]`:""}`:`${CARD_PART[cardPart(it)]||""} card`)+lv;
-  const mode=c.mode==="build"?"":`<div class="note">This switches the Character tab to <b>Build from gear</b>, so your stats are worked out from your gear. The status window values you typed come back if you switch back.</div>`;
+  const mode=c.mode==="build"?"":`<div class="note">This switches the Character tab to <b>Build from gear</b>; the status window values you typed come back if you switch back.</div>`;
   let body="";
   if(kind==="item"){const pl=eqPlaces(it,state.job);
     if(!pl.length)body=`<div class="note">This isn't something you wear.</div>`;
     else if(!wearsJob(it,state.job))body=`<div class="note bad">A ${esc(state.job)} can't wear it (${esc(jobsTxt(it))}). Pick another job on the Character tab to equip it there.</div>`;
     else body=`<div class="note">Which gear set?</div><div class="eqPicks">${sets.map(i=>{const s=i<0?c.build||{}:altOf(c,i),g=s.gear||{};
-        return `<div class="eqSet"><b>${setLabel(i)}</b>${pl.map(rows=>`<button type="button" class="eqPick" data-set="${i}" data-rows="${rows.join(",")}"><span>${pl.length>1||rows.length>1?esc(placeLabel(rows,it))+": ":""}${rows.map(k=>gearNow(g[k])).filter((x,j,a)=>a.indexOf(x)===j).join(" / ")}</span><span class="to">→ ${esc(it.name)}</span></button>`).join("")}</div>`}).join("")}
+        return `<div class="eqSet"><b>${esc(setLabel(i))}</b>${pl.map(rows=>`<button type="button" class="eqPick" data-set="${i}" data-rows="${rows.join(",")}"><span>${pl.length>1||rows.length>1?esc(placeLabel(rows,it))+": ":""}${rows.map(k=>gearNow(g[k])).filter((x,j,a)=>a.indexOf(x)===j).join(" / ")}</span><span class="to">→ ${esc(it.name)}</span></button>`).join("")}</div>`}).join("")}
       ${altN(c)<ALT_MAX?`<div class="eqSet"><b>New set</b><button type="button" class="eqPick" data-new="1"><span>Add Set ${altN(c)+1} with only this on</span><span class="to">→ ${esc(it.name)}</span></button></div>`:""}</div>`}
   else{const ts=cardTargets(c,it),part=CARD_PART[cardPart(it)]||"gear";
     if(!cardPart(it))body=`<div class="note">This card doesn't go in gear.</div>`;
     else body=`<div class="note">Which gear set and card slot?</div><div class="eqPicks">${sets.map(i=>{const t=ts.filter(x=>x.set===i);
-        return `<div class="eqSet"><b>${setLabel(i)}</b>${t.length?t.map(x=>`<button type="button" class="eqPick" data-set="${i}" data-row="${x.row}" data-box="${x.box}"><span>${iconHtml("gear",x.it.id)}${esc(slotLabel(x.row))}: ${num(x.g.refine)?`+${num(x.g.refine)} `:""}${esc(x.it.name)} · slot ${x.box+1}: ${x.cur?esc((BUILD.item(x.cur)||{}).name||"?"):'<span class="muted">empty</span>'}</span><span class="to">→ ${esc(it.name)}</span></button>`).join("")
+        return `<div class="eqSet"><b>${esc(setLabel(i))}</b>${t.length?t.map(x=>`<button type="button" class="eqPick" data-set="${i}" data-row="${x.row}" data-box="${x.box}"><span>${iconHtml("gear",x.it.id)}${esc(slotLabel(x.row))}: ${num(x.g.refine)?`+${num(x.g.refine)} `:""}${esc(x.it.name)} · slot ${x.box+1}: ${x.cur?esc((BUILD.item(x.cur)||{}).name||"?"):'<span class="muted">empty</span>'}</span><span class="to">→ ${esc(it.name)}</span></button>`).join("")
           :`<span class="note">No ${esc(part.toLowerCase())} with a card slot. <a href="#" data-eqfind="${cardPart(it)}">Find one</a></span>`}</div>`}).join("")}</div>`}
   $("eqDlgBody").innerHTML=mode+body}
 // the Equipment tab's Type filter for a card's part: the gear it goes in, with a slot

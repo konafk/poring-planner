@@ -88,6 +88,8 @@ JADE = ("Jade", "payon 173,238")
 EXCHANGES.update({716: (*JADE, [[717, 2]], "Gemstone Exchange", "Misc"),
                   715: (*JADE, [[716, 2]], "Gemstone Exchange", "Misc"),
                   717: (*JADE, [[715, 2]], "Gemstone Exchange", "Misc")})
+# the most an NPC swaps in one trade, by NPC: Jade's "Tell me an amount of 100 or less"
+EXCHANGE_MAX = {"Jade": 100}
 # Puchuchartan, the Utan shaman (Shaman's House, umbala 219,188, where the Umbala Guide points), fuses monster loot into elemental
 # ores once chief Karkatan allows it (for a Mr. Smile): 15 Horn, 20 Snail's Shell, 20 Scorpion Tail, 25 Rainbow Shell, from the shaman's lines
 # ("You need 20 Scorpion Tail from Scorpion"). The ritual can fail and the lines don't say how many ores it gives: written as one
@@ -103,6 +105,16 @@ EXCHANGES.update({993: (*SHAMAN, [[947, 15]], "Elemental Fusion", "Misc"),
 TADDE, KANT, GILL = ("Tadde", "izlude 145,122"), ("Kantstaff", "prt_mk 153,162"), ("Christopher Gillenlow", "prontera 179,184")
 EXCHANGES.update({984: (*TADDE, [[756, 5]], "Process refining stones", "Forging"),
                   985: (*TADDE, [[757, 5]], "Process refining stones", "Forging")})
+# Yakt, the Raid Manager (navi_npc.lub: moc_para01 22,35, the Eden Group's headquarters), trades Blacksmith Blessing Powder ("I'll
+# exchange Blacksmith Blessing Powder", "You can exchange 30 Blacksmith Blessing Powder for a Reward Box") with a choice of "Exchange
+# with Goblin Coin Shard" or "Exchange with Zelstar". The Zelstar shop as seen in game (the user's screenshot, 7 November 2026): 1
+# Blacksmith Blessing for 30 Blacksmith Blessing Powder and 10 Zelstar, no zeny. The Goblin Coin Shard cost isn't known yet: left out
+YAKT = ("Yakt", "moc_para01 22,35")
+EXCHANGES.update({6635: (*YAKT, [[1002357, 30], [25399, 10]], "Exchange with Zelstar", "Misc")})
+# Brewer Burkel (nordfeld 205,142) brews one Nordfeld Beer a day for the quest log's "Nordfeld: Special Beer!" (quest 1000213: 5 Red Herb,
+# 5 Apple, 2 Gleaming Pebble, 2 Nordium Fragment; "please come back tomorrow"). After it Brewer Telsa sells more (data/shops.js)
+BURKEL = ("Brewer Burkel", "nordfeld 205,142")
+EXCHANGES.update({107452: (*BURKEL, [[507, 5], [512, 5], [1002995, 2], [1002996, 2]], "Nordfeld: Special Beer! daily quest", "Misc")})
 # a second NPC for an item EXCHANGES already has: [(item id, (NPC, where, what it takes, its menu, category))]
 EXCHANGES_ALSO = [(984, (*KANT, [[756, 5]], "Process refining stones", "Forging")),
                   (985, (*KANT, [[757, 5]], "Process refining stones", "Forging")),
@@ -232,10 +244,19 @@ def affixes(grf):
     return out
 
 
+# event-limited options of cards, as bonus lines with the day the event ends (ev: counted before that day). The Gatchaman collaboration's
+# three garment cards (29 October to the 26 November 2026 maintenance), each: "Physical/Magical damage dealt to monsters of all races +10%
+# (excluding Players). Physical/Magical damage dealt to enemies of all sizes +10%. EXP gained from defeating monsters +15%. Item drop rate +7%."
+GATCHAMAN_EV = {"ev": "2026-11-26", "b": [["damage_percent", "race", "all", 10], ["magic_damage_percent", "race", "all", 10],
+                                         ["damage_percent", "size", "all", 10], ["magic_damage_percent", "size", "all", 10],
+                                         ["exp_percent", None, None, 15], ["drop_percent", None, None, 7]]}
+EVENT_OPT = {300732: GATCHAMAN_EV, 300733: GATCHAMAN_EV, 300734: GATCHAMAN_EV}
+
+
 def card_row(i, v, st, affix):
     """A data/cards.js row for a card the database doesn't have yet: its slot from "Equipped on" / "Equippable by", bonus lines from
-    its text up to "[Event-Limited Option]" (an event's options go when it ends, so they stay text only), "For every 10 BaseLv, ...
-    (Applies up to BaseLv 50.)" as lvPer / lvMax."""
+    its text up to "[Event-Limited Option]" (an event's options go when it ends: only the ones in EVENT_OPT count, until their day),
+    "For every 10 BaseLv, ... (Applies up to BaseLv 50.)" as lvPer / lvMax."""
     slot = CARD_SLOT.get(st.get("Equipped On") or st.get("Equippable by") or "")
     if not slot:
         return None
@@ -248,6 +269,8 @@ def card_row(i, v, st, affix):
                 g.append({"lvPer": int(m.group(1)), **({"lvMax": int(cap.group(1))} if cap else {}), "b": b[0]["b"]})
         elif b := bonus(s):
             g += b
+    if i in EVENT_OPT:
+        g.append(EVENT_OPT[i])
     row = {"id": i, "slug": re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") + f"-{i}", "name": name, "slot": [slot], "slots": 0, "lv": 0,
            "wlv": 0, "g": g, **({"affix": affix[0], "affixPos": affix[1]} if affix else {})}
     return {k: x for k, x in row.items() if x not in (None, [], "")}
@@ -413,7 +436,7 @@ def npc_recipes(grf, client):
     if later:
         print(f"  in the dialogue but not offered yet, left out: {later}")
     made = [r for (npc, i), r in sorted(out.items()) if npc not in offered or i in offered[npc]]
-    swaps = [{"cat": cat, "type": "npc", "id": i, "n": 1, "lv": None, "mats": mats, "npc": [npc, at], "swap": menu}
+    swaps = [{"cat": cat, "type": "npc", "id": i, "n": 1, "lv": None, "mats": mats, "npc": [npc, at], "swap": menu, "max": EXCHANGE_MAX.get(npc)}
              for i, (npc, at, mats, menu, cat) in [*EXCHANGES.items(), *EXCHANGES_ALSO]]
     return [{k: x for k, x in r.items() if x is not None or k == "lv"} for r in made + hat_quests(client, quests) + swaps]
 

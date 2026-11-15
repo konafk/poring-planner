@@ -111,17 +111,52 @@ try {
     await page.close();
   });
 
+  await t("Monsters & maps switches the session Farm here goes to, or starts a new one", async () => {
+    const { page, errs } = await open();
+    await page.evaluate("C().mode='build';buildOf(C()).base.str=30;state.sessions.push({id:'sA',name:'Alpha',mobIds:[],entries:[]},{id:'sB',name:'Beta',mobIds:[],entries:[]});state.current='sA';save();renderAll()");
+    await goTab(page, "maps");
+    assert.ok(await page.isVisible("#mapSessSel"));
+    assert.equal(await page.inputValue("#mapSessSel"), "sA");
+    await page.selectOption("#mapSessSel", "sB");
+    assert.equal(await page.evaluate("state.current"), "sB");
+    assert.equal(await page.getAttribute('[data-tabbtn="maps"]', "aria-selected"), "true");     // stays on Monsters & maps
+    await page.selectOption("#mapSessSel", "+new");
+    assert.equal(await page.evaluate("state.sessions.length"), 3);
+    assert.equal(await page.evaluate("cur().name"), "New session");
+    assert.deepEqual(errs, []);
+    await page.close();
+  });
+
   await t("Where to farm: best spots by EXP and zeny, Farm here sets the session's map, one ranking at a time", async () => {
     const { page, errs } = await open();
-    await page.evaluate("C().mode='build'");                           // the spots show once there's a character
+    await page.evaluate("C().mode='build';buildOf(C()).base.str=30");                           // the spots show once there's a character
     await goTab(page, "track");                         // Where to farm is on the Session tab
     await page.click("#newSession");                                   // a session first: its first Farm here would re-rank the spots
     assert.equal(await page.$$eval("#spots .spot", s => s.length), 6);              // top 3 by EXP, top 3 by zeny
+    // the ranking starts after the best spots' 3 (no map twice); sorted by a column, it lists them too. Best maps folds both
+    const first = () => page.$eval("#bestTable tbody tr[data-map] td", td => td.textContent);
+    assert.equal(await first(), "4");
+    assert.match(await page.textContent("#bestTable tbody tr"), /#1–3 are in Best for EXP above/);
+    await page.click('#bestTable th[data-sk="rank"]');
+    await page.waitForFunction(() => document.querySelector("#bestTable tbody tr[data-map] td").textContent === "1");
+    await page.click('#bestTable th[data-sk="epm"]');
+    await page.waitForFunction(() => document.querySelector("#bestTable tbody tr[data-map] td").textContent === "4");
+    await page.click("#rankMore > summary");
+    await page.waitForFunction("!!(state.collapsed || {})['Where to farm: ranking']");   // the toggle event comes after the click
+    assert.ok(!await page.isVisible("#spots") && !await page.isVisible("#bestTable"));
+    assert.match(await page.textContent("#rankSum"), /^EXP: .+ · zeny: .+ · ranked by EXP · top 10$/);
+    await page.click("#rankMore > summary");
     const mp = await page.getAttribute("#spots .spot [data-farm]", "data-farm");
     await page.click("#spots .spot [data-farm]");
     assert.equal(await page.evaluate("sessMap(cur())"), mp);
     assert.ok(await page.isVisible("#toast"));
     assert.match(await page.textContent("#spots .spot"), /✓ farming/);
+    // Your numbers on the Character tab: the map's kill time, damage per second, EXP and zeny, then the time per attack, ASPD and SP
+    await goTab(page, "char");
+    const keys = await page.$$eval("#charTiles .tile .k", ks => ks.map(k => k.textContent));
+    assert.deepEqual(keys.slice(1), ["Damage / s", "EXP / min", "Zeny / hr", "Time per attack", "ASPD", "SP use vs regen"]);
+    assert.match(await page.getAttribute("#charTiles .tile", "title"), /walk/);
+    await goTab(page, "track");
     assert.ok(await page.isVisible("#bestTable") && !await page.isVisible("#huntTable"));
     await page.click('[data-farmby="zeny"]');
     assert.ok(!await page.isVisible("#bestTable") && await page.isVisible("#huntTable"));
@@ -132,6 +167,23 @@ try {
     const row = await page.getAttribute("#huntTable tbody [data-farm]", "data-farm");
     await page.click("#huntTable tbody [data-farm]");
     assert.equal(await page.evaluate("sessMap(cur())"), row);
+    // the session's map lists all its monsters: − Session takes one out, + Session puts it back
+    const on = await page.evaluate("sessMap(cur())");
+    assert.equal(await page.$$eval("#sessMobTable tbody tr", r => r.length), await page.evaluate(`MAPMOBS[${JSON.stringify(on)}].length`));
+    const id = +(await page.getAttribute('#sessMobTable [data-sessmob]:text("− Session")', "data-sessmob"));
+    await page.click(`#sessMobTable [data-sessmob="${id}"]`);
+    assert.ok(await page.evaluate(`!cur().mobIds.includes(${id})`));
+    await page.click(`#sessMobTable [data-sessmob="${id}"]`);
+    assert.ok(await page.evaluate(`cur().mobIds.includes(${id})`));
+    // the world map farms the box clicked, the ranking's maps numbered on it
+    const wm = await page.getAttribute('#farmWorld .wmBox[data-rank="1"]', "data-wm");
+    await page.click('#farmWorld .wmBox[data-rank="1"]');
+    assert.ok(wm.split(",").includes(await page.evaluate("sessMap(cur())")));
+    // Farming on lists every other open map too: picking one farms it with its monsters
+    const other = await page.$eval("#sessMapSel optgroup option", o => o.value);
+    await page.selectOption("#sessMapSel", other);
+    assert.equal(await page.evaluate("sessMap(cur())"), other);
+    assert.equal(await page.inputValue("#sessMapSel"), other);
     assert.deepEqual(errs, []);
     await page.close();
   });
@@ -156,8 +208,14 @@ try {
     assert.equal(await page.isVisible('.navSec:has([data-tabbtn="items"]) > .navGrp'), true);
     assert.equal(await page.isVisible('[data-tabbtn="items"]'), false);
     await page.click('.navSec:has([data-tabbtn="items"]) > .navGrp');
+    // the menu is in the top layer, so the sideways-scrolling row can't clip it (iOS Safari did), and placed under its heading
+    assert.equal(await page.$eval('.navSec:has([data-tabbtn="items"]) > .navItems', m => m.matches(":popover-open")), true);
+    const [hd, mn] = await Promise.all(['.navSec:has([data-tabbtn="items"]) > .navGrp', '.navSec:has([data-tabbtn="items"]) > .navItems']
+      .map(s => page.$eval(s, e => { const r = e.getBoundingClientRect(); return { bottom: r.bottom, top: r.top, h: r.height }; })));
+    assert.ok(mn.top >= hd.bottom && mn.top - hd.bottom < 12 && mn.h > 100, JSON.stringify({ hd, mn }));
     await page.click('[data-tabbtn="items"]');
     assert.equal(await page.getAttribute('[data-tabbtn="items"]', "aria-selected"), "true");
+    assert.equal(await page.locator("[popover]").count(), 0);
     assert.equal(await page.locator(".navSubs").count(), 0);
     assert.deepEqual(errs, []);
     await page.close();

@@ -12,10 +12,12 @@ const RANGED=["Bow","Musical instrument","Whip"];
 const statVal=(c,k)=>EFF&&c===C()&&EFF.st?(k==="int"?sumStat(EFF.intTxt):EFF.st[k]!=null&&EFF.st[k]!==""?sumStat(EFF.st[k]):null):k==="int"?sumStat(c.intTxt):(c.st&&c.st[k]!=null&&c.st[k]!==""?sumStat(c.st[k]):null);
 function derived(c){const g=k=>statVal(c,k)??0;const lv=num(c.baseLv),str=g("str"),agi=g("agi"),int=g("int"),dex=g("dex"),luk=g("luk"),vit=g("vit");const r=RANGED.includes(c.weapon);
   return {atk:Math.floor(lv/4+(r?dex+str/5:str+dex/5)+luk/3),matk:Math.floor(lv/4)+Math.floor(int*1.5)+Math.floor(dex/5)+Math.floor(luk/3),
-    hit:175+lv+dex+Math.floor(luk/3),flee:100+lv+agi+Math.floor(luk/5),def:Math.floor(lv/2)+Math.floor(vit/2)+Math.floor(agi/5),
+    hit:175+lv+dex+Math.floor(luk/3),flee:100+lv+agi+Math.floor(luk/5),def:Math.floor(lv/2)+Math.floor(vit/2+agi/5),
     crit:1+luk*0.3+lv/100,aspdTerm:Math.sqrt(agi*agi/2+dex*dex/(r?7:5))/4,vit,int}}
-// ASPD base + weapon penalty for 1st and 2nd jobs on Zero (RO樂園攻速計算機 2026-09-07, sheet "攻速懲罰表"); missing = unknown
-const ASPD_T={Swordsman:{"Bare hands":156,"One-handed mace":-10,"Two-handed mace":-10,"Dagger":-7,"One-handed sword":-7,"Two-handed sword":-14,"One-handed axe":-15,"Two-handed axe":-20,"One-handed spear":-17,"Two-handed spear":-25},
+// ASPD base + weapon penalty for 1st and 2nd jobs on Zero (RO樂園攻速計算機 2026-09-07, sheet "攻速懲罰表"); missing = unknown. Novice: measured
+// in game (sir-quackberry's Zero Global ASPD calculator)
+const ASPD_T={Novice:{"Bare hands":156,"Dagger":-15,"One-handed sword":-17,"One-handed axe":-10,"One-handed mace":-10,"One-handed staff":-25},
+ Swordsman:{"Bare hands":156,"One-handed mace":-10,"Two-handed mace":-10,"Dagger":-7,"One-handed sword":-7,"Two-handed sword":-14,"One-handed axe":-15,"Two-handed axe":-20,"One-handed spear":-17,"Two-handed spear":-25},
  Mage:{"Bare hands":146,"One-handed staff":-5,"Two-handed staff":-5,"Dagger":0},Archer:{"Bare hands":156,"Dagger":-15,"Bow":-10},
  Acolyte:{"Bare hands":156,"One-handed mace":-5,"Two-handed mace":-5,"One-handed staff":-20,"Two-handed staff":-20},
  Merchant:{"Bare hands":156,"One-handed mace":-10,"Two-handed mace":-10,"Dagger":-12,"One-handed sword":-12,"One-handed axe":-8,"Two-handed axe":-15},
@@ -31,8 +33,8 @@ const aspdBase=(job,w)=>{const t=ASPD_T[job];if(!t||t[w]==null)return null;retur
 // with an Assassin's left-hand weapon, its delay comes off too (BUILD.LEFT_ASPD)
 const aspdBaseOf=(c,w=c.weapon,lw=c.lw)=>{const ab=aspdBase(state.job,w);return ab==null?null:ab-(BUILD.dualOk(state.job,w,lw)?BUILD.LEFT_ASPD[lw]:0)};
 // a shield (the tick box in status-window mode, the gear table in build mode) costs the job's shield penalty. It takes the left
-// hand, so it's never worn with an Assassin's second weapon
-const shieldPen=(c,w=c.weapon,lw=c.lw,sh=c.shield)=>sh&&!BUILD.dualOk(state.job,w,lw)?BUILD.SHIELD_ASPD[state.job]||0:0;
+// hand, so it's never worn with an Assassin's second weapon or a two-handed weapon
+const shieldPen=(c,w=c.weapon,lw=c.lw,sh=c.shield)=>sh&&!BUILD.twoHanded(w)&&!BUILD.dualOk(state.job,w,lw)?BUILD.SHIELD_ASPD[state.job]||0:0;
 const aspdStart=c=>{const ab=aspdBaseOf(c);return ab==null?null:ab-shieldPen(c)};
 // status-window mode: a change of weapon, left hand or shield moves the typed ASPD by what the base moves
 const aspdMove=(c,next)=>{const a0=aspdStart(c),a1=aspdStart(next);if(a0!=null&&a1!=null){c.aspd=Math.min(190,Math.round((num(c.aspd,150)+a1-a0)*10)/10);$("aspd").value=c.aspd}};
@@ -44,16 +46,19 @@ function shiftByStats(c,before){const a=derived(c);const ok=k=>STATS.every(x=>st
   if(a.vit!==before.vit&&num(c.maxHp)>0)c.maxHp=Math.round(num(c.maxHp)*(100+a.vit)/(100+before.vit));if(a.int!==before.int&&num(c.maxSp)>0)c.maxSp=Math.round(num(c.maxSp)*(100+a.int)/(100+before.int))}
 const renderStatNote=()=>{const c=C();const miss=STATS.filter(k=>statVal(c,k)==null);
   if(miss.length){$("statNote").textContent=`Type all six stats (base+bonus, e.g. 60+8) so changing a stat updates the rest. Missing: ${miss.map(x=>x.toUpperCase()).join(", ")}.`;return}
-  const d=derived(c);const ab=aspdStart(c);$("statNote").textContent=`From your stats: status ATK ${d.atk} · status MATK ${d.matk} · HIT ${d.hit} · FLEE ${d.flee} · soft DEF ${d.def} · CRIT ${d.crit.toFixed(1)}${ab!=null?` · ASPD ${(ab+d.aspdTerm).toFixed(1)} before potions/skills`:""} (${RANGED.includes(c.weapon)?"ranged: DEX":"melee: STR"} is your main ATK stat). Changing a stat moves your typed values by the difference.`};
+  const d=derived(c);const ab=aspdStart(c);$("statNote").textContent=`From your stats: status ATK ${d.atk} · status MATK ${d.matk} · HIT ${d.hit} · FLEE ${d.flee} · soft DEF ${d.def} · CRIT ${d.crit.toFixed(1)}${ab!=null?` · ASPD ${(ab+d.aspdTerm).toFixed(1)} before potions/skills`:""}.`};
 STATS.forEach(k=>$("st_"+k).addEventListener("change",e=>{const c=C();if(!c.st)c.st={};const wasSet=STATS.every(x=>statVal(c,x)!=null);const before=derived(c);c.st[k]=e.target.value;if(wasSet)shiftByStats(c,before);save();syncChar();renderAll()}));
 // character number/text fields
-const numK=["lwAtk","jobLv","fctSec","normalPct","myElPct","ignDef","ignMdef","mastery","rangePct","skillPct","crit","critDmg","fixedShare","vctPct","fctPct","acdPct","wAtk","baseLv","aspd","maxHp","maxSp","spRegen","dmgBonus","atkPct","namePct","itemSp","itemPrice","itemHp","itemHpPrice","mobInterval","hitScale","hpRegen6","curW","maxW","gymLv","townMin"];
-["baseLv","jobLv","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lwAtk","fctSec","normalPct","myElPct","ignDef","ignMdef","mastery","rangePct","skillPct","crit","critDmg","fixedShare","vctPct","fctPct","acdPct","spRegen","dmgBonus","atkPct","nameSel","namePct","itemSp","itemPrice","itemHp","itemHpPrice","mobInterval","hitScale","hpRegen6","curW","maxW","gymLv","townMin"].forEach(k=>
+const numK=["lwAtk","jobLv","fctSec","normalPct","myElPct","ignDef","ignMdef","mastery","rangePct","skillPct","crit","critDmg","fixedShare","vctPct","fctPct","acdPct","wAtk","baseLv","aspd","maxHp","maxSp","spRegen","dmgBonus","atkPct","matkPct","namePct","itemSp","itemPrice","itemHp","itemHpPrice","mobInterval","hitScale","hpRegen6","curW","maxW","gymLv","townMin"];
+["baseLv","jobLv","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lwAtk","fctSec","normalPct","myElPct","ignDef","ignMdef","mastery","rangePct","skillPct","crit","critDmg","fixedShare","vctPct","fctPct","acdPct","spRegen","dmgBonus","atkPct","matkPct","nameSel","namePct","itemSp","itemPrice","itemHp","itemHpPrice","mobInterval","hitScale","hpRegen6","curW","maxW","gymLv","townMin"].forEach(k=>
   $(k).addEventListener("input",e=>{const v=e.target.value;const c0=C();const before=(k==="baseLv"||k==="intTxt")?derived(c0):null;C()[k]=numK.includes(k)?(v===""?(k==="hitScale"?0.3:0):num(v)):v;if(k==="mobInterval"&&!(C()[k]>0))C()[k]=1.5;if(before){shiftByStats(c0,before);["atkTxt","matkTxt","hitTxt","fleeTxt","defTxt"].forEach(x=>{if(document.activeElement!==$(x))$(x).value=c0[x]})}save();renderAll()}));
 $("sellAt").addEventListener("input",e=>{const v=+e.target.value;C().sellAt=v>0?Math.min(90,v):70;save();renderAll()});
 ["weapon","wElem","nameType","lw","lwElem"].forEach(k=>$(k).addEventListener("change",e=>{const c=C();
-  if(k==="weapon"||k==="lw"){const next={...c,[k]:e.target.value};if(k==="lw"&&BUILD.dualOk(state.job,next.weapon,next.lw))next.shield=false;aspdMove(c,next);c.shield=next.shield;$("shield").checked=!!c.shield}
-  c[k]=e.target.value;save();renderAll();if(k==="weapon")renderSkills()}));
+  if(k==="weapon"||k==="lw"){const next={...c,[k]:e.target.value};if(k==="lw"&&BUILD.dualOk(state.job,next.weapon,next.lw))next.shield=false;
+    // a two-handed weapon takes both hands: the shield and the left-hand weapon come off
+    if(k==="weapon"&&BUILD.twoHanded(next.weapon)){next.shield=false;next.lw=""}
+    aspdMove(c,next);c.shield=next.shield;c.lw=next.lw;$("lw").value=c.lw||""}
+  c[k]=e.target.value;if(k==="weapon"||k==="lw")handsUi(c);save();renderAll();if(k==="weapon")renderSkills()}));
 $("shield").addEventListener("change",e=>{const c=C(),next={...c,shield:e.target.checked};if(next.shield)next.lw="";aspdMove(c,next);
   c.shield=next.shield;c.lw=next.lw;$("lw").value=c.lw||"";save();renderAll()});
 $("autoSp").addEventListener("change",e=>{C().autoSp=e.target.checked;save();renderAll()});
@@ -74,8 +79,13 @@ $("ecRow").addEventListener("input",e=>{const i=e.target,k=i.dataset.ec;if(!k)re
 $("acOn").addEventListener("change",e=>{AC().on=e.target.checked;save();renderAll()});
 $("acSpell").addEventListener("change",e=>{AC().spell=e.target.value;save();renderAll()});
 ["acLv","acPct"].forEach(id=>$(id).addEventListener("input",e=>{AC()[id==="acLv"?"lv":"pct"]=num(e.target.value);save();renderAll()}));
-$("convSel").addEventListener("change",e=>{const v=e.target.value,c=C();c.converters=!!v;c.convEl=v==="auto"?"":v;save();renderAll()});
+// "Fire:item": the Fire converter for a Sage who has Endow Blaze; plain "Fire" is the Endow (or the converter without it)
+$("convSel").addEventListener("change",e=>{const v=e.target.value,c=C(),[el,src]=v.split(":");c.converters=!!v;c.convEl=v==="auto"?"":el;
+  if(v&&v!=="auto"&&convSkLv(el)>0)setConvItem(el,src==="item");save();renderAll()});
 // a converter's price: what players pay for it, the same price as the Market tab and its details popup
+// an element skill's Lv box (Enchant Poison, the Sage's Endows): the skill tree's level once you set one, so the Skills card follows
+$("convItems").addEventListener("change",e=>{const el=e.target.dataset.convlv;if(!el)return;const c=C(),why=e.target.value==="item"?(setConvItem(el,true),null):setConvLv(el,e.target.value);e.target.blur();
+  refreshPreset(c);save();renderSkills();syncChar();renderAll();if(why)$("convNote").textContent=why.join(" · ")});
 $("convItems").addEventListener("input",e=>{const id=e.target.dataset.convprice;if(!id)return;const v=num(e.target.value);if(v>0)state.prices[id]=v;else delete state.prices[id];save();renderAll()});
 // attack detail fields: editing makes the attack "Custom"
 $("cartW").addEventListener("input",e=>{C().cartW=Math.min(8000,Math.max(0,num(e.target.value)));save();renderAll()});
@@ -268,6 +278,8 @@ addEventListener("click",e=>{const d=DOWN_AT;if(!d||e.target.closest?.("input,te
   if(Math.hypot(e.clientX-d[0],e.clientY-d[1])>4&&String(getSelection()).trim()){e.preventDefault();e.stopPropagation()}},true);
 renderAccts();
 $("sessionSel").addEventListener("change",e=>openSession(e.target.value));
+// Monsters & maps: switch the session there, without going to the Session tab; "+ New session" starts one
+$("mapSessSel").addEventListener("change",e=>{const v=e.target.value;if(v==="+new"){openSession(newSess().id);showToast("New session: Farm here or Farming it now picks its monsters")}else if(v)openSession(v)});
 // rename: swap the session picker for a text box; Enter or leaving the box saves, Esc cancels
 // renameId pins the session being renamed, so a save that lands after a session switch still renames the right one
 let renameId=null;
@@ -295,12 +307,17 @@ const sessAutoName=s=>{const mp=sessMap(s),m=sessMobs(s)[0];return mp?mapLabel(m
 const autoNamed=s=>{const mp=sessMap(s);return s.name==="New session"||s.name===sessAutoName(s)||!!mp&&s.name===mapCode(mp)};
 const toggleSessMob=id=>{const s=sessNow(),auto=autoNamed(s);const i=s.mobIds.indexOf(id);
   if(i>=0)s.mobIds.splice(i,1);else{if(!s.mobIds.length)s.job=state.job;s.mobIds.push(id)}
-  if(s.map&&!sessOn(s,s.map))delete s.map;
+  if(s.map&&s.mobIds.length&&!sessOn(s,s.map))delete s.map;
   const nm=sessAutoName(s);if(auto&&nm)s.name=nm};
 // the session's map: blank is the auto pick; the name follows it while it's still the default
-$("sessMapSel").addEventListener("change",e=>{const s=sessNow(),auto=autoNamed(s);
-  if(e.target.value)s.map=e.target.value;else delete s.map;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;save();renderAll()});
+// a map from Other open maps (none of the session's monsters spawn there): farm it, with its monsters, as Farm here does
+$("sessMapSel").addEventListener("change",e=>{const v=e.target.value,s=sessNow();
+  if(v&&!sessMaps(s).some(x=>x[0]===v)&&!(s.map===v&&sessOn(s,v))){farmMap(v);showToast(`Farming ${mapCode(v)} in "${cur().name}": log your EXP as you go`);return}
+  const auto=autoNamed(s);if(v)s.map=v;else delete s.map;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;save();renderAll()});
 $("mobList").innerHTML=MOBS.map(mobOpt).join("");
+// the session's map's monsters (Where to farm, Session tab): + Session / − Session, as on the Map planner
+$("sessMobTable").querySelector("tbody").addEventListener("click",e=>{const b=e.target.closest("[data-sessmob]");if(!b)return;const id=+b.dataset.sessmob,inS=cur().mobIds.includes(id);
+  toggleSessMob(id);state.calcMobId=null;save();renderAll();showToast(`${MOB_BY_ID.get(id).name} is ${inS?"out of":"in"} your session.`)});
 // Element / Race / Size / Boss dropdowns: the Monsters card's narrow its table, before Hide monsters with no open map; saved per account
 const mobFSel=(k,label,opts)=>`<label>${label}<select data-mf="${k}">${opts.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join("")}</select></label>`;
 const MOBF_HTML=mobFSel("el","Element",[["","Any"],...AE.map(x=>[x,x])])+mobFSel("race","Race",[["","Any"],...RACES.map(x=>[x,x])])
@@ -317,6 +334,8 @@ $("mobTable").querySelector("thead").addEventListener("click",e=>{if(e.target.cl
   if(state.sort===th.dataset.k)state.dir*=-1;else{state.sort=th.dataset.k;state.dir=["name","el","size","race","sec","uses","hpm"].includes(th.dataset.k)?1:-1}save();renderMobs()});
 document.querySelectorAll("#mobTable .filters [data-f]").forEach(inp=>{inp.value=state.filters[inp.dataset.f]||"";inp.addEventListener("input",()=>{state.filters[inp.dataset.f]=inp.value;save();renderMobs()})});
 $("clearF").addEventListener("click",()=>{state.filters={};document.querySelectorAll("#mobTable .filters [data-f]").forEach(i=>i.value="");save();renderMobs()});
+// My numbers (Monsters & maps, the monster popup): show or leave out your character's numbers against monsters
+document.addEventListener("change",e=>{if(!e.target.matches||!e.target.matches("[data-mine]"))return;state.hideMine=!e.target.checked;save();renderAll();if($("infoDlg").open&&typeof drawInfo==="function")drawInfo()});
 $("hideClosed").checked=state.hideClosed;$("hideClosed").addEventListener("change",e=>{state.hideClosed=e.target.checked;save();renderMobs()});
 // Where to farm: rank by EXP (the EXP table) or by zeny (the zeny table), one Show and one Max sec / kill for both; closed regions
 const renderFarm=()=>rowPass(()=>{renderBest();if(state.tab==="track")renderHunt()});
@@ -324,10 +343,10 @@ ROOTQ("[data-farmby]").forEach(b=>b.addEventListener("click",()=>{state.farmBy=b
 $("bestMin").addEventListener("input",renderBest);$("farmN").addEventListener("change",renderFarm);
 // max sec / kill: blank goes back to 60
 $("farmMaxSec").value=maxSecKill();$("farmMaxSec").addEventListener("input",e=>{state.maxSec=e.target.value===""?60:Math.max(0,num(e.target.value));save();renderFarm()});
-// Farm here (the best spots and every map row): the map becomes the session's, with the monsters you hunt there; the name follows
-// it while it's still the default. A capture listener, so the row under the button doesn't also open the map planner
+// Farm here (the best spots and every map row): the map becomes the session's, with the monsters you hunt there (Monsters & maps
+// keeps its own map, for looking things up); the name follows it while it's still the default. A capture listener, so the row under the button doesn't also open the map planner
 function farmMap(mp,ids){if(!MAPMOBS[mp])return;const s=sessNow(),auto=autoNamed(s);
-  if(!s.mobIds.length)s.job=state.job;s.mobIds=ids&&ids.length?ids:mapHuntIds(mp);s.map=mp;state.map=mp;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;state.calcMobId=null;save();renderAll()}
+  if(!s.mobIds.length)s.job=state.job;s.mobIds=ids&&ids.length?ids:mapHuntIds(mp);s.map=mp;const nm=sessAutoName(s);if(auto&&nm)s.name=nm;state.calcMobId=null;save();renderAll()}
 document.addEventListener("click",e=>{const b=e.target.closest&&e.target.closest("[data-farm]");if(!b)return;e.preventDefault();e.stopPropagation();
   farmMap(b.dataset.farm,(b.dataset.ids||"").split(",").filter(Boolean).map(Number));showToast(`Farming ${mapCode(b.dataset.farm)} in "${cur().name}": log your EXP as you go`)},true);
 // possible rampage, aggressive or assisting monsters attacking you together: blank goes back to the default (model.js CROWD_D)
@@ -642,13 +661,16 @@ function colViews(id,box,apply){const views={All:null,...COL_VIEWS[id]},seg=docu
   // the big tables start on their Compact view, once per account (state.colsShown["view:<id>"]), so a view you pick after that sticks
   ["mobTable","bestTable","huntTable"].forEach(id=>{const k="view:"+id;if(state.colsShown[k])return;state.colsShown[k]=["Compact"];
     state.hideCols[id]=names(id).filter(n=>n&&!COL_VIEWS[id].Compact.includes(n))});
-  const apply=()=>{st.textContent=IDS.flatMap(id=>{const ns=names(id);return (state.hideCols[id]||[]).map(k=>ns.indexOf(k)).filter(i=>i>=0).map(i=>`#${id} tr>:nth-child(${i+1}){display:none}`)}).join("\n")};
+  // columns that are price boxes go with the other price boxes (Settings → Price boxes), and so do their show / hide ticks
+  const PRICE_COLS={recTable:["Price used"]};
+  const apply=()=>{st.textContent=IDS.flatMap(id=>{const ns=names(id);return [...(state.hideCols[id]||[]).map(k=>ns.indexOf(k)).filter(i=>i>=0).map(i=>`#${id} tr>:nth-child(${i+1}){display:none}`),
+    ...(PRICE_COLS[id]||[]).map(k=>ns.indexOf(k)).filter(i=>i>=0).map(i=>`.noprice #${id} tr>:nth-child(${i+1}){display:none}`)]}).join("\n")};
   IDS.forEach(id=>{const t=document.getElementById(id);if(!t||!t.tHead)return;
     const ths=[...t.tHead.rows[0].cells];
     // older saves kept column numbers: turn them into the names of the columns they pointed at
     state.hideCols[id]=(state.hideCols[id]||[]).map(k=>typeof k==="number"?ths[k-1]&&(ths[k-1].textContent||"").trim():k).filter(Boolean);const box=document.createElement("details");box.className="note";box.style.cssText="margin:2px 0";
     box.innerHTML=`<summary>Show / hide columns</summary><div class="bar colList">${ths.map((th,i)=>{const name=(th.textContent||"").trim();if(!name)return "";
-      return `<label class="bar"><input type="checkbox" data-col="${esc(name)}" ${(state.hideCols[id]||[]).includes(name)?"":"checked"}> ${esc(name)}</label>`}).join("")}
+      return `<label class="bar${(PRICE_COLS[id]||[]).includes(name)?" priceIn":""}"><input type="checkbox" data-col="${esc(name)}" ${(state.hideCols[id]||[]).includes(name)?"":"checked"}> ${esc(name)}</label>`}).join("")}
       <button type="button" class="small" data-allcols>Show all</button></div>`;
     const anchor=t.closest(".scroll")||t;anchor.parentNode.insertBefore(box,anchor);
     if(COL_VIEWS[id])colViews(id,box,apply);

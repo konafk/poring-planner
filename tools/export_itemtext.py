@@ -7,7 +7,7 @@ data/cards.js the client has no item for yet (regions not out on Global), which 
 
 The client's English item descriptions are in System\\iteminfo_enUS.lub (compiled Lua 5.1, table tbl_string: item id ->
 identifiedDescriptionName, one string per line, with ^RRGGBB colour codes). Items are the ones data/clientitems.js lists as
-Consumable, plus the Lv.1–10 Cookbooks (ETC items the Cooking tab links to). The colour codes, the blank spacer line (^FFFFFF_) and the ---- rules are left out; the lines are joined with newlines; the
+Consumable, plus the Lv.1–10 Cookbooks (ETC items the Cooking tab links to) and USED (items you use that it files elsewhere). The colour codes, the blank spacer line (^FFFFFF_) and the ---- rules are left out; the lines are joined with newlines; the
 character the client's text can't decode (a dash in its other encoding) is written as a dash.
 Consumables the client has no text for are left out and counted at the end.
 """
@@ -18,6 +18,8 @@ from export_spawns import DATA, lua_data  # noqa: E402
 
 ITEMINFO = os.path.join("System", "iteminfo_enUS.lub")
 COOKBOOKS = list(range(7472, 7482))  # Lv.1 Cookbook … Lv.10 Cookbook
+# items used like a consumable that the catalog files elsewhere: Nordfeld Beer (Collectible; +10% damage to Boulder Dwarves for 30 minutes)
+USED = [107452]
 
 
 def consumables():
@@ -46,7 +48,7 @@ def main():
     info = lua_data(open(os.path.join(client, ITEMINFO), "rb").read(), "utf-8")["tbl_string"]
     text, missing = {}, 0
     nc = sorted(i for i in card_ids() if i not in info)
-    for i in consumables() + COOKBOOKS:
+    for i in consumables() + COOKBOOKS + USED:
         d = (info.get(i) or {}).get("identifiedDescriptionName") or {}
         t = clean(d[k] for k in sorted(d))
         if t:
