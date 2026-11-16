@@ -218,7 +218,7 @@ function renderSpark(s,st){const box=$("ctxRate"),es=[...s.entries].sort((a,b)=>
   const y=es.map(e=>e.lv*100+e.pct),rates=[];for(let i=1;i<es.length;i++){const dh=activeH(s,es[i-1].t,es[i].t);if(dh>0)rates.push((y[i]-y[i-1])/dh)}
   const r=rates.slice(-12),lo=Math.min(0,...r),hi=Math.max(...r,lo+1e-9),X=i=>r.length<2?36:2+i*(68/(r.length-1)),Y=v=>20-(v-lo)/(hi-lo)*17;
   const line=r.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
-  $("spark").innerHTML=`<polyline points="${line}" fill="none" stroke="url(#sparkG)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><defs><linearGradient id="sparkG"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-2)"/></linearGradient></defs>`+(r.length?`<circle cx="${X(r.length-1)}" cy="${Y(r[r.length-1])}" r="2.2" style="fill:var(--accent-2)"/>`:"");
+  $("spark").innerHTML=`<polyline points="${line}" fill="none" stroke="url(#sparkG)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><defs><linearGradient id="sparkG"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent)"/></linearGradient></defs>`+(r.length?`<circle cx="${X(r.length-1)}" cy="${Y(r[r.length-1])}" r="2.2" style="fill:var(--accent)"/>`:"");
   $("ctxRateV").textContent=`${pct(st.avgPct)}/hr`}
 function renderTracker(){renderStart();
   // at the max base level base EXP stops counting, so the quick Log EXP box (the + button, L) goes away
@@ -349,14 +349,14 @@ function renderChart(s){
   const pts=y.map((v,i)=>`${X(i)},${Y(v)}`).join(" ");
   // the brand gradient along the line, fading out under it
   g=`<defs><linearGradient id="expFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--accent);stop-opacity:.26"/><stop offset="1" style="stop-color:var(--accent);stop-opacity:0"/></linearGradient>
-    <linearGradient id="expLine" gradientUnits="userSpaceOnUse" x1="${pl}" x2="${W-pr}" y1="0" y2="0"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-2)"/></linearGradient></defs>`+g;
+    <linearGradient id="expLine" gradientUnits="userSpaceOnUse" x1="${pl}" x2="${W-pr}" y1="0" y2="0"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent)"/></linearGradient></defs>`+g;
   g+=`<polygon points="${X(0)},${H-pb} ${pts} ${X(n-1)},${H-pb}" fill="url(#expFill)" stroke="none"/><polyline points="${pts}" fill="none" stroke="url(#expLine)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
   g+=`<line id="expHair" y1="${pt}" y2="${H-pb}" stroke="var(--muted)" stroke-dasharray="3 3" visibility="hidden"/>`;
   // hover readout: the entry, and the %/hr from the one before it (paused time left out)
   EXP_PTS=y.map((v,i)=>{const e=es[i],dh=i?act(e.t)-act(es[i-1].t):0,rate=i&&dh>0?(v-y[i-1])/dh:null;
     return {x:X(i),y:Y(v),tip:`<b>Lv ${esc(e.lv)} · ${esc(e.pct)}%</b>${e.jpct!=null?` · job ${esc(e.jpct)}%`:""}<br>${md?fmtD(e.t)+" ":""}${fmtT(e.t)}${rate!=null?` · ${rate>=0?"+":""}${rate.toFixed(2)}%/hr since the last entry`:" · first entry"}${e.died?`<br>💀 died −${esc(e.died)}%`:""}`}});
   y.forEach((v,i)=>{const tip=`<title>${md?fmtD(es[i].t)+" ":""}${fmtT(es[i].t)} · Lv ${esc(es[i].lv)} ${esc(es[i].pct)}%${es[i].died?` · died −${esc(es[i].died)}%`:""}</title>`;
-    g+=`<circle cx="${X(i)}" cy="${Y(v)}" r="${i===n-1?5.5:3.5}" fill="${es[i].died?"var(--bad)":i===n-1?"var(--accent-2)":"var(--accent)"}" stroke="var(--surface)" stroke-width="2">${tip}</circle>`;
+    g+=`<circle cx="${X(i)}" cy="${Y(v)}" r="${i===n-1?5.5:3.5}" fill="${es[i].died?"var(--bad)":i===n-1?"var(--accent)":"var(--muted)"}" stroke="var(--surface)" stroke-width="2">${tip}</circle>`;
     // a death: a skull beside the point
     if(es[i].died){const r=X(i)+22<=W-pr;g+=`<text class="deathMark" x="${r?X(i)+9:X(i)-9}" y="${Y(v)+4}" text-anchor="${r?"start":"end"}">💀${tip}</text>`}});
   svg.innerHTML=g;
