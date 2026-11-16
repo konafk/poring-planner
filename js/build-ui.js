@@ -238,6 +238,8 @@ function applyConsumables(){EFF=null;const c=C();if(!addOnTop(c))return;const li
   EFF={atkTxt:`${atkSt}+${atkGear}`,matkTxt:`${matkSt}+${matkTot-matkSt}`,hitTxt:String(sumStat(c.hitTxt)+d("hit")+g("hit")),fleeTxt:String(sumStat(c.fleeTxt)+d("flee")+g("flee")),
     atkPct:num(c.atkPct)+g("atk_percent"),matkPct:num(c.matkPct)+g("matk_percent"),defTxt:`${ds+d("def")+vitDef}+${dh+g("def")}`,crit:num(c.crit)+d("crit")+g("crit"),aspd,maxHp:hp,maxSp:sp,st:tmp.st,intTxt:tmp.intTxt}}
 function renderCons(){const c=C(),it=consItemsOf(c),ac=acctBuffsOf();
+  // Blessing of Yggdrasil: the item's icon (23481, from the MVP Subjugation Reward Boxes), opening its details
+  $("yggIcon").innerHTML=`<a href="#" data-info="item:23481" title="Blessing of Yggdrasil">${itemIcon(23481)}</a>`;
   $("acctBuffs").innerHTML=ACCT_BUFFS.map(p=>`<div class="eqrow" data-ab="${esc(p.name)}"><label class="bar pbName"><input type="checkbox" data-f="on" ${ac[p.name]?"checked":""}><a href="#" data-info="item:${p.id}" title="${esc(p.name)}">${itemIcon(p.id)}</a>${esc(p.name)}</label>
     <span class="note">${esc(p.eff||p.info)} · 30 or 7 days</span></div>`).join("");
   // the listed items: a tick, the item's icon (opens its details), the name, what it does
