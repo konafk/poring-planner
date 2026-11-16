@@ -505,7 +505,7 @@ function gameName(g){const it=g&&g.id&&BUILD.item(g.id);if(!it)return "";const p
     if(n[a]===1)(c.affixPos==="suffix"||/^of /i.test(a)?post:pre).push(a)});
   const rep=a=>{const x=["","","Double ","Triple ","Quadruple "][n[a]]||"";return /^of /i.test(a)?"of "+x+a.slice(3):x+a};
   return [num(g.refine)?`+${num(g.refine)}`:"",...pre.map(rep),it.name,...post.map(rep)].filter(Boolean).join(" ")}
-const ewSlot=(k,label,name,ico,right)=>`<button type="button" class="ewSlot${right?" r":""}${name?"":" empty"}" data-ewslot="${k}" title="${esc(`${label}: ${name||"empty"}`)}">${ico}<span class="ewName">${esc(name)}</span></button>`;
+const ewSlot=(k,label,name,ico,right)=>`<button type="button" class="ewSlot${right?" r":""}${name?"":" empty"}" data-ewslot="${k}" title="${esc(`${label}: ${name||"empty"}`)}">${ico}<span class="ewName">${esc(name||label)}</span></button>`;// an empty slot shows its name, muted, as the game's tiles do
 const ewNone=right=>`<div class="ewSlot empty none${right?" r":""}" aria-hidden="true"><span class="ico none"></span></div>`;
 // the body at the feet, the head on the body's anchor; Bards are always male and Dancers female
 const ewSex=bj=>bj[state.look.sex]?state.look.sex:Object.keys(bj)[0];
