@@ -230,17 +230,10 @@ function renderStart(){const box=$("startCard"),c=C(),s=cur(),n=s.entries.length
   box.querySelectorAll("[data-step]").forEach(li=>li.classList.toggle("done",!!done[li.dataset.step]));
   // the Session tab's tiles wait for the first entry instead of showing nine dashes
   $("tCurLv").closest(".tiles").classList.toggle("noData",!n)}
-// ---- top bar trend: EXP %/hr between this session's entries (paused time left out), and its average ----
-function renderSpark(s,st){const box=$("ctxRate"),es=[...s.entries].sort((a,b)=>a.t-b.t);box.hidden=!st||es.length<2;if(box.hidden)return;
-  const y=es.map(e=>e.lv*100+e.pct),rates=[];for(let i=1;i<es.length;i++){const dh=activeH(s,es[i-1].t,es[i].t);if(dh>0)rates.push((y[i]-y[i-1])/dh)}
-  const r=rates.slice(-12),lo=Math.min(0,...r),hi=Math.max(...r,lo+1e-9),X=i=>r.length<2?36:2+i*(68/(r.length-1)),Y=v=>20-(v-lo)/(hi-lo)*17;
-  const line=r.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
-  $("spark").innerHTML=`<polyline points="${line}" fill="none" stroke="url(#sparkG)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><defs><linearGradient id="sparkG"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent)"/></linearGradient></defs>`+(r.length?`<circle cx="${X(r.length-1)}" cy="${Y(r[r.length-1])}" r="2.2" style="fill:var(--accent)"/>`:"");
-  $("ctxRateV").textContent=`${pct(st.avgPct)}/hr`}
 function renderTracker(){renderStart();
   // at the max base level base EXP stops counting, so the quick Log EXP box (the + button, L) goes away
   document.documentElement.classList.toggle("maxLv",atMaxLv());$("dieBtn").textContent=`Died −${diePct()}%`;
-  const s=cur(),st=stats(s);renderSpark(s,st);
+  const s=cur(),st=stats(s);
   if(document.activeElement!==$("partyN"))$("partyN").value=partyN(s);$("partyBonus").value=partyBonus(s);
   $("partyNote").textContent=partyN(s)>1?`Each kill gives you ${partyPct(s)}% of its EXP (party of ${partyN(s)}). Even Share only works within 15 base levels.`:"";
   const pz=openPause(s);$("pauseBtn").textContent=pz?"Resume":"Pause";$("pauseBtn").classList.toggle("primary",!!pz);$("pauseNote").hidden=!pz;

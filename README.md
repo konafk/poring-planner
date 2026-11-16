@@ -10,7 +10,7 @@ It's a single page that runs entirely in your browser. There's no server, no log
 
 1. **Character tab:** pick your job and attack. Then copy ATK, MATK, HIT, FLEE, ASPD, DEF, Max HP/SP and your six stats from the in-game status window.
 2. **Session tab:** pick the monster you're farming and press **Farming … now**.
-3. Log your EXP % every few minutes, for example `15:05 17.9% 63%` (time, base %, job %). Leave the time off (`17.9% 63%`) to log it at the current time. You can also paste many lines at once, or press **L** on any tab to log from the top bar. **Ctrl+K** or **/** searches every monster, item and map, and clicking a monster, item, gear or card name opens its details.
+3. Log your EXP % every few minutes, for example `15:05 17.9% 63%` (time, base %, job %). Leave the time off (`17.9% 63%`) to log it at the current time. You can also paste many lines at once, or press **L** (or the round **+** button) on any tab to log from anywhere. **Ctrl+K** or **/** searches every monster, item and map, and clicking a monster, item, gear or card name opens its details.
 4. **Monsters & maps tab:** Where to farm shows the best maps for your character by EXP and by zeny; press **Farm here** on one.
 
 ## What it does

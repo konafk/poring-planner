@@ -102,11 +102,14 @@ try {
     assert.ok(await page.isVisible("#sessionSel") && !await page.isVisible("#acctSel"));
     assert.equal(await page.textContent("#sessionSel"), "No session yet");     // a new player has no session until they start one
     assert.ok(await page.isDisabled("#editSession"));
+    await page.click("#farmCard h2");                                  // fold Where to farm: + New session unfolds it
+    assert.ok(await page.evaluate("$('farmCard').classList.contains('collapsed')"));
     await page.click("#newSession");                                   // a new session, then down to the Session tab's monster picker
     assert.equal(await page.evaluate("state.sessions.length"), 1);
     assert.equal(await page.textContent("#sessionSel"), "New session");
     assert.equal(await page.getAttribute('[data-tabbtn="track"]', "aria-selected"), "true");
     assert.ok(await page.isVisible("#farmCard"));
+    assert.ok(!await page.evaluate("$('farmCard').classList.contains('collapsed')"));
     assert.deepEqual(errs, []);
     await page.close();
   });
