@@ -193,22 +193,6 @@ let openQuickLog=()=>{};
 })();
 $("pauseBtn").addEventListener("click",()=>{const s=sessNow(),p=openPause(s);if(!s.pauses)s.pauses=[];
   if(p){p.to=Date.now();save();renderAll();showTab("track");$("fPct").focus()}else{s.pauses.push({from:Date.now()});save();renderAll()}});
-// sell timer: its weight boxes are the Character tab's, so typing in one updates the other
-[["tripW","curW"],["tripMax","maxW"],["tripTownMin","townMin"]].forEach(([id,k])=>$(id).addEventListener("input",e=>{C()[k]=num(e.target.value);$(k).value=e.target.value;save();renderAll()}));
-$("tripAt").addEventListener("input",e=>{const v=+e.target.value;C().sellAt=v>0?Math.min(90,v):70;$("sellAt").value=e.target.value;save();renderAll()});
-$("tripEarly").addEventListener("input",e=>{state.tripEarly=Math.max(0,num(e.target.value));save();renderTrip()});
-$("tripSound").addEventListener("change",e=>{state.tripSound=e.target.checked;save();if(e.target.checked)tripBeep()});
-$("tripNotify").addEventListener("change",e=>{const on=e.target.checked;state.tripNotify=on;save();
-  if(!on)return;if(typeof Notification==="undefined"){state.tripNotify=false;save();renderTrip();$("tripS").textContent="This browser can't show notifications; the sound and the tab title still work";return}
-  if(Notification.permission==="default")Notification.requestPermission().then(p=>{if(p!=="granted"){state.tripNotify=false;save();renderTrip()}});
-  else if(Notification.permission==="denied"){state.tripNotify=false;save();renderTrip();$("tripS").textContent="Notifications are blocked for this page in your browser settings"}});
-$("tripBtns").addEventListener("click",e=>{const b=e.target.closest("[data-trip]");if(!b)return;const s=sessNow();
-  if(b.dataset.trip==="stop")delete s.trip;
-  else{const wasPaused=!!openPause(s);if(!startTrip(s))return;TRIP_RING={id:null,n:0,at:0};
-    if(state.tripSound!==false)tripAudio();// a click lets the page play sound later
-    if(wasPaused){save();renderAll();return}}
-  save();renderTrip()});
-$("tripMin").addEventListener("input",e=>{const v=num(e.target.value);if(v>0)state.tripMin=v;else delete state.tripMin;save();renderTrip()});
 // entries table: ✎ edits an entry or a pause in place (Enter saves, Esc cancels), ✕ deletes it
 $("logTable").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const s=cur(),d=b.dataset;$("logMsg").textContent="";
   if(d.edit!=null||d.pedit!=null){LOG_EDIT=d.edit!=null?{sid:s.id,t:+d.edit}:{sid:s.id,p:+d.pedit};renderLog(s);const i=$("logTable").querySelector(".editRow input");if(i)i.focus();return}

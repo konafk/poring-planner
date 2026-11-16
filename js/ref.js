@@ -99,10 +99,14 @@ const gearCmpShown=()=>!$("gearCmpCard").closest("[data-tab]").hidden;
 function renderGearCmp(){const c=C(),T=$("gearCmpTable"),shown=gearCmpShown(),sets=shown?altList(c).map(i=>({i,x:altChar(c,i)})):[];T.hidden=!shown;
   if(!shown){$("gearCmpNote").textContent="";T.tHead.innerHTML=T.tBodies[0].innerHTML="";return}
   const mine=gearStats(),oth=sets.map(s=>withSnap(s.x,gearStats)),m=calcMob(),mp=cmpMap(),n=sets.length+2;
-  $("gearCmpNote").innerHTML=sets.length?sets.map(s=>`<b>${esc(altName(c,s.i))}</b>: ${altDiffTxt(c,s.i)}`).join("<br>"):c.mode==="build"?"+ Add set above the gear table to compare another set with yours.":"";
+  $("gearCmpNote").innerHTML=sets.length?"":c.mode==="build"?"+ Add set above the gear table to compare another set with yours.":"";
   T.tHead.innerHTML=`<tr><th></th><th>Your gear</th>${sets.map(s=>`<th>${esc(altName(c,s.i))}</th>`).join("")}</tr>`;
+  // what each set changes, as the table's first rows: the set's piece in bold, "same" where it keeps yours
+  const gr=sets.length?altGearRows(c,sets.map(s=>s.i)):[];
+  const gearRows=gr.length?`<tr class="grp"><td colspan="${n}">Gear</td></tr>`+gr.map(r=>`<tr class="gearRow"><td class="name">${esc(r.label)}</td><td>${esc(r.mine)}</td>${r.sets.map(v=>`<td>${v?`<b>${esc(v)}</b>`:'<span class="muted">same</span>'}</td>`).join("")}</tr>`).join("")
+    +`<tr class="grp"><td colspan="${n}">Stats</td></tr>`:sets.length?`<tr class="grp"><td colspan="${n}">Gear: every set is the same as yours</td></tr>`:"";
   let grp="";
-  T.tBodies[0].innerHTML=GEAR_CMP.filter(([k])=>mine[k]!=null||oth.some(o=>o[k]!=null)).map(([k,label,up,dp,g])=>{
+  T.tBodies[0].innerHTML=gearRows+GEAR_CMP.filter(([k])=>mine[k]!=null||oth.some(o=>o[k]!=null)).map(([k,label,up,dp,g])=>{
     const a=mine[k],all=[a,...oth.map(o=>o[k])].filter(v=>v!=null&&isFinite(v)),tol=dp?0.5*10**-dp:0.5;
     const best=all.length>1&&Math.max(...all)-Math.min(...all)>=tol?(up?Math.max(...all):Math.min(...all)):null,b=v=>best!=null&&v!=null&&Math.abs(v-best)<tol?' class="best"':"";
     // Damage per hit with a low and a high (Duple Light, Spell Fist): the average, then "low–high" under it

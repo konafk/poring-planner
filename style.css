@@ -126,6 +126,8 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
 .heroBar:empty{display:none}
 .heroBar>.cardHead{margin:0;padding:0;border:0}
 .heroBar .note{font-size:12.5px}
+/* Monsters & maps: the My numbers switch, one for the whole tab, beside its title */
+.heroMine:empty{display:none}
 /* Full width (Settings menu): drop the 1180px cap on wide screens */
 :root.wide .wrap{max-width:none}
 @media (max-width:1480px){#wideBtn{display:none}}
@@ -261,7 +263,9 @@ details.note>summary::marker{color:var(--muted)}
 .card h2[aria-expanded]{cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px}
 .card h2[aria-expanded]::before{content:"";flex:none;width:7px;height:7px;margin:0 3px 2px 2px;border-right:1.8px solid var(--muted);border-bottom:1.8px solid var(--muted);transform:rotate(45deg);transition:transform .15s}
 .card h2[aria-expanded="false"]::before{transform:rotate(-45deg);margin-bottom:0}
-.card.collapsed{align-self:start;padding-bottom:0}
+/* align-self:start keeps a folded card in a grid row from stretching to its neighbour's height; in a column of cards it would also
+   shrink it to its heading, so width:100% keeps its full width and its heading row's buttons stay beside the heading */
+.card.collapsed{align-self:start;width:100%;padding-bottom:0}
 .card.collapsed>.cardHead{border-bottom-color:transparent}
 .card.collapsed>:not(.cardHead){display:none}
 /* panels inside a card (Equipment stats, Attack details…): a tinted box whose summary folds it */
@@ -456,6 +460,9 @@ td .map{cursor:default}
 /* in the Equipment header row, on the right; a click on it flips the switch, not the fold */
 .fxToggle{display:inline-flex;flex-direction:row;align-items:center;align-self:center;gap:8px;margin-left:auto;cursor:pointer;user-select:none;font-weight:400}
 .fxToggle:hover{color:var(--fg)}
+/* options on a panel's title row, on the right (Consumables: Buy with Discount) */
+.sumOpts{display:inline-flex;flex-wrap:wrap;align-items:center;align-self:center;gap:4px 12px;margin-left:auto;font-weight:400}
+.sumOpts>span:empty{display:none}
 /* Consumables: the ASPD potion row, tick and icon then the potion picker and what it gives, like the item rows below it */
 .potRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .potRow>.pbName{min-width:0}
@@ -556,6 +563,8 @@ table.convtab td.name{text-align:left}
 #recTable td.nowrap{white-space:nowrap}
 table.cmptab th{cursor:default}
 table.cmptab td{padding:5px 10px;vertical-align:top}
+/* Compare gear's Gear rows: item names, in the body font and wrapping, not the numbers' monospace */
+table.cmptab tr.gearRow td{font-family:var(--body);font-variant-numeric:normal;white-space:normal}
 table.cmptab td .d{font-size:11.5px}table.cmptab td.best{font-weight:600}
 table.formulas td.chg{background:var(--accent-soft)}
 

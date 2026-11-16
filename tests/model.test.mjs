@@ -1018,41 +1018,10 @@ t("weight: a sell point below 70% (65%) keeps regen the whole trip; above 70% fi
   run(`C().maxW=0;C().curW=0;C().sellAt=70`);
 });
 
-t("sell timer: trip length for the session's monsters, and paused time pushes the due time back", () => {
-  const atk = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
-  setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed spear", st: {}, a: atk, maxW: 0 });
-  const id = run(`MOBS.find(m=>!m.boss&&!m.expUnknown&&(m.drops||[]).some(([i])=>ITEMW[i]>0)&&isFinite(bestFight(m))&&openMaps(m).length).id`);
-  run(`cur().mobIds=[${id}]`);
-  assert.equal(run(`sessTrip(cur(),2)`), null);                             // no Max Weight: off
-  run(`Object.assign(C(),{maxW:2000,curW:300,sellAt:65,townMin:3})`);
-  const m = `MOBS.find(m=>m.id===${id})`, one = run(`tripInfo(${m},2)`), tr = run(`sessTrip(cur(),2)`);
-  near(tr.kills, one.kills, "kills"); near(tr.min, one.min, "minutes");    // one monster: same as its own weight tile
-  near(tr.kills, (2000 * 0.65 - 300) / run(`weightKill(${m})`), "room / weight per kill");
-  assert.equal(tr.at, 65);
-  run(`cur().trip={from:1000,due:1000+6e5};cur().pauses=[{from:2000,to:62000}]`);
-  assert.equal(run(`tripDue(cur())`), 1000 + 6e5 + 60000);                  // a minute paused: due a minute later
-  run(`state.tripEarly=2`); assert.equal(run(`tripEarly()`), 120000);
-  run(`state.tripEarly=0;delete cur().trip;cur().pauses=[];C().maxW=0;C().curW=0;C().sellAt=70`);
-});
-
-t("sell timer: Start ends an open pause, and a typed trip length works without the model", () => {
-  run(`cur().mobIds=[];C().maxW=0;delete state.tripMin`);
-  assert.equal(run(`tripMinutes(cur())`), null);                            // no monster, no Max Weight, nothing typed
-  assert.equal(run(`startTrip(cur(),1000)`), false); assert.equal(run(`cur().trip`), undefined);
-  run(`state.tripMin=25;cur().pauses=[{from:500}]`);                         // paused while selling, then back from town
-  assert.equal(run(`startTrip(cur(),1000)`), true);
-  assert.equal(run(`JSON.stringify(cur().trip)`), JSON.stringify({ from: 1000, due: 1000 + 25 * 6e4 }));
-  assert.equal(run(`openPause(cur())`), undefined);                          // the pause ended, so the clock runs
-  assert.equal(run(`cur().pauses[0].to`), 1000);
-  run(`delete state.tripMin;delete cur().trip;cur().pauses=[]`);
-  const r = load({ sessions: [{ id: "a", name: "x", mobIds: [], entries: [] }], current: "a", tripMin: -3 });
-  assert.equal(r(`state.tripMin`), undefined);                              // a bad saved value is dropped
-});
-
-t("sell timer: a saved trip keeps only its times", () => {
-  const r = load({ sessions: [{ id: "a", name: "x", mobIds: [], entries: [], trip: { from: "5", due: 9, rang: true, x: "<b>" } }, { id: "b", name: "y", mobIds: [], entries: [], trip: { from: "no" } }], current: "a" });
-  assert.equal(r(`JSON.stringify(state.sessions[0].trip)`), JSON.stringify({ from: 5, due: 9, rang: true }));
-  assert.equal(r(`state.sessions[1].trip`), undefined);
+t("the old sell timer's saved trip and settings are dropped", () => {
+  const r = load({ sessions: [{ id: "a", name: "x", mobIds: [], entries: [], trip: { from: 5, due: 9, rang: true } }], current: "a", tripMin: 25, tripEarly: 2, tripSound: false, tripNotify: true });
+  assert.equal(r(`state.sessions[0].trip`), undefined);
+  assert.equal(r(`JSON.stringify(["tripMin","tripEarly","tripSound","tripNotify"].map(k=>state[k]))`), JSON.stringify([null, null, null, null]));
 });
 
 t("NPC prices: the database's NPC price is the default, a typed one overrides it", () => {

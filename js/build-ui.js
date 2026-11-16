@@ -759,19 +759,20 @@ function classPicker(el,groups,onPick,mine){let cur=null,shown="",looks={};
     const cs=[...btn.querySelectorAll(".ewFeet canvas")],px=(c,k)=>parseFloat(c.style[k])||0;
     const up=Math.max(...cs.map(c=>-px(c,"top"))),side=Math.max(...cs.map(c=>Math.max(-px(c,"left"),px(c,"left")+c.width))),k=Math.min(1,94/up,47/side);
     if(k<1)btn.querySelectorAll(".ewFeet").forEach(f=>f.style.transform=`scale(${(.7*k).toFixed(3)})`)}}
-// Build from gear's Status, Gear, Equipment and Special equipment panels and the HP & SP recovery items list fold away, remembered like
-// a card (state.collapsed)
+// Build from gear's Status, Gear, Equipment and Special equipment panels fold away, remembered like a card (state.collapsed)
 // "Show effects": the line under each item, card, stone, shadow shield and egg in the Equipment and Special equipment tables, on
 // unless turned off (state.showFx === false), remembered like the folds. A Job Essence's line stays: it has no value box to say it
 {const x=$("fxShow"),set=()=>$("buildPanel").classList.toggle("fxOff",!x.checked);x.checked=state.showFx!==false;set();
   x.addEventListener("change",()=>{if(x.checked)delete state.showFx;else state.showFx=false;save();set()})}
-[["buildStatFold","Build from gear: status"],["gsetFold","Build from gear: gear sets"],["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"],
-  ["recListFold","Consumables: recovery items list"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
+[["buildStatFold","Build from gear: status"],["gsetFold","Build from gear: gear sets"],["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
   d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[key])return;if(d.open)delete c[key];else c[key]=true;save()})});
-// Attack details (damage %, cast time, delay, mastery…) starts folded: the Attack picker fills them in, and its line says what it
-// does. Opened once, it stays open (state.collapsed["Attack details"] === false)
-{const d=$("atkPanel"),key="Attack details";d.open=(state.collapsed||{})[key]===false;
-  d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===(c[key]===false))return;if(d.open)c[key]=false;else delete c[key];save()})}
+// Attack details (damage %, cast time, delay, mastery…) and the HP & SP recovery items list start folded: the Attack picker fills
+// the details in, and the HP item and SP item picks cover what the list holds. Opened once, it stays open (state.collapsed[key] === false)
+const SPREGEN_FOLD="SP regen";
+$("statPanel").addEventListener("toggle",e=>{const p=e.currentTarget;if(p.dataset.mode!=="build")return;const c=state.collapsed=state.collapsed||{};
+  if(p.open===(c[SPREGEN_FOLD]===false))return;if(p.open)c[SPREGEN_FOLD]=false;else delete c[SPREGEN_FOLD];save()});
+[["atkPanel","Attack details"],["recListFold","Consumables: recovery items list"]].forEach(([id,key])=>{const d=$(id);d.open=(state.collapsed||{})[key]===false;
+  d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===(c[key]===false))return;if(d.open)c[key]=false;else delete c[key];save()})});
 function renderBuild(){const c=C(),on=c.mode==="build";
   if(on&&renderBuild.job!==state.job){renderBuild.job=state.job;renderGearTable()}if(!on)renderBuild.job=null;
   ROOTQ("[data-cmode]").forEach(x=>x.setAttribute("aria-checked",String(x.dataset.cmode===(on?"build":"status"))));
@@ -779,7 +780,10 @@ function renderBuild(){const c=C(),on=c.mode==="build";
   // Build from gear has its own status window: the typed Status card keeps only SP regen, the one box it still takes
   {const p=$("statPanel"),sp=$("spRegen");p.querySelectorAll(".form,.form>label").forEach(x=>x.classList.toggle("buildOff",on&&!x.contains(sp)));
     p.querySelector("summary .note").textContent=on?"leave it on auto, or type the tick you measured":"";
-    p.querySelector("summary b").textContent=on?"SP regen":"Status"}
+    p.querySelector("summary b").textContent=on?"SP regen":"Status";
+    // as SP regen it starts folded (auto is right for most), and opened once it stays open (state.collapsed["SP regen"] === false);
+    // as Status it's where you type your stats, so it opens
+    if(p.dataset.mode!==(on?"build":"status")){p.dataset.mode=on?"build":"status";p.open=!on||(state.collapsed||{})[SPREGEN_FOLD]===false}}
   if(!on)return;renderAltBar(c);renderEquipWin();const b=buildOf(c);renderStatWin(c);
   const r=BUILD_LAST;if(!r)return;const jb=r.jobBonus;
   $("jobBonusNote").textContent=`Job Lv ${r.fields.jobLv} bonus: `+BUILD.STAT6.map(k=>`${k.toUpperCase()} +${jb[k]}`).join(" · ")+(BUILD.curve(state.job,"hp",num(c.baseLv))==null?" · no HP/SP table for this job, type Max HP/SP after switching back":"");
@@ -887,7 +891,14 @@ function altDiff(c,i,short){const b=buildOf(c),a=altOf(c,i),g0=b.gear||{},g1=a.g
   // an empty list of other special equipment is the same as none (a set the table never showed has none)
   const sp=x=>{const o={...(x||{})};if(Array.isArray(o.own)&&!o.own.length)delete o.own;return o};
   if(!same(b.stones||{},a.stones||{})||!same(sp(b.special),sp(a.special)))rows.push("Special equipment");return rows}
-const altDiffTxt=(c,i)=>{const d=altDiff(c,i);return d.length?d.join(" · "):"same as your gear"};
+// Compare gear's Gear rows: each gear row any of the sets changes, with your piece and each set's (null where the set has yours), then
+// Special equipment when a set changes it ("changed")
+function altGearRows(c,idx){const b=buildOf(c),g0=b.gear||{},as=idx.map(i=>altOf(c,i)),same=(x,y)=>JSON.stringify(x||null)===JSON.stringify(y||null);
+  const rows=BUILD.SLOTS.filter(s=>as.some(a=>!same(g0[s.k],(a.gear||{})[s.k]))).map(s=>({label:s.label,mine:gearTxt(g0[s.k]),
+    sets:as.map(a=>{const g=(a.gear||{})[s.k];return same(g0[s.k],g)?null:gearTxt(g)+(gearTxt(g)===gearTxt(g0[s.k])?" (affixes)":"")})}));
+  const sp=x=>{const o={...(x||{})};if(Array.isArray(o.own)&&!o.own.length)delete o.own;return o};
+  const spc=as.map(a=>!same(b.stones||{},a.stones||{})||!same(sp(b.special),sp(a.special))?"changed":null);
+  if(spc.some(Boolean))rows.push({label:"Special equipment",mine:"",sets:spc});return rows}
 function renderAltBar(c=C()){const i=altIdx(c),has=i>=0&&altSaved(c,i),list=altList(c),n=altN(c),b=buildOf(c),mine=String(b.setName||"").trim(),memN=Object.keys(memOf(c)).length;
   const wait=(Array.isArray(b.loadouts)?b.loadouts:[]).map(x=>String(x&&x.name||"").trim()||"(no name)");
   $("gsetSeg").innerHTML=`<button type="button" role="radio" data-gset="mine" aria-checked="${i<0}"${mine?` title="You swapped on ${esc(mine)}"`:""}>My gear${mine?` (${esc(mine)})`:""}</button>`+Array.from({length:n},(_,k)=>

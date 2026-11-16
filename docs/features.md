@@ -76,15 +76,6 @@ All five are remembered in this browser, apart from your account data, so backup
 - A new session is named after its map, name first and its code in brackets (e.g. Nordfeld Cave 2F (nrd_dun02), as several fields share a name) once you add a monster, and the name follows the map while you add or remove monsters. A session named by its map code before follows it too. Rename a session with ✎ next to the session picker (Enter or ✓ saves, Esc cancels), and compare sessions side by side.
 - **Goal:** the EXP needed and the farming time to a target base and job level, charted together, with a date for each level-up if you farm non-stop.
 
-### Sell timer
-
-The game's auto return only takes you to town at a weight %; it doesn't sell or store anything. Press Start when you leave town and the timer counts down to when the current session's monsters should have filled you to your sell point, then rings: a beep, an optional browser notification and "Sell now" in the tab title. It can ring a few minutes early.
-
-- Time the session spends paused is added on, and Start or **Back from town** ends a pause left open while you sold.
-- If the trip length can't be worked out (no monster picked, no Max Weight) or doesn't match what you see, type the minutes one trip takes.
-- It also shows how many town runs you make an hour.
-- In a background tab the browser can make it up to a minute late.
-
 ## Daily quests
 
 Every daily quest an NPC gives, from the game client: its quest log, its Navigation and the NPCs' dialogue (`tools/export_dailies.py`). They all reset at 04:00 UTC+0; the card's heading counts down to the next reset in your time.
@@ -99,7 +90,7 @@ Every daily quest an NPC gives, from the game client: its quest log, its Navigat
 
 ## Monsters & maps
 
-**My numbers:** once your character is set up, a **My numbers** switch on the Map and Monsters cards and in a monster's popup shows or leaves out your kill time, damage, EXP and zeny against each monster, for when you only want to look a monster or map up. The page remembers it.
+**My numbers:** once your character is set up, a **My numbers** switch beside the Monsters & maps title (one for the whole tab) and in a monster's popup shows or leaves out your kill time, damage, EXP and zeny against each monster, for when you only want to look a monster or map up. The page remembers it.
 
 ### Where to farm
 

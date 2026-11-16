@@ -41,9 +41,8 @@ function crowdInfo(){const c=C(),m=calcMob();if(document.activeElement!==$("crow
 // is in the kill time's line, and where it comes from in its tooltip
 function charOutTiles(){const m=calcMob(),tile=(k,v,sub,tip)=>`<div class="tile out"${tip?` title="${esc(tip)}"`:""}><div class="k">${k}</div><div class="v mono">${v}</div><div class="s">${sub}</div></div>`;
   const dpsTile=(d,sub)=>d!=null&&isFinite(d)?tile("Damage / s",fmtN(Math.round(d)),sub):"";
-  const far='<a href="#session" data-gotab="track" data-goto="farmCard">Where to farm</a>';
   if(!charSet())return `<div class="tile out wide"><div class="k">No stats yet</div><div class="s">Fill in your stats below to see your kill time, EXP and zeny</div></div>`;
-  if(!m)return `<div class="tile out wide"><div class="k">No monster picked</div><div class="s">Press "Farm here" in ${far} on the Session tab to see your kill time, EXP and zeny</div></div>`;
+  if(!m)return "";// no monster picked: only the attack's own numbers
   // a whole map farmed (Farm here) and no one monster picked: the map's mix, the numbers Where to farm ranked it by
   {const ss=cur(),mp=sessMap(ss),r=!state.calcMobId&&sessMobs(ss).length>1&&mp?mapStats(mp,walkSec()):null;
     if(r&&isFinite(r.secT))return tile(`on ${esc(mapName(mp)||mapCode(mp))}`,`${r.secT.toFixed(1)}s`,`a kill: ${r.sec.toFixed(1)}s fighting + ${(r.secT-r.sec).toFixed(1)}s walking${r.sell>0.05?" and selling":""}`,walkSrcTxt())+
@@ -56,7 +55,9 @@ function charOutTiles(){const m=calcMob(),tile=(k,v,sub,tip)=>`<div class="tile 
     dpsTile(dps,`vs its ${fmtN(m.hp)} HP, misses included`)+
     tile("EXP / min",m.expUnknown?"?":fmtN(r.epm)+(m.expUnsure?"*":""),m.expUnknown?"no EXP data for it yet":`${m.expUnsure?"* EXP unconfirmed · ":""}job ${fmtN(r.jpm)} / min`)+
     tile("Zeny / hr",fmtN(r.zph),"loot after skill and SP items")}
-function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
+function renderChar(){$("convPanel").hidden=C().a.type==="spellfist";// Spell Fist's element is its bolts: no Weapon element panel
+  {const w=maxWCalc(C());$("maxW").placeholder=w?String(w.total):"off"}// Max Weight worked out from STR, job and skills
+  renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   // weapon endows vs the monster you picked: the element-table rate of each one, and the one the EXP/min picks
   // the items in use, each with its icon and what players pay for it (bought from players), and how many an hour; skills (Enchant Poison,
   // the Sage's Endows) with their SP, and the Point an Endow uses up (from an NPC, so no price box). Not while you type in a price
@@ -161,7 +162,7 @@ function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp
   $("recSp").innerHTML=opts("sp");$("recSp").value=R.spItem==="custom"||R.spItem==="none"||recFor(R.spItem,"sp")?R.spItem:"none";
   $("recHp").title=pick.hp&&pick.hp.price==null?`${pick.hp.name} has no price: type one in the Items list to count its cost`:"";$("recSp").title=pick.sp&&pick.sp.price==null?`${pick.sp.name} has no price: type one in the Items list to count its cost`:"";
   $("recCustom").hidden=R.spItem!=="custom";$("recCustomHp").hidden=R.hpItem!=="custom";$("recDisc").checked=recDisc();
-  $("recNote").textContent=need?`${state.job} on ${mapCode(need.mp)}: ${need.loss==null?"HP loss unknown":`${fmtN(need.loss)} HP lost/min${need.loss>0&&vitHeals()?" (your Vitata Heals cover it)":""}`} · ${fmtN(need.sp/60)} SP/min short`+` · using ${pick.hp?pick.hp.name:"no HP item"} and ${pick.sp?pick.sp.name:"no SP item"}`:"pick a monster or a map (Map planner) to see uses per hour";
+  $("recNote").textContent=need?`${state.job} on ${mapCode(need.mp)}: ${need.loss==null?"HP loss unknown":`${fmtN(need.loss)} HP lost/min${need.loss>0&&vitHeals()?" (your Vitata Heals cover it)":""}`} · ${fmtN(need.sp/60)} SP/min short`+` · using ${pick.hp?pick.hp.name:"no HP item"} and ${pick.sp?pick.sp.name:"no SP item"}`:"";
   // don't rebuild the box you're typing in; the table catches up when you leave it
   const f=document.activeElement;if(f&&f.tagName==="INPUT"&&$("recTable").tBodies[0].contains(f))return;
   const all=recItems(),shown=all.filter(x=>recShown(x,(pick[x.kind]||{}).id));$("recAll").checked=recAll();$("recAllN").textContent=all.length>shown.length?`${all.length-shown.length} more`:"";
@@ -213,7 +214,7 @@ const noChar=()=>!!state.noJob&&!charSet();
 // Game data (Monsters & maps, the monster popup) can leave your character's numbers out, to look a monster or map up as the game has
 // it: the My numbers switch (state.hideMine, per account)
 const showMine=()=>charSet()&&state.hideMine!==true;
-const mineSwitch=()=>charSet()?`<label class="bar mineSw" title="Your kill time, damage, EXP and zeny against each monster"><input type="checkbox" data-mine${state.hideMine===true?"":" checked"}> My numbers</label>`:"";
+const mineSwitch=()=>charSet()?`<label class="bar mineSw" title="Your kill time, damage, EXP and zeny against each monster"><input type="checkbox" class="switch" role="switch" data-mine${state.hideMine===true?"":" checked"}> My numbers</label>`:"";
 const NO_CHAR_TXT="Set up your character on the Character tab to see your kill time, EXP / min and zeny a kill";
 function renderStart(){const box=$("startCard"),c=C(),s=cur(),n=s.entries.length;
   // any session counts, so a new, empty session doesn't bring the card back; once both are done it stays away
@@ -279,58 +280,8 @@ function renderTracker(){renderStart();
   const j=jobRate(s);
   if(j&&num(C().jobLv)>=jobMax()){$("tJob").textContent="Max";$("tJobS").textContent=`Job Lv ${jobMax()} is the max for ${state.job}`}
   else if(j){const need=jobNeed();$("tJob").textContent=pct(j.rate);$("tJobS").textContent=`${fmtDur((100-j.last)/j.rate)} to Job Lv ${num(C().jobLv)?num(C().jobLv)+1:"next"}`+(need?` · ≈ ${fmtN(j.rate/100*need)} job EXP/hr`:" · set your job level for job EXP/hr")}else{$("tJob").textContent="–";$("tJobS").textContent="Add Job EXP % to 2+ entries"}
-  renderChart(s);renderLog(s);renderCompare();renderGoalChart(renderGoal(s,st),renderJobGoal(s));renderTrip(s);
+  renderChart(s);renderLog(s);renderCompare();renderGoalChart(renderGoal(s,st),renderJobGoal(s));
 }
-// ---- sell timer: counts down to the session's sell point and rings (sound, notification, tab title); ticked every second by start.js ----
-const fmtClock=ms=>{const t=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(t/3600),m=Math.floor(t/60)%60,x=String(t%60).padStart(2,"0");return h?`${h}:${String(m).padStart(2,"0")}:${x}`:`${m}:${x}`};
-const BASE_TITLE=String(document.title||"Poring Planner");
-const tripPhase=(s,now=Date.now())=>!s.trip?"none":openPause(s)?"paused":now>=tripDue(s)-tripEarly()?"due":"run";
-function renderTrip(s=cur()){const c=C(),act=document.activeElement;
-  [["tripW","curW"],["tripMax","maxW"]].forEach(([id,k])=>{if(act!==$(id))$(id).value=num(c[k])>0?c[k]:""});
-  {const w=maxWCalc(c);["maxW","tripMax"].forEach(id=>$(id).placeholder=w?String(w.total):"off")}
-  if(act!==$("tripAt"))$("tripAt").value=num(c.sellAt)>0?c.sellAt:"";if(act!==$("tripTownMin"))$("tripTownMin").value=c.townMin??3;
-  if(act!==$("tripEarly"))$("tripEarly").value=num(state.tripEarly)>0?state.tripEarly:"";
-  $("tripSound").checked=state.tripSound!==false;$("tripNotify").checked=state.tripNotify===true;
-  if(act!==$("tripMin"))$("tripMin").value=num(state.tripMin)>0?state.tripMin:"";
-  const t=wOn()?sessTrip(s):null,town=Math.max(0,num(c.townMin,3)),typed=num(state.tripMin)>0,ms=sessMobs(s);let len="–",lenS,runs="–",runsS="";
-  const auto=t&&t.wk>0&&t.kills>=1&&isFinite(t.min)?t.min:null;
-  $("tripFor").textContent=`${s.name}${ms.length?` · ${ms.map(m=>m.name).join(", ")}`:" · no monster picked"}`;
-  $("tripMin").placeholder=auto?String(Math.round(auto)):"auto";
-  if(!wOn())lenS="Type your Max Weight to work it out, or type the minutes a trip takes";
-  else if(!t)lenS=ms.length?"You can't hurt the session's monsters with this attack; type the minutes a trip takes":"Pick where you're farming (Where to farm → Farm here), or type the minutes a trip takes";
-  else if(!(t.wk>0))lenS="Their drops weigh nothing, so you never fill up";
-  else if(!(t.kills>=1))lenS=`<span class="bad">Your starting weight is already at your sell point (${fmtP(sellPct())}%)</span>`;
-  else lenS=`~${fmtN(Math.floor(t.kills))} kills · ${t.wk.toFixed(1)} weight a kill · ${fmtN(Math.max(0,maxWt(c)*t.at/100-num(c.curW)))} weight of room: ${fmtN(num(c.curW))} you start with → ${fmtN(maxWt(c)*t.at/100)} (${fmtP(t.at)}%)${t.fell?' · <span class="bad">no regen past 70% and you need SP, so you sell at 70%</span>':""}`;
-  if(typed)lenS=`typed${auto?` · worked out: ${fmtDur(auto/60)}`:""}`;
-  const min=typed?num(state.tripMin):auto;
-  if(min>0){len=fmtDur(min/60);const cyc=min+town;runs=`${(60/cyc).toFixed(1)}/hr`;runsS=`${fmtP(town)} min each · ${Math.round(town/cyc*100)}% of your time in town`}
-  $("tripLen").textContent=len;$("tripLenS").innerHTML=lenS;$("tripRuns").textContent=runs;$("tripRunsS").textContent=runsS;
-  TRIP_OK=min>0;renderTripBtns(s);tickTrip();
-}
-function renderTripBtns(s=cur()){const ph=tripPhase(s);TRIP_PHASE=ph;
-  $("tripBtns").innerHTML=ph==="none"?`<button type="button" class="primary" data-trip="go"${TRIP_OK?"":" disabled"}>Start</button>`
-    :`<button type="button" class="${ph==="due"?"primary":""}" data-trip="go"${TRIP_OK?"":" disabled"}>${ph==="due"?"Back from town: next trip":"Restart"}</button><button type="button" data-trip="stop">Stop</button>`}
-let TRIP_OK=false,TRIP_PHASE=null,TRIP_RING={id:null,n:0,at:0},TRIP_CTX=null;
-const tripAudio=()=>{try{if(!TRIP_CTX){const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;TRIP_CTX=new A()}if(TRIP_CTX.state==="suspended")TRIP_CTX.resume();return TRIP_CTX}catch(e){return null}};
-// three short beeps
-function tripBeep(){const a=tripAudio();if(!a)return;const t0=a.currentTime+0.05;
-  [0,0.3,0.6].forEach(d=>{const o=a.createOscillator(),g=a.createGain();o.type="square";o.frequency.value=880;g.gain.setValueAtTime(0.0001,t0+d);
-    g.gain.exponentialRampToValueAtTime(0.15,t0+d+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t0+d+0.22);o.connect(g);g.connect(a.destination);o.start(t0+d);o.stop(t0+d+0.25)})}
-function tripAlarm(s){if(state.tripSound!==false)tripBeep();
-  if(state.tripNotify===true&&typeof Notification!=="undefined"&&Notification.permission==="granted")
-    try{new Notification("Time to sell",{body:`${s.name}: you should be at your sell point. Go to town and sell or store.`,tag:"rozero-sell"})}catch(e){}}
-// rings once when a trip is due (and again each minute, up to 5 times, while this page stays open); paused sessions don't ring
-function tickTrip(){const now=Date.now(),s=cur();
-  state.sessions.forEach(x=>{if(tripPhase(x,now)!=="due")return;
-    if(!x.trip.rang){x.trip.rang=true;save();TRIP_RING={id:x.id,n:1,at:now};tripAlarm(x)}
-    else if(TRIP_RING.id===x.id&&TRIP_RING.n<5&&now-TRIP_RING.at>=6e4){TRIP_RING.n++;TRIP_RING.at=now;if(state.tripSound!==false)tripBeep()}});
-  const ph=tripPhase(s,now),el=$("tripClock");if(ph!==TRIP_PHASE)renderTripBtns(s);
-  if(ph==="none"){el.textContent="–";el.className="v mono";$("tripK").textContent="Next sell";$("tripS").textContent=TRIP_OK?"Press Start when you leave town":"";document.title=BASE_TITLE;return}
-  const due=tripDue(s),left=due-now,early=tripEarly();
-  el.textContent=ph==="paused"?"Paused":left>0?fmtClock(left):"Sell now";el.className="v mono"+(ph==="due"?left>0?" warnc":" bad":"");
-  $("tripK").textContent=ph==="due"?"Time to sell":"Next sell";
-  $("tripS").textContent=`sell point at ${fmtT(due)}${early?` · rings at ${fmtT(due-early)}`:""} · left town ${fmtT(s.trip.from)}${ph==="paused"?" · session paused: the clock waits until you Resume (Session tab) or press Restart":""}`;
-  document.title=(ph==="due"?"⏰ Sell now · ":ph==="run"?`${fmtClock(left)} · `:"")+BASE_TITLE}
 // charts draw at the width they're shown at (340–800 units), so their 11px labels stay 11px on a phone instead of shrinking
 const chartW=el=>{const w=+el.clientWidth;return w?Math.max(340,Math.min(800,Math.round(w))):800};
 let EXP_PTS=[];
@@ -531,7 +482,7 @@ const mobFOk=(m,f)=>(!f.el||m.el===f.el)&&(!f.race||m.race===f.race)&&(!f.size||
 const mobOpt=m=>`<option value="${esc(m.name)}">Lv ${m.lv} · ${fmtExp(m)} EXP${m.mvp?" · MVP":m.mini?" · mini boss":m.boss?" · boss":""}${MOB_VARIANT[m.id]?" · "+MOB_VARIANT[m.id]:""}</option>`;
 const isMagicAtk=()=>C().a.type==="magic"||C().a.type==="spellfist";
 function renderMobs(){
-  const w=walkSec(),me=showMine();$("mobMine").innerHTML=mineSwitch();
+  const w=walkSec(),me=showMine();$("heroMine").innerHTML=mineSwitch();
   const shown=m=>mobFOk(m,state.mobF)&&!(state.hideClosed&&!openMaps(m).length);
   const row=m=>{const om=openMaps(m);return {...m,om,topN:om.length?om[0][1]:0,ratio:m.hp>0?m.exp/m.hp:0,...mobRow(m,w)}};
   const F=state.filters,fOk=m=>Object.entries(F).every(([k,v])=>!v||matchF(v,colNum(m,k),colText(m,k)));
@@ -1121,7 +1072,7 @@ const WORLD_FOLD="Map planner: world map";
 const planPick=k=>{state.map=k;state.mapAll=null;save();renderMap()};
 const planPickAll=k=>{state.map=state.mapAll=k;save();renderMap()};
 function renderMap(){
-  let mp=mapKey(state.map);const mob=calcMob(),me=showMine();$("mapMine").innerHTML=mineSwitch();
+  let mp=mapKey(state.map);const mob=calcMob(),me=showMine();
   if(!MAPMOBS[mp]&&!isTown(mp))mp=mobMap(mob)||Object.keys(MAPMOBS).sort((a,b)=>mapCode(a).localeCompare(mapCode(b)))[0];
   const dun=mapDun(mp);
   if(document.activeElement!==$("mapInput"))$("mapInput").value=mp?mapCode(mp):"";$("mapName").textContent=mp?mapFactsTxt(mp):"";

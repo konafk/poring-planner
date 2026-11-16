@@ -78,7 +78,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   </div></div>
 <div class="wrap">
   <header class="pageHead">
-    <div class="heroRow"><h1 id="heroTitle"></h1><div class="heroBar" id="heroBar"></div></div><p id="heroDesc"></p>
+    <div class="heroRow"><h1 id="heroTitle"></h1><div class="heroBar" id="heroBar"></div><span class="heroMine" id="heroMine" data-tab="maps"></span></div><p id="heroDesc"></p>
   </header>
   <nav class="secNav pageNav" id="pageNav" aria-label="Sections on this tab" hidden></nav>
   <section class="homeHero" data-tab="home" aria-labelledby="homeTitle">
@@ -342,7 +342,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <label class="bar">carrying <input class="w-md" id="curW" type="number" min="0" title="What you carry when you leave town: gear, potions, scrolls… Only the room above it fills with loot"> of max <input class="w-md" id="maxW" type="number" min="0" placeholder="off" title="Worked out from STR, job and skills; type a number to override"></label>
         <label class="bar" title="Gym Membership (KP shop) teaches it: +200 Max Weight per level, kept forever">Increase Capacity Lv <input class="w-xs" id="gymLv" type="number" min="0" max="10" placeholder="0"></label>
         <label class="bar">go sell at <input class="w-xs" id="sellAt" type="number" min="1" max="90" step="1" placeholder="70" title="Where you stop to sell, e.g. 65 to stay clear of 70% (no HP/SP regen). Past 70% you fight with no regen; 90% is the most">%</label>
-        <label class="bar">town and back <input class="w-sm" id="townMin" type="number" step="0.5" min="0" placeholder="3"> min</label>
+        <label class="bar" title="Minutes to go to town, sell or store, and come back: counted in every kill time, once a trip">town and back <input class="w-sm" id="townMin" type="number" step="0.5" min="0" placeholder="3"> min</label>
       </div>
     </details>
   </section>
@@ -359,10 +359,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   <section class="card" id="recCard">
     <div class="bar"><h2 class="grow">Consumables</h2><span class="note" id="recNote"></span></div>
     <details class="card sub" id="recPanel" open>
-      <summary title="Potions, herbs and food bought to cover HP lost and SP short"><b>HP &amp; SP recovery items</b></summary>
-      <div class="bar note"><label class="bar" title="Saved for the whole account: a Merchant on the account with Discount Lv 10 (−24%) buys for the others. Covers recovery items, the ASPD potion, skill items and Custom HP / SP items. Off: the NPC price"><input type="checkbox" id="recDisc"> Buy with Discount</label>
-        <span id="mercNote"></span>
-      </div>
+      <summary title="Potions, herbs and food bought to cover HP lost and SP short"><b>HP &amp; SP recovery items</b><span class="note sumOpts"><span id="mercNote"></span><label class="bar" title="Saved for the whole account: a Merchant on the account with Discount Lv 10 (−24%) buys for the others. Covers recovery items, the ASPD potion, skill items and Custom HP / SP items. Off: the NPC price"><input type="checkbox" class="switch" role="switch" id="recDisc"> Buy with Discount</label></span></summary>
       <div class="bar note" id="recSet">
         <label class="bar">HP item <select id="recHp"></select></label>
         <span id="recCustomHp" class="bar" hidden>
@@ -376,14 +373,14 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         </span>
       </div>
       <div class="bar note"><span>SP items:</span>
-        <label class="bar"><input type="checkbox" id="autoSp"> auto-use when needed</label>
+        <label class="bar"><input type="checkbox" class="switch" role="switch" id="autoSp"> auto-use when needed</label>
         <span id="spItemUse"></span>
         <span id="itemInfo"></span>
       </div>
       <div class="bar note" id="useItems"></div>
-      <details class="card sub" id="recListFold" open>
+      <details class="card sub" id="recListFold">
         <summary title="Every HP and SP item: amount, price and weight, which you can change"><b>Items list</b></summary>
-        <label class="bar note" title="Saved for the whole account. Off: potions, Cheese, Strawberry and White / Blue Herb, plus any item you changed or picked"><input type="checkbox" id="recAll"> Show all items <span class="muted" id="recAllN"></span></label>
+        <label class="bar note" title="Saved for the whole account. Off: potions, Cheese, Strawberry and White / Blue Herb, plus any item you changed or picked"><input type="checkbox" class="switch" role="switch" id="recAll"> Show all items <span class="muted" id="recAllN"></span></label>
         <div class="scroll"><table id="recTable"><thead><tr><th data-sk="name">Item</th><th data-sk="kind">Type</th><th data-sk="avg" title="min – max restored (edit them); the average is what's counted">Avg amount</th><th data-sk="price" title="With Buy with Discount: the Discount price, else the NPC price; player-only items use the player price">Price used</th><th data-sk="per">Cost per HP / SP</th><th data-sk="perW" title="restored per point of weight (edit the weight)">HP or SP per weight</th><th data-sk="uph">Uses / hr</th><th data-sk="zph">Cost / hr</th><th data-sk="wph">Weight / hr</th></tr></thead><tbody></tbody></table></div>
         <div class="note hint">Measured on Zero Global; ? = classic RO's. Items without a price aren't counted until you type one.</div>
       </details>
@@ -573,26 +570,6 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="scroll" id="goalJobWrap" hidden><table id="goalJobTable"><thead></thead><tbody></tbody></table></div>
   </section>
 
-  <section class="card" data-tab="track" id="tripCard">
-    <div class="bar"><h2 class="grow">Sell timer</h2><span id="tripBtns" class="bar"></span></div>
-    <div class="note hint">Rings when loot should reach your sell point. Timing <b id="tripFor"></b>.</div>
-    <div class="bar note mt">
-      <label class="bar">starting weight <input class="w-md" id="tripW" type="number" min="0" title="What you carry when you leave town: gear, potions, scrolls, Fly Wings… Read it from the weight in your inventory window. Only the room left above it fills with loot"></label>
-      <label class="bar">of max <input class="w-md" id="tripMax" type="number" min="0" placeholder="off" title="Worked out from STR, job and skills; type a number to override"></label>
-      <label class="bar">sell at <input class="w-xs" id="tripAt" type="number" min="1" max="90" step="1" placeholder="70">%</label>
-      <label class="bar">town and back <input class="w-xs" id="tripTownMin" type="number" step="0.5" min="0" placeholder="3"> min</label>
-      <label class="bar">one trip <input class="w-sm" id="tripMin" type="number" min="0" step="1" placeholder="auto" title="Minutes from leaving town to your sell point. Blank: worked out from the session's monsters, your weight and your kill speed"> min</label>
-      <label class="bar">ring <input class="w-xs" id="tripEarly" type="number" min="0" step="0.5" placeholder="0"> min early</label>
-      <label class="bar"><input type="checkbox" id="tripSound"> sound</label>
-      <label class="bar"><input type="checkbox" id="tripNotify"> notification</label>
-    </div>
-    <div class="tiles mt">
-      <div class="tile now"><div class="k" id="tripK">Next sell</div><div class="v mono" id="tripClock">–</div><div class="s" id="tripS"></div></div>
-      <div class="tile"><div class="k">One trip</div><div class="v mono" id="tripLen">–</div><div class="s" id="tripLenS"></div></div>
-      <div class="tile"><div class="k">Town runs</div><div class="v mono" id="tripRuns">–</div><div class="s" id="tripRunsS"></div></div>
-    </div>
-  </section>
-
   <section class="card" data-tab="track">
     <div class="bar"><h2 class="grow">Compare sessions</h2></div>
     <div class="scroll tall"><table id="cmpTable"><thead><tr><th data-sk="name">Session</th><th data-sk="job">Job</th><th data-sk="mobs" title="filters on the monsters and the map">Monster</th><th data-sk="when">When</th><th data-sk="len">Length</th><th data-sk="pct" title="filters on the %/hr, or on the level: B65">%/hr</th><th data-sk="epm">EXP/min</th><th data-sk="kph">Kills/hr</th><th data-sk="spk">Sec/kill</th><th data-sk="die" title="deaths logged in the session (entries marked died)">Deaths</th></tr><tr class="filters"><td><input type="search" data-tf="name" placeholder="name"></td><td><input type="search" data-tf="job" placeholder="job"></td><td><input type="search" data-tf="mobs" placeholder="monster or map"></td><td><input type="search" data-tf="when" placeholder="3 Oct"></td><td><input type="search" data-tf="len" placeholder=">60"></td><td><input type="search" data-tf="pct" placeholder=">5 or B65"></td><td><input type="search" data-tf="epm" placeholder=">100000"></td><td><input type="search" data-tf="kph" placeholder=">300"></td><td><input type="search" data-tf="spk" placeholder="<10"></td><td><input type="search" data-tf="die" placeholder=">0"></td></tr></thead><tbody></tbody></table></div>
@@ -600,7 +577,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
 
 
   <section class="card" id="mapCard" data-tab="maps">
-    <div class="bar"><h2 class="grow">Map</h2><span id="mapMine"></span></div>
+    <div class="bar"><h2 class="grow">Map</h2></div>
     <div class="bar">
       <label class="grow">Map<input id="mapInput" list="mapList" placeholder="e.g. gef_dun01, Sphinx B5F or a town"></label>
       <label class="charOnly" title="The session Farm here and a monster's Farming it now add to">Session<select id="mapSessSel"></select></label>
@@ -635,8 +612,8 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   </section>
 
   <section class="card" id="mobCard" data-tab="maps">
-    <div class="bar"><h2 class="grow">Monsters</h2><span class="note" id="mobNote"></span><span id="mobMine"></span></div>
-    <div class="bar" id="mobF"><label><span>&nbsp;</span><span class="bar"><input type="checkbox" id="hideClosed"> Hide monsters with no open map</span></label></div>
+    <div class="bar"><h2 class="grow">Monsters</h2><span class="note" id="mobNote"></span></div>
+    <div class="bar" id="mobF"><label><span>&nbsp;</span><span class="bar"><input type="checkbox" class="switch" role="switch" id="hideClosed"> Hide monsters with no open map</span></label></div>
     <datalist id="mobList"></datalist>
     <div class="scroll tall"><table id="mobTable"><thead><tr>
       <th data-k="name">Monster</th><th data-k="lv">Lv</th><th data-k="el">Element</th><th data-k="size">Size</th><th data-k="race">Race</th><th data-k="hp">HP</th><th data-k="exp" title="* = not confirmed in game yet">Base EXP</th><th data-k="ratio" title="Base EXP per HP: how much EXP each point of damage earns">EXP / HP</th><th data-k="mult">Your hit %</th><th data-k="hitc">Hit chance</th><th data-k="uses">Uses / kill</th><th data-k="sec">Sec / kill</th><th data-k="epm">EXP / min</th><th data-k="dodge">Dodge %</th><th data-k="hpm">HP lost / min</th><th data-k="zk" title="Loot per kill less what your skills use up (catalysts, arrows, Mammonite zeny)">Zeny / kill</th><th data-k="zph" title="Net: loot less skill items, SP items, the ASPD potion and ground buffs">Zeny / hr</th><th data-k="topN">Best map</th><th></th>

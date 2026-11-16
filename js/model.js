@@ -984,25 +984,6 @@ function calInfo(w){const out={k:null,n:0,maps:{}},rs=[];
 // the calibration on one EXP Hunter row: kills come k times as fast, so EXP / min, loot and weight per hour scale by k; HP and SP
 // per hour and the hourly costs (SP items, the ASPD potion, ground buffs, HP items) don't
 function calApply(r,k){const hc=r.zg-r.zph;r.epm*=k;r.secT/=k;r.zg*=k;r.zph=r.zg-hc;r.zb=r.zph+r.spZ;r.net=r.zph-r.hpZ;r.wph*=k;if(r.trip!=null)r.trip/=k;r.cal=k}
-// ---- sell timer: how long the session's monsters take to fill you from the weight you have now to your sell point ----
-// spawn-weighted like the session pace: weight and seconds per kill are averaged over the mix, so minutes = room / weight per kill ×
-// seconds per kill (past 70% at the no-regen pace; if one monster can't keep fighting there, the trip stops at 70%)
-function sessTrip(s,w=walkSec()){if(!wOn())return null;const mix=sessMix(s,m=>isFinite(bestFight(m)));if(!mix)return null;
-  let wk=0,tA=0,tB=0,rA=0,rB=Infinity;
-  mix.list.forEach(({m,w:c})=>{const el=mobRow(m,w).el2,k=SG_MOB;SG_MOB=m;try{withEl(el,()=>{const tot=fightSec(m)+w,p=tripParts(m,tot,w);
-    rA=p.rA;rB=Math.min(rB,p.rB);wk+=c*weightKill(m);tA+=c*tot;tB+=c*p.totB})}finally{SG_MOB=k}});
-  wk/=mix.W;tA/=mix.W;tB/=mix.W;if(!isFinite(tA))return null;
-  const fell=sellFell(rA,rB),at=fell?70:sellPct();
-  if(!(wk>0))return {wk,kills:Infinity,min:Infinity,at,fell};
-  return {wk,kills:(rA+rB)/wk,min:(rA*tA+(rB?rB*tB:0))/wk/60,at,fell}}
-// a running timer is s.trip={from,due} (ms); time the session spends paused is added on, since you aren't picking anything up then
-const tripDue=s=>s.trip?s.trip.due+pausedMs(s,s.trip.from,Date.now()):null;
-const tripEarly=()=>Math.max(0,num(state.tripEarly))*6e4;
-// minutes one trip takes: the ones you typed (state.tripMin), else the ones worked out above; null when neither is there
-const tripMinutes=s=>{if(num(state.tripMin)>0)return num(state.tripMin);const t=sessTrip(s);return t&&t.wk>0&&t.kills>=1&&isFinite(t.min)?t.min:null};
-// Start / Back from town: you're out farming again, so a pause left open while you sold ends now (else the timer would sit on "Paused")
-function startTrip(s,now=Date.now()){const min=tripMinutes(s);if(!(min>0))return false;const p=openPause(s);if(p)p.to=now;
-  s.trip={from:now,due:now+min*6e4};return true}
 
 
 // ---- Zeny Hunter: maps and monsters ranked by net zeny per hour ----
