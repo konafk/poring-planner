@@ -119,8 +119,9 @@ const CONS_PRESETS=[
   {name:"Nimble Feather",id:105669,eff:"HIT/FLEE +15"},
   {name:"Sturdy Feather",id:105672,eff:"Max HP/Max SP +3%"},
   // not an event item: Brewer Burkel's daily quest gives one, Brewer Telsa sells more for 3,000z (data/shops.js)
-  // the client: "ASPD increases slightly more for 30 minutes", on top of the ASPD potions and by AGI like them; how much isn't known yet
-  {name:"Agi Up Potion",id:102891,eff:"",info:"ASPD up a little, on top of an ASPD potion",note:"30 minutes; the amount isn't known yet, so it isn't counted"},
+  // the client: "ASPD increases slightly more for 30 minutes", on top of the ASPD potions and by AGI like them; how much isn't known
+  // yet, so it counts as ASPD +1 (the user's assumption) and says so (show: the line shown in place of its effect)
+  {name:"Agi Up Potion",id:102891,eff:"ASPD +1",show:"Amount unknown, assumed ASPD +1"},
   {name:"Nordfeld Beer",id:107452,eff:"Damage to Boulder Dwarves +10%"}];
 // they're listed with a tick each, like the buffs from others: the ticked ones by name (c.consItems). Older saves added one as a row of
 // its own in Consumables effects: a row that is exactly a listed item (same name and effect) becomes its tick, ticked if the row was
@@ -241,7 +242,7 @@ function renderCons(){const c=C(),it=consItemsOf(c),ac=acctBuffsOf();
     <span class="note">${esc(p.eff||p.info)} · 30 or 7 days</span></div>`).join("");
   // the listed items: a tick, the item's icon (opens its details), the name, what it does
   $("consItems").innerHTML=CONS_PRESETS.map(p=>`<div class="eqrow" data-ci="${esc(p.name)}"><label class="bar pbName"><input type="checkbox" data-f="on" ${it[p.name]?"checked":""}><a href="#" data-info="item:${p.id}" title="${esc(p.name)}">${itemIcon(p.id)}</a>${esc(p.name)}</label>
-    <span class="note">${esc(p.eff||p.info||"")}${p.note?` · ${esc(p.note)}`:""}</span></div>`).join("");
+    <span class="note">${esc(p.show||p.eff||p.info||"")}${p.note?` · ${esc(p.note)}`:""}</span></div>`).join("");
   // cooking: a dish per stat, its icon opening its details
   const fd=foodOf(c);$("consFood").innerHTML=STAT6_UI.map(k=>{const id=+fd[k]||0,v=dishVal(k,id),K=k.toUpperCase();
     return `<div class="eqrow" data-food="${k}"><label class="bar pbName">${v?`<a href="#" data-info="item:${id}" title="${esc(itemName(id))}">${itemIcon(id)}</a>`:""}${K} food
