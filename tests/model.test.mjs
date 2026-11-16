@@ -264,6 +264,45 @@ t("death penalty: the rate the game shows, 100% costs 10% EXP, 50% costs 5%, 0% 
   run(`state.deathRate=100`);
 });
 
+t("Account Death Penalty Buff halves the server's death penalty", () => {
+  run(`state.deathRate=100;state.acctBuffs={"Account Death Penalty Buff":true}`); assert.equal(run(`diePct()`), 5);
+  run(`state.deathRate=0`); assert.equal(run(`diePct()`), 0);
+  run(`state.deathRate=100;state.acctBuffs={}`); assert.equal(run(`diePct()`), 10);
+});
+
+t("a save at Death penalty 50% loads as the Account Death Penalty Buff on a 100% server", () => {
+  const r = load({ deathRate: 50 });
+  assert.equal(r(`state.deathRate`), 100);
+  assert.equal(r(`state.acctBuffs["Account Death Penalty Buff"]`), true);
+  assert.equal(r(`diePct()`), 5);
+  const r2 = load({ deathRate: 0 });
+  assert.equal(r2(`state.deathRate`), 0);
+  assert.equal(r2(`!!(state.acctBuffs||{})["Account Death Penalty Buff"]`), false);
+});
+
+t("EXP and drop rate buffs add up: account buffs, Essential Package, Growth Elixir, Bubble Gum (client text)", () => {
+  run(`state.acctBuffs={};C().consItems={}`);
+  assert.equal(run(`dropPct()`), 0); assert.equal(run(`consSum("exp_base")`), 0);
+  run(`state.acctBuffs={"Account EXP Buff":true,"Account Drop Rate Buff":true}`);
+  assert.equal(run(`consSum("exp_base")`), 10); assert.equal(run(`consSum("exp_job")`), 10); assert.equal(run(`dropPct()`), 10);
+  // Essential Package: "EXP/item drop rate +10%", base and job EXP like every EXP buff
+  run(`C().consItems={"Essential Package":true,"Bubble Gum":true,"Growth Elixir":true}`);
+  assert.equal(run(`consSum("exp_base")`), 70); assert.equal(run(`consSum("exp_job")`), 70); assert.equal(run(`dropPct()`), 120);
+  // a plain "EXP +x%" line counts for both too
+  assert.equal(run(`JSON.stringify(parseCons("EXP +5%").lines)`), JSON.stringify([["exp_base", null, null, 5], ["exp_job", null, null, 5]]));
+  // the server's rate adds on top
+  run(`state.dropBonus=100`); assert.equal(run(`dropPct()`), 220);
+  run(`state.acctBuffs={};C().consItems={};state.dropBonus=0`);
+});
+
+t("Agi Up Potion: flat ASPD from its box, +1 when it's empty", () => {
+  run(`C().consItems={"Agi Up Potion":true};delete state.agiUpAspd`); assert.equal(run(`consSum("aspd")`), 1);
+  run(`state.agiUpAspd=3`); assert.equal(run(`consSum("aspd")`), 3);
+  run(`state.agiUpAspd=""`); assert.equal(run(`consSum("aspd")`), 1);
+  run(`state.agiUpAspd=99`); assert.equal(run(`consSum("aspd")`), 20);
+  run(`C().consItems={};delete state.agiUpAspd`); assert.equal(run(`consSum("aspd")`), 0);
+});
+
 t("EXP table log: oldest first, each dated, none is the current table", () => {
   const log = run("EXP_TABLE_LOG.map(x=>({until:x.until,top:Math.max(...Object.keys(x.table).map(Number)),same:x.table===EXP_TABLE}))");
   assert.ok(log.length >= 1);

@@ -86,8 +86,9 @@ function parseCons(txt){const lines=[],rest=[],N="([+-]\\s*\\d+(?:\\.\\d+)?)";
     if(pct("^(?:incoming\\s*)?heal\\s*(?:and|&|\\/)\\s*recovery\\s*items?(?:\\s*effect)?","heal_pct","rec_item_pct"))return;
     if(pct("^(?:recovery|healing)\\s*items?(?:\\s*effect)?","rec_item_pct"))return;
     if(pct("^(?:incoming\\s*)?heal(?:\\s*received)?(?:\\s*effect)?","heal_pct"))return;
-    if((m=p.match(/^(base|job|base\s*\/\s*job)\s*exp\s*([+-]\s*\d+(?:\.\d+)?)\s*%$/i))){const v=parseFloat(m[2].replace(/\s/g,""));
-      if(/base/i.test(m[1]))lines.push(["exp_base",null,null,v]);if(/job/i.test(m[1]))lines.push(["exp_job",null,null,v]);return}
+    if(pct("^(?:item\\s*)?drop(?:\\s*rate)?(?:\\s*from\\s*monsters)?","drop"))return;
+    if((m=p.match(/^(base|job|base\s*\/\s*job)?\s*exp\s*([+-]\s*\d+(?:\.\d+)?)\s*%$/i))){const v=parseFloat(m[2].replace(/\s/g,"")),w=m[1]||"base/job"; // "EXP +10%" alone: base and job EXP (every EXP buff counts for both)
+      if(/base/i.test(w))lines.push(["exp_base",null,null,v]);if(/job/i.test(w))lines.push(["exp_job",null,null,v]);return}
     if(/^cast(?:ing)?\s*(?:can\s*not|cannot|can't)\s*be\s*interrupted$/i.test(p)){lines.push(["no_break",null,null,1]);return}
     if((m=p.match(/^all\s*stats?\s*([+-]\s*\d+)$/i))){STAT6_UI.forEach(k=>rest.push(k+" "+m[1]));return}
     // "ATK/MATK +30", "Cri damage / ranged damage / magic damage +5%": each name gets the value
@@ -97,7 +98,12 @@ function parseCons(txt){const lines=[],rest=[],N="([+-]\\s*\\d+(?:\\.\\d+)?)";
   const o=BUILD.parseOptions(rest.join(","));return {lines:[...lines,...o.lines],bad:o.bad}}
 // Ragnarok Zero event consumables (30 minutes each), added as rows you can edit; values from the in-game tooltips (Ragnarok Zero Global).
 // id: the item (its icon opens its details); note: what isn't counted
+// the Agi Up Potion's ASPD (its box, 0 to 20; +1 when it's empty or not a number)
+const agiUpAspd=()=>{const v=state.agiUpAspd;return v!=null&&v!==""&&Number.isFinite(+v)?Math.max(0,Math.min(20,Math.round(+v))):1};
 const CONS_PRESETS=[
+  // first in the list. Client: "EXP/item drop rate +10%" (30, 7 or 3 days) on the character that used it; like every EXP buff it
+  // counts for base and job EXP. Its daily Yggdrasil Dew is the Blessing of Yggdrasil tick
+  {name:"Essential Package",id:200878,eff:"Base/Job EXP +10%, Drop rate +10%"},
   {name:"Challenge Drink",id:23605,eff:"ATK/MATK +30, ATK/MATK +1%, HIT/FLEE +30, ASPD +1, SP consumption -5%, Fixed cast -30%"},
   {name:"Mimir's Well",id:23611,eff:"Max SP +10%, SP consumption -10%"},
   {name:"Small Mana Potion",id:23203,eff:"SP +5% every 5s"},
@@ -105,7 +111,9 @@ const CONS_PRESETS=[
   {name:"Unlimited Drink",id:23607,eff:"Max HP/Max SP +5%, Crit damage +5%, Ranged damage +5%, Magic damage +5%, Casting cannot be interrupted"},
   {name:"Premium Course Meal",id:23604,eff:"All stats +5, ATK/MATK +20"},
   {name:"Enriched Abrasive",id:102892,eff:"CRIT +30"},
-  {name:"Growth Elixir",id:105743,eff:"Base/Job EXP +50%"},
+  {name:"Growth Elixir",id:105743,eff:"Base/Job EXP +50%",note:"doesn't stack with another growth elixir"},
+  // client: "Increases item drop rate from monsters by 100% for 30 minutes"
+  {name:"Bubble Gum",id:12210,eff:"Drop rate +100%"},
   {name:"Ale's Blessing",id:23608,eff:"Recovery items +20%, Heal received +20%"},
   // Gatchaman collaboration (until the 26 November 2026 maintenance): Condor Joe's feathers, 60 minutes each (data/news.js)
   {name:"Gorgeous Feather",id:105668,eff:"CRIT +5, ASPD +1"},
@@ -113,8 +121,10 @@ const CONS_PRESETS=[
   {name:"Nimble Feather",id:105669,eff:"HIT/FLEE +15"},
   {name:"Sturdy Feather",id:105672,eff:"Max HP/Max SP +3%"},
   // not an event item: Brewer Burkel's daily quest gives one, Brewer Telsa sells more for 3,000z (data/shops.js)
-  // the client: "ASPD increases slightly more for 30 minutes", on top of the ASPD potions and by AGI like them; how much isn't known yet
-  {name:"Agi Up Potion",id:102891,eff:"",info:"ASPD up a little, on top of an ASPD potion",note:"30 minutes; the amount isn't known yet, so it isn't counted"},
+  // the client: "ASPD increases slightly more for 30 minutes", on top of the ASPD potions and by AGI like them; how much isn't known
+  // yet, so it counts as the ASPD in its box (state.agiUpAspd, one value for every character, +1 until someone measures it). It's
+  // ticked per character like the others but shown in the ASPD potion section (sec)
+  {name:"Agi Up Potion",id:102891,sec:"aspd",get eff(){return `ASPD +${agiUpAspd()}`},get show(){return `Amount unknown, assumed ASPD +${agiUpAspd()}`}},
   {name:"Nordfeld Beer",id:107452,eff:"Damage to Boulder Dwarves +10%"}];
 // they're listed with a tick each, like the buffs from others: the ticked ones by name (c.consItems). Older saves added one as a row of
 // its own in Consumables effects: a row that is exactly a listed item (same name and effect) becomes its tick, ticked if the row was
@@ -123,7 +133,13 @@ const consItemsOf=c=>{if(c.consStat||(c.pbuffs&&(c.pbuffs.agiFood||c.pbuffs.dexF
   if(Array.isArray(c.cons)&&c.cons.length)c.cons=c.cons.filter(r=>{const p=CONS_PRESETS.find(x=>x.name===r.name&&x.eff===r.eff);if(!p)return true;if(r.on)it[p.name]=true;return false});
   return it};
 // every row that counts: the listed items ticked, then your own rows in Consumables effects and Skill buffs ({on, name, eff, what})
-const ownRows=c=>[...CONS_PRESETS.filter(p=>consItemsOf(c)[p.name]).map(p=>({on:true,name:p.name,eff:p.eff,what:"Item"})),
+// account buffs (client: "Effect applies to all characters on the server" for 30 or 7 days): ticked once for every character
+// (state.acctBuffs, by name). The death one halves the server's death penalty (model.js deathRate), so it has no effect line
+const ACCT_BUFFS=[{name:"Account EXP Buff",id:23463,eff:"Base/Job EXP +10%"},{name:"Account Drop Rate Buff",id:23464,eff:"Drop rate +10%"},
+  {name:"Account Death Penalty Buff",id:23465,eff:"",info:"Death penalty -50%"}];
+const acctBuffsOf=()=>{if(!state.acctBuffs||typeof state.acctBuffs!=="object")state.acctBuffs={};return state.acctBuffs};
+const ownRows=c=>[...ACCT_BUFFS.filter(p=>p.eff&&acctBuffsOf()[p.name]).map(p=>({on:true,name:p.name,eff:p.eff,what:"Account"})),
+  ...CONS_PRESETS.filter(p=>consItemsOf(c)[p.name]).map(p=>({on:true,name:p.name,eff:p.eff,what:"Item"})),
   ...OWN_LISTS.flatMap(L=>rowsOf(c,L.key).filter(r=>r.on).map(r=>({...r,what:L.what})))];
 // stacking: a cooked dish and Blessing of Yggdrasil don't add up, the higher one counts per stat; the listed items and your rows stack on top
 // clans (Ragnarok Zero Global; as iRO Wiki's Clan System has it): a buff that stays on while you're
@@ -224,10 +240,17 @@ function applyConsumables(){EFF=null;const c=C();if(!addOnTop(c))return;const li
   const sp=num(c.maxSp)>0?f((num(c.maxSp)*(100+int1)/(100+int0)+g("sp"))*(1+g("sp_percent")/100)):c.maxSp;
   EFF={atkTxt:`${atkSt}+${atkGear}`,matkTxt:`${matkSt}+${matkTot-matkSt}`,hitTxt:String(sumStat(c.hitTxt)+d("hit")+g("hit")),fleeTxt:String(sumStat(c.fleeTxt)+d("flee")+g("flee")),
     atkPct:num(c.atkPct)+g("atk_percent"),matkPct:num(c.matkPct)+g("matk_percent"),defTxt:`${ds+d("def")+vitDef}+${dh+g("def")}`,crit:num(c.crit)+d("crit")+g("crit"),aspd,maxHp:hp,maxSp:sp,st:tmp.st,intTxt:tmp.intTxt}}
-function renderCons(){const c=C(),it=consItemsOf(c);
+function renderCons(){const c=C(),it=consItemsOf(c),ac=acctBuffsOf();
+  // Blessing of Yggdrasil: the item's icon (23481, from the MVP Subjugation Reward Boxes), opening its details
+  $("yggIcon").innerHTML=`<a href="#" data-info="item:23481" title="Blessing of Yggdrasil">${itemIcon(23481)}</a>`;
+  $("acctBuffs").innerHTML=ACCT_BUFFS.map(p=>`<div class="eqrow" data-ab="${esc(p.name)}"><label class="bar pbName"><input type="checkbox" data-f="on" ${ac[p.name]?"checked":""}><a href="#" data-info="item:${p.id}" title="${esc(p.name)}">${itemIcon(p.id)}</a>${esc(p.name)}</label>
+    <span class="note">${esc(p.eff||p.info)} · 30 or 7 days</span></div>`).join("");
   // the listed items: a tick, the item's icon (opens its details), the name, what it does
-  $("consItems").innerHTML=CONS_PRESETS.map(p=>`<div class="eqrow" data-ci="${esc(p.name)}"><label class="bar pbName"><input type="checkbox" data-f="on" ${it[p.name]?"checked":""}><a href="#" data-info="item:${p.id}" title="${esc(p.name)}">${itemIcon(p.id)}</a>${esc(p.name)}</label>
-    <span class="note">${esc(p.eff||p.info||"")}${p.note?` · ${esc(p.note)}`:""}</span></div>`).join("");
+  {const p=CONS_PRESETS.find(x=>x.sec==="aspd");$("agiUpRow").innerHTML=`<div class="eqrow" data-ci="${esc(p.name)}"><label class="bar pbName"><input type="checkbox" data-f="on" ${it[p.name]?"checked":""}><a href="#" data-info="item:${p.id}" title="${esc(p.name)}">${itemIcon(p.id)}</a>${esc(p.name)}</label>
+    <label class="bar agiUpAmt" title="The ASPD it adds, measured in game: your ASPD with the potion minus without it (at your AGI: the client says it scales like the ASPD potions). One value for every character">ASPD +<input class="w-2xs" type="number" min="0" max="20" step="1" id="agiUpAspd" value="${agiUpAspd()}"></label>
+    <span class="note" id="agiUpNote">${esc(p.show)}</span></div>`}
+  $("consItems").innerHTML=CONS_PRESETS.filter(p=>!p.sec).map(p=>`<div class="eqrow" data-ci="${esc(p.name)}"><label class="bar pbName"><input type="checkbox" data-f="on" ${it[p.name]?"checked":""}><a href="#" data-info="item:${p.id}" title="${esc(p.name)}">${itemIcon(p.id)}</a>${esc(p.name)}</label>
+    <span class="note">${esc(p.show||p.eff||p.info||"")}${p.note?` · ${esc(p.note)}`:""}</span></div>`).join("");
   // cooking: a dish per stat, its icon opening its details
   const fd=foodOf(c);$("consFood").innerHTML=STAT6_UI.map(k=>{const id=+fd[k]||0,v=dishVal(k,id),K=k.toUpperCase();
     return `<div class="eqrow" data-food="${k}"><label class="bar pbName">${v?`<a href="#" data-info="item:${id}" title="${esc(itemName(id))}">${itemIcon(id)}</a>`:""}${K} food
@@ -240,7 +263,8 @@ function renderCons(){const c=C(),it=consItemsOf(c);
     <button type="button" class="small danger" data-del aria-label="Remove">✕</button></div>`).join(""));consNote()}
 // redrawn on every render (job and weapon change what's allowed), except while you're typing in it
 function renderAspdBuffs(){const c=C(),k=potKey(c),act=document.activeElement;$("consOff").hidden=c.mode==="build"||addOnTop(c);
-  $("clanSel").value=CLANS[c.clan]?c.clan:"";$("clanInfo").textContent=(CLANS[c.clan]?clanEff(CLANS[c.clan]):"two stats +1, Max HP +30, Max SP +10")+(c.mode==="build"?"":" · build mode only: your status window already shows it");
+  $("clanSel").value=CLANS[c.clan]?c.clan:"";// in Job & level: what it gives goes in the field's tooltip, so the row keeps one height
+  $("clanWrap").title=`The clan you joined at its Clan Master: a buff that stays on. ${CLANS[c.clan]?clanEff(CLANS[c.clan]):"Two stats +1, Max HP +30, Max SP +10"}.`+(c.mode==="build"?" Counted in Build from gear":" Counted only in Build from gear: your status window already shows it");
   if(act!==$("potType"))$("potType").innerHTML=Object.entries(ASPD_POT).filter(([key])=>potJobOk(key)).map(([key,p])=>{const lvOk=potLvOk(key);
     return `<option value="${key}"${key===k?" selected":""}${lvOk?"":" disabled"}>${p.name} (${p.mod})${lvOk?"":` · Base Lv ${p.lv}+`}</option>`}).join("");
   // the potion in use, its icon opening its details like the other item names
@@ -258,7 +282,8 @@ $("pbuffList").addEventListener("input",e=>{const f=e.target.dataset.f,row=e.tar
       const box=$("pbuffList").querySelector(`[data-pb="${x.k}"] [data-f="on"]`);if(box)box.checked=false})}
   // the list isn't redrawn while you type in it, so the effect text follows the level here
   {const b=PBUFF.find(x=>x.k===row.dataset.pb),el=row.querySelector("[data-pbeff]");if(b&&el)el.textContent=pbEff(b,pbLv(b,o))}save();renderAll()});
-$("clanSel").innerHTML=`<option value="">none</option>`+Object.entries(CLANS).map(([k,x])=>`<option value="${k}">${esc(x.name)}</option>`).join("");
+// short names ("Sword"), to fit the Clan box in Job & level; its tooltip says what the clan picked gives
+$("clanSel").innerHTML=`<option value="">none</option>`+Object.entries(CLANS).map(([k,x])=>`<option value="${k}">${esc(x.name.replace(/ Clan$/,""))}</option>`).join("");
 $("clanSel").addEventListener("change",e=>{const c=C();if(e.target.value)c.clan=e.target.value;else delete c.clan;save();renderAll()});
 $("addOnTop").addEventListener("change",e=>{C().addOnTop=e.target.checked;save();renderAll()});
 $("potType").addEventListener("change",e=>{C().potType=e.target.value;save();renderAll()});
@@ -266,6 +291,14 @@ const consNote=()=>OWN_LISTS.forEach(L=>{const bad=rowsOf(C(),L.key).filter(r=>r
   $(L.note).innerHTML=bad.length?`<span class="bad">Not understood: ${bad.map(esc).join(", ")}</span>`:""});
 $("consFood").addEventListener("change",e=>{const row=e.target.closest("[data-food]");if(!row||e.target.dataset.f!=="dish")return;const fd=foodOf(C());
   if(e.target.value)fd[row.dataset.food]=+e.target.value;else delete fd[row.dataset.food];save();renderCons();renderAll()});
+$("agiUpRow").addEventListener("change",e=>{if(e.target.dataset.f!=="on")return;const it=consItemsOf(C()),n="Agi Up Potion";
+  if(e.target.checked)it[n]=true;else delete it[n];save();renderAll()});
+// the box: saved as you type, the note follows; empty counts as +1 until it's filled in
+$("agiUpRow").addEventListener("input",e=>{if(e.target.id!=="agiUpAspd")return;const v=e.target.value.trim();if(v==="")delete state.agiUpAspd;else state.agiUpAspd=+v;
+  $("agiUpNote").textContent=`Amount unknown, assumed ASPD +${agiUpAspd()}`;save();renderAll()});
+$("agiUpRow").addEventListener("focusout",e=>{if(e.target.id==="agiUpAspd")e.target.value=agiUpAspd()});
+$("acctBuffs").addEventListener("change",e=>{const row=e.target.closest("[data-ab]");if(!row||e.target.dataset.f!=="on")return;const ac=acctBuffsOf();
+  if(e.target.checked)ac[row.dataset.ab]=true;else delete ac[row.dataset.ab];save();renderAll()});
 $("consItems").addEventListener("change",e=>{const row=e.target.closest("[data-ci]");if(!row||e.target.dataset.f!=="on")return;const it=consItemsOf(C());
   if(e.target.checked)it[row.dataset.ci]=true;else delete it[row.dataset.ci];save();renderAll()});
 OWN_LISTS.forEach(L=>{
@@ -382,13 +415,21 @@ function costumeLists(){if($("costumeLists").childElementCount)return;
 // (Special Equipment, Accessory Right: b.special.ring = the pet egg sealed in it, or true for the ring with no egg), the shadow shield
 // (b.special.shield, an item id), then other special equipment
 const shadowShields=()=>(typeof SHADOW_SHIELDS!=="undefined"?SHADOW_SHIELDS:[]).map(id=>BUILD.item(id)).filter(Boolean);
+// the lists name the stone, shield or egg; what the one picked gives shows under its box (like a Job Essence on the Armor row), and
+// each option's tooltip has its own
+function spFxLine(t){return t?`<div class="note fxLine">${esc(t)}</div>`:""}
+// an item's or card's effect as the Equipment and Cards tabs write it (gear-db.js fxOf), for the line under its box
+function gearFx(it){return it&&typeof fxOf==="function"?fxOf(it).join(" · "):""}
+const shFx=x=>stoneFx({b:(x.g||[]).flatMap(g=>g.b||[])});
+const eggFx=x=>[x.b.length?stoneFx({b:x.b}):"",x.off||""].filter(Boolean).join(", ");
 function renderStones(){const b=gearSet(),sel=b.stones||{},ring=(b.special||{}).ring,sh=(b.special||{}).shield,cos=(b.special||{}).costume||{},all=typeof STONES!=="undefined"?STONES:[],eggs=typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[];costumeLists();
+  const stoneOf=k=>sel[k]&&all.find(x=>x.slot===k&&x.id===+sel[k]),shOn=sh&&shadowShields().find(x=>x.id===+sh),egg=ring&&eggs.find(x=>x.id===+ring);
   $("stoneRow").innerHTML=BUILD.STONE_SLOTS.map(z=>{const lo=z.label.toLowerCase();
     return `<tr><td>Costume ${lo}</td><td><div class="itemBox">${itemIcon(cos[z.k])}<input class="item" data-costume="${z.k}" list="cos_${z.k}" placeholder="none" title="The costume the ${lo} stone goes on" aria-label="Costume ${lo}" value="${esc(costumeName(cos[z.k]))}"></div></td>
     <td><div class="itemBox">${itemIcon(sel[z.k])}<select data-stone="${z.k}" aria-label="Costume ${lo} stone"><option value="">no stone</option>${all.filter(x=>x.slot===z.k)
-    .map(x=>`<option value="${x.id}"${+sel[z.k]===x.id?" selected":""}>${esc(x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""))}: ${esc(stoneFx(x))}</option>`).join("")}</select></div></td><td></td></tr>`}).join("")+
-    `<tr><td>Shadow shield</td><td><div class="itemBox">${iconHtml("gear",sh)}<select data-shadow="shield" aria-label="Shadow shield"><option value="">none</option>${shadowShields().map(x=>`<option value="${x.id}"${+sh===x.id?" selected":""}>${esc(x.name)}: ${esc(stoneFx({b:(x.g||[]).flatMap(g=>g.b||[])}))}</option>`).join("")}</select></div></td><td></td><td></td></tr>
-    <tr><td>Accessory right</td><td><div class="itemBox">${itemIcon(ring&&24966)}<select data-ringon="1" aria-label="Accessory right"><option value="">none</option><option value="1"${ring?" selected":""}>Taming Ring</option></select></div></td><td><div class="itemBox">${itemIcon(ring)}<select data-ring="1" aria-label="Taming Ring pet egg" title="${ring?"The pet egg sealed in the ring":"Picking an egg puts the Taming Ring on"}"><option value="">no egg</option>${eggs.map(x=>`<option value="${x.id}"${+ring===x.id?" selected":""}>${esc(x.name)}: ${esc([x.b.length?stoneFx({b:x.b}):"",x.off||""].filter(Boolean).join(", "))}</option>`).join("")}</select></div></td><td></td></tr>`;renderSpecialOwn()}
+    .map(x=>`<option value="${x.id}"${+sel[z.k]===x.id?" selected":""} title="${esc(stoneFx(x))}">${esc(x.name.replace(/ \((Upper|Middle|Lower|Garment)\)$/,""))}</option>`).join("")}</select></div>${spFxLine(stoneOf(z.k)&&stoneFx(stoneOf(z.k)))}</td><td></td></tr>`}).join("")+
+    `<tr><td>Shadow shield</td><td><div class="itemBox">${iconHtml("gear",sh)}<select data-shadow="shield" aria-label="Shadow shield"><option value="">none</option>${shadowShields().map(x=>`<option value="${x.id}"${+sh===x.id?" selected":""} title="${esc(shFx(x))}">${esc(x.name)}</option>`).join("")}</select></div>${spFxLine(shOn&&shFx(shOn))}</td><td></td><td></td></tr>
+    <tr><td>Accessory right</td><td><div class="itemBox">${itemIcon(ring&&24966)}<select data-ringon="1" aria-label="Accessory right"><option value="">none</option><option value="1"${ring?" selected":""}>Taming Ring</option></select></div></td><td><div class="itemBox">${itemIcon(ring)}<select data-ring="1" aria-label="Taming Ring pet egg" title="${ring?"The pet egg sealed in the ring":"Picking an egg puts the Taming Ring on"}"><option value="">no egg</option>${eggs.map(x=>`<option value="${x.id}"${+ring===x.id?" selected":""} title="${esc(eggFx(x))}">${esc(x.name)}</option>`).join("")}</select></div>${spFxLine(egg&&eggFx(egg))}</td><td></td></tr>`;renderSpecialOwn()}
 // other special equipment: rows {on, name, opts} in b.special.own, each with up to OPT_MAX effects from the full affix list
 const specialOwn=()=>{const b=gearSet();b.special=b.special||{};if(!Array.isArray(b.special.own))b.special.own=[];return b.special.own};
 function renderSpecialOwn(){$("specialOwn").innerHTML=specialOwn().map((x,i)=>`<tr data-i="${i}">
@@ -467,11 +508,11 @@ function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};l
   const rows=BUILD.SLOTS.map(s=>{const g0=b.gear[s.k]||{},items=gearChoices(s.k),cards=cardChoices(s.k,g0.id&&BUILD.item(g0.id));GEAR_LISTS["g_"+s.k]=pickList(items);GEAR_LISTS["c_"+s.k]=pickList(cards);
     lists+=`<datalist id="gl_${s.k}">${[...GEAR_LISTS["g_"+s.k]].map(([n,id])=>`<option value="${esc(n)}"${mem[id]?` label="remembered: ${esc(memTxt(mem[id]))}"`:""}>`).join("")}</datalist><datalist id="cl_${s.k}">${[...GEAR_LISTS["c_"+s.k]].map(([n,id])=>{const p=cardName({id});return `<option value="${esc(n)}"${p?` label="${esc((BUILD.item(id)||{}).affixPos==="suffix"?"… "+p:p+" …")}"`:""}>`}).join("")}</datalist>`;
     const g=b.gear[s.k]||{},it=g.id&&BUILD.item(g.id),label=n=>{const x=BUILD.item(n);return x?labelOf(x,cards):""};
-    const cardBoxes=it&&it.slots?Array.from({length:it.slots},(_,i)=>`<span class="cardBox">${iconHtml("card",g.cards&&g.cards[i],.5)}<input data-card="${i}" list="cl_${s.k}" placeholder="card" title="The card (Vitata), or the name it gives the item in game (Healing)" value="${esc(g.cards&&g.cards[i]?label(g.cards[i]):"")}"></span>`).join(""):"";
+    const cardBoxes=it&&it.slots?Array.from({length:it.slots},(_,i)=>`<span class="cardBox">${iconHtml("card",g.cards&&g.cards[i],.5)}<input data-card="${i}" list="cl_${s.k}" placeholder="card" title="The card (Vitata), or the name it gives the item in game (Healing)" value="${esc(g.cards&&g.cards[i]?label(g.cards[i]):"")}"></span>${spFxLine(g.cards&&g.cards[i]&&gearFx(BUILD.item(g.cards[i])))}`).join(""):"";
     const refinable=it&&s.k!=="ammo"; // every part: some accessories and headgear refine though the data has no schedule for them
     // under a two-handed weapon the Shield row is closed; a shield saved there before stays editable so it can be taken off
     const both=s.k==="shield"&&twoHandOn(b.gear),w2=both&&BUILD.item(b.gear.weapon.id),off=both&&!it;
-    return `<tr data-slot="${s.k}"${both?' class="bothHands"':""}><td>${s.k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label}${both?`<div class="note">${it?"not counted: ":""}${esc(w2.name)} takes both hands</div>`:""}</td><td><div class="itemBox">${iconHtml("gear",it&&it.id)}<input class="item" list="gl_${s.k}" placeholder="${off?"two-handed weapon":items.length?"none":"no items for this job"}" title="${off?esc(`${w2.name} is two-handed: take it off to use a shield${state.job==="Assassin"?" or a left-hand weapon":""}`):"The item, or its name from the equipment window (+7 Healing Shining Clip) or with its cards (+7 Shining Clip Vitata): sets the refine and cards too"}" value="${esc(it?labelOf(it,items):"")}"${off?" disabled":""}></div></td>
+    return `<tr data-slot="${s.k}"${both?' class="bothHands"':""}><td>${s.k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label}${both?`<div class="note">${it?"not counted: ":""}${esc(w2.name)} takes both hands</div>`:""}</td><td><div class="itemBox">${iconHtml("gear",it&&it.id)}<input class="item" list="gl_${s.k}" placeholder="${off?"two-handed weapon":items.length?"none":"no items for this job"}" title="${off?esc(`${w2.name} is two-handed: take it off to use a shield${state.job==="Assassin"?" or a left-hand weapon":""}`):"The item, or its name from the equipment window (+7 Healing Shining Clip) or with its cards (+7 Shining Clip Vitata): sets the refine and cards too"}" value="${esc(it?labelOf(it,items):"")}"${off?" disabled":""}></div>${spFxLine(gearFx(it))}</td>
       <td>${refinable?`<input class="ref" type="number" min="0" max="20" value="${num(g.refine)}">`:""}</td><td><div class="cards">${cardBoxes}</div></td>
       <td>${it?optBoxes(s.k,g,it):""}</td></tr>`}).join("");
   $("gearTable").tBodies[0].innerHTML=rows;$("gearLists").innerHTML=lists;renderStones();
@@ -505,7 +546,7 @@ function gameName(g){const it=g&&g.id&&BUILD.item(g.id);if(!it)return "";const p
     if(n[a]===1)(c.affixPos==="suffix"||/^of /i.test(a)?post:pre).push(a)});
   const rep=a=>{const x=["","","Double ","Triple ","Quadruple "][n[a]]||"";return /^of /i.test(a)?"of "+x+a.slice(3):x+a};
   return [num(g.refine)?`+${num(g.refine)}`:"",...pre.map(rep),it.name,...post.map(rep)].filter(Boolean).join(" ")}
-const ewSlot=(k,label,name,ico,right)=>`<button type="button" class="ewSlot${right?" r":""}${name?"":" empty"}" data-ewslot="${k}" title="${esc(`${label}: ${name||"empty"}`)}">${ico}<span class="ewName">${esc(name)}</span></button>`;
+const ewSlot=(k,label,name,ico,right)=>`<button type="button" class="ewSlot${right?" r":""}${name?"":" empty"}" data-ewslot="${k}" title="${esc(`${label}: ${name||"empty"}`)}">${ico}<span class="ewName">${esc(name||label)}</span></button>`;// an empty slot shows its name, muted, as the game's tiles do
 const ewNone=right=>`<div class="ewSlot empty none${right?" r":""}" aria-hidden="true"><span class="ico none"></span></div>`;
 // the body at the feet, the head on the body's anchor; Bards are always male and Dancers female
 const ewSex=bj=>bj[state.look.sex]?state.look.sex:Object.keys(bj)[0];
@@ -720,6 +761,10 @@ function classPicker(el,groups,onPick,mine){let cur=null,shown="",looks={};
     if(k<1)btn.querySelectorAll(".ewFeet").forEach(f=>f.style.transform=`scale(${(.7*k).toFixed(3)})`)}}
 // Build from gear's Status, Gear, Equipment and Special equipment panels and the HP & SP recovery items list fold away, remembered like
 // a card (state.collapsed)
+// "Show effects": the line under each item, card, stone, shadow shield and egg in the Equipment and Special equipment tables, on
+// unless turned off (state.showFx === false), remembered like the folds. A Job Essence's line stays: it has no value box to say it
+{const x=$("fxShow"),set=()=>$("buildPanel").classList.toggle("fxOff",!x.checked);x.checked=state.showFx!==false;set();
+  x.addEventListener("change",()=>{if(x.checked)delete state.showFx;else state.showFx=false;save();set()})}
 [["buildStatFold","Build from gear: status"],["gsetFold","Build from gear: gear sets"],["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"],
   ["recListFold","Consumables: recovery items list"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
   d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[key])return;if(d.open)delete c[key];else c[key]=true;save()})});

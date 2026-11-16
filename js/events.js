@@ -63,7 +63,7 @@ $("shield").addEventListener("change",e=>{const c=C(),next={...c,shield:e.target
   c.shield=next.shield;c.lw=next.lw;$("lw").value=c.lw||"";save();renderAll()});
 $("autoSp").addEventListener("change",e=>{C().autoSp=e.target.checked;save();renderAll()});
 // the potion's Tool Dealer price and 30 minutes each give its zeny per hour
-const potInfo=()=>{const c=C(),z=potPrice(c);$("potInfo").textContent=!z?"":c.potOn?(c.mode!=="build"&&statVal(c,"agi")==null?"type your AGI above to count it (value × AGI/200)":`ASPD ${aspdEff()} · ~${fmtN(potOnlyHr())} z/hr`):`${fmtN(z)} z at a Tool Dealer · ${POT_MIN} min`};
+const potInfo=()=>{const c=C(),z=potPrice(c);$("potInfo").textContent=!z||!c.potOn?"":(c.mode!=="build"&&statVal(c,"agi")==null?"type your AGI above to count it (value × AGI/200)":`ASPD ${aspdEff()} · ~${fmtN(potOnlyHr())} z/hr`)};
 $("potOn").addEventListener("change",e=>{C().potOn=e.target.checked;save();potInfo();renderAll()});
 $("yggOn").addEventListener("change",e=>{C().yggOn=e.target.checked;save();renderAll()});
 ROOTQ("#sagePanel").forEach(p=>p.addEventListener("input",e=>{const i=e.target;const g=G();
@@ -114,7 +114,8 @@ $("recTable").addEventListener("change",e=>{if(e.target.dataset.rid)setTimeout(r
 $("recTable").addEventListener("focusout",()=>setTimeout(renderRecovery,0));
 $("recTable").addEventListener("click",e=>{const a=e.target.closest("[data-rreset]");if(!a)return;e.preventDefault();delete REC().overrides[a.dataset.rreset];save();renderAll()});
 $("partyN").addEventListener("input",e=>{sessNow().partyN=num(e.target.value,1)||1;save();renderAll()});
-// Base EXP % and Drop rate % are the rates the game shows (basic 100% + premium + events), never below 100%; state keeps what's over 100
+// Server EXP and Server drop are the server's rates (basic 100% + events; account buffs and items are ticked in Consumables), never
+// below 100%; state keeps what's over 100
 // (state.bonus, state.dropBonus). While you type, a number under 100 counts as 100; leaving the box puts 100 back in it
 [["bonus","bonus"],["dropBonus","dropBonus"]].forEach(([id,k])=>{const i=$(id);i.value=100+num(state[k]);
   i.addEventListener("input",()=>{state[k]=Math.max(0,num(i.value)-100);save();renderAll()});

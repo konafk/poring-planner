@@ -349,7 +349,7 @@ Once the site has a shared prices database ([setting it up](shared-prices.md)):
 
 ## Formulas
 
-- **EXP bonuses** add together. **Base EXP %** is the EXP rate the game shows (basic 100% plus premium and events, never below 100%) and counts for base and job EXP, like gear EXP. **Drop rate %** works the same way for drops.
+- **EXP bonuses** add together. **Server EXP** (Job & level) is the server's EXP rate (basic 100% plus events, never below 100%) and counts for base and job EXP, like gear EXP. **Server drop** works the same way for drops, and **Server death** is the server's death penalty. Your own boosts are ticked in Consumables: the account buffs (Account EXP Buff: base and job EXP +10%; Account Drop Rate Buff: drop +10%; Account Death Penalty Buff: death penalty −50%), the Essential Package (EXP and drop +10%), the Growth Elixir (base and job EXP +50%) and Bubble Gum (drop +100%), all as the client describes them.
 - Every formula the calculator uses, with your own numbers next to it.
 - **Other gear sets:** the formulas table gets a **Set N** column for each set from Build from gear (Character tab), with the values that differ from yours highlighted.
 - The element and weapon size tables.
