@@ -452,7 +452,8 @@ td .map{cursor:default}
 :is(#gearTable,#specialTable) .fxLine{margin:4px 0 0 30px;font-size:12px;white-space:normal}
 #gearTable .cards>.fxLine{margin-top:-4px}
 #buildPanel.fxOff .fxLine{display:none}
-.fxToggle{width:max-content;gap:8px;cursor:pointer;user-select:none}
+/* in the Equipment header row, on the right; a click on it flips the switch, not the fold */
+.fxToggle{display:inline-flex;flex-direction:row;align-items:center;align-self:center;gap:8px;margin-left:auto;cursor:pointer;user-select:none;font-weight:400}
 .fxToggle:hover{color:var(--fg)}
 /* a switch: the checkbox drawn as a 28x16 track with a 12px knob; muted off, the accent on, the knob sliding across */
 input.switch[type=checkbox]{appearance:none;-webkit-appearance:none;position:relative;width:28px;height:16px;padding:0;border:0;border-radius:8px;
