@@ -400,18 +400,16 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <details class="card sub" id="consPanel" open>
       <summary><b>ASPD potion, food &amp; buffs</b></summary>
       <div class="warnc" id="consOff" hidden>Not added: the status window box above says your numbers already include buffs and items.</div>
-      <div class="eqlist"><div class="eqrow"><label class="bar pbName" title="Stappy, the spirit of the Yggdrasil Staff, gives it for 1 Yggdrasil Dew (up to 3 a day from Stappy) or 1 Zelstar, and the Blessing of Yggdrasil item gives the same. It also fully restores HP and SP, and doesn't stack"><input type="checkbox" id="yggOn"><span id="yggIcon"></span>Blessing of Yggdrasil</label>
-        <span class="note">All stats +7, ATK +30, MATK +30, HIT +5, FLEE +5</span></div></div>
       <div class="note"><b>Skill buffs</b></div>
       <div id="pbuffList" class="eqlist"></div>
       <div id="pbuffOwn" class="eqlist"></div>
       <div class="bar"><button type="button" class="small" id="pbuffAdd">+ Add</button><span class="note hint">e.g. "STR +5, ATK +20, ASPD +10%"</span><span class="note" id="pbuffNote"></span></div>
       <div class="note"><b>Consumables effects</b></div>
-      <div class="bar note"><span>ASPD potion:</span>
-        <label class="bar"><input type="checkbox" id="potOn"> using one</label>
-        <span id="potIcon"></span><select id="potType" aria-label="Which potion"></select>
-        <span id="potInfo"></span>
-      </div>
+      <div class="eqlist"><div class="eqrow"><label class="bar pbName" title="Stappy, the spirit of the Yggdrasil Staff, gives it for 1 Yggdrasil Dew (up to 3 a day from Stappy) or 1 Zelstar, and the Blessing of Yggdrasil item gives the same. It also fully restores HP and SP, and doesn't stack"><input type="checkbox" id="yggOn"><span id="yggIcon"></span>Blessing of Yggdrasil</label>
+        <span class="note">All stats +7, ATK +30, MATK +30, HIT +5, FLEE +5</span></div></div>
+      <div class="note"><b>ASPD potion</b></div>
+      <div class="eqlist"><div class="eqrow potRow"><label class="bar pbName"><input type="checkbox" id="potOn" aria-label="Using an ASPD potion"><span id="potIcon"></span></label>
+        <select id="potType" aria-label="Which potion"></select><span class="note" id="potInfo"></span></div></div>
       <div class="note"><b>Account buffs</b> <span class="muted">every character on the server</span></div>
       <div id="acctBuffs" class="eqlist"></div>
       <div class="note"><b>Items</b></div>

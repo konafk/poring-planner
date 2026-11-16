@@ -455,6 +455,9 @@ td .map{cursor:default}
 /* in the Equipment header row, on the right; a click on it flips the switch, not the fold */
 .fxToggle{display:inline-flex;flex-direction:row;align-items:center;align-self:center;gap:8px;margin-left:auto;cursor:pointer;user-select:none;font-weight:400}
 .fxToggle:hover{color:var(--fg)}
+/* Consumables: the ASPD potion row, tick and icon then the potion picker and what it gives, like the item rows below it */
+.potRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.potRow>.pbName{min-width:0}
 /* a switch: the checkbox drawn as a 28x16 track with a 12px knob; muted off, the accent on, the knob sliding across */
 input.switch[type=checkbox]{appearance:none;-webkit-appearance:none;position:relative;width:28px;height:16px;padding:0;border:0;border-radius:8px;
   background:color-mix(in srgb,var(--muted) 45%,transparent);transition:background-color .15s ease-out}
