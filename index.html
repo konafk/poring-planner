@@ -117,15 +117,12 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   <section class="card" id="charCard">
     <div class="bar"><h2 class="grow">Your character</h2></div>
     <details class="card sub" id="basicsPanel" open>
-      <summary title="Your job, the attack you farm with, your levels and EXP / drop bonuses"><b>Job &amp; level</b></summary>
-      <div class="form c8">
+      <summary title="Your job, the attack you farm with, your levels and clan"><b>Job &amp; level</b></summary>
+      <div class="form c5">
         <label>Job<select id="job"></select></label>
         <label>Attack<select id="preset"></select></label>
         <label>Base level<input id="baseLv" type="number" min="1" max="99"></label>
         <label>Job level<input id="jobLv" type="number" min="1" max="70"></label>
-        <label title="The server's EXP rate: basic 100% plus events, for base and job EXP. Account buffs, the Essential Package and items such as the Growth Elixir are ticked in Consumables; add EXP gear here if you aren't building from gear">Server EXP<input id="bonus" type="number" min="100" step="1"></label>
-        <label title="The server's drop rate: basic 100% plus events. Account buffs, the Essential Package and Bubble Gum are ticked in Consumables">Server drop<input id="dropBonus" type="number" min="100" step="1"></label>
-        <label title="The server's death penalty: at 100% a death costs 10% base EXP, at 50% 5%. The Account Death Penalty Buff (Consumables) halves it">Server death<select id="deathRate"><option value="100">100%</option><option value="50">50%</option><option value="0">0%</option></select></label>
         <label id="clanWrap">Clan<select id="clanSel"></select></label>
       </div>
     </details>
@@ -446,6 +443,14 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
           <button type="button" role="menuitem" data-keep id="showArch" aria-pressed="false" title="List archived sessions in the session picker" hidden>Show archived: off</button>
           <button type="button" role="menuitem" id="delSession" class="danger" data-keep>Delete</button>
         </div>
+      </div>
+    </div>
+    <div class="bar srvRates" role="group" aria-label="Server rates">
+      <span class="note pickLbl">Server</span>
+      <div class="bar srvBoxes">
+      <label class="bar" title="The server's EXP rate: basic 100% plus events, for base and job EXP. Account buffs, the Essential Package and items such as the Growth Elixir are ticked in Consumables; add EXP gear here if you aren't building from gear">EXP<input id="bonus" type="number" min="100" step="1" class="w-xs" aria-label="Server EXP %">%</label>
+      <label class="bar" title="The server's drop rate: basic 100% plus events. Account buffs, the Essential Package and Bubble Gum are ticked in Consumables">Drop<input id="dropBonus" type="number" min="100" step="1" class="w-xs" aria-label="Server drop %">%</label>
+      <label class="bar" title="The server's death penalty: at 100% a death costs 10% base EXP, at 50% 5%. The Account Death Penalty Buff (Consumables) halves it">Death<select id="deathRate" aria-label="Server death penalty"><option value="100">100%</option><option value="50">50%</option><option value="0">0%</option></select></label>
       </div>
     </div>
   </section>

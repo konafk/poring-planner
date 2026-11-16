@@ -97,9 +97,10 @@ try {
     const { page, errs } = await open();
     await goTab(page, "char");                          // a new player starts on Home
     assert.ok(await page.isVisible("#acctSel") && await page.isVisible("#newAcct"));
-    assert.ok(!await page.isVisible("#sessionSel"));
+    assert.ok(!await page.isVisible("#sessionSel") && !await page.isVisible("#bonus"));
     await goTab(page, "track");
     assert.ok(await page.isVisible("#sessionSel") && !await page.isVisible("#acctSel"));
+    assert.ok(await page.isVisible("#bonus") && await page.isVisible("#dropBonus") && await page.isVisible("#deathRate"));   // the server's rates, under the session picker
     assert.equal(await page.textContent("#sessionSel"), "No session yet");     // a new player has no session until they start one
     assert.ok(await page.isDisabled("#editSession"));
     await page.click("#farmCard h2");                                  // fold Where to farm: + New session unfolds it
