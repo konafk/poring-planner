@@ -299,13 +299,14 @@ details.sub details.sub{background:var(--surface)}
 .form.c6{grid-template-columns:repeat(6,minmax(0,1fr))}
 .form.c7{grid-template-columns:repeat(7,minmax(0,1fr))}
 /* Job & level: the Job and Attack pickers get room for their names (they read "Novic…" and "Basic a…") */
-#basicsPanel>.form.c7{grid-template-columns:minmax(0,1.4fr) minmax(0,1.9fr) repeat(5,minmax(0,1fr))}
+#basicsPanel>.form.c8{grid-template-columns:minmax(0,1.3fr) minmax(0,1.6fr) repeat(4,minmax(0,.85fr)) minmax(0,1.15fr) minmax(0,1.6fr)}
+#basicsPanel>.form.c8>label{white-space:nowrap}
 .form.c211{grid-template-columns:2fr 1fr 1fr}
 .form.cfill{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
 .span-all{grid-column:1/-1}.span3{grid-column:span 3;align-self:end}.span-rest{grid-column:2/-1;align-self:center}
 #bonusRow{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
-@media (max-width:900px){#basicsPanel>.form.c7,.form.c6,.form.c7{grid-template-columns:repeat(3,minmax(0,1fr))}.form.c5{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (max-width:600px){#basicsPanel>.form.c7,.form.c4,.form.c5,.form.c6,.form.c7,.form.c211{grid-template-columns:repeat(2,minmax(0,1fr))}#bonusRow{grid-template-columns:1fr}
+@media (max-width:900px){#basicsPanel>.form.c8,.form.c6,.form.c7{grid-template-columns:repeat(3,minmax(0,1fr))}.form.c5{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:600px){#basicsPanel>.form.c8,.form.c4,.form.c5,.form.c6,.form.c7,.form.c211{grid-template-columns:repeat(2,minmax(0,1fr))}#bonusRow{grid-template-columns:1fr}
   .form.c211>:first-child,.span3,.span-rest{grid-column:1/-1}}
 
 /* ---- stat tiles ---- */

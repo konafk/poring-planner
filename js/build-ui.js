@@ -240,7 +240,8 @@ function renderCons(){const c=C(),it=consItemsOf(c);
     <button type="button" class="small danger" data-del aria-label="Remove">✕</button></div>`).join(""));consNote()}
 // redrawn on every render (job and weapon change what's allowed), except while you're typing in it
 function renderAspdBuffs(){const c=C(),k=potKey(c),act=document.activeElement;$("consOff").hidden=c.mode==="build"||addOnTop(c);
-  $("clanSel").value=CLANS[c.clan]?c.clan:"";$("clanInfo").textContent=(CLANS[c.clan]?clanEff(CLANS[c.clan]):"two stats +1, Max HP +30, Max SP +10")+(c.mode==="build"?"":" · build mode only: your status window already shows it");
+  $("clanSel").value=CLANS[c.clan]?c.clan:"";// in Job & level: what it gives goes in the field's tooltip, so the row keeps one height
+  $("clanWrap").title=`The clan you joined at its Clan Master: a buff that stays on. ${CLANS[c.clan]?clanEff(CLANS[c.clan]):"Two stats +1, Max HP +30, Max SP +10"}.`+(c.mode==="build"?" Counted in Build from gear":" Counted only in Build from gear: your status window already shows it");
   if(act!==$("potType"))$("potType").innerHTML=Object.entries(ASPD_POT).filter(([key])=>potJobOk(key)).map(([key,p])=>{const lvOk=potLvOk(key);
     return `<option value="${key}"${key===k?" selected":""}${lvOk?"":" disabled"}>${p.name} (${p.mod})${lvOk?"":` · Base Lv ${p.lv}+`}</option>`}).join("");
   // the potion in use, its icon opening its details like the other item names
@@ -258,7 +259,8 @@ $("pbuffList").addEventListener("input",e=>{const f=e.target.dataset.f,row=e.tar
       const box=$("pbuffList").querySelector(`[data-pb="${x.k}"] [data-f="on"]`);if(box)box.checked=false})}
   // the list isn't redrawn while you type in it, so the effect text follows the level here
   {const b=PBUFF.find(x=>x.k===row.dataset.pb),el=row.querySelector("[data-pbeff]");if(b&&el)el.textContent=pbEff(b,pbLv(b,o))}save();renderAll()});
-$("clanSel").innerHTML=`<option value="">none</option>`+Object.entries(CLANS).map(([k,x])=>`<option value="${k}">${esc(x.name)}</option>`).join("");
+// short names ("Sword"), to fit the Clan box in Job & level; its tooltip says what the clan picked gives
+$("clanSel").innerHTML=`<option value="">none</option>`+Object.entries(CLANS).map(([k,x])=>`<option value="${k}">${esc(x.name.replace(/ Clan$/,""))}</option>`).join("");
 $("clanSel").addEventListener("change",e=>{const c=C();if(e.target.value)c.clan=e.target.value;else delete c.clan;save();renderAll()});
 $("addOnTop").addEventListener("change",e=>{C().addOnTop=e.target.checked;save();renderAll()});
 $("potType").addEventListener("change",e=>{C().potType=e.target.value;save();renderAll()});

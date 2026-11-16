@@ -122,7 +122,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     <div class="bar"><h2 class="grow">Your character</h2></div>
     <details class="card sub" id="basicsPanel" open>
       <summary title="Your job, the attack you farm with, your levels and EXP / drop bonuses"><b>Job &amp; level</b></summary>
-      <div class="form c7">
+      <div class="form c8">
         <label>Job<select id="job"></select></label>
         <label>Attack<select id="preset"></select></label>
         <label>Base level<input id="baseLv" type="number" min="1" max="99"></label>
@@ -130,6 +130,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <label title="Your EXP rate as the game shows it (basic 100% plus premium and events), for base and job EXP; add EXP gear if you aren't building from gear">Base EXP %<input id="bonus" type="number" min="100" step="1"></label>
         <label title="Your drop rate as the game shows it (basic 100% plus premium and events)">Drop rate %<input id="dropBonus" type="number" min="100" step="1"></label>
         <label title="Your death penalty rate as the game shows it: at 100% a death costs 10% base EXP, at 50% it costs 5%">Death penalty<select id="deathRate"><option value="100">100%</option><option value="50">50%</option><option value="0">0%</option></select></label>
+        <label id="clanWrap">Clan<select id="clanSel"></select></label>
       </div>
     </details>
     <div class="bar">
@@ -137,9 +138,6 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <button type="button" role="radio" data-cmode="build">Build from gear</button>
         <button type="button" role="radio" data-cmode="status">Status window</button>
       </div>
-    </div>
-    <div class="bar note"><label class="bar" title="The clan you joined at its Clan Master: a buff that stays on, so your status window always includes it. Counted in build mode">Clan <select id="clanSel"></select></label>
-      <span class="muted" id="clanInfo"></span>
     </div>
     <details class="card sub build" id="buildPanel" open hidden>
       <summary title="Your stats worked out from base stats, job level and gear"><b>Build from gear</b></summary>
