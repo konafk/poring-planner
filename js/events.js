@@ -250,7 +250,7 @@ $("delAcct").addEventListener("click",()=>{if(accts.list.length<2)return;if(!acc
 // settings stay open: data-keep)
 const menus=[...document.querySelectorAll(".menu")];
 const closeMenu=(m,refocus)=>{const b=m.querySelector(".menuBtn");if(b.getAttribute("aria-expanded")!=="true")return;b.setAttribute("aria-expanded","false");m.querySelector(".menuList").hidden=true;if(refocus)b.focus()};
-menus.forEach(m=>{const b=m.querySelector(".menuBtn"),list=m.querySelector(".menuList"),items=()=>[...list.querySelectorAll("button:not(:disabled)")];
+menus.forEach(m=>{const b=m.querySelector(".menuBtn"),list=m.querySelector(".menuList"),items=()=>[...list.querySelectorAll("button:not(:disabled):not([hidden])")];
   b.addEventListener("click",()=>{const open=b.getAttribute("aria-expanded")==="true";menus.forEach(x=>closeMenu(x));if(!open){b.setAttribute("aria-expanded","true");list.hidden=false}});
   b.addEventListener("keydown",e=>{if(e.key==="ArrowDown"){e.preventDefault();if(list.hidden)b.click();items()[0]?.focus()}});
   list.addEventListener("click",e=>{const it=e.target.closest("button");if(it&&!it.hasAttribute("data-keep"))closeMenu(m)});
@@ -289,7 +289,9 @@ $("newSession").addEventListener("click",()=>{openSession(newSess().id);showTab(
 $("archSession").addEventListener("click",()=>{const s=cur();if(s===NO_SESS)return;
   if(s.archived){delete s.archived;save();renderAll();showToast(`"${s.name}" is back with your sessions.`);return}
   s.archived=true;const nx=state.sessions.find(x=>!x.archived);if(nx)openSession(nx.id);else{save();renderAll()}
-  showToast(`Archived "${s.name}": it's ${accts.list.length>1?"at the end of the session picker, marked (archived)":"under Archived in the session picker"}.`)});
+  showToast(`Archived "${s.name}": ${!SHOW_ARCH?"it's out of the session picker until you turn on Show archived in the ⋯ menu":`it's ${accts.list.length>1?"at the end of the session picker, marked (archived)":"under Archived in the session picker"}`}.`)});
+// Show archived: list archived sessions in the session picker (every account's), per device, off by default
+$("showArch").addEventListener("click",()=>{SHOW_ARCH=!SHOW_ARCH;try{SHOW_ARCH?localStorage.setItem(KEY_SHOWARCH,"1"):localStorage.removeItem(KEY_SHOWARCH)}catch(e){}renderSessions()});
 let delArmed=false;
 $("delSession").addEventListener("click",()=>{if(cur()===NO_SESS)return;if(!delArmed){delArmed=true;$("delSession").textContent="Confirm delete";setTimeout(()=>{delArmed=false;$("delSession").textContent="Delete"},3000);return}
   delArmed=false;$("delSession").textContent="Delete";state.sessions=state.sessions.filter(s=>s.id!==state.current);

@@ -186,20 +186,26 @@ const otherSessions=id=>{if(!OTHER_SESS.has(id)){let v=null;try{v=JSON.parse(loc
 addEventListener("storage",()=>OTHER_SESS.clear());
 // with 2+ accounts the picked session reads "Account · Session", so the closed dropdown says which account you're on
 // archived sessions (s.archived, Archive in the ⋯ menu) keep their entries but go to the end: under "Archived" with one account, and
-// marked "(archived)" at the end of their account's list with several (a dropdown can't group inside a group)
+// marked "(archived)" at the end of their account's list with several (a dropdown can't group inside a group).
+// They're left out of the picker unless Show archived (the ⋯ menu, per device, off by default) is on; the current one shows either way
+const KEY_SHOWARCH="rozero-farm-planner-showarch";
+let SHOW_ARCH=false;try{SHOW_ARCH=localStorage.getItem(KEY_SHOWARCH)==="1"}catch(e){}
 function renderSessions(){const none=!state.sessions.length,many=accts.list.length>1,an=many?esc((accts.list.find(a=>a.id===accts.active)||{}).name||"")+" · ":"";
-  const live=state.sessions.filter(s=>!s.archived),arch=state.sessions.filter(s=>s.archived),ARCH=" (archived)";
+  const live=state.sessions.filter(s=>!s.archived),allArch=state.sessions.filter(s=>s.archived),ARCH=" (archived)";
+  const arch=SHOW_ARCH?allArch:allArch.filter(s=>s.id===state.current);
   const opt=(s,mark)=>`<option value="${esc(s.id)}" ${s.id===state.current?"selected":""}>${s.id===state.current?an:""}${esc(s.name)}${mark?ARCH:""}</option>`;
   const mine=none?`<option value="">${an}No session yet</option>`:many?[...live,...arch].map(s=>opt(s,s.archived)).join("")
     :live.map(s=>opt(s)).join("")+(arch.length?`<optgroup label="Archived">${arch.map(s=>opt(s)).join("")}</optgroup>`:"");
   $("sessionSel").innerHTML=!many?mine:accts.list.map(a=>{if(a.id===accts.active)return `<optgroup label="${esc(a.name)}">${mine}</optgroup>`;
-    const ss=otherSessions(a.id),ord=[...ss.filter(s=>!s.archived),...ss.filter(s=>s.archived)];
-    return `<optgroup label="${esc(a.name)}">${ss.length?ord.map(s=>`<option value="acct:${esc(a.id)}:${esc(s.id)}">${esc(s.name)}${s.archived?ARCH:""}</option>`).join(""):`<option value="acct:${esc(a.id)}:">No session yet</option>`}</optgroup>`}).join("");
+    const ss=otherSessions(a.id),ord=[...ss.filter(s=>!s.archived),...SHOW_ARCH?ss.filter(s=>s.archived):[]];
+    return `<optgroup label="${esc(a.name)}">${ord.length?ord.map(s=>`<option value="acct:${esc(a.id)}:${esc(s.id)}">${esc(s.name)}${s.archived?ARCH:""}</option>`).join(""):`<option value="acct:${esc(a.id)}:">${ss.length?"Only archived sessions":"No session yet"}</option>`}</optgroup>`}).join("");
   // nothing to rename, archive or delete until logging EXP, Farm here or New session starts one; the dropdown still picks another account's
   ["editSession","renameSession","archSession","delSession"].forEach(id=>$(id).disabled=none);$("sessionSel").disabled=none&&!many;
   $("archSession").textContent=cur().archived?"Unarchive":"Archive";
-  // the Backup card's second copy only matters while some account has an archived session
-  $("bkCopyLive").hidden=!(arch.length||accts.list.some(a=>a.id!==accts.active&&otherSessions(a.id).some(s=>s.archived)));
+  // the Backup card's second copy and Show archived only matter while some account has an archived session
+  const anyArch=!!(allArch.length||accts.list.some(a=>a.id!==accts.active&&otherSessions(a.id).some(s=>s.archived)));
+  $("bkCopyLive").hidden=!anyArch;
+  const sa=$("showArch");sa.hidden=!anyArch;sa.setAttribute("aria-pressed",String(SHOW_ARCH));sa.textContent=`Show archived: ${SHOW_ARCH?"on":"off"}`;
   // the Map card's own pick (Monsters & maps): the session Farm here and Farming it now go to, or a new one; archived ones stay out
   // of it (the current one shows even when archived, so the box says where Farm here goes)
   $("mapSessSel").innerHTML=(none?'<option value="">No session yet</option>':state.sessions.filter(s=>!s.archived||s.id===cur().id).map(s=>`<option value="${esc(s.id)}" ${s.id===cur().id?"selected":""}>${esc(s.name)}${s.archived?ARCH:""}</option>`).join(""))+'<option value="+new">+ New session</option>'}
