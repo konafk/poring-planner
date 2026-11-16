@@ -386,7 +386,9 @@ function costumeLists(){if($("costumeLists").childElementCount)return;
 const shadowShields=()=>(typeof SHADOW_SHIELDS!=="undefined"?SHADOW_SHIELDS:[]).map(id=>BUILD.item(id)).filter(Boolean);
 // the lists name the stone, shield or egg; what the one picked gives shows under its box (like a Job Essence on the Armor row), and
 // each option's tooltip has its own
-const spFxLine=t=>t?`<div class="note fxLine">${esc(t)}</div>`:"";
+function spFxLine(t){return t?`<div class="note fxLine">${esc(t)}</div>`:""}
+// an item's or card's effect as the Equipment and Cards tabs write it (gear-db.js fxOf), for the line under its box
+function gearFx(it){return it&&typeof fxOf==="function"?fxOf(it).join(" · "):""}
 const shFx=x=>stoneFx({b:(x.g||[]).flatMap(g=>g.b||[])});
 const eggFx=x=>[x.b.length?stoneFx({b:x.b}):"",x.off||""].filter(Boolean).join(", ");
 function renderStones(){const b=gearSet(),sel=b.stones||{},ring=(b.special||{}).ring,sh=(b.special||{}).shield,cos=(b.special||{}).costume||{},all=typeof STONES!=="undefined"?STONES:[],eggs=typeof TAMING_EGGS!=="undefined"?TAMING_EGGS:[];costumeLists();
@@ -475,11 +477,11 @@ function renderGearTable(){const c=C(),b=gearSet(c),mem=memOf(c);GEAR_LISTS={};l
   const rows=BUILD.SLOTS.map(s=>{const g0=b.gear[s.k]||{},items=gearChoices(s.k),cards=cardChoices(s.k,g0.id&&BUILD.item(g0.id));GEAR_LISTS["g_"+s.k]=pickList(items);GEAR_LISTS["c_"+s.k]=pickList(cards);
     lists+=`<datalist id="gl_${s.k}">${[...GEAR_LISTS["g_"+s.k]].map(([n,id])=>`<option value="${esc(n)}"${mem[id]?` label="remembered: ${esc(memTxt(mem[id]))}"`:""}>`).join("")}</datalist><datalist id="cl_${s.k}">${[...GEAR_LISTS["c_"+s.k]].map(([n,id])=>{const p=cardName({id});return `<option value="${esc(n)}"${p?` label="${esc((BUILD.item(id)||{}).affixPos==="suffix"?"… "+p:p+" …")}"`:""}>`}).join("")}</datalist>`;
     const g=b.gear[s.k]||{},it=g.id&&BUILD.item(g.id),label=n=>{const x=BUILD.item(n);return x?labelOf(x,cards):""};
-    const cardBoxes=it&&it.slots?Array.from({length:it.slots},(_,i)=>`<span class="cardBox">${iconHtml("card",g.cards&&g.cards[i],.5)}<input data-card="${i}" list="cl_${s.k}" placeholder="card" title="The card (Vitata), or the name it gives the item in game (Healing)" value="${esc(g.cards&&g.cards[i]?label(g.cards[i]):"")}"></span>`).join(""):"";
+    const cardBoxes=it&&it.slots?Array.from({length:it.slots},(_,i)=>`<span class="cardBox">${iconHtml("card",g.cards&&g.cards[i],.5)}<input data-card="${i}" list="cl_${s.k}" placeholder="card" title="The card (Vitata), or the name it gives the item in game (Healing)" value="${esc(g.cards&&g.cards[i]?label(g.cards[i]):"")}"></span>${spFxLine(g.cards&&g.cards[i]&&gearFx(BUILD.item(g.cards[i])))}`).join(""):"";
     const refinable=it&&s.k!=="ammo"; // every part: some accessories and headgear refine though the data has no schedule for them
     // under a two-handed weapon the Shield row is closed; a shield saved there before stays editable so it can be taken off
     const both=s.k==="shield"&&twoHandOn(b.gear),w2=both&&BUILD.item(b.gear.weapon.id),off=both&&!it;
-    return `<tr data-slot="${s.k}"${both?' class="bothHands"':""}><td>${s.k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label}${both?`<div class="note">${it?"not counted: ":""}${esc(w2.name)} takes both hands</div>`:""}</td><td><div class="itemBox">${iconHtml("gear",it&&it.id)}<input class="item" list="gl_${s.k}" placeholder="${off?"two-handed weapon":items.length?"none":"no items for this job"}" title="${off?esc(`${w2.name} is two-handed: take it off to use a shield${state.job==="Assassin"?" or a left-hand weapon":""}`):"The item, or its name from the equipment window (+7 Healing Shining Clip) or with its cards (+7 Shining Clip Vitata): sets the refine and cards too"}" value="${esc(it?labelOf(it,items):"")}"${off?" disabled":""}></div></td>
+    return `<tr data-slot="${s.k}"${both?' class="bothHands"':""}><td>${s.k==="shield"&&state.job==="Assassin"?"Shield / left hand":s.label}${both?`<div class="note">${it?"not counted: ":""}${esc(w2.name)} takes both hands</div>`:""}</td><td><div class="itemBox">${iconHtml("gear",it&&it.id)}<input class="item" list="gl_${s.k}" placeholder="${off?"two-handed weapon":items.length?"none":"no items for this job"}" title="${off?esc(`${w2.name} is two-handed: take it off to use a shield${state.job==="Assassin"?" or a left-hand weapon":""}`):"The item, or its name from the equipment window (+7 Healing Shining Clip) or with its cards (+7 Shining Clip Vitata): sets the refine and cards too"}" value="${esc(it?labelOf(it,items):"")}"${off?" disabled":""}></div>${spFxLine(gearFx(it))}</td>
       <td>${refinable?`<input class="ref" type="number" min="0" max="20" value="${num(g.refine)}">`:""}</td><td><div class="cards">${cardBoxes}</div></td>
       <td>${it?optBoxes(s.k,g,it):""}</td></tr>`}).join("");
   $("gearTable").tBodies[0].innerHTML=rows;$("gearLists").innerHTML=lists;renderStones();
