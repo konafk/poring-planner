@@ -87,7 +87,7 @@ function parseCons(txt){const lines=[],rest=[],N="([+-]\\s*\\d+(?:\\.\\d+)?)";
     if(pct("^(?:recovery|healing)\\s*items?(?:\\s*effect)?","rec_item_pct"))return;
     if(pct("^(?:incoming\\s*)?heal(?:\\s*received)?(?:\\s*effect)?","heal_pct"))return;
     if(pct("^(?:item\\s*)?drop(?:\\s*rate)?(?:\\s*from\\s*monsters)?","drop"))return;
-    if((m=p.match(/^(base|job|base\s*\/\s*job)?\s*exp\s*([+-]\s*\d+(?:\.\d+)?)\s*%$/i))){const v=parseFloat(m[2].replace(/\s/g,"")),w=m[1]||"base";
+    if((m=p.match(/^(base|job|base\s*\/\s*job)?\s*exp\s*([+-]\s*\d+(?:\.\d+)?)\s*%$/i))){const v=parseFloat(m[2].replace(/\s/g,"")),w=m[1]||"base/job"; // "EXP +10%" alone: base and job EXP (every EXP buff counts for both)
       if(/base/i.test(w))lines.push(["exp_base",null,null,v]);if(/job/i.test(w))lines.push(["exp_job",null,null,v]);return}
     if(/^cast(?:ing)?\s*(?:can\s*not|cannot|can't)\s*be\s*interrupted$/i.test(p)){lines.push(["no_break",null,null,1]);return}
     if((m=p.match(/^all\s*stats?\s*([+-]\s*\d+)$/i))){STAT6_UI.forEach(k=>rest.push(k+" "+m[1]));return}
@@ -99,9 +99,9 @@ function parseCons(txt){const lines=[],rest=[],N="([+-]\\s*\\d+(?:\\.\\d+)?)";
 // Ragnarok Zero event consumables (30 minutes each), added as rows you can edit; values from the in-game tooltips (Ragnarok Zero Global).
 // id: the item (its icon opens its details); note: what isn't counted
 const CONS_PRESETS=[
-  // first in the list. Client: "EXP/item drop rate +10%" (30, 7 or 3 days) on the character that used it; EXP is base EXP, as the
-  // client words it next to "Job EXP" on the Account EXP Buff. Its daily Yggdrasil Dew is the Blessing of Yggdrasil tick
-  {name:"Essential Package",id:200878,eff:"EXP +10%, Drop rate +10%"},
+  // first in the list. Client: "EXP/item drop rate +10%" (30, 7 or 3 days) on the character that used it; like every EXP buff it
+  // counts for base and job EXP. Its daily Yggdrasil Dew is the Blessing of Yggdrasil tick
+  {name:"Essential Package",id:200878,eff:"Base/Job EXP +10%, Drop rate +10%"},
   {name:"Challenge Drink",id:23605,eff:"ATK/MATK +30, ATK/MATK +1%, HIT/FLEE +30, ASPD +1, SP consumption -5%, Fixed cast -30%"},
   {name:"Mimir's Well",id:23611,eff:"Max SP +10%, SP consumption -10%"},
   {name:"Small Mana Potion",id:23203,eff:"SP +5% every 5s"},

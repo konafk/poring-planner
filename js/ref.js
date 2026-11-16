@@ -61,7 +61,7 @@ function refFormulas(alts=[]){const vals=[],c=C(),m=calcMob(),ok=STATS.every(k=>
    grp("EXP")+
    R("Even Share party","share = floor(monster EXP × (100% + 10% × (members − 1)) / members)",()=>`${100+partyBonus()}% ÷ ${partyN()} = ${partyPct()}% each`,"same map, within 15 base levels; the game splits by damage dealt, so a kill can be 1 EXP off")+
    R("Base EXP per kill","floor(share of base EXP × (1 + gear EXP % + gear EXP % vs its race + (Server EXP − 100%) + account buff and consumable EXP %))",()=>need(x=>`${fmtN(killExp(x))}${mn}`),"bonuses add up, they don't multiply; Server EXP is the server's rate (basic 100% plus events), and the Account EXP Buff, Essential Package and Growth Elixir are ticked in Consumables")+
-   R("Job EXP per kill","floor(share of job EXP × (1 + gear EXP % + gear EXP % vs its race + (Server EXP − 100%) + account buff and consumable Job EXP %))",()=>need(x=>`${fmtN(killJobExp(x))}${mn}`),"the same Server EXP as base EXP; the Essential Package's EXP +10% is base EXP only, as the client words it")+
+   R("Job EXP per kill","floor(share of job EXP × (1 + gear EXP % + gear EXP % vs its race + (Server EXP − 100%) + account buff and consumable Job EXP %))",()=>need(x=>`${fmtN(killJobExp(x))}${mn}`),"the same Server EXP and buffs as base EXP: every EXP buff counts for both")+
    R("EXP / hour","EXP per kill × 3600 / (fight seconds + walking seconds)",()=>null)+
    grp("Loot")+
    R("Drop level penalty","gap = monster Lv − base Lv",()=>need(x=>dropGap(x)==null?null:`gap ${String(dropGap(x)).replace("-","−")}: ${penNote(x)||"no penalty"}${mn}`),"−19 or more: none; −40 or less: drops −50%; −20 to −39 isn't in the official guide, so none is counted")+

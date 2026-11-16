@@ -285,9 +285,11 @@ t("EXP and drop rate buffs add up: account buffs, Essential Package, Growth Elix
   assert.equal(run(`dropPct()`), 0); assert.equal(run(`consSum("exp_base")`), 0);
   run(`state.acctBuffs={"Account EXP Buff":true,"Account Drop Rate Buff":true}`);
   assert.equal(run(`consSum("exp_base")`), 10); assert.equal(run(`consSum("exp_job")`), 10); assert.equal(run(`dropPct()`), 10);
-  // Essential Package: "EXP/item drop rate +10%", base EXP only as the client words EXP next to Job EXP
+  // Essential Package: "EXP/item drop rate +10%", base and job EXP like every EXP buff
   run(`C().consItems={"Essential Package":true,"Bubble Gum":true,"Growth Elixir":true}`);
-  assert.equal(run(`consSum("exp_base")`), 70); assert.equal(run(`consSum("exp_job")`), 60); assert.equal(run(`dropPct()`), 120);
+  assert.equal(run(`consSum("exp_base")`), 70); assert.equal(run(`consSum("exp_job")`), 70); assert.equal(run(`dropPct()`), 120);
+  // a plain "EXP +x%" line counts for both too
+  assert.equal(run(`JSON.stringify(parseCons("EXP +5%").lines)`), JSON.stringify([["exp_base", null, null, 5], ["exp_job", null, null, 5]]));
   // the server's rate adds on top
   run(`state.dropBonus=100`); assert.equal(run(`dropPct()`), 220);
   run(`state.acctBuffs={};C().consItems={};state.dropBonus=0`);
