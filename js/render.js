@@ -429,10 +429,12 @@ function renderGoal(s,st){
 function renderJobGoal(s){
   const tiles=$("goalJobTiles"),wrap=$("goalJobWrap");wrap.hidden=true;
   const t=JOB_EXP[jobTier()],cap=t.length,jl=num(C().jobLv),j=jobRate(s),need0=jobNeed();
+  // at max job level there is nothing to plan: swap the job goal input and section for a short note
+  const maxed=jl>=cap;$("goalJobLvL").hidden=maxed;$("goalJobSec").hidden=maxed;$("goalJobMax").hidden=!maxed;
+  if(maxed){$("goalJobMax").textContent=`Job Lv ${cap} is the max for ${state.job}.`;return}
   const msg=m=>{tiles.innerHTML=`<div class="note">${m}</div>`};
   const goal=Math.min(cap,num(state.goalJobLv)||cap),gi=$("goalJobLv");gi.max=cap;if(document.activeElement!==gi)gi.value=goal;
   if(!jl)return msg("Set your job level on the Character tab to see job level estimates.");
-  if(jl===cap)return msg(`Job Lv ${cap} is the max for ${state.job}.`);
   if(!j||j.rate<=0)return msg("Log Job EXP % on 2+ entries to see job level estimates.");
   if(!need0)return msg(`Job Lv ${jl} is outside the ${state.job} job EXP table (up to Job Lv ${cap}).`);
   if(goal<=jl)return msg(`You're already Job Lv ${jl}. Pick a higher job level.`);
