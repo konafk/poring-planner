@@ -98,6 +98,8 @@ function parseCons(txt){const lines=[],rest=[],N="([+-]\\s*\\d+(?:\\.\\d+)?)";
   const o=BUILD.parseOptions(rest.join(","));return {lines:[...lines,...o.lines],bad:o.bad}}
 // Ragnarok Zero event consumables (30 minutes each), added as rows you can edit; values from the in-game tooltips (Ragnarok Zero Global).
 // id: the item (its icon opens its details); note: what isn't counted
+// the Agi Up Potion's ASPD (its box, 0 to 20; +1 when it's empty or not a number)
+const agiUpAspd=()=>{const v=state.agiUpAspd;return v!=null&&v!==""&&Number.isFinite(+v)?Math.max(0,Math.min(20,Math.round(+v))):1};
 const CONS_PRESETS=[
   // first in the list. Client: "EXP/item drop rate +10%" (30, 7 or 3 days) on the character that used it; like every EXP buff it
   // counts for base and job EXP. Its daily Yggdrasil Dew is the Blessing of Yggdrasil tick
@@ -120,8 +122,9 @@ const CONS_PRESETS=[
   {name:"Sturdy Feather",id:105672,eff:"Max HP/Max SP +3%"},
   // not an event item: Brewer Burkel's daily quest gives one, Brewer Telsa sells more for 3,000z (data/shops.js)
   // the client: "ASPD increases slightly more for 30 minutes", on top of the ASPD potions and by AGI like them; how much isn't known
-  // yet, so it counts as ASPD +1 (the user's assumption) and says so (show: the line shown in place of its effect)
-  {name:"Agi Up Potion",id:102891,eff:"ASPD +1",show:"Amount unknown, assumed ASPD +1"},
+  // yet, so it counts as the ASPD in its box (state.agiUpAspd, one value for every character, +1 until someone measures it). It's
+  // ticked per character like the others but shown in the ASPD potion section (sec)
+  {name:"Agi Up Potion",id:102891,sec:"aspd",get eff(){return `ASPD +${agiUpAspd()}`},get show(){return `Amount unknown, assumed ASPD +${agiUpAspd()}`}},
   {name:"Nordfeld Beer",id:107452,eff:"Damage to Boulder Dwarves +10%"}];
 // they're listed with a tick each, like the buffs from others: the ticked ones by name (c.consItems). Older saves added one as a row of
 // its own in Consumables effects: a row that is exactly a listed item (same name and effect) becomes its tick, ticked if the row was
@@ -243,7 +246,10 @@ function renderCons(){const c=C(),it=consItemsOf(c),ac=acctBuffsOf();
   $("acctBuffs").innerHTML=ACCT_BUFFS.map(p=>`<div class="eqrow" data-ab="${esc(p.name)}"><label class="bar pbName"><input type="checkbox" data-f="on" ${ac[p.name]?"checked":""}><a href="#" data-info="item:${p.id}" title="${esc(p.name)}">${itemIcon(p.id)}</a>${esc(p.name)}</label>
     <span class="note">${esc(p.eff||p.info)} · 30 or 7 days</span></div>`).join("");
   // the listed items: a tick, the item's icon (opens its details), the name, what it does
-  $("consItems").innerHTML=CONS_PRESETS.map(p=>`<div class="eqrow" data-ci="${esc(p.name)}"><label class="bar pbName"><input type="checkbox" data-f="on" ${it[p.name]?"checked":""}><a href="#" data-info="item:${p.id}" title="${esc(p.name)}">${itemIcon(p.id)}</a>${esc(p.name)}</label>
+  {const p=CONS_PRESETS.find(x=>x.sec==="aspd");$("agiUpRow").innerHTML=`<div class="eqrow" data-ci="${esc(p.name)}"><label class="bar pbName"><input type="checkbox" data-f="on" ${it[p.name]?"checked":""}><a href="#" data-info="item:${p.id}" title="${esc(p.name)}">${itemIcon(p.id)}</a>${esc(p.name)}</label>
+    <label class="bar agiUpAmt" title="The ASPD it adds, measured in game: your ASPD with the potion minus without it (at your AGI: the client says it scales like the ASPD potions). One value for every character">ASPD +<input class="w-2xs" type="number" min="0" max="20" step="1" id="agiUpAspd" value="${agiUpAspd()}"></label>
+    <span class="note" id="agiUpNote">${esc(p.show)}</span></div>`}
+  $("consItems").innerHTML=CONS_PRESETS.filter(p=>!p.sec).map(p=>`<div class="eqrow" data-ci="${esc(p.name)}"><label class="bar pbName"><input type="checkbox" data-f="on" ${it[p.name]?"checked":""}><a href="#" data-info="item:${p.id}" title="${esc(p.name)}">${itemIcon(p.id)}</a>${esc(p.name)}</label>
     <span class="note">${esc(p.show||p.eff||p.info||"")}${p.note?` · ${esc(p.note)}`:""}</span></div>`).join("");
   // cooking: a dish per stat, its icon opening its details
   const fd=foodOf(c);$("consFood").innerHTML=STAT6_UI.map(k=>{const id=+fd[k]||0,v=dishVal(k,id),K=k.toUpperCase();
@@ -285,6 +291,12 @@ const consNote=()=>OWN_LISTS.forEach(L=>{const bad=rowsOf(C(),L.key).filter(r=>r
   $(L.note).innerHTML=bad.length?`<span class="bad">Not understood: ${bad.map(esc).join(", ")}</span>`:""});
 $("consFood").addEventListener("change",e=>{const row=e.target.closest("[data-food]");if(!row||e.target.dataset.f!=="dish")return;const fd=foodOf(C());
   if(e.target.value)fd[row.dataset.food]=+e.target.value;else delete fd[row.dataset.food];save();renderCons();renderAll()});
+$("agiUpRow").addEventListener("change",e=>{if(e.target.dataset.f!=="on")return;const it=consItemsOf(C()),n="Agi Up Potion";
+  if(e.target.checked)it[n]=true;else delete it[n];save();renderAll()});
+// the box: saved as you type, the note follows; empty counts as +1 until it's filled in
+$("agiUpRow").addEventListener("input",e=>{if(e.target.id!=="agiUpAspd")return;const v=e.target.value.trim();if(v==="")delete state.agiUpAspd;else state.agiUpAspd=+v;
+  $("agiUpNote").textContent=`Amount unknown, assumed ASPD +${agiUpAspd()}`;save();renderAll()});
+$("agiUpRow").addEventListener("focusout",e=>{if(e.target.id==="agiUpAspd")e.target.value=agiUpAspd()});
 $("acctBuffs").addEventListener("change",e=>{const row=e.target.closest("[data-ab]");if(!row||e.target.dataset.f!=="on")return;const ac=acctBuffsOf();
   if(e.target.checked)ac[row.dataset.ab]=true;else delete ac[row.dataset.ab];save();renderAll()});
 $("consItems").addEventListener("change",e=>{const row=e.target.closest("[data-ci]");if(!row||e.target.dataset.f!=="on")return;const it=consItemsOf(C());

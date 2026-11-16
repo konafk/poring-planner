@@ -458,6 +458,7 @@ td .map{cursor:default}
 /* Consumables: the ASPD potion row, tick and icon then the potion picker and what it gives, like the item rows below it */
 .potRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .potRow>.pbName{min-width:0}
+.agiUpAmt{gap:4px;white-space:nowrap}
 /* a switch: the checkbox drawn as a 28x16 track with a 12px knob; muted off, the accent on, the knob sliding across */
 input.switch[type=checkbox]{appearance:none;-webkit-appearance:none;position:relative;width:28px;height:16px;padding:0;border:0;border-radius:8px;
   background:color-mix(in srgb,var(--muted) 45%,transparent);transition:background-color .15s ease-out}

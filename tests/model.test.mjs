@@ -295,6 +295,14 @@ t("EXP and drop rate buffs add up: account buffs, Essential Package, Growth Elix
   run(`state.acctBuffs={};C().consItems={};state.dropBonus=0`);
 });
 
+t("Agi Up Potion: flat ASPD from its box, +1 when it's empty", () => {
+  run(`C().consItems={"Agi Up Potion":true};delete state.agiUpAspd`); assert.equal(run(`consSum("aspd")`), 1);
+  run(`state.agiUpAspd=3`); assert.equal(run(`consSum("aspd")`), 3);
+  run(`state.agiUpAspd=""`); assert.equal(run(`consSum("aspd")`), 1);
+  run(`state.agiUpAspd=99`); assert.equal(run(`consSum("aspd")`), 20);
+  run(`C().consItems={};delete state.agiUpAspd`); assert.equal(run(`consSum("aspd")`), 0);
+});
+
 t("EXP table log: oldest first, each dated, none is the current table", () => {
   const log = run("EXP_TABLE_LOG.map(x=>({until:x.until,top:Math.max(...Object.keys(x.table).map(Number)),same:x.table===EXP_TABLE}))");
   assert.ok(log.length >= 1);
