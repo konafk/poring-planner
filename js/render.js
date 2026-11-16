@@ -197,6 +197,8 @@ function renderSessions(){const none=!state.sessions.length,many=accts.list.leng
   // nothing to rename, archive or delete until logging EXP, Farm here or New session starts one; the dropdown still picks another account's
   ["editSession","renameSession","archSession","delSession"].forEach(id=>$(id).disabled=none);$("sessionSel").disabled=none&&!many;
   $("archSession").textContent=cur().archived?"Unarchive":"Archive";
+  // the Backup card's second copy only matters while some account has an archived session
+  $("bkCopyLive").hidden=!(arch.length||accts.list.some(a=>a.id!==accts.active&&otherSessions(a.id).some(s=>s.archived)));
   // the Map card's own pick (Monsters & maps): the session Farm here and Farming it now go to, or a new one; archived ones stay out
   // of it (the current one shows even when archived, so the box says where Farm here goes)
   $("mapSessSel").innerHTML=(none?'<option value="">No session yet</option>':state.sessions.filter(s=>!s.archived||s.id===cur().id).map(s=>`<option value="${esc(s.id)}" ${s.id===cur().id?"selected":""}>${esc(s.name)}${s.archived?ARCH:""}</option>`).join(""))+'<option value="+new">+ New session</option>'}

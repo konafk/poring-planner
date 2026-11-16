@@ -570,9 +570,13 @@ $("mapTable").querySelector("tbody").addEventListener("click",e=>{const sm=e.tar
 // backup
 const bkText=()=>JSON.stringify(state);
 // combined backup: every account's save plus the account list
-// every account as stored (acctsText doesn't save first, so it never bumps the revision other tabs watch)
-const acctsText=()=>JSON.stringify({allAccounts:1,active:accts.active,accounts:accts.list.map(a=>{let data=null;try{data=JSON.parse(localStorage.getItem(acctKey(a.id)))}catch(e){}return {id:a.id,name:a.name,data}})});
-const bkAllText=()=>{save();return acctsText()};
+// a save without its archived sessions, for a share link (always) and Copy backup without archived; it opens on the current
+// session, or the first one left when that one is archived
+const noArchived=s=>{if(!s||!Array.isArray(s.sessions))return s;const ss=s.sessions.filter(x=>!(x&&x.archived));
+  return {...s,sessions:ss,current:ss.some(x=>x.id===s.current)?s.current:ss.length?ss[0].id:null}};
+// every account as stored (acctsText doesn't save first, so it never bumps the revision other tabs watch); live: archived sessions left out
+const acctsText=live=>JSON.stringify({allAccounts:1,active:accts.active,accounts:accts.list.map(a=>{let data=null;try{data=JSON.parse(localStorage.getItem(acctKey(a.id)))}catch(e){}return {id:a.id,name:a.name,data:live?noArchived(data):data}})});
+const bkAllText=live=>{save();return acctsText(live)};
 // write an all-accounts backup over every account: each one first, then drop the old ones it doesn't have, so a failed write leaves
 // the old accounts in place. "" when it worked, else what went wrong
 function writeAccounts(data){if(!data||!data.allAccounts||!Array.isArray(data.accounts)||!data.accounts.length||data.accounts.some(a=>!a||typeof a.id!=="string"||!a.id))return "That backup has no accounts in it.";
@@ -582,7 +586,9 @@ function writeAccounts(data){if(!data||!data.allAccounts||!Array.isArray(data.ac
 const bkCopyText=(t,what)=>{const fb=()=>{$("bkText").value=t;$("bkText").select();$("bkMsg").textContent="Couldn't copy automatically, so the backup is selected in the box below."};
   try{navigator.clipboard.writeText(t).then(()=>{$("bkMsg").textContent=`${what} copied. Paste it somewhere safe.`},fb)}catch(err){fb()}};
 // the backup always holds every account; the text also goes in the box so it can be seen or copied by hand
-$("bkCopy").addEventListener("click",()=>{const t=bkAllText();$("bkText").value=t;const n=accts.list.length;bkCopyText(t,n>1?`Backup of all ${n} accounts`:"Backup")});
+// Copy backup without archived (shown while any account has an archived session) leaves those out, as a share link does
+[["bkCopy",false],["bkCopyLive",true]].forEach(([id,live])=>$(id).addEventListener("click",()=>{const t=bkAllText(live);$("bkText").value=t;const n=accts.list.length;
+  bkCopyText(t,(n>1?`Backup of all ${n} accounts`:"Backup")+(live?" without archived sessions":""))}));
 // share link: the current account, deflated and base64url-encoded into the URL hash (#s=…), which never reaches the server
 const b64u={enc:b=>{let s="";for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode(...b.subarray(i,i+0x8000));return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"")},
   dec:t=>Uint8Array.from(atob(t.replace(/-/g,"+").replace(/_/g,"/")),c=>c.charCodeAt(0))};
@@ -616,10 +622,7 @@ function unpackState(o){if(!isObj(o)||o.$p!==1)return o;delete o.$p;
   (Array.isArray(o.sessions)?o.sessions:[]).forEach(x=>{if(!x)return;[x.snap,...(Array.isArray(x.snapHist)?x.snapHist:[])].forEach(y=>{if(!isObj(y)||y.$d!==1)return;
     delete y.$d;y.c={...JSON.parse(JSON.stringify(objOr(objOr(o.chars)[x.job||o.job]))),...objOr(y.c)}})});
   return o}
-// a share link leaves archived sessions out (Copy backup keeps them), so the link stays short; the session it opens on is the
-// current one, or the first one left when that one is archived
-const shareState=s=>{const ss=(s.sessions||[]).filter(x=>!x.archived);return {...s,sessions:ss,current:ss.some(x=>x.id===s.current)?s.current:ss.length?ss[0].id:null}};
-$("bkLink").addEventListener("click",async()=>{let url;try{save();url=location.origin+location.pathname+"#s="+await packShare(JSON.stringify(packState(shareState(state))))}catch(err){$("bkMsg").textContent="This browser can't make share links. Use Copy backup instead.";return}
+$("bkLink").addEventListener("click",async()=>{let url;try{save();url=location.origin+location.pathname+"#s="+await packShare(JSON.stringify(packState(noArchived(state))))}catch(err){$("bkMsg").textContent="This browser can't make share links. Use Copy backup instead.";return}
   bkCopyText(url,`Share link (${url.length.toLocaleString()} characters)`)});
 // opening a share link loads it into the backup box; nothing is replaced until Restore is clicked twice
 async function loadShareLink(){const m=location.hash.match(/^#s=([\w-]+)/);if(!m)return;

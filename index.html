@@ -430,7 +430,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   </section>
   <section class="card" id="backupCard">
     <div class="bar"><h2 class="grow">Backup &amp; share</h2><span class="note hint">Saved in this browser only. A share link opens this account for anyone.</span></div>
-    <div class="bar"><button type="button" id="bkCopy">Copy backup</button><button type="button" id="bkLink">Copy share link</button><button type="button" id="bkRestore" class="danger">Restore from text</button><span class="note" id="bkMsg"></span></div>
+    <div class="bar"><button type="button" id="bkCopy">Copy backup</button><button type="button" id="bkCopyLive" title="Every account, leaving out archived sessions: restoring it removes them" hidden>Copy backup without archived</button><button type="button" id="bkLink">Copy share link</button><button type="button" id="bkRestore" class="danger">Restore from text</button><span class="note" id="bkMsg"></span></div>
     <div class="bar mt cloudBar" id="cloudBar" hidden></div>
     <textarea class="mono-area" id="bkText" rows="3" placeholder="Paste a backup here, then click Restore from text"></textarea>
   </section>

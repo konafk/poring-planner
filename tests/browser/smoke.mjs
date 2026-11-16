@@ -122,6 +122,12 @@ try {
     assert.equal(await page.evaluate("state.current"), "sB");                 // opens the next session that isn't archived
     assert.deepEqual(await groups(), ["Beta", "Archived:Alpha"]);
     assert.equal(await page.evaluate("state.sessions.find(s=>s.id==='sA').entries.length"), 1);
+    assert.equal(await page.getAttribute("#bkCopyLive", "hidden"), null);     // Backup: a second copy, without archived sessions
+    await page.evaluate("$('bkCopyLive').click()");
+    const live = JSON.parse(await page.inputValue("#bkText")).accounts[0].data;
+    assert.deepEqual([live.sessions.map(s => s.id), live.current], [["sB"], "sB"]);
+    await page.evaluate("$('bkCopy').click()");                              // the full backup keeps it
+    assert.deepEqual(JSON.parse(await page.inputValue("#bkText")).accounts[0].data.sessions.map(s => s.id), ["sA", "sB"]);
     await goTab(page, "maps");                                               // Monsters & maps' picker leaves it out
     assert.deepEqual(await page.$$eval("#mapSessSel option", os => os.map(o => o.value)), ["sB", "+new"]);
     await goTab(page, "track");
@@ -131,6 +137,7 @@ try {
     await page.click("#archSession");
     assert.deepEqual(await groups(), ["Alpha", "Beta"]);
     assert.equal(await page.evaluate("state.current"), "sA");
+    assert.equal(await page.getAttribute("#bkCopyLive", "hidden"), "");       // nothing archived: just the one Copy backup
     assert.deepEqual(errs, []);
     await page.close();
   });
