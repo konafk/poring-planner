@@ -441,7 +441,7 @@ td .map{cursor:default}
 #gearTable tbody tr,#gearTable tbody tr:hover td,#specialTable tbody tr,#specialTable tbody tr:hover td{cursor:default;background:none}
 /* Build from gear's tables fit the card: slot, item and refine (or enchant) on a row's first line; cards and affixes wrap under the
    item, and cells with nothing in them take no room. Each row is a grid, its rule on the row */
-:is(#gearTable,#specialTable) :is(thead,tbody) tr{display:grid;grid-template-columns:128px minmax(0,440px) 88px;justify-content:start;align-items:center;column-gap:8px;border-bottom:1px solid var(--line)}
+:is(#gearTable,#specialTable) :is(thead,tbody) tr{display:grid;grid-template-columns:128px minmax(0,440px) 56px;justify-content:start;align-items:center;column-gap:8px;border-bottom:1px solid var(--line)}
 #specialTable :is(thead,tbody) tr{grid-template-columns:128px minmax(0,440px)}
 /* Special equipment: the stone, the ring's egg and affixes go under the item, like a gear row's cards and affixes */
 #specialTable tr>:nth-child(n+3){grid-column:2/-1;padding-top:0}
@@ -470,7 +470,9 @@ td .map{cursor:default}
 :is(#gearTable,#specialTable) .opts{min-width:0}
 #gearTable .cards{min-width:0}
 #gearTable .cards input{min-width:0}
-#gearTable .ref{width:72px}
+#gearTable .ref{width:56px}
+/* the refine box sits 8px after the item box (the item cell's padding only), not 24px off in a column of its own */
+#gearTable tr>:nth-child(3){margin-left:-8px;padding-left:0;padding-right:0}
 @media (max-width:520px){:is(#gearTable,#specialTable) :is(thead,tbody) tr{grid-template-columns:88px minmax(0,1fr) 72px}#specialTable :is(thead,tbody) tr{grid-template-columns:88px minmax(0,1fr)}}
 #buildPanel.altedit :is(#gearTable,#specialTable){background:var(--accent-soft)}
 /* card tick boxes: one card per line, its numbers only while ticked */
