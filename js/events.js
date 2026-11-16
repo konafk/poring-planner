@@ -50,9 +50,8 @@ const renderStatNote=()=>{const c=C();const miss=STATS.filter(k=>statVal(c,k)==n
 STATS.forEach(k=>$("st_"+k).addEventListener("change",e=>{const c=C();if(!c.st)c.st={};const wasSet=STATS.every(x=>statVal(c,x)!=null);const before=derived(c);c.st[k]=e.target.value;if(wasSet)shiftByStats(c,before);save();syncChar();renderAll()}));
 // character number/text fields
 const numK=["lwAtk","jobLv","fctSec","normalPct","myElPct","ignDef","ignMdef","mastery","rangePct","skillPct","crit","critDmg","fixedShare","vctPct","fctPct","acdPct","wAtk","baseLv","aspd","maxHp","maxSp","spRegen","dmgBonus","atkPct","matkPct","namePct","itemSp","itemPrice","itemHp","itemHpPrice","mobInterval","hitScale","hpRegen6","curW","maxW","gymLv","townMin"];
-["baseLv","jobLv","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lwAtk","fctSec","normalPct","myElPct","ignDef","ignMdef","mastery","rangePct","skillPct","crit","critDmg","fixedShare","vctPct","fctPct","acdPct","spRegen","dmgBonus","atkPct","matkPct","nameSel","namePct","itemSp","itemPrice","itemHp","itemHpPrice","mobInterval","hitScale","hpRegen6","curW","maxW","gymLv","townMin"].forEach(k=>
+["baseLv","jobLv","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","lwAtk","fctSec","normalPct","myElPct","ignDef","ignMdef","mastery","rangePct","skillPct","crit","critDmg","fixedShare","vctPct","fctPct","acdPct","spRegen","dmgBonus","atkPct","matkPct","nameSel","namePct","itemSp","itemPrice","itemHp","itemHpPrice","mobInterval","hitScale","hpRegen6","curW","maxW","gymLv"].forEach(k=>
   $(k).addEventListener("input",e=>{const v=e.target.value;const c0=C();const before=(k==="baseLv"||k==="intTxt")?derived(c0):null;C()[k]=numK.includes(k)?(v===""?(k==="hitScale"?0.3:0):num(v)):v;if(k==="mobInterval"&&!(C()[k]>0))C()[k]=1.5;if(before){shiftByStats(c0,before);["atkTxt","matkTxt","hitTxt","fleeTxt","defTxt"].forEach(x=>{if(document.activeElement!==$(x))$(x).value=c0[x]})}save();renderAll()}));
-$("sellAt").addEventListener("input",e=>{const v=+e.target.value;C().sellAt=v>0?Math.min(90,v):70;save();renderAll()});
 ["weapon","wElem","nameType","lw","lwElem"].forEach(k=>$(k).addEventListener("change",e=>{const c=C();
   if(k==="weapon"||k==="lw"){const next={...c,[k]:e.target.value};if(k==="lw"&&BUILD.dualOk(state.job,next.weapon,next.lw))next.shield=false;
     // a two-handed weapon takes both hands: the shield and the left-hand weapon come off
@@ -193,9 +192,10 @@ let openQuickLog=()=>{};
 })();
 $("pauseBtn").addEventListener("click",()=>{const s=sessNow(),p=openPause(s);if(!s.pauses)s.pauses=[];
   if(p){p.to=Date.now();save();renderAll();showTab("track");$("fPct").focus()}else{s.pauses.push({from:Date.now()});save();renderAll()}});
-// sell timer: its weight boxes are the Character tab's, so typing in one updates the other
-[["tripW","curW"],["tripMax","maxW"],["tripTownMin","townMin"]].forEach(([id,k])=>$(id).addEventListener("input",e=>{C()[k]=num(e.target.value);$(k).value=e.target.value;save();renderAll()}));
-$("tripAt").addEventListener("input",e=>{const v=+e.target.value;C().sellAt=v>0?Math.min(90,v):70;$("sellAt").value=e.target.value;save();renderAll()});
+// sell timer: carrying and max weight are also the Character tab's Weight boxes, so typing in one updates the other; sell at and town
+// and back are only here
+[["tripW","curW"],["tripMax","maxW"],["tripTownMin","townMin"]].forEach(([id,k])=>$(id).addEventListener("input",e=>{C()[k]=num(e.target.value);if($(k))$(k).value=e.target.value;save();renderAll()}));
+$("tripAt").addEventListener("input",e=>{const v=+e.target.value;C().sellAt=v>0?Math.min(90,v):70;save();renderAll()});
 $("tripEarly").addEventListener("input",e=>{state.tripEarly=Math.max(0,num(e.target.value));save();renderTrip()});
 $("tripSound").addEventListener("change",e=>{state.tripSound=e.target.checked;save();if(e.target.checked)tripBeep()});
 $("tripNotify").addEventListener("change",e=>{const on=e.target.checked;state.tripNotify=on;save();

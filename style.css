@@ -263,7 +263,9 @@ details.note>summary::marker{color:var(--muted)}
 .card h2[aria-expanded]{cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px}
 .card h2[aria-expanded]::before{content:"";flex:none;width:7px;height:7px;margin:0 3px 2px 2px;border-right:1.8px solid var(--muted);border-bottom:1.8px solid var(--muted);transform:rotate(45deg);transition:transform .15s}
 .card h2[aria-expanded="false"]::before{transform:rotate(-45deg);margin-bottom:0}
-.card.collapsed{align-self:start;padding-bottom:0}
+/* align-self:start keeps a folded card in a grid row from stretching to its neighbour's height; in a column of cards it would also
+   shrink it to its heading, so width:100% keeps its full width and its heading row's buttons stay beside the heading */
+.card.collapsed{align-self:start;width:100%;padding-bottom:0}
 .card.collapsed>.cardHead{border-bottom-color:transparent}
 .card.collapsed>:not(.cardHead){display:none}
 /* panels inside a card (Equipment stats, Attack details…): a tinted box whose summary folds it */
