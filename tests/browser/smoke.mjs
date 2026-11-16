@@ -111,16 +111,25 @@ try {
     await page.close();
   });
 
-  await t("Archive in the session's ⋯ menu moves it under Archived, keeps its entries, and Unarchive puts it back", async () => {
+  await t("Archive in the session's ⋯ menu hides it from the picker (Show archived lists it under Archived), keeps its entries, and Unarchive puts it back", async () => {
     const { page, errs } = await open();
     await page.evaluate("state.sessions.push({id:'sA',name:'Alpha',mobIds:[],entries:[{t:1,lv:50,pct:10}]},{id:'sB',name:'Beta',mobIds:[],entries:[]});state.current='sA';save();renderAll()");
     await goTab(page, "track");
     const groups = () => page.$$eval("#sessionSel > *", els => els.map(e => e.tagName === "OPTGROUP" ? e.label + ":" + [...e.children].map(o => o.textContent).join(",") : e.textContent));
     assert.deepEqual(await groups(), ["Alpha", "Beta"]);
     await page.click('[aria-controls="sessMenu"]');
+    assert.ok(!await page.isVisible("#showArch"));                           // nothing archived: no Show archived
     await page.click("#archSession");
     assert.equal(await page.evaluate("state.current"), "sB");                 // opens the next session that isn't archived
+    assert.deepEqual(await groups(), ["Beta"]);                               // Show archived is off by default
+    await page.click('[aria-controls="sessMenu"]');
+    assert.equal(await page.textContent("#showArch"), "Show archived: off");
+    await page.click("#showArch");
+    assert.ok(await page.isVisible("#sessMenu"));                             // the menu stays open
+    assert.equal(await page.getAttribute("#showArch", "aria-pressed"), "true");
     assert.deepEqual(await groups(), ["Beta", "Archived:Alpha"]);
+    assert.equal(await page.evaluate("localStorage.getItem('rozero-farm-planner-showarch')"), "1");
+    await page.keyboard.press("Escape");
     assert.equal(await page.evaluate("state.sessions.find(s=>s.id==='sA').entries.length"), 1);
     assert.equal(await page.getAttribute("#bkCopyLive", "hidden"), null);     // Backup: a second copy, without archived sessions
     await page.evaluate("$('bkCopyLive').click()");
@@ -138,6 +147,12 @@ try {
     assert.deepEqual(await groups(), ["Alpha", "Beta"]);
     assert.equal(await page.evaluate("state.current"), "sA");
     assert.equal(await page.getAttribute("#bkCopyLive", "hidden"), "");       // nothing archived: just the one Copy backup
+    await page.evaluate("state.sessions.find(s=>s.id==='sA').archived=true;renderAll()");
+    await page.click('[aria-controls="sessMenu"]');
+    await page.click("#showArch");                                           // off again: only the current archived session stays
+    assert.deepEqual(await groups(), ["Beta", "Archived:Alpha"]);
+    await page.selectOption("#sessionSel", "sB");
+    assert.deepEqual(await groups(), ["Beta"]);
     assert.deepEqual(errs, []);
     await page.close();
   });
