@@ -226,6 +226,9 @@ if(state.minLv!=null||state.maxLv!=null){const lo=Math.round(+state.minLv)||1,hi
 // Job EXP bonus % is gone: the Base EXP % box counts for job EXP too. The shop's death item (5% instead of 10%) is Death penalty 50%.
 // Base EXP % and Drop rate % can't go under 100%, so a bonus saved below 0 counts as 0
 delete state.jobBonus;if(state.deathRate==null&&state.dieItem)state.deathRate=50;delete state.dieItem;
+// Death penalty 50% was the Account Death Penalty Buff: it's ticked in Consumables now, on the server's 100%
+if(+state.deathRate===50&&!state.deathBuffMoved){state.acctBuffs=state.acctBuffs&&typeof state.acctBuffs==="object"?state.acctBuffs:{};
+  state.acctBuffs["Account Death Penalty Buff"]=true;state.deathRate=100}state.deathBuffMoved=true;
 ["bonus","dropBonus"].forEach(k=>{if(state[k]!=null&&!(+state[k]>0))state[k]=0});
 const D={bonus:0,dropBonus:0,deathRate:100,hideClosed:true,filters:{},mobF:{boss:"noboss"},infoF:{},sort:"epm",dir:-1,regions:{},closed:[],maxSec:60};
 for(const k in D)if(state[k]==null)state[k]=JSON.parse(JSON.stringify(D[k]));

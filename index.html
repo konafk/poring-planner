@@ -127,9 +127,9 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <label>Attack<select id="preset"></select></label>
         <label>Base level<input id="baseLv" type="number" min="1" max="99"></label>
         <label>Job level<input id="jobLv" type="number" min="1" max="70"></label>
-        <label title="Your EXP rate as the game shows it (basic 100% plus premium and events), for base and job EXP; add EXP gear if you aren't building from gear">Base EXP %<input id="bonus" type="number" min="100" step="1"></label>
-        <label title="Your drop rate as the game shows it (basic 100% plus premium and events)">Drop rate %<input id="dropBonus" type="number" min="100" step="1"></label>
-        <label title="Your death penalty rate as the game shows it: at 100% a death costs 10% base EXP, at 50% it costs 5%">Death penalty<select id="deathRate"><option value="100">100%</option><option value="50">50%</option><option value="0">0%</option></select></label>
+        <label title="The server's EXP rate: basic 100% plus events, for base and job EXP. Account buffs, the Essential Package and items such as the Growth Elixir are ticked in Consumables; add EXP gear here if you aren't building from gear">Server EXP<input id="bonus" type="number" min="100" step="1"></label>
+        <label title="The server's drop rate: basic 100% plus events. Account buffs, the Essential Package and Bubble Gum are ticked in Consumables">Server drop<input id="dropBonus" type="number" min="100" step="1"></label>
+        <label title="The server's death penalty: at 100% a death costs 10% base EXP, at 50% 5%. The Account Death Penalty Buff (Consumables) halves it">Server death<select id="deathRate"><option value="100">100%</option><option value="50">50%</option><option value="0">0%</option></select></label>
         <label id="clanWrap">Clan<select id="clanSel"></select></label>
       </div>
     </details>
@@ -413,6 +413,9 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <span id="potIcon"></span><select id="potType" aria-label="Which potion"></select>
         <span id="potInfo"></span>
       </div>
+      <div class="note"><b>Account buffs</b> <span class="muted">every character on the server</span></div>
+      <div id="acctBuffs" class="eqlist"></div>
+      <div class="note"><b>Items</b></div>
       <div id="consItems" class="eqlist"></div>
       <div id="consFood" class="eqlist"></div>
       <div id="consList" class="eqlist"></div>

@@ -663,8 +663,9 @@ function mapSpShort(mp,w,el){let s=0,t=0;withMobbed(mp,()=>withEl(el,()=>(MAPMOB
 // zeny per kill: the exported loot value (the database, NPC prices) scaled by your drop rate bonus. A drop you sell to players
 // counts at the market price you typed instead: the loot value already holds its NPC price, so the market price adds only what
 // it beats the NPC price by. Its chance is scaled by the drop bonus and the level penalty, capped at 100%
-// the Drop rate % box over 100% plus "Item drop rate +x%" from gear in build mode (an event card's option)
-const dropPct=()=>num(state.dropBonus)+num((C().bx||{}).drop);
+// the Server drop % box over 100%, "Item drop rate +x%" from gear in build mode (an event card's option) and drop rate from account
+// buffs and consumables (Bubble Gum, Essential Package): they add up
+const dropPct=()=>num(state.dropBonus)+num((C().bx||{}).drop)+consSum("drop");
 const dropMul=()=>1+dropPct()/100;
 // NPC sell price: the one you typed, else the database's (data/prices.js), else 0
 const npcSell=id=>{const v=state.npcPrices[id];return v!=null&&v!==""?num(v):num(NPCSELL[id])};
@@ -756,9 +757,9 @@ Object.entries(SPAWN).forEach(([id,arr])=>{const m=MOBS.find(x=>x.id===+id);if(!
 // ---- tracker math ----
 function cumulative(e,base){let total=0;for(let l=base;l<e.lv;l++)total+=lvExp(l,e.t)||100;return total+(e.pct/100)*(lvExp(e.lv,e.t)||100)}
 // pausing: s.pauses=[{from,to}] (to missing while paused); paused time is left out of every rate, EXP gained is still counted
-// EXP % lost on death: 10% at the Death penalty rate the game shows (100%, 50% or 0%)
+// EXP % lost on death: 10% at the server's death penalty (100%, 50% or 0%), halved by the Account Death Penalty Buff
 const DEATH_RATES=[100,50,0];
-const deathRate=()=>DEATH_RATES.includes(+state.deathRate)?+state.deathRate:100;
+const deathRate=()=>(DEATH_RATES.includes(+state.deathRate)?+state.deathRate:100)*((state.acctBuffs||{})["Account Death Penalty Buff"]?.5:1);
 const diePct=()=>10*deathRate()/100;
 const openPause=s=>(s.pauses||[]).find(p=>p.to==null);
 const pausedMs=(s,a,b)=>(s.pauses||[]).reduce((x,p)=>x+Math.max(0,Math.min(b,p.to??Date.now())-Math.max(a,p.from)),0);

@@ -86,8 +86,9 @@ function parseCons(txt){const lines=[],rest=[],N="([+-]\\s*\\d+(?:\\.\\d+)?)";
     if(pct("^(?:incoming\\s*)?heal\\s*(?:and|&|\\/)\\s*recovery\\s*items?(?:\\s*effect)?","heal_pct","rec_item_pct"))return;
     if(pct("^(?:recovery|healing)\\s*items?(?:\\s*effect)?","rec_item_pct"))return;
     if(pct("^(?:incoming\\s*)?heal(?:\\s*received)?(?:\\s*effect)?","heal_pct"))return;
-    if((m=p.match(/^(base|job|base\s*\/\s*job)\s*exp\s*([+-]\s*\d+(?:\.\d+)?)\s*%$/i))){const v=parseFloat(m[2].replace(/\s/g,""));
-      if(/base/i.test(m[1]))lines.push(["exp_base",null,null,v]);if(/job/i.test(m[1]))lines.push(["exp_job",null,null,v]);return}
+    if(pct("^(?:item\\s*)?drop(?:\\s*rate)?(?:\\s*from\\s*monsters)?","drop"))return;
+    if((m=p.match(/^(base|job|base\s*\/\s*job)?\s*exp\s*([+-]\s*\d+(?:\.\d+)?)\s*%$/i))){const v=parseFloat(m[2].replace(/\s/g,"")),w=m[1]||"base";
+      if(/base/i.test(w))lines.push(["exp_base",null,null,v]);if(/job/i.test(w))lines.push(["exp_job",null,null,v]);return}
     if(/^cast(?:ing)?\s*(?:can\s*not|cannot|can't)\s*be\s*interrupted$/i.test(p)){lines.push(["no_break",null,null,1]);return}
     if((m=p.match(/^all\s*stats?\s*([+-]\s*\d+)$/i))){STAT6_UI.forEach(k=>rest.push(k+" "+m[1]));return}
     // "ATK/MATK +30", "Cri damage / ranged damage / magic damage +5%": each name gets the value
@@ -98,6 +99,9 @@ function parseCons(txt){const lines=[],rest=[],N="([+-]\\s*\\d+(?:\\.\\d+)?)";
 // Ragnarok Zero event consumables (30 minutes each), added as rows you can edit; values from the in-game tooltips (Ragnarok Zero Global).
 // id: the item (its icon opens its details); note: what isn't counted
 const CONS_PRESETS=[
+  // first in the list. Client: "EXP/item drop rate +10%" (30, 7 or 3 days) on the character that used it; EXP is base EXP, as the
+  // client words it next to "Job EXP" on the Account EXP Buff. Its daily Yggdrasil Dew is the Blessing of Yggdrasil tick
+  {name:"Essential Package",id:200878,eff:"EXP +10%, Drop rate +10%"},
   {name:"Challenge Drink",id:23605,eff:"ATK/MATK +30, ATK/MATK +1%, HIT/FLEE +30, ASPD +1, SP consumption -5%, Fixed cast -30%"},
   {name:"Mimir's Well",id:23611,eff:"Max SP +10%, SP consumption -10%"},
   {name:"Small Mana Potion",id:23203,eff:"SP +5% every 5s"},
@@ -105,7 +109,9 @@ const CONS_PRESETS=[
   {name:"Unlimited Drink",id:23607,eff:"Max HP/Max SP +5%, Crit damage +5%, Ranged damage +5%, Magic damage +5%, Casting cannot be interrupted"},
   {name:"Premium Course Meal",id:23604,eff:"All stats +5, ATK/MATK +20"},
   {name:"Enriched Abrasive",id:102892,eff:"CRIT +30"},
-  {name:"Growth Elixir",id:105743,eff:"Base/Job EXP +50%"},
+  {name:"Growth Elixir",id:105743,eff:"Base/Job EXP +50%",note:"doesn't stack with another growth elixir"},
+  // client: "Increases item drop rate from monsters by 100% for 30 minutes"
+  {name:"Bubble Gum",id:12210,eff:"Drop rate +100%"},
   {name:"Ale's Blessing",id:23608,eff:"Recovery items +20%, Heal received +20%"},
   // Gatchaman collaboration (until the 26 November 2026 maintenance): Condor Joe's feathers, 60 minutes each (data/news.js)
   {name:"Gorgeous Feather",id:105668,eff:"CRIT +5, ASPD +1"},
@@ -123,7 +129,13 @@ const consItemsOf=c=>{if(c.consStat||(c.pbuffs&&(c.pbuffs.agiFood||c.pbuffs.dexF
   if(Array.isArray(c.cons)&&c.cons.length)c.cons=c.cons.filter(r=>{const p=CONS_PRESETS.find(x=>x.name===r.name&&x.eff===r.eff);if(!p)return true;if(r.on)it[p.name]=true;return false});
   return it};
 // every row that counts: the listed items ticked, then your own rows in Consumables effects and Skill buffs ({on, name, eff, what})
-const ownRows=c=>[...CONS_PRESETS.filter(p=>consItemsOf(c)[p.name]).map(p=>({on:true,name:p.name,eff:p.eff,what:"Item"})),
+// account buffs (client: "Effect applies to all characters on the server" for 30 or 7 days): ticked once for every character
+// (state.acctBuffs, by name). The death one halves the server's death penalty (model.js deathRate), so it has no effect line
+const ACCT_BUFFS=[{name:"Account EXP Buff",id:23463,eff:"Base/Job EXP +10%"},{name:"Account Drop Rate Buff",id:23464,eff:"Drop rate +10%"},
+  {name:"Account Death Penalty Buff",id:23465,eff:"",info:"Death penalty -50%"}];
+const acctBuffsOf=()=>{if(!state.acctBuffs||typeof state.acctBuffs!=="object")state.acctBuffs={};return state.acctBuffs};
+const ownRows=c=>[...ACCT_BUFFS.filter(p=>p.eff&&acctBuffsOf()[p.name]).map(p=>({on:true,name:p.name,eff:p.eff,what:"Account"})),
+  ...CONS_PRESETS.filter(p=>consItemsOf(c)[p.name]).map(p=>({on:true,name:p.name,eff:p.eff,what:"Item"})),
   ...OWN_LISTS.flatMap(L=>rowsOf(c,L.key).filter(r=>r.on).map(r=>({...r,what:L.what})))];
 // stacking: a cooked dish and Blessing of Yggdrasil don't add up, the higher one counts per stat; the listed items and your rows stack on top
 // clans (Ragnarok Zero Global; as iRO Wiki's Clan System has it): a buff that stays on while you're
@@ -224,7 +236,9 @@ function applyConsumables(){EFF=null;const c=C();if(!addOnTop(c))return;const li
   const sp=num(c.maxSp)>0?f((num(c.maxSp)*(100+int1)/(100+int0)+g("sp"))*(1+g("sp_percent")/100)):c.maxSp;
   EFF={atkTxt:`${atkSt}+${atkGear}`,matkTxt:`${matkSt}+${matkTot-matkSt}`,hitTxt:String(sumStat(c.hitTxt)+d("hit")+g("hit")),fleeTxt:String(sumStat(c.fleeTxt)+d("flee")+g("flee")),
     atkPct:num(c.atkPct)+g("atk_percent"),matkPct:num(c.matkPct)+g("matk_percent"),defTxt:`${ds+d("def")+vitDef}+${dh+g("def")}`,crit:num(c.crit)+d("crit")+g("crit"),aspd,maxHp:hp,maxSp:sp,st:tmp.st,intTxt:tmp.intTxt}}
-function renderCons(){const c=C(),it=consItemsOf(c);
+function renderCons(){const c=C(),it=consItemsOf(c),ac=acctBuffsOf();
+  $("acctBuffs").innerHTML=ACCT_BUFFS.map(p=>`<div class="eqrow" data-ab="${esc(p.name)}"><label class="bar pbName"><input type="checkbox" data-f="on" ${ac[p.name]?"checked":""}><a href="#" data-info="item:${p.id}" title="${esc(p.name)}">${itemIcon(p.id)}</a>${esc(p.name)}</label>
+    <span class="note">${esc(p.eff||p.info)} · 30 or 7 days</span></div>`).join("");
   // the listed items: a tick, the item's icon (opens its details), the name, what it does
   $("consItems").innerHTML=CONS_PRESETS.map(p=>`<div class="eqrow" data-ci="${esc(p.name)}"><label class="bar pbName"><input type="checkbox" data-f="on" ${it[p.name]?"checked":""}><a href="#" data-info="item:${p.id}" title="${esc(p.name)}">${itemIcon(p.id)}</a>${esc(p.name)}</label>
     <span class="note">${esc(p.eff||p.info||"")}${p.note?` · ${esc(p.note)}`:""}</span></div>`).join("");
@@ -268,6 +282,8 @@ const consNote=()=>OWN_LISTS.forEach(L=>{const bad=rowsOf(C(),L.key).filter(r=>r
   $(L.note).innerHTML=bad.length?`<span class="bad">Not understood: ${bad.map(esc).join(", ")}</span>`:""});
 $("consFood").addEventListener("change",e=>{const row=e.target.closest("[data-food]");if(!row||e.target.dataset.f!=="dish")return;const fd=foodOf(C());
   if(e.target.value)fd[row.dataset.food]=+e.target.value;else delete fd[row.dataset.food];save();renderCons();renderAll()});
+$("acctBuffs").addEventListener("change",e=>{const row=e.target.closest("[data-ab]");if(!row||e.target.dataset.f!=="on")return;const ac=acctBuffsOf();
+  if(e.target.checked)ac[row.dataset.ab]=true;else delete ac[row.dataset.ab];save();renderAll()});
 $("consItems").addEventListener("change",e=>{const row=e.target.closest("[data-ci]");if(!row||e.target.dataset.f!=="on")return;const it=consItemsOf(C());
   if(e.target.checked)it[row.dataset.ci]=true;else delete it[row.dataset.ci];save();renderAll()});
 OWN_LISTS.forEach(L=>{
