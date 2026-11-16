@@ -41,9 +41,8 @@ function crowdInfo(){const c=C(),m=calcMob();if(document.activeElement!==$("crow
 // is in the kill time's line, and where it comes from in its tooltip
 function charOutTiles(){const m=calcMob(),tile=(k,v,sub,tip)=>`<div class="tile out"${tip?` title="${esc(tip)}"`:""}><div class="k">${k}</div><div class="v mono">${v}</div><div class="s">${sub}</div></div>`;
   const dpsTile=(d,sub)=>d!=null&&isFinite(d)?tile("Damage / s",fmtN(Math.round(d)),sub):"";
-  const far='<a href="#session" data-gotab="track" data-goto="farmCard">Where to farm</a>';
   if(!charSet())return `<div class="tile out wide"><div class="k">No stats yet</div><div class="s">Fill in your stats below to see your kill time, EXP and zeny</div></div>`;
-  if(!m)return `<div class="tile out wide"><div class="k">No monster picked</div><div class="s">Press "Farm here" in ${far} on the Session tab to see your kill time, EXP and zeny</div></div>`;
+  if(!m)return "";// no monster picked: only the attack's own numbers
   // a whole map farmed (Farm here) and no one monster picked: the map's mix, the numbers Where to farm ranked it by
   {const ss=cur(),mp=sessMap(ss),r=!state.calcMobId&&sessMobs(ss).length>1&&mp?mapStats(mp,walkSec()):null;
     if(r&&isFinite(r.secT))return tile(`on ${esc(mapName(mp)||mapCode(mp))}`,`${r.secT.toFixed(1)}s`,`a kill: ${r.sec.toFixed(1)}s fighting + ${(r.secT-r.sec).toFixed(1)}s walking${r.sell>0.05?" and selling":""}`,walkSrcTxt())+
@@ -56,7 +55,8 @@ function charOutTiles(){const m=calcMob(),tile=(k,v,sub,tip)=>`<div class="tile 
     dpsTile(dps,`vs its ${fmtN(m.hp)} HP, misses included`)+
     tile("EXP / min",m.expUnknown?"?":fmtN(r.epm)+(m.expUnsure?"*":""),m.expUnknown?"no EXP data for it yet":`${m.expUnsure?"* EXP unconfirmed · ":""}job ${fmtN(r.jpm)} / min`)+
     tile("Zeny / hr",fmtN(r.zph),"loot after skill and SP items")}
-function renderChar(){renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
+function renderChar(){$("convPanel").hidden=C().a.type==="spellfist";// Spell Fist's element is its bolts: no Weapon element panel
+  renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   // weapon endows vs the monster you picked: the element-table rate of each one, and the one the EXP/min picks
   // the items in use, each with its icon and what players pay for it (bought from players), and how many an hour; skills (Enchant Poison,
   // the Sage's Endows) with their SP, and the Point an Endow uses up (from an NPC, so no price box). Not while you type in a price
@@ -213,7 +213,7 @@ const noChar=()=>!!state.noJob&&!charSet();
 // Game data (Monsters & maps, the monster popup) can leave your character's numbers out, to look a monster or map up as the game has
 // it: the My numbers switch (state.hideMine, per account)
 const showMine=()=>charSet()&&state.hideMine!==true;
-const mineSwitch=()=>charSet()?`<label class="bar mineSw" title="Your kill time, damage, EXP and zeny against each monster"><input type="checkbox" data-mine${state.hideMine===true?"":" checked"}> My numbers</label>`:"";
+const mineSwitch=()=>charSet()?`<label class="bar mineSw" title="Your kill time, damage, EXP and zeny against each monster"><input type="checkbox" class="switch" role="switch" data-mine${state.hideMine===true?"":" checked"}> My numbers</label>`:"";
 const NO_CHAR_TXT="Set up your character on the Character tab to see your kill time, EXP / min and zeny a kill";
 function renderStart(){const box=$("startCard"),c=C(),s=cur(),n=s.entries.length;
   // any session counts, so a new, empty session doesn't bring the card back; once both are done it stays away
