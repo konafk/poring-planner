@@ -111,6 +111,30 @@ try {
     await page.close();
   });
 
+  await t("Archive in the session's ⋯ menu moves it under Archived, keeps its entries, and Unarchive puts it back", async () => {
+    const { page, errs } = await open();
+    await page.evaluate("state.sessions.push({id:'sA',name:'Alpha',mobIds:[],entries:[{t:1,lv:50,pct:10}]},{id:'sB',name:'Beta',mobIds:[],entries:[]});state.current='sA';save();renderAll()");
+    await goTab(page, "track");
+    const groups = () => page.$$eval("#sessionSel > *", els => els.map(e => e.tagName === "OPTGROUP" ? e.label + ":" + [...e.children].map(o => o.textContent).join(",") : e.textContent));
+    assert.deepEqual(await groups(), ["Alpha", "Beta"]);
+    await page.click('[aria-controls="sessMenu"]');
+    await page.click("#archSession");
+    assert.equal(await page.evaluate("state.current"), "sB");                 // opens the next session that isn't archived
+    assert.deepEqual(await groups(), ["Beta", "Archived:Alpha"]);
+    assert.equal(await page.evaluate("state.sessions.find(s=>s.id==='sA').entries.length"), 1);
+    await goTab(page, "maps");                                               // Monsters & maps' picker leaves it out
+    assert.deepEqual(await page.$$eval("#mapSessSel option", os => os.map(o => o.value)), ["sB", "+new"]);
+    await goTab(page, "track");
+    await page.selectOption("#sessionSel", "sA");                            // still opens from the picker, and Unarchive puts it back
+    await page.click('[aria-controls="sessMenu"]');
+    assert.equal(await page.textContent("#archSession"), "Unarchive");
+    await page.click("#archSession");
+    assert.deepEqual(await groups(), ["Alpha", "Beta"]);
+    assert.equal(await page.evaluate("state.current"), "sA");
+    assert.deepEqual(errs, []);
+    await page.close();
+  });
+
   await t("Monsters & maps switches the session Farm here goes to, or starts a new one", async () => {
     const { page, errs } = await open();
     await page.evaluate("C().mode='build';buildOf(C()).base.str=30;state.sessions.push({id:'sA',name:'Alpha',mobIds:[],entries:[]},{id:'sB',name:'Beta',mobIds:[],entries:[]});state.current='sA';save();renderAll()");

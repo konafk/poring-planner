@@ -298,10 +298,17 @@ $("sessName").addEventListener("keydown",e=>{if(e.key==="Enter")endRename(true);
 $("sessName").addEventListener("blur",()=>setTimeout(()=>endRename(true),150));
 // a new session: pick where it farms
 $("newSession").addEventListener("click",()=>{openSession(newSess().id);showTab("track");$("farmCard").scrollIntoView({behavior:"smooth",block:"start"})});
+// archive: the session keeps its entries (Compare sessions and Calibrate to my logs still count them) but moves to the end of the
+// session picker and out of Monsters & maps' one; the picker opens the next session that isn't archived, if there is one.
+// Unarchive puts it back with the others
+$("archSession").addEventListener("click",()=>{const s=cur();if(s===NO_SESS)return;
+  if(s.archived){delete s.archived;save();renderAll();showToast(`"${s.name}" is back with your sessions.`);return}
+  s.archived=true;const nx=state.sessions.find(x=>!x.archived);if(nx)openSession(nx.id);else{save();renderAll()}
+  showToast(`Archived "${s.name}": it's ${accts.list.length>1?"at the end of the session picker, marked (archived)":"under Archived in the session picker"}.`)});
 let delArmed=false;
 $("delSession").addEventListener("click",()=>{if(cur()===NO_SESS)return;if(!delArmed){delArmed=true;$("delSession").textContent="Confirm delete";setTimeout(()=>{delArmed=false;$("delSession").textContent="Delete"},3000);return}
   delArmed=false;$("delSession").textContent="Delete";state.sessions=state.sessions.filter(s=>s.id!==state.current);
-  openSession((state.sessions[0]||newSess()).id)});
+  openSession((state.sessions.find(s=>!s.archived)||state.sessions[0]||newSess()).id)});
 $("cmpTable").querySelector("tbody").addEventListener("click",e=>{const tr=e.target.closest("tr[data-sid]");if(!tr)return;openSession(tr.dataset.sid);window.scrollTo({top:0,behavior:"smooth"})});
 // monsters
 // add or remove a monster from the current session; the first one sets a fresh session's job
