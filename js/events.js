@@ -281,8 +281,8 @@ $("renameSession").addEventListener("click",toggleRename);
 $("editSession").addEventListener("click",toggleRename);
 $("sessName").addEventListener("keydown",e=>{if(e.key==="Enter")endRename(true);else if(e.key==="Escape")endRename(false)});
 $("sessName").addEventListener("blur",()=>setTimeout(()=>endRename(true),150));
-// a new session: pick where it farms
-$("newSession").addEventListener("click",()=>{openSession(newSess().id);showTab("track");$("farmCard").scrollIntoView({behavior:"smooth",block:"start"})});
+// a new session: pick where it farms, in Where to farm (unfolded if you folded it)
+$("newSession").addEventListener("click",()=>{openSession(newSess().id);showTab("track");openCard($("farmCard"))});
 // archive: the session keeps its entries (Compare sessions and Calibrate to my logs still count them) but moves to the end of the
 // session picker and out of Monsters & maps' one; the picker opens the next session that isn't archived, if there is one.
 // Unarchive puts it back with the others
