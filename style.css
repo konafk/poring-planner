@@ -384,6 +384,7 @@ td .map{cursor:default}
 #huntTable .hpick.off{color:var(--muted);text-decoration:line-through}
 #huntTable .drop.off a{color:var(--muted)}
 #goalTable tbody tr{cursor:default}
+#goalJobMax{align-self:flex-end;padding-bottom:7px}
 /* entries table: pauses are rows of their own; ✎ edits a row in place */
 #logTable tr.pauseRow td{color:var(--warn);font-size:12.5px;white-space:normal}
 #logTable tbody tr[data-t]{cursor:default}

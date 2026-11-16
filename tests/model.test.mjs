@@ -431,6 +431,13 @@ t("job EXP: the last job level is the max and needs no EXP", () => {
   assert.equal(g.hi, 10);
   near(g.pts[g.pts.length - 1].h * rate, t.slice(0, 9).reduce((x, y) => x + y, 0) - 0.1 * t[0]); // already 10% into Job Lv 1
   assert.equal(run("C().jobLv=10;renderJobGoal(cur())"), undefined); // at the max: a note, no goal
+  // the job goal input and section give way to the note, and come back below the max
+  run(`globalThis.getEl=document.getElementById;globalThis.jgEls={goalJobLvL:{},goalJobSec:{},goalJobMax:{}};document.getElementById=id=>jgEls[id]||getEl(id)`);
+  run("C().jobLv=10;renderJobGoal(cur())");
+  assert.deepEqual([...run(`[jgEls.goalJobLvL.hidden,jgEls.goalJobSec.hidden,jgEls.goalJobMax.hidden,jgEls.goalJobMax.textContent]`)], [true, true, false, "Job Lv 10 is the max for Novice."]);
+  run("C().jobLv=1;renderJobGoal(cur())");
+  assert.deepEqual([...run(`[jgEls.goalJobLvL.hidden,jgEls.goalJobSec.hidden,jgEls.goalJobMax.hidden]`)], [false, false, true]);
+  run(`document.getElementById=getEl`);
 });
 
 t("walking time: the current session first, then another of the same job, then 2s", () => {
