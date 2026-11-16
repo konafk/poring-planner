@@ -49,7 +49,7 @@ if(!Array.isArray(state.sessions))state.sessions=[];
 // sessions hold a list of monsters (one map, plus the aggressive ones you end up killing); older saves had a single mobId
 state.sessions.forEach(s=>{if(!Array.isArray(s.mobIds))s.mobIds=s.mobId!=null?[s.mobId]:[];delete s.mobId});
 // saves can come from a pasted backup: keep ids and names as text and log entries as numbers, dropping entries that aren't
-state.sessions.forEach(s=>{s.id=String(s.id);s.name=String(s.name??"Session");s.mobIds=s.mobIds.map(Number).filter(Number.isFinite);if(s.job!=null)s.job=String(s.job);if(s.map!=null&&(typeof s.map!=="string"||!s.map))delete s.map;
+state.sessions.forEach(s=>{s.id=String(s.id);s.name=String(s.name??"Session");s.mobIds=s.mobIds.map(Number).filter(Number.isFinite);if(s.job!=null)s.job=String(s.job);if(s.map!=null&&(typeof s.map!=="string"||!s.map))delete s.map;if(s.archived!==true)delete s.archived;
   s.entries=(Array.isArray(s.entries)?s.entries:[]).map(e=>{const o={t:+(e&&e.t),lv:+(e&&e.lv),pct:+(e&&e.pct)};if(e&&e.jpct!=null&&e.jpct!==""&&isFinite(+e.jpct))o.jpct=+e.jpct;if(e&&+e.jlv>0)o.jlv=+e.jlv;if(e&&+e.died>0)o.died=+e.died;return o})
     .filter(e=>Number.isFinite(e.t)&&Number.isFinite(e.lv)&&Number.isFinite(e.pct));
   if(s.trip!=null)s.trip=s.trip&&Number.isFinite(+s.trip.from)&&Number.isFinite(+s.trip.due)?{from:+s.trip.from,due:+s.trip.due,...(s.trip.rang===true?{rang:true}:{})}:undefined;
@@ -217,7 +217,7 @@ state.look={sex:state.look&&state.look.sex==="f"?"f":"m",hair:Math.max(1,Math.ro
     // the costumes and normal headgear worn, by slot: item ids
     ...Object.fromEntries(["cos","gear"].map(w=>[w,Object.fromEntries(Object.entries(objOr(t[w])).filter(([k,v])=>["upper","middle","lower","garment"].includes(k)&&Number.isInteger(+v)&&+v>0).map(([k,v])=>[k,+v]))]))}}
 ["teleSec","tripEarly","tripMin"].forEach(k=>{if(state[k]!=null&&!(Number.isFinite(+state[k])&&+state[k]>=0))delete state[k]});
-if(!state.current||!state.sessions.some(s=>s.id===state.current))state.current=state.sessions.length?state.sessions[0].id:null;
+if(!state.current||!state.sessions.some(s=>s.id===state.current))state.current=state.sessions.length?(state.sessions.find(s=>!s.archived)||state.sessions[0]).id:null;
 // Element / Race / Size / Boss dropdowns: the Monsters card's (mobF) and Monster info's (infoF), {key: value}
 ["mobF","infoF"].forEach(k=>{if(state[k]!=null)state[k]=Object.fromEntries(Object.entries(objOr(state[k])).filter(([,x])=>typeof x==="string"))});
 // the Monsters card's old Level range: a range set there becomes its Lv column filter

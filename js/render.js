@@ -181,17 +181,27 @@ function renderRecovery(){const R=REC(),need=recNeed(),pick={hp:recPick("hp"),sp
 // another tab saves); picking one of them (value "acct:<account id>:<session id>") switches to that account and opens it
 const OTHER_SESS=new Map();
 const otherSessions=id=>{if(!OTHER_SESS.has(id)){let v=null;try{v=JSON.parse(localStorage.getItem(acctKey(id)))}catch(e){}
-  OTHER_SESS.set(id,(v&&Array.isArray(v.sessions)?v.sessions:[]).filter(s=>s&&s.id!=null).map(s=>({id:String(s.id),name:String(s.name||"Session")})))}return OTHER_SESS.get(id)};
+  OTHER_SESS.set(id,(v&&Array.isArray(v.sessions)?v.sessions:[]).filter(s=>s&&s.id!=null).map(s=>({id:String(s.id),name:String(s.name||"Session"),archived:s.archived===true})))}return OTHER_SESS.get(id)};
 addEventListener("storage",()=>OTHER_SESS.clear());
 // with 2+ accounts the picked session reads "Account · Session", so the closed dropdown says which account you're on
+// archived sessions (s.archived, Archive in the ⋯ menu) keep their entries but go to the end: under "Archived" with one account, and
+// marked "(archived)" at the end of their account's list with several (a dropdown can't group inside a group)
 function renderSessions(){const none=!state.sessions.length,many=accts.list.length>1,an=many?esc((accts.list.find(a=>a.id===accts.active)||{}).name||"")+" · ":"";
-  const mine=none?`<option value="">${an}No session yet</option>`:state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===state.current?"selected":""}>${s.id===state.current?an:""}${esc(s.name)}</option>`).join("");
+  const live=state.sessions.filter(s=>!s.archived),arch=state.sessions.filter(s=>s.archived),ARCH=" (archived)";
+  const opt=(s,mark)=>`<option value="${esc(s.id)}" ${s.id===state.current?"selected":""}>${s.id===state.current?an:""}${esc(s.name)}${mark?ARCH:""}</option>`;
+  const mine=none?`<option value="">${an}No session yet</option>`:many?[...live,...arch].map(s=>opt(s,s.archived)).join("")
+    :live.map(s=>opt(s)).join("")+(arch.length?`<optgroup label="Archived">${arch.map(s=>opt(s)).join("")}</optgroup>`:"");
   $("sessionSel").innerHTML=!many?mine:accts.list.map(a=>{if(a.id===accts.active)return `<optgroup label="${esc(a.name)}">${mine}</optgroup>`;
-    const ss=otherSessions(a.id);return `<optgroup label="${esc(a.name)}">${ss.length?ss.map(s=>`<option value="acct:${esc(a.id)}:${esc(s.id)}">${esc(s.name)}</option>`).join(""):`<option value="acct:${esc(a.id)}:">No session yet</option>`}</optgroup>`}).join("");
-  // nothing to rename or delete until logging EXP, Farm here or New session starts one; the dropdown still picks another account's
-  ["editSession","renameSession","delSession"].forEach(id=>$(id).disabled=none);$("sessionSel").disabled=none&&!many;
-  // the Map card's own pick (Monsters & maps): the session Farm here and Farming it now go to, or a new one
-  $("mapSessSel").innerHTML=(none?'<option value="">No session yet</option>':state.sessions.map(s=>`<option value="${esc(s.id)}" ${s.id===cur().id?"selected":""}>${esc(s.name)}</option>`).join(""))+'<option value="+new">+ New session</option>'}
+    const ss=otherSessions(a.id),ord=[...ss.filter(s=>!s.archived),...ss.filter(s=>s.archived)];
+    return `<optgroup label="${esc(a.name)}">${ss.length?ord.map(s=>`<option value="acct:${esc(a.id)}:${esc(s.id)}">${esc(s.name)}${s.archived?ARCH:""}</option>`).join(""):`<option value="acct:${esc(a.id)}:">No session yet</option>`}</optgroup>`}).join("");
+  // nothing to rename, archive or delete until logging EXP, Farm here or New session starts one; the dropdown still picks another account's
+  ["editSession","renameSession","archSession","delSession"].forEach(id=>$(id).disabled=none);$("sessionSel").disabled=none&&!many;
+  $("archSession").textContent=cur().archived?"Unarchive":"Archive";
+  // the Backup card's second copy only matters while some account has an archived session
+  $("bkCopyLive").hidden=!(arch.length||accts.list.some(a=>a.id!==accts.active&&otherSessions(a.id).some(s=>s.archived)));
+  // the Map card's own pick (Monsters & maps): the session Farm here and Farming it now go to, or a new one; archived ones stay out
+  // of it (the current one shows even when archived, so the box says where Farm here goes)
+  $("mapSessSel").innerHTML=(none?'<option value="">No session yet</option>':state.sessions.filter(s=>!s.archived||s.id===cur().id).map(s=>`<option value="${esc(s.id)}" ${s.id===cur().id?"selected":""}>${esc(s.name)}${s.archived?ARCH:""}</option>`).join(""))+'<option value="+new">+ New session</option>'}
 // ---- get started: its steps shown on Home until they're done (or hidden), each ticked off as you do it ----
 const KEY_START="rozero-farm-planner-start-hidden";
 // the character is set up: built from gear once a base stat is raised or a piece of gear is on (a new character starts in build mode
