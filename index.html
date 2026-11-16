@@ -72,10 +72,6 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
     </div>
   </aside>
 <main class="main">
-  <div class="ctxBar" aria-label="Current session"><div class="ctxIn">
-    <span class="ctxRate" id="ctxRate" hidden title="EXP %/hr between your entries this session; the number is the session average"><svg class="spark" id="spark" viewBox="0 0 72 22" aria-hidden="true"></svg><b id="ctxRateV"></b></span>
-    <span id="pauseNote" hidden></span>
-  </div></div>
 <div class="wrap">
   <header class="pageHead">
     <div class="heroRow"><h1 id="heroTitle"></h1><div class="heroBar" id="heroBar"></div><span class="heroMine" id="heroMine" data-tab="maps"></span></div><p id="heroDesc"></p>
@@ -520,6 +516,7 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
         <label>EXP %<input id="fPct" type="number" step="0.1" min="0" max="100" required></label>
         <label>Job EXP %<input id="fJob" type="number" step="0.1" min="0" max="100" placeholder="optional"></label>
         <div class="bar span-all"><button class="primary grow" type="submit">Add entry</button><button type="button" id="dieBtn" title="You died: type your EXP % from just before, then press this. It logs that EXP and, a second later, the EXP left after the death penalty">Died −10%</button><button class="w-btn" type="button" id="pauseBtn" title="Stop the clock while you sell, change maps or do something else">Pause</button></div>
+        <p class="span-all" id="pauseNote" hidden></p>
         <details class="more span-all" id="logMore">
           <summary>Time, party and deaths <span class="note" id="logMoreMeta"></span></summary>
           <div class="form">
