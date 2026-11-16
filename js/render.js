@@ -16,7 +16,7 @@ const syncChar=()=>{
   const c=C();$("job").value=noChar()?"":state.job;renderEq();renderCons();
   $("preset").innerHTML=JOBS[state.job].p.map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join("")+'<option value="-1">Custom</option>';
   $("preset").value=String(c.preset??0);renderSkills();
-  ["baseLv","jobLv","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","fctSec","normalPct","myElPct","ignDef","ignMdef","mastery","rangePct","skillPct","crit","critDmg","fixedShare","vctPct","fctPct","acdPct","dmgBonus","atkPct","matkPct","nameSel","namePct","itemSp","itemPrice","itemHp","itemHpPrice","mobInterval","hitScale"].forEach(k=>$(k).value=c[k]??"");["curW","maxW","gymLv"].forEach(k=>$(k).value=num(c[k])>0?c[k]:"");$("wAtk").value=num(c.wAtk)>0?c.wAtk:"";
+  ["baseLv","jobLv","atkTxt","matkTxt","hitTxt","fleeTxt","aspd","defTxt","maxHp","maxSp","intTxt","wAtk","fctSec","normalPct","myElPct","ignDef","ignMdef","mastery","rangePct","skillPct","crit","critDmg","fixedShare","vctPct","fctPct","acdPct","dmgBonus","atkPct","matkPct","nameSel","namePct","itemSp","itemPrice","itemHp","itemHpPrice","mobInterval","hitScale"].forEach(k=>$(k).value=c[k]??"");["curW","maxW","gymLv"].forEach(k=>$(k).value=num(c[k])>0?c[k]:"");$("townMin").value=c.townMin??3;$("sellAt").value=num(c.sellAt)>0?c.sellAt:"";$("wAtk").value=num(c.wAtk)>0?c.wAtk:"";
   $("spRegen").value=num(c.spRegen)>0?c.spRegen:"";$("hpRegen6").value=num(c.hpRegen6)>0?c.hpRegen6:"";
   $("weapon").value=c.weapon;$("wElem").value=c.wElem;$("dualRow").hidden=state.job!=="Assassin";$("lw").value=c.lw||"";$("lwElem").value=c.lwElem||"Neutral";$("lwAtk").value=num(c.lwAtk)>0?c.lwAtk:"";handsUi(c);$("nameType").value=c.nameType||"phys";$("autoSp").checked=!!c.autoSp;{const o=`<option value="">none</option><option value="auto">best per monster / map</option>${convEls().flatMap(el=>convSkLv(el)>0?[[el,`${el} · ${convSk(el).name.trim()}`],...(CONV_ITEMS[el]?[[el+":item",`${el} converter`]]:[])]:[[el,/converter/.test(convName(el))?convName(el):`${el} · ${convName(el)}`]]).map(([v,t])=>`<option value="${v}">${t}</option>`).join("")}`;if($("convSel").innerHTML!==o)$("convSel").innerHTML=o}$("convSel").value=!c.converters?"":convFixed()?convFixed()+(convSkLv(convFixed())>0&&convItemOn(convFixed())?":item":""):"auto";$("potOn").checked=!!c.potOn;potInfo();$("yggOn").checked=!!c.yggOn;$("convNote").textContent=c.converters&&c.a.el!=="W"?"(this attack has its own element, so these don't change it)":"";
   const a=c.a;$("aType").value=a.type;$("aPct").value=a.pct;$("aHits").value=a.hits;$("aElem").value=a.el;$("aCast").value=a.cast;$("aDelay").value=a.delay;$("aSp").value=a.sp;$("aTargets").value=a.targets;$("aZeny").value=a.zeny||"";$("cartW").value=c.cartW||"";$("cartWrap").hidden=!num(a.cart);
@@ -56,6 +56,7 @@ function charOutTiles(){const m=calcMob(),tile=(k,v,sub,tip)=>`<div class="tile 
     tile("EXP / min",m.expUnknown?"?":fmtN(r.epm)+(m.expUnsure?"*":""),m.expUnknown?"no EXP data for it yet":`${m.expUnsure?"* EXP unconfirmed · ":""}job ${fmtN(r.jpm)} / min`)+
     tile("Zeny / hr",fmtN(r.zph),"loot after skill and SP items")}
 function renderChar(){$("convPanel").hidden=C().a.type==="spellfist";// Spell Fist's element is its bolts: no Weapon element panel
+  {const w=maxWCalc(C());$("maxW").placeholder=w?String(w.total):"off"}// Max Weight worked out from STR, job and skills
   renderAspdBuffs();potInfo();eqMaxNote();crowdInfo();
   // weapon endows vs the monster you picked: the element-table rate of each one, and the one the EXP/min picks
   // the items in use, each with its icon and what players pay for it (bought from players), and how many an hour; skills (Enchant Poison,
@@ -279,58 +280,8 @@ function renderTracker(){renderStart();
   const j=jobRate(s);
   if(j&&num(C().jobLv)>=jobMax()){$("tJob").textContent="Max";$("tJobS").textContent=`Job Lv ${jobMax()} is the max for ${state.job}`}
   else if(j){const need=jobNeed();$("tJob").textContent=pct(j.rate);$("tJobS").textContent=`${fmtDur((100-j.last)/j.rate)} to Job Lv ${num(C().jobLv)?num(C().jobLv)+1:"next"}`+(need?` · ≈ ${fmtN(j.rate/100*need)} job EXP/hr`:" · set your job level for job EXP/hr")}else{$("tJob").textContent="–";$("tJobS").textContent="Add Job EXP % to 2+ entries"}
-  renderChart(s);renderLog(s);renderCompare();renderGoalChart(renderGoal(s,st),renderJobGoal(s));renderTrip(s);
+  renderChart(s);renderLog(s);renderCompare();renderGoalChart(renderGoal(s,st),renderJobGoal(s));
 }
-// ---- sell timer: counts down to the session's sell point and rings (sound, notification, tab title); ticked every second by start.js ----
-const fmtClock=ms=>{const t=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(t/3600),m=Math.floor(t/60)%60,x=String(t%60).padStart(2,"0");return h?`${h}:${String(m).padStart(2,"0")}:${x}`:`${m}:${x}`};
-const BASE_TITLE=String(document.title||"Poring Planner");
-const tripPhase=(s,now=Date.now())=>!s.trip?"none":openPause(s)?"paused":now>=tripDue(s)-tripEarly()?"due":"run";
-function renderTrip(s=cur()){const c=C(),act=document.activeElement;
-  [["tripW","curW"],["tripMax","maxW"]].forEach(([id,k])=>{if(act!==$(id))$(id).value=num(c[k])>0?c[k]:""});
-  {const w=maxWCalc(c);["maxW","tripMax"].forEach(id=>$(id).placeholder=w?String(w.total):"off")}
-  if(act!==$("tripAt"))$("tripAt").value=num(c.sellAt)>0?c.sellAt:"";if(act!==$("tripTownMin"))$("tripTownMin").value=c.townMin??3;
-  if(act!==$("tripEarly"))$("tripEarly").value=num(state.tripEarly)>0?state.tripEarly:"";
-  $("tripSound").checked=state.tripSound!==false;$("tripNotify").checked=state.tripNotify===true;
-  if(act!==$("tripMin"))$("tripMin").value=num(state.tripMin)>0?state.tripMin:"";
-  const t=wOn()?sessTrip(s):null,town=Math.max(0,num(c.townMin,3)),typed=num(state.tripMin)>0,ms=sessMobs(s);let len="–",lenS,runs="–",runsS="";
-  const auto=t&&t.wk>0&&t.kills>=1&&isFinite(t.min)?t.min:null;
-  $("tripFor").textContent=`${s.name}${ms.length?` · ${ms.map(m=>m.name).join(", ")}`:" · no monster picked"}`;
-  $("tripMin").placeholder=auto?String(Math.round(auto)):"auto";
-  if(!wOn())lenS="Type your Max Weight to work it out, or type the minutes a trip takes";
-  else if(!t)lenS=ms.length?"You can't hurt the session's monsters with this attack; type the minutes a trip takes":"Pick where you're farming (Where to farm → Farm here), or type the minutes a trip takes";
-  else if(!(t.wk>0))lenS="Their drops weigh nothing, so you never fill up";
-  else if(!(t.kills>=1))lenS=`<span class="bad">Your starting weight is already at your sell point (${fmtP(sellPct())}%)</span>`;
-  else lenS=`~${fmtN(Math.floor(t.kills))} kills · ${t.wk.toFixed(1)} weight a kill · ${fmtN(Math.max(0,maxWt(c)*t.at/100-num(c.curW)))} weight of room: ${fmtN(num(c.curW))} you start with → ${fmtN(maxWt(c)*t.at/100)} (${fmtP(t.at)}%)${t.fell?' · <span class="bad">no regen past 70% and you need SP, so you sell at 70%</span>':""}`;
-  if(typed)lenS=`typed${auto?` · worked out: ${fmtDur(auto/60)}`:""}`;
-  const min=typed?num(state.tripMin):auto;
-  if(min>0){len=fmtDur(min/60);const cyc=min+town;runs=`${(60/cyc).toFixed(1)}/hr`;runsS=`${fmtP(town)} min each · ${Math.round(town/cyc*100)}% of your time in town`}
-  $("tripLen").textContent=len;$("tripLenS").innerHTML=lenS;$("tripRuns").textContent=runs;$("tripRunsS").textContent=runsS;
-  TRIP_OK=min>0;renderTripBtns(s);tickTrip();
-}
-function renderTripBtns(s=cur()){const ph=tripPhase(s);TRIP_PHASE=ph;
-  $("tripBtns").innerHTML=ph==="none"?`<button type="button" class="primary" data-trip="go"${TRIP_OK?"":" disabled"}>Start</button>`
-    :`<button type="button" class="${ph==="due"?"primary":""}" data-trip="go"${TRIP_OK?"":" disabled"}>${ph==="due"?"Back from town: next trip":"Restart"}</button><button type="button" data-trip="stop">Stop</button>`}
-let TRIP_OK=false,TRIP_PHASE=null,TRIP_RING={id:null,n:0,at:0},TRIP_CTX=null;
-const tripAudio=()=>{try{if(!TRIP_CTX){const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;TRIP_CTX=new A()}if(TRIP_CTX.state==="suspended")TRIP_CTX.resume();return TRIP_CTX}catch(e){return null}};
-// three short beeps
-function tripBeep(){const a=tripAudio();if(!a)return;const t0=a.currentTime+0.05;
-  [0,0.3,0.6].forEach(d=>{const o=a.createOscillator(),g=a.createGain();o.type="square";o.frequency.value=880;g.gain.setValueAtTime(0.0001,t0+d);
-    g.gain.exponentialRampToValueAtTime(0.15,t0+d+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t0+d+0.22);o.connect(g);g.connect(a.destination);o.start(t0+d);o.stop(t0+d+0.25)})}
-function tripAlarm(s){if(state.tripSound!==false)tripBeep();
-  if(state.tripNotify===true&&typeof Notification!=="undefined"&&Notification.permission==="granted")
-    try{new Notification("Time to sell",{body:`${s.name}: you should be at your sell point. Go to town and sell or store.`,tag:"rozero-sell"})}catch(e){}}
-// rings once when a trip is due (and again each minute, up to 5 times, while this page stays open); paused sessions don't ring
-function tickTrip(){const now=Date.now(),s=cur();
-  state.sessions.forEach(x=>{if(tripPhase(x,now)!=="due")return;
-    if(!x.trip.rang){x.trip.rang=true;save();TRIP_RING={id:x.id,n:1,at:now};tripAlarm(x)}
-    else if(TRIP_RING.id===x.id&&TRIP_RING.n<5&&now-TRIP_RING.at>=6e4){TRIP_RING.n++;TRIP_RING.at=now;if(state.tripSound!==false)tripBeep()}});
-  const ph=tripPhase(s,now),el=$("tripClock");if(ph!==TRIP_PHASE)renderTripBtns(s);
-  if(ph==="none"){el.textContent="–";el.className="v mono";$("tripK").textContent="Next sell";$("tripS").textContent=TRIP_OK?"Press Start when you leave town":"";document.title=BASE_TITLE;return}
-  const due=tripDue(s),left=due-now,early=tripEarly();
-  el.textContent=ph==="paused"?"Paused":left>0?fmtClock(left):"Sell now";el.className="v mono"+(ph==="due"?left>0?" warnc":" bad":"");
-  $("tripK").textContent=ph==="due"?"Time to sell":"Next sell";
-  $("tripS").textContent=`sell point at ${fmtT(due)}${early?` · rings at ${fmtT(due-early)}`:""} · left town ${fmtT(s.trip.from)}${ph==="paused"?" · session paused: the clock waits until you Resume (Session tab) or press Restart":""}`;
-  document.title=(ph==="due"?"⏰ Sell now · ":ph==="run"?`${fmtClock(left)} · `:"")+BASE_TITLE}
 // charts draw at the width they're shown at (340–800 units), so their 11px labels stay 11px on a phone instead of shrinking
 const chartW=el=>{const w=+el.clientWidth;return w?Math.max(340,Math.min(800,Math.round(w))):800};
 let EXP_PTS=[];

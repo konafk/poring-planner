@@ -375,7 +375,6 @@ if(VIEW){if(VIEW.drafts)for(const id in VIEW.drafts)if(["fPct","fJob","pasteBox"
   document.addEventListener("visibilitychange",()=>{if((STALE||newer)&&!document.hidden)refresh()});
 })();
 if(VIEW&&VIEW.toast)showToast(String(VIEW.toast));
-(function tripLoop(){tickTrip();setTimeout(tripLoop,1000)})();
 loadShareLink();addEventListener("hashchange",loadShareLink);
 if(INFO_AT)openInfo(...INFO_AT);
 // a skill link (#skill/knight/bowling-bash): the Skill tree tab on that job, its details pinned
