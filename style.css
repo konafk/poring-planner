@@ -452,7 +452,18 @@ td .map{cursor:default}
 :is(#gearTable,#specialTable) .fxLine{margin:4px 0 0 30px;font-size:12px;white-space:normal}
 #gearTable .cards>.fxLine{margin-top:-4px}
 #buildPanel.fxOff .fxLine{display:none}
-.fxToggle{width:max-content;gap:8px;cursor:pointer} /* closer to its card than to the next one */
+.fxToggle{width:max-content;gap:8px;cursor:pointer;user-select:none}
+.fxToggle:hover{color:var(--fg)}
+/* a switch: the checkbox drawn as a 28x16 track with a 12px knob; muted off, the accent on, the knob sliding across */
+input.switch[type=checkbox]{appearance:none;-webkit-appearance:none;position:relative;width:28px;height:16px;padding:0;border:0;border-radius:8px;
+  background:color-mix(in srgb,var(--muted) 45%,transparent);transition:background-color .15s ease-out}
+input.switch[type=checkbox]::before{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:#fff;
+  box-shadow:0 1px 2px rgba(16,24,40,.25);transition:transform .15s ease-out}
+input.switch[type=checkbox]:checked{background:var(--accent)}
+input.switch[type=checkbox]:checked::before{transform:translateX(12px)}
+input.switch[type=checkbox]:hover{border:0}
+input.switch[type=checkbox]:focus{box-shadow:none}
+input.switch[type=checkbox]:focus-visible{box-shadow:0 0 0 3px var(--accent-soft)} /* closer to its card than to the next one */
 :is(#gearTable,#specialTable) :is(th,td){border-bottom:0;padding:8px;text-align:left}
 :is(#gearTable,#specialTable) tbody tr{align-items:start}
 :is(#gearTable,#specialTable) td:nth-child(n+4):empty,#gearTable td:has(>.cards:empty){display:none}
