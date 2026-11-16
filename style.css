@@ -440,21 +440,28 @@ td .map{cursor:default}
 #gearTable tbody tr,#gearTable tbody tr:hover td,#specialTable tbody tr,#specialTable tbody tr:hover td{cursor:default;background:none}
 /* Build from gear's tables fit the card: slot, item and refine (or enchant) on a row's first line; cards and affixes wrap under the
    item, and cells with nothing in them take no room. Each row is a grid, its rule on the row */
-:is(#gearTable,#specialTable) :is(thead,tbody) tr{display:grid;grid-template-columns:128px minmax(0,1fr) minmax(72px,auto);align-items:center;column-gap:8px;border-bottom:1px solid var(--line)}
-#specialTable :is(thead,tbody) tr{grid-template-columns:128px minmax(0,1fr) minmax(0,1fr)}
+:is(#gearTable,#specialTable) :is(thead,tbody) tr{display:grid;grid-template-columns:128px minmax(0,440px) 88px;justify-content:start;align-items:center;column-gap:8px;border-bottom:1px solid var(--line)}
+#specialTable :is(thead,tbody) tr{grid-template-columns:128px minmax(0,320px) minmax(0,240px)}
 :is(#gearTable,#specialTable) :is(th,td){border-bottom:0;padding:8px}
-:is(#gearTable,#specialTable) td:empty,#gearTable td:has(>.cards:empty){display:none}
+:is(#gearTable,#specialTable) td:nth-child(n+4):empty,#gearTable td:has(>.cards:empty){display:none}
 #gearTable tr>:nth-child(n+4),#specialTable tr>:nth-child(n+4){grid-column:2/-1;padding-top:0}
 #gearTable thead th:nth-child(n+4),#specialTable thead th:nth-child(n+4){display:none}
 :is(#gearTable,#specialTable) tbody tr>:first-child{grid-row:span 3;align-self:start;padding-top:14px}
 :is(#gearTable,#specialTable) thead tr{background:var(--raised)}
 :is(#gearTable,#specialTable) thead th{background:none}
-#gearTable tbody tr>:nth-child(n+4)>*,#specialTable tbody tr>:nth-child(n+4)>*{max-width:480px}
+#gearTable tbody tr>:nth-child(n+4)>*{max-width:424px} /* the item box's width: the 440px column less the cell's padding */
+/* every box in a row on one left edge and one height: a 24px icon slot and a 6px gap before each input, the affix lists indented
+   to match (the card icon is narrower, so it's centred in the slot) */
+:is(#gearTable,#specialTable) :is(input:not([type=checkbox]),select){height:28px;padding-top:0;padding-bottom:0}
+#gearTable .cardBox>.ico-card{margin:0 3px} /* 18px wide at this size: centred in the 24px slot the gear icons fill */
+#gearTable .cards{flex-direction:column;gap:8px}
+#gearTable td>.opts{padding-left:30px}
+#gearTable .opts{gap:8px}
 :is(#gearTable,#specialTable) .opts{min-width:0}
-#gearTable .cards{min-width:0;flex-wrap:wrap}
-#gearTable .cards input{min-width:120px}
+#gearTable .cards{min-width:0}
+#gearTable .cards input{min-width:0}
 #gearTable .ref{width:72px}
-@media (max-width:520px){:is(#gearTable,#specialTable) :is(thead,tbody) tr{grid-template-columns:88px minmax(0,1fr) minmax(64px,auto)}#specialTable :is(thead,tbody) tr{grid-template-columns:88px minmax(0,1fr) minmax(0,1fr)}}
+@media (max-width:520px){:is(#gearTable,#specialTable) :is(thead,tbody) tr{grid-template-columns:88px minmax(0,1fr) 72px}#specialTable :is(thead,tbody) tr{grid-template-columns:88px minmax(0,1fr) minmax(0,1fr)}}
 #buildPanel.altedit :is(#gearTable,#specialTable){background:var(--accent-soft)}
 /* card tick boxes: one card per line, its numbers only while ticked */
 .cdList{display:flex;flex-direction:column;gap:6px;margin:4px 0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
