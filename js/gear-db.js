@@ -162,7 +162,7 @@ function renderCardDb(){const c=C(),f=cardDbF(),all=typeof CARDS!=="undefined"?C
 // ---- the Equip dialog: pick the gear set (and the place, or for a card the card slot) ----
 let EQ_DLG=null;
 const gearNow=g=>g&&g.id?esc(gearTxt(g)):'<span class="muted">empty</span>';
-function openEquip(kind,id){const it=BUILD.item(id);if(!it)return;EQ_DLG={kind,id};drawEquip();if(!$("eqDlg").open)$("eqDlg").showModal()}
+function openEquip(kind,id){const it=BUILD.item(id);if(!it)return;EQ_DLG={kind,id};drawEquip();if(!$("eqDlg").open){$("eqDlg").showModal();$("eqDlgBody").focus({preventScroll:true})}}
 function drawEquip(){const c=C(),{kind,id}=EQ_DLG,it=BUILD.item(id),sets=[-1,...Array.from({length:altN(c)},(_,i)=>i)];
   $("eqDlgTitle").textContent=`Equip ${it.name}`;$("eqDlgIco").innerHTML=iconHtml(kind==="item"?"gear":"card",id);
   const lv=kind==="item"&&it.lv>num(c.baseLv)?` · needs base Lv ${it.lv} (you're Lv ${num(c.baseLv)})`:"";

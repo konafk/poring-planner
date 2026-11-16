@@ -7,7 +7,8 @@ const CARD_IDS=new Set((typeof CARDS!=="undefined"?CARDS:[]).map(c=>c.id));
 const infoKind=id=>CARD_IDS.has(+id)?"card":BUILD.item(+id)?"gear":"item";
 const infoLink=(kind,id,txt)=>`<a href="#" data-info="${kind}:${id}">${esc(txt)}</a>`;
 const infoMobLink=(id,txt)=>MOB_BY_ID.has(+id)?infoLink("mob",id,txt):esc(txt);
-const infoTile=(k,v,s,wide)=>`<div class="tile${wide?" wide":""}"><div class="k">${k}</div><div class="v mono">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`;
+// txt: the value is a name (a map), not a number, so it isn't set in the figures' mono
+const infoTile=(k,v,s,wide,txt)=>`<div class="tile${wide?" wide":""}"><div class="k">${k}</div><div class="v${txt?" txt":" mono"}">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`;
 // a section of the popup: folds, and one you fold stays folded in every popup (state.collapsed "info:" + its heading, counts left out)
 const infoSecKey=h=>"info:"+String(h).replace(/<[^>]+>/g,"").replace(/\s*\(.*\)\s*$/,"").trim();
 const infoSec=(h,body)=>body?`<details class="infoSec" data-fold="${esc(infoSecKey(h))}"${(state.collapsed||{})[infoSecKey(h)]?"":" open"}><summary><h3>${h}</h3></summary>${body}</details>`:"";
@@ -66,7 +67,7 @@ function popMob(m){const r=mobRow(m,walkSec()),om=openMaps(m),s=cur(),inS=s.mobI
   const sub=`Lv ${m.lv} · ${m.el?`<span class="el ${m.el}">${m.el} ${m.elv}</span>`:"element –"} · ${m.size||"size –"} · ${m.race||"race –"}${BOSS_PILL(m)}${m.agg?' <span class="pill">aggressive</span>':""}`;
   const tiles=infoTile("HP",m.hp==null?"?":fmtN(m.hp),`DEF ${m.def??"–"} · MDEF ${m.mdef??"–"} · ATK ${m.atkMin??"–"}–${m.atkMax??"–"}${m.hit100?` · 100% hit at ${m.hit100} HIT`:""}${m.flee95?` · 95% flee at ${m.flee95} FLEE`:""}`)
     +infoTile("EXP",fmtExp(m),m.expUnknown?"no EXP data yet":`${m.expUnsure?"* unconfirmed, not checked in game yet · ":""}job ${m.jobUnknown?"?":fmtN(m.job)}${me?` · you get ${fmtN(killExp(m))} / ${m.jobUnknown?"?":fmtN(killJobExp(m))}`:""}`)
-    +infoTile("Best map",om.length?esc(mapName(om[0][0])||mapCode(om[0][0])):"–",om.length?`${mapName(om[0][0])?mapCode(om[0][0])+" ":""}≈${spN(om[0][1])}`:a?`none open · comes with the ${esc(a)}`:"none open")
+    +infoTile("Best map",om.length?esc(mapName(om[0][0])||mapCode(om[0][0])):"–",om.length?`${mapName(om[0][0])?mapCode(om[0][0])+" ":""}≈${spN(om[0][1])}`:a?`none open · comes with the ${esc(a)}`:"none open",false,!!om.length)
     +(me?infoTile(`You (${esc(state.job)})`,isFinite(r.sec)?r.sec.toFixed(1)+"s / kill":"can't hurt",`your hit ${Math.round(r.mult)}%${elTag(r.el2)}`)
       // damage per second while fighting it, with the element the EXP/min picks (as on the Character card); none for Spell Fist
       +(dps!=null&&isFinite(dps)?infoTile("Damage / s",fmtN(Math.round(dps)),`vs its ${m.hp==null?"?":fmtN(m.hp)} HP, misses included`):"")
@@ -187,12 +188,19 @@ function drawInfo(){const [kind,id]=INFO[INFO.length-1],m=kind==="mob"&&MOB_BY_I
   if(!v){INFO.pop();return}
   $("infoDlgIco").innerHTML=v.ico;$("infoDlgTitle").textContent=v.title;$("infoDlgSub").innerHTML=v.sub;
   $("infoDlgBody").innerHTML=v.body;$("infoDlgActs").innerHTML=v.acts;if(v.after)v.after();$("infoBack").hidden=INFO.length<2;
+  // Back names what it goes back to: the popup before this one
+  if(INFO.length>1){const [pk,pi]=INFO[INFO.length-2];$("infoBackTo").textContent=pk==="mob"?(MOB_BY_ID.get(+pi)||{}).name||"Back":(BUILD.item(+pi)||{}).name||itemName(pi)}
+  // three or more sections: a row of links under the head that scrolls to each (and opens it if folded)
+  const secs=[...$("infoDlgBody").querySelectorAll(":scope>details.infoSec")],nav=$("infoNav");nav.hidden=secs.length<3;
+  nav.innerHTML=secs.length<3?"":secs.map((s,i)=>`<button type="button" data-infosec="${i}">${esc(s.querySelector("h3").textContent.replace(/\s*\(.*\)\s*$/,""))}</button>`).join("");
   $("infoDlgBody").scrollTop=0;$("infoShare").href=infoUrl();
+  // the body takes focus (no ring on Share or Close), so the arrow keys scroll it; a link that was clicked is gone after a redraw
+  const d=$("infoDlg"),ae=document.activeElement;if(!d.open||!ae||ae===document.body||!d.contains(ae))$("infoDlgBody").focus({preventScroll:true});
   try{history.replaceState(null,"",infoHash(kind,id))}catch(e){}}
 // kind "mob" or "item" (an item that's gear or a card shows as one)
 function openInfo(kind,id){if(kind!=="mob")kind=infoKind(id);
   const d=$("infoDlg");if(!d.open)INFO=[];const top=INFO[INFO.length-1];if(!top||top[0]!==kind||String(top[1])!==String(id))INFO.push([kind,id]);
-  drawInfo();if(!d.open)d.showModal()}
+  drawInfo();if(!d.open){d.showModal();$("infoDlgBody").focus({preventScroll:true})}}
 function infoAct(a){const [kind,id]=INFO[INFO.length-1],d=$("infoDlg");
   if(a==="farm"||a==="unfarm"){toggleSessMob(+id);state.calcMobId=null;save();renderAll();drawInfo();showToast(`${MOB_BY_ID.get(+id).name} is ${a==="farm"?"in":"out of"} your session.`);return}
   d.close();
@@ -207,6 +215,8 @@ function infoAct(a){const [kind,id]=INFO[INFO.length-1],d=$("infoDlg");
   d.addEventListener("click",e=>{if(e.target===d){d.close();return}
     if(e.target.closest("[data-gotab]")){d.close();return}// a link to a tab (its handler opens it)
     const b=e.target.closest("[data-infoact]");if(b){infoAct(b.dataset.infoact);return}
+    const sc=e.target.closest("[data-infosec]");if(sc){const body=$("infoDlgBody"),s=body.querySelectorAll(":scope>details.infoSec")[+sc.dataset.infosec];
+      if(s){s.open=true;body.scrollTo({top:body.scrollTop+s.getBoundingClientRect().top-body.getBoundingClientRect().top-16,behavior:matchMedia("(prefers-reduced-motion:reduce)").matches?"auto":"smooth"})}return}
     const mp=e.target.closest("[data-infomap]");if(mp){e.preventDefault();d.close();openMap(mp.dataset.infomap);return}
     const sk=e.target.closest("[data-mskill]");if(sk){e.preventDefault();d.close();openMsk(+sk.dataset.mskill)}});
   d.addEventListener("toggle",e=>{const s=e.target.closest&&e.target.closest("details.infoSec");if(!s||e.target!==s)return;

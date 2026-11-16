@@ -1019,16 +1019,17 @@ document.head.appendChild(st);addEventListener("DOMContentLoaded",function(){st.
   <div class="jumpFoot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>Enter</kbd> open</span><span><kbd>Ctrl</kbd><kbd>K</kbd> or <kbd>/</kbd> from anywhere</span></div>
 </dialog>
 <dialog class="jump eqDlg" id="eqDlg" aria-labelledby="eqDlgTitle">
-  <div class="eqDlgHead"><span id="eqDlgIco"></span><div class="grow"><b id="eqDlgTitle"></b><div class="note" id="eqDlgSub"></div></div><button type="button" class="small" id="eqDlgClose" aria-label="Close">✕</button></div>
-  <div class="eqDlgBody" id="eqDlgBody"></div>
+  <div class="eqDlgHead"><span class="dlgIco" id="eqDlgIco"></span><div class="grow"><b id="eqDlgTitle"></b><div class="note" id="eqDlgSub"></div></div><button type="button" class="dlgBtn" id="eqDlgClose" aria-label="Close" title="Close (Esc)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="eqDlgBody" id="eqDlgBody" tabindex="-1"></div>
 </dialog>
 <dialog class="jump eqDlg infoDlg" id="infoDlg" aria-labelledby="infoDlgTitle">
-  <div class="eqDlgHead"><button type="button" class="small" id="infoBack" aria-label="Back" hidden>←</button><span id="infoDlgIco"></span><div class="grow"><b id="infoDlgTitle"></b><div class="note" id="infoDlgSub"></div></div><a class="infoShare" id="infoShare" href="#" title="Copy a link that opens this"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg><span>Share</span></a><button type="button" class="small" id="infoDlgClose" aria-label="Close">✕</button></div>
-  <div class="eqDlgBody" id="infoDlgBody"></div>
+  <div class="eqDlgHead"><span class="dlgIco" id="infoDlgIco"></span><div class="grow"><button type="button" class="dlgBack" id="infoBack" hidden><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg><span id="infoBackTo">Back</span></button><b id="infoDlgTitle"></b><div class="note" id="infoDlgSub"></div></div><a class="dlgBtn infoShare" id="infoShare" href="#" title="Copy a link that opens this"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg><span>Share</span></a><button type="button" class="dlgBtn" id="infoDlgClose" aria-label="Close" title="Close (Esc)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <nav class="infoNav" id="infoNav" aria-label="Sections" hidden></nav>
+  <div class="eqDlgBody" id="infoDlgBody" tabindex="-1"></div>
   <div class="bar infoActs" id="infoDlgActs"></div>
 </dialog>
 <dialog class="jump eqDlg mktDlg" id="addDlg" aria-labelledby="addDlgTitle">
-  <div class="eqDlgHead"><div class="grow"><b id="addDlgTitle">Add an item</b><div class="note" id="addNote"></div></div><button type="button" class="small" data-addclose aria-label="Close">✕</button></div>
+  <div class="eqDlgHead"><div class="grow"><b id="addDlgTitle">Add an item</b><div class="note" id="addNote"></div></div><button type="button" class="dlgBtn" data-addclose aria-label="Close" title="Close (Esc)"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
   <div class="eqDlgBody">
     <div class="mktCats" id="addCats" role="group" aria-label="Category"></div>
     <div class="bar" id="addTypeBar" hidden><label>Type<select id="addType"></select></label></div>
