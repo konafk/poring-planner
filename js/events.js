@@ -616,7 +616,10 @@ function unpackState(o){if(!isObj(o)||o.$p!==1)return o;delete o.$p;
   (Array.isArray(o.sessions)?o.sessions:[]).forEach(x=>{if(!x)return;[x.snap,...(Array.isArray(x.snapHist)?x.snapHist:[])].forEach(y=>{if(!isObj(y)||y.$d!==1)return;
     delete y.$d;y.c={...JSON.parse(JSON.stringify(objOr(objOr(o.chars)[x.job||o.job]))),...objOr(y.c)}})});
   return o}
-$("bkLink").addEventListener("click",async()=>{let url;try{save();url=location.origin+location.pathname+"#s="+await packShare(JSON.stringify(packState(state)))}catch(err){$("bkMsg").textContent="This browser can't make share links. Use Copy backup instead.";return}
+// a share link leaves archived sessions out (Copy backup keeps them), so the link stays short; the session it opens on is the
+// current one, or the first one left when that one is archived
+const shareState=s=>{const ss=(s.sessions||[]).filter(x=>!x.archived);return {...s,sessions:ss,current:ss.some(x=>x.id===s.current)?s.current:ss.length?ss[0].id:null}};
+$("bkLink").addEventListener("click",async()=>{let url;try{save();url=location.origin+location.pathname+"#s="+await packShare(JSON.stringify(packState(shareState(state))))}catch(err){$("bkMsg").textContent="This browser can't make share links. Use Copy backup instead.";return}
   bkCopyText(url,`Share link (${url.length.toLocaleString()} characters)`)});
 // opening a share link loads it into the backup box; nothing is replaced until Restore is clicked twice
 async function loadShareLink(){const m=location.hash.match(/^#s=([\w-]+)/);if(!m)return;

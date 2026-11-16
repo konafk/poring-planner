@@ -2543,6 +2543,20 @@ t("share links leave out defaults and get every value back", () => {
   assert.equal(run("JSON.stringify(unpackState({sessions:[]}))"), '{"sessions":[]}');  // older links, not packed, load as they are
 });
 
+t("share links leave archived sessions out, and open on a session that's left", () => {
+  run(`var KEEP_SESS=[state.sessions,state.current];state.sessions=[{id:"a",name:"Alpha",mobIds:[],entries:[],archived:true},{id:"b",name:"Beta",mobIds:[],entries:[]}];state.current="a"`);
+  const sh = JSON.parse(run("JSON.stringify(shareState(state))"));
+  assert.deepEqual(sh.sessions.map(s => s.id), ["b"]);
+  assert.equal(sh.current, "b");
+  assert.equal(run("state.sessions.length"), 2);                              // the page's own sessions stay as they are
+  run(`state.current="b"`);
+  assert.equal(JSON.parse(run("JSON.stringify(shareState(state))")).current, "b");
+  run(`state.sessions[1].archived=true`);
+  const none = JSON.parse(run("JSON.stringify(shareState(state))"));
+  assert.deepEqual([none.sessions.length, none.current], [0, null]);
+  run("[state.sessions,state.current]=KEEP_SESS");
+});
+
 t("share links get a real two-account backup back", () => {
   const bk = JSON.parse(readFileSync(new URL("tests/fixtures/backup-2-accounts.json", root), "utf8"));
   for (const a of bk.accounts) {
