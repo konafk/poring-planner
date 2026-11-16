@@ -529,7 +529,7 @@ const mobFOk=(m,f)=>(!f.el||m.el===f.el)&&(!f.race||m.race===f.race)&&(!f.size||
 const mobOpt=m=>`<option value="${esc(m.name)}">Lv ${m.lv} · ${fmtExp(m)} EXP${m.mvp?" · MVP":m.mini?" · mini boss":m.boss?" · boss":""}${MOB_VARIANT[m.id]?" · "+MOB_VARIANT[m.id]:""}</option>`;
 const isMagicAtk=()=>C().a.type==="magic"||C().a.type==="spellfist";
 function renderMobs(){
-  const w=walkSec(),me=showMine();$("mobMine").innerHTML=mineSwitch();
+  const w=walkSec(),me=showMine();$("heroMine").innerHTML=mineSwitch();
   const shown=m=>mobFOk(m,state.mobF)&&!(state.hideClosed&&!openMaps(m).length);
   const row=m=>{const om=openMaps(m);return {...m,om,topN:om.length?om[0][1]:0,ratio:m.hp>0?m.exp/m.hp:0,...mobRow(m,w)}};
   const F=state.filters,fOk=m=>Object.entries(F).every(([k,v])=>!v||matchF(v,colNum(m,k),colText(m,k)));
@@ -1119,7 +1119,7 @@ const WORLD_FOLD="Map planner: world map";
 const planPick=k=>{state.map=k;state.mapAll=null;save();renderMap()};
 const planPickAll=k=>{state.map=state.mapAll=k;save();renderMap()};
 function renderMap(){
-  let mp=mapKey(state.map);const mob=calcMob(),me=showMine();$("mapMine").innerHTML=mineSwitch();
+  let mp=mapKey(state.map);const mob=calcMob(),me=showMine();
   if(!MAPMOBS[mp]&&!isTown(mp))mp=mobMap(mob)||Object.keys(MAPMOBS).sort((a,b)=>mapCode(a).localeCompare(mapCode(b)))[0];
   const dun=mapDun(mp);
   if(document.activeElement!==$("mapInput"))$("mapInput").value=mp?mapCode(mp):"";$("mapName").textContent=mp?mapFactsTxt(mp):"";

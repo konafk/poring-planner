@@ -126,6 +126,8 @@ body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-
 .heroBar:empty{display:none}
 .heroBar>.cardHead{margin:0;padding:0;border:0}
 .heroBar .note{font-size:12.5px}
+/* Monsters & maps: the My numbers switch, one for the whole tab, beside its title */
+.heroMine:empty{display:none}
 /* Full width (Settings menu): drop the 1180px cap on wide screens */
 :root.wide .wrap{max-width:none}
 @media (max-width:1480px){#wideBtn{display:none}}

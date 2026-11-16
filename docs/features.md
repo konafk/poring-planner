@@ -99,7 +99,7 @@ Every daily quest an NPC gives, from the game client: its quest log, its Navigat
 
 ## Monsters & maps
 
-**My numbers:** once your character is set up, a **My numbers** switch on the Map and Monsters cards and in a monster's popup shows or leaves out your kill time, damage, EXP and zeny against each monster, for when you only want to look a monster or map up. The page remembers it.
+**My numbers:** once your character is set up, a **My numbers** switch beside the Monsters & maps title (one for the whole tab) and in a monster's popup shows or leaves out your kill time, damage, EXP and zeny against each monster, for when you only want to look a monster or map up. The page remembers it.
 
 ### Where to farm
 
