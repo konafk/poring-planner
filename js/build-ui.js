@@ -891,7 +891,14 @@ function altDiff(c,i,short){const b=buildOf(c),a=altOf(c,i),g0=b.gear||{},g1=a.g
   // an empty list of other special equipment is the same as none (a set the table never showed has none)
   const sp=x=>{const o={...(x||{})};if(Array.isArray(o.own)&&!o.own.length)delete o.own;return o};
   if(!same(b.stones||{},a.stones||{})||!same(sp(b.special),sp(a.special)))rows.push("Special equipment");return rows}
-const altDiffTxt=(c,i)=>{const d=altDiff(c,i);return d.length?d.join(" · "):"same as your gear"};
+// Compare gear's Gear rows: each gear row any of the sets changes, with your piece and each set's (null where the set has yours), then
+// Special equipment when a set changes it ("changed")
+function altGearRows(c,idx){const b=buildOf(c),g0=b.gear||{},as=idx.map(i=>altOf(c,i)),same=(x,y)=>JSON.stringify(x||null)===JSON.stringify(y||null);
+  const rows=BUILD.SLOTS.filter(s=>as.some(a=>!same(g0[s.k],(a.gear||{})[s.k]))).map(s=>({label:s.label,mine:gearTxt(g0[s.k]),
+    sets:as.map(a=>{const g=(a.gear||{})[s.k];return same(g0[s.k],g)?null:gearTxt(g)+(gearTxt(g)===gearTxt(g0[s.k])?" (affixes)":"")})}));
+  const sp=x=>{const o={...(x||{})};if(Array.isArray(o.own)&&!o.own.length)delete o.own;return o};
+  const spc=as.map(a=>!same(b.stones||{},a.stones||{})||!same(sp(b.special),sp(a.special))?"changed":null);
+  if(spc.some(Boolean))rows.push({label:"Special equipment",mine:"",sets:spc});return rows}
 function renderAltBar(c=C()){const i=altIdx(c),has=i>=0&&altSaved(c,i),list=altList(c),n=altN(c),b=buildOf(c),mine=String(b.setName||"").trim(),memN=Object.keys(memOf(c)).length;
   const wait=(Array.isArray(b.loadouts)?b.loadouts:[]).map(x=>String(x&&x.name||"").trim()||"(no name)");
   $("gsetSeg").innerHTML=`<button type="button" role="radio" data-gset="mine" aria-checked="${i<0}"${mine?` title="You swapped on ${esc(mine)}"`:""}>My gear${mine?` (${esc(mine)})`:""}</button>`+Array.from({length:n},(_,k)=>
