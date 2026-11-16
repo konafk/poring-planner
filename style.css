@@ -425,7 +425,7 @@ td .map{cursor:default}
 #gearTable input,#specialTable input:not([type=checkbox]){padding:4px 8px;font-size:13px;width:100%}
 #gearTable .item,#specialTable .item{min-width:220px}
 #gearTable .ref{width:64px}
-#specialTable .itemBox>select{flex:1;width:240px;padding:4px 26px 4px 8px;font-size:13px}
+#specialTable .itemBox>select{flex:1;min-width:0;padding:4px 26px 4px 8px;font-size:13px}
 #specialTable .ownOn{display:flex;align-items:center;gap:8px;white-space:nowrap}
 #specialTable .ownOn>label{display:flex;flex-direction:row;align-items:center;gap:6px}
 #gearTable .opts,#specialTable .opts{display:flex;flex-direction:column;gap:4px;min-width:250px}
@@ -442,11 +442,19 @@ td .map{cursor:default}
 /* Build from gear's tables fit the card: slot, item and refine (or enchant) on a row's first line; cards and affixes wrap under the
    item, and cells with nothing in them take no room. Each row is a grid, its rule on the row */
 :is(#gearTable,#specialTable) :is(thead,tbody) tr{display:grid;grid-template-columns:128px minmax(0,440px) 88px;justify-content:start;align-items:center;column-gap:8px;border-bottom:1px solid var(--line)}
-#specialTable :is(thead,tbody) tr{grid-template-columns:128px minmax(0,320px) minmax(0,240px)}
-:is(#gearTable,#specialTable) :is(th,td){border-bottom:0;padding:8px}
+#specialTable :is(thead,tbody) tr{grid-template-columns:128px minmax(0,440px)}
+/* Special equipment: the stone, the ring's egg and affixes go under the item, like a gear row's cards and affixes */
+#specialTable tr>:nth-child(n+3){grid-column:2/-1;padding-top:0}
+#specialTable thead th:nth-child(n+3),#specialTable td:nth-child(n+3):empty{display:none}
+#specialTable tbody tr>:nth-child(n+3)>*{max-width:424px}
+#specialTable td>.opts{padding-left:30px}
+/* what the stone, shadow shield or egg picked gives, under its box and lined up with it (past the 24px icon and 6px gap) */
+#specialTable .fxLine{margin:4px 0 0 30px;font-size:12px;white-space:normal}
+:is(#gearTable,#specialTable) :is(th,td){border-bottom:0;padding:8px;text-align:left}
+:is(#gearTable,#specialTable) tbody tr{align-items:start}
 :is(#gearTable,#specialTable) td:nth-child(n+4):empty,#gearTable td:has(>.cards:empty){display:none}
-#gearTable tr>:nth-child(n+4),#specialTable tr>:nth-child(n+4){grid-column:2/-1;padding-top:0}
-#gearTable thead th:nth-child(n+4),#specialTable thead th:nth-child(n+4){display:none}
+#gearTable tr>:nth-child(n+4){grid-column:2/-1;padding-top:0}
+#gearTable thead th:nth-child(n+4){display:none}
 :is(#gearTable,#specialTable) tbody tr>:first-child{grid-row:span 3;align-self:start;padding-top:14px}
 :is(#gearTable,#specialTable) thead tr{background:var(--raised)}
 :is(#gearTable,#specialTable) thead th{background:none}
@@ -462,7 +470,7 @@ td .map{cursor:default}
 #gearTable .cards{min-width:0}
 #gearTable .cards input{min-width:0}
 #gearTable .ref{width:72px}
-@media (max-width:520px){:is(#gearTable,#specialTable) :is(thead,tbody) tr{grid-template-columns:88px minmax(0,1fr) 72px}#specialTable :is(thead,tbody) tr{grid-template-columns:88px minmax(0,1fr) minmax(0,1fr)}}
+@media (max-width:520px){:is(#gearTable,#specialTable) :is(thead,tbody) tr{grid-template-columns:88px minmax(0,1fr) 72px}#specialTable :is(thead,tbody) tr{grid-template-columns:88px minmax(0,1fr)}}
 #buildPanel.altedit :is(#gearTable,#specialTable){background:var(--accent-soft)}
 /* card tick boxes: one card per line, its numbers only while ticked */
 .cdList{display:flex;flex-direction:column;gap:6px;margin:4px 0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
