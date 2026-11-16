@@ -450,7 +450,9 @@ td .map{cursor:default}
 #specialTable td>.opts{padding-left:30px}
 /* what the stone, shadow shield or egg picked gives, under its box and lined up with it (past the 24px icon and 6px gap) */
 :is(#gearTable,#specialTable) .fxLine{margin:4px 0 0 30px;font-size:12px;white-space:normal}
-#gearTable .cards>.fxLine{margin-top:-4px} /* closer to its card than to the next one */
+#gearTable .cards>.fxLine{margin-top:-4px}
+#buildPanel.fxOff .fxLine{display:none}
+.fxToggle{width:max-content;gap:8px;cursor:pointer} /* closer to its card than to the next one */
 :is(#gearTable,#specialTable) :is(th,td){border-bottom:0;padding:8px;text-align:left}
 :is(#gearTable,#specialTable) tbody tr{align-items:start}
 :is(#gearTable,#specialTable) td:nth-child(n+4):empty,#gearTable td:has(>.cards:empty){display:none}

@@ -730,6 +730,10 @@ function classPicker(el,groups,onPick,mine){let cur=null,shown="",looks={};
     if(k<1)btn.querySelectorAll(".ewFeet").forEach(f=>f.style.transform=`scale(${(.7*k).toFixed(3)})`)}}
 // Build from gear's Status, Gear, Equipment and Special equipment panels and the HP & SP recovery items list fold away, remembered like
 // a card (state.collapsed)
+// "Show effects": the line under each item, card, stone, shadow shield and egg in the Equipment and Special equipment tables, on
+// unless turned off (state.showFx === false), remembered like the folds. A Job Essence's line stays: it has no value box to say it
+{const x=$("fxShow"),set=()=>$("buildPanel").classList.toggle("fxOff",!x.checked);x.checked=state.showFx!==false;set();
+  x.addEventListener("change",()=>{if(x.checked)delete state.showFx;else state.showFx=false;save();set()})}
 [["buildStatFold","Build from gear: status"],["gsetFold","Build from gear: gear sets"],["gearFold","Build from gear: equipment table"],["specialFold","Build from gear: special equipment table"],
   ["recListFold","Consumables: recovery items list"]].forEach(([id,key])=>{const d=$(id);d.open=!(state.collapsed||{})[key];
   d.addEventListener("toggle",()=>{const c=state.collapsed=state.collapsed||{};if(d.open===!c[key])return;if(d.open)delete c[key];else c[key]=true;save()})});
