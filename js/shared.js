@@ -152,7 +152,7 @@ function syncSummary(t){const as=acctsOf(t),jobs=[...new Set(as.flatMap(a=>Objec
   return `${as.length} account${as.length===1?"":"s"}${jobs.length?` · ${jobs.slice(0,4).join(", ")}${jobs.length>4?"…":""}`:" · no character"}${last?` · last logged ${agoTxt(last)}`:""}`}
 // the parts of a character, for saying which ones differ
 const CHAR_PART=k=>/^(eq|build|weapon|wElem|cards|ec|dmgBonus|nameType)$/.test(k)?"gear":/^(preset|a|sage|skills?)$/.test(k)?"skills":
-  /^(item|pot|autoSp|mobInterval|sellAt|townMin|curW|maxW)/.test(k)?"supplies":/^(baseLv|\w+Txt|aspd|maxHp|maxSp|spRegen|hpRegen6|hitScale|stats?|mode)$/.test(k)?"stats":"other";
+  /^(item|pot|autoSp|mobInterval|curW|maxW)/.test(k)?"supplies":/^(baseLv|\w+Txt|aspd|maxHp|maxSp|spRegen|hpRegen6|hitScale|stats?|mode)$/.test(k)?"stats":"other";
 // what differs between the cloud's accounts (ct) and this browser's (lt): rows of {what, cloud, local}, the accounts' names
 // in front when there's more than one
 function syncDiff(ct,lt){const C=syncNorm(ct),L=syncNorm(lt),rows=[],multi=C.length>1||L.length>1,same=(a,b)=>stableTxt(a)===stableTxt(b);

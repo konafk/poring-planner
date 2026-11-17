@@ -978,44 +978,24 @@ t("market prices: a drop sold to players counts at its player price instead of i
   run(`state.prices={}`);
 });
 
-t("weight: trips end at the sell point, no regen past 70%, nothing past 90%", () => {
+t("weight: loot fills you to 70%; kill times leave selling out", () => {
   const atk = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
   setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed spear", st: {}, a: atk, maxW: 0 });
   assert.equal(run(`ITEMW[909]`), 1);                                      // Jellopy weighs 1
   const mob = MOB.replace("drops:[]", "drops:[[909,100]]");
   const tot = run(`fightSec(${mob})`) + 2;
-  near(run(`tripTot(${mob},${tot},2)`), tot);                               // no Max Weight typed: off
-  run(`Object.assign(C(),{maxW:1000,curW:100,sellAt:70,townMin:2})`);
+  assert.equal(run(`tripInfo(${mob},2)`), null);                            // no Max Weight typed: off
+  run(`Object.assign(C(),{maxW:1000,curW:100})`);
   near(run(`weightKill(${mob})`), 1);
-  near(run(`tripTot(${mob},${tot},2)`), tot + 120 / 600);                   // 600 weight of room at 70%: a 2-minute trip spread over 600 kills
-  near(run(`mobRow0(${mob},2)`).tot, tot + 120 / 600);
-  assert.equal(Math.round(run(`tripInfo(${mob},2)`).kills), 600);
-  run(`C().sellAt=90`);                                                     // basic attacks need no SP, so you carry on to 90%
-  near(run(`tripTot(${mob},${tot},2)`), tot + 120 / 800);
-  assert.equal(run(`withRegenOff(()=>regenPerSec())`), 0);
-  run(`C().a={...C().a,type:"magic",matkTxt:"300",sp:30,el:"Wind"};C().matkTxt="300";C().autoSp=false`);
-  const t2 = run(`fightSec(${mob})`) + 2;                                   // a spell costs SP: with no regen and no SP items you can't fight past 70%
-  near(run(`tripTot(${mob},${t2},2)`), t2 + 120 / 600);
-  assert.ok(run(`tripInfo(${mob},2)`).fell);
-  run(`C().sellAt=70;C().curW=800`);                                        // already past the sell point
-  assert.equal(run(`tripTot(${mob},${t2},2)`), Infinity);
-  run(`C().sellAt=70;C().curW=100;C().baseLv=99`);                         // far above the monster: the drop penalty means less loot to carry
+  near(run(`mobRow0(${mob},2)`).tot, tot);                                  // no town trips in the kill time
+  const t = run(`tripInfo(${mob},2)`);
+  assert.equal(Math.round(t.kills), 600);                                   // 700 − 100 starting weight (gear, potions) = 600 kills
+  near(t.min, 600 * tot / 60);
+  run(`C().curW=800`); assert.ok(run(`tripInfo(${mob},2)`).kills < 1);     // already past 70%
+  run(`C().curW=100;C().baseLv=99`);                                        // far above the monster: the drop penalty means less loot to carry
   assert.ok(run(`dropPenalty(${mob})`) > 0);
   near(run(`weightKill(${mob})`), 1 - run(`dropPenalty(${mob})`) / 100);
   run(`C().maxW=0;C().curW=0`);
-});
-
-t("weight: a sell point below 70% (65%) keeps regen the whole trip; above 70% fights the rest with none", () => {
-  const atk = { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 };
-  setup("Knight", { atkTxt: "100+300", wAtk: 0, weapon: "Two-handed spear", st: {}, a: atk, maxW: 1000, curW: 100, sellAt: 65, townMin: 2 });
-  const mob = MOB.replace("drops:[]", "drops:[[909,100]]");
-  const tot = run(`fightSec(${mob})`) + 2;
-  near(run(`tripTot(${mob},${tot},2)`), tot + 120 / 550);                   // 650 − 100 starting weight (gear, potions) = 550 kills a trip
-  assert.ok(!run(`tripInfo(${mob},2)`).fell);
-  run(`C().sellAt=80`); near(run(`tripTot(${mob},${tot},2)`), tot + 120 / 700);
-  run(`C().sellAt=0`); assert.equal(run(`sellPct()`), 70);                   // blank: 70%
-  run(`C().sellAt=95`); assert.equal(run(`sellPct()`), 90);                  // nothing past 90%
-  run(`C().maxW=0;C().curW=0;C().sellAt=70`);
 });
 
 t("the old sell timer's saved trip and settings are dropped", () => {
@@ -2384,10 +2364,8 @@ t("SP regen: Increase SP Recovery adds to auto regen; consumables restore SP / H
   near(base, (1 + 5 + 5) / 8);
   run(`C().skills={"increase-sp-recovery":10}`);                           // Lv 10: 10 × (3 + 0.2% of 500) = 40 SP every 10 s
   assert.equal(run("isrPer10()"), 40); near(run("regenPerSec()"), base + 4);
-  near(run("withRegenOff(()=>regenPerSec())"), 0);                         // none at 70% weight, like natural regen
   run(`C().skills={};C().consItems={"Small Mana Potion":true}`);
   near(run("consSPPerSec()"), 500 * 0.05 / 5); near(run("regenPerSec()"), base + 5);
-  near(run("withRegenOff(()=>regenPerSec())"), 5);                         // keeps going when overweight
   run(`C().consItems={};C().cons=[{on:true,name:"",eff:"HP +5% every 5s, SP +2/s"}]`);
   near(run("consHPPerSec()"), 4000 * 0.05 / 5); near(run("consSPPerSec()"), 2);
   run(`C().cons=[];C().consItems={"Mimir's Well":true}`);
@@ -2504,7 +2482,6 @@ t("HP regen works like SP regen: worked out unless typed, HP Recovery +% gear, I
   run("C().skills={'increase-hp-recovery':10}");                            // Increase HP Recovery Lv 10: 10 × (5 + 0.2% of 5000) per 10 s
   assert.equal(run("ihrPer10()"), 150);
   near(run("hpRegenPerSec()"), 50 / 6 + 15);
-  assert.equal(run("withRegenOff(()=>hpRegenPerSec())"), 0);                // past 70% weight: none
   run("C().mode='build';C().build={base:{str:1,agi:1,vit:1,int:1,dex:1,luk:1},gear:{acc1:{id:2601,cards:[4036]}}};applyBuild()");   // build mode: Muka in a ring
   assert.equal(run("C().bx.hpRec"), 10);
 });
@@ -2900,12 +2877,12 @@ t("max base level: the EXP Hunter ranks by net zeny, EXP gear lines are flagged"
 });
 
 t("EXP Hunter: weight columns and calibration to your logs", () => {
-  setup("Knight", { atkTxt: "100+300", hitTxt: "400", wAtk: 0, weapon: "Two-handed spear", wElem: "Neutral", maxW: 3000, curW: 300, sellAt: 70, townMin: 3, st: {},
+  setup("Knight", { atkTxt: "100+300", hitTxt: "400", wAtk: 0, weapon: "Two-handed spear", wElem: "Neutral", maxW: 3000, curW: 300, st: {},
     a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
   const r = run(`mapStats0("prt_f08",2)`), wk = run(`(()=>{let a=0,n=0;MAPMOBS.prt_f08.forEach(({m,n:c})=>{if(m.boss||m.expUnknown||!isFinite(fightSec(m)))return;a+=c*weightKill(m);n+=c});return a/n})()`);
   near(r.wk, wk);
   near(r.wph, r.wk * 3600 / r.secT);
-  near(r.trip, (3000 * 0.7 - 300) / r.wk * r.secT / 3600);                 // kills to the sell point × seconds a kill
+  near(r.trip, (3000 * 0.7 - 300) / r.wk * r.secT / 3600);                 // kills to 70% × seconds a kill
   run("C().maxW=0;C().st={}");
   assert.equal(run(`mapStats0("prt_f08",2).trip`), null);                    // weight off
   const c = run(`(()=>{const r=mapStats0("prt_f08",2),o={...r};calApply(r,0.5);return {o,r}})()`);
