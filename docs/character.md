@@ -128,8 +128,7 @@ In the Consumables card: HP and SP items with what they really cost per HP / SP:
 
 ## Weight
 
-Enter what you carry when you leave town (gear, potions, scrolls), your Max Weight, where you sell (any % up to 90, such as 65% to stay clear of 70%) and how long a town trip takes.
+Enter what you carry when you leave town (gear, potions, scrolls) and your Max Weight (left blank, it's worked out from STR, job, Enlarge Weight Limit and Increase Capacity).
 
-- At 70% weight HP and SP stop regenerating, and at 90% you can't attack or use skills, so each trip ends at your sell point. Only the room above your starting weight fills with loot.
-- Kills per trip come from each drop's weight × chance. The trip time is spread over those kills in every EXP/min and zeny/hr figure.
-- Selling past 70% means fighting the stretch above 70% with no regen. It falls back to 70% when your attack needs SP and you have no SP items.
+- At 70% weight HP and SP stop regenerating, and at 90% you can't attack or use skills. The weight numbers say how many kills and how long your loot takes to fill you to 70%. Only the room above your starting weight fills with loot.
+- Kills to 70% come from each drop's weight × chance. Selling isn't worked out: kill times, EXP/min and zeny/hr leave town trips out.

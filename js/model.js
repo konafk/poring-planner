@@ -352,7 +352,7 @@ const isrPer10=()=>{const l=skLv(C(),"increase-sp-recovery");return l>0?Math.flo
 const ihrPer10=()=>{const l=skLv(C(),"increase-hp-recovery");return l>0?Math.floor(l*(5+num(cf("maxHp"))*0.002)):0};
 // HP back per second: natural regen and Increase HP Recovery (stop when you're overweight) plus HP-over-time consumables, which keep going
 // m: the monster in play, whose poison stops natural regen and Increase HP Recovery part of the time (poisonUp)
-const hpRegenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(hpRegen6()/6+ihrPer10()/10)*(1-poisonUp(m)))+consHPPerSec();
+const hpRegenPerSec=(m=SG_MOB||calcMob())=>(hpRegen6()/6+ihrPer10()/10)*(1-poisonUp(m))+consHPPerSec();
 // SP the attack itself costs per second (Spell Fist: its upkeep); defSP adds Energy Coat and Vitata's heals against the monster in play
 // Guillotine Fist spends all your SP (Max SP each use), whatever SP cost cuts you have
 const skillSPPerSec=()=>(C().a.asura?num(cf("maxSp")):(num(C().a.sp)+(fsUsed()?num(fsRow()[0])/FS_USES:0))*spCostMul())/useSec()+dlUpkeep()+convSpPerSec();
@@ -360,7 +360,7 @@ const skillSPPerSec=()=>(C().a.asura?num(cf("maxSp")):(num(C().a.sp)+(fsUsed()?n
 const selfHpPerSec=()=>{const a=C().a;return a.mr?0.09*num(cf("maxHp"))/useSec():num(a.hpCost)/useSec()};
 const spNeedPerSec=()=>isSF()?sgUpkeep()+defSP()+hsFullSP()*hsSustain():skillSPPerSec()+defSP();
 // SP back per second: natural regen and Increase SP Recovery (stop when you're overweight) plus SP from cards and consumables, which keep going
-const regenPerSec=(m=SG_MOB||calcMob())=>(REGEN_OFF?0:(spRegen8()/8+isrPer10()/10)*(1-poisonUp(m)))+cardSPPerSec()+consSPPerSec();
+const regenPerSec=(m=SG_MOB||calcMob())=>(spRegen8()/8+isrPer10()/10)*(1-poisonUp(m))+cardSPPerSec()+consSPPerSec();
 // items per second when auto SP items are on (covers the gap); otherwise you rest, which stretches fight time
 // the SP item is the one picked in Consumables (spItemAmt: SP it restores, spItemPrice: what it costs)
 const itemsPerSec=()=>isSF()?sgItemsPerSec():C().autoSp&&spItemAmt()>0?Math.max(0,spNeedPerSec()-regenPerSec())/spItemAmt():0;
@@ -563,7 +563,7 @@ function indulgeOpt(){const lv=skLv(C(),"indulge");if(!(lv>0))return null;const 
 // is the same without them unless Spell Fist's Hindsight runs on SP items; d0: defense(m) likewise, the same unless SP items set Energy Coat's band
 function susKill(m,w,raw,d0){const k=SG_MOB,ki=NO_ITEMS;SG_MOB=m;const same=raw!=null&&!(isSF()&&sgItemsOn());NO_ITEMS=true;try{
   // poison (poisonUp) drains HP over the whole kill, walking too, and stops natural regen part of the time
-  const F=same?raw:rawFight(m);if(!isFinite(F))return null;const d=same&&d0!==undefined&&!(d0&&d0.fb&&ecOn())?d0:defense(m),T=F+w,hpBack=hpRegenPerSec(m),spBack=(REGEN_OFF?0:(spRegen8()/8+isrPer10()/10)*(1-poisonUp(m)))+consSPPerSec();
+  const F=same?raw:rawFight(m);if(!isFinite(F))return null;const d=same&&d0!==undefined&&!(d0&&d0.fb&&ecOn())?d0:defense(m),T=F+w,hpBack=hpRegenPerSec(m),spBack=(spRegen8()/8+isrPer10()/10)*(1-poisonUp(m))+consSPPerSec();
   const hpOut=d?d.taken*F+d.psn*T:0,hf=hfHpPerSec()*F,spOut=(isSF()?sgUpkeep()*T+hsFullSP()*hsSustain()*F:skillSPPerSec()*F)+(d?d.ecSP*F:0);
   return {F,T,hpOut,hpIn:hf+hpBack*T,hf,spOut,spIn:cardSPPerSec()*F+spBack*T,card:cardSPPerSec()*F,hpBack,spBack,burst:Math.max(0,hpOut-hf-hpBack*F),known:!!d,dodge:dodge(m)}}
   finally{SG_MOB=k;NO_ITEMS=ki}}
@@ -884,10 +884,8 @@ function entryJobLvs(s){
   k=null;let nj=null;for(let i=es.length-1;i>=0;i--){const e=es[i];if(jl[i]==null&&k!=null)jl[i]=Math.max(1,k-(e.jpct!=null&&up(e,nj)?1:0));if(jl[i]!=null)k=jl[i];if(e.jpct!=null)nj=e}
   return new Map(es.map((e,i)=>[e,jl[i]]))}
 // ---- weight: at 70% of Max Weight HP and SP stop regenerating, at 90% you can't attack or use skills (official guide) ----
-// a trip ends at your sell point (up to 70% keeps regen, past it carries more but fights with no regen); then you go to town and back
-const W_NOREGEN=0.7,W_STOP=0.9;
-let REGEN_OFF=false;
-const withRegenOff=fn=>{const k=REGEN_OFF;REGEN_OFF=true;try{return fn()}finally{REGEN_OFF=k}};
+// selling isn't worked out: the weight numbers only say how soon your loot fills you to 70%, and kill times leave town trips out
+const W_NOREGEN=0.7;
 // weight picked up per kill: each drop you loot (auto loot) × its weight (data/weights.js) × its chance, with your drop bonus and the level-gap penalty
 const dropW=(m,id,ch)=>looted(id)?(ITEMW[id]||0)*Math.min(100,ch*dropMul()*penMul(m))/100:0;
 const weightKill=m=>(m.drops||[]).reduce((a,[id,ch])=>a+dropW(m,id,ch),0);
@@ -902,34 +900,21 @@ function maxWCalc(c=C()){const s=baseStr(c),jb=JOB_WEIGHT[state.job],lv=skLv(c,"
 const maxWt=(c=C())=>num(c.maxW)>0?num(c.maxW):(maxWCalc(c)||{total:0}).total;
 const wOn=()=>maxWt()>0;
 const wRoom=lim=>Math.max(0,maxWt()*lim-num(C().curW));
-const townSec=()=>Math.max(0,num(C().townMin,3))*60;
-// selling past 70% only pays when you can keep fighting with no regen (no SP needed, or SP items on)
-// the sell point is any % up to 90 (65% stops a loop before regen stops); blank or 0 means 70%
-const sellPct=()=>{const v=num(C().sellAt);return v>0?Math.min(W_STOP*100,v):70};
-const sellLim=()=>sellPct()/100;
-function tripParts(m,tot,w){const lim=sellLim(),rA=wRoom(Math.min(lim,W_NOREGEN));let rB=0,totB=tot;
-  if(lim>W_NOREGEN){totB=withRegenOff(()=>fightSec(m))+w;if(isFinite(totB))rB=Math.max(0,wRoom(lim)-rA)}return {rA,rB,totB}}
-// past 70% with no way to keep fighting (no regen, you need SP and have no SP items): the trip stops at 70%
-const sellFell=(rA,rB)=>sellLim()>W_NOREGEN&&rB<=0&&wRoom(sellLim())>rA;
-// seconds per kill with selling trips: kills up to 70% (or your sell point) at your normal pace, then 70% to the sell point at the no-regen pace, plus the town trip spread
-// over the trip's kills. It's linear in weight per kill, so the spawn-weighted map averages still add up
-function tripTot(m,tot,w){if(!wOn()||!isFinite(tot))return tot;const wk=weightKill(m);if(!(wk>0))return tot;
-  const {rA,rB,totB}=tripParts(m,tot,w);if(rA+rB<=0)return Infinity;return (rA*tot+(rB?rB*totB:0))/(rA+rB)+townSec()*wk/(rA+rB)}
-// one trip on this monster alone: kills, minutes farming, and whether a sell point past 70% fell back to 70%
+// one trip on this monster alone: the kills and minutes farming until your loot fills you to 70%
 function tripInfo(m,w){const k=SG_MOB;SG_MOB=m;try{if(!wOn())return null;const wk=weightKill(m),tot=fightSec(m)+w;if(!(wk>0)||!isFinite(tot))return {wk,kills:Infinity};
-  const {rA,rB,totB}=tripParts(m,tot,w);return {wk,kills:(rA+rB)/wk,min:(rA*tot+(rB?rB*totB:0))/wk/60,fell:sellFell(rA,rB)}}finally{SG_MOB=k}}
+  const kills=wRoom(W_NOREGEN)/wk;return {wk,kills,min:kills*tot/60}}finally{SG_MOB=k}}
 // mobRow0 kept for one pass (rowPass: a renderAll or a tab opening): Where to farm, the Zeny Hunter and the Monsters table work out
 // the same monsters many times over (a monster on several maps, each converter). Keyed by the monster and everything the model swaps
-// for a while (withEl, withMobbed, Hindsight, NO_ITEMS, REGEN_OFF, withSnap's character), and dropped when the pass ends
+// for a while (withEl, withMobbed, Hindsight, NO_ITEMS, withSnap's character), and dropped when the pass ends
 let ROW_MEMO=null;
 const oid=(()=>{const ids=new WeakMap();let n=0;return o=>o==null?"-":ids.get(o)||(ids.set(o,++n),n)})();
 function rowPass(fn){if(ROW_MEMO)return fn();ROW_MEMO=new WeakMap();try{return fn()}finally{ROW_MEMO=null}}
 function mobRow0(m,w){if(!ROW_MEMO)return mobRow0x(m,w);
-  const k=[w,EL_OVR,MOBBED,HS_OVR,NO_ITEMS,REGEN_OFF,state.job,oid(C()),oid(SKFX),oid(EFF),oid(BUILD_LAST)].join("|");
+  const k=[w,EL_OVR,MOBBED,HS_OVR,NO_ITEMS,state.job,oid(C()),oid(SKFX),oid(EFF),oid(BUILD_LAST)].join("|");
   let mm=ROW_MEMO.get(m);if(!mm)ROW_MEMO.set(m,mm=new Map());let r=mm.get(k);if(!r)mm.set(k,r=mobRow0x(m,w));return r}
 function mobRow0x(m,w){const kSG=SG_MOB;SG_MOB=m;try{return mobRow00(m,w)}finally{SG_MOB=kSG}}
 function mobRow00(m,w){
-  const raw=rawFight(m),sec=fightSec(m,raw),def=defense(m),tot=tripTot(m,sec+w,w),epk=killExp(m),jpk=killJobExp(m),ok=isFinite(tot)&&tot>0;
+  const raw=rawFight(m),sec=fightSec(m,raw),def=defense(m),tot=sec+w,epk=killExp(m),jpk=killJobExp(m),ok=isFinite(tot)&&tot>0;
   // zk: zeny per kill after what the skills use up; hc: SP items, ASPD potion and ground buffs per hour; zph: net zeny per hour
   // sph: SP items per hour (what huntCostHr counts)
   const zc=skillZeny(m),zk=zenyKill(m)-zc,sph=itemsPerSec()*3600,hc=sph*spItemPrice()+hourCostHr();
@@ -944,9 +929,9 @@ function mapStats00(mp,w){
   if(!n)return null;
   // zg: zeny / hr after skill items and zeny; zph also takes off SP items, the ASPD potion and ground buffs (per monster, over the time spent on it)
   // healing (Recovery items): SP items (spHr a hour, spZ zeny) and HP items for the HP lost (hpHr, hpZ). zb: zeny / hr before healing, net: after it
-  // weight: wk picked up a kill, wph an hour, trip the hours from leaving town to leaving it again (null with weight off or weightless drops)
-  const zg=z/time*3600,hcHr=hc/time,hpm=hpN?hp/hpN:null,hpiM=hpN?hpi/hpN:null,spHr=spi/time,spZ=spHr*spItemPrice(),hh=hpHeal(hpiM),wk=wt/n,room=wOn()?wRoom(sellLim()):0;
-  return {mp,N,epm:exp/time*60,secT:time/n,sec:fight/n,walk:w,sell:time/n-fight/n-w,epk:exp/n,zg,zph:zg-hcHr,zcost:zc/time*3600+hcHr,hpm,hpi:hpiM,hpt:hpN?hpt/hpN:null,pz:hpN?pz/hpN:0,psn:hpN?psn/hpN:0,skip:skip.length,skipNames:skip,unk:unk.length,unkNames:unk,
+  // weight: wk picked up a kill, wph an hour, trip the hours until it fills you to 70% (null with weight off or weightless drops)
+  const zg=z/time*3600,hcHr=hc/time,hpm=hpN?hp/hpN:null,hpiM=hpN?hpi/hpN:null,spHr=spi/time,spZ=spHr*spItemPrice(),hh=hpHeal(hpiM),wk=wt/n,room=wOn()?wRoom(W_NOREGEN):0;
+  return {mp,N,epm:exp/time*60,secT:time/n,sec:fight/n,walk:w,epk:exp/n,zg,zph:zg-hcHr,zcost:zc/time*3600+hcHr,hpm,hpi:hpiM,hpt:hpN?hpt/hpN:null,pz:hpN?pz/hpN:0,psn:hpN?psn/hpN:0,skip:skip.length,skipNames:skip,unk:unk.length,unkNames:unk,
     spHr,spZ,hpHr:hh.n,hpZ:hh.z,heal:hh.z+spZ,zb:zg-hcHr+spZ,net:zg-hcHr-hh.z,wk,wph:wt/time*3600,trip:wk>0&&room>0?room/wk*(time/n)/3600:null,sus:susCalc(sus)};
 }
 // damage per second on a map's mix with one converter: each monster's DPS weighted by the time spent fighting it (the monsters
@@ -1004,9 +989,7 @@ const huntCosts=(m,hpi)=>{const spHr=spItemsHr(m),spZ=spHr*spItemPrice(),other=h
 // on every landing, so without one you walk. Not on maps you've marked "no teleport" either (the database has no map flags).
 // Each landing finds a hunted monster about hunted/all of the time, so a kill takes all/hunted − 1 extra jumps of state.teleSec
 // seconds each. Each pick uses whichever of the two nets more.
-// Kill time includes selling trips (tripTot), like every other ranking
 const huntOffOf=mp=>(state.huntOff||{})[mp];
-const killTot=(m,sec,walk)=>{const k=SG_MOB;SG_MOB=m;try{return tripTot(m,sec+walk,walk)}finally{SG_MOB=k}};
 const noTele=mp=>(state.noTele||[]).includes(mp);
 const creamyOn=()=>cdOn("creamy");
 const canTele=()=>creamyOn()||skLv(C(),"teleport")>0;
@@ -1020,7 +1003,7 @@ function huntMap00(mp,w,minN){
   const rows=list.map(({m,n})=>({m,n,r:mobRow0(m,0)})),ok=rows.filter(x=>isFinite(x.r.sec)),skip=rows.filter(x=>!isFinite(x.r.sec)).map(x=>x.m.name);
   const all=ok.reduce((a,x)=>a+x.n,0);if(!all)return null;
   const at0=(h,n,walk,tele)=>{let time=0,z=0,exp=0,expT=0,hp=0,hpi=0,hpN=0,wt=0;
-    h.forEach(({m,n:c,r})=>{const tot=killTot(m,r.sec,walk);time+=c*tot;z+=c*r.zk;wt+=c*weightKill(m);if(!m.expUnknown){exp+=c*r.epk;expT+=c*tot}if(r.hpm!=null){hp+=c*r.hpm*tot;hpi+=c*r.hpi*tot;hpN+=c*tot}});
+    h.forEach(({m,n:c,r})=>{const tot=r.sec+walk;time+=c*tot;z+=c*r.zk;wt+=c*weightKill(m);if(!m.expUnknown){exp+=c*r.epk;expT+=c*tot}if(r.hpm!=null){hp+=c*r.hpm*tot;hpi+=c*r.hpi*tot;hpN+=c*tot}});
     const top=h.reduce((a,x)=>!a||x.n>a.n?x:a,null),kph=n/time*3600,loot=z/time*3600,hc=huntCosts(top.m,hpN?hpi/hpN:null);
     return {mp,N,n,walk,tele,kph,secT:time/n,loot,...hc,hpm:hpN?hp/hpN:null,net:loot-hc.cost,zk:z/n,wk:wt/n,wph:wt/time*3600,epm:expT?exp/expT*60:null,skip:skip.length,skipNames:skip,
       earn:h.map(({m,n,r})=>({m,n,zk:r.zk})).sort((a,b)=>b.n*b.zk-a.n*a.zk)}};
