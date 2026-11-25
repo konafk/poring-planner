@@ -12,6 +12,8 @@ const ROADMAP=[
  regions:[{id:"ct",name:"Clock Tower",pre:["c_tower","tow_d","alde_dun"]}]},
 {when:"2026-11-12",name:"Level 80 & Ant Hell",cap:{base:80},add:["Base level cap 80","Daily quests for level 80","Dungeons: Western Cave Karu (Comodo), Byalan Dungeon (Undersea Cave) 4F and 5F","Memorial dungeon: Ant Hell (Mutant Maya, base Lv 70): Expedition gear, upgraded from Subjugation Team gear with 50 Faintly Glowing Crystal and Jellostones","Ant Hell 1F and 2F are open already","Hunting Season event: Hode and Orc Warrior","Event: Blacksmith's Blessing exchange","Reset Cat returns: free stat and skill resets","Less base EXP needed for levels 2 to 70","Light Gacha Scroll (SEA), costume package (EU)"],
  regions:[{id:"by",name:"Byalan 4F & 5F",pre:["iz_d03","iz_d04","iz_dun03","iz_dun04"]},{id:"ka",name:"Western Cave Karu",pre:["bea_d01","bea_dun01"]}]},
+// from its maintenance reminder: no new maps. The events it ends are the ones the 12 November and 29 October updates brought, and Lifting Curse
+{when:"2026-11-26",name:"MVP Raids",add:["MVP Raids: Maya and Phreeoni","Event quests (Global only): A Hard Choice, Bug Extermination","Black Friday: the KP Shop-wide 10% discount's 2nd round","Ending with this maintenance: Lifting Curse, Hunting Season (Hode and Orc Warrior), the Blacksmith's Blessing event and the Gatchaman collaboration"]},
 {when:"2026-11",name:"Noah's Tube",add:["Collaboration event: Noah's Tube"]},
 {when:"2026-12",name:"Glast Heim",add:["Glast Heim: the Monastery, Catacombs, caves, Underground Prison and Culvert"],
  regions:[{id:"gh",name:"Glast Heim",pre:["gl_","glast_"]}]},
