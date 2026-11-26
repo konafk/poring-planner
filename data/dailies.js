@@ -98,5 +98,4 @@ const DAILIES=[
 {"id":1000212,"title":"Nordfeld: Boulder Dwarf Token Collection","npc":["Blacksmith Erisa","nordfeld 228 110"],"lv":null,"task":"Blacksmith Erisa has requested 10 Boulder Dwarf Token to support Nordfeld's supplies"},
 {"id":1000214,"title":"Nordfeld: Special Beer!","npc":["Brewer Burkel","nordfeld 205 142"],"lv":null,"task":"Gather Beer Ingredients"},
 {"id":1300006,"title":"Amon Ra's Reawakening","npc":["Apep","moc_ruins 125 125"],"lv":null,"task":"Help Apep and receive Amon Ra's blessing","mobs":[1511],"live":false},
-{"id":1300017,"title":"Hunt Baphomet Cult","npc":["Priest Raymond","prontera 247 307"],"lv":null,"task":"Defeat 66 Baphomet Jr., collect 6 each of Shell, Mantis Scythe, and Venom Canine, then return to Priest Raymond","mobs":[1101,1139],"live":false},
-{"id":1300029,"title":"Curse of the Clock Tower","npc":["Clock Tower Clerk Molden","aldebaran 136 132"],"lv":null,"task":"Romero Speciale's Book says you need 10 hands that tell time"}];
+{"id":1300017,"title":"Hunt Baphomet Cult","npc":["Priest Raymond","prontera 247 307"],"lv":null,"task":"Defeat 66 Baphomet Jr., collect 6 each of Shell, Mantis Scythe, and Venom Canine, then return to Priest Raymond","mobs":[1101,1139],"live":false}];

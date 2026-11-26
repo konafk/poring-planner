@@ -1089,6 +1089,18 @@ t("gear fixes from the client (data/client.js): the guild staffs' MATK and armou
   assert.equal(run(`JSON.stringify(BUILD.item(550005).g||null)`), "null");  // the MATK isn't also added as a bonus line
   assert.equal(run(`BUILD.item(480008).w`), 30);  // Advanced Guild Manteau, weightless before
 });
+t("gear built from the client (data/client.js): the 26 November Lv.N weapons and headgear, with their type, level and jobs", () => {
+  const it = id => JSON.parse(run(`JSON.stringify(EQUIP.find(e=>e.id===${id})||null)`));
+  const axe = it(28144);  // Lv.5 Two-Handed Axe: weapon level and refine from its text, base MATK from the stats table, its classes
+  assert.deepEqual([axe.type, axe.wlv, axe.refine, axe.atk, axe.matk, axe.jobs], ["axe_2h", 5, "weapon_lv5", 10, 10, ["swordsman", "merchant"]]);
+  assert.equal(axe.g, undefined);  // its "MATK +10" is the weapon's own MATK, not a bonus as well
+  assert.deepEqual(it(700071).g, [{ b: [["matk", null, null, 10]] }]);  // a bow has no MATK in the stats table: its MATK +10 is a bonus
+  assert.equal(run(`wearsJob(EQUIP.find(e=>e.id===28144),"Blacksmith")&&!wearsJob(EQUIP.find(e=>e.id===28144),"Mage")`), true);
+  assert.deepEqual([it(400359).slot, it(410208).slot, it(400359).jobs], [["head_upper"], ["head_middle"], undefined]);  // "Helm", All Jobs
+  // Huuma Shuriken and the guns (no class here uses them) and shadow gear stay items
+  [810029, 24781].forEach(id => { assert.equal(it(id), null); assert.ok(run(`!!CLIENT.items[${id}]`)) });
+  assert.equal(run(`EQUIP.filter(e=>/^Lv\\.\\d /.test(e.name)).length`), 85);
+});
 t("Affixes tab: the client's upgrade items with the gear they take, and the rolls players reported", () => {
   // every reported item is one the client lists, and every gear it takes is in the equipment data
   assert.equal(run(`Object.keys(AFFIX_ITEMS).every(i=>CLIENT.upgrades[i])`), true);
