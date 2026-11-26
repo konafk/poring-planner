@@ -4,7 +4,7 @@
 import { readFileSync } from "fs";
 import assert from "assert/strict";
 import { existsSync } from "fs";
-import { stamp, hashOf, localFiles, assetFiles } from "../tools/stamp.mjs";
+import { stamp, hashOf, localFiles, assetFiles, buildId, withBuild } from "../tools/stamp.mjs";
 
 const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const local = localFiles(html);
@@ -16,6 +16,14 @@ const out = stamp(html);
 for (const u of local) assert.ok(out.includes(`"${u}?v=${hashOf(u)}"`), `${u} not stamped`);
 assert.equal(stamp(out), out, "stamping is stable");
 assert.notEqual(hashOf("js/events.js"), hashOf("js/state.js"));
+// the build id open tabs compare with version.json (js/start.js, autoUpdate): in a <meta> right after the charset, and a new one
+// whenever any stamped file changes
+const id = buildId(out), built = withBuild(out, id);
+assert.match(id, /^[0-9a-f]{12}$/);
+assert.match(built, new RegExp(`<meta charset="utf-8">\n<meta name="build" content="${id}">`));
+assert.equal(built.match(/name="build"/g).length, 1);
+assert.notEqual(buildId(out.replace(/js\/start\.js\?v=[0-9a-f]+/, "js/start.js?v=0000000000")), id, "a changed file gives a new build");
+assert.ok(readFileSync(new URL("../js/start.js", import.meta.url), "utf8").includes('meta[name="build"]'), "start.js reads the build");
 // the sprite sheets data/icons.js names are deployed (img/ is copied as it is)
 const sheets = [...readFileSync(new URL("../data/icons.js", import.meta.url), "utf8").matchAll(/"file":"([^"]+)"/g)].map(m => m[1]);
 assert.equal(sheets.length, 5);                                     // gear icons, item icons, card pictures, monster pictures, skill icons
