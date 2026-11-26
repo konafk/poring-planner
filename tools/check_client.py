@@ -1,6 +1,7 @@
 """Check the planner's data against the installed Global client: spawn counts, monster levels, the level cap and gear stats.
 
-Spawn counts: data/spawn.js's normal and PvP counts against data.grf's navi_mob.lub (the most on one normal channel, and on a PvP one).
+Spawn counts: data/spawn.js's normal and PvP counts against data.grf's navi_mob.lub, on the channel tools/export_spawns.py keeps (the map
+itself, else the first of _a to _d; _z, else _y).
 A field's table under its old name has no channels, so a PvP count is only compared where the client lists one.
 A map's boss and PvP tables can be under its Zero name only (Orc Hero: gef_fild03 is b_gef_f03), so a map's old and Zero names count as one.
 Monster levels: data/client.js's mobLv, then data/mobs.js, against navi_mob.lub (the monster list takes its levels from mobLv, so this
@@ -51,19 +52,46 @@ def js_value(name, var):
     return json.JSONDecoder().raw_decode(src[i:])[0]
 
 
-def navi_counts(navi):
-    """{(map, monster id): [normal, PvP]}, channels and a map's boss table together, and {id: (sprite, level)}."""
-    counts, levels = {}, {}
+NORMAL, PVP = ("", "_a", "_b", "_c", "_d"), ("_z", "_y")  # the channels tools/export_spawns.py looks in, in its order
+
+
+def navi_counts(navi, first=False):
+    """{(map, monster id): [normal, PvP]}, channels and a map's boss table together, and {id: (sprite, level)}.
+    By default the most on any normal channel and on any PvP one (what tools/check_patch.py compares, so a change on any channel shows).
+    With first, the channel tools/export_spawns.py keeps: the map itself, else the first of _a to _d, and _z, else _y, with the boss
+    table's same channel added (Sunken Ship 1F has twice the monsters on C and D; spawn.js has A's). A monster only on another channel
+    gets 0 there, so it still counts as one the map has."""
+    tables, levels = {}, {}  # (map, boss table?, channel) -> {monster id: count}
     for r in navi.values():
         if not isinstance(r, dict) or not isinstance(r.get(4), int) or not r[4] & 0xFFFF:
             continue
         mob, count, name = r[4] & 0xFFFF, r[4] >> 16, r[1]
-        row = counts.setdefault((CHANNEL.sub("", name[2:] if name.startswith("b_") else name), mob), [0, None])
-        if name.endswith(("_y", "_z")):
-            row[1] = max(row[1] or 0, count)
-        else:
-            row[0] = max(row[0], count)
+        boss = name.startswith("b_")
+        name = name[2:] if boss else name
+        ch = CHANNEL.search(name)
+        t = tables.setdefault((CHANNEL.sub("", name), boss, ch.group(0) if ch else ""), {})
+        t[mob] = t.get(mob, 0) + count if first else max(t.get(mob, 0), count)
         levels[mob] = (r[6], r[7])
+    counts = {}
+    for mp in {k[0] for k in tables}:
+        for boss in (False, True):
+            got = {ch: t for (m, b, ch), t in tables.items() if m == mp and b == boss}
+            norm = [got[ch] for ch in NORMAL if ch in got]
+            pvp = [got[ch] for ch in PVP if ch in got]
+            if first:
+                norm, pvp = norm[:1], pvp[:1]
+            for mob in {i for t in got.values() for i in t}:
+                row = counts.setdefault((mp, mob), [0, None])
+                n = [t[mob] for t in norm if mob in t]
+                z = [t[mob] for t in pvp if mob in t]
+                if first:
+                    row[0] += n[0] if n else 0
+                    if z:
+                        row[1] = (row[1] or 0) + z[0]
+                else:
+                    row[0] = max([row[0], *n])
+                    if z:
+                        row[1] = max(row[1] or 0, *z)
     return counts, levels
 
 
@@ -258,7 +286,7 @@ def main():
     client = sys.argv[sys.argv.index("--client") + 1] if "--client" in sys.argv else r"C:\Gravity\RagnarokZero"
     grf = DesGrf(os.path.join(client, "data.grf"))
     navi = load(grf.read(NAVI))["Navi_Mob"]
-    counts, levels = navi_counts(navi)
+    counts, levels = navi_counts(navi, first=True)
     props = load(grf.read(EQUIP_PROPS))["Item"]
     settings = load(grf.read(SETTINGS))
     names = js_value("maps.js", "MAPNAMES")
