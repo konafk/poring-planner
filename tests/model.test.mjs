@@ -3595,7 +3595,8 @@ t("Recipes: search by item or material, the popup's Made from and Used in, and e
   // icons: drops and recipe items from the item sheet, gear from its own, cards their picture
   assert.match(run(`itemIcon(909)`), /ico-item"/);
   assert.match(run(`itemIcon(1301)`), /ico-gear"/);
-  assert.match(run(`itemIcon(4123)`), /ico-card"/);
+  assert.match(run(`itemIcon(4124)`), /ico-card"/);                                                  // Medusa Card: the client's picture
+  assert.match(run(`itemIcon(4123)`), /ico-cardDb"/);                                                // Eddga Card: not in the client's card pictures since 26 Nov, the database's
   assert.ok(run(`[...Object.keys(ITEMN),...Object.keys(RECIPE_ITEMN)].every(id=>!/ none"/.test(itemIcon(id)))`), "every item has an icon");
   // Memorial: 5 Jello Fragments make their Jellostone, and an Expedition piece takes its Subjugation Team piece, crystals and stones
   const mem = id => run(`JSON.stringify(RECIPE_LIST.find(r=>r.cat==="Memorial"&&r.id===${id}))`);
