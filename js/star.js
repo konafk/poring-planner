@@ -1,6 +1,6 @@
-// ---- Stellar tab: the ★ weapons on Global's client. Each takes 100 ★ Forging Certificates of its own weapon: Workshop Apprentice
+// ---- Star tab: the ★ weapons on Global's client. Each takes 100 ★ Forging Certificates of its own weapon: Workshop Apprentice
 // Nariya gives one for each monster-drop copy of that weapon (100 Book for ★ Book). The copies you still need, the monster you'd get
-// them fastest from, and the Activation routes with your refine after (data/stellar.js). Saved per account in state.stellar: have
+// them fastest from, and the Activation routes with your refine after (data/star.js). Saved per account in state.star: have
 // {★ weapon id: its certificates plus copies of its weapon you have}, refine (your weapon's) ----
 const STAR_W=EQUIP.filter(x=>x.name.startsWith("★ ")&&(x.slot||[]).includes("weapon")).sort((a,b)=>a.name.localeCompare(b.name));
 const STAR_CERTS=STAR_ROUTES[0].cert[0];
@@ -19,7 +19,7 @@ function starBest(s,w=walkSec()){let best=null;
   starMobs(s).forEach(o=>{if(!(o.per>0)||!starFarm(o))return;const r=mobRow(o.m,w);if(!r||!isFinite(r.tot)||!(r.tot>0))return;
     const ph=o.per*3600/r.tot;if(!best||ph>best.ph)best={...o,ph,kph:3600/r.tot}});
   return best}
-const starLeft=s=>Math.max(0,STAR_CERTS-(state.stellar.have[s.id]||0));
+const starLeft=s=>Math.max(0,STAR_CERTS-(state.star.have[s.id]||0));
 const starDur=h=>h>0?fmtDur(h).split("\n")[0]:"done";
 const starMob=o=>`${o.m?mobIcon(o.id,1,"il")+infoLink("mob",o.id,o.name):esc(o.name)}`;
 const starDrops=o=>o.ds.map(([id,ch])=>`<div>${itemIcon(id,1,"il")}${infoLink("gear",id,BUILD.item(id).name)} <span class="note">${chTxt(ch)}${o.m&&ch!=null&&yourCh(o.m,ch)!==ch?` (you ${chTxt(yourCh(o.m,ch))})`:""}</span></div>`).join("");
@@ -31,7 +31,7 @@ function starHow(s,b){const all=starMobs(s),open=all.filter(starFarm),unk=open.f
   if(unk.length)return `<span class="note">No published drop rate yet, so no time:</span>${list(unk)}`;
   if(all.length)return `<span class="note">None on an open map you can farm:</span>${list(all)}`;
   return '<span class="note">No monster drops it</span>'}
-function renderStar(){const S=state.stellar,w=walkSec();
+function renderStar(){const S=state.star,w=walkSec();
   $("starRows").innerHTML=STAR_W.map(s=>{const left=starLeft(s),b=left?starBest(s,w):null,src=starSrc(s);
     return `<tr><td class="name">${itemIcon(s.id,1,"il")}${infoLink("gear",s.id,s.name)}<div class="note">${esc(BUILD.WTYPE[s.type]||"")}</div></td>
       <td class="name">${src.length?src.map(x=>`<div>${itemIcon(x.id,1,"il")}${infoLink("gear",x.id,x.name)} <span class="note">${x.slots} slot${x.slots===1?"":"s"}</span></div>`).join(""):'<span class="note">–</span>'}</td>
@@ -43,6 +43,6 @@ function renderStar(){const S=state.stellar,w=walkSec();
     <td class="name">${r.cert[0]} ${esc(r.cert[1])}</td><td>${r.frag}</td><td class="mono">${S.refine?`+${S.refine} → +${Math.max(0,S.refine-r.refine)}`:"–"}</td></tr>`).join("");
   $("starNpcs").innerHTML=STAR_NPCS.map(([n,at,what])=>`<tr><td class="name"><b>${esc(n)}</b></td><td>${naviTag(at)}</td><td class="name">${esc(what)}</td></tr>`).join("")}
 $("starCard").addEventListener("input",e=>{const t=e.target.dataset.starhave;if(t==null)return;
-  const v=Math.max(0,Math.round(num(e.target.value)));if(v)state.stellar.have[t]=v;else delete state.stellar.have[t];save()});
+  const v=Math.max(0,Math.round(num(e.target.value)));if(v)state.star.have[t]=v;else delete state.star.have[t];save()});
 $("starCard").addEventListener("change",e=>{if(e.target.dataset.starhave!=null)renderStar()});
-$("starRefine").addEventListener("change",e=>{state.stellar.refine=Math.min(20,Math.max(0,Math.round(num(e.target.value))));save();renderStar()});
+$("starRefine").addEventListener("change",e=>{state.star.refine=Math.min(20,Math.max(0,Math.round(num(e.target.value))));save();renderStar()});

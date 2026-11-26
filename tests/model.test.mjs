@@ -3708,7 +3708,7 @@ t("Jellostones: Contingent and Conqueror pieces count by name, with their own cr
   assert.equal(r(`JSON.stringify(state.jello.want)`), JSON.stringify([15221, "Contingent Mail"]));
 });
 
-t("Stellar weapons: each ★ weapon's certificates come from its own weapon, and the monster that gets you copies fastest", () => {
+t("Star weapons: each ★ weapon's certificates come from its own weapon, and the monster that gets you copies fastest", () => {
   assert.equal(run(`STAR_W.length`), 17);                                         // the ★ weapons in Global's client
   const src = id => JSON.parse(run(`JSON.stringify(starSrc(STAR_W.find(x=>x.id===${id})).map(x=>x.id))`));
   assert.deepEqual(src(540118), [540106]);                                        // ★ Book: the Book monsters drop
@@ -3721,14 +3721,18 @@ t("Stellar weapons: each ★ weapon's certificates come from its own weapon, and
   near(per(), 0.0005);
   run(`state.dropBonus=100`);
   near(per(), 0.001);
-  run(`state.dropBonus=0;state.stellar={have:{610092:40},refine:9}`);
+  run(`state.dropBonus=0;state.star={have:{610092:40},refine:9}`);
   assert.equal(run(`starLeft(STAR_W.find(x=>x.id===610092))`), 60);
-  run(`state.stellar.have[610092]=150`);
+  run(`state.star.have[610092]=150`);
   assert.equal(run(`starLeft(STAR_W.find(x=>x.id===610092))`), 0);
   setup("Assassin", { atkTxt: "300+300", st: {}, a: { name: "x", type: "auto", pct: 100, hits: 1, el: "W", cast: 0, delay: 0, sp: 0, targets: 1 } });
   const b = JSON.parse(run(`JSON.stringify((()=>{const b=starBest(STAR_W.find(x=>x.id===510183),0);return b&&{ph:b.ph,per:b.per,kph:b.kph,ds:b.ds}})())`));
   assert.ok(b && b.ph > 0 && b.ds.every(([id]) => id === 510131), JSON.stringify(b));   // a Stiletto dropper
   near(b.ph, b.per * b.kph);
+  // a save from before the rename keeps its certificates and refine under stellar; they move to star
+  const old = load({ stellar: { have: { 610092: 40 }, refine: 9 } });
+  assert.equal(old(`JSON.stringify(state.star)`), JSON.stringify({ have: { 610092: 40 }, refine: 9 }));
+  assert.equal(old(`"stellar" in state`), false);
 });
 
 t("Brewing simulator: rAthena's Prepare Potion rate and each potion's random term", () => {

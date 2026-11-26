@@ -408,7 +408,7 @@ td .map{cursor:default}
 #memNpcTable td:nth-child(3){white-space:normal;min-width:220px}
 #jelloCraft{flex-wrap:wrap}
 #enchSpirits div{margin-top:2px}
-/* Stellar tab: tables read left to right, lists stack in their cell */
+/* Star tab: tables read left to right, lists stack in their cell */
 #starTable th,#starTable td,#starRulesTable th,#starRulesTable td,#starNpcTable th,#starNpcTable td{text-align:left;vertical-align:top;cursor:default}
 #starTable tbody tr,#starRulesTable tbody tr,#starNpcTable tbody tr{cursor:default}
 #dailyTable th,#dailyTable td{text-align:left;vertical-align:top;cursor:default}#dailyTable tbody tr{cursor:default}

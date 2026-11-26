@@ -8,7 +8,7 @@
 - [Daily quests](#daily-quests)
 - [Monsters & maps](#monsters--maps): Where to farm, Map planner, Monster table
 - [Memorial dungeons](#memorial-dungeons): Jellostones, Expedition upgrades, memorial dungeons and their gear's enchants
-- [Stellar weapons](#stellar-weapons): ★ Forging Certificates and Activation
+- [Star weapons](#star-weapons): ★ Forging Certificates and Activation
 - [What's new](#whats-new)
 - [Roadmap](#roadmap)
 - [Monster info](#monster-info)
@@ -25,7 +25,7 @@
 
 ## Page layout
 
-The tabs come in levels: Home, then four groups, Plan (Character, Session, Daily quests), Game data (Monsters & maps, Monster skills, Item info, Equipment, Cards, Affixes, Recipes, Memorial dungeons, Stellar weapons), Reference (What's new, Roadmap, Market, EXP tables, Formulas) and Simulators (Brewing, Cooking, Refine, Skill tree, Stylist). In a desktop window (1024px and wider) they sit in a sidebar on the left: the open tab's group lists its tabs, with the open tab's sections (its cards' headings) under it, the one you're reading marked; a click jumps to one. Every other group folds to its heading; click a heading to unfold or fold its group in place (the page remembers which you unfolded). With **Compact sidebar** every tab shows as an icon and the page keeps its own section links. In a narrower window or on a phone, Home and the four groups sit along the top, each group a menu of its tabs. Click a card's heading to fold the card away (the page remembers); a tab with only one card showing (Item info, Equipment, Roadmap, either Market pane…) doesn't fold it; when the card's heading only says the tab's name again it's dropped, and the rest of its row (counts, notes, buttons) sits beside the tab's title.
+The tabs come in levels: Home, then four groups, Plan (Character, Session, Daily quests), Game data (Monsters & maps, Monster skills, Item info, Equipment, Cards, Affixes, Recipes, Memorial dungeons, Star weapons), Reference (What's new, Roadmap, Market, EXP tables, Formulas) and Simulators (Brewing, Cooking, Refine, Skill tree, Stylist). In a desktop window (1024px and wider) they sit in a sidebar on the left: the open tab's group lists its tabs, with the open tab's sections (its cards' headings) under it, the one you're reading marked; a click jumps to one. Every other group folds to its heading; click a heading to unfold or fold its group in place (the page remembers which you unfolded). With **Compact sidebar** every tab shows as an icon and the page keeps its own section links. In a narrower window or on a phone, Home and the four groups sit along the top, each group a menu of its tabs. Click a card's heading to fold the card away (the page remembers); a tab with only one card showing (Item info, Equipment, Roadmap, either Market pane…) doesn't fold it; when the card's heading only says the tab's name again it's dropped, and the rest of its row (counts, notes, buttons) sits beside the tab's title.
 
 **Log EXP from any tab:** press the round **+** button at the bottom right, or **L** on any tab, and type in the Log EXP box it opens. It takes a line like the paste box does: `17.9` (EXP %), `17.9 63` (with job %), `15:05 17.9 63` (at that time), and `died` on the line for EXP after a death. The entry goes in at the level of your last one, and a level-up is picked up the same way as in the Log EXP card. On a phone the box opens as a sheet from the bottom, on a desktop as a pop-up above the button. At the max base level (70) base EXP no longer counts, so the box, the + button and **L** go away.
 
@@ -198,7 +198,7 @@ Every item on the tab shows its in-game icon and opens its details, which say wh
 
 The Subjugation Team and Expedition gear itself is on the Equipment tab with the lines its client description gives (MaxHP / MaxSP and "DEF +x", +3 refine bonuses once, the set's after-attack delay and cast lines only with the whole set). The Contingent and Conqueror gear isn't on the Equipment tab: its stats aren't in the Global client yet.
 
-## Stellar weapons
+## Star weapons
 
 Its own tab, for the Activation System. It's marked **Not open in game yet**: it's Taiwan Zero data, and Global doesn't have the system yet. The certificates you have and your weapon's refine are saved per account.
 

@@ -179,9 +179,10 @@ state.recovery={discount:!(state.recovery&&state.recovery.discount===false),all:
   stones=JELLO.map(x=>x.stone[0]),c=objOr(j.craft);
   state.jello={frag:cnt(j.frag,JELLO.map(x=>x.frag[0])),stone:cnt(j.stone,stones),want:[...new Set((Array.isArray(j.want)?j.want:[]).map(k=>/^\d+$/.test(k)?+k:k))].filter(k=>MEM_LADDER.some(x=>x.key===k)),
     crystals:Number.isFinite(+j.crystals)&&+j.crystals>0?Math.round(+j.crystals):0,...(stones.includes(+c.id)&&Number.isFinite(+c.due)?{craft:{id:+c.id,due:+c.due}}:{})}}
-// the Stellar tab (stellar.js): certificates you have by ★ weapon id (whole counts above 0) and your weapon's refine (0 to 20)
-{const t=objOr(state.stellar),r=Math.round(+t.refine);
-  state.stellar={have:Object.fromEntries(Object.entries(numMap(t.have)).filter(([k,v])=>/^\d+$/.test(k)&&v>=1).map(([k,v])=>[k,Math.round(v)])),refine:Number.isFinite(r)?Math.min(20,Math.max(0,r)):0}}
+// the Star tab (star.js): certificates you have by ★ weapon id (whole counts above 0) and your weapon's refine (0 to 20); saves from
+// before the rename keep them in state.stellar
+{const t=objOr(state.star!=null?state.star:state.stellar),r=Math.round(+t.refine);delete state.stellar;
+  state.star={have:Object.fromEntries(Object.entries(numMap(t.have)).filter(([k,v])=>/^\d+$/.test(k)&&v>=1).map(([k,v])=>[k,Math.round(v)])),refine:Number.isFinite(r)?Math.min(20,Math.max(0,r)):0}}
 // the Daily quests tab's filters (dailies.js): hide the ones done today, hide the ones with no level, and the range of daily levels to show (from and to: whole
 // numbers from 1, or null for no bound; from is never above to). dailyMine (only the ones your level allows) is gone
 delete state.dailyMine;state.dailyHideDone=state.dailyHideDone===true;state.dailyHideNoLv=state.dailyHideNoLv===true;
