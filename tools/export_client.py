@@ -54,7 +54,7 @@ from export_icons import (ROOT, CARD_W, CARD_H, CARD_COLS, GEAR_W, GEAR_H, GEAR_
                           ids, keys, pairs, shrink, sheet, fit)
 from export_itemtext import clean  # noqa: E402
 from lua_tables import load as load_lua  # noqa: E402
-from check_client import EQUIP_PROPS, MOB_BOSSES, in_text  # noqa: E402
+from check_client import EQUIP_PROPS, MOB_BOSSES, in_text, zero_name  # noqa: E402
 
 STAT = r"Type|Position|Weight|DEF|MDEF|ATK|MATK|Required Level|Equippable [Bb]y|Weapon Level|Element|Equipped on|Property|Range|Usable by"
 STAT_RE = re.compile(rf"({STAT})\s*:\s*(.*?)(?=\s+(?:{STAT})\s*:|$)")
@@ -471,7 +471,8 @@ def monsters(grf, path):
     from export_mobnames import english
     src = open(os.path.join(DATA, "maps.js"), encoding="utf-8").read()
     maps = json.JSONDecoder().raw_decode(src, src.index("{", src.index("const MAPNAMES=")))[0]
-    key = {c: k for k, v in maps.items() for c in [k, v[0], *v[2:]]}
+    # a map's boss tables can be under its Zero name only (Phreeoni: moc_fild17 is b_moc_f17), so both names count
+    key = {z: k for k, v in maps.items() for c in [k, v[0], *v[2:]] for z in (zero_name(c), c)}
     en, out = english(path), {}
     for e in lua_data(grf.read(NAVI))["Navi_Mob"].values():
         i, n, table = e[4] & 0xFFFF, e[4] >> 16, re.sub(r"^b_", "", e[1])
