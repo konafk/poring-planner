@@ -826,8 +826,10 @@ t("Amon Ra is in the monster tables as an MVP, Boss class, on Pyramid B2F", () =
   assert.ok(run(`MVP.size`) > 20);
   assert.ok(run(`MOBS.filter(m=>m.mvp).every(m=>m.boss&&!m.mini&&(SPAWN[m.id]||[]).every(([,n])=>n===1||n===null))`));
   assert.ok(run(`MOBS.filter(m=>m.mvp&&SPAWN[m.id]).length`) >= 15);
-  // the client's table doesn't have Maya, Mistress, Phreeoni, Eddga, Pharaoh or Drake on their maps, and no estimate stands in
-  assert.equal(run(`[1147,1059,1159,1115,1157,1112].filter(i=>SPAWN[i]).length`), 0);
+  // the client's table doesn't have Mistress, Eddga, Pharaoh or Drake on their maps, and no estimate stands in
+  assert.equal(run(`[1059,1115,1157,1112].filter(i=>SPAWN[i]).length`), 0);
+  // Maya and Phreeoni came with the 26 November MVP Raids: one each, in Ant Hell 2F's and the Sograt Desert's boss tables
+  assert.equal(run(`JSON.stringify([SPAWN[1147],SPAWN[1159]])`), JSON.stringify([[["an_d02", 1, 1]], [["moc_fild17", 1, 1]]]));
   assert.equal(run(`MOBS.find(m=>m.name==="Baphomet").mvp`), true);
   assert.equal(run(`JSON.stringify(SPAWN[1511])`), JSON.stringify([["pry_d06", 1, 1]]));
   assert.ok(run(`BOSS_PILL(${ra})`).includes(">MVP<"));
@@ -1106,7 +1108,7 @@ t("Affixes tab: the client's upgrade items with the gear they take, and the roll
   assert.match(nord, /1st affix: one of these[\s\S]*MaxHP[\s\S]*MaxSP[\s\S]*2nd affix: one of these[\s\S]*STR[\s\S]*HIT/);
 });
 t("Job Essences (data/essences.js) have their name and In-game text for the details popup", () => {
-  assert.equal(run(`ITEM_TEXT[29399]`), "CRIT increases by 3× the level of Cavalier Mastery.\nIncreases Bowling Bash damage by 20%.\nFor each armor refine level, ASPD increases (After Attack Delay -1%).");
+  assert.equal(run(`ITEM_TEXT[29399]`), "For every 1 level of [Cavalier Mastery] learned, CRI +3.\n[Bowling Bash] damage +20%.\nFor every armor refine level, Increases ASPD (After Attack Delay -1%).");  // the 26 November client's wording
   assert.equal(run(`ESSENCES.every(x=>ITEM_TEXT[x.id]===x.t&&CLIENT_ITEMS[x.id][0]===x.name)`), true);
   assert.deepEqual(JSON.parse(run(`JSON.stringify(CLIENT_ITEMS[29574])`)), ["Alchemist Essence II Lv.2", "Enchant Stone"]);  // the one the catalog lacks
 });
