@@ -385,3 +385,24 @@ if(STY_LINK)openStyle(STY_LINK);
 (function fabScroll(){if(typeof scrollY!=="number"||typeof requestAnimationFrame!=="function")return;let y=scrollY,raf=0;
   addEventListener("scroll",()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;const d=scrollY-y;
     if(Math.abs(d)<8)return;document.documentElement.classList.toggle("scrollDown",d>0&&scrollY>80);y=scrollY})},{passive:true})})();
+// ---- a new deploy: the deployed page names its build (<meta name="build">, tools/stamp.mjs) and version.json the newest one. The tab
+// checks every 5 minutes and when you come back to it; once a newer build is up it reloads with it (reloadView: same account, page tab,
+// scroll and unsent log entry), but only while you aren't in the middle of something: no dialog open, no text field focused, nothing
+// typed or clicked for 30 seconds. A tab in the background waits until you come back. The committed index.html has no build, so a
+// copy opened from the folder (file://) never checks. A reload that still brings up the old page (the CDN hadn't caught up) isn't
+// tried again for that build for 10 minutes ----
+(function autoUpdate(){const cur=document.querySelector('meta[name="build"]')?.content;
+  if(!cur||!/^https?:$/.test(location.protocol)||typeof fetch!=="function")return;
+  const K="rozero-farm-planner-update";let next=null,checked=0,last=Date.now();
+  for(const t of["keydown","pointerdown","input","wheel"])addEventListener(t,()=>{last=Date.now()},{capture:true,passive:true});
+  const tried=v=>{try{const o=JSON.parse(sessionStorage.getItem(K));return o&&o.v===v&&Date.now()-o.at<600e3}catch(e){return false}};
+  const busy=()=>{const a=document.activeElement;return !!document.querySelector("dialog[open]")||!!a&&(a.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))||Date.now()-last<30e3};
+  const go=()=>{if(!next||document.hidden||busy()||tried(next))return;
+    try{sessionStorage.setItem(K,JSON.stringify({v:next,at:Date.now()}))}catch(e){}reloadView("Updated to the latest version")};
+  const check=async()=>{if(document.hidden||Date.now()-checked<60e3)return;checked=Date.now();
+    try{const r=await fetch(`version.json?t=${Date.now()}`,{cache:"no-store"});if(!r.ok)return;const v=(await r.json()).v;
+      if(typeof v==="string"&&/^[0-9a-f]{6,40}$/.test(v))next=v!==cur?v:null}catch(e){}
+    go()};
+  setInterval(check,300e3);setInterval(go,10e3);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden){last=0;check();go()}});
+})();

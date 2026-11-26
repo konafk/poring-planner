@@ -6,6 +6,8 @@ The page is plain HTML, CSS and JavaScript with no dependencies. Open `index.htm
 
 **Don't put `?v=` stamps in `index.html`.** The Pages deploy (`.github/workflows/pages.yml`) runs `node tools/stamp.mjs`, which gives each script and stylesheet a `?v=` of its content hash, so after a deploy a browser never runs the new page with an old cached file. Keeping the hashes out of the repo means PRs don't conflict over them. `tests/stamp.test.mjs` fails if a stamp is committed.
 
+**Open tabs reload after a deploy.** The stamp script also puts the build id (a hash of the stamped page) in a `<meta name="build">` tag and in `version.json`. An open tab fetches `version.json` every 5 minutes and whenever you switch back to it. When the id there is newer, the tab reloads (`reloadView`, so it keeps the account, page tab, scroll and an unsent log entry) and says "Updated to the latest version". It waits while a dialog is open, a text field has focus, or you typed or clicked in the last 30 seconds, and a tab in the background waits until you come back. If the reload still brings up the old page, it doesn't try that build again for 10 minutes. The committed `index.html` has no build tag, so a copy opened from the folder never checks (`js/start.js`, `autoUpdate`).
+
 ## Project layout
 
 | Path | What's in it |

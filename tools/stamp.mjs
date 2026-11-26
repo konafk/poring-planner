@@ -1,6 +1,7 @@
 // Builds the deployed site: index.html with every local script and stylesheet given a ?v= of its own content hash, so a browser
 // never runs a new page with an old cached file (or the other way round) after a deploy, plus a copy of each of those files and of img/.
 // The committed index.html carries no stamps (they changed in nearly every PR and conflicted); the Pages workflow runs this.
+// It also writes version.json with the build id, which open tabs check to reload after a deploy.
 // Run: node tools/stamp.mjs [outDir]  (default _site)
 import { readFileSync, writeFileSync, mkdirSync, copyFileSync, readdirSync } from "fs";
 import { dirname, join, relative } from "path";
@@ -21,14 +22,21 @@ export const assetFiles = () => DYNAMIC.flatMap(dir => readdirSync(new URL(dir, 
   .map(d => `${dir}${relative(fileURLToPath(new URL(dir, root)), join(d.parentPath, d.name)).replace(/\\/g, "/")}`));
 // the stamped page: each local file's ?v= set to that file's hash
 export const stamp = html => html.replace(LOCAL, (_, pre, path) => `${pre}${path}?v=${hashOf(path)}"`);
+// the build id: a hash of the stamped page, so it changes whenever the page or any file it loads does. The deployed page names it in
+// <meta name="build"> and version.json holds the newest one: an open tab that finds them differ reloads (js/start.js, autoUpdate)
+export const buildId = stamped => createHash("sha256").update(stamped).digest("hex").slice(0, 12);
+// (after <meta charset>, which has to come first)
+export const withBuild = (stamped, id) => stamped.replace(/<meta charset[^>]*>/i.test(stamped) ? /<meta charset[^>]*>/i : /<head>/i, m => `${m}\n<meta name="build" content="${id}">`);
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const out = process.argv[2] || "_site", html = readFileSync(new URL("index.html", root), "utf8");
   mkdirSync(out, { recursive: true });
-  writeFileSync(join(out, "index.html"), stamp(html));
+  const stamped = stamp(html), id = buildId(stamped);
+  writeFileSync(join(out, "index.html"), withBuild(stamped, id));
+  writeFileSync(join(out, "version.json"), JSON.stringify({ v: id }) + "\n");
   // .nojekyll: serve the files as they are
   writeFileSync(join(out, ".nojekyll"), "");
   const files = [...localFiles(html), ...assetFiles()];
   for (const f of files) { mkdirSync(dirname(join(out, f)), { recursive: true }); copyFileSync(fileURLToPath(new URL(f, root)), join(out, f)) }
-  console.log(`${out}: index.html and ${files.length} files, stamped`);
+  console.log(`${out}: index.html and ${files.length} files, stamped, build ${id}`);
 }
