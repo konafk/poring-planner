@@ -12,10 +12,12 @@ the client isn't, so what the client says goes in a file of its own that only th
   differ from the database's.
 - lines: bonus lines an item's client text has that its database lines don't (missing(): flat stat lines, mostly), added to it.
 - cards: cards the database doesn't have yet (the Gatchaman event cards), as data/cards.js rows (card_row()).
-- gear: armour the database doesn't have yet, built from the client: slot from its Type / Position, the numbers from its stat block,
-  card slots, and bonus lines read from its simple sentences (stat lists, "For every N refine levels", "At +N refine", "for each refine
-  level above +N"); a sentence it can't read stays in the text only and is printed. Only "All Jobs" gear is built (the job lists of
-  the rest would need reading), and weapons are left for the database, which has their weapon type; both are printed.
+- gear: gear the database doesn't have yet, built from the client: slot from its Type / Position ("Helm" is headgear), the numbers
+  from its stat block, card slots, and bonus lines read from its simple sentences (stat lists, "For every N refine levels", "At +N
+  refine", "for each refine level above +N"); a sentence it can't read stays in the text only and is printed. Weapons take their
+  weapon type from Type (WEAPON_TYPE) and their base MATK from EquipmentProperties.lub, and the jobs from "Equippable by" (JOBS:
+  "Swordsman Class" is the swordsman's family). Gear with no slot or weapon type the planner has (Huuma Shuriken, the guns, shadow
+  gear, gear with no text) or no class it has is left for the database, and printed.
 - items: items in the client that no data file has (new event items and cards, packages, costumes), with a category and their text in
   data/itemtext.js's form (tools/export_itemtext.py's clean).
 - mobs: monsters the database doesn't have yet that were asked for (CLIENT_MOBS: the Clock Tower basement bosses, the Boulder Dwarf
@@ -62,6 +64,16 @@ STAT_LINE = re.compile(rf"^(?:{STAT})\s*:")
 SLOT = {"Garment": ["garment"], "Armor": ["armor"], "Shoes": ["footgear"], "Footgear": ["footgear"], "Shield": ["shield"],
         "Accessory": ["accessory_1", "accessory_2"]}
 HEAD = {"Upper": "head_upper", "Middle": "head_middle", "Lower": "head_lower"}
+# the client's weapon Type -> data/equipment.js's type (Huuma Shuriken and the guns have none: no class here uses them yet)
+WEAPON_TYPE = {"Dagger": "dagger", "Sword": "sword_1h", "One-Handed Sword": "sword_1h", "Two-Handed Sword": "sword_2h",
+               "One-Handed Axe": "axe_1h", "Axe": "axe_1h", "Two-Handed Axe": "axe_2h", "One-Handed Spear": "spear_1h", "Spear": "spear_1h",
+               "Two-Handed Spear": "spear_2h", "One-Handed Staff": "staff_1h", "Staff": "staff_1h", "Two-Handed Staff": "staff_2h",
+               "Mace": "mace", "Book": "book", "Knuckle": "knuckle", "Musical Instrument": "instrument", "Whip": "whip", "Katar": "katar",
+               "Bow": "bow"}
+# the classes "Equippable by" names ("Swordsman Class") -> data/equipment.js's job keys; a 1st job's key covers its 2nd jobs
+JOBS = {c: c.lower().replace(" ", "-") for c in ["Novice", "Swordsman", "Mage", "Archer", "Acolyte", "Merchant", "Thief", "Knight",
+                                                  "Crusader", "Wizard", "Sage", "Hunter", "Bard", "Dancer", "Priest", "Monk", "Blacksmith",
+                                                  "Alchemist", "Assassin", "Rogue", "Ninja", "Taekwon", "Soul Linker"]}
 # the names the client's bonus sentences use -> the bonus types data/equipment.js uses
 STATS = {"MHP": "hp", "MaxHP": "hp", "MSP": "sp", "MaxSP": "sp", "ATK": "atk", "MATK": "matk", "M.ATK": "matk", "HIT": "hit", "FLEE": "flee",
          "CRIT": "crit", "DEF": "def", "MDEF": "mdef", "STR": "str", "AGI": "agi", "VIT": "vit", "INT": "int", "DEX": "dex", "LUK": "luk"}
@@ -276,23 +288,44 @@ def card_row(i, v, st, affix):
     return {k: x for k, x in row.items() if x not in (None, [], "")}
 
 
-def build(i, v, d, st):
-    """An equipment.js row for gear the database doesn't have, and the sentences it couldn't read; None when it can't be built."""
+def jobs_of(s):
+    """data/equipment.js's jobs for an "Equippable by" list: [] for All Jobs (every job wears it), None when it names no class the
+    planner has (a Druid or Gunslinger weapon)."""
+    if re.fullmatch(r"all jobs", s or "", re.I):
+        return []
+    out = [JOBS[c] for c in (re.sub(r"\s+Class$", "", x.strip()) for x in (s or "").split(",")) if c in JOBS]
+    return list(dict.fromkeys(out)) or None
+
+
+def build(i, v, d, st, prop=None):
+    """An equipment.js row for gear the database doesn't have, and the sentences it couldn't read; None when it can't be built.
+    prop: its EquipmentProperties.lub entry, for a weapon's base MATK ("MATK +10" in its text is the weapon's own, not a bonus)."""
     ty, pos = st.get("Type", ""), st.get("Position", "")
-    slot = SLOT.get(ty) or ([HEAD[p.strip()] for p in pos.split("/") if p.strip() in HEAD] if ty == "Headgear" else None)
-    if not slot or not re.fullmatch(r"all jobs", st.get("Equippable by", ""), re.I):
+    wtype = WEAPON_TYPE.get(ty) if "Weapon Level" in st else None
+    slot = ["weapon"] if wtype else SLOT.get(ty) or ([HEAD[p.strip()] for p in pos.split("/") if p.strip() in HEAD] if ty in ("Headgear", "Helm") else None)
+    jobs = jobs_of(st.get("Equippable by"))
+    if not slot or jobs is None:
         return None, []
     name = v["identifiedDisplayName"].replace("’", "'")
+    stat = prop.get("Stat") if isinstance(prop, dict) and prop.get("Type") == "Mweapon" and isinstance(prop.get("Stat"), dict) else {}
+    matk = (stat.get(4) or 0) if wtype else 0
     g, unread = [], []
-    for sentence in re.split(r"(?<=\.)\s+", desc(lines(v))):
+    for sentence in re.split(r"(?<=\.)\s+|\s+(?=MATK [+-])", desc(lines(v))):
+        if matk and re.fullmatch(rf"MATK \+\s*{matk}\.?", sentence.strip()):
+            continue  # the weapon's base MATK
         b = bonus(sentence)
         if b:
             g += b
         elif re.search(r"[+-]\d|\d+%", sentence):
             unread.append(sentence)
-    row = {"id": i, "slug": re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") + f"-{i}", "name": name, "slot": slot,
-           "slots": d.get("slotCount") or 0, "lv": num(st.get("Required Level")) or 0, "refine": "armor", "def": num(st.get("Def")) or 0,
-           "g": g}  # no jobs: every job wears it
+    row = {"id": i, "slug": re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") + f"-{i}", "name": name, "slot": slot}
+    if wtype:
+        wlv = num(st.get("Weapon Level")) or 1
+        row.update({"type": wtype, "slots": d.get("slotCount") or 0, "lv": num(st.get("Required Level")) or 0, "wlv": wlv,
+                    "w": num(st.get("Weight")) or 0, "refine": f"weapon_lv{wlv}", "atk": num(st.get("Atk")) or 0, "matk": matk})
+    else:
+        row.update({"slots": d.get("slotCount") or 0, "lv": num(st.get("Required Level")) or 0, "refine": "armor", "def": num(st.get("Def")) or 0})
+    row.update({"jobs": jobs, "g": g})  # no jobs: every job wears it
     return {k: x for k, x in row.items() if x not in (None, [], "")}, unread
 
 
@@ -534,8 +567,8 @@ def main():
             continue
         ls, d = lines(v), data.get(i) or {}
         st = stats(ls)
-        if st.get("Type") in SLOT or st.get("Type") == "Headgear" or re.search(r"Weapon|Sword|Spear|Axe|Mace|Staff|Bow|Dagger|Katar|Book|Knuckle|Instrument|Whip", st.get("Type", "")) and "Weapon Level" in st:
-            row, bad = build(i, v, d, st)
+        if st.get("Type") in SLOT or st.get("Type") in ("Headgear", "Helm") or "Weapon Level" in st:
+            row, bad = build(i, v, d, st, props.get(i))
             if row:
                 gear.append(row); text[i] = desc(ls)
                 if bad:
