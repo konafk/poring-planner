@@ -38,8 +38,9 @@ QUEST_IDS = [(21000, 23999), (1000000, 1000999), (1300000, 1300999)]
 AGAIN = re.compile(r"daily quest|accepted? (?:it |the quest )?again|come back (?:again )?(?:after dawn|tomorrow)|again tomorrow|"
                    r"can be done daily|when the wait time expires", re.I)
 # daily-looking entries that aren't an NPC's daily: a story step, the town's thank-you buff, the Kumamon collaboration (ended
-# 2026-10-29: its NPCs are still in the client)
-SKIP = {21134, 23446, 23449}
+# 2026-10-29: its NPCs are still in the client), and Curse of the Clock Tower (1300029): Clock Tower Clerk Molden left with the 26
+# November 2026 update (patch 415), but the quest log still has it, and Mr. Smile, 3 cells from his spot, would make it look live
+SKIP = {21134, 23446, 23449, 1300029}
 SKIP_TITLES = {"Trust of the Town"}  # and titles in brackets: [Event], [Raid], [Guild], [Battle Pass], [MD]
 # the dailies of an NPC with more than one level line, or whose name another daily NPC shares, by "- Pending" id: the level and the line
 LEVELS = {
